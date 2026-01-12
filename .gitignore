@@ -1,0 +1,174 @@
+#-------------------------
+# Operating Specific Junk Files
+#-------------------------
+
+# OS X
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# OS X Thumbnails
+._*
+
+# Windows image file caches
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# Windows Installer files
+*.cab
+*.msi
+*.msm
+*.msp
+
+# Windows shortcuts
+*.lnk
+
+# Linux
+*~
+
+# KDE directory preferences
+.directory
+
+# Linux trash folder which might appear on any partition or disk
+.Trash-*
+
+#-------------------------
+# Environment Files
+#-------------------------
+# These should never be under version control,
+# as it poses a security risk.
+.env
+.vagrant
+Vagrantfile
+
+#-------------------------
+# Temporary Files
+#-------------------------
+writable/cache/*
+!writable/cache/index.html
+
+writable/logs/*
+!writable/logs/index.html
+
+writable/session/*
+!writable/session/index.html
+
+writable/uploads/*
+!writable/uploads/index.html
+
+writable/debugbar/*
+
+php_errors.log
+
+#-------------------------
+# User Guide Temp Files
+#-------------------------
+user_guide_src/build/*
+user_guide_src/cilexer/build/*
+user_guide_src/cilexer/dist/*
+user_guide_src/cilexer/pycilexer.egg-info/*
+
+#-------------------------
+# Test Files
+#-------------------------
+tests/coverage*
+
+# Don't save phpunit under version control.
+phpunit
+
+#-------------------------
+# Composer
+#-------------------------
+vendor/
+
+#-------------------------
+# IDE / Development Files
+#-------------------------
+
+# Modules Testing
+_modules/*
+
+# phpenv local config
+.php-version
+
+# Jetbrains editors (PHPStorm, etc)
+.idea/
+*.iml
+
+# Netbeans
+nbproject/
+build/
+nbbuild/
+dist/
+nbdist/
+nbactions.xml
+nb-configuration.xml
+.nb-gradle/
+
+# Sublime Text
+*.tmlanguage.cache
+*.tmPreferences.cache
+*.stTheme.cache
+*.sublime-workspace
+*.sublime-project
+.phpintel
+/api/
+
+# Visual Studio Code
+.vscode/
+
+/results/
+/phpunit*.xml
+/.phpunit.*.cache
+
+
+
+
+system/*
+writable/*
+vendor/*
+public/*
+/soap/*
+
+
+# Kecualikan folder app/Config
+!app/
+app/*
+!app/Config/
+!app/Config/**
+!app/Models/
+!app/Models/**
+!app/Controllers/
+!app/Controllers/**
+!app/Views/
+!app/Views/**
+
+app/Libraries
+# !app/Libraries/Default_style.php
+!app\Libraries\Default_style.php
+
+# Abaikan semua file di folder assets
+assets/*
+
+# Kecualikan folder assets/pagejs
+!assets/pagejs/
+
+# Termasuk semua file dalam assets/pagejs
+!assets/pagejs/**
+
+# Kecualikan folder assets/json
+!assets/json/
+
+# Termasuk semua file dalam assets/json
+!assets/json/**
+
+# Kecualikan folder assets/mrt
+!assets/mrt/
+
+# Termasuk semua file dalam assets/mrt
+!assets/mrt/**
+

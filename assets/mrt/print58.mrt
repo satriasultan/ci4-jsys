@@ -1,0 +1,353 @@
+{
+  "ReportGuid": "2fbf83c6c1c7a2c9a8792da031d2336a",
+  "ReportName": "Report",
+  "ReportAlias": "Report",
+  "ReportFile": "Report.mrt",
+  "ReportCreated": "/Date(1652772791000+0700)/",
+  "ReportChanged": "/Date(1652773390000+0700)/",
+  "EngineVersion": "EngineV2",
+  "CalculationMode": "Interpretation",
+  "ReportUnit": "Centimeters",
+  "PreviewSettings": 260039167,
+  "Pages": {
+    "0": {
+      "Ident": "StiPage",
+      "Name": "Page1",
+      "Guid": "72dbee17112560f7a21c0f3b51a0be57",
+      "Interaction": {
+        "Ident": "StiInteraction"
+      },
+      "Border": ";;2;;;;;solid:Black",
+      "Brush": "solid:",
+      "Components": {
+        "0": {
+          "Ident": "StiText",
+          "Name": "Text1",
+          "ClientRectangle": "0,0,5.6,0.6",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "Testing Printer 58 MM"
+          },
+          "HorAlignment": "Center",
+          "Font": ";12;Bold;",
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "Type": "Expression"
+        },
+        "1": {
+          "Ident": "StiText",
+          "Name": "Text2",
+          "Guid": "3d8e66191e7d9e6089d5829b5dda10e5",
+          "ClientRectangle": "2.6,1.2,3,0.6",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "Testing Printer 58 MM"
+          },
+          "HorAlignment": "Right",
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "Type": "Expression"
+        },
+        "2": {
+          "Ident": "StiText",
+          "Name": "Text3",
+          "Guid": "d6bf3d9cae6d6487f65d20f7c5f2b54c",
+          "ClientRectangle": "0,2.8,3,0.4",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "Testing Printer 58 MM"
+          },
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "Type": "Expression"
+        },
+        "3": {
+          "Ident": "StiText",
+          "Name": "Text4",
+          "Guid": "ffd84dbba74c1a1adb880ccf187f233f",
+          "ClientRectangle": "0,3.2,3,0.4",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "Testing Printer 58 MM"
+          },
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "Type": "Expression"
+        },
+        "4": {
+          "Ident": "StiText",
+          "Name": "Text5",
+          "Guid": "af475100700adbe23762e642495340be",
+          "ClientRectangle": "0,3.6,3,0.4",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "Testing Printer 58 MM"
+          },
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "Type": "Expression"
+        },
+        "5": {
+          "Ident": "StiText",
+          "Name": "Text6",
+          "Guid": "542016641e096ffe9742c0cff4470761",
+          "ClientRectangle": "0,4,3,0.4",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "Testing Printer 58 MM"
+          },
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "Type": "Expression"
+        },
+        "6": {
+          "Ident": "StiText",
+          "Name": "Text7",
+          "Guid": "bd674d29a4d73fcc78a9a2359d34976d",
+          "ClientRectangle": "2.6,4.4,3,0.4",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "Testing Printer 58 MM"
+          },
+          "HorAlignment": "Right",
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "Type": "Expression"
+        },
+        "7": {
+          "Ident": "StiText",
+          "Name": "Text8",
+          "Guid": "26a126f3b669dfb4792673de7ea685f7",
+          "ClientRectangle": "2.6,4.8,3,0.4",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "Testing Printer 58 MM"
+          },
+          "HorAlignment": "Right",
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "Type": "Expression"
+        },
+        "8": {
+          "Ident": "StiText",
+          "Name": "Text9",
+          "Guid": "c49776287b624bafe41ec110541f442a",
+          "ClientRectangle": "2.6,5.2,3,0.4",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "Testing Printer 58 MM"
+          },
+          "HorAlignment": "Right",
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "Type": "Expression"
+        },
+        "9": {
+          "Ident": "StiText",
+          "Name": "Text10",
+          "Guid": "c4907c68573ebd4a574692fea0d5249a",
+          "ClientRectangle": "2.6,5.6,3,0.4",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "Testing Printer 58 MM"
+          },
+          "HorAlignment": "Right",
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "Type": "Expression"
+        },
+        "10": {
+          "Ident": "StiText",
+          "Name": "Text11",
+          "Guid": "85e9dde5e0b0c164d78e0bcc8846e2af",
+          "ClientRectangle": "0,6,3,0.4",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "Testing Printer 58 MM"
+          },
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "Type": "Expression"
+        },
+        "11": {
+          "Ident": "StiText",
+          "Name": "Text12",
+          "Guid": "41f21dac8661efc030b75af25b511f3f",
+          "ClientRectangle": "0,6.4,3,0.4",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "Testing Printer 58 MM"
+          },
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "Type": "Expression"
+        },
+        "12": {
+          "Ident": "StiText",
+          "Name": "Text13",
+          "Guid": "3eb8375cbb8290c9999c5aa0f870af1d",
+          "ClientRectangle": "0,6.8,3,0.4",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "Testing Printer 58 MM"
+          },
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "Type": "Expression"
+        },
+        "13": {
+          "Ident": "StiText",
+          "Name": "Text14",
+          "Guid": "96c930346f4e0b2b05f2080f1206a0af",
+          "ClientRectangle": "0,7.2,3,0.4",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "Testing Printer 58 MM"
+          },
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "Type": "Expression"
+        },
+        "14": {
+          "Ident": "StiText",
+          "Name": "Text15",
+          "Guid": "9bd645f2a209c397e12df15e1994d845",
+          "ClientRectangle": "2.6,7.6,3,0.4",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "Testing Printer 58 MM"
+          },
+          "HorAlignment": "Right",
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "Type": "Expression"
+        },
+        "15": {
+          "Ident": "StiText",
+          "Name": "Text16",
+          "Guid": "31bedd6d2050e0681d33c9cbac6d4483",
+          "ClientRectangle": "2.6,8,3,0.4",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "Testing Printer 58 MM"
+          },
+          "HorAlignment": "Right",
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "Type": "Expression"
+        },
+        "16": {
+          "Ident": "StiText",
+          "Name": "Text17",
+          "Guid": "0cbb9fa4005316346aafc089c75548e2",
+          "ClientRectangle": "2.6,8.4,3,0.4",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "Testing Printer 58 MM"
+          },
+          "HorAlignment": "Right",
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "Type": "Expression"
+        },
+        "17": {
+          "Ident": "StiText",
+          "Name": "Text18",
+          "Guid": "e7b0af36aa8eaf59a1be88b61c18b497",
+          "ClientRectangle": "2.6,8.8,3,0.4",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "Testing Printer 58 MM"
+          },
+          "HorAlignment": "Right",
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "Type": "Expression"
+        },
+        "18": {
+          "Ident": "StiText",
+          "Name": "Text19",
+          "Guid": "40d126b2161e4f0afdacfe779a8588b9",
+          "ClientRectangle": "0,9.2,5.6,0.6",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "Xprinter Printer 58testingX"
+          },
+          "HorAlignment": "Center",
+          "Font": ";12;Bold;",
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "Type": "Expression"
+        }
+      },
+      "PageWidth": 5.8,
+      "PageHeight": 10,
+      "Watermark": {
+        "TextBrush": "solid:50,0,0,0"
+      },
+      "Margins": {
+        "Left": 0.1,
+        "Right": 0.1,
+        "Top": 0.1,
+        "Bottom": 0.1
+      }
+    }
+  }
+}

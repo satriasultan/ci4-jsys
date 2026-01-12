@@ -1,0 +1,5358 @@
+{
+  "ReportGuid": "9f241849eeafc81cd5bddc12c7bcb91d",
+  "ReportName": "Report",
+  "ReportAlias": "Report",
+  "ReportFile": "form_allocation_map.mrt",
+  "ReportCreated": "/Date(1645069867000+0700)/",
+  "ReportChanged": "/Date(1645430250000+0700)/",
+  "EngineVersion": "EngineV2",
+  "CalculationMode": "Interpretation",
+  "ReportUnit": "Centimeters",
+  "PreviewSettings": 260039167,
+  "Dictionary": {
+    "DataSources": {
+      "0": {
+        "Ident": "StiDataTableSource",
+        "Name": "branch",
+        "Alias": "branch",
+        "Columns": {
+          "0": {
+            "Name": "address",
+            "Index": -1,
+            "NameInSource": "address",
+            "Alias": "address",
+            "Type": "System.String"
+          },
+          "1": {
+            "Name": "branch",
+            "Index": -1,
+            "NameInSource": "branch",
+            "Alias": "branch",
+            "Type": "System.String"
+          },
+          "2": {
+            "Name": "branchname",
+            "Index": -1,
+            "NameInSource": "branchname",
+            "Alias": "branchname",
+            "Type": "System.String"
+          },
+          "3": {
+            "Name": "fax",
+            "Index": -1,
+            "NameInSource": "fax",
+            "Alias": "fax",
+            "Type": "System.String"
+          },
+          "4": {
+            "Name": "phone1",
+            "Index": -1,
+            "NameInSource": "phone1",
+            "Alias": "phone1",
+            "Type": "System.String"
+          },
+          "5": {
+            "Name": "phone2",
+            "Index": -1,
+            "NameInSource": "phone2",
+            "Alias": "phone2",
+            "Type": "System.String"
+          }
+        },
+        "NameInSource": "json_alocation_map.branch"
+      },
+      "1": {
+        "Ident": "StiDataTableSource",
+        "Name": "detail",
+        "Alias": "detail",
+        "Columns": {
+          "0": {
+            "Name": "allocated",
+            "Index": -1,
+            "NameInSource": "allocated",
+            "Alias": "allocated",
+            "Type": "System.String"
+          },
+          "1": {
+            "Name": "batch",
+            "Index": -1,
+            "NameInSource": "batch",
+            "Alias": "batch",
+            "Type": "System.String"
+          },
+          "2": {
+            "Name": "ctype",
+            "Index": -1,
+            "NameInSource": "ctype",
+            "Alias": "ctype",
+            "Type": "System.String"
+          },
+          "3": {
+            "Name": "docno",
+            "Index": -1,
+            "NameInSource": "docno",
+            "Alias": "docno",
+            "Type": "System.String"
+          },
+          "4": {
+            "Name": "docref",
+            "Index": -1,
+            "NameInSource": "docref",
+            "Alias": "docref",
+            "Type": "System.String"
+          },
+          "5": {
+            "Name": "id",
+            "Index": -1,
+            "NameInSource": "id",
+            "Alias": "id",
+            "Type": "System.String"
+          },
+          "6": {
+            "Name": "idarea",
+            "Index": -1,
+            "NameInSource": "idarea",
+            "Alias": "idarea",
+            "Type": "System.String"
+          },
+          "7": {
+            "Name": "idbarang",
+            "Index": -1,
+            "NameInSource": "idbarang",
+            "Alias": "idbarang",
+            "Type": "System.String"
+          },
+          "8": {
+            "Name": "idlocation",
+            "Index": -1,
+            "NameInSource": "idlocation",
+            "Alias": "idlocation",
+            "Type": "System.String"
+          },
+          "9": {
+            "Name": "lasttrxdate",
+            "Index": -1,
+            "NameInSource": "lasttrxdate",
+            "Alias": "lasttrxdate",
+            "Type": "System.String"
+          },
+          "10": {
+            "Name": "nmarea",
+            "Index": -1,
+            "NameInSource": "nmarea",
+            "Alias": "nmarea",
+            "Type": "System.String"
+          },
+          "11": {
+            "Name": "nmbarang",
+            "Index": -1,
+            "NameInSource": "nmbarang",
+            "Alias": "nmbarang",
+            "Type": "System.String"
+          },
+          "12": {
+            "Name": "nmlocation",
+            "Index": -1,
+            "NameInSource": "nmlocation",
+            "Alias": "nmlocation",
+            "Type": "System.String"
+          },
+          "13": {
+            "Name": "onhand",
+            "Index": -1,
+            "NameInSource": "onhand",
+            "Alias": "onhand",
+            "Type": "System.String"
+          },
+          "14": {
+            "Name": "prc_allocated",
+            "Index": -1,
+            "NameInSource": "prc_allocated",
+            "Alias": "prc_allocated",
+            "Type": "System.String"
+          },
+          "15": {
+            "Name": "prc_onhand",
+            "Index": -1,
+            "NameInSource": "prc_onhand",
+            "Alias": "prc_onhand",
+            "Type": "System.String"
+          },
+          "16": {
+            "Name": "prc_tmpalloca",
+            "Index": -1,
+            "NameInSource": "prc_tmpalloca",
+            "Alias": "prc_tmpalloca",
+            "Type": "System.String"
+          },
+          "17": {
+            "Name": "sisa",
+            "Index": -1,
+            "NameInSource": "sisa",
+            "Alias": "sisa",
+            "Type": "System.String"
+          },
+          "18": {
+            "Name": "subunit",
+            "Index": -1,
+            "NameInSource": "subunit",
+            "Alias": "subunit",
+            "Type": "System.String"
+          },
+          "19": {
+            "Name": "tmpalloca",
+            "Index": -1,
+            "NameInSource": "tmpalloca",
+            "Alias": "tmpalloca",
+            "Type": "System.String"
+          },
+          "20": {
+            "Name": "unit",
+            "Index": -1,
+            "NameInSource": "unit",
+            "Alias": "unit",
+            "Type": "System.String"
+          }
+        },
+        "NameInSource": "json_alocation_map.detail"
+      },
+      "2": {
+        "Ident": "StiDataTableSource",
+        "Name": "dtlnew",
+        "Alias": "dtlnew",
+        "Columns": {
+          "0": {
+            "Name": "a1",
+            "Index": -1,
+            "NameInSource": "a1",
+            "Alias": "a1",
+            "Type": "System.String"
+          },
+          "1": {
+            "Name": "a2",
+            "Index": -1,
+            "NameInSource": "a2",
+            "Alias": "a2",
+            "Type": "System.String"
+          },
+          "2": {
+            "Name": "a3",
+            "Index": -1,
+            "NameInSource": "a3",
+            "Alias": "a3",
+            "Type": "System.String"
+          },
+          "3": {
+            "Name": "a4",
+            "Index": -1,
+            "NameInSource": "a4",
+            "Alias": "a4",
+            "Type": "System.String"
+          },
+          "4": {
+            "Name": "a5",
+            "Index": -1,
+            "NameInSource": "a5",
+            "Alias": "a5",
+            "Type": "System.String"
+          },
+          "5": {
+            "Name": "a6",
+            "Index": -1,
+            "NameInSource": "a6",
+            "Alias": "a6",
+            "Type": "System.String"
+          },
+          "6": {
+            "Name": "b1",
+            "Index": -1,
+            "NameInSource": "b1",
+            "Alias": "b1",
+            "Type": "System.String"
+          },
+          "7": {
+            "Name": "b2",
+            "Index": -1,
+            "NameInSource": "b2",
+            "Alias": "b2",
+            "Type": "System.String"
+          },
+          "8": {
+            "Name": "b3",
+            "Index": -1,
+            "NameInSource": "b3",
+            "Alias": "b3",
+            "Type": "System.String"
+          },
+          "9": {
+            "Name": "b4",
+            "Index": -1,
+            "NameInSource": "b4",
+            "Alias": "b4",
+            "Type": "System.String"
+          },
+          "10": {
+            "Name": "b5",
+            "Index": -1,
+            "NameInSource": "b5",
+            "Alias": "b5",
+            "Type": "System.String"
+          },
+          "11": {
+            "Name": "b6",
+            "Index": -1,
+            "NameInSource": "b6",
+            "Alias": "b6",
+            "Type": "System.String"
+          },
+          "12": {
+            "Name": "c1",
+            "Index": -1,
+            "NameInSource": "c1",
+            "Alias": "c1",
+            "Type": "System.String"
+          },
+          "13": {
+            "Name": "c2",
+            "Index": -1,
+            "NameInSource": "c2",
+            "Alias": "c2",
+            "Type": "System.String"
+          },
+          "14": {
+            "Name": "c3",
+            "Index": -1,
+            "NameInSource": "c3",
+            "Alias": "c3",
+            "Type": "System.String"
+          },
+          "15": {
+            "Name": "c4",
+            "Index": -1,
+            "NameInSource": "c4",
+            "Alias": "c4",
+            "Type": "System.String"
+          },
+          "16": {
+            "Name": "c5",
+            "Index": -1,
+            "NameInSource": "c5",
+            "Alias": "c5",
+            "Type": "System.String"
+          },
+          "17": {
+            "Name": "c6",
+            "Index": -1,
+            "NameInSource": "c6",
+            "Alias": "c6",
+            "Type": "System.String"
+          },
+          "18": {
+            "Name": "d1",
+            "Index": -1,
+            "NameInSource": "d1",
+            "Alias": "d1",
+            "Type": "System.String"
+          },
+          "19": {
+            "Name": "d2",
+            "Index": -1,
+            "NameInSource": "d2",
+            "Alias": "d2",
+            "Type": "System.String"
+          },
+          "20": {
+            "Name": "d3",
+            "Index": -1,
+            "NameInSource": "d3",
+            "Alias": "d3",
+            "Type": "System.String"
+          },
+          "21": {
+            "Name": "d4",
+            "Index": -1,
+            "NameInSource": "d4",
+            "Alias": "d4",
+            "Type": "System.String"
+          },
+          "22": {
+            "Name": "d5",
+            "Index": -1,
+            "NameInSource": "d5",
+            "Alias": "d5",
+            "Type": "System.String"
+          },
+          "23": {
+            "Name": "d6",
+            "Index": -1,
+            "NameInSource": "d6",
+            "Alias": "d6",
+            "Type": "System.String"
+          },
+          "24": {
+            "Name": "defarea",
+            "Index": -1,
+            "NameInSource": "defarea",
+            "Alias": "defarea",
+            "Type": "System.String"
+          },
+          "25": {
+            "Name": "docno",
+            "Index": -1,
+            "NameInSource": "docno",
+            "Alias": "docno",
+            "Type": "System.String"
+          },
+          "26": {
+            "Name": "e1",
+            "Index": -1,
+            "NameInSource": "e1",
+            "Alias": "e1",
+            "Type": "System.String"
+          },
+          "27": {
+            "Name": "e2",
+            "Index": -1,
+            "NameInSource": "e2",
+            "Alias": "e2",
+            "Type": "System.String"
+          },
+          "28": {
+            "Name": "e3",
+            "Index": -1,
+            "NameInSource": "e3",
+            "Alias": "e3",
+            "Type": "System.String"
+          },
+          "29": {
+            "Name": "e4",
+            "Index": -1,
+            "NameInSource": "e4",
+            "Alias": "e4",
+            "Type": "System.String"
+          },
+          "30": {
+            "Name": "e5",
+            "Index": -1,
+            "NameInSource": "e5",
+            "Alias": "e5",
+            "Type": "System.String"
+          },
+          "31": {
+            "Name": "e6",
+            "Index": -1,
+            "NameInSource": "e6",
+            "Alias": "e6",
+            "Type": "System.String"
+          },
+          "32": {
+            "Name": "f1",
+            "Index": -1,
+            "NameInSource": "f1",
+            "Alias": "f1",
+            "Type": "System.String"
+          },
+          "33": {
+            "Name": "f2",
+            "Index": -1,
+            "NameInSource": "f2",
+            "Alias": "f2",
+            "Type": "System.String"
+          },
+          "34": {
+            "Name": "f3",
+            "Index": -1,
+            "NameInSource": "f3",
+            "Alias": "f3",
+            "Type": "System.String"
+          },
+          "35": {
+            "Name": "f4",
+            "Index": -1,
+            "NameInSource": "f4",
+            "Alias": "f4",
+            "Type": "System.String"
+          },
+          "36": {
+            "Name": "f5",
+            "Index": -1,
+            "NameInSource": "f5",
+            "Alias": "f5",
+            "Type": "System.String"
+          },
+          "37": {
+            "Name": "f6",
+            "Index": -1,
+            "NameInSource": "f6",
+            "Alias": "f6",
+            "Type": "System.String"
+          },
+          "38": {
+            "Name": "g1",
+            "Index": -1,
+            "NameInSource": "g1",
+            "Alias": "g1",
+            "Type": "System.String"
+          },
+          "39": {
+            "Name": "g2",
+            "Index": -1,
+            "NameInSource": "g2",
+            "Alias": "g2",
+            "Type": "System.String"
+          },
+          "40": {
+            "Name": "g3",
+            "Index": -1,
+            "NameInSource": "g3",
+            "Alias": "g3",
+            "Type": "System.String"
+          },
+          "41": {
+            "Name": "g4",
+            "Index": -1,
+            "NameInSource": "g4",
+            "Alias": "g4",
+            "Type": "System.String"
+          },
+          "42": {
+            "Name": "g5",
+            "Index": -1,
+            "NameInSource": "g5",
+            "Alias": "g5",
+            "Type": "System.String"
+          },
+          "43": {
+            "Name": "g6",
+            "Index": -1,
+            "NameInSource": "g6",
+            "Alias": "g6",
+            "Type": "System.String"
+          },
+          "44": {
+            "Name": "h1",
+            "Index": -1,
+            "NameInSource": "h1",
+            "Alias": "h1",
+            "Type": "System.String"
+          },
+          "45": {
+            "Name": "h2",
+            "Index": -1,
+            "NameInSource": "h2",
+            "Alias": "h2",
+            "Type": "System.String"
+          },
+          "46": {
+            "Name": "h3",
+            "Index": -1,
+            "NameInSource": "h3",
+            "Alias": "h3",
+            "Type": "System.String"
+          },
+          "47": {
+            "Name": "h4",
+            "Index": -1,
+            "NameInSource": "h4",
+            "Alias": "h4",
+            "Type": "System.String"
+          },
+          "48": {
+            "Name": "h5",
+            "Index": -1,
+            "NameInSource": "h5",
+            "Alias": "h5",
+            "Type": "System.String"
+          },
+          "49": {
+            "Name": "h6",
+            "Index": -1,
+            "NameInSource": "h6",
+            "Alias": "h6",
+            "Type": "System.String"
+          },
+          "50": {
+            "Name": "i1",
+            "Index": -1,
+            "NameInSource": "i1",
+            "Alias": "i1",
+            "Type": "System.String"
+          },
+          "51": {
+            "Name": "i2",
+            "Index": -1,
+            "NameInSource": "i2",
+            "Alias": "i2",
+            "Type": "System.String"
+          },
+          "52": {
+            "Name": "i3",
+            "Index": -1,
+            "NameInSource": "i3",
+            "Alias": "i3",
+            "Type": "System.String"
+          },
+          "53": {
+            "Name": "i4",
+            "Index": -1,
+            "NameInSource": "i4",
+            "Alias": "i4",
+            "Type": "System.String"
+          },
+          "54": {
+            "Name": "i5",
+            "Index": -1,
+            "NameInSource": "i5",
+            "Alias": "i5",
+            "Type": "System.String"
+          },
+          "55": {
+            "Name": "i6",
+            "Index": -1,
+            "NameInSource": "i6",
+            "Alias": "i6",
+            "Type": "System.String"
+          },
+          "56": {
+            "Name": "idbarang",
+            "Index": -1,
+            "NameInSource": "idbarang",
+            "Alias": "idbarang",
+            "Type": "System.String"
+          },
+          "57": {
+            "Name": "idlocation",
+            "Index": -1,
+            "NameInSource": "idlocation",
+            "Alias": "idlocation",
+            "Type": "System.String"
+          },
+          "58": {
+            "Name": "j1",
+            "Index": -1,
+            "NameInSource": "j1",
+            "Alias": "j1",
+            "Type": "System.String"
+          },
+          "59": {
+            "Name": "j2",
+            "Index": -1,
+            "NameInSource": "j2",
+            "Alias": "j2",
+            "Type": "System.String"
+          },
+          "60": {
+            "Name": "j3",
+            "Index": -1,
+            "NameInSource": "j3",
+            "Alias": "j3",
+            "Type": "System.String"
+          },
+          "61": {
+            "Name": "j4",
+            "Index": -1,
+            "NameInSource": "j4",
+            "Alias": "j4",
+            "Type": "System.String"
+          },
+          "62": {
+            "Name": "j5",
+            "Index": -1,
+            "NameInSource": "j5",
+            "Alias": "j5",
+            "Type": "System.String"
+          },
+          "63": {
+            "Name": "j6",
+            "Index": -1,
+            "NameInSource": "j6",
+            "Alias": "j6",
+            "Type": "System.String"
+          },
+          "64": {
+            "Name": "k1",
+            "Index": -1,
+            "NameInSource": "k1",
+            "Alias": "k1",
+            "Type": "System.String"
+          },
+          "65": {
+            "Name": "k2",
+            "Index": -1,
+            "NameInSource": "k2",
+            "Alias": "k2",
+            "Type": "System.String"
+          },
+          "66": {
+            "Name": "k3",
+            "Index": -1,
+            "NameInSource": "k3",
+            "Alias": "k3",
+            "Type": "System.String"
+          },
+          "67": {
+            "Name": "k4",
+            "Index": -1,
+            "NameInSource": "k4",
+            "Alias": "k4",
+            "Type": "System.String"
+          },
+          "68": {
+            "Name": "k5",
+            "Index": -1,
+            "NameInSource": "k5",
+            "Alias": "k5",
+            "Type": "System.String"
+          },
+          "69": {
+            "Name": "k6",
+            "Index": -1,
+            "NameInSource": "k6",
+            "Alias": "k6",
+            "Type": "System.String"
+          },
+          "70": {
+            "Name": "l1",
+            "Index": -1,
+            "NameInSource": "l1",
+            "Alias": "l1",
+            "Type": "System.String"
+          },
+          "71": {
+            "Name": "l2",
+            "Index": -1,
+            "NameInSource": "l2",
+            "Alias": "l2",
+            "Type": "System.String"
+          },
+          "72": {
+            "Name": "l3",
+            "Index": -1,
+            "NameInSource": "l3",
+            "Alias": "l3",
+            "Type": "System.String"
+          },
+          "73": {
+            "Name": "l4",
+            "Index": -1,
+            "NameInSource": "l4",
+            "Alias": "l4",
+            "Type": "System.String"
+          },
+          "74": {
+            "Name": "l5",
+            "Index": -1,
+            "NameInSource": "l5",
+            "Alias": "l5",
+            "Type": "System.String"
+          },
+          "75": {
+            "Name": "l6",
+            "Index": -1,
+            "NameInSource": "l6",
+            "Alias": "l6",
+            "Type": "System.String"
+          },
+          "76": {
+            "Name": "m1",
+            "Index": -1,
+            "NameInSource": "m1",
+            "Alias": "m1",
+            "Type": "System.String"
+          },
+          "77": {
+            "Name": "m2",
+            "Index": -1,
+            "NameInSource": "m2",
+            "Alias": "m2",
+            "Type": "System.String"
+          },
+          "78": {
+            "Name": "m3",
+            "Index": -1,
+            "NameInSource": "m3",
+            "Alias": "m3",
+            "Type": "System.String"
+          },
+          "79": {
+            "Name": "m4",
+            "Index": -1,
+            "NameInSource": "m4",
+            "Alias": "m4",
+            "Type": "System.String"
+          },
+          "80": {
+            "Name": "m5",
+            "Index": -1,
+            "NameInSource": "m5",
+            "Alias": "m5",
+            "Type": "System.String"
+          },
+          "81": {
+            "Name": "m6",
+            "Index": -1,
+            "NameInSource": "m6",
+            "Alias": "m6",
+            "Type": "System.String"
+          },
+          "82": {
+            "Name": "n1",
+            "Index": -1,
+            "NameInSource": "n1",
+            "Alias": "n1",
+            "Type": "System.String"
+          },
+          "83": {
+            "Name": "n2",
+            "Index": -1,
+            "NameInSource": "n2",
+            "Alias": "n2",
+            "Type": "System.String"
+          },
+          "84": {
+            "Name": "n3",
+            "Index": -1,
+            "NameInSource": "n3",
+            "Alias": "n3",
+            "Type": "System.String"
+          },
+          "85": {
+            "Name": "n4",
+            "Index": -1,
+            "NameInSource": "n4",
+            "Alias": "n4",
+            "Type": "System.String"
+          },
+          "86": {
+            "Name": "n5",
+            "Index": -1,
+            "NameInSource": "n5",
+            "Alias": "n5",
+            "Type": "System.String"
+          },
+          "87": {
+            "Name": "n6",
+            "Index": -1,
+            "NameInSource": "n6",
+            "Alias": "n6",
+            "Type": "System.String"
+          },
+          "88": {
+            "Name": "o1",
+            "Index": -1,
+            "NameInSource": "o1",
+            "Alias": "o1",
+            "Type": "System.String"
+          },
+          "89": {
+            "Name": "o2",
+            "Index": -1,
+            "NameInSource": "o2",
+            "Alias": "o2",
+            "Type": "System.String"
+          },
+          "90": {
+            "Name": "o3",
+            "Index": -1,
+            "NameInSource": "o3",
+            "Alias": "o3",
+            "Type": "System.String"
+          },
+          "91": {
+            "Name": "o4",
+            "Index": -1,
+            "NameInSource": "o4",
+            "Alias": "o4",
+            "Type": "System.String"
+          },
+          "92": {
+            "Name": "o5",
+            "Index": -1,
+            "NameInSource": "o5",
+            "Alias": "o5",
+            "Type": "System.String"
+          },
+          "93": {
+            "Name": "o6",
+            "Index": -1,
+            "NameInSource": "o6",
+            "Alias": "o6",
+            "Type": "System.String"
+          },
+          "94": {
+            "Name": "p1",
+            "Index": -1,
+            "NameInSource": "p1",
+            "Alias": "p1",
+            "Type": "System.String"
+          },
+          "95": {
+            "Name": "p2",
+            "Index": -1,
+            "NameInSource": "p2",
+            "Alias": "p2",
+            "Type": "System.String"
+          },
+          "96": {
+            "Name": "p3",
+            "Index": -1,
+            "NameInSource": "p3",
+            "Alias": "p3",
+            "Type": "System.String"
+          },
+          "97": {
+            "Name": "p4",
+            "Index": -1,
+            "NameInSource": "p4",
+            "Alias": "p4",
+            "Type": "System.String"
+          },
+          "98": {
+            "Name": "p5",
+            "Index": -1,
+            "NameInSource": "p5",
+            "Alias": "p5",
+            "Type": "System.String"
+          },
+          "99": {
+            "Name": "p6",
+            "Index": -1,
+            "NameInSource": "p6",
+            "Alias": "p6",
+            "Type": "System.String"
+          },
+          "100": {
+            "Name": "q1",
+            "Index": -1,
+            "NameInSource": "q1",
+            "Alias": "q1",
+            "Type": "System.String"
+          },
+          "101": {
+            "Name": "q2",
+            "Index": -1,
+            "NameInSource": "q2",
+            "Alias": "q2",
+            "Type": "System.String"
+          },
+          "102": {
+            "Name": "q3",
+            "Index": -1,
+            "NameInSource": "q3",
+            "Alias": "q3",
+            "Type": "System.String"
+          },
+          "103": {
+            "Name": "q4",
+            "Index": -1,
+            "NameInSource": "q4",
+            "Alias": "q4",
+            "Type": "System.String"
+          },
+          "104": {
+            "Name": "q5",
+            "Index": -1,
+            "NameInSource": "q5",
+            "Alias": "q5",
+            "Type": "System.String"
+          },
+          "105": {
+            "Name": "q6",
+            "Index": -1,
+            "NameInSource": "q6",
+            "Alias": "q6",
+            "Type": "System.String"
+          },
+          "106": {
+            "Name": "r1",
+            "Index": -1,
+            "NameInSource": "r1",
+            "Alias": "r1",
+            "Type": "System.String"
+          },
+          "107": {
+            "Name": "r2",
+            "Index": -1,
+            "NameInSource": "r2",
+            "Alias": "r2",
+            "Type": "System.String"
+          },
+          "108": {
+            "Name": "r3",
+            "Index": -1,
+            "NameInSource": "r3",
+            "Alias": "r3",
+            "Type": "System.String"
+          },
+          "109": {
+            "Name": "r4",
+            "Index": -1,
+            "NameInSource": "r4",
+            "Alias": "r4",
+            "Type": "System.String"
+          },
+          "110": {
+            "Name": "r5",
+            "Index": -1,
+            "NameInSource": "r5",
+            "Alias": "r5",
+            "Type": "System.String"
+          },
+          "111": {
+            "Name": "r6",
+            "Index": -1,
+            "NameInSource": "r6",
+            "Alias": "r6",
+            "Type": "System.String"
+          }
+        },
+        "NameInSource": "json_alocation_map.dtlnew"
+      },
+      "3": {
+        "Ident": "StiDataTableSource",
+        "Name": "master",
+        "Alias": "master",
+        "Columns": {
+          "0": {
+            "Name": "allocated",
+            "Index": -1,
+            "NameInSource": "allocated",
+            "Alias": "allocated",
+            "Type": "System.String"
+          },
+          "1": {
+            "Name": "batch",
+            "Index": -1,
+            "NameInSource": "batch",
+            "Alias": "batch",
+            "Type": "System.String"
+          },
+          "2": {
+            "Name": "chold",
+            "Index": -1,
+            "NameInSource": "chold",
+            "Alias": "chold",
+            "Type": "System.String"
+          },
+          "3": {
+            "Name": "defarea",
+            "Index": -1,
+            "NameInSource": "defarea",
+            "Alias": "defarea",
+            "Type": "System.String"
+          },
+          "4": {
+            "Name": "deflocation",
+            "Index": -1,
+            "NameInSource": "deflocation",
+            "Alias": "deflocation",
+            "Type": "System.String"
+          },
+          "5": {
+            "Name": "description",
+            "Index": -1,
+            "NameInSource": "description",
+            "Alias": "description",
+            "Type": "System.String"
+          },
+          "6": {
+            "Name": "expdate",
+            "Index": -1,
+            "NameInSource": "expdate",
+            "Alias": "expdate",
+            "Type": "System.String"
+          },
+          "7": {
+            "Name": "expdate1",
+            "Index": -1,
+            "NameInSource": "expdate1",
+            "Alias": "expdate1",
+            "Type": "System.String"
+          },
+          "8": {
+            "Name": "grade",
+            "Index": -1,
+            "NameInSource": "grade",
+            "Alias": "grade",
+            "Type": "System.String"
+          },
+          "9": {
+            "Name": "id",
+            "Index": -1,
+            "NameInSource": "id",
+            "Alias": "id",
+            "Type": "System.String"
+          },
+          "10": {
+            "Name": "idbarang",
+            "Index": -1,
+            "NameInSource": "idbarang",
+            "Alias": "idbarang",
+            "Type": "System.String"
+          },
+          "11": {
+            "Name": "idbarcode",
+            "Index": -1,
+            "NameInSource": "idbarcode",
+            "Alias": "idbarcode",
+            "Type": "System.String"
+          },
+          "12": {
+            "Name": "idgroup",
+            "Index": -1,
+            "NameInSource": "idgroup",
+            "Alias": "idgroup",
+            "Type": "System.String"
+          },
+          "13": {
+            "Name": "idsubgroup",
+            "Index": -1,
+            "NameInSource": "idsubgroup",
+            "Alias": "idsubgroup",
+            "Type": "System.String"
+          },
+          "14": {
+            "Name": "idtype",
+            "Index": -1,
+            "NameInSource": "idtype",
+            "Alias": "idtype",
+            "Type": "System.String"
+          },
+          "15": {
+            "Name": "inputby",
+            "Index": -1,
+            "NameInSource": "inputby",
+            "Alias": "inputby",
+            "Type": "System.String"
+          },
+          "16": {
+            "Name": "inputdate",
+            "Index": -1,
+            "NameInSource": "inputdate",
+            "Alias": "inputdate",
+            "Type": "System.String"
+          },
+          "17": {
+            "Name": "inputdate1",
+            "Index": -1,
+            "NameInSource": "inputdate1",
+            "Alias": "inputdate1",
+            "Type": "System.String"
+          },
+          "18": {
+            "Name": "lastprice",
+            "Index": -1,
+            "NameInSource": "lastprice",
+            "Alias": "lastprice",
+            "Type": "System.String"
+          },
+          "19": {
+            "Name": "lastrxdate",
+            "Index": -1,
+            "NameInSource": "lastrxdate",
+            "Alias": "lastrxdate",
+            "Type": "System.String"
+          },
+          "20": {
+            "Name": "lastrxdoc",
+            "Index": -1,
+            "NameInSource": "lastrxdoc",
+            "Alias": "lastrxdoc",
+            "Type": "System.String"
+          },
+          "21": {
+            "Name": "lsize",
+            "Index": -1,
+            "NameInSource": "lsize",
+            "Alias": "lsize",
+            "Type": "System.String"
+          },
+          "22": {
+            "Name": "maks_daystock",
+            "Index": -1,
+            "NameInSource": "maks_daystock",
+            "Alias": "maks_daystock",
+            "Type": "System.String"
+          },
+          "23": {
+            "Name": "mfgdate",
+            "Index": -1,
+            "NameInSource": "mfgdate",
+            "Alias": "mfgdate",
+            "Type": "System.String"
+          },
+          "24": {
+            "Name": "mfgdate1",
+            "Index": -1,
+            "NameInSource": "mfgdate1",
+            "Alias": "mfgdate1",
+            "Type": "System.String"
+          },
+          "25": {
+            "Name": "nmarea",
+            "Index": -1,
+            "NameInSource": "nmarea",
+            "Alias": "nmarea",
+            "Type": "System.String"
+          },
+          "26": {
+            "Name": "nmbarang",
+            "Index": -1,
+            "NameInSource": "nmbarang",
+            "Alias": "nmbarang",
+            "Type": "System.String"
+          },
+          "27": {
+            "Name": "nmgroup",
+            "Index": -1,
+            "NameInSource": "nmgroup",
+            "Alias": "nmgroup",
+            "Type": "System.String"
+          },
+          "28": {
+            "Name": "nmlocation",
+            "Index": -1,
+            "NameInSource": "nmlocation",
+            "Alias": "nmlocation",
+            "Type": "System.String"
+          },
+          "29": {
+            "Name": "onhand",
+            "Index": -1,
+            "NameInSource": "onhand",
+            "Alias": "onhand",
+            "Type": "System.String"
+          },
+          "30": {
+            "Name": "sku",
+            "Index": -1,
+            "NameInSource": "sku",
+            "Alias": "sku",
+            "Type": "System.String"
+          },
+          "31": {
+            "Name": "status",
+            "Index": -1,
+            "NameInSource": "status",
+            "Alias": "status",
+            "Type": "System.String"
+          },
+          "32": {
+            "Name": "subunit",
+            "Index": -1,
+            "NameInSource": "subunit",
+            "Alias": "subunit",
+            "Type": "System.String"
+          },
+          "33": {
+            "Name": "subunitenable",
+            "Index": -1,
+            "NameInSource": "subunitenable",
+            "Alias": "subunitenable",
+            "Type": "System.String"
+          },
+          "34": {
+            "Name": "tmpalloca",
+            "Index": -1,
+            "NameInSource": "tmpalloca",
+            "Alias": "tmpalloca",
+            "Type": "System.String"
+          },
+          "35": {
+            "Name": "uninvoiced",
+            "Index": -1,
+            "NameInSource": "uninvoiced",
+            "Alias": "uninvoiced",
+            "Type": "System.String"
+          },
+          "36": {
+            "Name": "unit",
+            "Index": -1,
+            "NameInSource": "unit",
+            "Alias": "unit",
+            "Type": "System.String"
+          }
+        },
+        "NameInSource": "json_alocation_map.master"
+      }
+    },
+    "Databases": {
+      "0": {
+        "Ident": "StiJsonDatabase",
+        "Name": "json_alocation_map",
+        "Alias": "json_alocation_map",
+        "PathData": "E:\\WEB\\apache2\\htdocs\\ci4-inventory\\assets\\json\\api_alocation_map_sti.json"
+      }
+    }
+  },
+  "Pages": {
+    "0": {
+      "Ident": "StiPage",
+      "Name": "Page1",
+      "Guid": "5057e767bd8335264d3067a38f62562d",
+      "Interaction": {
+        "Ident": "StiInteraction"
+      },
+      "Border": ";;2;;;;;solid:Black",
+      "Brush": "solid:",
+      "Components": {
+        "0": {
+          "Ident": "StiPanel",
+          "Name": "Panel6",
+          "Guid": "7a9b174f6bd485203e1f4241f0726c2e",
+          "ClientRectangle": "10.8,12.8,23.2,2.6",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "Components": {
+            "0": {
+              "Ident": "StiText",
+              "Name": "Text106",
+              "Guid": "ced6bf5942496ab6a352b7c633b70bf0",
+              "ClientRectangle": "0.2,0.6,6.8,0.6",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "A"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Font": ";10;Bold;",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "1": {
+              "Ident": "StiText",
+              "Name": "Text109",
+              "Guid": "5a176f736a540008e5f9a4e73c6b9439",
+              "ClientRectangle": "0.2,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.a1",
+                  "Value2": "16401-0014 ",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.a1",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "A1"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "2": {
+              "Ident": "StiText",
+              "Name": "Text110",
+              "Guid": "fc54baaabdb03c939330078643fca5b3",
+              "ClientRectangle": "0.2,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.a2",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.a2",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "A2"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "3": {
+              "Ident": "StiText",
+              "Name": "Text111",
+              "Guid": "52c16aff4a0439a6503bf594ee864a73",
+              "ClientRectangle": "2.4,1.2,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.a3",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.a3",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "A3"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "4": {
+              "Ident": "StiText",
+              "Name": "Text112",
+              "Guid": "a70ddd4062000057ab30654ab42e07ce",
+              "ClientRectangle": "2.4,1.8,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.a4",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.a4",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "A4"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "5": {
+              "Ident": "StiText",
+              "Name": "Text1",
+              "Guid": "ffcf24a8ac4c3c1fad9d8bc56dd51d28",
+              "ClientRectangle": "4.8,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.a5",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.a5",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "A5"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "6": {
+              "Ident": "StiText",
+              "Name": "Text2",
+              "Guid": "1ba6b9a11086f49ad255a748b986eb99",
+              "ClientRectangle": "4.8,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.a6",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.a6",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "A6"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "7": {
+              "Ident": "StiText",
+              "Name": "Text3",
+              "Guid": "5c0d0829349330399a21ea92f53e52c9",
+              "ClientRectangle": "8.4,0.6,6.8,0.6",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "B"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Font": ";10;Bold;",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "8": {
+              "Ident": "StiText",
+              "Name": "Text4",
+              "Guid": "b96c0a5d64cd52fdcd57cd91862591e5",
+              "ClientRectangle": "8.4,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.b1",
+                  "Value2": "16401-0002",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.b1",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "B1"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "9": {
+              "Ident": "StiText",
+              "Name": "Text5",
+              "Guid": "cd3e48cb0514944ec8634f0d80fc5cc3",
+              "ClientRectangle": "8.4,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.b2",
+                  "Value2": "16401-0003",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.b2",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "B2"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "10": {
+              "Ident": "StiText",
+              "Name": "Text6",
+              "Guid": "f742467869349a796b5c4e1e36631fb1",
+              "ClientRectangle": "10.6,1.2,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.b3",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.b3",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "B3"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "11": {
+              "Ident": "StiText",
+              "Name": "Text7",
+              "Guid": "1a4efb3e5f73db60c74069ca78ecf79a",
+              "ClientRectangle": "10.6,1.8,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.b4",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.b4",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "B4"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "12": {
+              "Ident": "StiText",
+              "Name": "Text8",
+              "Guid": "453a2c070a814d5982776abaa19d589d",
+              "ClientRectangle": "13,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.b5",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.b5",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "B5"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "13": {
+              "Ident": "StiText",
+              "Name": "Text9",
+              "Guid": "1a5a376811e190edb1001838caf80513",
+              "ClientRectangle": "13,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.b6",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.b6",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "B6"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "14": {
+              "Ident": "StiText",
+              "Name": "Text10",
+              "Guid": "9e8db8222b432f87ed891d839b29769d",
+              "ClientRectangle": "16.4,0.6,6.8,0.6",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "C"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Font": ";10;Bold;",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "15": {
+              "Ident": "StiText",
+              "Name": "Text11",
+              "Guid": "1a368bea55d33f3d4612f9610a9638aa",
+              "ClientRectangle": "16.4,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.c1",
+                  "Value2": "16401-0002",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.c1",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "C1"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "16": {
+              "Ident": "StiText",
+              "Name": "Text12",
+              "Guid": "c30b956f54e2fc5653a6e887f4358dd5",
+              "ClientRectangle": "16.4,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "Containing",
+                  "Column": "dtlnew.c2",
+                  "Value1": "16401-C2",
+                  "Value2": "16401-0003",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.c2",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "C2"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "17": {
+              "Ident": "StiText",
+              "Name": "Text13",
+              "Guid": "8ed70e1a557555752e59e9b0c7bf9ed1",
+              "ClientRectangle": "18.6,1.2,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.c3",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.c3",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "C3"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "18": {
+              "Ident": "StiText",
+              "Name": "Text14",
+              "Guid": "01b8c69a25102e3532306bb1aba72129",
+              "ClientRectangle": "18.6,1.8,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.c4",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.c4",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "C4"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "19": {
+              "Ident": "StiText",
+              "Name": "Text15",
+              "Guid": "6711e044cb685ccc9f6b9f6f176680af",
+              "ClientRectangle": "21,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.c5",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.c5",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "C5"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "20": {
+              "Ident": "StiText",
+              "Name": "Text16",
+              "Guid": "55f1ec72df4e5ee7782b47e3b75c3c43",
+              "ClientRectangle": "21,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.c6",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.c6",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "C6"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            }
+          }
+        },
+        "1": {
+          "Ident": "StiPanel",
+          "Name": "Panel7",
+          "ClientRectangle": "5.4,0.4,5.4,15.2",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Border": ";;;;;;;solid:0,0,0",
+          "Brush": "solid:",
+          "Components": {
+            "0": {
+              "Ident": "StiText",
+              "Name": "Text128",
+              "Guid": "5270fbfab0269a3193a4054addfc868e",
+              "ClientRectangle": "0.4,13,4.4,1.8",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "AREA TRANSIT"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Font": ";12;Bold;",
+              "Border": ";;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "TextOptions": {
+                "WordWrap": true
+              },
+              "Type": "Expression"
+            },
+            "1": {
+              "Ident": "StiText",
+              "Name": "Text129",
+              "Guid": "93b8fb8ffda651455e47374b9bf844be",
+              "ClientRectangle": "0.4,10.4,4.4,1.8",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "AREA MAINTENCE LISTRIK"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Font": ";12;Bold;",
+              "Border": ";;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "TextOptions": {
+                "WordWrap": true
+              },
+              "Type": "Expression"
+            },
+            "2": {
+              "Ident": "StiText",
+              "Name": "Text130",
+              "Guid": "110229a5b0e67e3242c28a6b69fce69b",
+              "ClientRectangle": "0.4,7.8,4.4,1.8",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "AREA CONSUMABLE/ PERSEDIAAN GUDANG"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Font": ";12;Bold;",
+              "Border": ";;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "TextOptions": {
+                "WordWrap": true
+              },
+              "Type": "Expression"
+            },
+            "3": {
+              "Ident": "StiText",
+              "Name": "Text131",
+              "Guid": "5a6608580090ce11154fca55246d7591",
+              "ClientRectangle": "0.4,5.2,4.4,1.8",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "AREA CONSUMABLE/ PERSEDIAAN GUDANG"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Font": ";12;Bold;",
+              "Border": ";;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "TextOptions": {
+                "WordWrap": true
+              },
+              "Type": "Expression"
+            },
+            "4": {
+              "Ident": "StiText",
+              "Name": "Text132",
+              "Guid": "12a974357f1ffa45d4647b3944200205",
+              "ClientRectangle": "0.4,2.6,4.4,1.8",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "AREA MAINTENANCE MEKANIK & UTILITY"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Font": ";12;Bold;",
+              "Border": ";;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "TextOptions": {
+                "WordWrap": true
+              },
+              "Type": "Expression"
+            },
+            "5": {
+              "Ident": "StiText",
+              "Name": "Text127",
+              "Guid": "c33707c47cb0a93735904b802babe652",
+              "ClientRectangle": "0.4,0.4,4.4,1.4",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "AREA NON STOCK & QC"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Font": ";12;Bold;",
+              "Border": ";;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "TextOptions": {
+                "WordWrap": true
+              },
+              "Type": "Expression"
+            }
+          }
+        },
+        "2": {
+          "Ident": "StiText",
+          "Name": "Text133",
+          "Guid": "7762a23a47926a0af6932736bea8ff12",
+          "ClientRectangle": "0.4,3.2,4.4,10.2",
+          "Conditions": {
+            "0": {
+              "Ident": "StiCondition",
+              "Condition": "NotEqualTo",
+              "Column": "dtlnew.defarea",
+              "TextColor": "0,0,0",
+              "BackColor": "255,0,0",
+              "Font": ";12;;",
+              "CanAssignExpression": true,
+              "AssignExpression": "dtlnew.defarea",
+              "BorderSides": "All"
+            }
+          },
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "AREA TRANSIT"
+          },
+          "HorAlignment": "Center",
+          "VertAlignment": "Center",
+          "Font": ";12;Bold;",
+          "Border": "All;;;;;;;solid:0,0,0",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "TextOptions": {
+            "WordWrap": true
+          },
+          "Type": "Expression"
+        },
+        "3": {
+          "Ident": "StiText",
+          "Name": "Text134",
+          "Guid": "4ba9317d486940410ba6b53df6d8218e",
+          "ClientRectangle": "0.4,10.8,4.4,1",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "TRANSIT"
+          },
+          "HorAlignment": "Center",
+          "VertAlignment": "Center",
+          "Font": ";12;Bold;",
+          "Border": ";;;;;;;solid:0,0,0",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "TextOptions": {
+            "WordWrap": true
+          },
+          "Type": "Expression"
+        },
+        "4": {
+          "Ident": "StiPanel",
+          "Name": "Panel1",
+          "Guid": "2aa18db25132d18ccf3476cd6ec74f3c",
+          "ClientRectangle": "10.8,-0.2,23.2,2.6",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "Components": {
+            "0": {
+              "Ident": "StiText",
+              "Name": "Text17",
+              "Guid": "5a72f8f6c3323eb2dff63a689fb4470d",
+              "ClientRectangle": "0.2,0.6,6.8,0.6",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "P"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Font": ";10;Bold;",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "1": {
+              "Ident": "StiText",
+              "Name": "Text18",
+              "Guid": "2543b891983715c8a5fd2b782055d6dc",
+              "ClientRectangle": "0.2,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.p1",
+                  "Value2": "16401-0002",
+                  "Expression": {
+                    "Value": "{detail.idarea}"
+                  },
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.p1",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "P1"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "2": {
+              "Ident": "StiText",
+              "Name": "Text19",
+              "Guid": "3add6c4844a5e80acf90dffb84e836ec",
+              "ClientRectangle": "0.2,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.p2",
+                  "Value2": "16401-0003",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.p2",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "P2"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "3": {
+              "Ident": "StiText",
+              "Name": "Text20",
+              "Guid": "f943ec8dcac555f70c5e325d77045795",
+              "ClientRectangle": "2.4,1.2,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.p3",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.p3",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "P3"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "4": {
+              "Ident": "StiText",
+              "Name": "Text21",
+              "Guid": "9dbd378547b5ae503f36aaa509011418",
+              "ClientRectangle": "2.4,1.8,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.p4",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.p4",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "P4"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "5": {
+              "Ident": "StiText",
+              "Name": "Text22",
+              "Guid": "acdf243f7f3d7364990b28d1fdcac656",
+              "ClientRectangle": "4.8,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.p5",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.p5",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "P5"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "6": {
+              "Ident": "StiText",
+              "Name": "Text23",
+              "Guid": "191c00df6138fdedd2af17a725ad7e80",
+              "ClientRectangle": "4.8,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "Containing",
+                  "Column": "dtlnew.p6",
+                  "Value1": "16401-P6",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.p6",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "P6"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "7": {
+              "Ident": "StiText",
+              "Name": "Text24",
+              "Guid": "bb30e09e342c95e0ea49302f153584fd",
+              "ClientRectangle": "8.4,0.6,6.8,0.6",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "Q"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Font": ";10;Bold;",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "8": {
+              "Ident": "StiText",
+              "Name": "Text25",
+              "Guid": "d6a25b6ef3b16d3e933c0ee2b0a0aeff",
+              "ClientRectangle": "8.4,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.q1",
+                  "Value2": "16401-0002",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.q1",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "Q1"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "9": {
+              "Ident": "StiText",
+              "Name": "Text26",
+              "Guid": "fe5d852467716fb6b14b55eda1d59907",
+              "ClientRectangle": "8.4,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.q2",
+                  "Value2": "16401-0003",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.q2",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "Q2"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "10": {
+              "Ident": "StiText",
+              "Name": "Text27",
+              "Guid": "80953682a042913a19f4af778523a7da",
+              "ClientRectangle": "10.6,1.2,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.q3",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.q3",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "Q3"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "11": {
+              "Ident": "StiText",
+              "Name": "Text28",
+              "Guid": "de85dbc9fbdca7e408d37c9ced89ffb6",
+              "ClientRectangle": "10.6,1.8,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.q4",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.q4",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "Q4"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "12": {
+              "Ident": "StiText",
+              "Name": "Text29",
+              "Guid": "956e144366c4ae130e89b708ba54e3be",
+              "ClientRectangle": "13,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.q5",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.q5",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "Q5"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "13": {
+              "Ident": "StiText",
+              "Name": "Text30",
+              "Guid": "28ea3fb4b72f4843fec80aa99b133779",
+              "ClientRectangle": "13,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.q6",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.q6",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "Q6"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "14": {
+              "Ident": "StiText",
+              "Name": "Text31",
+              "Guid": "137a7b333ec1ca4e3ce60376f3385c95",
+              "ClientRectangle": "16.4,0.6,6.8,0.6",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "R"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Font": ";10;Bold;",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "15": {
+              "Ident": "StiText",
+              "Name": "Text32",
+              "Guid": "5cc393c764972485150020ff5ae0f160",
+              "ClientRectangle": "16.4,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.r1",
+                  "Value2": "16401-0002",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.r1",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "R1"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "16": {
+              "Ident": "StiText",
+              "Name": "Text33",
+              "Guid": "77de0d451c657f9adc19bf3871f9afc1",
+              "ClientRectangle": "16.4,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.r2",
+                  "Value2": "16401-0003",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.r2",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "R2"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "17": {
+              "Ident": "StiText",
+              "Name": "Text34",
+              "Guid": "c82f37d3e2a33a483064193bcfc0a500",
+              "ClientRectangle": "18.6,1.2,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.r3",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.r3",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "R3"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "18": {
+              "Ident": "StiText",
+              "Name": "Text35",
+              "Guid": "e67b2f662ce30b717c1914d628829689",
+              "ClientRectangle": "18.6,1.8,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.r4",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.r4",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "R4"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "19": {
+              "Ident": "StiText",
+              "Name": "Text36",
+              "Guid": "4e5efe954e13210c726bae32b440fe0a",
+              "ClientRectangle": "21,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.r5",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.r5",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "R5"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "20": {
+              "Ident": "StiText",
+              "Name": "Text37",
+              "Guid": "481b77fc5deecb728402eec1b356705a",
+              "ClientRectangle": "21,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.r6",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.r6",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "R6"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            }
+          }
+        },
+        "5": {
+          "Ident": "StiPanel",
+          "Name": "Panel2",
+          "Guid": "8491b19980d14b2372528364695b16b1",
+          "ClientRectangle": "10.8,2.4,23.2,2.6",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "Components": {
+            "0": {
+              "Ident": "StiText",
+              "Name": "Text38",
+              "Guid": "e87257353d81ae19b748ffed6462845a",
+              "ClientRectangle": "0.2,0.6,6.8,0.6",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "M"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Font": ";10;Bold;",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "1": {
+              "Ident": "StiText",
+              "Name": "Text39",
+              "Guid": "e1a3292b65bf7a590f6999269b1e657a",
+              "ClientRectangle": "0.2,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.m1",
+                  "Value2": "16401-0002",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.m1",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "M1"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "2": {
+              "Ident": "StiText",
+              "Name": "Text40",
+              "Guid": "40ab58cdaa0aaf99ee0ddc8e1fbf8b5a",
+              "ClientRectangle": "0.2,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "Containing",
+                  "Column": "dtlnew.m2",
+                  "Value1": "16401-M2",
+                  "Value2": "16401-0003",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.m2",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "M2"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "3": {
+              "Ident": "StiText",
+              "Name": "Text41",
+              "Guid": "1f0d2041fa2df5d906b4e92f3b215c03",
+              "ClientRectangle": "2.4,1.2,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.m3",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.m3",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "M3"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "4": {
+              "Ident": "StiText",
+              "Name": "Text42",
+              "Guid": "7578aba9528563cee69aea67bf540aff",
+              "ClientRectangle": "2.4,1.8,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.m4",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.m4",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "M4"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "5": {
+              "Ident": "StiText",
+              "Name": "Text43",
+              "Guid": "9f4c2c7df9eacc8d66f7b25d91fc54e9",
+              "ClientRectangle": "4.8,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.m5",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.m5",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "M5"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "6": {
+              "Ident": "StiText",
+              "Name": "Text44",
+              "Guid": "c9ac4bff693832a177cd5b99dec31f96",
+              "ClientRectangle": "4.8,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.m6",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.m6",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "M6"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "7": {
+              "Ident": "StiText",
+              "Name": "Text45",
+              "Guid": "7f3fcfe2b900048d7f8318d747dffed8",
+              "ClientRectangle": "8.4,0.6,6.8,0.6",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "N"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Font": ";10;Bold;",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "8": {
+              "Ident": "StiText",
+              "Name": "Text46",
+              "Guid": "5b0bc1768fac156a78515aba7eda768f",
+              "ClientRectangle": "8.4,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.n1",
+                  "Value2": "16401-0002",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.n1",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "N1"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "9": {
+              "Ident": "StiText",
+              "Name": "Text47",
+              "Guid": "d9881cb0486f6a54fd12f85bc174d840",
+              "ClientRectangle": "8.4,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.n2",
+                  "Value2": "16401-0003",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.n2",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "N2"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "10": {
+              "Ident": "StiText",
+              "Name": "Text48",
+              "Guid": "cfeb5b7b7c2cb7277c3bda42f8740ee1",
+              "ClientRectangle": "10.6,1.2,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.n3",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.n3",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "N3"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "11": {
+              "Ident": "StiText",
+              "Name": "Text49",
+              "Guid": "fec2628383c5ec9c0c5d80404c0fb5e2",
+              "ClientRectangle": "10.6,1.8,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.n4",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.n4",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "N4"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "12": {
+              "Ident": "StiText",
+              "Name": "Text50",
+              "Guid": "25adf9287af8c46bf2ade1e13e8a82da",
+              "ClientRectangle": "13,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.n5",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.n5",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "N5"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "13": {
+              "Ident": "StiText",
+              "Name": "Text51",
+              "Guid": "8d422f6f1cc3a6b834c603ceb1d30365",
+              "ClientRectangle": "13,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.n6",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.n6",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "N6"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "14": {
+              "Ident": "StiText",
+              "Name": "Text52",
+              "Guid": "653f89b9d262aa59992a9e7bd6ef8fa2",
+              "ClientRectangle": "16.4,0.6,6.8,0.6",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "O"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Font": ";10;Bold;",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "15": {
+              "Ident": "StiText",
+              "Name": "Text53",
+              "Guid": "64f7d10ec191d0b08a687d7bc85fb008",
+              "ClientRectangle": "16.4,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.o1",
+                  "Value2": "16401-0002",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.o1",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "O1"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "16": {
+              "Ident": "StiText",
+              "Name": "Text54",
+              "Guid": "203aea8b65b89b476a0f465d5e047d62",
+              "ClientRectangle": "16.4,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.o2",
+                  "Value2": "16401-0003",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.o2",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "O2"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "17": {
+              "Ident": "StiText",
+              "Name": "Text55",
+              "Guid": "e4cb7831833879f4e298eb10b27eb8c6",
+              "ClientRectangle": "18.6,1.2,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.o3",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.o3",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "O3"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "18": {
+              "Ident": "StiText",
+              "Name": "Text56",
+              "Guid": "aa57836097e093faa515d6de281d81bc",
+              "ClientRectangle": "18.6,1.8,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.o4",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.o4",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "O4"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "19": {
+              "Ident": "StiText",
+              "Name": "Text57",
+              "Guid": "8762ebde2e2f337098f56f2ad83f9d95",
+              "ClientRectangle": "21,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.o5",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.o5",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "O5"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "20": {
+              "Ident": "StiText",
+              "Name": "Text58",
+              "Guid": "23685e3c6645324c633114a7d31d3d44",
+              "ClientRectangle": "21,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.o6",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.o6",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "O6"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            }
+          }
+        },
+        "6": {
+          "Ident": "StiPanel",
+          "Name": "Panel3",
+          "Guid": "56a10fcfc1ccf962ad2370a3b4b77db8",
+          "ClientRectangle": "10.8,5,23.2,2.6",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "Components": {
+            "0": {
+              "Ident": "StiText",
+              "Name": "Text59",
+              "Guid": "8ad9825ddcc86c4c87336dc3436ade0b",
+              "ClientRectangle": "0.2,0.6,6.8,0.6",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "J"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Font": ";10;Bold;",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "1": {
+              "Ident": "StiText",
+              "Name": "Text60",
+              "Guid": "8044341114decd1e8fe5a2778838dba8",
+              "ClientRectangle": "0.2,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.j1",
+                  "Value2": "16401-0002",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.j1",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "J1"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "2": {
+              "Ident": "StiText",
+              "Name": "Text61",
+              "Guid": "57a354f5a166c2e586eaa242b7449d7c",
+              "ClientRectangle": "0.2,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.j2",
+                  "Value2": "16401-0003",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.j2",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "J2"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "3": {
+              "Ident": "StiText",
+              "Name": "Text62",
+              "Guid": "59e88301f5f514042460bf73fb4754ff",
+              "ClientRectangle": "2.4,1.2,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.j3",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.j3",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "J3"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "4": {
+              "Ident": "StiText",
+              "Name": "Text63",
+              "Guid": "0da38f8db1824d4eab5c342a14c562b6",
+              "ClientRectangle": "2.4,1.8,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.j4",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.j4",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "J4"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "5": {
+              "Ident": "StiText",
+              "Name": "Text64",
+              "Guid": "94a9d9dc4957dd4cac60f8208ec53537",
+              "ClientRectangle": "4.8,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.j5",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.j5",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "J5"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "6": {
+              "Ident": "StiText",
+              "Name": "Text65",
+              "Guid": "7869209f0a6a24e1c339595e92306d48",
+              "ClientRectangle": "4.8,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.j6",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.j6",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "J6"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "7": {
+              "Ident": "StiText",
+              "Name": "Text66",
+              "Guid": "fa49e2f5499df1dd6a2dc525a917af0d",
+              "ClientRectangle": "8.4,0.6,6.8,0.6",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "K"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Font": ";10;Bold;",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "8": {
+              "Ident": "StiText",
+              "Name": "Text67",
+              "Guid": "65ef3328f686cf1378a43021594bc328",
+              "ClientRectangle": "8.4,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.k1",
+                  "Value2": "16401-0002",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.k1",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "K1"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "9": {
+              "Ident": "StiText",
+              "Name": "Text68",
+              "Guid": "ed49b3576a47ded87e7d7fdd4f5d37ab",
+              "ClientRectangle": "8.4,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.k2",
+                  "Value2": "16401-0003",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.k2",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "K2"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "10": {
+              "Ident": "StiText",
+              "Name": "Text69",
+              "Guid": "2cd58f9762712875f7e191caabedf7a3",
+              "ClientRectangle": "10.6,1.2,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.k3",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.k3",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "K3"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "11": {
+              "Ident": "StiText",
+              "Name": "Text70",
+              "Guid": "5ddd6171f00d5c44982b5400a8a66244",
+              "ClientRectangle": "10.6,1.8,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.k4",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.k4",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "K4"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "12": {
+              "Ident": "StiText",
+              "Name": "Text71",
+              "Guid": "af9e3dec9195b4cd47c72fbd30f564ee",
+              "ClientRectangle": "13,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.k5",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.k5",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "K5"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "13": {
+              "Ident": "StiText",
+              "Name": "Text72",
+              "Guid": "2e6ba9c57f1098559b10ad3f4570ff36",
+              "ClientRectangle": "13,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.k6",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.k6",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "K6"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "14": {
+              "Ident": "StiText",
+              "Name": "Text73",
+              "Guid": "81b48419fad83c3bf3c58a7fe8f9e333",
+              "ClientRectangle": "16.4,0.6,6.8,0.6",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "L"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Font": ";10;Bold;",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "15": {
+              "Ident": "StiText",
+              "Name": "Text74",
+              "Guid": "954f1acae94368546471646dc181f09e",
+              "ClientRectangle": "16.4,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.l1",
+                  "Value2": "16401-0002",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.l1",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "L1"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "16": {
+              "Ident": "StiText",
+              "Name": "Text75",
+              "Guid": "6cef9f81fc411d18a0fac8a6644930c4",
+              "ClientRectangle": "16.4,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.l2",
+                  "Value2": "16401-0003",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.l2",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "L2"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "17": {
+              "Ident": "StiText",
+              "Name": "Text76",
+              "Guid": "82235ebe6c0f55017aebff67048b61c1",
+              "ClientRectangle": "18.6,1.2,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.l3",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.l3",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "L3"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "18": {
+              "Ident": "StiText",
+              "Name": "Text77",
+              "Guid": "4202e39cf996ad8b3192db3889a48d02",
+              "ClientRectangle": "18.6,1.8,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.l4",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.l4",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "L4"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "19": {
+              "Ident": "StiText",
+              "Name": "Text78",
+              "Guid": "a6079b363882e3b3ff531b2041fb6da8",
+              "ClientRectangle": "21,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.l5",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.l5",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "L5"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "20": {
+              "Ident": "StiText",
+              "Name": "Text79",
+              "Guid": "d56bbd60a08e4ffee18d62235f98f964",
+              "ClientRectangle": "21,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.l6",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.l6",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "L6"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            }
+          }
+        },
+        "7": {
+          "Ident": "StiPanel",
+          "Name": "Panel4",
+          "Guid": "48232d517ced57016586d45c0d638a5d",
+          "ClientRectangle": "10.8,7.6,23.2,2.6",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "Components": {
+            "0": {
+              "Ident": "StiText",
+              "Name": "Text80",
+              "Guid": "67b437f07e3a5e7d857b9f85e5f836c6",
+              "ClientRectangle": "0.2,0.6,6.8,0.6",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "G"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Font": ";10;Bold;",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "1": {
+              "Ident": "StiText",
+              "Name": "Text81",
+              "Guid": "bf25058b8417c5fdb6ed9df1d7fde5b6",
+              "ClientRectangle": "0.2,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.g1",
+                  "Value2": "16401-0002",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.g1",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "G1"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "2": {
+              "Ident": "StiText",
+              "Name": "Text82",
+              "Guid": "80ba989c963c4fd38017b39d733d8f3e",
+              "ClientRectangle": "0.2,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.g2",
+                  "Value2": "16401-0003",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.g2",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "G2"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "3": {
+              "Ident": "StiText",
+              "Name": "Text83",
+              "Guid": "03035e01317f548731b7cc4039086e9a",
+              "ClientRectangle": "2.4,1.2,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.g3",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.g3",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "G3"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "4": {
+              "Ident": "StiText",
+              "Name": "Text84",
+              "Guid": "910c4fda84a1b636e718e25ad28a2715",
+              "ClientRectangle": "2.4,1.8,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.g4",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.g4",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "G4"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "5": {
+              "Ident": "StiText",
+              "Name": "Text85",
+              "Guid": "7ddb72a948feb1fa76d27df4e0037a6a",
+              "ClientRectangle": "4.8,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.g5",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.g5",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "G5"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "6": {
+              "Ident": "StiText",
+              "Name": "Text86",
+              "Guid": "f2ee2991054cd1f9b6370d00f2c9070a",
+              "ClientRectangle": "4.8,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.g6",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.g6",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "G6"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "7": {
+              "Ident": "StiText",
+              "Name": "Text87",
+              "Guid": "b64d644f78b554d5a04d29729721afe3",
+              "ClientRectangle": "8.4,0.6,6.8,0.6",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "H"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Font": ";10;Bold;",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "8": {
+              "Ident": "StiText",
+              "Name": "Text88",
+              "Guid": "18cf91a7bbf902d8e7c5cf8228cb502a",
+              "ClientRectangle": "8.4,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.h1",
+                  "Value2": "16401-0002",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.h1",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "H1"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "9": {
+              "Ident": "StiText",
+              "Name": "Text89",
+              "Guid": "76a6ef8624ff8ae6bd2ae718378ed5b7",
+              "ClientRectangle": "8.4,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.h2",
+                  "Value2": "16401-0003",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.h2",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "H2"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "10": {
+              "Ident": "StiText",
+              "Name": "Text90",
+              "Guid": "ded6146f00d8f3e1ea593e1b53a4ca9b",
+              "ClientRectangle": "10.6,1.2,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.h3",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.h3",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "H3"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "11": {
+              "Ident": "StiText",
+              "Name": "Text91",
+              "Guid": "eefc24fd000da638d4958770c10ebb0f",
+              "ClientRectangle": "10.6,1.8,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.h4",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.h4",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "H4"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "12": {
+              "Ident": "StiText",
+              "Name": "Text92",
+              "Guid": "9a47ddb5f46169b12e6bef54cae34a5f",
+              "ClientRectangle": "13,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.h5",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.h5",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "H5"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "13": {
+              "Ident": "StiText",
+              "Name": "Text93",
+              "Guid": "4b7c2bdd8ea53a23ed02ba4b42639030",
+              "ClientRectangle": "13,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.h6",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.h6",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "H6"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "14": {
+              "Ident": "StiText",
+              "Name": "Text94",
+              "Guid": "64bf64a1867102a6fc58c3fcd753ecdc",
+              "ClientRectangle": "16.4,0.6,6.8,0.6",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "I"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Font": ";10;Bold;",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "15": {
+              "Ident": "StiText",
+              "Name": "Text95",
+              "Guid": "bc2cd14379e576083c276cef149c75df",
+              "ClientRectangle": "16.4,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.i1",
+                  "Value2": "16401-0002",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.i1",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "I1"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "16": {
+              "Ident": "StiText",
+              "Name": "Text96",
+              "Guid": "824d80496cf137fab8c3f033c40c6609",
+              "ClientRectangle": "16.4,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.i2",
+                  "Value2": "16401-0003",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.i2",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "I2"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "17": {
+              "Ident": "StiText",
+              "Name": "Text97",
+              "Guid": "e60440479a77f987bdeef2a1d3a660a4",
+              "ClientRectangle": "18.6,1.2,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.i3",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.i3",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "I3"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "18": {
+              "Ident": "StiText",
+              "Name": "Text98",
+              "Guid": "67145c16225745cd8b066b219473c8d7",
+              "ClientRectangle": "18.6,1.8,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.i4",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.i4",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "I4"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "19": {
+              "Ident": "StiText",
+              "Name": "Text99",
+              "Guid": "4495b7d2b571510517c5f2f658fca31f",
+              "ClientRectangle": "21,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.i5",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.i5",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "I5"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "20": {
+              "Ident": "StiText",
+              "Name": "Text100",
+              "Guid": "3797191fbc1529fcd9dba738edd4b823",
+              "ClientRectangle": "21,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.i6",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.i6",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "I6"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            }
+          }
+        },
+        "8": {
+          "Ident": "StiPanel",
+          "Name": "Panel5",
+          "Guid": "b0ca71610f133c4e79aa8f8ff48c6c5e",
+          "ClientRectangle": "10.8,10.2,23.2,2.6",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Border": ";;;;;;;solid:Black",
+          "Brush": "solid:",
+          "Components": {
+            "0": {
+              "Ident": "StiText",
+              "Name": "Text101",
+              "Guid": "350cee94ab485d3b73a77cc53689f96d",
+              "ClientRectangle": "0.2,0.6,6.8,0.6",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "D"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Font": ";10;Bold;",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "1": {
+              "Ident": "StiText",
+              "Name": "Text102",
+              "Guid": "9523e3187c966ab43c81791438385bfb",
+              "ClientRectangle": "0.2,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.d1",
+                  "Value2": "16401-0002",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.d1",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "D1"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "2": {
+              "Ident": "StiText",
+              "Name": "Text103",
+              "Guid": "b5abf76865c239f5102c202dc6df7434",
+              "ClientRectangle": "0.2,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.d2",
+                  "Value2": "16401-0003",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.d2",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "D2"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "3": {
+              "Ident": "StiText",
+              "Name": "Text104",
+              "Guid": "1424d4885bc5abf4ccf90bd0894392ee",
+              "ClientRectangle": "2.4,1.2,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.d3",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.d3",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "D3"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "4": {
+              "Ident": "StiText",
+              "Name": "Text105",
+              "Guid": "07afa3665fe17e35fff5a20a359921a5",
+              "ClientRectangle": "2.4,1.8,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.d4",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.d4",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "D4"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "5": {
+              "Ident": "StiText",
+              "Name": "Text107",
+              "Guid": "262ef68c33f0929a45b56610cdfcec14",
+              "ClientRectangle": "4.8,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.d5",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.d5",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "D5"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "6": {
+              "Ident": "StiText",
+              "Name": "Text108",
+              "Guid": "8f92011a0ac74698d341baefa4454b11",
+              "ClientRectangle": "4.8,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.d6",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.d6",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "D6"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "7": {
+              "Ident": "StiText",
+              "Name": "Text113",
+              "Guid": "df4f3b96d1f3c1575aaf699d8df28b1b",
+              "ClientRectangle": "8.4,0.6,6.8,0.6",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "E"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Font": ";10;Bold;",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "8": {
+              "Ident": "StiText",
+              "Name": "Text114",
+              "Guid": "1ed044caf1f6a32d85cf0a81c9ad36fc",
+              "ClientRectangle": "8.4,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.e1",
+                  "Value2": "16401-0002",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.e1",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "E1"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "9": {
+              "Ident": "StiText",
+              "Name": "Text115",
+              "Guid": "4f705ab14817c5298ce8e46925939ccd",
+              "ClientRectangle": "8.4,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.e2",
+                  "Value2": "16401-0003",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.e2",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "E2"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "10": {
+              "Ident": "StiText",
+              "Name": "Text116",
+              "Guid": "d1afb262089b2e2004360cdec0e4b469",
+              "ClientRectangle": "10.6,1.2,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.e3",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.e3",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "E3"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "11": {
+              "Ident": "StiText",
+              "Name": "Text117",
+              "Guid": "ec9fa9e7fcf1181768a61482efcfb95f",
+              "ClientRectangle": "10.6,1.8,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.e4",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.e4",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "E4"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "12": {
+              "Ident": "StiText",
+              "Name": "Text118",
+              "Guid": "a686b225b19f2135260fb5fcd4649b68",
+              "ClientRectangle": "13,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.e5",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.e5",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "E5"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "13": {
+              "Ident": "StiText",
+              "Name": "Text119",
+              "Guid": "cb38a8a51acadec8ad1df29f151f23cb",
+              "ClientRectangle": "13,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.e6",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.e6",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "E6"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "14": {
+              "Ident": "StiText",
+              "Name": "Text120",
+              "Guid": "2a48c416565fc2119b0e9393179cc3c6",
+              "ClientRectangle": "16.4,0.6,6.8,0.6",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "F"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Font": ";10;Bold;",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "15": {
+              "Ident": "StiText",
+              "Name": "Text121",
+              "Guid": "8c1fdc117ed41fd332715bc3ca80d272",
+              "ClientRectangle": "16.4,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.f1",
+                  "Value2": "16401-0002",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.f1",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "F1"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "16": {
+              "Ident": "StiText",
+              "Name": "Text122",
+              "Guid": "723e213d8a5cab22622bef5b6cf52303",
+              "ClientRectangle": "16.4,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.f2",
+                  "Value2": "16401-0003",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.f2",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "F2"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "17": {
+              "Ident": "StiText",
+              "Name": "Text123",
+              "Guid": "f322bc556a601eab27670d2373d8637c",
+              "ClientRectangle": "18.6,1.2,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.f3",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.f3",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "F3"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "18": {
+              "Ident": "StiText",
+              "Name": "Text124",
+              "Guid": "e098e8feca2158ade2edfb84616224e7",
+              "ClientRectangle": "18.6,1.8,2.4,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.f4",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.f4",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "F4"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "19": {
+              "Ident": "StiText",
+              "Name": "Text125",
+              "Guid": "330b39512ecb9941ef82d430af4df88e",
+              "ClientRectangle": "21,1.2,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.f5",
+                  "Value2": "16401-0004",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.f5",
+                  "BorderSides": "None"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "F5"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            },
+            "20": {
+              "Ident": "StiText",
+              "Name": "Text126",
+              "Guid": "cb51b96fd636293f56b36fcbeccdd578",
+              "ClientRectangle": "21,1.8,2.2,0.6",
+              "Conditions": {
+                "0": {
+                  "Ident": "StiCondition",
+                  "Condition": "NotEqualTo",
+                  "Column": "dtlnew.f6",
+                  "Value2": "16401-0005",
+                  "TextColor": "0,0,0",
+                  "BackColor": "255,0,0",
+                  "CanAssignExpression": true,
+                  "AssignExpression": "dtlnew.f6",
+                  "BorderSides": "All"
+                }
+              },
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "F6"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            }
+          }
+        },
+        "9": {
+          "Ident": "StiText",
+          "Name": "Text135",
+          "Guid": "f57ef33a49c47e01740f73abd9ab9c17",
+          "ClientRectangle": "3,0,7.8,0.6",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "{master.nmbarang}"
+          },
+          "VertAlignment": "Center",
+          "Font": ";;Bold;",
+          "Border": ";;;;;;;solid:0,0,0",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "Type": "DataColumn"
+        },
+        "10": {
+          "Ident": "StiText",
+          "Name": "Text136",
+          "Guid": "6ca9d49d4cc7c05067323a078b176357",
+          "ClientRectangle": "0.4,0,2.8,0.6",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "{master.idbarang}"
+          },
+          "VertAlignment": "Center",
+          "Font": ";;Bold;",
+          "Border": ";;;;;;;solid:0,0,0",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "Type": "DataColumn"
+        },
+        "11": {
+          "Ident": "StiText",
+          "Name": "Text137",
+          "Guid": "e01f8425b451c1ef48aab61a4eb5d58b",
+          "ClientRectangle": "2.8,0,0.2,0.6",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": ":"
+          },
+          "VertAlignment": "Center",
+          "Font": ";;Bold;",
+          "Border": ";;;;;;;solid:0,0,0",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "Type": "Expression"
+        },
+        "12": {
+          "Ident": "StiText",
+          "Name": "Text138",
+          "Guid": "3158334dc39b0b275650f7359eb09e62",
+          "ClientRectangle": "0.4,0.6,2.8,0.6",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "{master.deflocation}"
+          },
+          "VertAlignment": "Center",
+          "Font": ";;Bold;",
+          "Border": ";;;;;;;solid:0,0,0",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "Type": "DataColumn"
+        }
+      },
+      "Orientation": "Landscape",
+      "PageWidth": 35,
+      "PageHeight": 15.5,
+      "Watermark": {
+        "TextBrush": "solid:50,0,0,0"
+      },
+      "Margins": {
+        "Left": 0.1,
+        "Right": 0.1,
+        "Top": 0.1,
+        "Bottom": 0.1
+      }
+    }
+  }
+}

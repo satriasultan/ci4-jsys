@@ -1,0 +1,59 @@
+{
+    "master": [
+        {
+            "branch": "MJKCNI",
+            "branchname": "PT. CITICON NUSANTARA INDUSTRIES",
+            "address": "Jl. Raya Pacet KM 3, Jatilangkung,\r\nPungging, Mojosari - Mojokerto 61383\r\nJawa Timur, Indonesia",
+            "phone1": "+62 (321) 590231",
+            "phone2": "",
+            "fax": "+62 (321) 590 195"
+        }
+    ],
+    "detail": [
+        {
+            "docno": "SKP20120020         ",
+            "docname": "DOKUMEN SP                    ",
+            "nik": "20102       ",
+            "docref": "SP KARYAWAN         ",
+            "doctype": "SP2                 ",
+            "docdate": "2020-12-08",
+            "status": "P     ",
+            "description": "TEST",
+            "startdate": "2020-12-01",
+            "enddate": "2020-12-02",
+            "inputby": "16235               ",
+            "inputdate": "2020-12-08 10:53:05",
+            "updateby": null,
+            "updatedate": null,
+            "cancelby": null,
+            "canceldate": null,
+            "approveby": "16235               ",
+            "approvedate": "2020-12-08 10:53:55",
+            "att_name": "                                                  ",
+            "att_dir": ".\/assets\/files\/skPeringatan\/",
+            "docnotmp": "SKP20120020         ",
+            "solusi": "SFW",
+            "app_pic1": null,
+            "app_pic2": null,
+            "app_pic3": null,
+            "app_level": null,
+            "startdatex": "01-12-2020 - 02-12-2020",
+            "nmlengkap": "ABDULLOH WAKID HASIM                                                       ",
+            "nmdept": "PRODUKSI",
+            "bag_dept": "PRD   ",
+            "nmjabatan": "PELAKSANA PRODUKSI UNIT 1",
+            "nmatasan1": "ARY SULISTIAWAN                                                            ",
+            "nmatasan2": "PONADI                                                                     ",
+            "nmsubdept": "UNIT 1",
+            "nmlvljabatan": "PELAKSANA",
+            "alamattinggal": "DSN SIDOTOPO 018\/006 DS MENANGGAL KEC MOJOSARI KAB MOJOKERTO",
+            "nohp1": "081559991054    ",
+            "email": "IKANGURAME3@GMAIL.COM                                                                               ",
+            "spname": "SURAT PERINGATAN 2            ",
+            "nmstatus": "DOKUMEN FINAL",
+            "startdate1": "01-12-2020",
+            "enddate1": "02-12-2020",
+            "docdate2": "08-12-2020"
+        }
+    ]
+}

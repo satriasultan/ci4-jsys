@@ -1,0 +1,324 @@
+{
+  "ReportGuid": "5ffb0e9da7ae23adfff27d77f759bc0b",
+  "ReportName": "Report",
+  "ReportAlias": "Report",
+  "ReportFile": "label_perangkat_pribadi_v63.mrt",
+  "ReportCreated": "/Date(1644566413000+0700)/",
+  "ReportChanged": "/Date(1756177093000+0700)/",
+  "EngineVersion": "EngineV2",
+  "CalculationMode": "Interpretation",
+  "ReportUnit": "Centimeters",
+  "PreviewSettings": 260039167,
+  "Dictionary": {
+    "DataSources": {
+      "0": {
+        "Ident": "StiDataTableSource",
+        "Name": "branch",
+        "Alias": "branch",
+        "Columns": {
+          "0": {
+            "Name": "address",
+            "Index": -1,
+            "NameInSource": "address",
+            "Alias": "address",
+            "Type": "System.String"
+          },
+          "1": {
+            "Name": "branch",
+            "Index": -1,
+            "NameInSource": "branch",
+            "Alias": "branch",
+            "Type": "System.String"
+          },
+          "2": {
+            "Name": "branchname",
+            "Index": -1,
+            "NameInSource": "branchname",
+            "Alias": "branchname",
+            "Type": "System.String"
+          },
+          "3": {
+            "Name": "fax",
+            "Index": -1,
+            "NameInSource": "fax",
+            "Alias": "fax",
+            "Type": "System.String"
+          },
+          "4": {
+            "Name": "phone1",
+            "Index": -1,
+            "NameInSource": "phone1",
+            "Alias": "phone1",
+            "Type": "System.String"
+          },
+          "5": {
+            "Name": "phone2",
+            "Index": -1,
+            "NameInSource": "phone2",
+            "Alias": "phone2",
+            "Type": "System.String"
+          }
+        },
+        "NameInSource": "json_api_label.branch"
+      },
+      "1": {
+        "Ident": "StiDataTableSource",
+        "Name": "info",
+        "Alias": "info",
+        "Columns": {
+          "0": {
+            "Name": "datenow",
+            "Index": -1,
+            "NameInSource": "datenow",
+            "Alias": "datenow",
+            "Type": "System.String"
+          },
+          "1": {
+            "Name": "userid",
+            "Index": -1,
+            "NameInSource": "userid",
+            "Alias": "userid",
+            "Type": "System.String"
+          }
+        },
+        "NameInSource": "json_api_label.info"
+      },
+      "2": {
+        "Ident": "StiDataTableSource",
+        "Name": "master",
+        "Alias": "master",
+        "Columns": {
+          "0": {
+            "Name": "cgroup",
+            "Index": -1,
+            "NameInSource": "cgroup",
+            "Alias": "cgroup",
+            "Type": "System.String"
+          },
+          "1": {
+            "Name": "cmodul",
+            "Index": -1,
+            "NameInSource": "cmodul",
+            "Alias": "cmodul",
+            "Type": "System.String"
+          },
+          "2": {
+            "Name": "cname",
+            "Index": -1,
+            "NameInSource": "cname",
+            "Alias": "cname",
+            "Type": "System.String"
+          },
+          "3": {
+            "Name": "ctype",
+            "Index": -1,
+            "NameInSource": "ctype",
+            "Alias": "ctype",
+            "Type": "System.String"
+          },
+          "4": {
+            "Name": "docno",
+            "Index": -1,
+            "NameInSource": "docno",
+            "Alias": "docno",
+            "Type": "System.String"
+          },
+          "5": {
+            "Name": "idbarcode",
+            "Index": -1,
+            "NameInSource": "idbarcode",
+            "Alias": "idbarcode",
+            "Type": "System.String"
+          },
+          "6": {
+            "Name": "inputby",
+            "Index": -1,
+            "NameInSource": "inputby",
+            "Alias": "inputby",
+            "Type": "System.String"
+          },
+          "7": {
+            "Name": "inputdate",
+            "Index": -1,
+            "NameInSource": "inputdate",
+            "Alias": "inputdate",
+            "Type": "System.String"
+          },
+          "8": {
+            "Name": "subunit",
+            "Index": -1,
+            "NameInSource": "subunit",
+            "Alias": "subunit",
+            "Type": "System.String"
+          },
+          "9": {
+            "Name": "unit",
+            "Index": -1,
+            "NameInSource": "unit",
+            "Alias": "unit",
+            "Type": "System.String"
+          }
+        },
+        "NameInSource": "json_api_label.master"
+      }
+    },
+    "Databases": {
+      "0": {
+        "Ident": "StiJsonDatabase",
+        "Name": "json_api_label",
+        "Alias": "json_api_label",
+        "PathData": "D:\\XAMPP\\htdocs\\ci4_elite_starter\\assets\\json\\api_label_form.json"
+      }
+    }
+  },
+  "Pages": {
+    "0": {
+      "Ident": "StiPage",
+      "Name": "Page1",
+      "Guid": "2dc1315c07117e7c4f3b543f9e531d6b",
+      "Interaction": {
+        "Ident": "StiInteraction"
+      },
+      "Border": ";;2;;;;;solid:Black",
+      "Brush": "solid:",
+      "Components": {
+        "0": {
+          "Ident": "StiText",
+          "Name": "Text3",
+          "Guid": "6de605dd1df91f4aeaf58c873322e96d",
+          "ClientRectangle": "3.8,2.8,2,0.2",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Text": {
+            "Value": "EXP DATE : 10/09/2025"
+          },
+          "HorAlignment": "Right",
+          "VertAlignment": "Center",
+          "Font": ";5;Bold, Italic;",
+          "Border": ";;;;;;;solid:0,0,0",
+          "Brush": "solid:",
+          "TextBrush": "solid:Black",
+          "Type": "Expression"
+        },
+        "1": {
+          "Ident": "StiDataBand",
+          "Name": "DataBand1",
+          "ClientRectangle": "0,0.4,6,1.8",
+          "Interaction": {
+            "Ident": "StiBandInteraction"
+          },
+          "Border": "Bottom;;;None;;;;solid:0,0,0",
+          "Brush": "solid:",
+          "Components": {
+            "0": {
+              "Ident": "StiText",
+              "Name": "Text1",
+              "Guid": "b200d304ea2c2407198fd9d31af7ec2d",
+              "ClientRectangle": "0.4,0,5.4,0.4",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "{master.cname}"
+              },
+              "VertAlignment": "Center",
+              "Font": ";;Bold;",
+              "Border": ";;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "DataColumn"
+            },
+            "1": {
+              "Ident": "StiBarCode",
+              "Name": "BarCode1",
+              "ShiftMode": "None",
+              "GrowToHeight": true,
+              "ClientRectangle": "0.2,0.4,2.5,2.2",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Border": ";;;Dash;;;;solid:0,0,0",
+              "AutoScale": true,
+              "ShowLabelText": false,
+              "Font": ";5;Regular;Point",
+              "HorAlignment": "Center",
+              "BarCodeType": {
+                "Ident": "StiQRCodeBarCodeType"
+              },
+              "Code": {
+                "Value": "{master.idbarcode}"
+              }
+            },
+            "2": {
+              "Ident": "StiText",
+              "Name": "Text5",
+              "Guid": "7cc26c94085a3b1f9e83a61730d32e41",
+              "ClientRectangle": "3.2,0.6,2.6,0.4",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "{master.docno}"
+              },
+              "HorAlignment": "Right",
+              "Font": ";10;Bold, Italic;",
+              "Border": ";;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "TextOptions": {
+                "WordWrap": true
+              },
+              "Type": "DataColumn"
+            },
+            "3": {
+              "Ident": "StiImage",
+              "Name": "Image7",
+              "ShiftMode": "OnlyInWidthOfComponent",
+              "Guid": "0b17d29e7cfb3786e1f597214e6021ac",
+              "ClientRectangle": "4,1,1.8,0.8",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Border": ";;;;;;;solid:Black",
+              "Brush": "solid:",
+              "Stretch": true,
+              "Image": "data:image/png;base64,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"
+            },
+            "4": {
+              "Ident": "StiText",
+              "Name": "Text2",
+              "Guid": "40fbaca1da22e007a0a2613242bc6752",
+              "ClientRectangle": "2.8,1.8,3,0.8",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "PT JATIM TAMAN STEEL . MFG\r\nIT DEPARTMENT"
+              },
+              "HorAlignment": "Right",
+              "VertAlignment": "Center",
+              "Font": ";5;Bold, Italic;",
+              "Border": ";;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "Expression"
+            }
+          },
+          "DataSourceName": "master"
+        }
+      },
+      "PageWidth": 6,
+      "PageHeight": 3,
+      "Watermark": {
+        "TextBrush": "solid:50,0,0,0"
+      },
+      "Margins": {
+        "Left": 0,
+        "Right": 0,
+        "Top": 0,
+        "Bottom": 0
+      }
+    }
+  }
+}

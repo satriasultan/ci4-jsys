@@ -1,0 +1,162 @@
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0"><?php echo ucwords(strtolower(trim($title)));?></h1>
+            </div><!-- /.col -->
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <div class="float-right" style="margin-right: 10px;vertical-align:middle;padding-top: 0.7%;"><i style="color:transparent;"><?php echo $t; ?></i> Versi: <?php echo $version; ?></div>
+                    <input type="hidden" id="classmenu" value="<?= str_replace('.','_',$kodemenu) ?>" required>
+                    <?php foreach ($y as $y1) { ?>
+                        <?php if( trim($y1->kodemenu)!=trim($kodemenu)) { ?>
+                            <li class="breadcrumb-item"><a href="<?php echo base_url( trim($y1->linkmenu)) ; ?>"><i class="fa <?php echo trim($y1->iconmenu); ?>"></i> <?php echo  trim($y1->namamenu); ?></a></li>
+                        <?php } else { ?>
+                            <li class="breadcrumb-item active"><i class="fa <?php echo trim($y1->iconmenu); ?>"></i> <?php echo trim($y1->namamenu); ?></li>
+                        <?php } ?>
+                    <?php } ?>
+                </ol>
+            </div><!-- /.col -->
+        </div><!-- /.row -->
+    </div><!-- /.container-fluid -->
+</div>
+
+<?php echo $message;?>
+
+<div class="row">
+    <!-- left column -->
+    <?php /*
+    <div class="col-md-6">
+        <!-- jquery validation -->
+        <div class="card card-default">
+            <div class="card-header">
+                <h3 class="card-title"> Show Labels All Items </h3>
+            </div>
+            <!-- /.card-header -->
+            <!-- form start -->
+            <form  action="<?php echo base_url('master/item/show_showlabels_item')?>" method="post" id="formInputTransfers" enctype="multipart/form-data" role="form">
+                <div class="card-body row">
+                    <div class="form-group col-sm-12 ">
+                        <label for="idlocation">Search Your Location (Gudang)</label>
+                        <div class="input-group">
+                            <select name="idlocation" id="idlocation" class="form-control" required >
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row col-sm-12">
+                        <div class="form-group col-sm-12 ">
+                            <button type="submit"  class="btn btn-primary float-right"><i class="fa fa-repeat"></i> Proses</button>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+        <!-- /.card -->
+    </div> */ ?>
+    <?php /* LABELING CLASS */ ?>
+
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <!-- jquery validation -->
+        <div class="card card-default">
+            <div class="card-header">
+                <h3 class="card-title"> Show Labels Partial Items </h3>
+            </div>
+            <!-- /.card-header -->
+            <!-- form start -->
+            <form  action="<?php echo base_url('master/item/show_showlabels_item_post')?>" method="post" id="formInputTransfers" enctype="multipart/form-data" role="form">
+                <div class="card-body row">
+                    <div class="form-group col-sm-12 ">
+                        <label for="idlocation">Pencarian Master Barang</label>
+                        <div class="input-group">
+                            <select name="idbarang[]" id="idbarang_filter" class="form-control" required >
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row col-sm-12">
+                        <div class="form-group col-sm-12 ">
+                            <button type="submit"  class="btn btn-primary float-right"><i class="fa fa-repeat"></i> Proses</button>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+        <!-- /.card -->
+    </div>
+    <div class="col-sm-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="text-center display-5"><?php echo 'DAFTAR LIST CETAK LABEL' ?></h4>
+                <div class="row">
+                    <div class="form-group col-sm-12 ">
+                        <label for="idlocation">Pencarian Master Barang</label>
+                        <div class="input-group">
+                            <select name="idbarang_filter_spec" id="idbarang_filter_spec" class="form-control" required >
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-sm-12 ">
+                        <a href="#"
+                           class="btn btn-primary float-left"
+                           onclick="tarikCetak()">
+                            <i class="fa fa-sync"></i> Tarik Cetak
+                        </a>
+                        <a href="<?php echo base_url('form/pa/clearTemporaryPrinter') ?>" class="btn btn-danger float-left"><i class="fa fa-trash"></i> Clear All</a>
+                        <a href="<?php echo base_url('form/pa/printFromListPrinter') ?>"  class="btn btn-success float-right"><i class="fa fa-print"></i> Print K.stock</a>
+                    </div>
+                </div>
+            </div><!-- /.card-header -->
+            <div class="card-body table-responsive" style='overflow-x:scroll;'>
+                <table id="titem_temporary" class="table table-bordered table-striped" >
+                    <thead>
+                    <tr>
+                        <th width="1%">No.</th>
+                        <th>Docno</th>
+                        <th>Ctype</th>
+                        <th>Cname</th>
+                        <th>Barcode</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div><!-- /.card-body -->
+        </div><!-- /.card -->
+    </div>
+</div>
+
+
+<script type="application/javascript" src="<?= base_url('assets/pagejs/form/print_label_form.js') ?>"></script>
+<script type="text/javascript">
+    $(function() {
+        $("#example1").dataTable();
+        $("#example2").dataTable();
+        $("#example4").dataTable();
+        //datemask
+        //$("#datemaskinput").inputmask("dd/mm/yyyy", {"placeholder": "dd/mm/yyyy"});
+        //$("#datemaskinput").daterangepicker();
+        //Date picker
+
+        $('#docdate').daterangepicker({
+            autoUpdateInput: false,
+            singleDatePicker: false,
+            showDropdowns: true,
+            locale: {
+                format: 'DD-MM-YYYY'
+            },
+            cancelLabel: 'Clear',
+        });
+        $('#docdate').on('apply.daterangepicker', function(ev, picker) {
+            $(this).val(picker.startDate.format('DD-MM-YYYY') + ' - ' + picker.endDate.format('DD-MM-YYYY'));
+        });
+
+        $('#docdate').on('cancel.daterangepicker', function(ev, picker) {
+            $(this).val('');
+        });
+    });
+
+</script>

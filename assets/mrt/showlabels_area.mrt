@@ -1,0 +1,295 @@
+{
+  "ReportGuid": "d41289b7c64dd3130ece1325be69ca60",
+  "ReportName": "Report",
+  "ReportAlias": "Report",
+  "ReportFile": "showlabels_area.mrt",
+  "ReportCreated": "/Date(1644566413000+0700)/",
+  "ReportChanged": "/Date(1649836853000+0700)/",
+  "EngineVersion": "EngineV2",
+  "CalculationMode": "Interpretation",
+  "ReportUnit": "Centimeters",
+  "PreviewSettings": 260039167,
+  "Dictionary": {
+    "DataSources": {
+      "0": {
+        "Ident": "StiDataTableSource",
+        "Name": "branch",
+        "Alias": "branch",
+        "Columns": {
+          "0": {
+            "Name": "address",
+            "Index": -1,
+            "NameInSource": "address",
+            "Alias": "address",
+            "Type": "System.String"
+          },
+          "1": {
+            "Name": "branch",
+            "Index": -1,
+            "NameInSource": "branch",
+            "Alias": "branch",
+            "Type": "System.String"
+          },
+          "2": {
+            "Name": "branchname",
+            "Index": -1,
+            "NameInSource": "branchname",
+            "Alias": "branchname",
+            "Type": "System.String"
+          },
+          "3": {
+            "Name": "fax",
+            "Index": -1,
+            "NameInSource": "fax",
+            "Alias": "fax",
+            "Type": "System.String"
+          },
+          "4": {
+            "Name": "phone1",
+            "Index": -1,
+            "NameInSource": "phone1",
+            "Alias": "phone1",
+            "Type": "System.String"
+          },
+          "5": {
+            "Name": "phone2",
+            "Index": -1,
+            "NameInSource": "phone2",
+            "Alias": "phone2",
+            "Type": "System.String"
+          }
+        },
+        "NameInSource": "area_labels.branch"
+      },
+      "1": {
+        "Ident": "StiDataTableSource",
+        "Name": "info",
+        "Alias": "info",
+        "Columns": {
+          "0": {
+            "Name": "datenow",
+            "Index": -1,
+            "NameInSource": "datenow",
+            "Alias": "datenow",
+            "Type": "System.String"
+          },
+          "1": {
+            "Name": "userid",
+            "Index": -1,
+            "NameInSource": "userid",
+            "Alias": "userid",
+            "Type": "System.String"
+          }
+        },
+        "NameInSource": "area_labels.info"
+      },
+      "2": {
+        "Ident": "StiDataTableSource",
+        "Name": "master",
+        "Alias": "master",
+        "Columns": {
+          "0": {
+            "Name": "chold",
+            "Index": -1,
+            "NameInSource": "chold",
+            "Alias": "chold",
+            "Type": "System.String"
+          },
+          "1": {
+            "Name": "description",
+            "Index": -1,
+            "NameInSource": "description",
+            "Alias": "description",
+            "Type": "System.String"
+          },
+          "2": {
+            "Name": "id",
+            "Index": -1,
+            "NameInSource": "id",
+            "Alias": "id",
+            "Type": "System.String"
+          },
+          "3": {
+            "Name": "idarea",
+            "Index": -1,
+            "NameInSource": "idarea",
+            "Alias": "idarea",
+            "Type": "System.String"
+          },
+          "4": {
+            "Name": "idbarcode",
+            "Index": -1,
+            "NameInSource": "idbarcode",
+            "Alias": "idbarcode",
+            "Type": "System.String"
+          },
+          "5": {
+            "Name": "idcomplex",
+            "Index": -1,
+            "NameInSource": "idcomplex",
+            "Alias": "idcomplex",
+            "Type": "System.String"
+          },
+          "6": {
+            "Name": "idlocation",
+            "Index": -1,
+            "NameInSource": "idlocation",
+            "Alias": "idlocation",
+            "Type": "System.String"
+          },
+          "7": {
+            "Name": "idtype",
+            "Index": -1,
+            "NameInSource": "idtype",
+            "Alias": "idtype",
+            "Type": "System.String"
+          },
+          "8": {
+            "Name": "inputby",
+            "Index": -1,
+            "NameInSource": "inputby",
+            "Alias": "inputby",
+            "Type": "System.String"
+          },
+          "9": {
+            "Name": "inputdate",
+            "Index": -1,
+            "NameInSource": "inputdate",
+            "Alias": "inputdate",
+            "Type": "System.String"
+          },
+          "10": {
+            "Name": "nmarea",
+            "Index": -1,
+            "NameInSource": "nmarea",
+            "Alias": "nmarea",
+            "Type": "System.String"
+          },
+          "11": {
+            "Name": "status",
+            "Index": -1,
+            "NameInSource": "status",
+            "Alias": "status",
+            "Type": "System.String"
+          },
+          "12": {
+            "Name": "updateby",
+            "Index": -1,
+            "NameInSource": "updateby",
+            "Alias": "updateby",
+            "Type": "System.String"
+          },
+          "13": {
+            "Name": "updatedate",
+            "Index": -1,
+            "NameInSource": "updatedate",
+            "Alias": "updatedate",
+            "Type": "System.String"
+          }
+        },
+        "NameInSource": "area_labels.master"
+      }
+    },
+    "Databases": {
+      "0": {
+        "Ident": "StiJsonDatabase",
+        "Name": "area_labels",
+        "Alias": "area_labels",
+        "PathData": "E:\\WEB\\apache2\\htdocs\\ci4-inventory\\assets\\json\\api_location_area_labels.json"
+      }
+    }
+  },
+  "Pages": {
+    "0": {
+      "Ident": "StiPage",
+      "Name": "Page1",
+      "Guid": "2dc1315c07117e7c4f3b543f9e531d6b",
+      "Interaction": {
+        "Ident": "StiInteraction"
+      },
+      "Border": ";;2;;;;;solid:Black",
+      "Brush": "solid:",
+      "Components": {
+        "0": {
+          "Ident": "StiDataBand",
+          "Name": "DataBand1",
+          "ClientRectangle": "0,0.4,20.6,2.8",
+          "Interaction": {
+            "Ident": "StiBandInteraction"
+          },
+          "Border": "Bottom;;;Dash;;;;solid:0,0,0",
+          "Brush": "solid:",
+          "Components": {
+            "0": {
+              "Ident": "StiBarCode",
+              "Name": "BarCode1",
+              "ClientRectangle": "0.2,0,3.4,2.8",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Border": ";;;;;;;solid:Black",
+              "BackColor": "Transparent",
+              "AutoScale": true,
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "BarCodeType": {
+                "Ident": "StiQRCodeBarCodeType"
+              },
+              "Code": {
+                "Value": "{master.idarea}"
+              }
+            },
+            "1": {
+              "Ident": "StiText",
+              "Name": "Text1",
+              "ClientRectangle": "3.6,1.8,8.8,0.6",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "{master.nmarea}"
+              },
+              "VertAlignment": "Center",
+              "Font": ";12;Bold;",
+              "Border": "Bottom;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "DataColumn"
+            },
+            "2": {
+              "Ident": "StiText",
+              "Name": "Text2",
+              "Guid": "262ec8e0603f5ef10425e8ce2b4924f6",
+              "ClientRectangle": "3.6,0.6,5.6,0.6",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "{master.idarea}"
+              },
+              "VertAlignment": "Center",
+              "Font": ";;Bold;",
+              "Border": "Bottom;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Type": "DataColumn"
+            }
+          },
+          "DataSourceName": "master"
+        }
+      },
+      "PaperSize": "A4",
+      "PageWidth": 21,
+      "PageHeight": 29.7,
+      "Watermark": {
+        "TextBrush": "solid:50,0,0,0"
+      },
+      "Margins": {
+        "Left": 0.2,
+        "Right": 0.2,
+        "Top": 0.2,
+        "Bottom": 0.2
+      }
+    }
+  }
+}

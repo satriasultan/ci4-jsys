@@ -1,0 +1,58 @@
+{
+    "master": [
+        {
+            "branch": "MJKCNI",
+            "branchname": "PT. CITICON NUSANTARA INDUSTRIES",
+            "address": "Jl. Raya Pacet KM 3, Jatilangkung,\r\nPungging, Mojosari - Mojokerto 61383\r\nJawa Timur, Indonesia",
+            "phone1": "+62 (321) 590231",
+            "phone2": "",
+            "fax": "+62 (321) 590 195"
+        }
+    ],
+    "detail": [
+        {
+            "nodok": "PSPK17110007",
+            "nodokref": "PAS17110003",
+            "descbarang": "",
+            "kdgroup": "KDN",
+            "kdsubgroup": "GDG",
+            "stockcode": "MHCTBR54B5K123411",
+            "kdbengkel": "BKLRTYT001",
+            "kdsubbengkel": "BKLRTYT001.0002",
+            "upbengkel": "TEST",
+            "jnsperawatan": "",
+            "jnsperawatanref": "AA",
+            "tgldok": "",
+            "tglawal": "20-11-2017",
+            "tglakhir": "20-11-2017",
+            "keterangan": "TEST",
+            "status": "A",
+            "inputdate": "20-11-2017",
+            "inputby": "16235",
+            "updatedate": "20-11-2017",
+            "updateby": "TRIAL2",
+            "nmbarang": "ISUZU\/ TBR54",
+            "kdgudang": "MJKCNI",
+            "nmbengkel": "AUTO 2000 MANYAR",
+            "addbengkel": "JL. MANYAR INDAH 75",
+            "city": "SURABAYA",
+            "phone1": "098",
+            "phone2": "9980809",
+            "nopol": "L 8450 LN",
+            "branch_address": "",
+            "branch_phone1": "",
+            "branch_phone2": "",
+            "branch_fax": "",
+            "nmmohon": "",
+            "km_awal": "400",
+            "km_akhir": "40000",
+            "ttlservis": "45.00",
+            "ttldiskon": "0",
+            "ttldpp": "0",
+            "ttlppn": "0",
+            "ttlppnbm": "0",
+            "ttlnetto": "0",
+            "typeservis": ""
+        }
+    ]
+}

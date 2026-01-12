@@ -1,0 +1,3338 @@
+{
+  "ReportGuid": "ef1d7a21b833f7e0c02909ba7f711d2a",
+  "ReportName": "Report",
+  "ReportAlias": "Report",
+  "ReportFile": "form_permintaan_akses_jaringan_system.mrt",
+  "ReportDescription": "Bukti Barang Masuk",
+  "ReportCreated": "/Date(0+0700)/",
+  "ReportChanged": "/Date(1764821522000+0700)/",
+  "EngineVersion": "EngineV2",
+  "CalculationMode": "Interpretation",
+  "ReportUnit": "Inches",
+  "ScriptLanguage": "CSharp",
+  "Culture": "id-ID",
+  "PreviewSettings": 260039167,
+  "Dictionary": {
+    "DataSources": {
+      "0": {
+        "Ident": "StiDataTableSource",
+        "Name": "branch",
+        "Alias": "branch",
+        "Columns": {
+          "0": {
+            "Name": "address",
+            "Index": -1,
+            "NameInSource": "address",
+            "Alias": "address",
+            "Type": "System.String"
+          },
+          "1": {
+            "Name": "branch",
+            "Index": -1,
+            "NameInSource": "branch",
+            "Alias": "branch",
+            "Type": "System.String"
+          },
+          "2": {
+            "Name": "branchname",
+            "Index": -1,
+            "NameInSource": "branchname",
+            "Alias": "branchname",
+            "Type": "System.String"
+          },
+          "3": {
+            "Name": "fax",
+            "Index": -1,
+            "NameInSource": "fax",
+            "Alias": "fax",
+            "Type": "System.String"
+          },
+          "4": {
+            "Name": "phone1",
+            "Index": -1,
+            "NameInSource": "phone1",
+            "Alias": "phone1",
+            "Type": "System.String"
+          },
+          "5": {
+            "Name": "phone2",
+            "Index": -1,
+            "NameInSource": "phone2",
+            "Alias": "phone2",
+            "Type": "System.String"
+          }
+        },
+        "NameInSource": "api_internet.branch"
+      },
+      "1": {
+        "Ident": "StiDataTableSource",
+        "Name": "detail",
+        "Alias": "detail",
+        "Columns": {
+          "0": {
+            "Name": "aksesapp",
+            "Index": -1,
+            "NameInSource": "aksesapp",
+            "Alias": "aksesapp",
+            "Type": "System.String"
+          },
+          "1": {
+            "Name": "aksesemail",
+            "Index": -1,
+            "NameInSource": "aksesemail",
+            "Alias": "aksesemail",
+            "Type": "System.String"
+          },
+          "2": {
+            "Name": "aksesinternet",
+            "Index": -1,
+            "NameInSource": "aksesinternet",
+            "Alias": "aksesinternet",
+            "Type": "System.String"
+          },
+          "3": {
+            "Name": "aksesother",
+            "Index": -1,
+            "NameInSource": "aksesother",
+            "Alias": "aksesother",
+            "Type": "System.String"
+          },
+          "4": {
+            "Name": "aksesuser",
+            "Index": -1,
+            "NameInSource": "aksesuser",
+            "Alias": "aksesuser",
+            "Type": "System.String"
+          },
+          "5": {
+            "Name": "appfield",
+            "Index": -1,
+            "NameInSource": "appfield",
+            "Alias": "appfield",
+            "Type": "System.String"
+          },
+          "6": {
+            "Name": "barcodelink",
+            "Index": -1,
+            "NameInSource": "barcodelink",
+            "Alias": "barcodelink",
+            "Type": "System.String"
+          },
+          "7": {
+            "Name": "cancelby",
+            "Index": -1,
+            "NameInSource": "cancelby",
+            "Alias": "cancelby",
+            "Type": "System.String"
+          },
+          "8": {
+            "Name": "canceldate",
+            "Index": -1,
+            "NameInSource": "canceldate",
+            "Alias": "canceldate",
+            "Type": "System.String"
+          },
+          "9": {
+            "Name": "cancelremarks",
+            "Index": -1,
+            "NameInSource": "cancelremarks",
+            "Alias": "cancelremarks",
+            "Type": "System.String"
+          },
+          "10": {
+            "Name": "departemenpic",
+            "Index": -1,
+            "NameInSource": "departemenpic",
+            "Alias": "departemenpic",
+            "Type": "System.String"
+          },
+          "11": {
+            "Name": "departmen",
+            "Index": -1,
+            "NameInSource": "departmen",
+            "Alias": "departmen",
+            "Type": "System.String"
+          },
+          "12": {
+            "Name": "deptpic",
+            "Index": -1,
+            "NameInSource": "deptpic",
+            "Alias": "deptpic",
+            "Type": "System.String"
+          },
+          "13": {
+            "Name": "description",
+            "Index": -1,
+            "NameInSource": "description",
+            "Alias": "description",
+            "Type": "System.String"
+          },
+          "14": {
+            "Name": "docdate",
+            "Index": -1,
+            "NameInSource": "docdate",
+            "Alias": "docdate",
+            "Type": "System.DateTime"
+          },
+          "15": {
+            "Name": "docno",
+            "Index": -1,
+            "NameInSource": "docno",
+            "Alias": "docno",
+            "Type": "System.String"
+          },
+          "16": {
+            "Name": "docnoencrypt",
+            "Index": -1,
+            "NameInSource": "docnoencrypt",
+            "Alias": "docnoencrypt",
+            "Type": "System.String"
+          },
+          "17": {
+            "Name": "docnotmp",
+            "Index": -1,
+            "NameInSource": "docnotmp",
+            "Alias": "docnotmp",
+            "Type": "System.String"
+          },
+          "18": {
+            "Name": "doctype",
+            "Index": -1,
+            "NameInSource": "doctype",
+            "Alias": "doctype",
+            "Type": "System.String"
+          },
+          "19": {
+            "Name": "emailfield",
+            "Index": -1,
+            "NameInSource": "emailfield",
+            "Alias": "emailfield",
+            "Type": "System.String"
+          },
+          "20": {
+            "Name": "expdate",
+            "Index": -1,
+            "NameInSource": "expdate",
+            "Alias": "expdate",
+            "Type": "System.DateTime"
+          },
+          "21": {
+            "Name": "inputby",
+            "Index": -1,
+            "NameInSource": "inputby",
+            "Alias": "inputby",
+            "Type": "System.String"
+          },
+          "22": {
+            "Name": "inputdate",
+            "Index": -1,
+            "NameInSource": "inputdate",
+            "Alias": "inputdate",
+            "Type": "System.String"
+          },
+          "23": {
+            "Name": "isAplikasi",
+            "Index": -1,
+            "NameInSource": "isAplikasi",
+            "Alias": "isAplikasi",
+            "Type": "System.Boolean"
+          },
+          "24": {
+            "Name": "isEmail",
+            "Index": -1,
+            "NameInSource": "isEmail",
+            "Alias": "isEmail",
+            "Type": "System.Boolean"
+          },
+          "25": {
+            "Name": "isHariKerja",
+            "Index": -1,
+            "NameInSource": "isHariKerja",
+            "Alias": "isHariKerja",
+            "Type": "System.Boolean"
+          },
+          "26": {
+            "Name": "isInternet",
+            "Index": -1,
+            "NameInSource": "isInternet",
+            "Alias": "isInternet",
+            "Type": "System.Boolean"
+          },
+          "27": {
+            "Name": "isKaryawanLain",
+            "Index": -1,
+            "NameInSource": "isKaryawanLain",
+            "Alias": "isKaryawanLain",
+            "Type": "System.Boolean"
+          },
+          "28": {
+            "Name": "isOther",
+            "Index": -1,
+            "NameInSource": "isOther",
+            "Alias": "isOther",
+            "Type": "System.Boolean"
+          },
+          "29": {
+            "Name": "isOtherWaktu",
+            "Index": -1,
+            "NameInSource": "isOtherWaktu",
+            "Alias": "isOtherWaktu",
+            "Type": "System.Boolean"
+          },
+          "30": {
+            "Name": "isPemohon",
+            "Index": -1,
+            "NameInSource": "isPemohon",
+            "Alias": "isPemohon",
+            "Type": "System.Boolean"
+          },
+          "31": {
+            "Name": "isRutin",
+            "Index": -1,
+            "NameInSource": "isRutin",
+            "Alias": "isRutin",
+            "Type": "System.Boolean"
+          },
+          "32": {
+            "Name": "isSementara",
+            "Index": -1,
+            "NameInSource": "isSementara",
+            "Alias": "isSementara",
+            "Type": "System.Boolean"
+          },
+          "33": {
+            "Name": "isUser",
+            "Index": -1,
+            "NameInSource": "isUser",
+            "Alias": "isUser",
+            "Type": "System.Boolean"
+          },
+          "34": {
+            "Name": "isWaktuTertentu",
+            "Index": -1,
+            "NameInSource": "isWaktuTertentu",
+            "Alias": "isWaktuTertentu",
+            "Type": "System.Boolean"
+          },
+          "35": {
+            "Name": "jabatan",
+            "Index": -1,
+            "NameInSource": "jabatan",
+            "Alias": "jabatan",
+            "Type": "System.String"
+          },
+          "36": {
+            "Name": "jabatanpic",
+            "Index": -1,
+            "NameInSource": "jabatanpic",
+            "Alias": "jabatanpic",
+            "Type": "System.String"
+          },
+          "37": {
+            "Name": "jnsakses",
+            "Index": -1,
+            "NameInSource": "jnsakses",
+            "Alias": "jnsakses",
+            "Type": "System.String"
+          },
+          "38": {
+            "Name": "keperluan",
+            "Index": -1,
+            "NameInSource": "keperluan",
+            "Alias": "keperluan",
+            "Type": "System.String"
+          },
+          "39": {
+            "Name": "linkdefault",
+            "Index": -1,
+            "NameInSource": "linkdefault",
+            "Alias": "linkdefault",
+            "Type": "System.String"
+          },
+          "40": {
+            "Name": "nmpemohon",
+            "Index": -1,
+            "NameInSource": "nmpemohon",
+            "Alias": "nmpemohon",
+            "Type": "System.String"
+          },
+          "41": {
+            "Name": "nmpic",
+            "Index": -1,
+            "NameInSource": "nmpic",
+            "Alias": "nmpic",
+            "Type": "System.String"
+          },
+          "42": {
+            "Name": "nmstatus",
+            "Index": -1,
+            "NameInSource": "nmstatus",
+            "Alias": "nmstatus",
+            "Type": "System.String"
+          },
+          "43": {
+            "Name": "osticket",
+            "Index": -1,
+            "NameInSource": "osticket",
+            "Alias": "osticket",
+            "Type": "System.String"
+          },
+          "44": {
+            "Name": "otherfield",
+            "Index": -1,
+            "NameInSource": "otherfield",
+            "Alias": "otherfield",
+            "Type": "System.String"
+          },
+          "45": {
+            "Name": "otherwaktufield",
+            "Index": -1,
+            "NameInSource": "otherwaktufield",
+            "Alias": "otherwaktufield",
+            "Type": "System.String"
+          },
+          "46": {
+            "Name": "perangkatregist",
+            "Index": -1,
+            "NameInSource": "perangkatregist",
+            "Alias": "perangkatregist",
+            "Type": "System.String"
+          },
+          "47": {
+            "Name": "picakun",
+            "Index": -1,
+            "NameInSource": "picakun",
+            "Alias": "picakun",
+            "Type": "System.String"
+          },
+          "48": {
+            "Name": "printby",
+            "Index": -1,
+            "NameInSource": "printby",
+            "Alias": "printby",
+            "Type": "System.String"
+          },
+          "49": {
+            "Name": "printcount",
+            "Index": -1,
+            "NameInSource": "printcount",
+            "Alias": "printcount",
+            "Type": "System.String"
+          },
+          "50": {
+            "Name": "printdate",
+            "Index": -1,
+            "NameInSource": "printdate",
+            "Alias": "printdate",
+            "Type": "System.String"
+          },
+          "51": {
+            "Name": "sifatakses",
+            "Index": -1,
+            "NameInSource": "sifatakses",
+            "Alias": "sifatakses",
+            "Type": "System.String"
+          },
+          "52": {
+            "Name": "status",
+            "Index": -1,
+            "NameInSource": "status",
+            "Alias": "status",
+            "Type": "System.String"
+          },
+          "53": {
+            "Name": "tertentufield",
+            "Index": -1,
+            "NameInSource": "tertentufield",
+            "Alias": "tertentufield",
+            "Type": "System.String"
+          },
+          "54": {
+            "Name": "updateby",
+            "Index": -1,
+            "NameInSource": "updateby",
+            "Alias": "updateby",
+            "Type": "System.String"
+          },
+          "55": {
+            "Name": "updatedate",
+            "Index": -1,
+            "NameInSource": "updatedate",
+            "Alias": "updatedate",
+            "Type": "System.String"
+          },
+          "56": {
+            "Name": "waktuakses",
+            "Index": -1,
+            "NameInSource": "waktuakses",
+            "Alias": "waktuakses",
+            "Type": "System.String"
+          }
+        },
+        "NameInSource": "api_internet.detail"
+      }
+    },
+    "Databases": {
+      "0": {
+        "Ident": "StiJsonDatabase",
+        "Name": "api_internet",
+        "Alias": "api_internet",
+        "PathData": "D:\\XAMPP\\htdocs\\ci4_elite_starter\\assets\\json\\api_internet.json"
+      }
+    }
+  },
+  "Pages": {
+    "0": {
+      "Ident": "StiPage",
+      "Name": "form_permintaan_akses_jaringan",
+      "Guid": "b185fa59fb6f4204be7c1f8b2b49a659",
+      "Alias": "form_permintaan_akses_jaringan",
+      "Interaction": {
+        "Ident": "StiInteraction"
+      },
+      "Border": ";;2;;;;;solid:Black",
+      "Brush": "solid:",
+      "Components": {
+        "0": {
+          "Ident": "StiPageHeaderBand",
+          "Name": "PageHeaderBand1",
+          "CanShrink": true,
+          "ClientRectangle": "0,0.2,7.91,9.2",
+          "Interaction": {
+            "Ident": "StiInteraction"
+          },
+          "Border": ";;;;;;;solid:0,0,0",
+          "Brush": "solid:",
+          "Components": {
+            "0": {
+              "Ident": "StiPanel",
+              "Name": "Panel1",
+              "ClientRectangle": "0,-0.2,7.9,9.4",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Border": "All;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "Components": {
+                "0": {
+                  "Ident": "StiText",
+                  "Name": "Text2",
+                  "ClientRectangle": "0,0.9,7.9,0.3",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "FORM PERMINTAAN AKSES JARINGAN DAN SYSTEM"
+                  },
+                  "HorAlignment": "Center",
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;16;Bold;",
+                  "Border": "All;;;;;;;solid:Black",
+                  "Brush": "solid:",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "1": {
+                  "Ident": "StiText",
+                  "Name": "Text4",
+                  "Guid": "5ae69d6e22b623352c19f1cbf720a04b",
+                  "ClientRectangle": "0.1,1.3,1.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Nama Pemohon"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "2": {
+                  "Ident": "StiText",
+                  "Name": "Text11",
+                  "Guid": "9ce244c6410aecb22040af3d59171dfd",
+                  "ClientRectangle": "1.3,1.3,0.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": ":"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "3": {
+                  "Ident": "StiText",
+                  "Name": "Text15",
+                  "Guid": "6fe039b554e5a2deb5c88331ddde3943",
+                  "ClientRectangle": "1.4,1.3,2.3,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "{detail.nmpemohon}"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": "Bottom;;;Dot;;;;solid:0,0,0",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "DataColumn"
+                },
+                "4": {
+                  "Ident": "StiText",
+                  "Name": "Text16",
+                  "Guid": "71ca17f00436ae2b6690fc43dd37a647",
+                  "ClientRectangle": "0.1,1.6,1.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Jabatan"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "5": {
+                  "Ident": "StiText",
+                  "Name": "Text17",
+                  "Guid": "c6de7f6b088fea1fdd96013d8d2035ea",
+                  "ClientRectangle": "1.3,1.6,0.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": ":"
+                  },
+                  "VertAlignment": "Center",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "6": {
+                  "Ident": "StiText",
+                  "Name": "Text18",
+                  "Guid": "b619c244614125e8e33b8cdb905c0276",
+                  "ClientRectangle": "1.4,1.6,2.3,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "{detail.jabatan}"
+                  },
+                  "VertAlignment": "Center",
+                  "Border": "Bottom;;;Dot;;;;solid:0,0,0",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "DataColumn"
+                },
+                "7": {
+                  "Ident": "StiText",
+                  "Name": "Text20",
+                  "Guid": "d3d0ad71a9e415e2d0770e2318001531",
+                  "ClientRectangle": "0.1,1.9,1.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Department / Bagian"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "8": {
+                  "Ident": "StiText",
+                  "Name": "Text21",
+                  "Guid": "b769b5e2c4d3dfbff266f17acd4119dd",
+                  "ClientRectangle": "1.3,1.9,0.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": ":"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "9": {
+                  "Ident": "StiText",
+                  "Name": "Text23",
+                  "Guid": "7483d8f3479866a7823d130764fc0298",
+                  "ClientRectangle": "1.4,1.9,2.3,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "{detail.departmen}"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": "Bottom;;;Dot;;;;solid:0,0,0",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "DataColumn"
+                },
+                "10": {
+                  "Ident": "StiText",
+                  "Name": "Text24",
+                  "Guid": "a0357e9eb4fcb147eb8fe8b5e5a6d99d",
+                  "ClientRectangle": "4.4,1.3,1.7,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Tanggal Permintaan"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "11": {
+                  "Ident": "StiText",
+                  "Name": "Text25",
+                  "Guid": "24f8a39f32845188cc51324ec0bb0730",
+                  "ClientRectangle": "6.1,1.3,0.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": ":"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "12": {
+                  "Ident": "StiText",
+                  "Name": "Text26",
+                  "Guid": "9f4d4f638ddf2746ec49c2b3a3bc48bd",
+                  "ClientRectangle": "6.2,1.3,1.6,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "{detail.docdate}"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": "Bottom;;;Dot;;;;solid:0,0,0",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "TextFormat": {
+                    "Ident": "StiCustomFormatService",
+                    "StringFormat": "dd/MM/yyyy"
+                  },
+                  "Type": "DataColumn"
+                },
+                "13": {
+                  "Ident": "StiText",
+                  "Name": "Text27",
+                  "Guid": "5d0cee2ce951acd86d316250d4c49a63",
+                  "ClientRectangle": "4.4,1.6,1.7,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Nomor Ticket ( Os Ticket )"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "14": {
+                  "Ident": "StiText",
+                  "Name": "Text28",
+                  "Guid": "681365e517c20205d08765d5a0b8b259",
+                  "ClientRectangle": "6.1,1.6,0.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": ":"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "15": {
+                  "Ident": "StiText",
+                  "Name": "Text29",
+                  "Guid": "407c2e6c96ec634e8420e6fc1f90314a",
+                  "ClientRectangle": "6.2,1.6,1.6,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": "Bottom;;;Dot;;;;solid:0,0,0",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "16": {
+                  "Ident": "StiText",
+                  "Name": "Text30",
+                  "Guid": "79b20ce37d5264d79ed2774a362d9fcd",
+                  "ClientRectangle": "4.4,1.8,0.8,0.1",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "( diisi oleh IT )"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;6;Italic;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "17": {
+                  "Ident": "StiText",
+                  "Name": "Text1",
+                  "Guid": "de9faba708451d8273f9a4e2515d9471",
+                  "ClientRectangle": "0.1,2.2,1.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Jenis Akses"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "18": {
+                  "Ident": "StiText",
+                  "Name": "Text31",
+                  "Guid": "ddee824921fec228efd7eb8147decf2f",
+                  "ClientRectangle": "1.3,2.2,0.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": ":"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "19": {
+                  "Ident": "StiCheckBox",
+                  "Name": "CheckBox1",
+                  "ClientRectangle": "1.5,2.2,0.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Brush": "solid:",
+                  "Border": "All;;;;;;;solid:0,0,0",
+                  "TextBrush": "solid:Black",
+                  "Checked": {
+                    "Value": "{detail.isUser}"
+                  }
+                },
+                "20": {
+                  "Ident": "StiText",
+                  "Name": "Text14",
+                  "Guid": "f4c93be591d94c38981b9e9d42976a1d",
+                  "ClientRectangle": "0.1,4.5,3.9,0.1",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "(isi jenis / identitas perangkat yang akan dipakai menggunakan akun ini)"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;6;Italic;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "21": {
+                  "Ident": "StiText",
+                  "Name": "Text32",
+                  "Guid": "cab79ed2adbaee686ad458fc8d78761a",
+                  "ClientRectangle": "1.8,2.2,2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "User Domain / Data User"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "22": {
+                  "Ident": "StiText",
+                  "Name": "Text37",
+                  "Guid": "d613b77752aba3234f468e729b0b56a4",
+                  "ClientRectangle": "1.8,2.5,2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Internet"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "23": {
+                  "Ident": "StiText",
+                  "Name": "Text42",
+                  "Guid": "1f1d6de3332df461fda1fd2a62ab43f8",
+                  "ClientRectangle": "1.8,2.8,0.7,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Lain-lain"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "24": {
+                  "Ident": "StiText",
+                  "Name": "Text47",
+                  "Guid": "e7a7858fb6dd5aca59c43e44d46303f3",
+                  "ClientRectangle": "2.5,2.8,0.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": ":"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "25": {
+                  "Ident": "StiText",
+                  "Name": "Text49",
+                  "Guid": "a493593b989426a3498151e90cb5cab4",
+                  "ClientRectangle": "2.6,2.8,2.5,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "{detail.otherfield}"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": "Bottom;;;Dot;;;;solid:0,0,0",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "DataColumn"
+                },
+                "26": {
+                  "Ident": "StiText",
+                  "Name": "Text50",
+                  "Guid": "67db102f4e30d6b70e39ec68d017fb8e",
+                  "ClientRectangle": "0.1,3.1,1.2,0.3",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Keperluan dan Alasan Akses"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "TextOptions": {
+                    "WordWrap": true
+                  },
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "27": {
+                  "Ident": "StiText",
+                  "Name": "Text53",
+                  "Guid": "e6b371835ef9f6a08292d1238d0d442e",
+                  "ClientRectangle": "1.3,3.1,0.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": ":"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "28": {
+                  "Ident": "StiText",
+                  "Name": "Text54",
+                  "Guid": "6bc9f7d3df48003c5644d50315f162bf",
+                  "ClientRectangle": "1.4,3.1,6.3,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "{detail.keperluan}"
+                  },
+                  "Font": "Times New Roman;;;",
+                  "Border": "Bottom;;;Dot;;;;solid:0,0,0",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "TextOptions": {
+                    "WordWrap": true
+                  },
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "DataColumn"
+                },
+                "29": {
+                  "Ident": "StiText",
+                  "Name": "Text58",
+                  "Guid": "68d9c0a91eb7ab931490d33622b9027b",
+                  "ClientRectangle": "4.7,2.2,0.6,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Email"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "30": {
+                  "Ident": "StiText",
+                  "Name": "Text59",
+                  "Guid": "9ff1763971252fd83e07cea6224fb735",
+                  "ClientRectangle": "4.7,2.5,0.6,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Aplikasi"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "31": {
+                  "Ident": "StiText",
+                  "Name": "Text60",
+                  "Guid": "f460a8a31f9a4add98d7becdf4b8897b",
+                  "ClientRectangle": "5.4,2.2,2.3,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "{detail.emailfield}"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": "Bottom;;;Dot;;;;solid:0,0,0",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "DataColumn"
+                },
+                "32": {
+                  "Ident": "StiText",
+                  "Name": "Text61",
+                  "Guid": "451489e1226e1f19ae735217541afac2",
+                  "ClientRectangle": "5.4,2.5,2.3,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "{detail.appfield}"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": "Bottom;;;Dot;;;;solid:0,0,0",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "DataColumn"
+                },
+                "33": {
+                  "Ident": "StiText",
+                  "Name": "Text62",
+                  "Guid": "2811072b1d2935c1487d0b2d7859462e",
+                  "ClientRectangle": "0.1,3.4,1.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Jenis Akses"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "34": {
+                  "Ident": "StiText",
+                  "Name": "Text63",
+                  "Guid": "f429a49e7a802e56c83862fc0a3ca213",
+                  "ClientRectangle": "1.3,3.4,0.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": ":"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "35": {
+                  "Ident": "StiText",
+                  "Name": "Text64",
+                  "Guid": "331891b56f63032bf5f7f328df2ae721",
+                  "ClientRectangle": "1.8,3.4,1.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Rutin / Permanen"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "36": {
+                  "Ident": "StiText",
+                  "Name": "Text65",
+                  "Guid": "a5120609d3bf1bcc18f1a7f3c67bbc3b",
+                  "ClientRectangle": "3.3,3.4,1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Sementara"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "37": {
+                  "Ident": "StiText",
+                  "Name": "Text66",
+                  "Guid": "ca5338b5329552ebbe52d3f559ecf33e",
+                  "ClientRectangle": "0.1,3.7,1.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Waktu Akses"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "38": {
+                  "Ident": "StiText",
+                  "Name": "Text67",
+                  "Guid": "7aceb68611e9ff25b027a237ec200693",
+                  "ClientRectangle": "1.3,3.7,0.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": ":"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "39": {
+                  "Ident": "StiText",
+                  "Name": "Text68",
+                  "Guid": "e6a61b6cd30af5cb5bcc0ce8a5c1e4d3",
+                  "ClientRectangle": "1.8,3.7,1.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Hari & Jam Kerja"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "40": {
+                  "Ident": "StiText",
+                  "Name": "Text69",
+                  "Guid": "a475c1455fb6dace6ffb7bdd7f4aaa83",
+                  "ClientRectangle": "3.3,3.7,1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Waktu tertentu"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "41": {
+                  "Ident": "StiText",
+                  "Name": "Text70",
+                  "Guid": "cefa4efcb3578039bf5593db49185771",
+                  "ClientRectangle": "4.4,3.7,1.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "{detail.otherwaktufield}"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": "Bottom;;;Dot;;;;solid:0,0,0",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "DataColumn"
+                },
+                "42": {
+                  "Ident": "StiText",
+                  "Name": "Text71",
+                  "Guid": "a19e6389a36714d56e5b04c53ce069f2",
+                  "ClientRectangle": "6,3.7,0.8,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Lain - lain"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "43": {
+                  "Ident": "StiText",
+                  "Name": "Text72",
+                  "Guid": "0528c6f8318997679a3d08953eacd266",
+                  "ClientRectangle": "6.8,3.7,1.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": "Bottom;;;Dot;;;;solid:0,0,0",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "44": {
+                  "Ident": "StiText",
+                  "Name": "Text73",
+                  "Guid": "c5f2c75ae08f6dde127308dabb10dc86",
+                  "ClientRectangle": "0.1,4,1.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Masa Berlaku Akses"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "45": {
+                  "Ident": "StiText",
+                  "Name": "Text74",
+                  "Guid": "a54f11d7c1e277eafa823e502ea4d25b",
+                  "ClientRectangle": "1.3,4,0.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": ":"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "46": {
+                  "Ident": "StiText",
+                  "Name": "Text75",
+                  "Guid": "24d3d537df95c6fc2ea4ca124b2741b4",
+                  "ClientRectangle": "1.4,4,6.3,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "{detail.expdate}"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": "Bottom;;;Dot;;;;solid:0,0,0",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "TextFormat": {
+                    "Ident": "StiDateFormatService"
+                  },
+                  "Type": "DataColumn"
+                },
+                "47": {
+                  "Ident": "StiText",
+                  "Name": "Text3",
+                  "Guid": "1e214b4cd509130217bb49c01b45b74a",
+                  "ClientRectangle": "0.1,4.3,1.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Perangkat Terdaftar *"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "48": {
+                  "Ident": "StiText",
+                  "Name": "Text51",
+                  "Guid": "d1b732dc97cdf88c942dbc4d40e79449",
+                  "ClientRectangle": "1.3,4.3,0.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": ":"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "49": {
+                  "Ident": "StiText",
+                  "Name": "Text52",
+                  "Guid": "8f70872f5a442a968ad9e37e4f77b7a1",
+                  "ClientRectangle": "1.4,4.3,6.3,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "{detail.perangkatregist}"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": "Bottom;;;Dot;;;;solid:0,0,0",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "DataColumn"
+                },
+                "50": {
+                  "Ident": "StiText",
+                  "Name": "Text76",
+                  "Guid": "cf67becbeccd5e116fc3f94d52bd961c",
+                  "ClientRectangle": "0.1,4.7,0.6,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "PIC Akun"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "51": {
+                  "Ident": "StiText",
+                  "Name": "Text77",
+                  "Guid": "f9aa7927a71d23c58582b4269a178295",
+                  "ClientRectangle": "0.7,4.7,0.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": ":"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "52": {
+                  "Ident": "StiText",
+                  "Name": "Text78",
+                  "Guid": "ebc2698c06455eb06c98174275f859f2",
+                  "ClientRectangle": "0.8,4.7,1.4,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "(Pengguna Akun)"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;Italic;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "53": {
+                  "Ident": "StiText",
+                  "Name": "Text79",
+                  "Guid": "264eb528397926c286cd0a0d8df252e3",
+                  "ClientRectangle": "2.6,4.7,1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Pemohon Sendiri"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "54": {
+                  "Ident": "StiText",
+                  "Name": "Text80",
+                  "Guid": "87472f6203410fa45d1565c74751a5b0",
+                  "ClientRectangle": "5.3,4.7,1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Karyawan Lain"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "55": {
+                  "Ident": "StiText",
+                  "Name": "Text81",
+                  "Guid": "9865315681f6b483244d8a492eb41c79",
+                  "ClientRectangle": "2.9,5,1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Nama"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "56": {
+                  "Ident": "StiText",
+                  "Name": "Text82",
+                  "Guid": "50cc28361f6ce834d1b05059d4ece471",
+                  "ClientRectangle": "2.9,5.3,1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Departmen"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "57": {
+                  "Ident": "StiText",
+                  "Name": "Text83",
+                  "Guid": "6da262eb4ae0655872e5e6bfbed4ceba",
+                  "ClientRectangle": "3.9,5,0.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": ":"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "58": {
+                  "Ident": "StiText",
+                  "Name": "Text84",
+                  "Guid": "c8399ddc8d68d4ed21c893c067a9f853",
+                  "ClientRectangle": "3.9,5.3,0.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": ":"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "59": {
+                  "Ident": "StiText",
+                  "Name": "Text85",
+                  "Guid": "00fb4fd47e5b4d1417b566cb35cd3863",
+                  "ClientRectangle": "5.4,5,1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Jabatan"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "60": {
+                  "Ident": "StiText",
+                  "Name": "Text86",
+                  "Guid": "e6d331fbb6df718a983b856f6bdd6f04",
+                  "ClientRectangle": "6.4,5,0.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": ":"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "61": {
+                  "Ident": "StiText",
+                  "Name": "Text87",
+                  "Guid": "7fc57610d8407d62803b8b18f23ce6e4",
+                  "ClientRectangle": "4,5,1.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "{detail.nmpic}"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": "Bottom;;;Dot;;;;solid:0,0,0",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "DataColumn"
+                },
+                "62": {
+                  "Ident": "StiText",
+                  "Name": "Text88",
+                  "Guid": "fcb2bcd0da142c2cc756a0e915d24ea9",
+                  "ClientRectangle": "4,5.3,3.7,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "{detail.deptpic}"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": "Bottom;;;Dot;;;;solid:0,0,0",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "DataColumn"
+                },
+                "63": {
+                  "Ident": "StiText",
+                  "Name": "Text89",
+                  "Guid": "25b28253f43f2884f366fa939d437c90",
+                  "ClientRectangle": "6.5,5,1.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "{detail.jabatanpic}"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": "Bottom;;;Dot;;;;solid:0,0,0",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "DataColumn"
+                },
+                "64": {
+                  "Ident": "StiText",
+                  "Name": "Text12",
+                  "Guid": "a00da726c44789132022a2b343d8cb54",
+                  "ClientRectangle": "1.5,8.3,1.5,1.1",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "HorAlignment": "Center",
+                  "VertAlignment": "Center",
+                  "Font": ";10;Bold;",
+                  "Border": "All;;;;;;;solid:Black",
+                  "Brush": "solid:",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "65": {
+                  "Ident": "StiText",
+                  "Name": "Text13",
+                  "Guid": "76fe02465f125a43159acb8302b883aa",
+                  "ClientRectangle": "1.5,8.3,1.5,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Disetujui Oleh,"
+                  },
+                  "HorAlignment": "Center",
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;Bold;",
+                  "Border": "Top, Left, Right;;;;;;;solid:0,0,0",
+                  "Brush": "solid:",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "66": {
+                  "Ident": "StiText",
+                  "Name": "Text43",
+                  "Guid": "1aaa981821a3beac89e59a1d72a59cd3",
+                  "ClientRectangle": "0,8.3,1.5,1.1",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "HorAlignment": "Center",
+                  "VertAlignment": "Center",
+                  "Font": ";10;Bold;",
+                  "Border": "All;;;;;;;solid:Black",
+                  "Brush": "solid:",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "67": {
+                  "Ident": "StiText",
+                  "Name": "Text46",
+                  "Guid": "f212bc7a320145f1369042d0d3698527",
+                  "ClientRectangle": "0,8.3,1.5,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Diajukan Oleh"
+                  },
+                  "HorAlignment": "Center",
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;Bold;",
+                  "Border": "Top, Left, Right;;;;;;;solid:0,0,0",
+                  "Brush": "solid:",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "68": {
+                  "Ident": "StiText",
+                  "Name": "Text90",
+                  "Guid": "faee19e015aed62a7c776f49e8b7313e",
+                  "ClientRectangle": "0.1,5.6,1.6,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Catatan / Informasi"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "69": {
+                  "Ident": "StiText",
+                  "Name": "Text91",
+                  "Guid": "227e97b4e404cacf4764ff84d016ee09",
+                  "ClientRectangle": "1.7,5.6,0.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": ":"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "70": {
+                  "Ident": "StiText",
+                  "Name": "Text92",
+                  "Guid": "54a8da056020accf39cd0e628c877223",
+                  "ClientRectangle": "1.8,5.6,5.9,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "{detail.description}"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": "Bottom;;;Dot;;;;solid:0,0,0",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "TextOptions": {
+                    "WordWrap": true
+                  },
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "DataColumn"
+                },
+                "71": {
+                  "Ident": "StiText",
+                  "Name": "Text93",
+                  "Guid": "f1aa23dd048ec60f4641ae7276120f7b",
+                  "ClientRectangle": "0.1,5.8,1.5,0.1",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "( Diisi oleh IT )"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;6;Italic;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "72": {
+                  "Ident": "StiText",
+                  "Name": "Text95",
+                  "Guid": "92f6761c61648a72a961b55aa30861c4",
+                  "ClientRectangle": "0.1,6,1.6,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Ketentuan Akses"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;Bold;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:255,0,0",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "73": {
+                  "Ident": "StiText",
+                  "Name": "Text96",
+                  "Guid": "4eb862af0ba32fd846d93c85787888ef",
+                  "ClientRectangle": "1.7,6,0.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": ":"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;Bold;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "74": {
+                  "Ident": "StiText",
+                  "Name": "Text97",
+                  "Guid": "5b82a1488ac32e4c511bc027958dcfa5",
+                  "ClientRectangle": "0.1,6.2,0.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "1."
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:255,0,0",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "75": {
+                  "Ident": "StiText",
+                  "Name": "Text98",
+                  "Guid": "f72fd1687513a0011d5cafecd3f0fbf3",
+                  "ClientRectangle": "0.3,6.2,7.4,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "PIC Akun menyetujui dan mematuhi kebijakan keamanan informasi, kebijakan keamanan sistem / aplikasi dan prosedur terkait."
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:255,0,0",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "76": {
+                  "Ident": "StiText",
+                  "Name": "Text99",
+                  "Guid": "58e383771e6a5c4b07580e2dc2d7ae62",
+                  "ClientRectangle": "0.1,6.4,0.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "2."
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:255,0,0",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "77": {
+                  "Ident": "StiText",
+                  "Name": "Text100",
+                  "Guid": "a82272b0e77de1ff7a1d6fa540ba97f1",
+                  "ClientRectangle": "0.3,6.4,7.4,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "PIC Akun dilarang mengalihkan dan / atau meminjamkan hak akses kepada orang lain ."
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:255,0,0",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "78": {
+                  "Ident": "StiText",
+                  "Name": "Text101",
+                  "Guid": "48e780591482e44ba4386d3f8141c6bf",
+                  "ClientRectangle": "0.1,6.6,0.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "3."
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:255,0,0",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "79": {
+                  "Ident": "StiText",
+                  "Name": "Text102",
+                  "Guid": "67ad1dae6bac5ed38bf26298f5b953da",
+                  "ClientRectangle": "0.3,6.6,7.4,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Akun Hanya boleh digunakan di Perangkat Perusahaan yang terdaftar atas seizin Atasan PIC Akun dan Manager IT"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:255,0,0",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "80": {
+                  "Ident": "StiText",
+                  "Name": "Text103",
+                  "Guid": "49e3bfb1b3dae066c7add370c8cc0670",
+                  "ClientRectangle": "0.1,6.8,0.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "4."
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:255,0,0",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "81": {
+                  "Ident": "StiText",
+                  "Name": "Text104",
+                  "Guid": "9c2d052c80c24c6b3f27105707ad469f",
+                  "ClientRectangle": "0.3,6.8,7.4,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "PIC Akun dilarang menyalahgunakan akses untuk kepentingan selain penugasan yang telah ditetapkan perusahaan."
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:255,0,0",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "82": {
+                  "Ident": "StiText",
+                  "Name": "Text105",
+                  "Guid": "bca05cd1ee964872e6dd7233c309c3d4",
+                  "ClientRectangle": "0.1,7,0.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "5."
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:255,0,0",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "83": {
+                  "Ident": "StiText",
+                  "Name": "Text106",
+                  "Guid": "d3453a5aed58a582123670a417d0a945",
+                  "ClientRectangle": "0.3,7,7.4,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "PIC Akun harus memberitahukan kepada atasan dan IT apabila ada perubahan hak akses (Resign , Mutasi dan lain-lain )."
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:255,0,0",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "84": {
+                  "Ident": "StiText",
+                  "Name": "Text107",
+                  "Guid": "89c3af7954e81ad56ae5a437d653d718",
+                  "ClientRectangle": "0.1,7.2,0.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "6."
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:255,0,0",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "85": {
+                  "Ident": "StiText",
+                  "Name": "Text108",
+                  "Guid": "1b8b17bd7d073658e8d8bc5d5bab7534",
+                  "ClientRectangle": "0.3,7.2,7.4,0.3",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Pelanggaran terhadap ketentuan akses dan prosedur terkait akan menyebabkan pencabutan hak akses, tindakan disiplin, atau sanksi sesuai peraturan yang berlaku."
+                  },
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:255,0,0",
+                  "TextOptions": {
+                    "WordWrap": true
+                  },
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "86": {
+                  "Ident": "StiText",
+                  "Name": "Text109",
+                  "Guid": "f095c33b182406fb8f4ac08d87bad75c",
+                  "ClientRectangle": "0.3,7.6,7.4,0.3",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "\" Saya menyetujui dan bersedia mematuhi ketentuan ini, saya akan menggunakan hak akses sesuai dengan tugas dan pekerjaan yang diberikan oleh perusahaan dan saya akan melaporkan setiap masalah atau insiden keamanan informasi yang saya ketahui kepada atasan \""
+                  },
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:255,0,0",
+                  "TextOptions": {
+                    "WordWrap": true
+                  },
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "87": {
+                  "Ident": "StiText",
+                  "Name": "Text34",
+                  "Guid": "7b084d4fd7c3cd5eb0470e941ef4cba3",
+                  "ClientRectangle": "4.7,8.3,1.6,1.1",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "HorAlignment": "Center",
+                  "VertAlignment": "Center",
+                  "Font": ";10;Bold;",
+                  "Border": "All;;;;;;;solid:Black",
+                  "Brush": "solid:",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "88": {
+                  "Ident": "StiText",
+                  "Name": "Text35",
+                  "Guid": "d82f12b88ae6fc46f800a91789bd0927",
+                  "ClientRectangle": "4.7,8.3,1.6,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Disetujui Oleh,"
+                  },
+                  "HorAlignment": "Center",
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;Bold;",
+                  "Border": "Top, Left, Right;;;;;;;solid:0,0,0",
+                  "Brush": "solid:",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "89": {
+                  "Ident": "StiText",
+                  "Name": "Text9",
+                  "Guid": "475f7ced4500a221e3fc5f5bc363a137",
+                  "ClientRectangle": "6.3,8.3,1.6,1.1",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "HorAlignment": "Center",
+                  "VertAlignment": "Center",
+                  "Font": ";10;Bold;",
+                  "Border": "All;;;;;;;solid:Black",
+                  "Brush": "solid:",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "90": {
+                  "Ident": "StiText",
+                  "Name": "Text39",
+                  "Guid": "f160c6a714766321493a37a8569277ee",
+                  "ClientRectangle": "6.3,8.3,1.6,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Pelaksana,"
+                  },
+                  "HorAlignment": "Center",
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;Bold;",
+                  "Border": "Top, Left, Right;;;;;;;solid:0,0,0",
+                  "Brush": "solid:",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "91": {
+                  "Ident": "StiCheckBox",
+                  "Name": "CheckBox2",
+                  "Guid": "56c3d35661d0c90649ae02ba15a2649e",
+                  "ClientRectangle": "1.5,2.5,0.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Brush": "solid:",
+                  "Border": "All;;;;;;;solid:0,0,0",
+                  "TextBrush": "solid:Black",
+                  "Checked": {
+                    "Value": "{detail.isInternet}"
+                  }
+                },
+                "92": {
+                  "Ident": "StiCheckBox",
+                  "Name": "CheckBox3",
+                  "Guid": "427b7466802ddf4c319064fb95a801ef",
+                  "ClientRectangle": "1.5,2.8,0.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Brush": "solid:",
+                  "Border": "All;;;;;;;solid:0,0,0",
+                  "TextBrush": "solid:Black",
+                  "Checked": {
+                    "Value": "{detail.isOther}"
+                  }
+                },
+                "93": {
+                  "Ident": "StiCheckBox",
+                  "Name": "CheckBox4",
+                  "Guid": "48b213eebdca23f1d0c099e04f8fd1b7",
+                  "ClientRectangle": "4.4,2.5,0.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Brush": "solid:",
+                  "Border": "All;;;;;;;solid:0,0,0",
+                  "TextBrush": "solid:Black",
+                  "Checked": {
+                    "Value": "{detail.isAplikasi}"
+                  },
+                  "Size": 0,
+                  "Values": "True/False"
+                },
+                "94": {
+                  "Ident": "StiCheckBox",
+                  "Name": "CheckBox5",
+                  "Guid": "2933785a3c3b30e2964424808a48a3dd",
+                  "ClientRectangle": "4.4,2.2,0.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Brush": "solid:",
+                  "Border": "All;;;;;;;solid:0,0,0",
+                  "TextBrush": "solid:Black",
+                  "Checked": {
+                    "Value": "{detail.isEmail}"
+                  },
+                  "Values": "True/False"
+                },
+                "95": {
+                  "Ident": "StiCheckBox",
+                  "Name": "CheckBox6",
+                  "Guid": "fd05f6d989a23ad9472512a68fa28301",
+                  "ClientRectangle": "1.5,3.7,0.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Brush": "solid:",
+                  "Border": "All;;;;;;;solid:0,0,0",
+                  "TextBrush": "solid:Black",
+                  "Checked": {
+                    "Value": "{detail.isHariKerja}"
+                  }
+                },
+                "96": {
+                  "Ident": "StiCheckBox",
+                  "Name": "CheckBox8",
+                  "Guid": "39fc0510c2b1be215f363ff0278d9c63",
+                  "ClientRectangle": "1.5,3.4,0.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Brush": "solid:",
+                  "Border": "All;;;;;;;solid:0,0,0",
+                  "TextBrush": "solid:Black",
+                  "Checked": {
+                    "Value": "{detail.isRutin}"
+                  }
+                },
+                "97": {
+                  "Ident": "StiCheckBox",
+                  "Name": "CheckBox7",
+                  "Guid": "b8bfe5ad1e820f44aca6a4f1437f6546",
+                  "ClientRectangle": "3,3.4,0.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Brush": "solid:",
+                  "Border": "All;;;;;;;solid:0,0,0",
+                  "TextBrush": "solid:Black",
+                  "Checked": {
+                    "Value": "{detail.isSementara}"
+                  }
+                },
+                "98": {
+                  "Ident": "StiCheckBox",
+                  "Name": "CheckBox9",
+                  "Guid": "6c93eb03b46a1fc48be5df0599f96093",
+                  "ClientRectangle": "3,3.7,0.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Brush": "solid:",
+                  "Border": "All;;;;;;;solid:0,0,0",
+                  "TextBrush": "solid:Black",
+                  "Checked": {
+                    "Value": "{detail.isOtherWaktu}"
+                  }
+                },
+                "99": {
+                  "Ident": "StiCheckBox",
+                  "Name": "CheckBox10",
+                  "Guid": "57efcaee2f47b8c2f2510205f974ffa6",
+                  "ClientRectangle": "5.7,3.7,0.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Brush": "solid:",
+                  "Border": "All;;;;;;;solid:0,0,0",
+                  "TextBrush": "solid:Black",
+                  "Checked": {
+                    "Value": "{detail.isOther}"
+                  }
+                },
+                "100": {
+                  "Ident": "StiCheckBox",
+                  "Name": "CheckBox11",
+                  "Guid": "01d58539d1c4ebd6ec770856afadad4d",
+                  "ClientRectangle": "2.3,4.7,0.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Brush": "solid:",
+                  "Border": "All;;;;;;;solid:0,0,0",
+                  "TextBrush": "solid:Black",
+                  "Checked": {
+                    "Value": "{detail.isPemohon}"
+                  }
+                },
+                "101": {
+                  "Ident": "StiCheckBox",
+                  "Name": "CheckBox12",
+                  "Guid": "8832b7f87e1824d3b6758ce379ac94a2",
+                  "ClientRectangle": "5,4.7,0.2,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Brush": "solid:",
+                  "Border": "All;;;;;;;solid:0,0,0",
+                  "TextBrush": "solid:Black",
+                  "Checked": {
+                    "Value": "{detail.isKaryawanLain}"
+                  }
+                },
+                "102": {
+                  "Ident": "StiText",
+                  "Name": "Text5",
+                  "Guid": "ef48369e14c06fba90a2ed241312139c",
+                  "ClientRectangle": "0.1,0.2,0.7,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Form"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": "Top, Left;;;;;;;solid:0,0,0",
+                  "Brush": "solid:",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "103": {
+                  "Ident": "StiText",
+                  "Name": "Text6",
+                  "Guid": "d8552cd01dd528550cf6249a197c8380",
+                  "ClientRectangle": "0.9,0.2,0.8,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "JTS-30-38"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": "Top, Right;;;;;;;solid:0,0,0",
+                  "Brush": "solid:",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "104": {
+                  "Ident": "StiText",
+                  "Name": "Text7",
+                  "Guid": "838888619d0d60a0a0b12027ef912414",
+                  "ClientRectangle": "0.1,0.4,0.7,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Rev"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": "Left;;;;;;;solid:0,0,0",
+                  "Brush": "solid:",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "105": {
+                  "Ident": "StiText",
+                  "Name": "Text8",
+                  "Guid": "4ccc220e3dbf4e4794a2bf4dbb4f4ed1",
+                  "ClientRectangle": "0.1,0.6,0.7,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Date"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": "Left, Bottom;;;;;;;solid:0,0,0",
+                  "Brush": "solid:",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "106": {
+                  "Ident": "StiText",
+                  "Name": "Text10",
+                  "Guid": "53ddd165fd13c255a5241f628c628305",
+                  "ClientRectangle": "0.8,0.2,0.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": ":"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": "Top;;;;;;;solid:0,0,0",
+                  "Brush": "solid:",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "107": {
+                  "Ident": "StiText",
+                  "Name": "Text36",
+                  "Guid": "085076ce1e9ef3e45864cae10b887c32",
+                  "ClientRectangle": "0.8,0.4,0.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": ":"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:0,0,0",
+                  "Brush": "solid:",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "108": {
+                  "Ident": "StiText",
+                  "Name": "Text40",
+                  "Guid": "d4cb074d13f266ca81fc7623057914ef",
+                  "ClientRectangle": "0.8,0.6,0.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": ":"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": "Bottom;;;;;;;solid:0,0,0",
+                  "Brush": "solid:",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "109": {
+                  "Ident": "StiText",
+                  "Name": "Text44",
+                  "Guid": "ba705283d11d324cb3290ca7f976f29e",
+                  "ClientRectangle": "0.9,0.4,0.8,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "03"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": "Right;;;;;;;solid:0,0,0",
+                  "Brush": "solid:",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "110": {
+                  "Ident": "StiText",
+                  "Name": "Text45",
+                  "Guid": "e7cff2b12820610e5a56753e0bab2845",
+                  "ClientRectangle": "0.9,0.6,0.8,0.2",
+                  "Alias": "form_bbk",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "15.08.2025"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": "Right, Bottom;;;;;;;solid:0,0,0",
+                  "Brush": "solid:",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "111": {
+                  "Ident": "StiImage",
+                  "Name": "Image1",
+                  "Guid": "710c71bebd2a3dcc6142a39a679dea92",
+                  "ClientRectangle": "1.8,0.2,0.8,0.6",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "HorAlignment": "Center",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:",
+                  "Stretch": true,
+                  "Image": "data:image/png;base64,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"
+                },
+                "112": {
+                  "Ident": "StiText",
+                  "Name": "Text22",
+                  "Guid": "2032b908f866d180093164b656e80111",
+                  "ClientRectangle": "2.7,0.3,3.4,0.4",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "{branch.branchname}"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;16;Bold;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "DataColumn"
+                },
+                "113": {
+                  "Ident": "StiText",
+                  "Name": "Text122",
+                  "Guid": "f51f1815f69105098c90d20533b48f40",
+                  "ClientRectangle": "6.1,0.8,1.7,0.1",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "ID - {detail.docno}"
+                  },
+                  "HorAlignment": "Right",
+                  "VertAlignment": "Center",
+                  "Font": ";;Bold, Italic;",
+                  "Border": "Bottom;;;Dot;;;;solid:0,0,0",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:0,0,0",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "114": {
+                  "Ident": "StiText",
+                  "Name": "Text33",
+                  "Guid": "53eddd0a8acf27c6f975dd3824b5f6be",
+                  "ClientRectangle": "6.1,0.2,1.7,0.5",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "CONFIDENTIAL"
+                  },
+                  "HorAlignment": "Center",
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;10;Bold;",
+                  "Border": "All;255,0,0;;;;;;solid:0,0,0",
+                  "Brush": "solid:",
+                  "TextBrush": "solid:255,0,0",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "115": {
+                  "Ident": "StiText",
+                  "Name": "Text55",
+                  "Guid": "c52966f33d96d6387b503119f28c355d",
+                  "ClientRectangle": "5.3,2.5,0.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": ":"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "116": {
+                  "Ident": "StiText",
+                  "Name": "Text56",
+                  "Guid": "109053007e4315f8fb82de298456edc9",
+                  "ClientRectangle": "5.3,2.2,0.1,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": ":"
+                  },
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "117": {
+                  "Ident": "StiText",
+                  "Name": "Text41",
+                  "Guid": "37f5d0bdcc3e444aab47cf31bb5cd0f9",
+                  "ClientRectangle": "0,9.2,1.5,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Pemohon dan PIC Akun"
+                  },
+                  "HorAlignment": "Center",
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;Bold;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "118": {
+                  "Ident": "StiText",
+                  "Name": "Text19",
+                  "Guid": "c93df3dd4fba88d7f1583a7b455eb798",
+                  "ClientRectangle": "1.5,9.2,1.5,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Manager Pemohon"
+                  },
+                  "HorAlignment": "Center",
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;Bold;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "119": {
+                  "Ident": "StiText",
+                  "Name": "Text38",
+                  "Guid": "97052f32f7752797ddeb9f731f3d4b4f",
+                  "ClientRectangle": "4.7,9.2,1.6,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Manager IT"
+                  },
+                  "HorAlignment": "Center",
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;Bold;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                },
+                "120": {
+                  "Ident": "StiText",
+                  "Name": "Text48",
+                  "Guid": "40c9e51e9c3d06bb714bd7cc3eed17f9",
+                  "ClientRectangle": "6.3,9.2,1.6,0.2",
+                  "Interaction": {
+                    "Ident": "StiInteraction"
+                  },
+                  "Text": {
+                    "Value": "Staff IT"
+                  },
+                  "HorAlignment": "Center",
+                  "VertAlignment": "Center",
+                  "Font": "Times New Roman;;Bold;",
+                  "Border": ";;;;;;;solid:Black",
+                  "Brush": "solid:White",
+                  "TextBrush": "solid:Black",
+                  "Margins": {
+                    "Left": 2,
+                    "Right": 0,
+                    "Top": 0,
+                    "Bottom": 0
+                  },
+                  "Type": "Expression"
+                }
+              }
+            }
+          }
+        }
+      },
+      "PaperSize": "A4",
+      "PageWidth": 8.27,
+      "PageHeight": 11.69,
+      "Watermark": {
+        "TextBrush": "solid:50,0,0,0"
+      },
+      "Margins": {
+        "Left": 0.2,
+        "Right": 0.16,
+        "Top": 0.2,
+        "Bottom": 2
+      }
+    }
+  }
+}
