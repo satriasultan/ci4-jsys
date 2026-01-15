@@ -144,6 +144,19 @@ $routes->group('/master/role', ["namespace" => "App\Controllers\Master"], functi
 });
 
 
+$routes->group('/master/data', ["namespace" => "App\Controllers\Master"], function ($routes) {
+    $routes->add('supplier', 'Suppliers::supplier');
+    $routes->post("list_suppliers", "Suppliers::list_suppliers");
+    $routes->post("saveDataSupplier", "Suppliers::saveDataSupplier");
+    $routes->add("showDetailSupplier(:any)", "Suppliers::showDetailSupplier$1");
+    $routes->add("edit_suppliers(:any)", "Suppliers::edit_suppliers$1");
+    $routes->add("detail_suppliers(:any)", "Suppliers::detail_suppliers$1");
+    $routes->add("hapus_suppliers(:any)", "Suppliers::hapus_suppliers$1");
+    $routes->add("del_suppliers(:any)", "Suppliers::del_suppliers$1");
+    $routes->add("input_suppliers", "Suppliers::input_suppliers");
+});
+
+
 $routes->group('/master/item', ["namespace" => "App\Controllers\Master"], function ($routes) {
     $routes->add('/', 'Item::index');
     $routes->post("list_mitem", "Item::list_mitem");
@@ -409,6 +422,8 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
     $routes->add('globalmodule/list_outstanding_po', 'Globalmodule::list_outstanding_po');
     $routes->add('globalmodule/list_batch_item', 'Globalmodule::list_batch_item');
     $routes->add('globalmodule/add_newbatch', 'Globalmodule::add_newbatch');
+    $routes->add('globalmodule/list_market', 'Globalmodule::list_market');
+
 
     //validator & request keluar
     $routes->add('validatorabsensi', 'ValidatorAbsensi::index');

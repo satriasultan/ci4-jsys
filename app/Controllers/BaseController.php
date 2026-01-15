@@ -30,6 +30,7 @@ use App\Models\Master\M_Location;
 use App\Models\Master\M_Menu;
 use App\Models\Master\M_Role;
 use App\Models\Master\M_User;
+use App\Models\Master\M_Suppliers;
 
 use App\Models\Purchase\M_Purchaseorder;
 use App\Models\Stock\M_Balance;
@@ -125,6 +126,7 @@ class BaseController extends Controller
         $this->m_role = new M_Role();
         $this->m_location = new M_Location();
         $this->m_supplier = new M_Supplier();
+        $this->m_suppliers = new M_Suppliers();
         $this->m_item = new M_Item();
         $this->m_balance = new M_Balance();
         $this->m_bbm = new M_Bbm();

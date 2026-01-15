@@ -263,4 +263,9 @@ group by docno order by docno asc");
         return $this->db->query("select * from (select *,username as id from sc_mst.user) as x where username is not null $param");
     }
 
+
+     function q_market($param){
+        return $this->db->query("select *, trim(idmarket) as id from sc_mst.market where coalesce(trim(idmarket),'')!='' $param ");
+    }
+
 }

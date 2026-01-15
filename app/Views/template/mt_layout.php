@@ -24,7 +24,7 @@ use App\Libraries\Fiky_encryption;
     <meta name="author" content="">
     <!-- Favicon icon -->
     <link rel="icon" type="image/png" sizes="16x16" href="<?php echo base_url('assets/img/logo-depan/jts.ico') ?>">
-    <title>IT - Jatim Taman Steel Mfg</title>
+    <title>Jsys - Jatim Taman Steel Mfg</title>
     <?php $this->fiky_encryption = new Fiky_encryption(); ?>
     <?php echo $_ini_stylenya;?>
 
@@ -97,9 +97,12 @@ use App\Libraries\Fiky_encryption;
     </style>
     <style>
         #app-zoom {
-            transform: scale(0.75);
-            transform-origin: top left;
-            width: 133.33%;
+            zoom: 0.75; 
+            width: 100%; 
+        }
+
+        #app-zoom .modal {
+            zoom: 1.333; 
         }
     </style>
     <style> .ratakanan { text-align : right; } </style>
