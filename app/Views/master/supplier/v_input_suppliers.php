@@ -277,7 +277,7 @@
 
 
 
-<script type="application/javascript" src="<?= base_url('assets/pagejs/master/suppliers.js') ?>"></script>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/master/supplier/suppliers.js') ?>"></script>
 <script type="text/javascript">
     $(function() {
         $("#example1").dataTable();

@@ -154,6 +154,17 @@ $routes->group('/master/data', ["namespace" => "App\Controllers\Master"], functi
     $routes->add("hapus_suppliers(:any)", "Suppliers::hapus_suppliers$1");
     $routes->add("del_suppliers(:any)", "Suppliers::del_suppliers$1");
     $routes->add("input_suppliers", "Suppliers::input_suppliers");
+
+
+    $routes->add('customer', 'Customer::customer');
+    $routes->post("list_customer", "Customer::list_customer");
+    $routes->post("saveDataCustomer", "Customer::saveDataCustomer");
+    $routes->add("showDetailCustomer(:any)", "Customer::showDetailCustomer$1");
+    $routes->add("edit_customer(:any)", "Customer::edit_customer$1");
+    $routes->add("detail_customer(:any)", "Customer::detail_customer$1");
+    $routes->add("hapus_customer(:any)", "Customer::hapus_customer$1");
+    $routes->add("del_customer(:any)", "Customer::del_customer$1");
+    $routes->add("input_customer", "Customer::input_customer");
 });
 
 
@@ -423,6 +434,9 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
     $routes->add('globalmodule/list_batch_item', 'Globalmodule::list_batch_item');
     $routes->add('globalmodule/add_newbatch', 'Globalmodule::add_newbatch');
     $routes->add('globalmodule/list_market', 'Globalmodule::list_market');
+    $routes->add('globalmodule/list_gradecust', 'Globalmodule::list_gradecust');
+    $routes->add('globalmodule/list_salesman', 'Globalmodule::list_salesman');
+    $routes->add('globalmodule/list_kolektor', 'Globalmodule::list_kolektor');
 
 
     //validator & request keluar
