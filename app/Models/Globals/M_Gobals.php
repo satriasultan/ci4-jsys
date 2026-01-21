@@ -282,4 +282,9 @@ group by docno order by docno asc");
         return $this->db->query("select *, trim(kdkolektor) as id from sc_mst.kolektor where coalesce(trim(kdkolektor),'')!='' $param ");
     }
 
+    
+    function q_coa($param){
+        return $this->db->query("select *, trim(idcoa) as id from sc_mst.coa where coalesce(trim(idcoa),'')!='' $param ");
+    }
+
 }

@@ -32,6 +32,7 @@ use App\Models\Master\M_Role;
 use App\Models\Master\M_User;
 use App\Models\Master\M_Suppliers;
 use App\Models\Master\M_Customer;
+use App\Models\Master\M_Currency;
 
 use App\Models\Purchase\M_Purchaseorder;
 use App\Models\Stock\M_Balance;
@@ -142,6 +143,6 @@ class BaseController extends Controller
         $this->m_winacc = new M_Winacc();
         $this->m_form = new M_Form();
         $this->m_customer = new M_Customer();
-
+        $this->m_currency = new M_Currency();
     }
 }

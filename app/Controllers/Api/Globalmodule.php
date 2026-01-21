@@ -1921,4 +1921,55 @@ class Globalmodule extends BaseController
 
     }
 
+    
+    
+    function list_coa(){
+        $branch = $this->session->get('branch');
+        $idbu = $this->session->get('idbu');
+        $param_c="";
+        //$count = $this->m_instock->q_kdgroup_param($param_c)->getNumRows();
+        $search = strtoupper($this->request->getPost('_search_'));
+        $perpage = $this->request->getPost('_perpage_');
+        $perpage = intval($perpage);
+        //$perpage = $perpage < 1 ? $count : $perpage;
+        $page = $this->request->getPost('_page_');
+        $pg = trim($this->request->getPost('_paramglobal_'));
+        $page = intval($page);
+        $limit = $perpage * $page;
+
+        if (!empty($pg) or $pg!=='') {
+            $paramglobal = " and trim(coalesce(idcoa,'')) ='$pg'";
+        } else {
+            $paramglobal = "";
+        }
+
+        $varGet = trim($this->request->getGet('var'));
+        $varPost = trim($this->request->getPost('var'));
+        if (!empty($varGet) or $varGet!=='') {
+            $paramglobal1= " and idcoa='$varGet'";
+        } else {
+            $paramglobal1= "";
+        }
+        if (!empty($varPost) or $varPost!=='') {
+            $paramglobal2= " and idcoa='$varGet'";
+        } else {
+            $paramglobal2= "";
+        }
+
+        $param=" and (idcoa like '%$search%' $paramglobal $paramglobal1 $paramglobal2 ) or (upper(nmcoa) like '%$search%' $paramglobal $paramglobal1 $paramglobal2 ) order by level asc";
+        //$param="";
+        // $getResult = $this->m_skperingatan->q_mst_karyawan()->getResult();
+        $getResult = $this->m_global->q_coa($param)->getResult();
+        $count = $this->m_global->q_coa($param)->getNumRows();
+        header('Content-Type: application/json');
+        echo json_encode(
+            array(
+                'total_count' => $count,
+                'items' => $getResult,
+                'incomplete_getResults' => false,
+            ),
+            JSON_PRETTY_PRINT
+        );
+
+    }
 }
