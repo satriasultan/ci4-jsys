@@ -36,21 +36,21 @@
                     <button type="button" class="btn btn-primary dropdown-toggle dropdown-icon" data-bs-toggle="dropdown"><?php echo 'Menu'; ?>
                     </button>
                     <div class="dropdown-menu">
-                        <a class="dropdown-item" href="<?= base_url('master/data/input_suppliers') ?>"><i class="fa fa-plus"></i><?php echo '   Input'; ?> </a>
+                        <a class="dropdown-item" href="<?= base_url('master/data/input_customer') ?>"><i class="fa fa-plus"></i><?php echo '   Input'; ?> </a>
                         <!-- <a class="dropdown-item disabled" data-bs-toggle="modal" data-bs-target="#filter"  href="#"><i class="fa fa-filter"></i><?php echo '   Filter'; ?></a> -->
                         <a class="dropdown-item" href="#"  onclick="reload_table()"><i class="fa fa-refresh"></i><?php echo '    Reload'; ?> </a>
                     </div>
                 </div>
             </div><!-- /.card-header -->
 			<div class="card-body table-responsive m-t-40" style='overflow-x:scroll;' cellspacing="0" width="100%">
-				<table id="tsuppliers" class="table table-bordered table-striped" >
+				<table id="tcustomer" class="table table-bordered table-striped" >
 					<thead class="text-center">
 						<tr>
 							<th style="min-width:30px; text-align:center; vertical-align:middle;">No.</th>
                             <th style="min-width:10px; text-align:center; vertical-align:middle;">Action</th>
-                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Kode Supplier</th>
-                            <th style="min-width:200px; text-align:center; vertical-align:middle;">Nama Supplier</th>
-                            <th style="min-width:250px; text-align:center; vertical-align:middle;">Alamat</th>
+                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Kode Customer</th>
+                            <th style="min-width:200px; text-align:center; vertical-align:middle;">Nama Customer</th>
+                            <th style="min-width:250px; text-align:center; vertical-align:middle;">Alamat Kantor</th>
                             <th style="min-width:80px; text-align:center; vertical-align:middle;">Telepon</th>
                             <th style="min-width:80px; text-align:center; vertical-align:middle;">Dibuat oleh</th>
                             <th style="min-width:100px; text-align:center; vertical-align:middle;">Dibuat tanggal</th>
@@ -118,7 +118,7 @@
 <!-- /.modal -->
 
 
-<script type="application/javascript" src="<?= base_url('assets/pagejs/master/supplier/suppliers.js') ?>"></script>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/master/customer/customer.js') ?>"></script>
 <script type="text/javascript">
     $(function() {
         $("#example1").dataTable();

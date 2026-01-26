@@ -264,8 +264,27 @@ group by docno order by docno asc");
     }
 
 
-     function q_market($param){
+    function q_market($param){
         return $this->db->query("select *, trim(idmarket) as id from sc_mst.market where coalesce(trim(idmarket),'')!='' $param ");
+    }
+
+    
+    function q_gradecust($param){
+        return $this->db->query("select *, trim(kdgradecust) as id from sc_mst.gradecust where coalesce(trim(kdgradecust),'')!='' $param ");
+    }
+
+    
+    function q_salesman($param){
+        return $this->db->query("select a.*, k.namakotakab ,trim(a.kdsalesman) as id from sc_mst.salesman a left outer join sc_mst.kotakab k on k.kodekotakab=a.idkota  where coalesce(trim(kdsalesman),'')!='' $param ");
+    }
+    
+    function q_kolektor($param){
+        return $this->db->query("select *, trim(kdkolektor) as id from sc_mst.kolektor where coalesce(trim(kdkolektor),'')!='' $param ");
+    }
+
+    
+    function q_coa($param){
+        return $this->db->query("select *, trim(idcoa) as id from sc_mst.coa where coalesce(trim(idcoa),'')!='' $param ");
     }
 
 }

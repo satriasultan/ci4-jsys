@@ -154,6 +154,39 @@ $routes->group('/master/data', ["namespace" => "App\Controllers\Master"], functi
     $routes->add("hapus_suppliers(:any)", "Suppliers::hapus_suppliers$1");
     $routes->add("del_suppliers(:any)", "Suppliers::del_suppliers$1");
     $routes->add("input_suppliers", "Suppliers::input_suppliers");
+
+
+    $routes->add('customer', 'Customer::customer');
+    $routes->post("list_customer", "Customer::list_customer");
+    $routes->post("saveDataCustomer", "Customer::saveDataCustomer");
+    $routes->add("showDetailCustomer(:any)", "Customer::showDetailCustomer$1");
+    $routes->add("edit_customer(:any)", "Customer::edit_customer$1");
+    $routes->add("detail_customer(:any)", "Customer::detail_customer$1");
+    $routes->add("hapus_customer(:any)", "Customer::hapus_customer$1");
+    $routes->add("del_customer(:any)", "Customer::del_customer$1");
+    $routes->add("input_customer", "Customer::input_customer");
+
+
+    
+    $routes->add('currency', 'Currency::currency');
+    $routes->add('list_currency', 'Currency::list_currency');
+    $routes->post('saveCurrency', 'Currency::saveCurrency');
+    $routes->add('input_currency', 'Currency::input_currency');
+    $routes->get('showing_currency(:any)', 'Currency::showing_currency$1');
+    $routes->add('submitCurrency', 'Currency::saveCurrency');
+
+    $routes->add('saveFinalCurrency', 'Currency::saveFinalCurrency');
+    $routes->get("editCurrency/(:any)/(:any)", "Currency::editCurrency/$1/$2");
+    $routes->get("detailCurrency/(:any)/(:any)", "Currency::detailCurrency/$1/$2");
+    $routes->get("hapusCurrency/(:any)/(:any)", "Currency::hapusCurrency/$1/$2");
+    // $routes->add('showing_exchange_rate', 'Currency::showing_exchange_rate');
+    $routes->add('showing_exchange_rate(:any)', 'Currency::showing_exchange_rate$1');
+
+    $routes->add('insertNewExchange', 'Currency::insertNewExchange');
+    $routes->post("update_exchangerate", "Currency::update_exchangerate");
+    $routes->add('deleteExchangeRate', 'Currency::deleteExchangeRate');
+
+
 });
 
 
@@ -423,6 +456,10 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
     $routes->add('globalmodule/list_batch_item', 'Globalmodule::list_batch_item');
     $routes->add('globalmodule/add_newbatch', 'Globalmodule::add_newbatch');
     $routes->add('globalmodule/list_market', 'Globalmodule::list_market');
+    $routes->add('globalmodule/list_gradecust', 'Globalmodule::list_gradecust');
+    $routes->add('globalmodule/list_salesman', 'Globalmodule::list_salesman');
+    $routes->add('globalmodule/list_kolektor', 'Globalmodule::list_kolektor');
+    $routes->add('globalmodule/list_coa', 'Globalmodule::list_coa');
 
 
     //validator & request keluar
