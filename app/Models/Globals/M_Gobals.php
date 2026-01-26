@@ -287,4 +287,8 @@ group by docno order by docno asc");
         return $this->db->query("select *, trim(idcoa) as id from sc_mst.coa where coalesce(trim(idcoa),'')!='' $param ");
     }
 
+    function q_currency($param){
+        return $this->db->query("select *, trim(currcode) as id from sc_mst.currency where coalesce(trim(currcode),'')!='' $param ");
+    }
+
 }

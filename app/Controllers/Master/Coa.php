@@ -4,23 +4,23 @@ namespace App\Controllers\Master;
 
 use App\Controllers\BaseController;
 
-class Customer extends BaseController
+class Coa extends BaseController
 {
-     public function customer()
+     public function coa()
     {
-        $data['title']="LIST CUSTOMER";
+        $data['title']="LIST COA";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.M.B.1'; $versirelease='I.M.B.1/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.M.B.5'; $versirelease='I.M.B.5/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
         $data['kodemenu']=$kodemenu; $data['version']=$versidb;
         /* END CODE UNTUK VERSI */
 
-        $paramerror=" and userid='$nama' and modul='I.M.B.1'";
+        $paramerror=" and userid='$nama' and modul='I.M.B.5'";
         $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
         $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
         if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
@@ -43,114 +43,208 @@ class Customer extends BaseController
 
         }
         //auto insert unit
-        // $this->m_customer->q_autoinsert_unit();
-        $kmenu = 'I.M.B.1';
-        $role = trim($this->session->get('roleid'));
-        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
+        // $this->m_coa->q_autoinsert_unit();
+        $roleid=trim($this->session->get('roleid'));
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
-        return $this->template->render('master/customer/v_list_customer',$data);
+        return $this->template->render('master/coa/v_list_coa',$data);
     }
 
-    function list_customer(){
-        $kmenu = 'I.M.B.1';
-        $nama=trim($this->session->get('nama'));
-        $list = $this->m_customer->get_t_customer_view();
-        $role=trim($this->session->get('roleid'));
+    public function js_vtree_query()
+    {
+        $rows  = $this->m_coa->getTreeData();
 
-        $datadtl['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
-        $dataanu['userinfo'] = $this->m_user->getUser(" and username='$nama'")->getRowArray();
+        $tree = [];
 
-        $canUpdate = isset($datadtl['dtl_akses']['a_update']) && trim($datadtl['dtl_akses']['a_update']) === 't';
-        $canDelete = isset($datadtl['dtl_akses']['a_delete']) && trim($datadtl['dtl_akses']['a_delete']) === 't';
-        $canView = isset($datadtl['dtl_akses']['a_view']) && trim($datadtl['dtl_akses']['a_view']) === 't';
-        $canInput = isset($datadtl['dtl_akses']['a_input']) && trim($datadtl['dtl_akses']['a_input']) === 't';
-
-
-
-        $data = array();
-        $no = $_POST['start'];
-        foreach ($list as $lm) {
-            $no++;
-            $row = array();
-            $row[] = $no;
-
-            if ($canView || $canUpdate || $canDelete) {
-                $btnActions = '<div class="btn-group">
-                    <button type="button" class="btn btn-info dropdown-toggle text-white"
-                        data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <i class="fa fa-gear"></i>
-                    </button>
-                    <div class="dropdown-menu">';
-            }
-
-            // Default: Cetak selalu ada
-            // if(trim($lm->nmstatus) !== 'BATAL'){
-
-            // }
-
-            //Default: Detail selalu ada
-
-            if ($canUpdate) {
-                $btnActions .= '<a class="dropdown-item text-warning href="#" onclick="editCustomer(\'' . trim($lm->id) . '\');">
-                    <i class="fa fa-edit"></i> Update</a>';
-            }
-            if ($canView) {
-                $btnActions .= '<a class="dropdown-item text-info" href="#" onclick="detailCustomer(\'' . trim($lm->id) . '\');">
-                        <i class="fa fa-eye"></i> Detail Data</a>';
-            }
-            if ($canDelete) {
-                $btnActions .= '<a class="dropdown-item text-danger" href="#" onclick="hapusCustomer(\'' . trim($lm->id) . '\');">
-                    <i class="fa fa-trash"></i> Hapus</a>';
-            }
-
-
-
-            $btnActions .= '</div></div>';
-
-
-            $row[] = $btnActions;
-            $row[] = $lm->kdcustomer;
-            $row[] = $lm->nmcustomer;
-            $row[] = $lm->alamat_kantor;
-            $row[] = $lm->phone;
-
-            $row[] = $lm->createdby;
-            $row[] = $lm->createddate;
-            $row[] = $lm->updateby;
-            $row[] = $lm->updatedate;
-
-
-            // $row[] = $lm->inputdate1;
-            //$row[] = '<div align="right">'.number_format($lm->nominal, 2,',','.').'</div>';
-            //add html for action
-            $data[] = $row;
+        foreach ($rows as $r) {
+            $tree[] = [
+                'id'   => $r->id,
+                'pid'  => $r->pid,
+                'name' => trim($r->id) . ' | ' . trim($r->name),
+                'open' => ($r->pid === '0'), // auto open root
+                // opsional
+                // 'chkDisabled' => ($r->isDetail === 'false')
+            ];
         }
 
-        $output = array(
-            "draw" => $_POST['draw'],
-            "recordsTotal" => $this->m_customer->t_customer_view_count_all(),
-            "recordsFiltered" => $this->m_customer->t_customer_view_count_filtered(),
-            "data" => $data,
-        );
-        echo $this->fiky_encryption->jDatatable($output);
+        return $this->response->setJSON($tree);
+    }
+
+    public function get_coa_detail()
+    {
+        $idcoa = $this->request->getPost('idcoa');
+        
+        $data['coa'] = $this->m_coa->getById($idcoa);
+        
+        $roleid = trim($this->session->get('roleid'));
+        $kodemenu = 'I.M.B.5';
+        $perm = $this->m_role->detail_user_akses($roleid, $kodemenu)->getRowArray();
+
+
+        // fallback jika tidak ada record
+        $data['perm'] = [
+            'input'  => isset($perm['a_input'])  && trim($perm['a_input'])  === 't',
+            'update' => isset($perm['a_update']) && trim($perm['a_update']) === 't',
+            'delete' => isset($perm['a_delete']) && trim($perm['a_delete']) === 't',
+        ];
+
+
+        return view('master/coa/coa_form', $data);
     }
 
 
-    function input_customer(){
-        $data['title']="INPUT DATA CUSTOMER";
+    public function saveCOA()
+    {
+        $type  = $this->request->getPost('type');
+        $idcoa = $this->request->getPost('idcoa');
+        $nama  = trim($this->session->get('nama'));
+
+        $builder = $this->db->table('sc_mst.coa');
+
+        if ($type === 'INPUT') {
+
+            $idcoa = trim((string) $idcoa);
+
+            $exists = $builder
+            ->where("TRIM(idcoa) =", $idcoa)
+            ->where("COALESCE(TRIM(status), 'F') = 'F'", null, false)
+            ->countAllResults();
+
+            if ($exists > 0) {
+                return $this->response->setJSON([
+                    'status'  => 'error',
+                    'message' => 'ID COA sudah ada'
+                ]);
+            }
+
+            $data = [
+                'idcoa'        => $idcoa,
+                'nmcoa'        => strtoupper($this->request->getPost('nmcoa')),
+                'nm2coa'       => strtoupper($this->request->getPost('nm2coa')),
+                'induk'        => $this->request->getPost('induk'),
+                'level'        => $this->request->getPost('level'),
+                'isdetail'     => $this->request->getPost('isdetail'),
+                'groupcoa'     => strtoupper($this->request->getPost('groupcoa')),
+                'idcur'        => strtoupper($this->request->getPost('idcur')),
+                'jenis'        => strtoupper($this->request->getPost('jenis')),
+                'status'       => 'F',
+                'createdby'    => $nama,
+                'createddate'  => date('Y-m-d H:i:s')
+            ];
+
+            $builder->insert($data);
+        }
+
+        if ($type === 'EDIT') {
+
+            $data = [
+                'nmcoa'        => strtoupper($this->request->getPost('nmcoa')),
+                'nm2coa'       => strtoupper($this->request->getPost('nm2coa')),
+                // 'induk'        => $this->request->getPost('induk'),
+                // 'level'        => $this->request->getPost('level'),
+                'isdetail'     => $this->request->getPost('isdetail'),
+                'groupcoa'     => strtoupper($this->request->getPost('groupcoa')),
+                'idcur'        => strtoupper($this->request->getPost('idcur')),
+                'jenis'        => strtoupper($this->request->getPost('jenis')),
+                'updateby'    => $nama,
+                'updatedate'  => date('Y-m-d H:i:s')
+            ];
+
+            $builder->where('idcoa', $idcoa)->update($data);
+        }
+
+        return $this->response->setJSON([
+            'status'  => 'success',
+            'message' => 'Data COA berhasil disimpan'
+        ]);
+    }
+
+
+    // public function delete_coa()
+    // {
+    //     $idcoa = $this->request->getPost('idcoa');
+    //     $nama  = trim($this->session->get('nama'));
+
+    //     if (!$idcoa) {
+    //         return $this->response->setJSON([
+    //             'status'  => 'error',
+    //             'message' => 'ID COA tidak valid'
+    //         ]);
+    //     }
+
+    //     $builder = $this->db->table('sc_mst.coa');
+
+    //     $builder->where('idcoa', $idcoa)->update([
+    //         'status'      => 'C',
+    //         'updateby'   => $nama,
+    //         'updatedate' => date('Y-m-d H:i:s')
+    //     ]);
+
+    //     return $this->response->setJSON([
+    //         'status'  => 'success',
+    //         'message' => 'COA berhasil dihapus'
+    //     ]);
+    // }
+
+    public function delete_coa()
+    {
+        $idcoa = $this->request->getPost('idcoa');
+        $nama  = trim($this->session->get('nama'));
+
+        if (!$idcoa) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'ID COA tidak valid'
+            ]);
+        }
+
+        // Cek apakah COA memiliki child (untuk keamanan)
+        $builder = $this->db->table('sc_mst.coa');
+        
+        // Cek apakah ada child records
+        $hasChild = $builder->where('induk', $idcoa)->countAllResults();
+        
+        if ($hasChild > 0) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'COA tidak dapat dihapus karena masih memiliki child COA'
+            ]);
+        }
+
+        // Hard delete menggunakan delete()
+        $deleted = $builder->where('idcoa', $idcoa)->delete();
+
+        if ($deleted) {
+            // Optional: Log aktivitas
+            // $this->logActivity($nama, 'DELETE_COA', "Menghapus COA: $idcoa");
+            
+            return $this->response->setJSON([
+                'status'  => 'success',
+                'message' => 'COA berhasil dihapus'
+            ]);
+        } else {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Gagal menghapus COA'
+            ]);
+        }
+    }
+
+
+    function input_coa(){
+        $data['title']="INPUT DATA COA";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.M.B.1'; $versirelease='I.M.B.1/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.M.B.5'; $versirelease='I.M.B.5/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
         $data['kodemenu']=$kodemenu; $data['version']=$versidb;
         /* END CODE UNTUK VERSI */
 
-        $paramerror=" and userid='$nama' and modul='I.M.B.1'";
+        $paramerror=" and userid='$nama' and modul='I.M.B.5'";
         $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
         $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
         if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
@@ -178,7 +272,7 @@ class Customer extends BaseController
         $data['back_url'] = base_url("master/data");
         $data['typeform'] = 'INPUT';
 
-        $kmenu = 'I.M.B.1';
+        $kmenu = 'I.M.B.5';
         $role = trim($this->session->get('roleid'));
         $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
         $data['userinfo'] = $this->m_user->getUser(" and username='$nama'")->getRowArray();
@@ -187,23 +281,23 @@ class Customer extends BaseController
         $data['id']='';
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
-        return $this->template->render('master/customer/v_input_customer',$data);
+        return $this->template->render('master/coa/v_input_coa',$data);
     }
 
-    function edit_customer(){
+    function edit_coa(){
 
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.M.B.1'; $versirelease='I.M.B.1/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.M.B.5'; $versirelease='I.M.B.5/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
         $data['kodemenu']=$kodemenu; $data['version']=$versidb;
         /* END CODE UNTUK VERSI */
 
-        $paramerror=" and userid='$nama' and modul='I.M.B.1'";
+        $paramerror=" and userid='$nama' and modul='I.M.B.5'";
         $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
         $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
         if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
@@ -225,7 +319,7 @@ class Customer extends BaseController
             }
 
         }
-        $data['title']="EDIT DATA CUSTOMER";
+        $data['title']="EDIT DATA COA";
         $var = trim($this->request->getGet('var'));
         $data['type']="UPDATE";
         $data['nama']=$nama;
@@ -237,7 +331,7 @@ class Customer extends BaseController
 
 
 
-        $kmenu = 'I.M.B.1';
+        $kmenu = 'I.M.B.5';
         $role = trim($this->session->get('roleid'));
         $data['idParam'] = $idParam;
         $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
@@ -247,23 +341,23 @@ class Customer extends BaseController
 
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
-        return $this->template->render('master/customer/v_input_customer',$data);
+        return $this->template->render('master/coa/v_input_coa',$data);
     }
 
-    function detail_customer(){
+    function detail_coa(){
 
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.M.B.1'; $versirelease='I.M.B.1/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.M.B.5'; $versirelease='I.M.B.5/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
         $data['kodemenu']=$kodemenu; $data['version']=$versidb;
         /* END CODE UNTUK VERSI */
 
-        $paramerror=" and userid='$nama' and modul='I.M.B.1'";
+        $paramerror=" and userid='$nama' and modul='I.M.B.5'";
         $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
         $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
         if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
@@ -285,7 +379,7 @@ class Customer extends BaseController
             }
 
         }
-        $data['title']="DETAIL DATA CUSTOMER";
+        $data['title']="DETAIL DATA COA";
         $var = trim($this->request->getGet('var'));
         $data['type']="DETAIL";
         $data['nama']=$nama;
@@ -296,7 +390,7 @@ class Customer extends BaseController
         $data['back_url'] = base_url("master/data");
 
         $data['idParam'] = $idParam;
-        $kmenu = 'I.M.B.1';
+        $kmenu = 'I.M.B.5';
         $role = trim($this->session->get('roleid'));
         $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
         $data['userinfo'] = $this->m_user->getUser(" and username='$nama'")->getRowArray();
@@ -305,10 +399,10 @@ class Customer extends BaseController
 
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
-        return $this->template->render('master/customer/v_input_customer',$data);
+        return $this->template->render('master/coa/v_input_coa',$data);
     }
 
-    public function hapus_customer()
+    public function hapus_coa()
     {
         $id   = $this->request->getPost('id');
         $nama = trim($this->session->get('nama'));
@@ -316,24 +410,24 @@ class Customer extends BaseController
         if (empty($id)) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'ID customer tidak valid'
+                'message' => 'ID coa tidak valid'
             ]);
         }
 
-        $builder = $this->db->table('sc_mst.customer');
+        $builder = $this->db->table('sc_mst.coa');
 
         // cek data
-        $customer = $builder
-            ->select('id, kdcustomer')
+        $coa = $builder
+            ->select('id, kdcoa')
             ->where('id', $id)
             ->where('status !=', 'D')
             ->get()
             ->getRowArray();
 
-        if (!$customer) {
+        if (!$coa) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Data customer tidak ditemukan atau sudah dihapus'
+                'message' => 'Data coa tidak ditemukan atau sudah dihapus'
             ]);
         }
 
@@ -347,44 +441,44 @@ class Customer extends BaseController
 
         return $this->response->setJSON([
             'success' => true,
-            'message' => 'Data customer ' . trim($customer['kdcustomer']) . ' berhasil dihapus'
+            'message' => 'Data coa ' . trim($coa['kdcoa']) . ' berhasil dihapus'
         ]);
     }
 
 
 
 
-    function del_customer(){
+    function del_coa(){
         $nama = trim($this->session->get('nama'));
         $id = trim($this->request->getGet('var'));
-        $builder = $this->db->table('sc_mst.customer');
+        $builder = $this->db->table('sc_mst.coa');
         $builder_trxerror = $this->db->table('sc_mst.trxerror');
 
         $builder->where('id',$id);
         $builder->delete();
         //INSERT TRX ERROR
         $builder_trxerror->where('userid',$nama);
-        $builder_trxerror->where('modul','I.M.B.1');
+        $builder_trxerror->where('modul','I.M.B.5');
         $builder_trxerror->delete();
         $infotrxerror = array (
             'userid' => $nama,
             'errorcode' => 0,
             'nomorakhir1' => $id,
             'nomorakhir2' => '',
-            'modul' => 'I.M.B.1',
+            'modul' => 'I.M.B.5',
         );
         $builder_trxerror->insert($infotrxerror);
         return redirect()->to(base_url('master/data'));
     }
 
-    function showDetailCustomer () {
+    function showDetailCoa () {
         $nama = $this->session->get('nama');
         //parsing biar tidak sama dengan nik
         $var = $this->request->getGet('var');
         $nik = $this->request->getGet('nik');
 
         $param = " and id='$var'";
-        $dtl = $this->m_customer->q_mstcustomer($param);
+        $dtl = $this->m_coa->q_mstcoa($param);
 
         $output = array(
             'status' => true,
@@ -397,7 +491,7 @@ class Customer extends BaseController
     }
 
 
-    function saveDataCustomer(){
+    function saveDataCoa(){
         $nama = trim($this->session->get('nama'));
         // $request_body = file_get_contents('php://input');
         // $data = json_decode($request_body);
@@ -409,8 +503,8 @@ class Customer extends BaseController
             $dataprocess = $data->body;
             $type = trim($dataprocess->type);
             $id = trim($dataprocess->id);
-            $kdcustomer          = strtoupper(trim($dataprocess->kdcustomer));
-            $nmcustomer      = strtoupper(trim($dataprocess->nmcustomer));
+            $kdcoa          = strtoupper(trim($dataprocess->kdcoa));
+            $nmcoa      = strtoupper(trim($dataprocess->nmcoa));
 
             $provinsi_kantor = $dataprocess->provinsi_kantor;
             $kota_kantor = $dataprocess->kota_kantor;
@@ -493,11 +587,11 @@ class Customer extends BaseController
 
             $createdby = $nama;
             $createddate = date('Y-m-d H:i:s');
-            $builder = $this->db->table('sc_mst.customer');
+            $builder = $this->db->table('sc_mst.coa');
             if ($type === 'INPUT') {
                 $info = [
-                    'kdcustomer' => $kdcustomer,
-                    'nmcustomer' => $nmcustomer,
+                    'kdcoa' => $kdcoa,
+                    'nmcoa' => $nmcoa,
 
                     'provinsi_kantor' => $provinsi_kantor,
                     'kota_kantor'     => $kota_kantor,
@@ -563,23 +657,23 @@ class Customer extends BaseController
                     // $inx = array('status' => 'F');
                     // $builder->where('docno',$nama);
                     // $builder->update($inx);
-                    // $customerRow = $builder
+                    // $coaRow = $builder
                     //     ->orderBy('docno', 'DESC') // pakai id jika ada, atau docdate
                     //     ->get()
                     //     ->getRowArray();
-                    // if ($customerRow) {
-                    //     $docnoFinal   = trim($customerRow['docno']);
+                    // if ($coaRow) {
+                    //     $docnoFinal   = trim($coaRow['docno']);
                     //     $url = array(
-                    //         'barcodelink' => base_url('master/data/getDataFormCustomer/' . $this->fiky_encryption->sealed($docnoFinal)),
+                    //         'barcodelink' => base_url('master/data/getDataFormCoa/' . $this->fiky_encryption->sealed($docnoFinal)),
                     //     );
                     //     $builder->where('TRIM(docno)', $docnoFinal);
                     //     $builder->update($url);
 
                     // }
 
-                    // $paramerror=" and userid='$nama' and modul='I.M.B.1'";
+                    // $paramerror=" and userid='$nama' and modul='I.M.B.5'";
                     // $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
-                    $getResult = array('status' => true, 'messages' => 'Data processing'.' Code: '.trim($kdcustomer));
+                    $getResult = array('status' => true, 'messages' => 'Data processing'.' Code: '.trim($kdcoa));
                     echo json_encode($getResult);
 
                 } else {
@@ -589,11 +683,11 @@ class Customer extends BaseController
 
             } else if ($type==='UPDATE') {
                 $param = " and id='$id'";
-                $check = $this->m_customer->q_mstcustomer($param)->getNumRows();
+                $check = $this->m_coa->q_mstcoa($param)->getNumRows();
                 //check data ganda
                 if ($check > 0) {
                 $info = [
-                    'nmcustomer' => $nmcustomer,
+                    'nmcoa' => $nmcoa,
                     'provinsi_kantor' => $provinsi_kantor,
                     'kota_kantor'     => $kota_kantor,
                     'kec_kantor'      => $kec_kantor,
@@ -675,7 +769,7 @@ class Customer extends BaseController
 
             } else if ($type==='DELETE') {
 
-                $builder = $this->db->table('sc_mst.customer');
+                $builder = $this->db->table('sc_mst.coa');
                 $builder->where('id' , $id);
                 if ($builder->delete()) {
                     $getResult = array('status' => true, 'messages' => 'Data Deleting'.' Code: '.$id);

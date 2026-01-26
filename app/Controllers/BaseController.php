@@ -33,6 +33,7 @@ use App\Models\Master\M_User;
 use App\Models\Master\M_Suppliers;
 use App\Models\Master\M_Customer;
 use App\Models\Master\M_Currency;
+use App\Models\Master\M_Coa;
 
 use App\Models\Purchase\M_Purchaseorder;
 use App\Models\Stock\M_Balance;
@@ -144,5 +145,6 @@ class BaseController extends Controller
         $this->m_form = new M_Form();
         $this->m_customer = new M_Customer();
         $this->m_currency = new M_Currency();
+        $this->m_coa = new M_Coa();
     }
 }

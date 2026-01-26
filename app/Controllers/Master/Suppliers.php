@@ -44,44 +44,65 @@ class Suppliers extends BaseController
         }
         //auto insert unit
         // $this->m_suppliers->q_autoinsert_unit();
-        $roleid=trim($this->session->get('roleid'));
+        $kmenu = 'I.M.B.2';
+        $role = trim($this->session->get('roleid'));
+        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
         return $this->template->render('master/supplier/v_list_suppliers',$data);
     }
 
     function list_suppliers(){
+        $kmenu = 'I.M.B.2';
         $nama=trim($this->session->get('nama'));
-        $roleid=trim($this->session->get('roleid'));
+        $role=trim($this->session->get('roleid'));
         $list = $this->m_suppliers->get_t_suppliers_view();
         $roleid=trim($this->session->get('roleid'));
+
+        $datadtl['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
+        $dataanu['userinfo'] = $this->m_user->getUser(" and username='$nama'")->getRowArray();
+
+        $canUpdate = isset($datadtl['dtl_akses']['a_update']) && trim($datadtl['dtl_akses']['a_update']) === 't';
+        $canDelete = isset($datadtl['dtl_akses']['a_delete']) && trim($datadtl['dtl_akses']['a_delete']) === 't';
+        $canView = isset($datadtl['dtl_akses']['a_view']) && trim($datadtl['dtl_akses']['a_view']) === 't';
+        $canInput = isset($datadtl['dtl_akses']['a_input']) && trim($datadtl['dtl_akses']['a_input']) === 't';
+
+
+
         $data = array();
         $no = $_POST['start'];
         foreach ($list as $lm) {
             $no++;
             $row = array();
             $row[] = $no;
-            $btnActions = '<div class="btn-group">
-                <button type="button" class="btn btn-info dropdown-toggle text-white"
-                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <i class="fa fa-gear"></i>
-                </button>
-                <div class="dropdown-menu">';
 
+            if ($canView || $canUpdate || $canDelete) {
+                $btnActions = '<div class="btn-group">
+                    <button type="button" class="btn btn-info dropdown-toggle text-white"
+                        data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa fa-gear"></i>
+                    </button>
+                    <div class="dropdown-menu">';
+            }
             // Default: Cetak selalu ada
             // if(trim($lm->nmstatus) !== 'BATAL'){
 
             // }
-
+            if ($canUpdate) {
+                $btnActions .= '<a class="dropdown-item text-warning" href="#" onclick="editSupplier(\'' . trim($lm->id) . '\');">
+                    <i class="fa fa-edit"></i> Update</a>';
+            }
+            if ($canView) {
+                $btnActions .= '<a class="dropdown-item text-info" href="#" onclick="detailSupplier(\'' . trim($lm->id) . '\');">
+                        <i class="fa fa-eye"></i> Detail Data</a>';
+            }
+            if ($canDelete) {
+                $btnActions .= '<a class="dropdown-item text-danger" href="#" onclick="hapusSupplier(\'' . trim($lm->id) . '\');">
+                    <i class="fa fa-trash"></i> Hapus</a>';
+            }            
             //Default: Detail selalu ada
-            $btnActions .= '<a class="dropdown-item" href="#" onclick="detailSupplier(\'' . trim($lm->id) . '\');">
-                    <i class="fa fa-eye"></i> Detail Data</a>';
 
-            $btnActions .= '<a class="dropdown-item" href="#" onclick="editSupplier(\'' . trim($lm->id) . '\');">
-                <i class="fa fa-edit"></i> Update</a>';
 
-            $btnActions .= '<a class="dropdown-item" href="#" onclick="hapusSupplier(\'' . trim($lm->id) . '\');">
-                <i class="fa fa-trash"></i> Hapus</a>';
 
             $btnActions .= '</div></div>';
 

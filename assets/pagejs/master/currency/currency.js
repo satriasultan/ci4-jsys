@@ -582,6 +582,7 @@ function tableExchangeRate(){
             $("#update_exchange").html('<i class="fa fa-gear"></i> Update');  // Kembali ke tombol Update
             $(".btn-success").show();
             $(".btn-info").show();
+            $(".btn-aksi").show();
 
             isEditing = false;
             // checkTableData()

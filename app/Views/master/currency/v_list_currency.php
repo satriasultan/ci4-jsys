@@ -36,7 +36,11 @@
                     <button type="button" class="btn btn-primary dropdown-toggle dropdown-icon" data-bs-toggle="dropdown"><?php echo 'Menu'; ?>
                     </button>
                     <div class="dropdown-menu">
-                        <a class="dropdown-item" href="<?= base_url('master/data/input_currency') ?>"><i class="fa fa-plus"></i><?php echo '   Input'; ?> </a>
+                        <?php if (isset($dtl_akses['a_input']) && trim($dtl_akses['a_input']) === 't'): ?>
+                            <a class="dropdown-item" href="<?= base_url('master/data/input_currency') ?>">
+                                <i class="fa fa-plus"></i> Input
+                            </a>
+                        <?php endif; ?>
                         <!-- <a class="dropdown-item disabled" data-bs-toggle="modal" data-bs-target="#filter"  href="#"><i class="fa fa-filter"></i><?php echo '   Filter'; ?></a> -->
                         <a class="dropdown-item" href="#"  onclick="reload_table()"><i class="fa fa-refresh"></i><?php echo '    Reload'; ?> </a>
                     </div>

@@ -187,6 +187,11 @@ $routes->group('/master/data', ["namespace" => "App\Controllers\Master"], functi
     $routes->add('deleteExchangeRate', 'Currency::deleteExchangeRate');
 
 
+    $routes->add('coa', 'Coa::coa');
+    $routes->add('js_vtree_query', 'Coa::js_vtree_query');
+    $routes->add('get_coa_detail', 'Coa::get_coa_detail');
+    $routes->add('saveCOA', 'Coa::saveCOA');
+    $routes->add('delete_coa', 'Coa::delete_coa');
 });
 
 
@@ -460,6 +465,7 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
     $routes->add('globalmodule/list_salesman', 'Globalmodule::list_salesman');
     $routes->add('globalmodule/list_kolektor', 'Globalmodule::list_kolektor');
     $routes->add('globalmodule/list_coa', 'Globalmodule::list_coa');
+    $routes->add('globalmodule/list_currency', 'Globalmodule::list_currency');
 
 
     //validator & request keluar

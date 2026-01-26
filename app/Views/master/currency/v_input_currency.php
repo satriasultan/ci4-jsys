@@ -156,15 +156,15 @@
                             <div class="row">
                                 <input type="hidden" name="typeform" value="<?php echo $typeform; ?>" data-typeform="<?php echo $typeform; ?>">
 
-                                <input type="hidden" name="idcurrency" id="idcurrency" value="<?= ($typeform == 'UPDATE') ? $currency['id'] : '' ?>">
+                                <input type="hidden" name="idcurrency" id="idcurrency" value="<?= ($typeform == 'UPDATE' || $typeform == 'DETAIL') ? $currency['id'] : '' ?>">
                                 
                                 <div class="col-md-3">
                                     <label>Currency Code</label>
-                                    <input type="text" name="currcode" maxlength="3" class="form-control" style="text-transform: uppercase;" required></input>
+                                    <input type="text" name="currcode" maxlength="3" class="form-control" <?= ($typeform == 'DETAIL' ? 'disabled' : '') ?> style="text-transform: uppercase;" required></input>
                                 </div>
                                 <div class="col-md-9">
                                     <label>Currency Name</label>
-                                    <input type="text" name="currname" maxlength="50" class="form-control" style="text-transform: uppercase;" required>
+                                    <input type="text" name="currname" maxlength="50" class="form-control" <?= ($typeform == 'DETAIL' ? 'disabled' : '') ?> style="text-transform: uppercase;" required>
                                 </div>
                                 <?php if(($typeform == 'INPUT')) {?>
                                 <div class="col-md-12"><hr></div>
@@ -179,7 +179,7 @@
                             <div class="section-header">
                                 <i class="fa fa-exchange"></i> Exchange Rate
                             </div>
-                            <?php if($typeform != 'INPUT'){?>
+                            <?php if($typeform == 'UPDATE'){?>
                             <div class="row">
                                 <div class=" col-md-2">
                                     <div class="input-group">
@@ -238,28 +238,28 @@
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label>Perkiraan Hutang</label>
-                                            <select name="phutang" id="phutang" class="form-control" required>
+                                            <select name="phutang" id="phutang" class="form-control" <?= ($typeform == 'DETAIL' ? 'disabled' : '') ?> required>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label>Perkiraan Uang Muka</label>
-                                            <select name="pum" id="pum" class="form-control" required>
+                                            <select name="pum" id="pum" class="form-control" <?= ($typeform == 'DETAIL' ? 'disabled' : '') ?> required>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label>Perkiraan Bonus</label>
-                                            <select name="pbonus" id="pbonus" class="form-control" required>
+                                            <select name="pbonus" id="pbonus" class="form-control" <?= ($typeform == 'DETAIL' ? 'disabled' : '') ?> required>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label>Hutang Antar Cabang</label>
-                                            <select name="hutangac" id="hutangac" class="form-control" required>
+                                            <select name="hutangac" id="hutangac" class="form-control" <?= ($typeform == 'DETAIL' ? 'disabled' : '') ?> required>
                                             </select>
                                         </div>
                                     </div>
@@ -268,14 +268,14 @@
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label>Perkiraan Hutang Biaya 1</label>
-                                            <select name="hutangbiaya1" id="hutangbiaya1" class="form-control" required>
+                                            <select name="hutangbiaya1" id="hutangbiaya1" class="form-control" <?= ($typeform == 'DETAIL' ? 'disabled' : '') ?> required>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label>Perkiraan Hutang Biaya 1</label>
-                                            <select name="hutangbiaya2" id="hutangbiaya2" class="form-control" required>
+                                            <select name="hutangbiaya2" id="hutangbiaya2" class="form-control" <?= ($typeform == 'DETAIL' ? 'disabled' : '') ?> required>
                                             </select>
                                         </div>
                                     </div>
@@ -293,28 +293,28 @@
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label>Perkiraan Piutang</label>
-                                            <select name="ppiutang" id="ppiutang" class="form-control" required>
+                                            <select name="ppiutang" id="ppiutang" class="form-control" <?= ($typeform == 'DETAIL' ? 'disabled' : '') ?> required>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label>Perkiraan Uang Muka</label>
-                                            <select name="pumjual" id="pumjual" class="form-control" required>
+                                            <select name="pumjual" id="pumjual" class="form-control" <?= ($typeform == 'DETAIL' ? 'disabled' : '') ?> required>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label>Perkiraan Pendapatan</label>
-                                            <select name="ppendapatan" id="ppendapatan" class="form-control" required>
+                                            <select name="ppendapatan" id="ppendapatan" class="form-control" <?= ($typeform == 'DETAIL' ? 'disabled' : '') ?> required>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label>Perkiraan Retur</label>
-                                            <select name="pretur" id="pretur" class="form-control" required>
+                                            <select name="pretur" id="pretur" class="form-control" <?= ($typeform == 'DETAIL' ? 'disabled' : '') ?> required>
                                             </select>
                                         </div>
                                     </div>
@@ -323,42 +323,42 @@
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label>Perkiraan Disc</label>
-                                            <select name="pdisc" id="pdisc" class="form-control" required>
+                                            <select name="pdisc" id="pdisc" class="form-control" <?= ($typeform == 'DETAIL' ? 'disabled' : '') ?> required>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label>Perkiraan Bonus</label>
-                                            <select name="pbonusjual" id="pbonusjual" class="form-control" required>
+                                            <select name="pbonusjual" id="pbonusjual" class="form-control" <?= ($typeform == 'DETAIL' ? 'disabled' : '') ?> required>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label>Perkiraan Tunai</label>
-                                            <select name="ptunai" id="ptunai" class="form-control" required>
+                                            <select name="ptunai" id="ptunai" class="form-control" <?= ($typeform == 'DETAIL' ? 'disabled' : '') ?> required>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label>Piutang Antar Cabang</label>
-                                            <select name="piutangac" id="piutangac" class="form-control" required>
+                                            <select name="piutangac" id="piutangac" class="form-control" <?= ($typeform == 'DETAIL' ? 'disabled' : '') ?> required>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label>Pendapatan Antar Cabang</label>
-                                            <select name="pendapatanac" id="pendapatanac" class="form-control" required>
+                                            <select name="pendapatanac" id="pendapatanac" class="form-control" <?= ($typeform == 'DETAIL' ? 'disabled' : '') ?> required>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label>Perkiraan Pendapatan Service</label>
-                                            <select name="pps" id="pps" class="form-control" required>
+                                            <select name="pps" id="pps" class="form-control" <?= ($typeform == 'DETAIL' ? 'disabled' : '') ?> required>
                                             </select>
                                         </div>
                                     </div>
@@ -373,7 +373,7 @@
                     <i class="fa fa-arrow-left"></i> Back
                 </a>
                 <?php if ($typeform == 'UPDATE'): ?>
-                        <button id="btnSave" onclick="saveFinalCurrency();" class="btn btn-primary float-right">Save Final Currency</button>
+                        <button id="btnSave" onclick="saveFinalCurrency();" class="btn btn-primary btn-aksi float-right">Save Final Currency</button>
                 <?php endif; ?>
             </div>
         </div>

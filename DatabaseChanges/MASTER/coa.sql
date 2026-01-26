@@ -1,6 +1,6 @@
 
 create table sc_mst.coa(
-	idcoa char(6) primary key,
+	idcoa char(20) primary key,
 	nmcoa char(250),
     nm2coa char(250),
     induk char(20),
@@ -9,6 +9,7 @@ create table sc_mst.coa(
     groupcoa char(50),
     idcur char(20),
     jenis char(20),
+    status char(6),
 	createdby CHAR(20),
     createddate TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updateby CHAR(20),
@@ -148,3 +149,8 @@ INSERT INTO sc_mst.coa (idcoa, nmcoa, nm2coa, induk, level, isdetail, groupcoa, 
 ('223102', 'HUTANG PEMEGANG SAHAM (IDR)', 'HUTANG PEMEGANG SAHAM (IDR)', '2231', '5', '0', NULL, NULL, NULL),
 ('223103', 'UANG MUKA PEMEGANG SAHAM', 'UANG MUKA PEMEGANG SAHAM', '2231', '5', '0', NULL, NULL, NULL),
 ('224101', 'LABA DITANGGUHKAN(JUAL&SEWA KEMB,AT)', 'LABA DITANGGUHKAN(JUAL&SEWA KEMB,AT)', '2241', '5', '0', NULL, NULL, NULL);
+
+
+
+-- menambahkan defaultstyle.php untuk ztree
+-- menambahkan folder libraries di C:\xampp\htdocs\ci4-jsys\assets\css\ztree\js\

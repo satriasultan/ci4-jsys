@@ -64,6 +64,12 @@ class Currency extends BaseController
         $dataanu['userinfo'] = $this->m_user->getUser(" and username='$nama'")->getRowArray();
         // $bagian = trim($dataanu['userinfo']['bagian']);
 
+        $canUpdate = isset($datadtl['dtl_akses']['a_update']) && trim($datadtl['dtl_akses']['a_update']) === 't';
+        $canDelete = isset($datadtl['dtl_akses']['a_delete']) && trim($datadtl['dtl_akses']['a_delete']) === 't';
+        $canView = isset($datadtl['dtl_akses']['a_view']) && trim($datadtl['dtl_akses']['a_view']) === 't';
+        $canInput = isset($datadtl['dtl_akses']['a_input']) && trim($datadtl['dtl_akses']['a_input']) === 't';
+
+
         $list = $this->m_currency->get_t_currency_view();
         $data = array();
         $no = $_POST['start'];
@@ -74,25 +80,45 @@ class Currency extends BaseController
             $row = array();
             $row[] = $no;
             
+            $btnActions = '';
 
-            $btnActions = '<div class="btn-group">
-                <button type="button" class="btn btn-info dropdown-toggle text-white"
-                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <i class="fa fa-gear"></i>
-                </button>
-                <div class="dropdown-menu">';
+            if ($canView || $canUpdate || $canDelete) {
 
+                $btnActions = '<div class="btn-group">
+                    <button type="button" class="btn btn-info dropdown-toggle text-white"
+                        data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa fa-gear"></i>
+                    </button>
+                    <div class="dropdown-menu">';
+            }
             // Default: Cetak selalu ada
             // if(trim($lm->nmstatus) !== 'BATAL'){
 
             // }
 
             //Default: Detail selalu ada
-            $btnActions .= '<a class="dropdown-item" href='."'". base_url('master/data/editCurrency').'/'.''.$enc_id.'/'.$enc_currname."'".'  title="Editing Currency" onclick="return confirm('."'".'Editing Currency ?  : '.trim($lm->currname)."'".')"><i class="fa fa-gear"></i> Edit Data</a>';
+            if ($canUpdate) {
+                $btnActions .= '<a class="dropdown-item text-warning"
+                    href="' . base_url('master/data/editCurrency/'.$enc_id.'/'.$enc_currname) . '"
+                    onclick="return confirm(\'Edit Currency : '.trim($lm->currname).' ?\')">
+                    <i class="fa fa-edit"></i> Edit Data
+                </a>';
+            }
 
-            $btnActions .= '<a class="dropdown-item" href='."'". base_url('master/data/detailCurrency').'/'.''.$enc_id.'/'.$enc_currname."'".'  title="View Detail Currency" onclick="return confirm('."'".'View Detail Currency ?  : '.trim($lm->currname)."'".')"><i class="fa fa-eye"></i> Detail Data </a>';
+            if ($canView) {
+                $btnActions .= '<a class="dropdown-item text-info"
+                    href="' . base_url('master/data/detailCurrency/'.$enc_id.'/'.$enc_currname) . '">
+                    <i class="fa fa-eye"></i> Detail Data
+                </a>';
+            }
 
-            $btnActions .= '<a class="dropdown-item" href='."'". base_url('master/data/hapusCurrency').'/'.''.$enc_id.'/'.$enc_currname."'".'  title="Hapus Data Currency" onclick="return confirm('."'".'Detail Menu Programs ?  : '.trim($lm->currname)."'".')"><i class="fa fa-trash"></i> Delete Data </a>';
+            if ($canDelete) {
+                $btnActions .= '<a class="dropdown-item text-danger"
+                    href="' . base_url('master/data/hapusCurrency/'.$enc_id.'/'.$enc_currname) . '"
+                    onclick="return confirm(\'Hapus Currency : '.trim($lm->currname).' ?\')">
+                    <i class="fa fa-trash"></i> Delete Data
+                </a>';
+            }
 
             $btnActions .= '</div></div>';
 
