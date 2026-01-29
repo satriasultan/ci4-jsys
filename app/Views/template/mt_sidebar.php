@@ -1,5 +1,5 @@
 <!-- Main Sidebar Container -->
-<aside class="left-sidebar" style="background-color: #10b2ee">
+<aside class="left-sidebar">
     <!-- Sidebar scroll-->
     <div class="scroll-sidebar">
         <!-- Sidebar navigation-->
@@ -16,7 +16,7 @@
                 </li>
                 <?php foreach ($list_menu_main as $lm) { ?>
                 <li> <a class="has-arrow waves-effect waves-dark" href="<?php if (trim($lm->linkmenu)!=='NULL') {echo base_url(trim($lm->linkmenu));} else { echo '#';}?>" aria-expanded="false"><i class="fa <?php echo trim($lm->iconmenu);?>"></i><span class="hide-menu"> <?php echo ucwords(strtolower(trim($lm->namamenu)));?> <span class="badge rounded-pill bg-info">25</span></span></a>
-                    <ul aria-expanded="false" class="collapse">
+                    <ul aria-expanded="false" class="collapse"  style=" text-wrap: nowrap; min-width: 250px; position: absolute;left: 0;">
                         <?php foreach ($list_menu_sub as $lms) {
                         if (trim($lms->parentmenu)==trim($lm->kodemenu)){
                         ?>

@@ -81,10 +81,11 @@ function add_mlocation()
     //$('.form-group').removeClass('has-error').removeClass('has-success'); // clear error class
     $('.help-block').empty(); // clear error string
     $('#modal_form').modal('show'); // show bootstrap modal
-    $('.modal-title').text('INPUT MASTER AREA'); // Set Title to Bootstrap modal title
+    $('.modal-title').text('Input Master Area'); // Set Title to Bootstrap modal title
     $('[name="type"]').val('INPUT');
     $('[name="id"]').val();
-    $('[name="idarea"]').prop("required", true);
+    $('[name="idlocation"]').prop('disabled', false);
+    $('#idlocation').val(null).trigger('change');    $('[name="idarea"]').prop("required", true);
     $('#btnSave').removeClass("btn-danger").addClass("btn-primary").text('Simpan');
 }
 function update_marea(id)
@@ -136,9 +137,7 @@ function update_marea(id)
             $('#btnSave').removeClass("btn-danger").addClass("btn-primary").text('Update');
             //$('[name="dob"]').datepicker('update',data.dob);
             $('#modal_form').modal('show'); // show bootstrap modal when complete loaded
-            $('.modal-title').text('Update Location'); // Set title to Bootstrap modal title
-
-
+            $('.modal-title').text('Update Master Area'); // Set title to Bootstrap modal title
             //.removeClass("btn-primary").addClass("btn-danger"); // set button
 
         },

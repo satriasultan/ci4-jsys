@@ -81,9 +81,13 @@ function add_mlocation()
     //$('.form-group').removeClass('has-error').removeClass('has-success'); // clear error class
     $('.help-block').empty(); // clear error string
     $('#modal_form').modal('show'); // show bootstrap modal
-    $('.modal-title').text('INPUT MASTER LOCATION'); // Set Title to Bootstrap modal title
+    $('.modal-title').text('Input Master Location'); // Set Title to Bootstrap modal title
     $('[name="type"]').val('INPUT');
     $('[name="id"]').val();
+    $('[name="idarea_default"]').val(null).trigger('change')
+    $('[name="pselisih"]').val(null).trigger('change')
+    $('[name="idarea_default"]').prop("disabled", false);
+    $('[name="pselisih"]').prop("disabled", false);
     $('[name="idlocation"]').prop("required", true);
     $('#btnSave').removeClass("btn-danger").addClass("btn-primary").text('Simpan');
 }
@@ -130,7 +134,27 @@ function update_mlocation(id)
                     }
                 });
             });
-            $('[name="chold"]').val(data.chold);
+            $.ajax({
+                type: 'GET',
+                url: HOST_URL + 'api/globalmodule/list_coa' + '?var=' + data.pselisih,
+                dataType: 'json',
+                delay: 250,
+            }).then(function (datax) {
+
+
+                // create the option and append to Select2
+                var option = new Option(datax.items[0].nmcoa, datax.items[0].idcoa, true, true);
+                $('[name="pselisih"]').append(option).trigger('change');
+
+                // manually trigger the `select2:select` event
+                $('[name="pselisih"]').trigger({
+                    type: 'select2:select',
+                    params: {
+                        data: datax
+                    }
+                });
+            });
+            $('[name="chold"]').val(data.chold.trim()).trigger('change');
             $('.chold').prop("disabled", false);
             $('#btnSave').removeClass("btn-danger").addClass("btn-primary").text('Update');
             //$('[name="dob"]').datepicker('update',data.dob);
@@ -169,6 +193,48 @@ function delete_mlocation(id)
             $('[name="id"]').val(data.id);
             $('[name="idlocation"]').val(data.idlocation).prop("readonly", true);
             $('[name="nmlocation"]').val(data.nmlocation).prop("readonly", true);
+            $.ajax({
+                type: 'GET',
+                url: HOST_URL + 'api/globalmodule/list_marea' + '?var=' + data.idarea_default,
+                dataType: 'json',
+                delay: 250,
+            }).then(function (datax) {
+
+
+                // create the option and append to Select2
+                var option = new Option(datax.items[0].nmarea, datax.items[0].idarea, true, true);
+                $('[name="idarea_default"]').append(option).trigger('change');
+
+                // manually trigger the `select2:select` event
+                $('[name="idarea_default"]').trigger({
+                    type: 'select2:select',
+                    params: {
+                        data: datax
+                    }
+                });
+            });
+            $.ajax({
+                type: 'GET',
+                url: HOST_URL + 'api/globalmodule/list_coa' + '?var=' + data.pselisih,
+                dataType: 'json',
+                delay: 250,
+            }).then(function (datax) {
+
+
+                // create the option and append to Select2
+                var option = new Option(datax.items[0].nmcoa, datax.items[0].idcoa, true, true);
+                $('[name="pselisih"]').append(option).trigger('change');
+
+                // manually trigger the `select2:select` event
+                $('[name="pselisih"]').trigger({
+                    type: 'select2:select',
+                    params: {
+                        data: datax
+                    }
+                });
+            });
+            $('[name="idarea_default"]').prop("disabled", true);
+            $('[name="pselisih"]').prop("disabled", true);
             $('[name="chold"]').val(data.chold);
             $('.chold').prop("disabled", true);
             $('#btnSave').removeClass("btn-primary").addClass("btn-danger").text('Delete');
@@ -245,6 +311,7 @@ function save()
                 var valID = $('[name="id"]').val();
                 var validlocation= $('[name="idlocation"]').val();
                 var validarea_default= $('[name="idarea_default"]').val();
+                var valpselisih= $('[name="pselisih"]').val();
                 var valnmlocation = $('[name="nmlocation"]').val();
                 var valchold = $('[name="chold"]').val();
 
@@ -257,6 +324,7 @@ function save()
                         idlocation: validlocation,
                         idarea_default: validarea_default,
                         nmlocation: valnmlocation,
+                        pselisih: valpselisih,
                         chold: valchold,
                         type: valtype
                     },
@@ -316,17 +384,21 @@ function save()
                     }
                 });
             }
+        } else {
+            bttn.prop('disabled', false);
         }
     });
 }
 
 
 // ID POSTION
-var defaultInitialGroup = $('[name="idlocation"]').val();
+// var defaultInitialGroup = $('[name="idlocation"]').val();
 $("#idarea_default").select2({
     placeholder: "Type position area",
     allowClear: true,
-    minimumInputLength: 2, // only start searching when the user has input 3 or more characters
+    width: '100%',
+    dropdownParent: $("#modal_form"),
+    // minimumInputLength: 2, // only start searching when the user has input 3 or more characters
     //maximumSelectionLength: 1,
     //multiple: false,
     ajax: {
@@ -341,9 +413,7 @@ $("#idarea_default").select2({
                 _draw_: true,
                 _start_: 1,
                 _perpage_: 2,
-                _paramglobal_: defaultInitialGroup,
-                _parameterx_: defaultInitialGroup,
-                term: params.term,
+                _paramglobal_: '',
             };
         },
         processResults: function(data, params) {
@@ -391,6 +461,64 @@ function formatAreaSelection(repo) {
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++ RANAH AREA ++++++++++++++++++++++++++++++++++++++++//
 
 
+function formatCOA(repo) {
+    if (repo.loading) return repo.text;
+    var markup ="<div class='select2-result-repository__description'>" + repo.idcoa +"   <i class='fa fa-circle'></i>   "+ repo.nmcoa +" <i class='fa fa-circle'></i> LEVEL "+ repo.level + " </div>";
+    return markup;
+}
+function formatCOASelection(repo) {
+    return repo.nmcoa || repo.text;
+}
+
+// ======================= PEMBELIAN ==================================
+
+//var defaultInitialGol = $("#newdept").val();
+$("#pselisih").select2({
+    placeholder: "Ketik/Pilih COA",
+    allowClear: true,
+    dropdownParent: $("#modal_form"),
+    width: '100%',
+    ajax: {
+        url: HOST_URL + 'api/globalmodule/list_coa',
+        type: 'POST',
+        dataType: 'json',
+        delay: 250,
+        data: function(params) {
+            return {
+                _search_: params.term, // search term
+                _page_: params.page,
+                _draw_: true,
+                _start_: 1,
+                _perpage_: 2,
+                _paramglobal_: '',
+            };
+        },
+        processResults: function(data, params) {
+            // parse the results into the format expected by Select2
+            // since we are using custom formatting functions we do not need to
+            // alter the remote JSON data, except to indicate that infinite
+            // scrolling can be used
+            params.page = params.page || 1;
+
+            return {
+                results: data.items,
+                pagination: {
+                    more: (params.page * 30) < data.total_count
+                }
+            };
+        },
+        cache: true
+    },
+    escapeMarkup: function(markup) {
+        return markup;
+    }, // let our custom formatter work
+    // minimumInputLength: 1,
+    templateResult: formatCOA, // omitted for brevity, see the source of this page
+    templateSelection: formatCOASelection // omitted for brevity, see the source of this page
+}).on("select2:selecting", function () {
+    // $("#id_desaktp").val(null).trigger('change');
+    // $("#id_kecktp").val(null).trigger('change');
+});
 
 
 

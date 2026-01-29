@@ -32,9 +32,10 @@ class M_Location extends Model
                                     and coalesce(resign,'')!='YES') as x where nik is not null $param ");
     }
 
-    var $t_mlocation_view = "(select a.*,to_char(a.inputdate,'dd-mm-yyyy hh24:mi:ss') as inputdate1,b.nmarea from sc_mst.mlocation a
-left outer join sc_mst.marea b on a.idarea_default=b.idarea ) as x";
-    var $t_mlocation_view_column = array('id','idlocation','nmlocation','inputdate1','inputby');
+    var $t_mlocation_view = "(select a.*,c.nmcoa,to_char(a.inputdate,'dd-mm-yyyy hh24:mi:ss') as inputdate1,b.nmarea from sc_mst.mlocation a
+left outer join sc_mst.marea b on a.idarea_default=b.idarea
+left outer join sc_mst.coa c on a.pselisih=c.idcoa ) as x";
+    var $t_mlocation_view_column = array('id','idlocation','nmlocation','idarea_default','nmarea','nmcoa');
     var $t_mlocation_view_order = array("nmlocation" => 'asc'); // default order
     private function _get_query_t_mlocation()
     {
@@ -196,8 +197,10 @@ left outer join sc_mst.mlocation b on a.idlocation=b.idlocation) as x";
     }
 
     /* Penambahan Bagian Pada Inventory */
-    var $t_costcenter_view = "sc_mst.costcenter";
-    var $t_costcenter_view_column = array('idcostcenter','nmcostcenter');
+    // var $t_costcenter_view = "sc_mst.costcenter";
+    var $t_costcenter_view = "(select a.*,c.nmcoa from sc_mst.costcenter a
+            left outer join sc_mst.coa c on a.pbiaya=c.idcoa ) as x";
+    var $t_costcenter_view_column = array('idcostcenter','nmcostcenter','nmcoa','chold');
     var $t_costcenter_view_order = array("nmcostcenter" => 'asc'); // default order
     private function _get_query_t_costcenter()
     {

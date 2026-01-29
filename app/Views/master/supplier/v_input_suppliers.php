@@ -113,7 +113,7 @@
                                     <label for="kdsupplier">Kode Supplier</label>
                                     <input type="hidden" id="type" name="type" value="<?= $type ?>" autocomplete="off">
                                     <input type="hidden" id="id" name="id" value="<?= $id ?>" autocomplete="off">
-                                    <input type="text" name="kdsupplier" class="form-control" id="kdsupplier" maxlength="60" placeholder="Kode Supplier" style="text-transform:uppercase;">
+                                    <input type="text" name="kdsupplier" class="form-control" id="kdsupplier" <?= $type == 'UPDATE' ? 'disabled' : '' ?> maxlength="60" placeholder="Kode Supplier" style="text-transform:uppercase;">
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -122,12 +122,29 @@
                                     <input type="text" name="nmsupplier" class="form-control" id="nmsupplier" maxlength="250" placeholder="Nama Supplier" style="text-transform:uppercase;">
                                 </div>
                             </div>
-                            <div class="col-md-3"></div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label class="">Hold</label>
+                                    <select name="chold" id="chold" class="form-control inform" style="text-transform:uppercase;" >
+                                        <!--option value="">--Pilih Hold--</option-->
+                                        <option value="NO"> NO </option>
+                                        <option value="YES">YES </option>
+                                    </select>
+                                    <span class="help-block"></span>
+                                </div>
+                            </div>
                             <!-- <div class="section-divider"></div> -->
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="alamat">Alamat </label>
                                     <textarea type="text" name="alamat" class="form-control" row="3" id="alamat" placeholder="Alamat" style="text-transform:uppercase;"></textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label for="idprovinsi">Wilayah/Provinsi</label>
+                                    <select name="idprovinsi" id="idprovinsi" class="form-control" required>
+                                    </select>
                                 </div>
                             </div>
                             <div class="col-md-2">
@@ -173,7 +190,7 @@
                                     <input type="text"
                                         name="plafon"
                                         id="plafon"
-                                        class="form-control text-end numeric-format"
+                                        class="form-control ratakanan jtsseparator"
                                         placeholder="0.00">
                                 </div>
                             </div>
@@ -183,7 +200,7 @@
                                     <input type="text"
                                         name="jthtempo"
                                         id="jthtempo"
-                                        class="form-control text-end numeric-format"
+                                        class="form-control ratakanan jtsseparator"
                                         placeholder="0.00">
                                 </div>
                             </div>
@@ -207,7 +224,7 @@
                                     <input type="text" name="jabatan" class="form-control" id="jabatan" maxlength="50" placeholder="Jabatan" style="text-transform:uppercase;">
                                 </div>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-1">
                                 <div class="form-group">
                                     <!-- Radio untuk Interngroup -->
                                     <div class="form-check mb-3">
@@ -226,7 +243,7 @@
                                     </div>
                                 </div>
                             </div>                            
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="form-group">
                                     <label for="Description">Keterangan</label>
                                     <textarea name="keterangan"  id="keterangan" class="form-control" rows="3" placeholder="Catatan/Informasi..."  style="text-transform:uppercase;" <?= $disabled ?>></textarea>

@@ -8,30 +8,20 @@ class M_Suppliers extends Model
 {
 
     /* PERANGKAT */
-    var $suppliers_view = "(select a.* from sc_mst.mstsupplier a 
+    var $suppliers_view = "(select a.*,
+    b.namaprov, 
+    c.namakotakab,
+    f.nmmarket from sc_mst.mstsupplier a 
+    left outer join sc_mst.provinsi b on a.idprovinsi=b.kodeprov
+    left outer join sc_mst.kotakab c on a.idkota=c.kodekotakab
+    left outer join sc_mst.market f on a.idmarket=f.idmarket
     where COALESCE(status,'') = 'F') as x";
-    var $suppliers_view_column = array('kdsupplier', 'nmsupplier','alamat','phone','createdby','createddate','updateby','updatedate');
+    var $suppliers_view_column = array('kdsupplier', 'nmsupplier','alamat','namakotakab','namaprov','nmmarket','npwp','plafon','jthtempo','phone','cp');
     var $suppliers_view_order = array("createddate" => 'desc'); // default order
     private function _get_query_t_suppliers()
     {
         // $cek = $this->qauthorization(" and username='$nama' and level_1='YES'")->getNumRows();
         $builder = $this->db->table($this->suppliers_view);
-        //$builder->where(array('grouptype ' => 'CIT'));
-
-        // $tglrange = $this->request->getPost('tglrange');
-        // if (!empty($tglrange)) {
-        //     $dates = explode(' - ', $tglrange);
-        //     if (count($dates) == 2) {
-        //         $start = \DateTime::createFromFormat('d-m-Y', trim($dates[0]))->format('Y-m-d');
-        //         $end   = \DateTime::createFromFormat('d-m-Y', trim($dates[1]))->format('Y-m-d');
-        //         $builder->where("docdate BETWEEN '{$start}' AND '{$end}'");
-        //     }
-        // }
-
-        // $status_filter = $this->request->getPost('status_filter');
-        // if ($status_filter !== 'ALL') {
-        //     $builder->where('trim(x.status)', $status_filter);
-        // }
 
         $i = 0;
         foreach ($this->suppliers_view_column as $item)

@@ -47,8 +47,10 @@
             <button type="button" class="btn btn-primary dropdown-toggle dropdown-icon" data-bs-toggle="dropdown"><?php echo 'Menu'; ?>
             </button>
             <div class="dropdown-menu">
-                <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#filter"  href="#" disabled="true"><i class="fa fa-filter"></i><?php echo '    Filter'; ?></a>
+                <!-- <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#filter"  href="#" disabled="true"><i class="fa fa-filter"></i><?php echo '    Filter'; ?></a> -->
+                <?php if (isset($dtl_akses['a_input']) && trim($dtl_akses['a_input']) === 't'): ?>
                 <a class="dropdown-item" href="#"  onclick="add_mlocation()"><i class="fa fa-plus" ></i><?php echo '     Input'; ?> </a>
+                <?php endif;?>
                 <a class="dropdown-item" href="#"  onclick="reload_table()"><i class="fa fa-refresh"></i><?php echo '    Reload'; ?> </a>
             </div>
         </div>
@@ -63,6 +65,7 @@
                 <th>Warehouse Name</th>
                 <th>ID Default Area</th>
                 <th>Default Area</th>
+                <th>Perkiraan Selisih</th>
                 <th>Hold</th>
             </tr>
             </thead>
@@ -74,7 +77,7 @@
 
 <!-- Bootstrap modal -->
 <div class="modal fade" id="modal_form" role="dialog">
-    <div class="modal-dialog modal-md">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title" id="myModalLabel">Input Data Lokasi</h4>
@@ -87,36 +90,45 @@
                     <input type="hidden" value="INPUT" name="type"/>
                     <input type="hidden" name="id"/>
                     <div class="form-body">
-                        <div class="form-group">
-                            <label class="control-label col-md-3">ID</label>
-                            <div class="col-md-9">
-                                <input name="idlocation" placeholder="ID Location" class="form-control inform" type="text" MAXLENGTH="12" style="text-transform:uppercase;" required>
-                                <span class="help-block"></span>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label class="">ID Lokasi</label>
+                                    <input name="idlocation" placeholder="ID Location" class="form-control inform" type="text" MAXLENGTH="12" style="text-transform:uppercase;" required>
+                                    <span class="help-block"></span>
+                                </div>
                             </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="control-label col-md-3">LOCATION NAME</label>
-                            <div class="col-md-9">
-                                <input name="nmlocation" placeholder="LOCATION NAME" class="form-control inform" type="text" style="text-transform:uppercase;">
-                                <span class="help-block"></span>
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label class="">Nama Lokasi</label>
+                                    <input name="nmlocation" placeholder="LOCATION NAME" class="form-control inform" type="text" style="text-transform:uppercase;">
+                                    <span class="help-block"></span>
+                                </div>
                             </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="control-label col-md-3">AREA DEFAULT</label>
-                            <div class="col-md-9">
-                                <select name="idarea_default" id="idarea_default" class="form-control"  >
-                                </select>
+                            <div class="form-group">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label class="">Area Default</label>
+                                        <select name="idarea_default" id="idarea_default" class="form-control"  >
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="">Perkiraan Selisih</label>
+                                        <select name="pselisih" id="pselisih" class="form-control"  >
+                                        </select>    
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="control-label col-md-3">Hold</label>
-                            <div class="col-md-9">
-                                <select name="chold" class="form-control chold inform" style="text-transform:uppercase;" >
-                                    <!--option value="">--Pilih Hold--</option-->
-                                    <option value="NO"> NO </option>
-                                    <option value="YES">YES </option>
-                                </select>
-                                <span class="help-block"></span>
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label class="">Hold</label>
+                                    <select name="chold" class="form-control chold inform" style="text-transform:uppercase;" >
+                                        <!--option value="">--Pilih Hold--</option-->
+                                        <option value="NO"> NO </option>
+                                        <option value="YES">YES </option>
+                                    </select>
+                                    <span class="help-block"></span>
+                                </div>
                             </div>
                         </div>
                     </div>

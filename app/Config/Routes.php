@@ -192,6 +192,43 @@ $routes->group('/master/data', ["namespace" => "App\Controllers\Master"], functi
     $routes->add('get_coa_detail', 'Coa::get_coa_detail');
     $routes->add('saveCOA', 'Coa::saveCOA');
     $routes->add('delete_coa', 'Coa::delete_coa');
+
+    
+    $routes->add('job', 'Job::job');
+    $routes->add('js_vtree_job_query', 'Job::js_vtree_job_query');
+    $routes->add('get_job_detail', 'Job::get_job_detail');
+    $routes->add('saveJob', 'Job::saveJob');
+    $routes->add('delete_job', 'Job::delete_job');
+
+
+    $routes->add('location', 'Location::index');
+    $routes->add('list_mlocation', 'Location::list_mlocation');
+    $routes->post("saveEntry", "Location::saveEntry");
+
+    $routes->get("showing_data/(:any)", "Location::showing_data/$1");
+
+
+
+    
+    $routes->add('area', 'Location::area');
+    $routes->add('list_marea', 'Location::list_marea');
+    $routes->post("saveEntryArea", "Location::saveEntryArea");
+    $routes->get("showing_data_area/(:any)", "Location::showing_data_area/$1");
+    $routes->add('import_area', 'Location::import_area');
+    $routes->post("proses_upload", "Location::proses_upload");
+    $routes->add("clear_tmp", "Location::clear_tmp");
+    $routes->add("final_data", "Location::final_data");
+    $routes->add("showlabels", "Location::showlabels");
+    $routes->add("api_show_showlabels_area(:any)", "Location::api_show_showlabels_area$1");
+    $routes->add("show_showlabels_area", "Location::show_showlabels_area");
+
+
+    $routes->add("cc", "Location::cc");
+    $routes->add("list_costcenter", "Location::list_costcenter");
+    $routes->post("saveCostCenter", "Location::saveCostCenter");
+    $routes->get("showing_data_costcenter(:any)", "Location::showing_data_costcenter$1");
+    $routes->post("show_showlabels_area_partial", "Location::show_showlabels_area_partial");
+    $routes->get("api_show_showlabels_area_partial(:any)", "Location::api_show_showlabels_area_partial$1");
 });
 
 
@@ -466,6 +503,7 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
     $routes->add('globalmodule/list_kolektor', 'Globalmodule::list_kolektor');
     $routes->add('globalmodule/list_coa', 'Globalmodule::list_coa');
     $routes->add('globalmodule/list_currency', 'Globalmodule::list_currency');
+    $routes->add('globalmodule/list_customer', 'Globalmodule::list_customer');
 
 
     //validator & request keluar

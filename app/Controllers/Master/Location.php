@@ -13,7 +13,7 @@ class Location extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.M.B.1'; $versirelease='I.M.B.1/BETA.001'; $releasedate=date('2022-04-12 00:00:00');
+        $kodemenu='I.M.B.7'; $versirelease='I.M.B.7/BETA.001'; $releasedate=date('2022-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -27,24 +27,62 @@ class Location extends BaseController
         } else {
             $data['message']='';
         }
+        $kmenu = 'I.M.B.7';
+        $role = trim($this->session->get('roleid'));
+        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
         return $this->template->render('master/location/v_location',$data);
     }
 
     function list_mlocation(){
         $list = $this->m_location->get_t_mlocation_view();
+        $kmenu = 'I.M.B.7';
+        $nama=trim($this->session->get('nama'));
+        $role=trim($this->session->get('roleid'));
+
+        $datadtl['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
+        $dataanu['userinfo'] = $this->m_user->getUser(" and username='$nama'")->getRowArray();
+
+        $canUpdate = isset($datadtl['dtl_akses']['a_update']) && trim($datadtl['dtl_akses']['a_update']) === 't';
+        $canDelete = isset($datadtl['dtl_akses']['a_delete']) && trim($datadtl['dtl_akses']['a_delete']) === 't';
+        // $canView = isset($datadtl['dtl_akses']['a_view']) && trim($datadtl['dtl_akses']['a_view']) === 't';
+        $canInput = isset($datadtl['dtl_akses']['a_input']) && trim($datadtl['dtl_akses']['a_input']) === 't';
+
+
         $data = array();
         $no = $_POST['start'];
         foreach ($list as $lm) {
             $no++;
             $row = array();
             $row[] = $no;
-            $row[] = '
-              <a class="btn btn-sm btn-primary" href="javascript:void(0)" title="Update Location" onclick="update_mlocation('."'".trim($lm->id)."'".')"><i class="fa fa-gear"></i> </a>
-              <!--a class="btn btn-sm btn-danger" href="javascript:void(0)" title="Delete Location" onclick="delete_mlocation('."'".trim($lm->id)."'".')"><i class="fa fa-trash"></i> </a-->';
+            $btnUpdate = '';
+            $btnDelete = '';
+
+            if ($canUpdate) {
+                $btnUpdate = '
+                    <a class="btn btn-sm btn-warning" 
+                        href="javascript:void(0)" 
+                        title="Update Location" 
+                        onclick="update_mlocation(\''.trim($lm->id).'\')">
+                        <i class="fa fa-gear"></i>
+                    </a>';
+            }
+
+            if ($canDelete) {
+                $btnDelete = '
+                    <a class="btn btn-sm btn-danger" 
+                        href="javascript:void(0)" 
+                        title="Delete Location" 
+                        onclick="delete_mlocation(\''.trim($lm->id).'\')">
+                        <i class="fa fa-trash"></i>
+                    </a>';
+            }
+
+            $row[] = $btnUpdate . ' ' . $btnDelete;
             $row[] = $lm->idlocation;
             $row[] = $lm->nmlocation;
             $row[] = $lm->idarea_default;
             $row[] = $lm->nmarea;
+            $row[] = $lm->nmcoa;
             $row[] = $lm->chold;
             //$row[] = '<div align="right">'.number_format($lm->nominal, 2,',','.').'</div>';
             //add html for action
@@ -71,6 +109,7 @@ class Location extends BaseController
             $idlocation = strtoupper(trim($dataprocess->idlocation));
             $idarea_default = strtoupper(trim($dataprocess->idarea_default));
             $nmlocation = strtoupper(trim($dataprocess->nmlocation));
+            $pselisih = $dataprocess->pselisih;
             $chold = trim($dataprocess->chold);
             $inputby = $nama;
             $inputdate = date('Y-m-d H:i:s');
@@ -87,9 +126,11 @@ class Location extends BaseController
                 } else {
                     $info = array(
                         'idlocation' => $idlocation,
+                        'idarea_default' => $idarea_default,
                         'nmlocation' => $nmlocation,
                         'chold' => $chold,
                         'idbarcode' => $idlocation,
+                        'pselisih' => $pselisih,
                         'inputby' => $inputby,
                         'inputdate' => $inputdate,
                     );
@@ -113,6 +154,7 @@ class Location extends BaseController
                         'idbarcode' => $idlocation,
                         'idarea_default' => $idarea_default,
                         'nmlocation' => $nmlocation,
+                        'pselisih' => $pselisih,
                         'chold' => $chold,
                         'updateby' => $inputby,
                         'updatedate' => $inputdate,
@@ -180,10 +222,26 @@ class Location extends BaseController
         } else {
             $data['message']='';
         }
+        $kmenu = 'I.M.B.8';
+        $role = trim($this->session->get('roleid'));
+        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
         return $this->template->render('master/location/v_area',$data);
     }
 
     function list_marea(){
+        $kmenu = 'I.M.B.8';
+        $nama=trim($this->session->get('nama'));
+        $role=trim($this->session->get('roleid'));
+
+        $datadtl['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
+        $dataanu['userinfo'] = $this->m_user->getUser(" and username='$nama'")->getRowArray();
+
+        $canUpdate = isset($datadtl['dtl_akses']['a_update']) && trim($datadtl['dtl_akses']['a_update']) === 't';
+        $canDelete = isset($datadtl['dtl_akses']['a_delete']) && trim($datadtl['dtl_akses']['a_delete']) === 't';
+        // $canView = isset($datadtl['dtl_akses']['a_view']) && trim($datadtl['dtl_akses']['a_view']) === 't';
+        $canInput = isset($datadtl['dtl_akses']['a_input']) && trim($datadtl['dtl_akses']['a_input']) === 't';
+
+
         $list = $this->m_location->get_t_marea_view();
         $data = array();
         $no = $_POST['start'];
@@ -191,9 +249,22 @@ class Location extends BaseController
             $no++;
             $row = array();
             $row[] = $no;
-            $row[] = '
-              <a class="btn btn-sm btn-primary" href="javascript:void(0)" title="Update Area" onclick="update_marea('."'".trim($lm->id)."'".')"><i class="fa fa-gear"></i> </a>
-              <a class="btn btn-sm btn-danger" href="javascript:void(0)" title="Delete Area" onclick="delete_marea('."'".trim($lm->id)."'".')"><i class="fa fa-trash"></i> </a>';
+
+            $btnUpdate = '';
+            $btnDelete = '';
+
+            if ($canUpdate) {
+                $btnUpdate = '<a class="btn btn-sm btn-warning" href="javascript:void(0)" title="Update Area" 
+                onclick="update_marea('."'".trim($lm->id)."'".')">
+                <i class="fa fa-gear"></i> </a>';
+            }
+
+            if ($canDelete) {
+                $btnDelete = '<a class="btn btn-sm btn-danger" href="javascript:void(0)" title="Delete Area" 
+                onclick="delete_marea('."'".trim($lm->id)."'".')">
+                <i class="fa fa-trash"></i> </a>';
+            }
+            $row[] = $btnUpdate . ' ' . $btnDelete;
             $row[] = $lm->nmlocation;
             $row[] = $lm->idarea;
             $row[] = $lm->nmarea;
@@ -303,8 +374,9 @@ class Location extends BaseController
         }
     }
 
-    function showing_data_area($id){
-        $data = $this->m_location->get_t_marea_view_by_id($id);
+    function showing_data_area(){
+        $id = $this->uri->getSegment(4);
+        $data = $this->m_location->q_marea(" and id = $id")->getRow();
         echo json_encode($data);
     }
 
@@ -610,12 +682,12 @@ class Location extends BaseController
 
 
     function cc(){
-        $data['title']="Master Section / Bagian";
+        $data['title']="Master Cost Center";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.M.B.5'; $versirelease='I.M.B.5/BETA.001'; $releasedate=date('2022-04-12 00:00:00');
+        $kodemenu='I.M.B.9'; $versirelease='I.M.B.9/BETA.001'; $releasedate=date('2022-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -629,10 +701,25 @@ class Location extends BaseController
         } else {
             $data['message']='';
         }
+        $kmenu = 'I.M.B.9';
+        $role = trim($this->session->get('roleid'));
+        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();    
         return $this->template->render('master/location/v_costcenter',$data);
     }
 
     function list_costcenter(){
+        $kmenu = 'I.M.B.9';
+        $nama=trim($this->session->get('nama'));
+        $role=trim($this->session->get('roleid'));
+
+        $datadtl['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
+        $dataanu['userinfo'] = $this->m_user->getUser(" and username='$nama'")->getRowArray();
+
+        $canUpdate = isset($datadtl['dtl_akses']['a_update']) && trim($datadtl['dtl_akses']['a_update']) === 't';
+        $canDelete = isset($datadtl['dtl_akses']['a_delete']) && trim($datadtl['dtl_akses']['a_delete']) === 't';
+        // $canView = isset($datadtl['dtl_akses']['a_view']) && trim($datadtl['dtl_akses']['a_view']) === 't';
+        $canInput = isset($datadtl['dtl_akses']['a_input']) && trim($datadtl['dtl_akses']['a_input']) === 't';
+
         $list = $this->m_location->get_t_costcenter_view();
         $data = array();
         $no = $_POST['start'];
@@ -640,11 +727,25 @@ class Location extends BaseController
             $no++;
             $row = array();
             $row[] = $no;
-            $row[] = '
-              <a class="btn btn-sm btn-primary" href="javascript:void(0)" title="Update Bagian" onclick="update_costcenter('."'".trim($lm->idcostcenter)."'".')"><i class="fa fa-gear"></i> </a>
-              <a class="btn btn-sm btn-danger" href="javascript:void(0)" title="Delete Bagian" onclick="delete_costcenter('."'".trim($lm->idcostcenter)."'".')"><i class="fa fa-trash"></i> </a>';
+            $row[] =
+                ($canUpdate ? '
+                    <a class="btn btn-sm btn-warning"
+                        href="javascript:void(0)"
+                        title="Update Bagian"
+                        onclick="update_costcenter(\''.trim($lm->idcostcenter).'\')">
+                        <i class="fa fa-gear"></i>
+                    </a>' : '')
+                .
+                ($canDelete ? '
+                    <a class="btn btn-sm btn-danger"
+                        href="javascript:void(0)"
+                        title="Delete Bagian"
+                        onclick="delete_costcenter(\''.trim($lm->idcostcenter).'\')">
+                        <i class="fa fa-trash"></i>
+                    </a>' : '');
             $row[] = $lm->idcostcenter;
             $row[] = $lm->nmcostcenter;
+            $row[] = $lm->nmcoa;
             $row[] = $lm->chold;
             //$row[] = '<div align="right">'.number_format($lm->nominal, 2,',','.').'</div>';
             //add html for action
@@ -669,6 +770,7 @@ class Location extends BaseController
             $idcostcenter = strtoupper(trim($dataprocess->idcostcenter));
             $nmcostcenter = strtoupper(trim($dataprocess->nmcostcenter));
             $chold = trim($dataprocess->chold);
+            $pbiaya = ($dataprocess->pbiaya);
             $inputby = $nama;
             $inputdate = date('Y-m-d H:i:s');
             $type = trim($dataprocess->type);
@@ -686,6 +788,7 @@ class Location extends BaseController
                         'idcostcenter' => $idcostcenter,
                         'nmcostcenter' => $nmcostcenter,
                         'chold' => $chold,
+                        'pbiaya' => $pbiaya,
                         'inputby' => $inputby,
                         'inputdate' => $inputdate,
                     );
@@ -706,6 +809,7 @@ class Location extends BaseController
                     $info = array(
                         'nmcostcenter' => $nmcostcenter,
                         'chold' => $chold,
+                        'pbiaya' => $pbiaya,
                         'updateby' => $inputby,
                         'updatedate' => $inputdate,
                     );
@@ -741,8 +845,9 @@ class Location extends BaseController
         }
     }
 
-    function showing_data_costcenter($id){
-        $data = $this->m_location->get_t_costcenter_view_by_id($id);
+    function showing_data_costcenter(){
+        $id = $this->uri->getSegment(4);
+        $data = $this->m_location->q_costcenter(" and idcostcenter = '$id'")->getRow();
         echo json_encode($data);
     }
 }

@@ -158,7 +158,7 @@
                                             <label for="kdcustomer">Kode Customer</label>
                                             <input type="hidden" id="type" name="type" value="<?= $type ?>" autocomplete="off">
                                             <input type="hidden" id="id" name="id" value="<?= $id ?>" autocomplete="off">
-                                            <input type="text" name="kdcustomer" class="form-control" id="kdcustomer" maxlength="60" placeholder="Kode Customer" style="text-transform:uppercase;">
+                                            <input type="text" name="kdcustomer" class="form-control" id="kdcustomer" maxlength="60" <?= $type == 'UPDATE' ? 'disabled' : '' ?> placeholder="Kode Customer" style="text-transform:uppercase;">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -167,7 +167,17 @@
                                             <input type="text" name="nmcustomer" class="form-control" id="nmcustomer" maxlength="250" placeholder="Nama Customer" style="text-transform:uppercase;">
                                         </div>
                                     </div>
-                                    <div class="col-md-3"></div>
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                        <label class="">Hold</label>
+                                            <select name="chold" id="chold" class="form-control inform" style="text-transform:uppercase;" >
+                                                <!--option value="">--Pilih Hold--</option-->
+                                                <option value="NO"> NO </option>
+                                                <option value="YES">YES </option>
+                                            </select>
+                                            <span class="help-block"></span>
+                                        </div>
+                                    </div>
                                     <!-- <div class="section-divider"></div> -->
                                     <!-- <div class="col-md-4">
                                         <div class="form-group">
@@ -340,7 +350,7 @@
                                             <input type="text"
                                                 name="plafon"
                                                 id="plafon"
-                                                class="form-control text-end numeric-format"
+                                                class="form-control ratakanan jtsseparator"
                                                 placeholder="0.00">
                                         </div>
                                     </div>
@@ -350,7 +360,7 @@
                                             <input type="text"
                                                 name="jthtempo"
                                                 id="jthtempo"
-                                                class="form-control text-end numeric-format"
+                                                class="form-control ratakanan jtsseparator"
                                                 placeholder="0.00">
                                         </div>
                                     </div>
@@ -412,7 +422,7 @@
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="namanpwp">Nama NPWP</label>
-                                            <input type="text" name="namanpwp" id="namanpwp"
+                                            <input type="text" name="namanpwp" style="text-transform: uppercase;" id="namanpwp"
                                                 class="form-control" maxlength="50">
                                         </div>
                                     </div>
@@ -420,7 +430,7 @@
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label for="alamatnpwp">Alamat NPWP</label>
-                                            <textarea name="alamatnpwp" id="alamatnpwp"
+                                            <textarea name="alamatnpwp" style="text-transform: uppercase;" id="alamatnpwp"
                                             class="form-control" rows="3"></textarea>
                                         </div>
                                     </div>
@@ -445,21 +455,21 @@
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="idcoretax">Jenis ID</label>
-                                            <input type="text" name="idcoretax" id="idcoretax"
+                                            <input type="text" style="text-transform: uppercase;" name="idcoretax" id="idcoretax"
                                                 class="form-control" maxlength="100">
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="idtku">ID TKU</label>
-                                            <input type="text" name="idtku" id="idtku"
+                                            <input type="text" style="text-transform: uppercase;" name="idtku" id="idtku"
                                                 class="form-control" maxlength="100">
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="docnopembeli">No Doc Pembeli</label>
-                                            <input type="text" name="docnopembeli" id="docnopembeli"
+                                            <input type="text" style="text-transform: uppercase;" name="docnopembeli" id="docnopembeli"
                                                 class="form-control" maxlength="100">
                                         </div>
                                     </div>
@@ -500,7 +510,7 @@
                                     <div class="col-md-1">
                                         <div class="form-group">
                                             <label for="koderetur">Kode Retur</label>
-                                            <input type="text" name="koderetur" id="koderetur"
+                                            <input type="text" style="text-transform: uppercase;" name="koderetur" id="koderetur"
                                                 class="form-control" maxlength="3">
                                         </div>
                                     </div>

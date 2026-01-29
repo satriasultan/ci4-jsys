@@ -363,7 +363,7 @@ class Currency extends BaseController
                 : "";
         }
 
-        $data['back_url'] = base_url("master/currency");
+        $data['back_url'] = base_url("master/data/currency");
         $data['typeform'] = 'INPUT';
         $data['status'] = '';
 
@@ -621,7 +621,7 @@ class Currency extends BaseController
             $row[] = $lm->id;
             // $row[] = '<input class=" " maxlength="50" style="text-transform: uppercase;margin:0px; background-color:#d6d5d5;width: 100%" type="text" id="nmsupplier_' . htmlspecialchars($lm->id, ENT_QUOTES, 'UTF-8') . '" name="nmsupplier_' . htmlspecialchars($lm->id, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($lm->nmsupplier, ENT_QUOTES, 'UTF-8') . '" disabled >';
             // $row[] = '<input type="text" class=" ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;"  id="pricelst_'.$lm->id.'" name="pricelst_'.$lm->id.'" value="'.number_format($lm->pricelst, 2, '.', '').'" disabled >';
-            $row[] = '<input type="text" class="form-control" style="margin:0px; background-color:#d6d5d5;width: 100%;" id="exchangedate_'.$lm->id.'" name="exchangedate_'.$lm->id.'" value="'.($lm->exchangedate ? htmlspecialchars(date('d-m-Y', strtotime($lm->exchangedate)), ENT_QUOTES, 'UTF-8') : '').'" disabled >';
+            $row[] = '<input type="text" class="" style="margin:0px; background-color:#d6d5d5;width: 100%;" id="exchangedate_'.$lm->id.'" name="exchangedate_'.$lm->id.'" value="'.($lm->exchangedate ? htmlspecialchars(date('d-m-Y H:i:s', strtotime($lm->exchangedate)), ENT_QUOTES, 'UTF-8') : '').'" disabled >';
 
             
             $row[] = '<input type="text" class=" ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;" id="nilai_'.$lm->id.'" name="nilai_'.$lm->id.'" value="'.number_format($lm->nilai, 2, '.', ',').'" disabled >';
@@ -681,7 +681,9 @@ class Currency extends BaseController
                 $infoupdate = [
                     'nilai' => $nilai,
                     // 'nmsupplier' => $nmsupplier != '' ? strtoupper($nmsupplier) : $nmsupplier ,
-                    'exchangedate' => $exchangedate
+                    'exchangedate' => $exchangedate,
+                    'updateby' => $nama,
+                    'updatedate' => date('Y-m-d H:i:s')
                 ];
 
                 // Update berdasarkan idurut dan docno = nama

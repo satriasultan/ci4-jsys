@@ -99,7 +99,7 @@ class Customer extends BaseController
                 $btnActions .= '<a class="dropdown-item text-info" href="#" onclick="detailCustomer(\'' . trim($lm->id) . '\');">
                         <i class="fa fa-eye"></i> Detail Data</a>';
             }
-            if ($canDelete) {
+            if ($canDelete && trim($lm->chold) != 'YES') {
                 $btnActions .= '<a class="dropdown-item text-danger" href="#" onclick="hapusCustomer(\'' . trim($lm->id) . '\');">
                     <i class="fa fa-trash"></i> Hapus</a>';
             }
@@ -113,12 +113,18 @@ class Customer extends BaseController
             $row[] = $lm->kdcustomer;
             $row[] = $lm->nmcustomer;
             $row[] = $lm->alamat_kantor;
+            $row[] = $lm->namakotakab;
+            $row[] = $lm->namaprov;
+            $row[] = $lm->nmmarket;
+            $row[] = $lm->npwp;
+            $row[] = number_format((float)$lm->plafon, 2, '.', ',');
+            $row[] = number_format((float)$lm->jthtempo, 2, '.', ',');
             $row[] = $lm->phone;
-
-            $row[] = $lm->createdby;
-            $row[] = $lm->createddate;
-            $row[] = $lm->updateby;
-            $row[] = $lm->updatedate;
+            $row[] = $lm->cp;
+            // $row[] = $lm->createdby;
+            // $row[] = $lm->createddate;
+            // $row[] = $lm->updateby;
+            // $row[] = $lm->updatedate;
 
 
             // $row[] = $lm->inputdate1;
@@ -411,6 +417,7 @@ class Customer extends BaseController
             $id = trim($dataprocess->id);
             $kdcustomer          = strtoupper(trim($dataprocess->kdcustomer));
             $nmcustomer      = strtoupper(trim($dataprocess->nmcustomer));
+            $chold = $dataprocess->chold;
 
             $provinsi_kantor = $dataprocess->provinsi_kantor;
             $kota_kantor = $dataprocess->kota_kantor;
@@ -498,6 +505,7 @@ class Customer extends BaseController
                 $info = [
                     'kdcustomer' => $kdcustomer,
                     'nmcustomer' => $nmcustomer,
+                    'chold' => $chold,
 
                     'provinsi_kantor' => $provinsi_kantor,
                     'kota_kantor'     => $kota_kantor,
@@ -594,6 +602,7 @@ class Customer extends BaseController
                 if ($check > 0) {
                 $info = [
                     'nmcustomer' => $nmcustomer,
+                    'chold' => $chold,
                     'provinsi_kantor' => $provinsi_kantor,
                     'kota_kantor'     => $kota_kantor,
                     'kec_kantor'      => $kec_kantor,

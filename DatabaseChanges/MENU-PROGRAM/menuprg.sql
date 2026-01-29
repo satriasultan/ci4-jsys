@@ -14,10 +14,16 @@ INSERT INTO sc_mst.menuprg (
 ) VALUES 
 ('JTS', 1, 'I.M.B.1', 'MASTER CUSTOMER', 'I.M', 'I.M.B', 'P', false, 'fa-lightbulb-o', 'master/data/customer', 'LEFT', 'NO'),
 ('JTS', 2, 'I.M.B.2', 'MASTER SUPPLIER', 'I.M', 'I.M.B', 'P', false, 'fa-list-alt', 'master/data/supplier', 'LEFT', 'NO'),
--- ('JTS', 3, 'I.M.B.3', 'MASTER TAX', 'I.M', 'I.M.B', 'P', false, 'fa-calendar', 'master/data/tax', 'LEFT', 'NO'),
+('JTS', 3, 'I.M.B.3', 'MASTER TAX', 'I.M', 'I.M.B', 'P', false, 'fa-calendar', 'master/data/tax', 'LEFT', 'NO'),
 ('JTS', 4, 'I.M.B.4', 'MASTER CURRENCY', 'I.M', 'I.M.B', 'P', false, 'fa-list-alt', 'master/data/currency', 'LEFT', 'NO'),
-('JTS', 5, 'I.M.B.5', 'MASTER COA', 'I.M', 'I.M.B', 'P', false, 'fa-list-alt', 'master/data/coa', 'LEFT', 'NO');
--- ('JTS', 6, 'I.M.B.6', 'MASTER JOB', 'I.M', 'I.M.B', 'P', false, 'fa-folder', 'master/data/job', 'LEFT', 'NO'),
--- ('JTS', 7, 'I.M.B.7', 'MASTER WAREHOUSE', 'I.M', 'I.M.B', 'P', false, 'fa-external-link', 'master/location', 'LEFT', 'NO');
--- ('JTS', 8, 'I.M.B.8', 'MASTER SUB LOCATION', 'I.M', 'I.M.B', 'P', false, 'fa-traceability', 'master/data/sub', 'LEFT', 'NO'),
--- ('JTS', 9, 'I.M.B.9', 'MASTER COST CENTER', 'I.M', 'I.M.B', 'P', false, 'fa-traceability', 'master/data/cc', 'LEFT', 'NO');
+('JTS', 5, 'I.M.B.5', 'MASTER COA', 'I.M', 'I.M.B', 'P', false, 'fa-list-alt', 'master/data/coa', 'LEFT', 'NO'),
+('JTS', 6, 'I.M.B.6', 'MASTER JOB', 'I.M', 'I.M.B', 'P', false, 'fa-folder', 'master/data/job', 'LEFT', 'NO'),
+('JTS', 7, 'I.M.B.7', 'MASTER WAREHOUSE', 'I.M', 'I.M.B', 'P', false, 'fa-external-link', 'master/data/location', 'LEFT', 'NO'),
+('JTS', 8, 'I.M.B.8', 'MASTER SUB LOCATION', 'I.M', 'I.M.B', 'P', false, 'fa-traceability', 'master/data/area', 'LEFT', 'NO'),
+('JTS', 9, 'I.M.B.9', 'MASTER COST CENTER', 'I.M', 'I.M.B', 'P', false, 'fa-traceability', 'master/data/cc', 'LEFT', 'NO'),
+
+('JTS', 10, 'I.M.B.10', 'MASTER BARANG', 'I.M', 'I.M.B', 'P', false, 'fa-traceability', 'master/data/cc', 'LEFT', 'NO'),
+('JTS', 11, 'I.M.B.11', 'MASTER GOLONGAN BARANG', 'I.M', 'I.M.B', 'P', false, 'fa-traceability', 'master/data/cc', 'LEFT', 'NO'),
+('JTS', 12, 'I.M.B.12', 'MASTER JENIS PRODUK', 'I.M', 'I.M.B', 'P', false, 'fa-traceability', 'master/data/cc', 'LEFT', 'NO'),
+('JTS', 13, 'I.M.B.13', 'MASTER KELOMPOK BARANG', 'I.M', 'I.M.B', 'P', false, 'fa-traceability', 'master/data/cc', 'LEFT', 'NO'),
+('JTS', 14, 'I.M.B.14', 'MASTER PRINCIPAL', 'I.M', 'I.M.B', 'P', false, 'fa-traceability', 'master/data/cc', 'LEFT', 'NO');

@@ -291,4 +291,8 @@ group by docno order by docno asc");
         return $this->db->query("select *, trim(currcode) as id from sc_mst.currency where coalesce(trim(currcode),'')!='' $param ");
     }
 
+    function q_customer_new($param){
+        return $this->db->query("select *, trim(kdcustomer) as id from sc_mst.customer where coalesce(trim(kdcustomer),'')!='' $param ");
+    }
+
 }

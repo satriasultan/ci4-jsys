@@ -47,8 +47,10 @@
             <button type="button" class="btn btn-primary dropdown-toggle dropdown-icon" data-bs-toggle="dropdown"><?php echo 'Menu'; ?>
             </button>
             <div class="dropdown-menu">
-                <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#filter"  href="#" disabled="true"><i class="fa fa-filter"></i><?php echo '    Filter'; ?></a>
+                <?php if (isset($dtl_akses['a_input']) && trim($dtl_akses['a_input']) === 't'): ?>
+                <!-- <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#filter"  href="#" disabled="true"><i class="fa fa-filter"></i><?php echo '    Filter'; ?></a> -->
                 <a class="dropdown-item" href="#"  onclick="add_costcenter()"><i class="fa fa-plus" ></i><?php echo '     Input'; ?> </a>
+                <?php endif;?>
                 <a class="dropdown-item" href="#"  onclick="reload_table()"><i class="fa fa-refresh"></i><?php echo '    Reload'; ?> </a>
             </div>
         </div>
@@ -61,6 +63,7 @@
                 <th width="8%">Action</th>
                 <th>ID</th>
                 <th>Bagian</th>
+                <th>Perkiraan Biaya</th>
                 <th>Hold</th>
             </tr>
             </thead>
@@ -85,29 +88,38 @@
                     <input type="hidden" value="INPUT" name="type"/>
                     <input type="hidden" name="id"/>
                     <div class="form-body">
-                        <div class="form-group">
-                            <label class="control-label col-md-3">Section ID</label>
-                            <div class="col-md-9">
-                                <input name="idcostcenter" placeholder="ID Bagian" class="form-control inform" type="text" MAXLENGTH="10" style="text-transform:uppercase;" required>
-                                <span class="help-block"></span>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                <label class="">Section ID</label>
+                                    <input name="idcostcenter" placeholder="ID Bagian" class="form-control inform" type="text" MAXLENGTH="10" style="text-transform:uppercase;" required>
+                                    <span class="help-block"></span>
+                                </div>
                             </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="control-label col-md-3">Section Name</label>
-                            <div class="col-md-9">
-                                <input name="nmcostcenter" placeholder="Nama Bagian" class="form-control inform" type="text" style="text-transform:uppercase;">
-                                <span class="help-block"></span>
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                <label class="">Section Name</label>
+                                    <input name="nmcostcenter" placeholder="Nama Bagian" class="form-control inform" type="text" style="text-transform:uppercase;">
+                                    <span class="help-block"></span>
+                                </div>
                             </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="control-label col-md-3">Hold</label>
-                            <div class="col-md-9">
-                                <select name="chold" class="form-control chold inform" style="text-transform:uppercase;" >
-                                    <!--option value="">--Pilih Hold--</option-->
-                                    <option value="NO"> NO </option>
-                                    <option value="YES">YES </option>
-                                </select>
-                                <span class="help-block"></span>
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label class="">Perkiraan Biaya</label>
+                                    <select name="pbiaya" id="pbiaya" class="form-control"  >
+                                    </select>    
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                <label class="">Hold</label>
+                                    <select name="chold" class="form-control chold inform" style="text-transform:uppercase;" >
+                                        <!--option value="">--Pilih Hold--</option-->
+                                        <option value="NO"> NO </option>
+                                        <option value="YES">YES </option>
+                                    </select>
+                                    <span class="help-block"></span>
+                                </div>
                             </div>
                         </div>
                     </div>

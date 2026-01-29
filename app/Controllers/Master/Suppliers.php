@@ -96,7 +96,7 @@ class Suppliers extends BaseController
                 $btnActions .= '<a class="dropdown-item text-info" href="#" onclick="detailSupplier(\'' . trim($lm->id) . '\');">
                         <i class="fa fa-eye"></i> Detail Data</a>';
             }
-            if ($canDelete) {
+            if ($canDelete && trim($lm->chold) != 'YES') {
                 $btnActions .= '<a class="dropdown-item text-danger" href="#" onclick="hapusSupplier(\'' . trim($lm->id) . '\');">
                     <i class="fa fa-trash"></i> Hapus</a>';
             }            
@@ -111,12 +111,19 @@ class Suppliers extends BaseController
             $row[] = $lm->kdsupplier;
             $row[] = $lm->nmsupplier;
             $row[] = $lm->alamat;
+            $row[] = $lm->namakotakab;
+            $row[] = $lm->namaprov;
+            $row[] = $lm->nmmarket;
+            $row[] = $lm->npwp;
+            $row[] = number_format((float)$lm->plafon, 2, '.', ',');
+            $row[] = number_format((float)$lm->jthtempo, 2, '.', ',');
             $row[] = $lm->phone;
+            $row[] = $lm->cp;
 
-            $row[] = $lm->createdby;
-            $row[] = $lm->createddate;
-            $row[] = $lm->updateby;
-            $row[] = $lm->updatedate;
+            // $row[] = $lm->createdby;
+            // $row[] = $lm->createddate;
+            // $row[] = $lm->updateby;
+            // $row[] = $lm->updatedate;
 
 
             // $row[] = $lm->inputdate1;
@@ -410,6 +417,7 @@ class Suppliers extends BaseController
             $kdsupplier          = strtoupper(trim($dataprocess->kdsupplier));
             $nmsupplier      = strtoupper(trim($dataprocess->nmsupplier));
             $alamat       = strtoupper(trim($dataprocess->alamat));
+            $idprovinsi       = strtoupper(trim($dataprocess->idprovinsi));
             $idkota       = strtoupper(trim($dataprocess->idkota));
             $phone        = trim($dataprocess->phone);
             // $idsticker      = strtoupper(trim($dataprocess->idsticker));
@@ -418,6 +426,7 @@ class Suppliers extends BaseController
             $npwp           = strtoupper(trim($dataprocess->npwp));
             $npkp        = strtoupper(trim($dataprocess->npkp));
             $jthtempo = $dataprocess->jthtempo;
+            $chold = $dataprocess->chold;
             $plafon = $dataprocess->plafon;
 
             $idmarket         = strtoupper(trim($dataprocess->idmarket));
@@ -442,8 +451,10 @@ class Suppliers extends BaseController
                 $info = array(
                     'kdsupplier'         => $kdsupplier,
                     'nmsupplier'     => $nmsupplier,
+                    'chold' => $chold,
                     // 'deptpic'       => $deptpic,
                     'alamat'       => $alamat,
+                    'idprovinsi'       => $idprovinsi,
                     'idkota'       => $idkota,
                     'phone'     => $phone,
                     // 'idsticker'      => $idsticker,
@@ -505,8 +516,10 @@ class Suppliers extends BaseController
                     $info = array(
                     'kdsupplier'         => $kdsupplier,
                     'nmsupplier'     => $nmsupplier,
+                    'chold' => $chold,
                     // 'deptpic'       => $deptpic,
                     'alamat'       => $alamat,
+                    'idprovinsi'       => $idprovinsi,
                     'idkota'       => $idkota,
                     'phone'     => $phone,
                     // 'idsticker'      => $idsticker,

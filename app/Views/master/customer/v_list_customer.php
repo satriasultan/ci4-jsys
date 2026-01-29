@@ -55,11 +55,18 @@
                             <th style="min-width:100px; text-align:center; vertical-align:middle;">Kode Customer</th>
                             <th style="min-width:200px; text-align:center; vertical-align:middle;">Nama Customer</th>
                             <th style="min-width:250px; text-align:center; vertical-align:middle;">Alamat Kantor</th>
-                            <th style="min-width:80px; text-align:center; vertical-align:middle;">Telepon</th>
-                            <th style="min-width:80px; text-align:center; vertical-align:middle;">Dibuat oleh</th>
+                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Kota Kantor</th>
+                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Provinsi Kantor</th>
+                            <th style="min-width:80px; text-align:center; vertical-align:middle;">Market</th>
+                            <th style="min-width:100px; text-align:center; vertical-align:middle;">NPWP</th>
+                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Plafon</th>
+                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Jatuh Tempo</th>
+                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Telepon</th>
+                            <th style="min-width:150px; text-align:center; vertical-align:middle;">Contact Person</th>
+                            <!-- <th style="min-width:80px; text-align:center; vertical-align:middle;">Dibuat oleh</th>
                             <th style="min-width:100px; text-align:center; vertical-align:middle;">Dibuat tanggal</th>
                             <th style="min-width:80px; text-align:center; vertical-align:middle;">Diubah oleh</th>
-                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Diubah tanggal</th>
+                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Diubah tanggal</th> -->
 						</tr>
 					</thead>
 					<tbody>

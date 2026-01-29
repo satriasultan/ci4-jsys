@@ -33,6 +33,10 @@ create table sc_mst.market(
    updatedate TIMESTAMP WITHOUT TIME ZONE
 )
 
+alter table sc_mst.mstsupplier
+add column idprovinsi CHAR(20),
+add column chold char(6)
+
 
 INSERT INTO sc_mst.market
     (idmarket, nmmarket, createdby)

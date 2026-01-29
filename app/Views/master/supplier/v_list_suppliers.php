@@ -53,11 +53,14 @@
                             <th style="min-width:100px; text-align:center; vertical-align:middle;">Kode Supplier</th>
                             <th style="min-width:200px; text-align:center; vertical-align:middle;">Nama Supplier</th>
                             <th style="min-width:250px; text-align:center; vertical-align:middle;">Alamat</th>
-                            <th style="min-width:80px; text-align:center; vertical-align:middle;">Telepon</th>
-                            <th style="min-width:80px; text-align:center; vertical-align:middle;">Dibuat oleh</th>
-                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Dibuat tanggal</th>
-                            <th style="min-width:80px; text-align:center; vertical-align:middle;">Diubah oleh</th>
-                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Diubah tanggal</th>
+                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Kota</th>
+                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Wilayah</th>
+                            <th style="min-width:80px; text-align:center; vertical-align:middle;">Market</th>
+                            <th style="min-width:100px; text-align:center; vertical-align:middle;">NPWP</th>
+                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Plafon</th>
+                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Jatuh Tempo</th>
+                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Telepon</th>
+                            <th style="min-width:150px; text-align:center; vertical-align:middle;">Contact Person</th>
 						</tr>
 					</thead>
 					<tbody>

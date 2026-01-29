@@ -108,32 +108,51 @@ function documentReadable(){
             $('[name="kdsupplier"]').val($.trim(dt.kdsupplier));
             $('[name="nmsupplier"]').val($.trim(dt.nmsupplier).toUpperCase());
             $('[name="alamat"]').val($.trim(dt.alamat).toUpperCase());
-            $.ajax({
-                type: 'GET',
-                url: HOST_URL + 'api/geolocation/list_kota' + '?var=' + dt.idkota.trim(),
-                dataType: 'json',
-                delay: 100,
-            }).then(function (datax) {
-                // create the option and append to Select2
-                var option = new Option(datax.items[0].namakotakab, datax.items[0].kodekotakab, true, true);
-                $('[name="idkota"]').append(option).trigger('change');
+            // $.ajax({
+            //     type: 'GET',
+            //     url: HOST_URL + 'api/geolocation/list_kota' + '?var=' + dt.idkota.trim(),
+            //     dataType: 'json',
+            //     delay: 100,
+            // }).then(function (datax) {
+            //     // create the option and append to Select2
+            //     var option = new Option(datax.items[0].namakotakab, datax.items[0].kodekotakab, true, true);
+            //     $('[name="idkota"]').append(option).trigger('change');
 
-                // manually trigger the `select2:select` event
-                $('[name="idkota"]').trigger({
-                    type: 'select2:select',
-                    params: {
-                        data: datax
-                    }
-                });
-            });            
+            //     // manually trigger the `select2:select` event
+            //     $('[name="idkota"]').trigger({
+            //         type: 'select2:select',
+            //         params: {
+            //             data: datax
+            //         }
+            //     });
+            // }); 
+            
+            $.ajax({
+                url: HOST_URL + 'api/geolocation/list_provinsi?var=' + dt.idprovinsi,
+                dataType: 'json'
+            }).then(function (res) {
+                var option = new Option(res.items[0].namaprov, res.items[0].kodeprov, true, true);
+                $('[name="idprovinsi"]').append(option).trigger('change');
+                $('[name="idprovinsi"]').trigger({ type: 'select2:select', params: { data: res.items[0] } });
+            });
+
+            $.ajax({
+                url: HOST_URL + 'api/geolocation/list_kota?var=' + dt.idkota,
+                dataType: 'json'
+            }).then(function (res) {
+                var option = new Option(res.items[0].namakotakab, res.items[0].kodekotakab, true, true);
+                $('[name="idkota"]').append(option).trigger('change');
+                $('[name="idkota"]').trigger({ type: 'select2:select', params: { data: res.items[0] } });
+            });
             $('[name="phone"]').val($.trim(dt.phone));
             // $('[name="idsticker"]').val($.trim(dt.idsticker).toUpperCase()); // dikomentari seperti di PHP
             $('[name="fax"]').val($.trim(dt.fax).toUpperCase());
             $('[name="email"]').val($.trim(dt.email).toLowerCase());
             $('[name="npwp"]').val($.trim(dt.npwp).toUpperCase());
             $('[name="npkp"]').val($.trim(dt.npkp).toUpperCase());
-            $('[name="jthtempo"]').val((dt.jthtempo));
-            $('[name="plafon"]').val((dt.plafon));
+            $('[name="chold"]').val($.trim(dt.chold)).trigger('change');
+            setJtsValue('[name="jthtempo"]', convertToDbNumber(dt.jthtempo));
+            setJtsValue('[name="plafon"]', convertToDbNumber(dt.plafon));
             $('[name="interngroup"]').prop(
                 'checked',
                 $.trim((dt.interngroup || '')).toUpperCase() === 'YES'
@@ -314,6 +333,8 @@ function saveInputSupplier() {
                     kdsupplier: $('[name="kdsupplier"]').val(),
                     nmsupplier: $('[name="nmsupplier"]').val(),
                     alamat: $('[name="alamat"]').val(),
+                    chold: $('[name="chold"]').val(),
+                    idprovinsi: $('[name="idprovinsi"]').val(),
                     idkota: $('[name="idkota"]').val(),
 
                     phone: $('[name="phone"]').val(),
@@ -323,8 +344,8 @@ function saveInputSupplier() {
                     npwp: $('[name="npwp"]').val(),
                     npkp: $('[name="npkp"]').val(),
 
-                    plafon: $('[name="plafon"]').val(),
-                    jthtempo: $('[name="jthtempo"]').val(),
+                    plafon: convertToDbNumber($('[name="plafon"]').val()),
+                    jthtempo: convertToDbNumber($('[name="jthtempo"]').val()),
                     idmarket: $('[name="idmarket"]').val(),
 
                     cp: $('[name="cp"]').val(),
@@ -402,6 +423,11 @@ $('#email').on('input', function () {
 
 
 
+$(document).on('input', '.jtsseparator', function () {
+    _jtsseparator(this);
+});
+
+
 
 function editSupplier(e){
     Swal.fire({
@@ -450,6 +476,11 @@ function detailSupplier(e){
 }
 
 
+
+function setJtsValue(selector, value) {
+    $(selector).val(value);
+    _jtsseparator($(selector)[0]);
+}
 
 function hapusSupplier(e) {
     Swal.fire({
@@ -504,58 +535,58 @@ function hapusSupplier(e) {
 }
 
 
+function formatProvinsi(repo) {
+    if (repo.loading) return repo.text;
+    var markup = "<div class='select2-result-repository__description'>" + repo.kodeprov + " <i class='fa fa-circle-o'></i> " + repo.namaprov + "</div>";
+    return markup;
+}
+function formatProvinsiSelection(repo) {
+    return repo.namaprov || repo.text;
+}
 
-
-// function setToCancel(docno) {
-//     Swal.fire({
-//         title: 'Batal Pengajuan?',
-//         text: "Apakah anda yakin akan membatalkan pengajuan?",
-//         icon: 'question',
-//         showCancelButton: true,
-//         confirmButtonColor: '#3085d6',
-//         cancelButtonColor: '#d33',
-//         confirmButtonText: 'Ya, ubah'
-//     }).then((result) => {
-//         if (result.isConfirmed) {
-//             $.ajax({
-//                 url: HOST_URL + '/master/data/updateStatus',
-//                 type: 'POST',
-//                 data: { docno: docno, status: 'R' },
-//                 dataType: 'json',
-//                 success: function(res) {
-//                     if (res.success) {
-//                         Swal.fire({
-//                             icon: 'success',
-//                             title: 'Berhasil',
-//                             text: 'Pengajuan berhasil dibatalkan'
-//                         }).then(() => {
-//                             reload_table()
-//                         });
-//                     } else {
-//                         Swal.fire('Gagal', res.message || 'Terjadi kesalahan', 'error');
-//                     }
-//                 },
-//                 error: function() {
-//                     Swal.fire('Error', 'Tidak dapat terhubung ke server', 'error');
-//                 }
-//             });
-//         }
-//     });
-// }
-
-
-// kotakab
 function formatKota(repo) {
     if (repo.loading) return repo.text;
-    var markup ="<div class='select2-result-repository__description'>" + repo.kodekotakab +"   <i class='fa fa-circle-o'></i>   "+ repo.namakotakab +"</div>";
+    var markup = "<div class='select2-result-repository__description'>" + repo.kodekotakab + " <i class='fa fa-circle-o'></i> " + repo.namakotakab + "</div>";
     return markup;
 }
 function formatKotaSelection(repo) {
     return repo.namakotakab || repo.text;
 }
-//var defaultInitialGol = $("#newdept").val();
+
+
+// Provinsi Kantor
+$("#idprovinsi").select2({
+    placeholder: "Ketik/Pilih Provinsi Kantor",
+    allowClear: true,
+    width: '100%',
+    ajax: {
+        url: HOST_URL + 'api/geolocation/list_provinsi',
+        type: 'POST',
+        dataType: 'json',
+        delay: 250,
+        data: params => ({
+            _search_: params.term,
+            _page_: params.page,
+            _draw_: true,
+            _start_: 1,
+            _perpage_: 2,
+        }),
+        processResults: (data, params) => ({
+            results: data.items,
+            pagination: { more: (params.page * 30) < data.total_count }
+        }),
+        cache: true
+    },
+    escapeMarkup: markup => markup,
+    templateResult: formatProvinsi,
+    templateSelection: formatProvinsiSelection
+}).on("select2:selecting", () => {
+    $("#idkota").val(null).trigger('change');
+});
+
+// Kota Kantor
 $("#idkota").select2({
-    placeholder: "Ketik/Pilih Kota",
+    placeholder: "Ketik/Pilih Kota Kantor",
     allowClear: true,
     width: '100%',
     ajax: {
@@ -563,43 +594,26 @@ $("#idkota").select2({
         type: 'POST',
         dataType: 'json',
         delay: 250,
-        data: function(params) {
-            return {
-                _search_: params.term, // search term
-                _page_: params.page,
-                _draw_: true,
-                _start_: 1,
-                _perpage_: 2,
-                _paramglobal_: '',
-            };
-        },
-        processResults: function(data, params) {
-            // parse the results into the format expected by Select2
-            // since we are using custom formatting functions we do not need to
-            // alter the remote JSON data, except to indicate that infinite
-            // scrolling can be used
-            params.page = params.page || 1;
-
-            return {
-                results: data.items,
-                pagination: {
-                    more: (params.page * 30) < data.total_count
-                }
-            };
-        },
+        data: params => ({
+            _search_: params.term,
+            _page_: params.page,
+            _draw_: true,
+            _start_: 1,
+            _perpage_: 2,
+            _paramglobal_: $('#idprovinsi').val(),
+        }),
+        processResults: (data, params) => ({
+            results: data.items,
+            pagination: { more: (params.page * 30) < data.total_count }
+        }),
         cache: true
     },
-    escapeMarkup: function(markup) {
-        return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatKota, // omitted for brevity, see the source of this page
-    templateSelection: formatKotaSelection // omitted for brevity, see the source of this page
-}).on("select2:selecting", function () {
-    // $("#id_desaktp").val(null).trigger('change');
-    // $("#id_kecktp").val(null).trigger('change');
+    escapeMarkup: markup => markup,
+    templateResult: formatKota,
+    templateSelection: formatKotaSelection
+}).on("select2:selecting", () => {
+    // $("#kec_kantor, #kel_kantor").val(null).trigger('change');
 });
-
 
 
 

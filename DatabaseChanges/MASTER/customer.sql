@@ -116,6 +116,13 @@ create table sc_mst.kolektor(
 )
 
 
+
+
+
+alter table sc_mst.customer
+add column chold char(6)
+
+
 -- INSERT INTO sc_mst.kolektor
 --     (kdkolektor, nmkolektor, alamat, idkota ,createdby)
 -- VALUES

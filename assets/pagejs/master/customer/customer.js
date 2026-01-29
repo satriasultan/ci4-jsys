@@ -104,6 +104,12 @@ function documentReadable(){
             var json = jQuery.parseJSON(data);
             var dt = json.dataTables.items[0]; // data pertama
 
+            var isDetail = $('[name="type"]').val() === 'DETAIL';
+            if (isDetail) {
+                // disable semua input, textarea, select, dan checkbox/radio
+                $('input, textarea, select').prop('disabled', true);
+            }
+
             // Isi semua field dengan trim
             $('[name="kdcustomer"]').val($.trim(dt.kdcustomer));
             $('[name="nmcustomer"]').val($.trim(dt.nmcustomer).toUpperCase());
@@ -270,15 +276,15 @@ function documentReadable(){
             $('[name="kodepos_penagihan"]').val(dt.kodepos_penagihan);
 
 
-
+            $('[name="chold"]').val($.trim(dt.chold)).trigger('change');
             $('[name="phone"]').val($.trim(dt.phone));
             // $('[name="idsticker"]').val($.trim(dt.idsticker).toUpperCase()); // dikomentari seperti di PHP
             $('[name="fax"]').val($.trim(dt.fax).toUpperCase());
             $('[name="email"]').val($.trim(dt.email).toLowerCase());
             $('[name="npwp"]').val($.trim(dt.npwp).toUpperCase());
             $('[name="npkp"]').val($.trim(dt.npkp).toUpperCase());
-            $('[name="jthtempo"]').val((dt.jthtempo));
-            $('[name="plafon"]').val((dt.plafon));
+            setJtsValue('[name="jthtempo"]', convertToDbNumber(dt.jthtempo));
+            setJtsValue('[name="plafon"]', convertToDbNumber(dt.plafon));
             $('[name="cp"]').val($.trim(dt.cp).toUpperCase());
             $('[name="jabatan"]').val($.trim(dt.jabatan).toUpperCase());
             $('[name="keterangan"]').val($.trim(dt.keterangan).toUpperCase());
@@ -430,12 +436,6 @@ function documentReadable(){
             }
 
 
-            var isDetail = $('[name="type"]').val() === 'DETAIL';
-            if (isDetail) {
-                // disable semua input, textarea, select, dan checkbox/radio
-                $('input, textarea, select').prop('disabled', true);
-            }
-
             // Kalau mau readonly pada field tertentu:
             $('[name="docno"]').prop('readonly', true);
         },
@@ -450,6 +450,12 @@ function documentReadable(){
     });
 
     $("#loadMe").modal("hide");
+}
+
+
+function setJtsValue(selector, value) {
+    $(selector).val(value);
+    _jtsseparator($(selector)[0]);
 }
 /* FOR INPUT FUNCTION */
 
@@ -602,8 +608,8 @@ function saveInputCustomer() {
                     fax: $('[name="fax"]').val(),
                     npwp: $('[name="npwp"]').val(),
                     npkp: $('[name="npkp"]').val(),
-                    plafon: $('[name="plafon"]').val(),
-                    jthtempo: $('[name="jthtempo"]').val(),
+                    plafon: convertToDbNumber($('[name="plafon"]').val()),
+                    jthtempo: convertToDbNumber($('[name="jthtempo"]').val()),
                     idmarket: $('[name="idmarket"]').val(),
 
                     cp: $('[name="cp"]').val(),
@@ -612,6 +618,7 @@ function saveInputCustomer() {
                     coa: $('#coa').is(':checked') ? 'YES' : 'NO',
                     blacklist: $('#blacklist').is(':checked') ? 'YES' : 'NO',
 
+                    chold: $('[name="chold"]').val(),
                     namanpwp: $('[name="namanpwp"]').val(),
                     alamatnpwp: $('[name="alamatnpwp"]').val(),
                     idkotanpwp: $('[name="idkotanpwp"]').val(),
@@ -807,7 +814,9 @@ function isValid(val) {
 }
 
 
-
+$(document).on('input', '.jtsseparator', function () {
+    _jtsseparator(this);
+});
 
 
 /// ++++++++++++++++++++++++++++++ GEOLOCATION AREA ++++++++++++++++++++++++++++++++++++

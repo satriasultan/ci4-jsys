@@ -8,9 +8,20 @@ class M_Customer extends Model
 {
 
     /* PERANGKAT */
-    var $customer_view = "(select a.* from sc_mst.customer a 
+    var $customer_view = "(select a.*, 
+    b.namaprov, 
+    c.namakotakab, 
+    d.namakec, 
+    e.namakeldesa,
+    f.nmmarket
+    from sc_mst.customer a 
+    left outer join sc_mst.provinsi b on a.provinsi_kantor=b.kodeprov
+    left outer join sc_mst.kotakab c on a.kota_kantor=c.kodekotakab
+    left outer join sc_mst.kec d on a.kec_kantor=d.kodekec
+    left outer join sc_mst.keldesa e on a.kel_kantor=e.kodekeldesa
+    left outer join sc_mst.market f on a.idmarket=f.idmarket
     where COALESCE(status,'') = 'F') as x";
-    var $customer_view_column = array('kdcustomer', 'nmcustomer','alamat_kantor','phone','createdby','createddate','updateby','updatedate');
+    var $customer_view_column = array('kdcustomer', 'nmcustomer','alamat_kantor','namakotakab','namaprov','nmmarket','npwp','plafon','jthtempo','phone','cp');
     var $customer_view_order = array("createddate" => 'desc'); // default order
     private function _get_query_t_customer()
     {

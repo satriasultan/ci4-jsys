@@ -4,28 +4,28 @@ CREATE TABLE IF NOT EXISTS sc_mst.currency
     id SERIAL NOT NULL,
     currcode character(3) COLLATE pg_catalog."default" NOT NULL,
     currname character(50) COLLATE pg_catalog."default" NOT NULL,
-    createdby CHAR(20),
+    createdby CHARACTER(20),
     createddate TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updateby CHAR(20),
+    updateby CHARACTER(20),
     updatedate TIMESTAMP WITHOUT TIME ZONE,
     --pembelian
-    phutang char(20),
-    pum char(20),
-    pbonus char(20),
-    hutangac char(20),
-    hutangbiaya1 char(20),
-    hutangbiaya2 char(20),
+    phutang character(20),
+    pum character(20),
+    pbonus character(20),
+    hutangac character(20),
+    hutangbiaya1 character(20),
+    hutangbiaya2 character(20),
     --penjualan
-    ppiutang char(20),
-    pumjual char(20),
-    ppendapatan char(20),
-    pretur char(20),
-    pdisc char(20),
-    pbonusjual char(20),
-    ptunai char(20),
-    piutangac char(20),
-    pendapatanac char(20),
-    pps char(20),
+    ppiutang character(20),
+    pumjual character(20),
+    ppendapatan character(20),
+    pretur character(20),
+    pdisc character(20),
+    pbonusjual character(20),
+    ptunai character(20),
+    piutangac character(20),
+    pendapatanac character(20),
+    pps character(20),
     CONSTRAINT currency_pkey PRIMARY KEY (id)
 )
 
@@ -54,3 +54,12 @@ TABLESPACE pg_default;
 
 ALTER TABLE IF EXISTS sc_mst.exchangerate
     OWNER to postgres;
+
+
+
+
+ALTER TABLE sc_mst.exchangerate
+createdby CHARACTER(20),
+createddate TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+updateby CHARACTER(20),
+updatedate TIMESTAMP WITHOUT TIME ZONE
