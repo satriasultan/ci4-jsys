@@ -167,7 +167,7 @@ $routes->group('/master/data', ["namespace" => "App\Controllers\Master"], functi
     $routes->add("input_customer", "Customer::input_customer");
 
 
-    
+
     $routes->add('currency', 'Currency::currency');
     $routes->add('list_currency', 'Currency::list_currency');
     $routes->post('saveCurrency', 'Currency::saveCurrency');
@@ -193,42 +193,29 @@ $routes->group('/master/data', ["namespace" => "App\Controllers\Master"], functi
     $routes->add('saveCOA', 'Coa::saveCOA');
     $routes->add('delete_coa', 'Coa::delete_coa');
 
-    
-    $routes->add('job', 'Job::job');
-    $routes->add('js_vtree_job_query', 'Job::js_vtree_job_query');
-    $routes->add('get_job_detail', 'Job::get_job_detail');
-    $routes->add('saveJob', 'Job::saveJob');
-    $routes->add('delete_job', 'Job::delete_job');
-
-
-    $routes->add('location', 'Location::index');
-    $routes->add('list_mlocation', 'Location::list_mlocation');
-    $routes->post("saveEntry", "Location::saveEntry");
-
-    $routes->get("showing_data/(:any)", "Location::showing_data/$1");
 
 
 
-    
-    $routes->add('area', 'Location::area');
-    $routes->add('list_marea', 'Location::list_marea');
-    $routes->post("saveEntryArea", "Location::saveEntryArea");
-    $routes->get("showing_data_area/(:any)", "Location::showing_data_area/$1");
-    $routes->add('import_area', 'Location::import_area');
-    $routes->post("proses_upload", "Location::proses_upload");
-    $routes->add("clear_tmp", "Location::clear_tmp");
-    $routes->add("final_data", "Location::final_data");
-    $routes->add("showlabels", "Location::showlabels");
-    $routes->add("api_show_showlabels_area(:any)", "Location::api_show_showlabels_area$1");
-    $routes->add("show_showlabels_area", "Location::show_showlabels_area");
 
 
-    $routes->add("cc", "Location::cc");
-    $routes->add("list_costcenter", "Location::list_costcenter");
-    $routes->post("saveCostCenter", "Location::saveCostCenter");
-    $routes->get("showing_data_costcenter(:any)", "Location::showing_data_costcenter$1");
-    $routes->post("show_showlabels_area_partial", "Location::show_showlabels_area_partial");
-    $routes->get("api_show_showlabels_area_partial(:any)", "Location::api_show_showlabels_area_partial$1");
+    /* Master Data Tax */
+    $routes->add('tax', 'Tax::tax');
+    $routes->add("input_tax", "Tax::input_tax");
+    $routes->post("list_tax", "Tax::list_tax");
+    $routes->add("save_tax_master", "Tax::save_tax_master");
+
+    $routes->add("getMasterTax(:any)", "Tax::getMasterTax$1");
+    $routes->add("update_tax(:any)", "Tax::update_tax$1");
+    $routes->add("detail_tax(:any)", "Tax::detail_tax$1");
+    $routes->add("get_tax_detail(:any)", "Tax::get_tax_detail$1");
+
+    $routes->add("list_tax_detail", "Tax::list_tax_detail");
+    $routes->add("save_tax_detail", "Tax::save_tax_detail");
+    $routes->add("delete_tax_detail", "Tax::delete_tax_detail");
+    $routes->add("hapus_master_tax", "Tax::hapus_master_tax");
+
+
+
 
 
     $routes->add('barang', 'Item::index');
@@ -277,6 +264,7 @@ $routes->group('/master/data', ["namespace" => "App\Controllers\Master"], functi
 });
 
 
+/* MASTER ITEM */
 $routes->group('/master/item', ["namespace" => "App\Controllers\Master"], function ($routes) {
     $routes->add('/', 'Item::index');
     $routes->post("list_mitem", "Item::list_mitem");
@@ -305,192 +293,6 @@ $routes->group('/master/item', ["namespace" => "App\Controllers\Master"], functi
     $routes->add("api_show_showlabels_item_post(:any)", "Item::api_show_showlabels_item_post$1");
 });
 
-//stock terkumpul di sini
-$routes->group('/stock/balance', ["namespace" => "App\Controllers\Stock"], function ($routes) {
-    $routes->add('/', 'Balance::index');
-    $routes->add('import_stock', 'Balance::import_stock');
-    $routes->add('proses_upload', 'Balance::proses_upload');
-    $routes->add('clear_tmp', 'Balance::clear_tmp');
-    $routes->add('final_data', 'Balance::final_data');
-    $routes->post('list_balance', 'Balance::list_balance');
-    $routes->add('allocation_map', 'Balance::allocation_map');
-    $routes->add('apiAlocationMap', 'Balance::apiAlocationMap');
-    //stimulus
-    $routes->add('show_sti_allocation_map(:any)', 'Balance::show_sti_allocation_map$1');
-    $routes->add('api_sti_allocation_map(:any)', 'Balance::api_sti_allocation_map$1');
-
-    $routes->add('moving', 'Balance::moving');
-    $routes->add('input_moving', 'Balance::input_moving');
-    $routes->post('list_item', 'Balance::list_item');
-    $routes->post('list_balance_moving', 'Balance::list_balance_moving');
-    $routes->post('list_area', 'Balance::list_area');
-    $routes->add('showing_detail_moving(:any)', 'Balance::showing_detail_moving$1');
-    $routes->post('saveMovingStock', 'Balance::saveMovingStock');
-    $routes->add('list_moving', 'Balance::list_moving');
-    $routes->get('cancelmoveitem', 'Balance::cancelmoveitem');
-    $routes->add('transfers', 'Balance::transfers');
-    $routes->add('input_stock_transfers', 'Balance::input_stock_transfers');
-    $routes->add('clearEntryTransfers', 'Balance::clearEntryTransfers');
-    $routes->add('verifikasi_mst_stock_transfers', 'Balance::verifikasi_mst_stock_transfers');
-    $routes->add('showing_item_transfers_mst', 'Balance::showing_item_transfers_mst');
-    $routes->add('list_balance_transfers', 'Balance::list_balance_transfers');
-    $routes->add('list_tmp_transfers_dtl', 'Balance::list_tmp_transfers_dtl');
-    $routes->add('showing_stkgdw(:any)', 'Balance::showing_stkgdw$1');
-    $routes->post('saveDetailTransfer', 'Balance::saveDetailTransfer');
-    $routes->add('showing_item_transfers_dtl(:any)', 'Balance::showing_item_transfers_dtl$1');
-    $routes->add('update_stock_transfers(:any)', 'Balance::update_stock_transfers$1');
-    $routes->add('detail_stock_transfers(:any)', 'Balance::detail_stock_transfers$1');
-    $routes->add('cancel_stock_transfers(:any)', 'Balance::cancel_stock_transfers');
-    $routes->add('finalEntryTransfers', 'Balance::finalEntryTransfers');
-    $routes->add('list_transfers', 'Balance::list_transfers');
-    //ajustment
-    $routes->add('ajustment', 'Balance::ajustment');
-    $routes->add('input_stock_ajustment', 'Balance::input_stock_ajustment');
-    $routes->add('list_tmp_ajustments_dtl', 'Balance::list_tmp_ajustments_dtl');
-    $routes->add('list_balance_ajustments', 'Balance::list_balance_ajustments');
-    $routes->add('showing_item_ajustments_mst', 'Balance::showing_item_ajustments_mst');
-    $routes->add('verifikasi_mst_stock_ajustment', 'Balance::verifikasi_mst_stock_ajustment');
-    $routes->add('showing_item_ajustments_mst', 'Balance::showing_item_ajustments_mst');
-    $routes->add('clearEntryAjustment', 'Balance::clearEntryAjustment');
-    $routes->add('list_balance_ajustments', 'Balance::list_balance_ajustments');
-    $routes->add('list_tmp_ajustments_dtl', 'Balance::list_tmp_ajustments_dtl');
-    $routes->post('saveDetailajustment', 'Balance::saveDetailajustment');
-    $routes->add('showing_item_ajustment_dtl(:any)', 'Balance::showing_item_ajustment_dtl$1');
-    $routes->add('finalEntryAjustment', 'Balance::finalEntryAjustment');
-    $routes->add('import_balance_winacc', 'Balance::import_balance_winacc');
-    $routes->add('proses_balance_winacc_upload', 'Balance::proses_balance_winacc_upload');
-    $routes->add('clear_balance_winacc_tmp', 'Balance::clear_balance_winacc_tmp');
-    $routes->add('final_balance_winacc_data', 'Balance::final_balance_winacc_data');
-});
-//PURCHASING
-$routes->group('/purchase/purchaseorder', ["namespace" => "App\Controllers\Purchase"], function ($routes) {
-    $routes->add('/', 'Purchaseorder::index');
-    $routes->add('import_purchase', 'Purchaseorder::import_purchase');
-    $routes->add('proses_upload', 'Purchaseorder::proses_upload');
-    $routes->add('clear_tmp', 'Purchaseorder::clear_tmp');
-    $routes->add('final_data', 'Purchaseorder::final_data');
-    $routes->add('listpurchase', 'Purchaseorder::listpurchase');
-    $routes->add('list_po', 'Purchaseorder::list_po');
-    $routes->post('saveListPo', 'Purchaseorder::saveListPo');
-    $routes->add('outstanding', 'Purchaseorder::outstanding');
-    $routes->add('list_outstanding', 'Purchaseorder::list_outstanding');
-    $routes->add('showing_data_po(:any)', 'Purchaseorder::showing_data_po$1');
-    $routes->add('createpp', 'Purchaseorder::createpp');
-
-});
-
-
-//BBM
-$routes->group('/stock/bbm', ["namespace" => "App\Controllers\Stock"], function ($routes) {
-    $routes->add('/', 'Bbm::index');
-    $routes->add('input_bbm', 'Bbm::input_bbm');
-    $routes->add('showing_item_bbm_mst(:any)', 'Bbm::showing_item_bbm_mst$1');
-    $routes->add('showing_item_bbm_dtl(:any)', 'Bbm::showing_item_bbm_dtl$1');
-    $routes->add('verifikasi_mst_stock_bbm', 'Bbm::verifikasi_mst_stock_bbm');
-    $routes->post('saveDetailBbm', 'Bbm::saveDetailBbm');
-    $routes->post('list_tmp_bbm_dtl', 'Bbm::list_tmp_bbm_dtl');
-    $routes->add('finalEntryBbm', 'Bbm::finalEntryBbm');
-    $routes->add('clearEntryBbm', 'Bbm::clearEntryBbm');
-    $routes->add('clearQty0', 'Bbm::clearQty0');
-    $routes->add('list_bbm', 'Bbm::list_bbm');
-    $routes->add('update_stock_bbm(:any)', 'Bbm::update_stock_bbm$1');
-    $routes->add('detail_stock_bbm(:any)', 'Bbm::detail_stock_bbm$1');
-    $routes->add('cancel_stock_bbm(:any)', 'Bbm::cancel_stock_bbm$1');
-    $routes->add('api_print_stock_bbm(:any)', 'Bbm::api_print_stock_bbm$1');
-    $routes->add('print_stock_bbm(:any)', 'Bbm::print_stock_bbm$1');
-    $routes->add('reprint', 'Bbm::reprint');
-    $routes->add('void', 'Bbm::void');
-    $routes->add('void_stock_bbm', 'Bbm::void_stock_bbm');
-    $routes->add('loadItemVoidLpb', 'Bbm::loadItemVoidLpb');
-    $routes->add('clearEntryVoidBbm', 'Bbm::clearEntryVoidBbm');
-    $routes->add('deleteUnheckVoid', 'Bbm::deleteUnheckVoid');
-    $routes->add('progresVoid', 'Bbm::progresVoid');
-    $routes->add('saveTmpMstVoid', 'Bbm::saveTmpMstVoid');
-    $routes->add('showing_item_void_mst', 'Bbm::showing_item_void_mst');
-    $routes->add('showing_item_void_dtl', 'Bbm::showing_item_void_dtl');
-    $routes->add('showing_stkgdw(:any)', 'Bbm::showing_stkgdw$1');
-    $routes->add('showing_item(:any)', 'Bbm::showing_item$1');
-    $routes->add('list_tmp_void_dtl', 'Bbm::list_tmp_void_dtl');
-    $routes->add('verifikasi_void_mst_stock_bbm', 'Bbm::verifikasi_void_mst_stock_bbm');
-    $routes->add('load_po_to_bbm', 'Bbm::load_po_to_bbm');
-    //LBM IMPORT
-    $routes->get('import_lbm', 'Bbm::import_lbm');
-    $routes->add('list_lbm', 'Bbm::list_lbm');
-    $routes->add('proses_upload_lbm', 'Bbm::proses_upload_lbm');
-    $routes->add('list_lbm_pagination', 'Bbm::list_lbm_pagination');
-    $routes->add('clear_tmp_lbm', 'Bbm::clear_tmp_lbm');
-    $routes->add('final_data_lbm', 'Bbm::final_data_lbm');
-    $routes->post('list_balance_bbm', 'Bbm::list_balance_bbm');
-
-    $routes->add('cetak_bt_bbm(:any)', 'Bbm::cetak_bt_bbm$1');
-    $routes->add('testpdf(:any)', 'Bbm::testpdf$1');
-    $routes->add('renderpdf(:any)', 'Bbm::renderpdf$1');
-
-
-});
-//BBK
-$routes->group('/stock/bbk', ["namespace" => "App\Controllers\Stock"], function ($routes) {
-    $routes->add('/', 'Bbk::index');
-    $routes->add('input_bbk', 'Bbk::input_bbk');
-    $routes->add('showing_item_bbk_mst(:any)', 'Bbk::showing_item_bbk_mst$1');
-    $routes->add('showing_item_bbk_dtl(:any)', 'Bbk::showing_item_bbk_dtl$1');
-    $routes->add('verifikasi_mst_stock_bbk', 'Bbk::verifikasi_mst_stock_bbk');
-    $routes->post('saveDetailbbk', 'Bbk::saveDetailbbk');
-    $routes->post('list_tmp_bbk_dtl', 'Bbk::list_tmp_bbk_dtl');
-    $routes->post('list_balance_bbk', 'Bbk::list_balance_bbk');
-    $routes->post('load_bbm_to_bbk', 'Bbk::load_bbm_to_bbk');
-    $routes->add('finalEntrybbk', 'Bbk::finalEntrybbk');
-    $routes->add('clearEntrybbk', 'Bbk::clearEntrybbk');
-    $routes->add('list_bbk', 'Bbk::list_bbk');
-    $routes->add('update_stock_bbk(:any)', 'Bbk::update_stock_bbk$1');
-    $routes->add('detail_stock_bbk(:any)', 'Bbk::detail_stock_bbk$1');
-    $routes->add('cancel_stock_bbk(:any)', 'Bbk::cancel_stock_bbk$1');
-    $routes->add('api_print_stock_bbk(:any)', 'Bbk::api_print_stock_bbk$1');
-    $routes->add('print_stock_bbk(:any)', 'Bbk::print_stock_bbk$1');
-    $routes->add('reprint', 'Bbk::reprint');
-
-    $routes->add('void', 'Bbk::void');
-    $routes->add('void_stock_bbk', 'Bbk::void_stock_bbk');
-    $routes->add('clearEntryVoidbbk', 'Bbk::clearEntryVoidbbk');
-    $routes->add('showing_item_void_mst', 'Bbk::showing_item_void_mst');
-    $routes->add('showing_item_void_dtl', 'Bbk::showing_item_void_dtl');
-    $routes->add('list_tmp_void_dtl', 'Bbk::list_tmp_void_dtl');
-    $routes->add('verifikasi_void_mst_stock_bbk', 'Bbk::verifikasi_void_mst_stock_bbk');
-    $routes->add('list_pbl', 'Bbk::list_pbl');
-    $routes->add('import_pbl', 'Bbk::import_pbl');
-    $routes->add('test_print', 'Bbk::test_print');
-    $routes->add('final_tmp_pbl', 'Bbk::final_tmp_pbl');
-    $routes->add('clear_tmp_pbl', 'Bbk::clear_tmp_pbl');
-    $routes->add('proses_upload_pbl', 'Bbk::proses_upload_pbl');
-    $routes->add('list_pbl_wacc_pagination', 'Bbk::list_pbl_wacc_pagination');
-
-
-
-});
-
-$routes->group('/stock/report', ["namespace" => "App\Controllers\Stock"], function ($routes) {
-    $routes->add('/', 'Report::index');
-    $routes->add('sisastockgdg', 'Report::sisastockgdg');
-    $routes->add('show_sisastockgdg', 'Report::show_sisastockgdg');
-    $routes->add('api_sisastockgdg(:any)', 'Report::api_sisastockgdg$1');
-    $routes->add('sisastockposition', 'Report::sisastockposition');
-    $routes->add('show_sisastockgdg_position', 'Report::show_sisastockgdg_position');
-    $routes->add('api_sisastockgdg_position(:any)', 'Report::api_sisastockgdg_position$1');
-    $routes->add('kstockgdg', 'Report::kstockgdg');
-    $routes->add('show_kstockgdg', 'Report::show_kstockgdg');
-    $routes->add('api_kstockgdg(:any)', 'Report::api_kstockgdg$1');
-    $routes->add('lbmbarang', 'Report::lbmbarang');
-    $routes->add('api_lbmbarang(:any)', 'Report::api_lbmbarang$1');
-    $routes->add('show_lbmbarang', 'Report::show_lbmbarang');
-
-    $routes->add('po_peritem', 'Report::po_peritem');
-    $routes->add('api_po_peritem(:any)', 'Report::api_po_peritem$1');
-    $routes->add('show_po_peritem', 'Report::show_po_peritem');
-
-    $routes->add('lbkbarang', 'Report::lbkbarang');
-    $routes->add('api_lbkbarang(:any)', 'Report::api_lbkbarang$1');
-    $routes->add('show_lbkbarang', 'Report::show_lbkbarang');
-});
 //API GROUP
 $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes) {
     $routes->add('geolocation/list_negara', 'Geolocation::list_negara');
@@ -543,6 +345,7 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
     $routes->add('globalmodule/list_batch_item', 'Globalmodule::list_batch_item');
     $routes->add('globalmodule/add_newbatch', 'Globalmodule::add_newbatch');
     $routes->add('globalmodule/list_market', 'Globalmodule::list_market');
+    /*adding 27/01/2026 for jsystem*/
     $routes->add('globalmodule/list_gradecust', 'Globalmodule::list_gradecust');
     $routes->add('globalmodule/list_salesman', 'Globalmodule::list_salesman');
     $routes->add('globalmodule/list_kolektor', 'Globalmodule::list_kolektor');
@@ -578,298 +381,9 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
 
 });
 
-//Absensi Mesin & Koneksi
-$routes->group('/absenmesin', ["namespace" => "App\Controllers\Absenmesin"], function ($routes) {
-    $routes->add('/', 'Absenmesin::index');
-    $routes->add("set_mConnection", "Absenmesin::set_mConnection");
-    $routes->add("mc_vAttendance", "Absenmesin::mc_vAttendance");
-    $routes->add("mc_userabsen", "Absenmesin::mc_userabsen");
-    $routes->add("testKoneksiMesin(:any)", "Absenmesin::testKoneksiMesin$1");
-    $routes->post("save_mc_userabsen", "Absenmesin::save_mc_userabsen");
-});
-
-//Abscut
-$routes->group('/trans/abscut', ["namespace" => "App\Controllers\Trans"], function ($routes) {
-    $routes->add('/', 'Abscut::index');
-    $routes->add("mkriteria", "Abscut::mkriteria");
-    $routes->add("list_mkriteria", "Abscut::list_mkriteria");
-    $routes->get("showing_data_kriteria(:any)", "Abscut::showing_data_kriteria$1");
-    $routes->post("saveEntryKriteria", "Abscut::saveEntryKriteria");
-    $routes->add("input_new", "Abscut::input_new");
-    $routes->add("list_karyawan", "Abscut::list_karyawan");
-    $routes->get("showDetailNik(:any)", "Abscut::showDetailNik$1");
-    $routes->post("list_mtypecuti", "Abscut::list_mtypecuti");
-    $routes->post("saveAbscut", "Abscut::saveAbscut");
-    $routes->get("edit(:any)", "Abscut::edit$1");
-    $routes->get("showDetailAbscut(:any)", "Abscut::showDetailAbscut$1");
-    $routes->get("list_mtypecuti(:any)", "Abscut::list_mtypecuti$1");
-    $routes->get("detail(:any)", "Abscut::detail$1");
-    $routes->post("downloadExcel", "Abscut::downloadExcel");
-    $routes->post("downloadResumeExcel", "Abscut::downloadResumeExcel");
-    $routes->get("test_download", "Abscut::test_download");
-    $routes->get("importabscut", "Abscut::importabscut");
-    $routes->get("clear_tmp", "Abscut::clear_tmp");
-    $routes->get("final_data", "Abscut::final_data");
-    $routes->post("proses_upload", "Abscut::proses_upload");
-    $routes->get("cutibalance", "Abscut::cutibalance");
-    $routes->post("cutibalancedtl", "Abscut::cutibalancedtl");
-    $routes->post("pr_hitungallcuti", "Abscut::pr_hitungallcuti");
-    $routes->get("excel_blc(:any)", "Abscut::excel_blc$1");
-    $routes->get("hps_abscut(:any)", "Abscut::hps_abscut$1");
-});
-
-//Lembur Karyawan
-$routes->group('/trans/lembur', ["namespace" => "App\Controllers\Trans"], function ($routes) {
-    $routes->add('/', 'Lembur::index');
-    $routes->add("input_new", "Lembur::input_new");
-    $routes->add("list_karyawan", "Lembur::list_karyawan");
-    $routes->get("showDetailNik(:any)", "Lembur::showDetailNik$1");
-    $routes->post("saveLembur", "Lembur::saveLembur");
-    $routes->post("recalculate", "Lembur::recalculate");
-    $routes->post("downloadExcel", "Lembur::downloadExcel");
-    $routes->get("import_lembur", "Lembur::import_lembur");
-    $routes->add("proses_xls_lembur", "Lembur::proses_xls_lembur");
-    $routes->get("clear_tmp", "Lembur::clear_tmp");
-    $routes->get("immgp", "Lembur::immgp");
-    $routes->get("edit(:any)", "Lembur::edit$1");
-    $routes->get("showDetailLembur(:any)", "Lembur::showDetailLembur$1");
-    $routes->post("proses_komponen_gp", "Lembur::proses_komponen_gp");
-    $routes->get("final_data", "Lembur::final_data");
-    $routes->get("hps_lembur(:any)", "Lembur::hps_lembur$1");
-
-});
-
-//Share Location Report
-$routes->group('/trans/shareloc', ["namespace" => "App\Controllers\Trans"], function ($routes) {
-    $routes->add('/', 'Shareloc::index');
-    $routes->add("report_checkinout", "Shareloc::report_checkinout");
-    $routes->post("list_report_checkinout", "Shareloc::list_report_checkinout");
-});
-
-//Trans / Koreksi / Koreksi CUti
-$routes->group('/trans/koreksi', ["namespace" => "App\Controllers\Trans"], function ($routes) {
-    $routes->add('/', 'Koreksi::index');
-    $routes->add("koreksicuti", "Koreksi::koreksicuti");
-    $routes->post("list_koreksi_cuti", "Koreksi::list_koreksi_cuti");
-    $routes->get("showOn_Koreksi_Cuti", "Koreksi::showOn_Koreksi_Cuti");
-    $routes->get("input_koreksicuti", "Koreksi::input_koreksicuti");
-    $routes->get("clearEntry_Koreksi_Cuti", "Koreksi::clearEntry_Koreksi_Cuti");
-    $routes->post("list_tmp_koreksi_cuti_dtl", "Koreksi::list_tmp_koreksi_cuti_dtl");
-    $routes->post("saveKoreksiCutiTmpMst", "Koreksi::saveKoreksiCutiTmpMst");
-    $routes->post("saveKoreksiCutiTmpDtl", "Koreksi::saveKoreksiCutiTmpDtl");
-    $routes->get("showing_koreksi_cuti_dtl(:any)", "Koreksi::showing_koreksi_cuti_dtl$1");
-    $routes->get("cancelKoreksiCuti(:any)", "Koreksi::cancelKoreksiCuti$1");
-    $routes->get("detailKoreksiCuti(:any)", "Koreksi::detailKoreksiCuti$1");
-    $routes->get("showOn_Koreksi_Cuti_Trx(:any)", "Koreksi::showOn_Koreksi_Cuti_Trx$1");
-    $routes->post("finishInputKoreksiCuti", "Koreksi::finishInputKoreksiCuti");
-    $routes->post("list_trx_koreksi_cuti_dtl", "Koreksi::list_trx_koreksi_cuti_dtl");
-
-});
 
 
 
-//report
-$routes->group('/report/presensi', ["namespace" => "App\Controllers\Report"], function ($routes) {
-    $routes->add('', 'Presensi::index');
-    $routes->add('showupPresensi', 'Presensi::showupPresensi');
-    $routes->get('downloadPresensi(:any)', 'Presensi::downloadPresensi$1');
-    $routes->get('detail', 'Presensi::detail');
-    $routes->add('showupPresensiTransready', 'Presensi::showupPresensiTransready');
-});
-
-//manpower
-$routes->group('/report/manpower', ["namespace" => "App\Controllers\Report"], function ($routes) {
-    $routes->add('', 'Manpower::index');
-    $routes->add('downloadManpowerPosition', 'Manpower::downloadManpowerPosition');
-});
-
-//Contacs
-$routes->group('/contacts/supplier', ["namespace" => "App\Controllers\Contacts"], function ($routes) {
-    $routes->add('/', 'Supplier::index');
-    $routes->add('list_msupplier', 'Supplier::list_msupplier');
-    $routes->add('list_mgroup', 'Supplier::list_mgroup');
-    $routes->add('import_suppliers', 'Supplier::import_suppliers');
-    $routes->add('suppliers_group', 'Supplier::suppliers_group');
-    $routes->add('input_supplier', 'Supplier::input_supplier');
-    $routes->get("showing_data_supplier/(:any)", "Supplier::showing_data_supplier/$1");
-    $routes->post("saveSupplier", "Supplier::saveSupplier");
-
-});
-
-/* GROUP FOR MOBILE INVENTORY */
-$routes->group('/intern/mobile', ["namespace" => "App\Controllers\Intern"], function ($routes) {
-    $routes->add('/', 'Mobile::index');
-    $routes->post("downloadMst", "Mobile::downloadMst");
-});
-
-//Capital
-$routes->group('/capital/masters', ["namespace" => "App\Controllers\Capital"], function ($routes) {
-    $routes->add('/', 'Masters::index');
-    $routes->add('group', 'Masters::group');
-    $routes->add('list_mgroup', 'Masters::list_mgroup');
-    $routes->get('showing_data_mgroup/(:any)', 'Masters::showing_data_mgroup/$1');
-    $routes->post('saveGrouping', 'Masters::saveGrouping');
-    /*subgroup*/
-    $routes->add('list_msubgroup', 'Masters::list_msubgroup');
-    $routes->get('showing_data_msubgroup/(:any)', 'Masters::showing_data_msubgroup/$1');
-    $routes->get('showing_data_kdlvl/(:any)', 'Masters::showing_data_kdlvl/$1');
-    $routes->post('saveSubGrouping', 'Masters::saveSubGrouping');
-    /*mtype*/
-    $routes->add('list_mtype', 'Masters::showing_data_mtype');
-    $routes->get('showing_data_mtype/(:any)', 'Masters::showing_data_mtype/$1');
-    $routes->post('saveMtype', 'Masters::saveMtype');
-    /*master_capital_authorization*/
-    $routes->add('list_capital_authorization', 'Masters::list_capital_authorization');
-    $routes->add('save_capital_authorization', 'Masters::save_capital_authorization');
-
-    $routes->get('showing_data_kdlvl_msubgroup(:any)', 'Masters::showing_data_kdlvl_msubgroup$1');
-
-
-});
-
-$routes->group('/capital/administration', ["namespace" => "App\Controllers\Capital"], function ($routes) {
-    $routes->add('/', 'Administration::index');
-    $routes->add('admin_transaction', 'Administration::admin_transaction');
-    $routes->add('list_karyawan', 'Administration::list_karyawan');
-    $routes->add('list_pengajuan', 'Administration::list_pengajuan');
-
-    $routes->add('save_capital_pengajuan', 'Administration::save_capital_pengajuan');
-    $routes->add('showing_data_pengajuan/(:any)', 'Administration::showing_data_pengajuan/$1');
-    $routes->add('permintaan_persetujuan_mngr/(:any)', 'Administration::permintaan_persetujuan_mngr/$1');
-
-    $routes->add('approvals_admin', 'Administration::approvals_admin');
-    $routes->add('list_pengajuan_approvals_admin', 'Administration::list_pengajuan_approvals_admin');
-
-    $routes->add('persetujuan_mngr/(:any)', 'Administration::persetujuan_mngr/$1');
-    $routes->add('tolak_persetujuan_mngr(:any)', 'Administration::tolak_persetujuan_mngr$1');
-
-    $routes->add('input_transaction', 'Administration::input_transaction');
-    $routes->add('list_pengajuan_all', 'Administration::list_pengajuan_all');
-    $routes->add('save_capital_it_input_transaction', 'Administration::save_capital_it_input_transaction');
-
-    $routes->add('print_pengajuan_dept_get', 'Administration::print_pengajuan_dept_get');
-    $routes->add('print_pengajuan_dept', 'Administration::print_pengajuan_dept');
-    $routes->add('api_print_capital_pengajuan(:any)', 'Administration::api_print_capital_pengajuan');
-    $routes->add('saveReview', 'Administration::saveReview');
-
-    $routes->add('jasa_pembayaran', 'Administration::jasa_pembayaran');
-    $routes->add('save_jasa_pembayaran', 'Administration::save_jasa_pembayaran');
-    $routes->add('list_jasa_pembayaran', 'Administration::list_jasa_pembayaran');
-    $routes->add('delete_pembayaran(:any)', 'Administration::delete_pembayaran$1');
-    $routes->add('detail_jasa_pembayaran(:any)', 'Administration::detail_jasa_pembayaran$1');
-    $routes->add('showing_jasa_pembayaran/(:any)', 'Administration::showing_jasa_pembayaran/$1');
-    $routes->add('delete_detail_pembayaran/(:any)', 'Administration::delete_detail_pembayaran/$1');
-    $routes->add('showing_jasa_pembayaran_detail/(:any)', 'Administration::showing_jasa_pembayaran_detail/$1');
-    $routes->add('save_jasa_pembayaran_detail', 'Administration::save_jasa_pembayaran_detail');
-    $routes->add('list_jasa_pembayaran_detail', 'Administration::list_jasa_pembayaran_detail');
-});
-$routes->group('/capital/budget', ["namespace" => "App\Controllers\Capital"], function ($routes) {
-    $routes->add('/', 'Budget::index');
-    $routes->add('admin_transaction', 'Budget::admin_transaction');
-    $routes->add('save_capital_pengajuan_budget', 'Administration::save_capital_pengajuan_budget');
-});
-
-//BBM
-$routes->group('/import/winacc', ["namespace" => "App\Controllers\Import"], function ($routes) {
-    $routes->add('/', 'Winacc::index');
-    $routes->add('pp', 'Winacc::pp');
-    $routes->add('proses_upload_pp', 'Winacc::proses_upload_pp');
-    $routes->add('po', 'Winacc::po');
-    $routes->add('proses_upload_po', 'Winacc::proses_upload_po');
-    $routes->add('penerimaan', 'Winacc::penerimaan');
-    $routes->add('proses_upload_penerimaan', 'Winacc::proses_upload_penerimaan');
-    $routes->add('syncronize', 'Winacc::syncronize');
-
-    $routes->add('cetak_bt_bbm(:any)', 'Winacc::cetak_bt_bbm$1');
-    $routes->add('testpdf(:any)', 'Winacc::testpdf$1');
-    $routes->add('renderpdf(:any)', 'Winacc::renderpdf$1');
-
-
-});
-
-
-
-//FORM
-$routes->group('/form/pa', ["namespace" => "App\Controllers\Form"], function ($routes) {
-
-    //PERANGKAT PRIBADI
-    $routes->add('/', 'Form::index');
-    $routes->post("list_perangkat", "Form::list_perangkat");
-    $routes->post("saveDataPerangkat", "Form::saveDataPerangkat");
-    $routes->add("showDetailPerangkat(:any)", "Form::showDetailPerangkat$1");
-    $routes->add("edit_perangkat(:any)", "Form::edit_perangkat$1");
-    $routes->add("detail_perangkat(:any)", "Form::detail_perangkat$1");
-    $routes->add("del_perangkat(:any)", "Form::del_perangkat$1");
-    $routes->add("input_perangkat", "Form::input_perangkat");
-
-    $routes->add("updateIzinMasuk", "Form::updateIzinMasuk");
-    $routes->add("updateIzinKeluar", "Form::updateIzinKeluar");
-    $routes->add("updateStatus", "Form::updateStatus");
-    $routes->get('getDataFormPerangkat/(:any)', 'Form::getDataFormPerangkat/$1');
-    $routes->get('print_perangkat(:any)', 'Form::print_perangkat$1');
-    $routes->get('api_print_perangkat(:any)', 'Form::api_print_perangkat$1');
-
-
-    //IZIN INTERNET
-    $routes->add('internet', 'Form::internet');
-    $routes->post("list_internet", "Form::list_internet");
-    $routes->post("saveDataInternet", "Form::saveDataInternet");
-    $routes->add("showDetailInternet(:any)", "Form::showDetailInternet$1");
-    $routes->add("edit_internet(:any)", "Form::edit_internet$1");
-    $routes->add("detail_internet(:any)", "Form::detail_internet$1");
-    $routes->add("del_internet(:any)", "Form::del_internet$1");
-    $routes->add("updateStatusInternet", "Form::updateStatusInternet");
-    $routes->add("input_internet", "Form::input_internet");
-    $routes->post("saveDataInternet", "Form::saveDataInternet");
-    $routes->add("print_internet", "Form::print_internet");
-    $routes->get('getDataFormInternet/(:any)', 'Form::getDataFormInternet/$1');
-    $routes->add("api_print_internet(:any)", "Form::api_print_internet$1");
-    $routes->add("verifikasi_internet(:any)", "Form::verifikasi_internet$1");
-
-
-    
-    //KELUAR LAPTOP
-    $routes->add('laptop', 'Form::laptop');
-    $routes->post("list_perangkatkeluar", "Form::list_laptop");
-    $routes->post("saveDataPerangkatKeluar", "Form::saveDataPerangkatKeluar");
-    $routes->add("showDetailPerangkatKeluar(:any)", "Form::showDetailPerangkatKeluar$1");
-    $routes->add("edit_perangkatkeluar(:any)", "Form::edit_perangkatkeluar$1");
-    $routes->add("detail_perangkatkeluar(:any)", "Form::detail_perangkatkeluar$1");
-    $routes->add("del_perangkatkeluar(:any)", "Form::del_perangkatkeluar$1");
-    $routes->add("input_perangkatkeluar", "Form::input_perangkatkeluar");
-    $routes->add("updateStatusPK", "Form::updateStatusPK");
-    $routes->get('getDataFormPerangkatKeluar/(:any)', 'Form::getDataFormPerangkatKeluar/$1');
-    $routes->get('print_perangkatkeluar(:any)', 'Form::print_perangkatkeluar$1');
-    $routes->get('api_print_perangkatkeluar(:any)', 'Form::api_print_perangkatkeluar$1');
-
-    //MEDIA PENYIMPANAN
-    $routes->add('media', 'Form::media');
-    $routes->post("list_media", "Form::list_media");
-    $routes->post("saveDataMedia", "Form::saveDataMedia");
-    $routes->add("showDetailMedia(:any)", "Form::showDetailMedia$1");
-    $routes->add("edit_media(:any)", "Form::edit_media$1");
-    $routes->add("del_media(:any)", "Form::del_media$1");
-    $routes->add("input_media", "Form::input_media");
-
-
-    //SOFTWARE HARDWARE
-    $routes->add('pengadaan_hwsw', 'Form::pengadaan_hwsw');
-    $routes->post("list_pengadaan_hwsw", "Form::list_pengadaan_hwsw");
-    $routes->post("saveDataPengadaanHwsw", "Form::saveDataPengadaanHwsw");
-    $routes->add("showDetailReq(:any)", "Form::showDetailReq$1");
-    $routes->add("edit_pengadaan_hwsw(:any)", "Form::edit_pengadaan_hwsw$1");
-    $routes->add("del_pengadaan_hwsw(:any)", "Form::del_pengadaan_hwsw$1");
-    $routes->add("input_pengadaan_hwsw", "Form::input_pengadaan_hwsw");
-    $routes->get('print_pengadaan_hwsw(:any)', 'Form::print_pengadaan_hwsw$1');
-    $routes->get('api_print_pengadaan_hwsw(:any)', 'Form::api_print_pengadaan_hwsw$1');
-
-    //SOFTWARE HARDWARE
-    $routes->add('list_label_form_temporary', 'Form::list_label_form_temporary');
-    $routes->add('print_labels_form', 'Form::print_labels_form');
-    $routes->add('getDataFormLabel', 'Form::getDataFormLabel');
-    $routes->add('printFromListPrinter', 'Form::printFromListPrinter');
-    $routes->add('api_show_form_labels(:any)', 'Form::api_show_form_labels$1');
-});
 
 /*
 $routes->add('/dashboard', 'Dashboard/Dashboard::index');
