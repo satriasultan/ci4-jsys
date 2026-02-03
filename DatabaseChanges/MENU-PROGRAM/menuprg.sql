@@ -22,8 +22,8 @@ INSERT INTO sc_mst.menuprg (
 ('JTS', 8, 'I.M.B.8', 'MASTER SUB LOCATION', 'I.M', 'I.M.B', 'P', false, 'fa-traceability', 'master/data/area', 'LEFT', 'NO'),
 ('JTS', 9, 'I.M.B.9', 'MASTER COST CENTER', 'I.M', 'I.M.B', 'P', false, 'fa-traceability', 'master/data/cc', 'LEFT', 'NO'),
 
-('JTS', 10, 'I.M.B.10', 'MASTER BARANG', 'I.M', 'I.M.B', 'P', false, 'fa-traceability', 'master/data/cc', 'LEFT', 'NO'),
-('JTS', 11, 'I.M.B.11', 'MASTER GOLONGAN BARANG', 'I.M', 'I.M.B', 'P', false, 'fa-traceability', 'master/data/cc', 'LEFT', 'NO'),
-('JTS', 12, 'I.M.B.12', 'MASTER JENIS PRODUK', 'I.M', 'I.M.B', 'P', false, 'fa-traceability', 'master/data/cc', 'LEFT', 'NO'),
-('JTS', 13, 'I.M.B.13', 'MASTER KELOMPOK BARANG', 'I.M', 'I.M.B', 'P', false, 'fa-traceability', 'master/data/cc', 'LEFT', 'NO'),
-('JTS', 14, 'I.M.B.14', 'MASTER PRINCIPAL', 'I.M', 'I.M.B', 'P', false, 'fa-traceability', 'master/data/cc', 'LEFT', 'NO');
+('JTS', 10, 'I.M.B.10', 'MASTER BARANG', 'I.M', 'I.M.B', 'P', false, 'fa-traceability', 'master/data/barang', 'LEFT', 'NO'),
+('JTS', 11, 'I.M.B.11', 'MASTER GOLONGAN BARANG', 'I.M', 'I.M.B', 'P', false, 'fa-traceability', 'master/data/golonganbarang', 'LEFT', 'NO'),
+('JTS', 12, 'I.M.B.12', 'MASTER JENIS PRODUK', 'I.M', 'I.M.B', 'P', false, 'fa-traceability', 'master/data/jenisproduk', 'LEFT', 'NO'),
+('JTS', 13, 'I.M.B.13', 'MASTER KELOMPOK BARANG', 'I.M', 'I.M.B', 'P', false, 'fa-traceability', 'master/data/kelompokbarang', 'LEFT', 'NO'),
+('JTS', 14, 'I.M.B.14', 'MASTER PRINCIPAL', 'I.M', 'I.M.B', 'P', false, 'fa-traceability', 'master/data/principal', 'LEFT', 'NO');

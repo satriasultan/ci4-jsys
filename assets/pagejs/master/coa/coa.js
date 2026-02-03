@@ -79,7 +79,7 @@ function addChild() {
             // select2
             $('#idcur').val(null).trigger('change');
             $('[name="jenis"]').val(''); // Kosongkan jenis
-            \
+            
             // Set tipe form
             $('#formCoa').data('type', 'INPUT');
             

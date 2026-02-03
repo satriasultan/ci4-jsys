@@ -229,6 +229,51 @@ $routes->group('/master/data', ["namespace" => "App\Controllers\Master"], functi
     $routes->get("showing_data_costcenter(:any)", "Location::showing_data_costcenter$1");
     $routes->post("show_showlabels_area_partial", "Location::show_showlabels_area_partial");
     $routes->get("api_show_showlabels_area_partial(:any)", "Location::api_show_showlabels_area_partial$1");
+
+
+    $routes->add('barang', 'Item::index');
+    $routes->post("list_mitem", "Item::list_mitem");
+    $routes->post("saveDataItem", "Item::saveDataItem");
+    $routes->add("showDetailItem(:any)", "Item::showDetailItem$1");
+    $routes->add("edit(:any)", "Item::edit$1");
+    $routes->add("detail(:any)", "Item::detail$1");
+    $routes->add("del_item(:any)", "Item::del_item$1");
+    $routes->add("input", "Item::input");
+    $routes->add("import", "Item::import");
+    $routes->post("proses_upload", "Item::proses_upload");
+    $routes->add("clear_tmp", "Item::clear_tmp");
+    $routes->add("final_data", "Item::final_data");
+    $routes->add("unit", "Item::unit");
+
+    $routes->add("golonganbarang", "GolonganBarang::golonganbarang");
+    $routes->add("list_golonganbarang", "GolonganBarang::list_golonganbarang");
+    $routes->post("saveGolonganBarang", "GolonganBarang::saveGolonganBarang");
+    $routes->get("showing_data_golonganbarang(:any)", "GolonganBarang::showing_data_golonganbarang$1");
+
+
+    
+    $routes->add("jenisproduk", "JenisProduk::jenisproduk");
+    $routes->add("list_jenisproduk", "JenisProduk::list_jenisproduk");
+    $routes->post("saveJenisProduk", "JenisProduk::saveJenisProduk");
+    $routes->get("showing_data_jenisproduk(:any)", "JenisProduk::showing_data_jenisproduk$1");
+
+
+    
+
+    
+    $routes->add("kelompokbarang", "KelompokBrg::kelompokbarang");
+    $routes->add("list_kelompokbarang", "KelompokBrg::list_kelompokbarang");
+    $routes->post("saveKelompokBarang", "KelompokBrg::saveKelompokBarang");
+    $routes->get("showing_data_kelompokbarang(:any)", "KelompokBrg::showing_data_kelompokbarang$1");
+
+
+    
+
+    
+    $routes->add("principal", "Principal::principal");
+    $routes->add("list_principal", "Principal::list_principal");
+    $routes->post("savePrincipal", "Principal::savePrincipal");
+    $routes->get("showing_data_principal(:any)", "Principal::showing_data_principal$1");
 });
 
 
@@ -504,6 +549,11 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
     $routes->add('globalmodule/list_coa', 'Globalmodule::list_coa');
     $routes->add('globalmodule/list_currency', 'Globalmodule::list_currency');
     $routes->add('globalmodule/list_customer', 'Globalmodule::list_customer');
+    $routes->add('globalmodule/list_golonganbarang', 'Globalmodule::list_golonganbarang');
+    $routes->add('globalmodule/list_jenisproduk', 'Globalmodule::list_jenisproduk');
+    $routes->add('globalmodule/list_kelompokbarang', 'Globalmodule::list_kelompokbarang');
+    $routes->add('globalmodule/list_principal', 'Globalmodule::list_principal');
+    $routes->add('globalmodule/list_supplier_new', 'Globalmodule::list_supplier_new');
 
 
     //validator & request keluar

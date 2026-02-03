@@ -35,7 +35,10 @@ use App\Models\Master\M_Customer;
 use App\Models\Master\M_Currency;
 use App\Models\Master\M_Coa;
 use App\Models\Master\M_Job;
-
+use App\Models\Master\M_GolonganBarang;
+use App\Models\Master\M_JenisProduk;
+use App\Models\Master\M_KelompokBrg;
+use App\Models\Master\M_Principal;
 use App\Models\Purchase\M_Purchaseorder;
 use App\Models\Stock\M_Balance;
 use App\Models\Stock\M_Bbk;
@@ -148,5 +151,9 @@ class BaseController extends Controller
         $this->m_currency = new M_Currency();
         $this->m_coa = new M_Coa();
         $this->m_job = new M_Job();
+        $this->m_golbar = new M_GolonganBarang();
+        $this->m_jnsprdk = new M_JenisProduk();
+        $this->m_kelompokbrg = new M_KelompokBrg();
+        $this->m_principal = new M_Principal();
     }
 }

@@ -8,11 +8,23 @@ class M_Item extends Model
 {
 
     var $t_item_view = "(select a.*,to_char(a.inputdate,'dd-mm-yyyy hh24:mi:ss') as inputdate1,to_char(a.expdate,'dd-mm-yyyy hh24:mi:ss') as expdate1,
- c.nmlocation,d.nmarea,b.nmgroup,to_char(a.mfgdate,'dd-mm-yyyy hh24:mi:ss') as mfgdate1,coalesce(a.setminstock,'NO') as setminstock1,round(coalesce(a.minstock,0)) as minstock1
- from sc_mst.mbarang a 
- left outer join sc_mst.mgroup b on a.idgroup=b.idgroup
- left outer join sc_mst.mlocation c on a.deflocation=c.idlocation
- left outer join sc_mst.marea d on a.defarea=d.idarea
+        c.nmlocation,d.nmarea,
+        b.nmgroup,
+        e.nmgolonganbarang,
+        f.nmjenisproduk,
+        g.nmkelompokbarang,
+        h.nmprincipal,
+        to_char(a.mfgdate,'dd-mm-yyyy hh24:mi:ss') as mfgdate1,
+        coalesce(a.setminstock,'NO') as setminstock1,
+        round(coalesce(a.minstock,0)) as minstock1
+        from sc_mst.mbarang a 
+        left outer join sc_mst.mgroup b on a.idgroup=b.idgroup
+        left outer join sc_mst.mlocation c on a.deflocation=c.idlocation
+        left outer join sc_mst.marea d on a.defarea=d.idarea
+        left outer join sc_mst.golonganbarang e on a.idgolonganbarang=e.idgolonganbarang
+        left outer join sc_mst.jenisproduk f on a.idjenisproduk=f.idjenisproduk
+        left outer join sc_mst.kelompokbarang g on a.idkelompokbarang=g.idkelompokbarang
+        left outer join sc_mst.principal h on a.idprincipal=h.idprincipal
 ) as x";
     var $t_item_view_column = array('idbarang','nmbarang','expdate1','chold','nmgroup','unit','subunit');
     var $t_item_view_order = array("idbarang" => 'asc'); // default order

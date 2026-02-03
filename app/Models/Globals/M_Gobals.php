@@ -292,7 +292,28 @@ group by docno order by docno asc");
     }
 
     function q_customer_new($param){
-        return $this->db->query("select *, trim(kdcustomer) as id from sc_mst.customer where coalesce(trim(kdcustomer),'')!='' $param ");
+        return $this->db->query("select *, trim(kdcustomer) as id from sc_mst.customer where coalesce(trim(chold),'NO')!='YES' AND coalesce(trim(kdcustomer),'')!='' $param ");
+    }
+
+    
+    function q_golonganbarang($param){
+        return $this->db->query("select *, trim(idgolonganbarang) as id from sc_mst.golonganbarang where coalesce(trim(chold),'NO')!='YES' AND coalesce(trim(idgolonganbarang),'')!='' $param ");
+    }
+
+    function q_jenisproduk($param){
+        return $this->db->query("select *, trim(idjenisproduk) as id from sc_mst.jenisproduk where coalesce(trim(chold),'NO')!='YES' AND coalesce(trim(idjenisproduk),'')!='' $param ");
+    }
+
+    function q_kelompokbarang($param){
+        return $this->db->query("select *, trim(idkelompokbarang) as id from sc_mst.kelompokbarang where coalesce(trim(chold),'NO')!='YES' AND coalesce(trim(idkelompokbarang),'')!='' $param ");
+    }
+
+    function q_principal($param){
+        return $this->db->query("select *, trim(idprincipal) as id from sc_mst.principal where coalesce(trim(chold),'NO')!='YES' AND coalesce(trim(idprincipal),'')!='' $param ");
+    }
+
+    function q_supplier_new($param){
+        return $this->db->query("select *, trim(kdsupplier) as id from sc_mst.mstsupplier where coalesce(trim(chold),'NO')!='YES' AND coalesce(trim(kdsupplier),'')!='' $param ");
     }
 
 }
