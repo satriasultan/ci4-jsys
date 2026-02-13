@@ -144,6 +144,68 @@ $routes->group('/master/role', ["namespace" => "App\Controllers\Master"], functi
 });
 
 
+$routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], function ($routes) {
+    
+
+    $routes->add('pp', 'Purchase::pp');
+    $routes->add('list_pp', 'Purchase::list_pp');
+    $routes->add('addPP', 'Purchase::addPP');
+    $routes->add('detailPP', 'Purchase::detailPP');
+    $routes->add('list_tmp_pp_dtl', 'Purchase::list_tmp_pp_dtl');
+    // $routes->add('showing_sikbsp_mst', 'Purchase::showing_sikbsp_mst');
+    
+    $routes->add('clearEntryPP', 'Purchase::clearEntryPP');
+    $routes->add('finalEntryPP', 'Purchase::finalEntryPP');
+    $routes->add('showing_pptemp', 'Purchase::showing_pptemp');
+
+    $routes->add('save_pp_detail', 'Purchase::save_pp_detail');
+    $routes->get('updatePP(:any)', 'Purchase::updatePP$1');
+
+    $routes->add('deletePPDtl', 'Purchase::deletePPDtl');
+    $routes->add('show_pp', 'Purchase::show_pp');
+    $routes->add('api_pp(:any)', 'Purchase::api_pp$1');
+    $routes->add('list_trx_pp_dtl', 'Purchase::list_trx_pp_dtl');
+    $routes->add('showing_pptrx', 'Purchase::showing_pptrx');
+    $routes->add('getBranchInfo', 'Purchase::getBranchInfo');
+    $routes->add('getNextSuffixPP', 'Purchase::getNextSuffixPP');
+    $routes->add('initPPHeader', 'Purchase::initPPHeader');
+    $routes->add('savePPDetail', 'Purchase::savePPDetail');
+    $routes->add("get_pp_detail(:any)", "Purchase::get_pp_detail$1");
+    $routes->add("delete_pp_detail", "Purchase::delete_pp_detail");
+
+
+
+
+
+    
+    $routes->add('voidpp', 'Purchase::voidpp');
+    $routes->add('list_voidpp', 'Purchase::list_voidpp');
+    $routes->add('addVoidPP', 'Purchase::addVoidPP');
+    $routes->add('detailVoidPP', 'Purchase::detailVoidPP');
+    $routes->add('list_tmp_voidpp_dtl', 'Purchase::list_tmp_voidpp_dtl');
+    // $routes->add('showing_sikbsp_mst', 'Purchase::showing_sikbsp_mst');
+    
+    $routes->add('clearEntryVoidPP', 'Purchase::clearEntryVoidPP');
+    $routes->add('finalEntryVoidPP', 'Purchase::finalEntryVoidPP');
+    $routes->add('showing_voidpptemp', 'Purchase::showing_voidpptemp');
+
+    $routes->add('save_voidpp_detail', 'Purchase::save_voidpp_detail');
+    $routes->get('updateVoidPP(:any)', 'Purchase::updateVoidPP$1');
+
+    $routes->add('deleteVoidPPDtl', 'Purchase::deleteVoidPPDtl');
+    $routes->add('show_voidpp', 'Purchase::show_voidpp');
+    $routes->add('api_voidpp(:any)', 'Purchase::api_voidpp$1');
+    $routes->add('list_trx_voidpp_dtl', 'Purchase::list_trx_voidpp_dtl');
+    $routes->add('showing_voidpptrx', 'Purchase::showing_voidpptrx');
+    $routes->add('getBranchInfoVoid', 'Purchase::getBranchInfoVoid');
+    $routes->add('getNextSuffixVoidPP', 'Purchase::getNextSuffixVoidPP');
+    $routes->add('initVoidPPHeader', 'Purchase::initVoidPPHeader');
+    $routes->add('saveVoidPPDetail', 'Purchase::saveVoidPPDetail');
+    $routes->add("get_voidpp_detail(:any)", "Purchase::get_voidpp_detail$1");
+    $routes->add("delete_voidpp_detail", "Purchase::delete_voidpp_detail");
+});
+
+
 $routes->group('/master/data', ["namespace" => "App\Controllers\Master"], function ($routes) {
     $routes->add('supplier', 'Suppliers::supplier');
     $routes->post("list_suppliers", "Suppliers::list_suppliers");
@@ -357,6 +419,10 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
     $routes->add('globalmodule/list_kelompokbarang', 'Globalmodule::list_kelompokbarang');
     $routes->add('globalmodule/list_principal', 'Globalmodule::list_principal');
     $routes->add('globalmodule/list_supplier_new', 'Globalmodule::list_supplier_new');
+
+    $routes->add('globalmodule/list_pp', 'Globalmodule::list_pp');
+
+    $routes->add('globalmodule/list_branchjob', 'Globalmodule::list_branchjob');
 
 
     //validator & request keluar

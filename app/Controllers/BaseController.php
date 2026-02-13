@@ -39,6 +39,8 @@ use App\Models\Master\M_GolonganBarang;
 use App\Models\Master\M_JenisProduk;
 use App\Models\Master\M_KelompokBrg;
 use App\Models\Master\M_Principal;
+use App\Models\Master\M_Tax;
+use App\Models\Purchase\M_Purchase;
 use App\Models\Purchase\M_Purchaseorder;
 use App\Models\Stock\M_Balance;
 use App\Models\Stock\M_Bbk;
@@ -155,5 +157,7 @@ class BaseController extends Controller
         $this->m_jnsprdk = new M_JenisProduk();
         $this->m_kelompokbrg = new M_KelompokBrg();
         $this->m_principal = new M_Principal();
+        $this->m_tax = new M_Tax();
+        $this->m_purchase = new M_Purchase();
     }
 }

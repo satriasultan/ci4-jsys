@@ -175,7 +175,7 @@
         <input class="form-control mt-3" type="password" required name="password" placeholder="Password">
 
         <div class="form-group mt-3">
-            <input id="datePick" class="form-control" type="text" name="date" placeholder="Select Date" required>
+            <input id="datePick" class="form-control" type="text" name="logindate" placeholder="Select Date" required>
         </div>
 
         <div class="form-group mt-3">

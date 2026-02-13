@@ -1,3 +1,5 @@
+-- MASTER DATA --
+
 INSERT INTO sc_mst.menuprg (
     branch, 
     urut, 
@@ -27,3 +29,26 @@ INSERT INTO sc_mst.menuprg (
 ('JTS', 12, 'I.M.B.12', 'MASTER JENIS PRODUK', 'I.M', 'I.M.B', 'P', false, 'fa-traceability', 'master/data/jenisproduk', 'LEFT', 'NO'),
 ('JTS', 13, 'I.M.B.13', 'MASTER KELOMPOK BARANG', 'I.M', 'I.M.B', 'P', false, 'fa-traceability', 'master/data/kelompokbarang', 'LEFT', 'NO'),
 ('JTS', 14, 'I.M.B.14', 'MASTER PRINCIPAL', 'I.M', 'I.M.B', 'P', false, 'fa-traceability', 'master/data/principal', 'LEFT', 'NO');
+
+
+
+
+-- PEMBELIAN
+INSERT INTO sc_mst.menuprg (
+    branch, 
+    urut, 
+    kodemenu, 
+    namamenu, 
+    parentmenu, 
+    parentsub, 
+    child, 
+    holdmenu, 
+    iconmenu, 
+    linkmenu, 
+    menuposition, 
+    chold
+) VALUES 
+('JTS', 1, 'I.P', 'PEMBELIAN', '0', '0', 'U', false, 'fa-cart-plus', '', 'LEFT', 'NO'),
+('JTS', 1, 'I.P.A', 'TRANSAKSI', 'I.P', '0', 'S', false, 'fa-right-left', '', 'LEFT', 'NO'),
+('JTS', 1, 'I.P.A.1', 'PERMINTAAN PEMBELIAN(PP)', 'I.P', 'I.P.A', 'P', false, 'fa-lightbulb-o', 'purchase/trans/pp', 'LEFT', 'NO'),
+('JTS', 2, 'I.P.A.2', 'VOID PP', 'I.P', 'I.P.A', 'P', false, 'fa-lightbulb-o', 'purchase/trans/voidpp', 'LEFT', 'NO');

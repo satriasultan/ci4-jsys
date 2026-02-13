@@ -214,6 +214,50 @@ class Globalmodule extends BaseController
         );
     }
 
+
+     function list_branchjob(){
+
+         $branch = $this->session->get('branch');
+        $idbu = $this->session->get('idbu');
+        $param_c="";
+        //$count = $this->m_instock->q_kdgroup_param($param_c)->getNumRows();
+        $search = strtoupper($this->request->getPost('_search_'));
+        $perpage = $this->request->getPost('_perpage_');
+        $perpage = intval($perpage);
+        //$perpage = $perpage < 1 ? $count : $perpage;
+        $page = $this->request->getPost('_page_');
+        $paramglobal = $this->request->getPost('_paramglobal_');
+        $page = intval($page);
+        $limit = $perpage * $page;
+
+        $varGet = trim($this->request->getGet('var'));
+        $varPost = trim($this->request->getPost('var'));
+        if (!empty($varGet) or $varGet!=='') {
+            $paramglobal1= " and idbranch='$varGet'";
+        } else {
+            $paramglobal1= "";
+        }
+        if (!empty($varPost) or $varPost!=='') {
+            $paramglobal2= " and idbranch='$varGet'";
+        } else {
+            $paramglobal2= "";
+        }
+
+        $param=" and (idbranch like '%$search%' $paramglobal $paramglobal1 $paramglobal2 ) or (nmbranch like '%$search%' $paramglobal $paramglobal1 $paramglobal2 ) order by idbranch asc";
+        //$param="";
+        $getResult = $this->m_global->q_branchjob($param)->getResult();
+        $count = $this->m_global->q_branchjob($param)->getNumRows();
+        header('Content-Type: application/json');
+        echo json_encode(
+            array(
+                'total_count' => $count,
+                'items' => $getResult,
+                'incomplete_getResults' => false,
+            ),
+            JSON_PRETTY_PRINT
+        );
+    }
+
     function option_idbu_by_id(){
 
         $id = trim($this->request->getGet('var'));
@@ -2334,6 +2378,60 @@ class Globalmodule extends BaseController
         // $getResult = $this->m_skperingatan->q_mst_karyawan()->getResult();
         $getResult = $this->m_global->q_supplier_new($param)->getResult();
         $count = $this->m_global->q_supplier_new($param)->getNumRows();
+        header('Content-Type: application/json');
+        echo json_encode(
+            array(
+                'total_count' => $count,
+                'items' => $getResult,
+                'incomplete_getResults' => false,
+            ),
+            JSON_PRETTY_PRINT
+        );
+
+    }
+
+
+
+    
+    
+    function list_pp(){
+        $branch = $this->session->get('branch');
+        $idbu = $this->session->get('idbu');
+        $param_c="";
+        //$count = $this->m_instock->q_kdgroup_param($param_c)->getNumRows();
+        $search = strtoupper($this->request->getPost('_search_'));
+        $perpage = $this->request->getPost('_perpage_');
+        $perpage = intval($perpage);
+        //$perpage = $perpage < 1 ? $count : $perpage;
+        $page = $this->request->getPost('_page_');
+        $pg = trim($this->request->getPost('_paramglobal_'));
+        $page = intval($page);
+        $limit = $perpage * $page;
+
+        if (!empty($pg) or $pg!=='') {
+            $paramglobal = " and trim(coalesce(docno,'')) ='$pg'";
+        } else {
+            $paramglobal = "";
+        }
+
+        $varGet = trim($this->request->getGet('var'));
+        $varPost = trim($this->request->getPost('var'));
+        if (!empty($varGet) or $varGet!=='') {
+            $paramglobal1= " and docno='$varGet'";
+        } else {
+            $paramglobal1= "";
+        }
+        if (!empty($varPost) or $varPost!=='') {
+            $paramglobal2= " and docno='$varGet'";
+        } else {
+            $paramglobal2= "";
+        }
+
+        $param=" and (docno like '%$search%' $paramglobal $paramglobal1 $paramglobal2 ) or (upper(keterangan) like '%$search%' $paramglobal $paramglobal1 $paramglobal2 ) order by docno asc";
+        //$param="";
+        // $getResult = $this->m_skperingatan->q_mst_karyawan()->getResult();
+        $getResult = $this->m_global->q_pp($param)->getResult();
+        $count = $this->m_global->q_pp($param)->getNumRows();
         header('Content-Type: application/json');
         echo json_encode(
             array(

@@ -78,6 +78,7 @@ order by msession);");
         $recaptchaResponse = trim($this->request->getVar('g-recaptcha-response'));
         $username = strtoupper($this->request->getVar('username'));
         $password = $this->request->getVar('password');
+        $logindate = $this->request->getVar('logindate');
         $ip = $this->fiky_encryption->getUserIP();
 
         // form data
@@ -112,6 +113,7 @@ order by msession);");
                 'kddept' => trim($dtl['kddept']),
                 'roleid' => trim($dtl['roleid']),
                 'site_lang' => trim($dtl['lang']),
+                'logindate' => $logindate
             ];
             $this->session->set($newdata);
             $blog = $this->db->table('sc_log.log_time');

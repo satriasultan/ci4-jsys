@@ -50,37 +50,44 @@ class M_Trxerror extends Model
 
     function unfinish($name,$urlclear,$urlnext,$title,$body){
         return"
-            <!-- Bootstrap modal -->
-            <div id=\"modal_unfinish\" class=\"modal\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"myModalLabel\" aria-hidden=\"true\">
-                <div class=\"modal-dialog\">
-                    <div class=\"modal-content\">
-                        <div class=\"modal-header\">
-                            <h3 class=\"modal-title\" align=\"center\"> $title   $name </h3>
-                            <button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"modal\" aria-hidden=\"true\"></button>
-                        </div>
-                        <div class=\"modal-body\">
-                             <h6 class=\"modal-title\"  align=\"center\"> $body </h6>
-                        </div>
-                        <div class=\"modal-footer\">
-                <a href=\"$urlnext\" type=\"button\" class=\"btn btn-primary pull-right\"><i class='fa fa-arrow-right'></i> Continue </a>
-                <a href=\"$urlclear\" type=\"button\" class=\"btn btn-danger pull-left\" ><i class='fa fa-trash'></i> Clear</a>
-                        </div>
-                    </div>
-                    <!-- /.modal-content -->
-                </div>
-                <!-- /.modal-dialog -->
+           <!-- Bootstrap 5 modal -->
+<div id=\"modal_unfinish\" class=\"modal fade\" tabindex=\"-1\" aria-hidden=\"true\">
+    <div class=\"modal-dialog\">
+        <div class=\"modal-content\">
+            <div class=\"modal-header\">
+                <h3 class=\"modal-title text-center w-100\">
+                    $title $name
+                </h3>
             </div>
+            <div class=\"modal-body\">
+                <h6 class=\"text-center\"> $body </h6>
+            </div>
+            <div class=\"modal-footer d-flex justify-content-between\">
+                <a href=\"$urlclear\" class=\"btn btn-danger\">
+                    <i class=\"fa fa-trash\"></i> Clear
+                </a>
+                <a href=\"$urlnext\" class=\"btn btn-primary\">
+                    <i class=\"fa fa-arrow-right\"></i> Continue
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script type=\"text/javascript\">
-$(window).on('load', function() {
-            $('#modal_unfinish').modal({
-                backdrop: 'static',
-                keyboard: false,
-                show: true
-            }); // show bootstrap modal
+window.addEventListener('load', function () {
+    var myModal = new bootstrap.Modal(
+        document.getElementById('modal_unfinish'),
+        {
+            backdrop: 'static',
+            keyboard: false
+        }
+    );
+    myModal.show();
 });
+</script>
 
-</script>            
+   
             ";
 
     }

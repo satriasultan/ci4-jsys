@@ -59,6 +59,12 @@ class M_Gobals extends Model
     }
 
 
+       function q_branchjob($param){
+        $query = $this->db->query("select *,  trim(idbranch) as id from sc_mst.branchjob where coalesce(trim(status),'')='F' $param");
+        return $query;
+    }
+
+
     /* INITIALIZE BREADCRUMB */
 
     function q_menuprg($kodemenu){
@@ -314,6 +320,10 @@ group by docno order by docno asc");
 
     function q_supplier_new($param){
         return $this->db->query("select *, trim(kdsupplier) as id from sc_mst.mstsupplier where coalesce(trim(chold),'NO')!='YES' AND coalesce(trim(kdsupplier),'')!='' $param ");
+    }
+
+    function q_pp($param){
+        return $this->db->query("select *, trim(docno) as id from sc_trx.pp where coalesce(trim(docno),'')!='' $param ");
     }
 
 }
