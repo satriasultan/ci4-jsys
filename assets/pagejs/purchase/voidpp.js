@@ -96,82 +96,6 @@ $('#btn-reset-tx').click(function(){ //button reset event click
 let skipRoleChange = false;
 
 
-function tableItem(){
-    // var lg = languageDatatable;
-    var initTable = function () {
-        var table = $('#tsearchitem');
-        table.DataTable({
-            "processing": true, //Feature control the processing indicator.
-            "serverSide": true, //Feature control DataTables' server-side processing mode.
-            "order": [], //Initial no order.
-            "language":  languageDatatable(),
-            "paging": true,
-            "lengthChange": false,
-            "searching": false,
-            "ordering": false,
-            "info": true,
-            "autoWidth": false,
-            "responsive": false,
-            "bFilter":true,
-            "ajax": {
-                "url": HOST_URL + 'stock/bbm/list_balance_bbm',
-                "type": "POST",
-                "data": function(data) {
-                    data.searchfilter = $('#searchitem').val()+'';
-                    data.idbarang = $('#idbarang').val()+'';
-                    data.idposition = $('#idposition').val()+'';
-                },
-                "dataFilter": function(data) {
-                    var json = jQuery.parseJSON(data);
-                    json.draw = json.dataTables.draw;
-                    json.recordsTotal = json.dataTables.recordsTotal;
-                    json.recordsFiltered = json.dataTables.recordsFiltered;
-                    json.data = json.dataTables.data;
-                    return JSON.stringify(json); // return JSON string
-                }
-            },
-
-            //Set column definition initialisation properties.
-            "columnDefs": [
-                {
-                    "targets": [ -1 ], //last column
-                    "orderable": false, //set not orderable
-                },
-            ],
-
-        });
-
-        $('#searchitem').keyup(function(){
-            var table = $('#tsearchitem');
-            // table.append().search( $(this).val() ).draw();
-            console.log('Selecting =>' + $(this).val());
-            table.DataTable().ajax.reload();
-        });
-    };
-
-
-    return initTable();
-}
-
-function reload_table()
-{
-    var table = $('#tsearchitem');
-    table.DataTable().ajax.reload(); //reload datatable ajax
-    //console.log('HALO HALO BANDUNG');
-}
-
-
-$('#btn-filter').click(function(){ //button filter event click
-    var table = $('#tsearchitem');
-    table.DataTable().ajax.reload(); //reload datatable ajax
-    $('#filter').modal('hide');
-});
-$('#btn-reset').click(function(){ //button reset event click
-    $('#form-filter')[0].reset();
-    var table = $('#tsearchitem');
-    table.DataTable().ajax.reload(); //reload datatable ajax
-    $('#filter').modal('hide');
-});
 
 //EDIT ITEM
 function documentReadable(){
@@ -395,30 +319,6 @@ $(document).on('input', '.jtsseparator', function () {
 });
 
 
-
-
-
-function editsearchitem(e){
-    Swal.fire({
-        title: 'Peringatan..!!!',
-        text: 'Would be change? ' + e,
-        backdrop: true,
-        allowOutsideClick: false,
-        showConfirmButton: true,
-        showDenyButton: true,
-        showCancelButton: false,
-        confirmButtonText: `Ok`,
-        icon: 'question',
-        //denyButtonText: `Don't save`,
-    }).then((result) => {
-        /* Read more about isConfirmed, isDenied below */
-        if (result.isConfirmed) {
-            window.location.replace(HOST_URL + 'master/item/edit' + '/?var=' + e)
-        } else if (result.isDenied) {
-            return false;
-        }
-    })
-}
 
 
 /* TABLE VoidPP DETAIL */
@@ -742,77 +642,6 @@ $('#btn-reset').click(function(){ //button reset event click
 
 
 
-var defaultInitialItem = '';
-$("#idbarang_filter").select2({
-    placeholder: "Type/ Choose your item",
-    allowClear: true,
-    dropdownParent: $("#filter"),
-    //minimumInputLength: 2, // only start searching when the user has input 3 or more characters
-    //maximumSelectionLength: 1,
-    multiple: false,
-    ajax: {
-        url: HOST_URL + 'stock/balance/list_item',
-        type: 'POST',
-        dataType: 'json',
-        delay: 250,
-        data: function(params) {
-            return {
-                _search_: params.term, // search term
-                _page_: params.page,
-                _draw_: true,
-                _start_: 1,
-                _perpage_: 2,
-                _paramglobal_: defaultInitialItem,
-                _parameterx_: defaultInitialItem,
-                term: params.term,
-            };
-        },
-        processResults: function (data, params) {
-            var searchTerm = $("#idbarang_filter").data("select2").$dropdown.find("input").val();
-            if (data.items.length === 1 && data.items[0].text === searchTerm) {
-                var option = new Option(data.items[0].nmbarang, data.items[0].idbarang, true, true);
-                $('#idbarang_filter').append(option).trigger('change').select2("close");
-                // manually trigger the `select2:select` event
-                $('#idbarang_filter').trigger({
-                    type: 'select2:select',
-                    params: {
-                        data: data
-                    }
-                });
-            }
-            params.page = params.page || 1;
-            return {
-                results: data.items,
-                pagination: {
-                    more: (params.page * 30) < data.total_count
-                }
-            };
-        },
-
-        cache: false
-    },
-    escapeMarkup: function(markup) {
-        return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatItemFilter, // omitted for brevity, see the source of this page
-    templateSelection: formatItemSelectionFilter // omitted for brevity, see the source of this page
-}).on("change", function () {
-    console.log('Selecting =>' + $(this).val());
-    //var table = $('#tsearchitem');
-    //table.DataTable().ajax.reload(); //reload datatable ajax
-    ///table.append().search( $(this).val() ).draw();
-    //$('#filter').modal('hide');
-});
-/* Format Group */
-function formatItemFilter(repo) {
-    if (repo.loading) return repo.text;
-    var markup ="<div class='select2-result-repository__description'>" + repo.idbarang +"   <i class='fa fa-circle-o'></i>   "+ repo.nmbarang +"</div>";
-    return markup;
-}
-function formatItemSelectionFilter(repo) {
-    return repo.nmbarang || repo.text;
-}
 
 
 function saveVoidPPDetail() {
@@ -1207,7 +1036,7 @@ $(document).ready(function() {
 
     tableVoidPPTrx();
     tableVoidPPDetail();
-    tableItem();
+    // tableItem();
     //read_qrcode();
     $('#checkboxnik').change(function() {
         // this will contain a reference to the checkbox

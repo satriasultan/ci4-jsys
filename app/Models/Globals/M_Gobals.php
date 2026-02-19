@@ -294,7 +294,34 @@ group by docno order by docno asc");
     }
 
     function q_currency($param){
-        return $this->db->query("select *, trim(currcode) as id from sc_mst.currency where coalesce(trim(currcode),'')!='' $param ");
+        return $this->db->query("
+            select 
+                a.*, 
+                trim(a.currcode) as id,
+                b.nilai as kurs,
+                b.exchangedate as tgl_kurs,
+                b.idcurr
+            from sc_mst.currency a
+            left join (
+                select distinct on (idcurr) idcurr, nilai, exchangedate
+                from sc_mst.exchangerate
+                order by idcurr, exchangedate desc
+            ) b on b.idcurr = a.id
+            where coalesce(trim(a.currcode),'') != '' 
+            $param
+        ");
+    }
+
+    
+    function q_tax($param){
+        return $this->db->query("
+            select 
+                a.*, 
+                trim(a.idtax) as id
+            from sc_mst.tax_mst a
+            where coalesce(trim(a.idtax),'') != '' 
+            $param
+        ");
     }
 
     function q_customer_new($param){

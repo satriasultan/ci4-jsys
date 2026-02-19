@@ -186,11 +186,11 @@ BEGIN
         -- INSERT DETAIL
         -- ===============================
         INSERT INTO sc_trx.voidpp_dtl (
-            idurut, docno, docnopp, idbarang, nmbarang, unit, qty, description,
+            idurut, docno, docnopp, idbarang, uniqueid,  nmbarang, unit, qty, description,
             inputby, inputdate, status, updateby, updatedate
         )
         SELECT
-            idurut, v_docno, docnopp, idbarang, nmbarang, unit, qty, description,
+            idurut, v_docno, docnopp, idbarang, uniqueid,  nmbarang, unit, qty, description,
             inputby, inputdate, status, updateby, updatedate
         FROM sc_tmp.voidpp_dtl
         WHERE rtrim(docno) = rtrim(OLD.docno)
@@ -217,10 +217,10 @@ BEGIN
         DELETE FROM sc_trx.voidpp_dtl WHERE docno = NEW.docnotmp;
 
         INSERT INTO sc_trx.voidpp_dtl
-        (idurut, docno, docnopp, idbarang, nmbarang, unit, qty, description,
+        (idurut, docno, docnopp, idbarang, uniqueid,  nmbarang, unit, qty, description,
          inputby, inputdate, status, updateby, updatedate, docnotmp)
         SELECT
-            idurut, NEW.docnotmp, docnopp, idbarang, nmbarang, unit, qty, description,
+            idurut, NEW.docnotmp, docnopp, idbarang, uniqueid,  nmbarang, unit, qty, description,
             inputby, inputdate, status, updateby, updatedate, docnotmp
         FROM sc_tmp.voidpp_dtl
         WHERE rtrim(docno) = rtrim(NEW.docno);
@@ -289,9 +289,9 @@ BEGIN
 		IF (OLD.STATUS='F' AND NEW.STATUS='E') THEN
 			-- Insert into pp_dtl with new columns
 			INSERT INTO sc_tmp.voidpp_dtl
-			( idurut, docno, docnopp, idbarang,nmbarang, unit, qty, description,
+			( idurut, docno, docnopp, idbarang, uniqueid, nmbarang, unit, qty, description,
             inputby, inputdate, status, updateby, updatedate, docnotmp)
-			SELECT idurut, NEW.docno, docnopp, idbarang,nmbarang, unit, qty, description,
+			SELECT idurut, NEW.docno, docnopp, idbarang, uniqueid, nmbarang, unit, qty, description,
             inputby, inputdate, status, updateby, updatedate, NEW.docno
 			FROM sc_trx.voidpp_dtl 
 			WHERE docno = NEW.docno;
@@ -332,3 +332,13 @@ CREATE OR REPLACE TRIGGER tr_voidpp
     ON sc_trx.voidpp
     FOR EACH ROW
     EXECUTE FUNCTION sc_trx.tr_voidpp();
+
+
+    
+
+ALTER TABLE sc_tmp.voidpp_dtl
+ADD COLUMN uniqueid VARCHAR(64)
+
+ALTER TABLE sc_trx.voidpp_dtl
+ADD COLUMN uniqueid VARCHAR(64)
+

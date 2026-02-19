@@ -98,18 +98,6 @@ let skipRoleChange = false;
 
 
 
-$('#btn-filter').click(function(){ //button filter event click
-    var table = $('#tsearchitem');
-    table.DataTable().ajax.reload(); //reload datatable ajax
-    $('#filter').modal('hide');
-});
-$('#btn-reset').click(function(){ //button reset event click
-    $('#form-filter')[0].reset();
-    var table = $('#tsearchitem');
-    table.DataTable().ajax.reload(); //reload datatable ajax
-    $('#filter').modal('hide');
-});
-
 //EDIT ITEM
 function documentReadable(){
     // $("#loadMe").modal({
@@ -271,30 +259,6 @@ $(document).on('input', '.jtsseparator', function () {
 });
 
 
-
-
-
-function editsearchitem(e){
-    Swal.fire({
-        title: 'Peringatan..!!!',
-        text: 'Would be change? ' + e,
-        backdrop: true,
-        allowOutsideClick: false,
-        showConfirmButton: true,
-        showDenyButton: true,
-        showCancelButton: false,
-        confirmButtonText: `Ok`,
-        icon: 'question',
-        //denyButtonText: `Don't save`,
-    }).then((result) => {
-        /* Read more about isConfirmed, isDenied below */
-        if (result.isConfirmed) {
-            window.location.replace(HOST_URL + 'master/item/edit' + '/?var=' + e)
-        } else if (result.isDenied) {
-            return false;
-        }
-    })
-}
 
 
 /* TABLE VoidPP DETAIL */

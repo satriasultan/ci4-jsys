@@ -203,6 +203,43 @@ $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], f
     $routes->add('saveVoidPPDetail', 'Purchase::saveVoidPPDetail');
     $routes->add("get_voidpp_detail(:any)", "Purchase::get_voidpp_detail$1");
     $routes->add("delete_voidpp_detail", "Purchase::delete_voidpp_detail");
+
+
+
+    
+    $routes->add('po', 'Purchase::po');
+    $routes->add('list_po', 'Purchase::list_po');
+    $routes->add('list_po_apprv', 'Purchase::list_po_apprv');
+    
+    $routes->add('addPO', 'Purchase::addPO');
+    $routes->add('detailPO', 'Purchase::detailPO');
+    $routes->add('list_tmp_po_dtl', 'Purchase::list_tmp_po_dtl');
+    // $routes->add('showing_sikbsp_mst', 'Purchase::showing_sikbsp_mst');
+    
+    $routes->add('clearEntryPO', 'Purchase::clearEntryPO');
+    $routes->add('finalEntryPO', 'Purchase::finalEntryPO');
+    $routes->add('showing_potemp', 'Purchase::showing_potemp');
+    $routes->add('updateStatusPO', 'Purchase::updateStatusPO');
+
+    
+    $routes->add('save_po_detail', 'Purchase::save_po_detail');
+    $routes->get('updatePO(:any)', 'Purchase::updatePO$1');
+
+    $routes->add('deletePODtl', 'Purchase::deletePODtl');
+    $routes->add('show_po', 'Purchase::show_po');
+    $routes->add('api_po(:any)', 'Purchase::api_po$1');
+    $routes->add('list_trx_po_dtl', 'Purchase::list_trx_po_dtl');
+    $routes->add('showing_potrx', 'Purchase::showing_potrx');
+    $routes->add('getBranchInfoPO', 'Purchase::getBranchInfoPO');
+    $routes->add('getNextSuffixPO', 'Purchase::getNextSuffixPO');
+    $routes->add('initPOHeader', 'Purchase::initPOHeader');
+    $routes->add('savePODetail', 'Purchase::savePODetail');
+    $routes->add("get_po_detail(:any)", "Purchase::get_po_detail$1");
+    $routes->add("delete_po_detail", "Purchase::delete_po_detail");
+
+
+
+
 });
 
 
@@ -413,6 +450,7 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
     $routes->add('globalmodule/list_kolektor', 'Globalmodule::list_kolektor');
     $routes->add('globalmodule/list_coa', 'Globalmodule::list_coa');
     $routes->add('globalmodule/list_currency', 'Globalmodule::list_currency');
+    $routes->add('globalmodule/list_tax', 'Globalmodule::list_tax');
     $routes->add('globalmodule/list_customer', 'Globalmodule::list_customer');
     $routes->add('globalmodule/list_golonganbarang', 'Globalmodule::list_golonganbarang');
     $routes->add('globalmodule/list_jenisproduk', 'Globalmodule::list_jenisproduk');

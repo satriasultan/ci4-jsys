@@ -51,4 +51,5 @@ INSERT INTO sc_mst.menuprg (
 ('JTS', 1, 'I.P', 'PEMBELIAN', '0', '0', 'U', false, 'fa-cart-plus', '', 'LEFT', 'NO'),
 ('JTS', 1, 'I.P.A', 'TRANSAKSI', 'I.P', '0', 'S', false, 'fa-right-left', '', 'LEFT', 'NO'),
 ('JTS', 1, 'I.P.A.1', 'PERMINTAAN PEMBELIAN(PP)', 'I.P', 'I.P.A', 'P', false, 'fa-lightbulb-o', 'purchase/trans/pp', 'LEFT', 'NO'),
-('JTS', 2, 'I.P.A.2', 'VOID PP', 'I.P', 'I.P.A', 'P', false, 'fa-lightbulb-o', 'purchase/trans/voidpp', 'LEFT', 'NO');
+('JTS', 2, 'I.P.A.2', 'VOID PP', 'I.P', 'I.P.A', 'P', false, 'fa-lightbulb-o', 'purchase/trans/voidpp', 'LEFT', 'NO'),
+('JTS', 3, 'I.P.A.3', 'PURCHASE ORDER (PO)', 'I.P', 'I.P.A', 'P', false, 'fa-lightbulb-o', 'purchase/trans/po', 'LEFT', 'NO');

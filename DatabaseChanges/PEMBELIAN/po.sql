@@ -1,12 +1,33 @@
 
-CREATE TABLE IF NOT EXISTS sc_tmp.pp
+-- JALANKAN INI DULU
+
+DROP TABLE IF EXISTS sc_tmp.po_dtl
+DROP TABLE IF EXISTS sc_trx.po_dtl
+
+
+
+
+CREATE TABLE IF NOT EXISTS sc_tmp.po
 (
     idurut serial NOT NULL,
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
     docdate character(20) COLLATE pg_catalog."default",
+    senddate character(20) COLLATE pg_catalog."default",
     cabang character (30 ) COLLATE pg_catalog."default",    
     pemohon character(100) COLLATE pg_catalog."default",
-    estpakai character(20) COLLATE pg_catalog."default",
+    kdsupplier character(30) COLLATE pg_catalog."default",
+    nmsupplier character(250) COLLATE pg_catalog."default",
+    alamatsupplier TEXT,
+    alamatkirim TEXT,
+    jthtempo numeric(18,2),
+    idtax character(20),
+    isinclusive character(6),
+    currcode character(3),
+    kurs numeric(18,2),
+    dpp numeric(18,2),
+    jumlahpajak numeric(18,2),
+    total numeric(18,2),
+    syarat TEXT,
     status character(6) COLLATE pg_catalog."default",
     keterangan TEXT,
     inputby character varying(50) COLLATE pg_catalog."default",
@@ -16,26 +37,39 @@ CREATE TABLE IF NOT EXISTS sc_tmp.pp
     printby character varying(50) COLLATE pg_catalog."default",
     printdate timestamp without time zone,
     docnotmp character(30) COLLATE pg_catalog."default",
-    CONSTRAINT pk_tmp_pp PRIMARY KEY (idurut, docno)
+    CONSTRAINT pk_tmp_po PRIMARY KEY (idurut, docno)
 )
 
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS sc_tmp.pp
+ALTER TABLE IF EXISTS sc_tmp.po
     OWNER to postgres;
 
 
 
 
 
-CREATE TABLE IF NOT EXISTS sc_trx.pp
+CREATE TABLE IF NOT EXISTS sc_trx.po
 (
     idurut serial NOT NULL,
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
     docdate character(20) COLLATE pg_catalog."default",
+    senddate character(20) COLLATE pg_catalog."default",
     cabang character (30 ) COLLATE pg_catalog."default",    
     pemohon character(100) COLLATE pg_catalog."default",
-    estpakai character(20) COLLATE pg_catalog."default",
+    kdsupplier character(30) COLLATE pg_catalog."default",
+    nmsupplier character(250) COLLATE pg_catalog."default",
+    alamatsupplier TEXT,
+    alamatkirim TEXT,
+    jthtempo numeric(18,2),
+    idtax character(20),
+    isinclusive character(6),
+    currcode character(3),
+    kurs numeric(18,2),
+    dpp numeric(18,2),
+    jumlahpajak numeric(18,2),
+    total numeric(18,2),
+    syarat TEXT,
     status character(6) COLLATE pg_catalog."default",
     keterangan TEXT,
     inputby character varying(50) COLLATE pg_catalog."default",
@@ -45,26 +79,31 @@ CREATE TABLE IF NOT EXISTS sc_trx.pp
     printby character varying(50) COLLATE pg_catalog."default",
     printdate timestamp without time zone,
     docnotmp character(30) COLLATE pg_catalog."default",
-    CONSTRAINT pk_trx_pp PRIMARY KEY (idurut, docno)
+    CONSTRAINT pk_trx_po PRIMARY KEY (idurut, docno)
 )
 
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS sc_trx.pp
+ALTER TABLE IF EXISTS sc_trx.po
     OWNER to postgres;
 
 
 
-
-CREATE TABLE IF NOT EXISTS sc_tmp.pp_dtl
+CREATE TABLE IF NOT EXISTS sc_tmp.po_dtl
 (
     idurut SERIAL PRIMARY KEY,
     docno CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
+    docnopp CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
     idbarang CHARACTER(20) COLLATE pg_catalog."default",
     nmbarang CHARACTER(150) COLLATE pg_catalog."default",
     unit CHARACTER(20) COLLATE pg_catalog."default",
     qty NUMERIC(18,2),
-    description TEXT COLLATE pg_catalog."default",
+    qtybonus NUMERIC(18,2),
+    harga NUMERIC(18,2),
+    multidisc NUMERIC(18,2),
+    nilai NUMERIC(18,2),
+    descriptionpo TEXT COLLATE pg_catalog."default",
+    descriptionpp TEXT COLLATE pg_catalog."default",
     status CHARACTER(6) COLLATE pg_catalog."default",
     inputby CHARACTER VARYING(50) COLLATE pg_catalog."default",
     inputdate TIMESTAMP WITHOUT TIME ZONE,
@@ -74,20 +113,27 @@ CREATE TABLE IF NOT EXISTS sc_tmp.pp_dtl
 )
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS sc_tmp.pp_dtl
+ALTER TABLE IF EXISTS sc_tmp.po_dtl
     OWNER TO postgres;
 
 
 
-CREATE TABLE IF NOT EXISTS sc_trx.pp_dtl
+
+CREATE TABLE IF NOT EXISTS sc_trx.po_dtl
 (
     idurut SERIAL PRIMARY KEY,
     docno CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
+    docnopp CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
     idbarang CHARACTER(20) COLLATE pg_catalog."default",
     nmbarang CHARACTER(150) COLLATE pg_catalog."default",
     unit CHARACTER(20) COLLATE pg_catalog."default",
     qty NUMERIC(18,2),
-    description TEXT COLLATE pg_catalog."default",
+    qtybonus NUMERIC(18,2),
+    harga NUMERIC(18,2),
+    multidisc NUMERIC(18,2),
+    nilai NUMERIC(18,2),
+    descriptionpo TEXT COLLATE pg_catalog."default",
+    descriptionpp TEXT COLLATE pg_catalog."default",
     status CHARACTER(6) COLLATE pg_catalog."default",
     inputby CHARACTER VARYING(50) COLLATE pg_catalog."default",
     inputdate TIMESTAMP WITHOUT TIME ZONE,
@@ -97,17 +143,17 @@ CREATE TABLE IF NOT EXISTS sc_trx.pp_dtl
 )
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS sc_trx.pp_dtl
+ALTER TABLE IF EXISTS sc_trx.po_dtl
     OWNER TO postgres;
 
 
 
 
 
--- FUNCTION: sc_tmp.tr_pp_finalize()
+-- FUNCTION: sc_tmp.tr_po_finalize()
 
--- DROP FUNCTION IF EXISTS sc_tmp.tr_pp_finalize();
-CREATE OR REPLACE FUNCTION sc_tmp.tr_pp_finalize()
+-- DROP FUNCTION IF EXISTS sc_tmp.tr_po_finalize();
+CREATE OR REPLACE FUNCTION sc_tmp.tr_po_finalize()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $BODY$
@@ -148,7 +194,7 @@ BEGIN
         LOOP
             EXIT WHEN NOT EXISTS (
                 SELECT 1
-                FROM sc_trx.pp
+                FROM sc_trx.po
                 WHERE rtrim(docno) = v_new_docno
             );
 
@@ -168,88 +214,128 @@ BEGIN
         -- ===============================
         -- INSERT HEADER
         -- ===============================
-        INSERT INTO sc_trx.pp (
-            idurut, docno, cabang, docdate, pemohon, estpakai,
+        INSERT INTO sc_trx.po (
+            idurut, docno, cabang, docdate, senddate, pemohon, kdsupplier,
+            nmsupplier, alamatsupplier, alamatkirim, jthtempo,
+            idtax,isinclusive, currcode, kurs, dpp, 
+            jumlahpajak, total, syarat,
             keterangan, status, inputby, inputdate,
             updateby, updatedate, printby, printdate
         )
         SELECT
-            idurut, v_docno, cabang, docdate, pemohon, estpakai,
+            idurut, v_docno, cabang, docdate, senddate, pemohon, kdsupplier,
+            nmsupplier, alamatsupplier, alamatkirim, jthtempo,
+            idtax,isinclusive, currcode, kurs, dpp, 
+            jumlahpajak, total, syarat,
             keterangan, 'F', inputby, inputdate,
             updateby, updatedate, printby, printdate
-        FROM sc_tmp.pp
+        FROM sc_tmp.po
         WHERE rtrim(docno) = rtrim(OLD.docno)
-          AND inputby = v_inputby
-          AND idurut = v_idurut;
+            AND inputby = v_inputby
+            AND idurut = v_idurut;
 
         -- ===============================
         -- INSERT DETAIL
         -- ===============================
-        INSERT INTO sc_trx.pp_dtl (
-            idurut, docno, idbarang, uniqueid, nmbarang, unit, qty, description,
+        INSERT INTO sc_trx.po_dtl (
+            idurut, docno, docnopp, idbarang, uniqueid,  nmbarang, unit, qty, qtybonus, 
+            harga, multidisc, nilai, descriptionpo, descriptionpp,
             inputby, inputdate, status, updateby, updatedate
         )
         SELECT
-            idurut, v_docno, idbarang, uniqueid, nmbarang, unit, qty, description,
+            idurut, v_docno, docnopp, idbarang, uniqueid,  nmbarang, unit, qty, qtybonus, 
+            harga, multidisc, nilai, descriptionpo, descriptionpp,
             inputby, inputdate, status, updateby, updatedate
-        FROM sc_tmp.pp_dtl
+        FROM sc_tmp.po_dtl
         WHERE rtrim(docno) = rtrim(OLD.docno)
-          AND inputby = v_inputby;
+            AND inputby = v_inputby;
+
+        UPDATE sc_trx.pp p
+            SET status = 'PO'
+            WHERE p.docno IN (
+                SELECT DISTINCT docnopp
+                FROM sc_tmp.po_dtl
+                WHERE rtrim(docno) = rtrim(OLD.docno)
+                AND inputby = v_inputby
+                AND docnopp IS NOT NULL
+                AND docnopp <> ''
+        );
 
         -- ===============================
         -- CLEANUP TMP
         -- ===============================
-        DELETE FROM sc_tmp.pp
+        DELETE FROM sc_tmp.po
         WHERE rtrim(docno) = rtrim(OLD.docno)
-          AND inputby = v_inputby
-          AND idurut = v_idurut;
+            AND inputby = v_inputby
+            AND idurut = v_idurut;
 
-        DELETE FROM sc_tmp.pp_dtl
+        DELETE FROM sc_tmp.po_dtl
         WHERE rtrim(docno) = rtrim(OLD.docno)
-          AND inputby = v_inputby;
+            AND inputby = v_inputby;
 
     -- ===============================
     -- DOCNOTMP FLOW (TETAP)
     -- ===============================
     ELSIF OLD.status = 'E' AND NEW.status = 'F' AND COALESCE(NEW.docnotmp, '') <> '' THEN
 
-        DELETE FROM sc_trx.pp WHERE docno = NEW.docnotmp;
-        DELETE FROM sc_trx.pp_dtl WHERE docno = NEW.docnotmp;
+        DELETE FROM sc_trx.po WHERE docno = NEW.docnotmp;
+        DELETE FROM sc_trx.po_dtl WHERE docno = NEW.docnotmp;
 
-        INSERT INTO sc_trx.pp_dtl
-        (idurut, docno, idbarang, uniqueid, nmbarang, unit, qty, description,
-         inputby, inputdate, status, updateby, updatedate, docnotmp)
+        INSERT INTO sc_trx.po_dtl
+        (idurut, docno, docnopp, idbarang, uniqueid,  nmbarang, unit, qty, qtybonus, 
+        harga, multidisc, nilai, descriptionpo, descriptionpp,
+        inputby, inputdate, status, updateby, updatedate, docnotmp)
         SELECT
-            idurut, NEW.docnotmp, idbarang, uniqueid, nmbarang, unit, qty, description,
+            idurut, NEW.docnotmp, docnopp, idbarang, uniqueid,  nmbarang, unit, qty, qtybonus, 
+            harga, multidisc, nilai, descriptionpo, descriptionpp,
             inputby, inputdate, status, updateby, updatedate, docnotmp
-        FROM sc_tmp.pp_dtl
+        FROM sc_tmp.po_dtl
         WHERE rtrim(docno) = rtrim(NEW.docno);
 
-        INSERT INTO sc_trx.pp
-        (idurut, docno, cabang, docdate, pemohon, estpakai,
-         keterangan, status, inputby, inputdate,
-         updateby, updatedate, printby, printdate, docnotmp)
+                -- ===============================
+        -- UPDATE STATUS PP MENJADI 'PO'
+        -- ===============================
+        UPDATE sc_trx.pp p
+        SET status = 'PO'
+        WHERE p.docno IN (
+            SELECT DISTINCT docnopp
+            FROM sc_tmp.po_dtl
+            WHERE rtrim(docno) = rtrim(NEW.docno)
+                AND docnopp IS NOT NULL
+                AND docnopp <> ''
+        );
+
+
+        INSERT INTO sc_trx.po
+        (idurut, docno, cabang, docdate, senddate, pemohon, kdsupplier,
+        nmsupplier, alamatsupplier, alamatkirim, jthtempo,
+        idtax,isinclusive, currcode, kurs, dpp, 
+        jumlahpajak, total, syarat,
+        keterangan, status, inputby, inputdate,
+        updateby, updatedate, printby, printdate, docnotmp)
         SELECT
-            idurut, NEW.docnotmp, cabang, docdate, pemohon, estpakai,
+            idurut, NEW.docnotmp, cabang, docdate, senddate, pemohon, kdsupplier,
+            nmsupplier, alamatsupplier, alamatkirim, jthtempo,
+            idtax,isinclusive, currcode, kurs, dpp, 
+            jumlahpajak, total, syarat,
             keterangan, status, inputby, inputdate,
             updateby, updatedate, printby, printdate, docnotmp
-        FROM sc_tmp.pp
+        FROM sc_tmp.po
         WHERE rtrim(docno) = rtrim(NEW.docno);
 
-        DELETE FROM sc_tmp.pp WHERE rtrim(docno) = rtrim(NEW.docno);
-        DELETE FROM sc_tmp.pp_dtl WHERE rtrim(docno) = rtrim(NEW.docno);
-
+        DELETE FROM sc_tmp.po WHERE rtrim(docno) = rtrim(NEW.docno);
+        DELETE FROM sc_tmp.po_dtl WHERE rtrim(docno) = rtrim(NEW.docno);
 
     ELSEIF (OLD.STATUS = 'E' AND NEW.STATUS = 'C') THEN
         IF NEW.printby IS NOT NULL AND NEW.printby <> '' AND NEW.printdate IS NOT NULL THEN
-            UPDATE sc_trx.pp SET status = 'P' WHERE docno = NEW.docnotmp;
+            UPDATE sc_trx.po SET status = 'P' WHERE docno = NEW.docnotmp;
         ELSE
-            UPDATE sc_trx.pp SET status = 'F' WHERE docno = NEW.docnotmp;
+            UPDATE sc_trx.po SET status = 'F' WHERE docno = NEW.docnotmp;
         END IF;
 
             
-        DELETE FROM sc_tmp.pp WHERE docno = NEW.docno;
-        DELETE FROM sc_tmp.pp_dtl WHERE docno = NEW.docno;
+        DELETE FROM sc_tmp.po WHERE docno = NEW.docno;
+        DELETE FROM sc_tmp.po_dtl WHERE docno = NEW.docno;
     
     END IF;
 
@@ -259,10 +345,10 @@ $BODY$;
 
 
 
-CREATE TRIGGER tr_pp_finalize
-    AFTER UPDATE ON sc_tmp.pp
+CREATE TRIGGER tr_po_finalize
+    AFTER UPDATE ON sc_tmp.po
     FOR EACH ROW
-    EXECUTE FUNCTION sc_tmp.tr_pp_finalize();
+    EXECUTE FUNCTION sc_tmp.tr_po_finalize();
 
 
 
@@ -270,9 +356,9 @@ CREATE TRIGGER tr_pp_finalize
 
 
 
--- DROP FUNCTION IF EXISTS sc_trx.tr_pp();
+-- DROP FUNCTION IF EXISTS sc_trx.tr_po();
 
-CREATE OR REPLACE FUNCTION sc_trx.tr_pp()
+CREATE OR REPLACE FUNCTION sc_trx.tr_po()
     RETURNS trigger
     LANGUAGE 'plpgsql'
     COST 100
@@ -289,25 +375,33 @@ BEGIN
 
 		IF (OLD.STATUS='F' AND NEW.STATUS='E') THEN
 			-- Insert into pp_dtl with new columns
-			INSERT INTO sc_tmp.pp_dtl
-			( idurut, docno, idbarang, uniqueid,nmbarang, unit, qty, description,
+			INSERT INTO sc_tmp.po_dtl
+			( idurut, docno, docnopp, idbarang, uniqueid, nmbarang, unit, qty, qtybonus, 
+            harga, multidisc, nilai, descriptionpo, descriptionpp,
             inputby, inputdate, status, updateby, updatedate, docnotmp)
-			SELECT idurut, NEW.docno, idbarang, uniqueid,nmbarang, unit, qty, description,
+			SELECT idurut, NEW.docno, docnopp, idbarang, uniqueid, nmbarang, unit, qty, qtybonus, 
+            harga, multidisc, nilai, descriptionpo, descriptionpp,
             inputby, inputdate, status, updateby, updatedate, NEW.docno
-			FROM sc_trx.pp_dtl 
+			FROM sc_trx.po_dtl 
 			WHERE docno = NEW.docno;
 
 			-- Insert into pp with new columns
-			INSERT INTO sc_tmp.pp
+			INSERT INTO sc_tmp.po
             (
-                idurut, docno, cabang, docdate, pemohon, estpakai,
+                idurut, docno, cabang, docdate, senddate, pemohon, kdsupplier,
+                nmsupplier, alamatsupplier, alamatkirim, jthtempo,
+                idtax,isinclusive, currcode, kurs, dpp, 
+                jumlahpajak, total, syarat,
                 keterangan, status, inputby, inputdate, updateby, updatedate,
                 printby, printdate, docnotmp
             )
-			SELECT  idurut, NEW.docno, cabang, docdate, pemohon, estpakai,
+			SELECT  idurut, NEW.docno, cabang, docdate, senddate, pemohon, kdsupplier,
+            nmsupplier, alamatsupplier, alamatkirim, jthtempo,
+            idtax,isinclusive, currcode, kurs, dpp, 
+            jumlahpajak, total, syarat,
             keterangan, status , inputby, inputdate, updateby, updatedate,
             printby, printdate, NEW.docno
-			FROM sc_trx.pp 
+			FROM sc_trx.po 
 			WHERE docno = NEW.docno;
 
 		END IF;	
@@ -317,29 +411,31 @@ BEGIN
 END;
 $BODY$;
 
-ALTER FUNCTION sc_trx.tr_pp()
+ALTER FUNCTION sc_trx.tr_po()
     OWNER TO postgres;
 
 
     
 
--- FUNCTION: sc_trx.tr_pp()
--- Trigger: tr_pp
+-- FUNCTION: sc_trx.tr_po()
+-- Trigger: tr_po
 
--- DROP TRIGGER IF EXISTS tr_pp ON sc_trx.pp;
+-- DROP TRIGGER IF EXISTS tr_po ON sc_trx.po;
 
-CREATE OR REPLACE TRIGGER tr_pp
+CREATE OR REPLACE TRIGGER tr_po
     AFTER UPDATE 
-    ON sc_trx.pp
+    ON sc_trx.po
     FOR EACH ROW
-    EXECUTE FUNCTION sc_trx.tr_pp();
+    EXECUTE FUNCTION sc_trx.tr_po();
 
 
 
 
 
-ALTER TABLE sc_tmp.pp_dtl
+
+ALTER TABLE sc_tmp.po_dtl
 ADD COLUMN uniqueid VARCHAR(64)
 
-ALTER TABLE sc_trx.pp_dtl
+ALTER TABLE sc_trx.po_dtl
 ADD COLUMN uniqueid VARCHAR(64)
+

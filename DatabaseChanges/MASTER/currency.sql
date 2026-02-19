@@ -59,7 +59,7 @@ ALTER TABLE IF EXISTS sc_mst.exchangerate
 
 
 ALTER TABLE sc_mst.exchangerate
-createdby CHARACTER(20),
-createddate TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-updateby CHARACTER(20),
-updatedate TIMESTAMP WITHOUT TIME ZONE
+add column createdby CHARACTER(20),
+add column createddate TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+add column updateby CHARACTER(20),
+add column updatedate TIMESTAMP WITHOUT TIME ZONE

@@ -97,18 +97,6 @@ let skipRoleChange = false;
 
 
 
-$('#btn-filter').click(function(){ //button filter event click
-    var table = $('#tsearchitem');
-    table.DataTable().ajax.reload(); //reload datatable ajax
-    $('#filter').modal('hide');
-});
-$('#btn-reset').click(function(){ //button reset event click
-    $('#form-filter')[0].reset();
-    var table = $('#tsearchitem');
-    table.DataTable().ajax.reload(); //reload datatable ajax
-    $('#filter').modal('hide');
-});
-
 //EDIT ITEM
 function documentReadable(){
     // $("#loadMe").modal({

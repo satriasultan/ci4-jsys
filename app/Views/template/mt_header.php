@@ -16,7 +16,7 @@ $this->session = \Config\Services::session();
                     <img src="<?php echo base_url('assets/img/logo-depan/jts.ico') ?>" style="width: 30%"  alt="homepage" class="dark-logo" />
                     <!-- Light Logo icon -->
                     <img src="<?php echo base_url('assets/img/logo-depan/jts.ico') ?>" style="width: 30%" alt="homepage" class="light-logo" />
-                    <span class="brand-text font-weight-light" style="font-size: 130%; font-weight: bolder;">JSYS</span>
+                    <span class="brand-text font-weight-light" style="font-size: 130%; font-weight: bolder;">J-Accounting</span>
                 </b>
             </a>
         </div>

@@ -14,10 +14,10 @@ var table;
 var initTable;
 //"use strict";
 
-function tablePPTrx(){
+function tablePOTrx(){
     // var lg = languageDatatable;
     var initTable = function () {
-        var table = $('#tableppTrx');
+        var table = $('#tablepoTrx');
         table.DataTable({
             "processing": true, //Feature control the processing indicator.
             "serverSide": true, //Feature control DataTables' server-side processing mode.
@@ -40,7 +40,7 @@ function tablePPTrx(){
                 'pageLength','excel'
             ],
             "ajax": {
-                "url": HOST_URL + 'purchase/trans/list_pp',
+                "url": HOST_URL + 'purchase/trans/list_po',
                 "type": "POST",
                 "data": function(data) {
                     data.tglrange = $('#tglrange').val();
@@ -74,27 +74,26 @@ function tablePPTrx(){
     return initTable();
 }
 
-function reload_tablePPTrx()
+function reload_tablePOTrx()
 {
-    var table = $('#tableppTrx');
+    var table = $('#tablepoTrx');
     table.DataTable().ajax.reload(); //reload datatable ajax
     //console.log('HALO HALO BANDUNG');
 }
 
 $('#btn-filter-tx').click(function(){ //button filter event click
-    var table = $('#tableppTrx');
+    var table = $('#tablepoTrx');
     table.DataTable().ajax.reload(); //reload datatable ajax
     $('#filter').modal('hide');
 });
 $('#btn-reset-tx').click(function(){ //button reset event click
     $('#form-filter')[0].reset();
-    var table = $('#tableppTrx');
+    var table = $('#tablepoTrx');
     table.DataTable().ajax.reload(); //reload datatable ajax
     $('#filter').modal('hide');
 });
 
 let skipRoleChange = false;
-
 
 
 
@@ -109,7 +108,7 @@ function documentReadable(){
 
     $.ajax({
         type: 'GET',
-        url: HOST_URL + 'purchase/trans/showing_pptrx',
+        url: HOST_URL + 'purchase/trans/showing_potrx',
         data: { docno: docno },
         dataType: 'json',
         dataFilter: function(data) {
@@ -125,6 +124,30 @@ function documentReadable(){
             $('[name="prefix"]').val(prefixParts[0]).prop('readonly', true);
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
             $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
+
+
+            $.ajax({
+                type: 'GET',
+                url: HOST_URL + 'api/globalmodule/list_supplier_new' + '?var=' + json.dataTables.items[0].kdsupplier,
+                dataType: 'json',
+                delay: 250,
+            }).then(function (datax) {
+
+            // Tambahkan data alamat dan phone ke object
+                var supplierData = datax.items[0];
+                supplierData.alamat = json.dataTables.items[0].alamatsupplier;
+                // supplierData.phone = data.phone;
+                
+                // create the option dan simpan data lengkap
+                var option = new Option(supplierData.nmsupplier, supplierData.kdsupplier, true, true);
+                $(option).data('supplier-data', supplierData); // Simpan data lengkap
+                
+                $('[name="kdsupplier"]').append(option).trigger('change');
+                
+                // Set alamat dan phone langsung
+                $("#alamatsupplier").val(json.dataTables.items[0].alamatsupplier).prop('readonly', true);
+                // $("#phone").val(data.phone).prop('readonly', true);
+            });
 
             //$('[name="idgroup"]').val(json.dataTables.items[0].idgroup);
             $.ajax({
@@ -145,12 +168,77 @@ function documentReadable(){
                     }
                 });
             });
+
+            $.ajax({
+                type: 'GET',
+                url: HOST_URL + 'api/globalmodule/list_tax' + '?var=' + json.dataTables.items[0].idtax,
+                dataType: 'json',
+                delay: 250,
+            }).then(function (datax) {
+                // create the option and append to Select2
+                var option = new Option(datax.items[0].nmtax, datax.items[0].idtax, true, true);
+                $('[name="idtax"]').append(option).trigger('change');
+
+                // manually trigger the `select2:select` event
+                $('[name="idtax"]').trigger({
+                    type: 'select2:select',
+                    params: {
+                        data: datax
+                    }
+                });
+            });
+
+            $.ajax({
+                type: 'GET',
+                url: HOST_URL + 'api/globalmodule/list_currency' + '?var=' + json.dataTables.items[0].currcode,
+                dataType: 'json',
+                delay: 250,
+            }).then(function (datax) {
+                // create the option and append to Select2
+                var currencyData = datax.items[0];
+                currencyData.kurs = json.dataTables.items[0].kurs;
+                // currencyData.phone = data.phone;
+                
+                // create the option dan simpan data lengkap
+                var option = new Option(currencyData.currname, currencyData.currcode, true, true);
+                $(option).data('currency-data', currencyData); // Simpan data lengkap
+                
+                $('[name="currcode"]').append(option).trigger('change');
+                
+                // Set alamat dan phone langsung
+                setJtsValue('[name="kurs"]', convertToDbNumber(json.dataTables.items[0].kurs));
+                $('[name="kurs"]').prop('readonly', true);
+                // $("#phone").val(data.phone).prop('readonly', true);
+            });
             skipRoleChange = true;
             $('[name="docdate"]').val(json.dataTables.items[0].docdate).prop('readonly',true);
-            $('[name="estpakai"]').val(json.dataTables.items[0].estpakai).prop('readonly',true);
-            $('[name="pemohon"]').val(json.dataTables.items[0].pemohon).prop('readonly',true);
-
+            $('[name="senddate"]').val(json.dataTables.items[0].senddate).prop('readonly',true);
+            setJtsValue('[name="jthtempo"]', convertToDbNumber(json.dataTables.items[0].jthtempo));
+            setJtsValue('[name="kurs"]', convertToDbNumber(json.dataTables.items[0].kurs));
+            $('[name="isinclusive"]').prop(
+                'checked',
+                $.trim((json.dataTables.items[0].isinclusive || '')).toUpperCase() === 'YES'
+            );
+            // $('[name="jthtempo"]').val(json.dataTables.items[0].jthtempo).prop('readonly',true);
+            $('[name="alamatsupplier"]').val(json.dataTables.items[0].alamatsupplier).prop('readonly',true);
+            $('[name="alamatkirim"]').val(json.dataTables.items[0].alamatkirim).prop('readonly',true);
+            // $('[name="isinclusive"]').val(json.dataTables.items[0].isinclusive).prop('readonly',true);
             $('[name="keterangan"]').val(json.dataTables.items[0].keterangan).prop('readonly',true);
+            $('[name="jthtempo"]').val(json.dataTables.items[0].jthtempo).prop('readonly',true);
+            $('[name="kdsupplier"]').val(json.dataTables.items[0].kdsupplier).prop('disabled',true);
+            $('[name="idtax"]').val(json.dataTables.items[0].idtax).prop('disabled',true);
+            $('[name="currcode"]').val(json.dataTables.items[0].currcode).prop('disabled',true);
+            $('[name="isinclusive"]').val(json.dataTables.items[0].isinclusive).prop('disabled',true);
+
+            $('[name="syarat"]').val(json.dataTables.items[0].syarat).prop('readonly',true);
+
+            setJtsValue('[name="dpp"]', convertToDbNumber(json.dataTables.items[0].dpp));
+            setJtsValue('[name="jumlahpajak"]', convertToDbNumber(json.dataTables.items[0].jumlahpajak));
+            setJtsValue('[name="total"]', convertToDbNumber(json.dataTables.items[0].total));
+            // $('[name="estpakai"]').val(json.dataTables.items[0].estpakai);
+            
+
+            // $('[name="keterangan"]').val(json.dataTables.items[0].keterangan);
             //$('[name="chold"]').val(json.dataTables.items[0].chold.trim()).trigger('change');
 
             //$('[name="idbarang"]').prop('readonly', true);
@@ -175,13 +263,74 @@ function documentReadable(){
 
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++ RANAH GROUP ++++++++++++++++++++++++++++++++++++++++//
 
-var defaultInitialGroupBrng = '';
-$("#idbarang").select2({
-    placeholder: "Choose Your Item List",
+// var defaultInitialGroupBrng = '';
+// $("#idbarang").select2({
+//     placeholder: "Choose Your Item List",
+//     allowClear: true,
+//     width:'100%',
+//     ajax: {
+//         url: HOST_URL + 'api/globalmodule/list_item',
+//         type: 'POST',
+//         dataType: 'json',
+//         delay: 250,
+//         data: function(params) {
+//             return {
+//                 _search_: params.term, // search term
+//                 _page_: params.page,
+//                 _draw_: true,
+//                 _start_: 1,
+//                 _perpage_: 2,
+//                 _paramglobal_: defaultInitialGroupBrng,
+//                 _parameterx_: defaultInitialGroupBrng,
+//                 term: params.term,
+//             };
+//         },
+//         processResults: function (data, params) {
+//             // var searchTerm = $("#idbarang").data("select2").$dropdown.find("input").val();
+//             // if (data.items.length === 1 && data.items[0].text === searchTerm) {
+//             //     var option = new Option(data.items[0].nmbarang, data.items[0].idbarang, true, true);
+//             //     $('#idbarang').append(option).trigger('change').select2("close");
+//             //     // manually trigger the `select2:select` event
+//             //     $('#idbarang').trigger({
+//             //         type: 'select2:select',
+//             //         params: {
+//             //             data: data
+//             //         }
+//             //     });
+//             // }
+//             params.page = params.page || 1;
+//             return {
+//                 results: data.items,
+//                 pagination: {
+//                     more: (params.page * 30) < data.total_count
+//                 }
+//             };
+//         },
+
+//         cache: false
+//     },
+//     escapeMarkup: function(markup) {
+//         return markup;
+//     }, // let our custom formatter work
+//     // minimumInputLength: 1,
+//     templateResult: formatItem, // omitted for brevity, see the source of this page
+//     templateSelection: formatItemSelection // omitted for brevity, see the source of this page
+// }).on("select2:select", function (e) {
+//     var data = e.params.data;
+//     $('[name="nmbarang"]').val(data.nmbarang.trim()).prop("readonly", true);
+//     $('[name="unit"]').val(data.unit.trim()).prop("readonly", true);
+//     $("#batch").val(null).trigger('change');
+// });
+
+
+
+var defaultInitialPP = '';
+$("#docnopp").select2({
+    placeholder: "Choose Your PP",
     allowClear: true,
     width:'100%',
     ajax: {
-        url: HOST_URL + 'api/globalmodule/list_item',
+        url: HOST_URL + 'api/globalmodule/list_pp',
         type: 'POST',
         dataType: 'json',
         delay: 250,
@@ -192,8 +341,8 @@ $("#idbarang").select2({
                 _draw_: true,
                 _start_: 1,
                 _perpage_: 2,
-                _paramglobal_: defaultInitialGroupBrng,
-                _parameterx_: defaultInitialGroupBrng,
+                _paramglobal_: defaultInitialPP,
+                _parameterx_: defaultInitialPP,
                 term: params.term,
             };
         },
@@ -225,24 +374,146 @@ $("#idbarang").select2({
         return markup;
     }, // let our custom formatter work
     // minimumInputLength: 1,
-    templateResult: formatItem, // omitted for brevity, see the source of this page
-    templateSelection: formatItemSelection // omitted for brevity, see the source of this page
+    templateResult: formatPP, // omitted for brevity, see the source of this page
+    templateSelection: formatPPSelection // omitted for brevity, see the source of this page
 }).on("select2:select", function (e) {
     var data = e.params.data;
-    $('[name="nmbarang"]').val(data.nmbarang.trim()).prop("readonly", true);
-    $('[name="unit"]').val(data.unit.trim()).prop("readonly", true);
-    $("#batch").val(null).trigger('change');
+    // $('[name="nmbarang"]').val(data.nmbarang.trim()).prop("readonly", true);
+    // $('[name="unit"]').val(data.unit.trim()).prop("readonly", true);
+    // $("#batch").val(null).trigger('change');
 });
 
 /* Format Group */
-function formatItem(repo) {
+function formatPP(repo) {
     if (repo.loading) return repo.text;
-    var markup ="<div class='select2-result-repository__description'>" + repo.idbarang +"   <i class='fa fa-circle-o'></i>   "+ repo.nmbarang +"</div>";
+    var markup ="<div class='select2-result-repository__description'>" + repo.docno +"   <i class='fa fa-circle-o'></i>   "+ repo.keterangan +"</div>";
     return markup;
 }
-function formatItemSelection(repo) {
-    return repo.nmbarang || repo.text;
+function formatPPSelection(repo) {
+    return repo.keterangan || repo.text;
 }
+
+
+
+function formatCurrency(repo) {
+if (repo.loading) return repo.text;
+    var markup ="<div class='select2-result-repository__description'>" + repo.currcode +"   <i class='fa fa-circle'></i>   "+ repo.currname +"   <i class='fa fa-circle'></i>   "+  repo.kurs +"  </div>";
+    return markup;
+}
+function formatCurrencySelection(repo) {
+    return repo.currname || repo.text;
+}
+
+// ======================= PEMBELIAN ==================================
+
+//var defaultInitialGol = $("#newdept").val();
+$("#currcode").select2({
+    placeholder: "Ketik/Pilih Currency",
+    allowClear: true,
+    width: '100%',
+    ajax: {
+        url: HOST_URL + 'api/globalmodule/list_currency',
+        type: 'POST',
+        dataType: 'json',
+        delay: 250,
+        data: function(params) {
+            return {
+                _search_: params.term, // search term
+                _page_: params.page,
+                _draw_: true,
+                _start_: 1,
+                _perpage_: 2,
+                _paramglobal_: '',
+            };
+        },
+        processResults: function(data, params) {
+            // parse the results into the format expected by Select2
+            // since we are using custom formatting functions we do not need to
+            // alter the remote JSON data, except to indicate that infinite
+            // scrolling can be used
+            params.page = params.page || 1;
+
+            return {
+                results: data.items,
+                pagination: {
+                    more: (params.page * 30) < data.total_count
+                }
+            };
+        },
+        cache: true
+    },
+    escapeMarkup: function(markup) {
+        return markup;
+    }, // let our custom formatter work
+    // minimumInputLength: 1,
+    templateResult: formatCurrency, // omitted for brevity, see the source of this page
+    templateSelection: formatCurrencySelection // omitted for brevity, see the source of this page
+}).on("select2:select", function (e) {
+    var data = e.params.data;
+    setJtsValue('[name="kurs"]', convertToDbNumber(data.kurs));
+
+});
+
+
+
+
+function formatTax(repo) {
+if (repo.loading) return repo.text;
+    var markup ="<div class='select2-result-repository__description'>" + repo.idtax +"   <i class='fa fa-circle'></i>   "+ repo.nmtax +"  </div>";
+    return markup;
+}
+function formatTaxSelection(repo) {
+    return repo.nmtax || repo.text;
+}
+
+// ======================= PEMBELIAN ==================================
+
+//var defaultInitialGol = $("#newdept").val();
+$("#idtax").select2({
+    placeholder: "Ketik/Pilih Pajak",
+    allowClear: true,
+    width: '100%',
+    ajax: {
+        url: HOST_URL + 'api/globalmodule/list_tax',
+        type: 'POST',
+        dataType: 'json',
+        delay: 250,
+        data: function(params) {
+            return {
+                _search_: params.term, // search term
+                _page_: params.page,
+                _draw_: true,
+                _start_: 1,
+                _perpage_: 2,
+                _paramglobal_: '',
+            };
+        },
+        processResults: function(data, params) {
+            // parse the results into the format expected by Select2
+            // since we are using custom formatting functions we do not need to
+            // alter the remote JSON data, except to indicate that infinite
+            // scrolling can be used
+            params.page = params.page || 1;
+
+            return {
+                results: data.items,
+                pagination: {
+                    more: (params.page * 30) < data.total_count
+                }
+            };
+        },
+        cache: true
+    },
+    escapeMarkup: function(markup) {
+        return markup;
+    }, // let our custom formatter work
+    // minimumInputLength: 1,
+    templateResult: formatTax, // omitted for brevity, see the source of this page
+    templateSelection: formatTaxSelection // omitted for brevity, see the source of this page
+}).on("select2:select", function (e) {
+    // var data = e.params.data;
+
+});
 
 
 
@@ -262,9 +533,9 @@ $(document).on('input', '.jtsseparator', function () {
 
 
 
-/* TABLE PP DETAIL */
-function tablePPDetail(){
-        /* Tabel PP Detail */
+/* TABLE PO DETAIL */
+function tablePODetail(){
+        /* Tabel PO Detail */
     var initTable = function () {
         var table = $('#tabppdtl');
         table.DataTable({
@@ -281,7 +552,7 @@ function tablePPDetail(){
             "bFilter":true,
             "iDisplayLength": -1,
             "ajax": {
-                "url": HOST_URL + 'purchase/trans/list_trx_pp_dtl',
+                "url": HOST_URL + 'purchase/trans/list_trx_po_dtl',
                 "type": "POST",
                 "data": function(data) {
                     data.docno = $('#docno').val(); // tambahkan parameter docno
@@ -323,7 +594,7 @@ function tablePPDetail(){
 }
 
 
-function reload_table_pp_dtl()
+function reload_table_po_dtl()
 {
     var table = $('#tabppdtl');
     table.DataTable().ajax.reload(); //reload datatable ajax
@@ -349,7 +620,7 @@ $('#tabppdtl tbody').on('change', '.row-check', function () {
 $('#tabppdtl').on('draw.dt', function () {
     $('#checkAll').prop('checked', false);
 });
-function getSelectedPPDetail(){
+function getSelectedPODetail(){
     return $('#tabppdtl tbody .row-check:checked')
         .map(function () {
             return $(this).val();
@@ -372,6 +643,8 @@ function setSelect2Ajax(selector, value, text) {
     let option = new Option(text || value, value, true, true);
     $(selector).append(option).trigger('change');
 }
+
+let currentEditId = null;
 function btnUpdateDetail(){
     const ids = getCheckedDetailIds();
     console.log('IDS:', ids);
@@ -397,7 +670,7 @@ function btnUpdateDetail(){
     const id = ids[0];
 
     $.ajax({
-        url: HOST_URL + 'purchase/trans/get_pp_detail',
+        url: HOST_URL + 'purchase/trans/get_po_detail',
         type: 'GET',
         data: { id: id },
         dataType: 'json',
@@ -405,16 +678,31 @@ function btnUpdateDetail(){
             if(res.status){
 
                 $('#idurut').val(res.data.idurut);
-                $('#description').val(res.data.description);
+                $('#uniqueid').val(res.data.uniqueid);
+                $('#descriptionpp').val(res.data.descriptionpp);
+                $('#descriptionpo').val(res.data.descriptionpo);
                 $('#docno').val(res.data.docno);
+                $('#docnoppmodal').val(res.data.docnopp);
                 $('#idbarang').val(res.data.idbarang);
                 $('#nmbarang').val(res.data.nmbarang);
                 $('#unit').val(res.data.unit);
-                $('#qty').val(res.data.qty);
-                setSelect2Ajax('#idbarang', res.data.idbarang, res.data.idbarang);
+                setJtsValue('[name="qty"]', convertToDbNumber(res.data.qty));
+                setJtsValue('[name="qtybonus"]', convertToDbNumber(res.data.qtybonus));
+                setJtsValue('[name="harga"]', convertToDbNumber(res.data.harga));
+                setJtsValue('[name="multidisc"]', convertToDbNumber(res.data.multidisc));
+                setJtsValue('[name="nilai"]', convertToDbNumber(res.data.nilai));
 
-                $('#modalDetailPPLabel').text('Update PP Detail');
-                $('#modalDetailPP').modal('show');
+
+                currentEditId = res.data.idurut;
+                // $('#qty').val(res.data.qty);
+                // $('#qtybonus').val(res.data.qtybonus);
+                // $('#harga').val(res.data.harga);
+                // $('#multidisc').val(res.data.multidisc);
+                // setSelect2Ajax('#idbarang', res.data.idbarang, res.data.idbarang);
+                // setSelect2Ajax('#docnopp', res.data.docnopp, res.data.keterangan);
+
+                $('#modalUpdatePOLabel').text('Update PO Detail');
+                $('#modalUpdatePO').modal('show');
 
             }else{
                 Swal.fire({
@@ -427,6 +715,35 @@ function btnUpdateDetail(){
     });
 }
 
+// Reset currentEditId ketika modal ditutup
+$('#modalUpdatePO').on('hidden.bs.modal', function () {
+    currentEditId = null;
+});
+
+$(document).on('input', '.form-control', function () {
+    // Jika sedang dalam mode edit, gunakan currentEditId
+    if (currentEditId) {
+        // Baca nilai qty, harga, dan multidisc
+        let qty = parseFloat($('#qty').val().replace(/,/g, '')) || 0;
+        let harga = parseFloat($('#harga').val().replace(/,/g, '')) || 0;
+        let multidisc = parseFloat($('#multidisc').val().replace(/,/g, '')) || 0;
+        
+        // Hitung nilai awal (qty * harga)
+        let nilaiAwal = qty * harga;
+        
+        // Hitung diskon
+        let diskon = (nilaiAwal * multidisc) / 100;
+        
+        // Hitung nilai akhir setelah diskon
+        let nilaiAkhir = nilaiAwal - diskon;
+        
+        // Format ke en-US: separator ribuan = koma, desimal = titik
+        $('#nilai').val(nilaiAkhir.toLocaleString('en-US', {
+            minimumFractionDigits: 2, 
+            maximumFractionDigits: 2
+        }));
+    }
+});
 
 function btnDeleteDetail(){
     const ids = getCheckedDetailIds();
@@ -453,7 +770,7 @@ function btnDeleteDetail(){
         if(!result.isConfirmed) return;
 
         $.ajax({
-            url: HOST_URL + 'purchase/trans/delete_pp_detail',
+            url: HOST_URL + 'purchase/trans/delete_po_detail',
             type: 'POST',
             data: { ids: ids },
             dataType: 'json',
@@ -495,7 +812,7 @@ $(document).on('change','.row-check', function(){
     }
 });
 
-$('#formPPMasters').bootstrapValidator({
+$('#formPOMasters').bootstrapValidator({
     message: 'This value is not valid',
     feedbackIcons: {
         valid: 'fa fa-check',
@@ -542,7 +859,7 @@ $('#formPPMasters').bootstrapValidator({
     },
     excluded: [':disabled']
 });
-$('#formPPdetail').bootstrapValidator({
+$('#formPOdetail').bootstrapValidator({
     message: 'This value is not valid',
     feedbackIcons: {
         valid: 'fa fa-check',
@@ -584,16 +901,169 @@ $('#btn-reset').click(function(){ //button reset event click
 
 
 
-var defaultInitialItem = '';
-$("#idbarang_filter").select2({
-    placeholder: "Type/ Choose your item",
+
+function savePODetail() {
+
+    Swal.fire({
+        title: 'Konfirmasi',
+        text: 'Simpan data PO Detail?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Simpan',
+        cancelButtonText: 'Batal',
+        reverseButtons: true
+    }).then((result) => {
+
+        if (!result.isConfirmed) return;
+
+        let formData = new FormData(document.getElementById('formPODetail'));
+        formData.append('docdate', $('#docdate').val());
+        formData.append('cabang', $('#cabang').val());
+        formData.append('senddate', $('#senddate').val());
+        formData.append('jthtempo', convertToDbNumber($('#jthtempo').val()));
+        formData.append('kdsupplier', $('#kdsupplier').val());
+        formData.append('isinclusive', $('#isinclusive').is(':checked') ? 'YES' : 'NO');
+        formData.append('alamatsupplier', $('#alamatsupplier').val());
+        formData.append('idtax', $('#idtax').val());
+        formData.append('currcode', $('#currcode').val());
+        formData.append('kurs', convertToDbNumber($('#kurs').val()));
+        formData.append('alamatkirim', $('#alamatkirim').val());
+        formData.append('keterangan', $('#keterangan').val());
+        // formData.append('estpakai', $('#estpakai').val());
+
+        // docno gabungan (lebih aman pakai hidden header)
+        formData.set('docno', $('#prefix').val() + '/' + $('#infix').val() + '/' + $('#sufix').val());
+        // convert qty ke numeric DB
+        let qty = $('#qty').val();
+        let qtybonus = $('#qtybonus').val();
+        let harga = $('#harga').val();
+        let multidisc = $('#multidisc').val();
+        let nilai = $('#nilai').val();
+        formData.set('qty', convertToDbNumber(qty));
+        formData.set('qtybonus', convertToDbNumber(qtybonus));
+        formData.set('harga', convertToDbNumber(harga));
+        formData.set('multidisc', convertToDbNumber(multidisc));
+        formData.set('nilai', convertToDbNumber(nilai));
+        // formData.set('nilai', convertToDbNumber(nilai));
+        formData.set('descriptionpo', $('#descriptionpo').val());
+        formData.set('uniqueid', $('#uniqueid').val());
+        formData.set('docnopp', $('#docnopp').val());
+        
+        // formData.set('descriptionpo', convertToDbNumber(qty));
+
+        $.ajax({
+            url: HOST_URL + 'purchase/trans/savePODetail',
+            type: 'POST',
+            data: formData,
+            dataType: 'json',
+            processData: false,
+            contentType: false,
+
+            success: function (res) {
+
+                if (!res.success) {
+
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Gagal',
+                        text: res.message
+                    });
+
+                    return;
+                }
+
+                // ==============================
+                // SUCCESS
+                // ==============================
+
+                // Jika tidak ada item baru (semua sudah ada)
+                let iconType = 'success';
+                let titleText = 'Berhasil';
+
+                if (res.message && res.message.toLowerCase().includes('sudah ada')) {
+                    iconType = 'info';
+                    titleText = 'Tidak Ada Perubahan';
+                }
+
+                Swal.fire({
+                    icon: iconType,
+                    title: titleText,
+                    text: res.message,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+                // Jika header baru dibuat → reload
+                if (res.reload === true) {
+                    setTimeout(function () {
+                        window.location.reload();
+                    }, 1000);
+                    return;
+                }
+
+                // Jika hanya tambah detail
+                $('#modalDetailPO').modal('hide');
+                $('#modalUpdatePO').modal('hide');
+                $('#formPOUpdate')[0].reset();
+                reload_table_po_dtl();
+                documentReadable()
+                $('#formPODetail')[0].reset();
+            },
+
+            error: function (xhr) {
+
+                console.error(xhr.responseText);
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Server Error',
+                    text: 'Terjadi kesalahan pada server (500)'
+                });
+            }
+        });
+
+
+    });
+}
+
+function btnInputDetail() {
+
+    $('#formPODetail')[0].reset();
+
+    
+    // 🔹 Clear select2
+    $('#docnopp').val(null).trigger('change');
+
+    // Jika ada select2 lain, lakukan hal sama
+    // $('#selectlain').val(null).trigger('change');
+
+    $('#idurut').val(''); // pastikan id kosong (mode insert)
+
+    $('#modalDetailPOLabel').text('Tambah Item Detail');
+    $('#modalDetailPO').modal('show');
+}
+
+
+
+
+function formatSupplier(repo) {
+    if (repo.loading) return repo.text;
+    var markup ="<div class='select2-result-repository__description'>" + repo.kdsupplier +"   <i class='fa fa-circle'></i>   "+ repo.nmsupplier + " </div>";
+    return markup;
+}
+function formatSupplierSelection(repo) {
+    return repo.nmsupplier || repo.text;
+}
+
+// ======================= PEMBELIAN ==================================
+
+//var defaultInitialGol = $("#newdept").val();
+$("#kdsupplier").select2({
+    placeholder: "Ketik/Pilih Supplier",
     allowClear: true,
-    dropdownParent: $("#filter"),
-    //minimumInputLength: 2, // only start searching when the user has input 3 or more characters
-    //maximumSelectionLength: 1,
-    multiple: false,
+    width: '100%',
     ajax: {
-        url: HOST_URL + 'stock/balance/list_item',
+        url: HOST_URL + 'api/globalmodule/list_supplier_new',
         type: 'POST',
         dataType: 'json',
         delay: 250,
@@ -604,25 +1074,16 @@ $("#idbarang_filter").select2({
                 _draw_: true,
                 _start_: 1,
                 _perpage_: 2,
-                _paramglobal_: defaultInitialItem,
-                _parameterx_: defaultInitialItem,
-                term: params.term,
+                _paramglobal_: '',
             };
         },
-        processResults: function (data, params) {
-            var searchTerm = $("#idbarang_filter").data("select2").$dropdown.find("input").val();
-            if (data.items.length === 1 && data.items[0].text === searchTerm) {
-                var option = new Option(data.items[0].nmbarang, data.items[0].idbarang, true, true);
-                $('#idbarang_filter').append(option).trigger('change').select2("close");
-                // manually trigger the `select2:select` event
-                $('#idbarang_filter').trigger({
-                    type: 'select2:select',
-                    params: {
-                        data: data
-                    }
-                });
-            }
+        processResults: function(data, params) {
+            // parse the results into the format expected by Select2
+            // since we are using custom formatting functions we do not need to
+            // alter the remote JSON data, except to indicate that infinite
+            // scrolling can be used
             params.page = params.page || 1;
+
             return {
                 results: data.items,
                 pagination: {
@@ -630,32 +1091,22 @@ $("#idbarang_filter").select2({
                 }
             };
         },
-
-        cache: false
+        cache: true
     },
     escapeMarkup: function(markup) {
         return markup;
     }, // let our custom formatter work
     // minimumInputLength: 1,
-    templateResult: formatItemFilter, // omitted for brevity, see the source of this page
-    templateSelection: formatItemSelectionFilter // omitted for brevity, see the source of this page
-}).on("change", function () {
-    console.log('Selecting =>' + $(this).val());
-    //var table = $('#tsearchitem');
-    //table.DataTable().ajax.reload(); //reload datatable ajax
-    ///table.append().search( $(this).val() ).draw();
-    //$('#filter').modal('hide');
+    templateResult: formatSupplier, // omitted for brevity, see the source of this page
+    templateSelection: formatSupplierSelection // omitted for brevity, see the source of this page
+}).on("select2:select", function (e) {
+    if (e.params && e.params.data) {
+        var selectedData = e.params.data;
+        
+        $("#alamatsupplier").val(selectedData.alamat || '').prop('disabled', true);
+        // $("#phone").val(selectedData.phone || '').prop('disabled', true);
+    }
 });
-/* Format Group */
-function formatItemFilter(repo) {
-    if (repo.loading) return repo.text;
-    var markup ="<div class='select2-result-repository__description'>" + repo.idbarang +"   <i class='fa fa-circle-o'></i>   "+ repo.nmbarang +"</div>";
-    return markup;
-}
-function formatItemSelectionFilter(repo) {
-    return repo.nmbarang || repo.text;
-}
-
 
 
 let currentKodeSuffix = '';
@@ -667,7 +1118,7 @@ $('#cabang').on('change', function () {
 
     if(idbranch){
         $.ajax({
-                url: HOST_URL + '/purchase/trans/getBranchInfo',
+                url: HOST_URL + '/purchase/trans/getBranchInfoPO',
                 method: 'GET',
                 data: { idbranch: idbranch },
                 dataType: 'json',
@@ -679,7 +1130,7 @@ $('#cabang').on('change', function () {
 
                     currentKodeSuffix = res.kode_suffix; // PT / PA / PB
                     $('#infix').val(res.infix);          // YYMM
-                    $('#prefix').val('PPB');             // default
+                    $('#prefix').val('POB');             // default
                     $('#sufix').val(currentKodeSuffix + '0001');
 
                     var infix = (res.infix || '').toString();
@@ -730,7 +1181,7 @@ $('#cabang').on('change', function () {
                     }
 
                     $('#docno').val(
-                        'PPB/' + res.infix + '/' + currentKodeSuffix + '0001'
+                        'POB/' + res.infix + '/' + currentKodeSuffix + '0001'
                     );
                 }
             });
@@ -746,7 +1197,7 @@ $('#prefix').on('blur', function () {
     if (!prefix || !infix || !currentKodeSuffix) return;
 
     $.ajax({
-        url: HOST_URL + '/purchase/trans/getNextSuffixPP',
+        url: HOST_URL + '/purchase/trans/getNextSuffixPO',
         method: 'GET',
         data: {
             prefix: prefix,
@@ -843,10 +1294,6 @@ function formatBranchSelection(repo) {
     return repo.nmbranch || repo.text;
 }
 
-/* TABEL LIST PO FINAL */
-
-
-
 var audio = document.getElementById('chatAudio');
 function play(){
     audio.play()
@@ -933,8 +1380,8 @@ $(document).ready(function() {
 
 
 
-    tablePPTrx();
-    tablePPDetail();
+    tablePOTrx();
+    tablePODetail();
     //read_qrcode();
     $('#checkboxnik').change(function() {
         // this will contain a reference to the checkbox
