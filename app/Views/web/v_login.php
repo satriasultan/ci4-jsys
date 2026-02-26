@@ -45,65 +45,54 @@
             margin-bottom: 10px;
         }
 
-        /* UNIVERSAL INPUT STYLE (Input, Select2, Flatpickr) */
-        .form-control,
-        .flatpickr-input,
-        .select2-container .select2-selection--single {
-            height: 48px !important;
-            background: rgba(255,255,255,0.18) !important;
-            border: 1px solid rgba(255,255,255,0.3) !important;
-            color: #fff !important;
-            border-radius: 12px !important;
-            padding-left: 14px !important;
-            backdrop-filter: blur(10px);
+        /* ================================
+    SELECT2 CLEAN BLACK TEXT STYLE
+ ================================ */
+
+        /* Selected text */
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #222 !important;
+            font-weight: 500;
         }
 
-        .form-control::placeholder,
-        .flatpickr-input::placeholder,
-        .select2-selection__placeholder {
-            color: #eaeaea !important;
+        /* Placeholder */
+        .select2-container--default .select2-selection--single .select2-selection__placeholder {
+            color: #444 !important;
         }
 
-        /* SELECT2 MAIN STYLE */
-        .select2-container .select2-selection--single {
-            display: flex !important;
-            align-items: center !important;
+        /* Arrow */
+        .select2-container--default .select2-selection--single .select2-selection__arrow b {
+            border-color: #222 transparent transparent transparent !important;
         }
 
-        .select2-container .select2-selection__rendered {
-            color: #fff !important;
-            line-height: 48px !important;
-            padding-left: 2px !important;
+        /* Focus state */
+        .select2-container--default.select2-container--focus .select2-selection--single {
+            color: #222 !important;
         }
 
-        .select2-container .select2-selection__arrow b {
-            border-color: #fff transparent transparent transparent !important;
-        }
-
-        /* SELECT2 DROPDOWN */
+        /* Dropdown */
         .select2-dropdown {
-            background: rgba(0,0,0,0.45) !important;
-            border: 1px solid rgba(255,255,255,0.25) !important;
-            backdrop-filter: blur(12px);
+            background: rgba(255,255,255,0.95) !important;
+            color: #222 !important;
             border-radius: 12px !important;
+            border: 1px solid rgba(0,0,0,0.1) !important;
         }
 
+        /* Dropdown option */
         .select2-results__option {
-            color: #fff !important;
+            color: #222 !important;
             padding: 10px 14px;
         }
 
+        /* Hover option */
         .select2-results__option--highlighted {
-            background: rgba(255,255,255,0.2) !important;
+            background: #00C4FF !important;
+            color: #fff !important;
         }
 
+        /* Selected option */
         .select2-results__option[aria-selected="true"] {
-            background: rgba(0,196,255,0.35) !important;
-        }
-
-        /* Hilangkan search di dropdown */
-        .select2-search--dropdown {
-            display: none !important;
+            background: rgba(0,196,255,0.2) !important;
         }
 
         .btn-login {
@@ -155,6 +144,31 @@
             background: #00C4FF !important;
             border-color: #00C4FF !important;
         }
+
+        /* DATE WRAPPER */
+        .date-wrapper {
+            position: relative;
+        }
+
+        .date-wrapper input {
+            padding-right: 45px !important;
+        }
+
+        /* ICON */
+        .calendar-icon {
+            position: absolute;
+            top: 50%;
+            right: 15px;
+            transform: translateY(-50%);
+            cursor: pointer;
+            opacity: 0.8;
+            transition: 0.2s;
+        }
+
+        .calendar-icon:hover {
+            opacity: 1;
+            transform: translateY(-50%) scale(1.1);
+        }
     </style>
 
 </head>
@@ -170,16 +184,35 @@
 
     <form id="loginform" action="<?php echo base_url('web/login/proses');?>" method="post">
 
-        <input class="form-control mt-3" type="text" required name="username" placeholder="Username">
+        <input class="form-control mt-3"
+               type="text"
+               required
+               name="username"
+               placeholder="Username"
+               oninput="this.value = this.value.toUpperCase();">
 
         <input class="form-control mt-3" type="password" required name="password" placeholder="Password">
 
         <div class="form-group mt-3">
-            <input id="datePick" class="form-control" type="text" name="logindate" placeholder="Select Date" required>
+            <div class="date-wrapper">
+                <input id="datePick"
+                       class="form-control"
+                       type="text"
+                       name="logindate"
+                       placeholder="Select Date"
+                       required>
+
+                <span class="calendar-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 24 24">
+                <path d="M7 2v2H5a2 2 0 0 0-2 2v2h18V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7zm14 8H3v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V10z"/>
+            </svg>
+        </span>
+            </div>
         </div>
 
         <div class="form-group mt-3">
-            <select class="form-control select2" name="branch" required>
+
+            <select class="form-control select2" name="cabang" id="cabang" required>
                 <option value="JTS">PT JATIM TAMAN STEEL.MFG</option>
                 <option value="P1">PLANT 1</option>
                 <option value="P2">PLANT 2</option>
@@ -209,18 +242,99 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
-    flatpickr("#datePick", {
-        dateFormat: "Y-m-d",
+    const fp = flatpickr("#datePick", {
+        dateFormat: "d-m-Y",
         allowInput: false,
-        disableMobile: true,
+        disableMobile: false,
         defaultDate: "today"
     });
 
-    $('.select2').select2({
-        placeholder: "Pilih Branch",
-        allowClear: false,
-        minimumResultsForSearch: -1
-    }).val('JTS').trigger('change');
+    const input = document.getElementById("datePick");
+
+    input.addEventListener("keydown", function (e) {
+        if (e.code === "Space" || e.code === "Enter") {
+            e.preventDefault(); // supaya tidak submit form
+            fp.open();
+        }
+    });
+    document.querySelector('.calendar-icon').addEventListener('click', function () {
+        fp.open();
+    });
+
+
+
+    var defaultInitialBranch = '';
+    $("#cabang").select2({
+        placeholder: "Type/ Choose your Branch",
+        allowClear: true,
+        width: '100%',
+        //minimumInputLength: 2, // only start searching when the user has input 3 or more characters
+        maximumSelectionLength: 1,
+        multiple: false,
+        ajax: {
+            url: HOST_URL + 'api/globalmodule/list_branchjob',
+            type: 'POST',
+            dataType: 'json',
+            delay: 250,
+            data: function(params) {
+                return {
+                    _search_: params.term, // search term
+                    _page_: params.page,
+                    _draw_: true,
+                    _start_: 1,
+                    _perpage_: 2,
+                    _paramglobal_: defaultInitialBranch,
+                    _parameterx_: defaultInitialBranch,
+                    term: params.term,
+                };
+            },
+            processResults: function (data, params) {
+                var searchTerm = $("#cabang").data("select2").$dropdown.find("input").val();
+                if (data.items.length === 1 && data.items[0].text === searchTerm) {
+                    var option = new Option(data.items[0].nmbranch, data.items[0].idbranch, true, true);
+                    $('#cabang').append(option).trigger('change').select2("close");
+                    // manually trigger the `select2:select` event
+                    $('#cabang').trigger({
+                        type: 'select2:select',
+                        params: {
+                            data: data
+                        }
+                    });
+                }
+                params.page = params.page || 1;
+                return {
+                    results: data.items,
+                    pagination: {
+                        more: (params.page * 30) < data.total_count
+                    }
+                };
+            },
+
+            cache: false
+        },
+        escapeMarkup: function(markup) {
+            return markup;
+        }, // let our custom formatter work
+        // minimumInputLength: 1,
+        templateResult: formatBranch, // omitted for brevity, see the source of this page
+        templateSelection: formatBranchSelection // omitted for brevity, see the source of this page
+    }).on("change", function () {
+        console.log('Selecting =>' + $(this).val());
+        //var table = $('#tsearchitem');
+        //table.DataTable().ajax.reload(); //reload datatable ajax
+        ///table.append().search( $(this).val() ).draw();
+        //$('#filter').modal('hide');
+    });
+    /* Format Group */
+    function formatBranch(repo) {
+        if (repo.loading) return repo.text;
+        var markup ="<div class='select2-result-repository__description'>" +"   <i class='fa fa-circle-o'></i>   "+ repo.nmbranch +"</div>";
+        return markup;
+    }
+    function formatBranchSelection(repo) {
+        return repo.nmbranch || repo.text;
+    }
+
 </script>
 
 </body>
