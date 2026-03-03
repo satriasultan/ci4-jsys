@@ -14,10 +14,10 @@ var table;
 var initTable;
 //"use strict";
 
-function tablePOTrx(){
+function tableVoidPOTrx(){
     // var lg = languageDatatable;
     var initTable = function () {
-        var table = $('#tablepoTrx');
+        var table = $('#tablevoidpoTrx');
         table.DataTable({
             "processing": true, //Feature control the processing indicator.
             "serverSide": true, //Feature control DataTables' server-side processing mode.
@@ -40,7 +40,7 @@ function tablePOTrx(){
                 'pageLength','excel'
             ],
             "ajax": {
-                "url": HOST_URL + 'purchase/trans/list_po',
+                "url": HOST_URL + 'purchase/trans/list_voidpo',
                 "type": "POST",
                 "data": function(data) {
                     data.tglrange = $('#tglrange').val();
@@ -74,90 +74,21 @@ function tablePOTrx(){
     return initTable();
 }
 
-function reload_tablePOTrx()
+function reload_tableVoidPOTrx()
 {
-    var table = $('#tablepoTrx');
-    table.DataTable().ajax.reload(); //reload datatable ajax
-    //console.log('HALO HALO BANDUNG');
-}
-
-
-
-function tablePOApprvTrx(){
-    // var lg = languageDatatable;
-    var initTable = function () {
-        var table = $('#tablepoapprvTrx');
-        table.DataTable({
-            "processing": true, //Feature control the processing indicator.
-            "serverSide": true, //Feature control DataTables' server-side processing mode.
-            "order": [], //Initial no order.
-            "language":  languageDatatable(),
-            "paging": true,
-            "lengthChange": false,
-            "searching": true,
-            "ordering": true,
-            "info": true,
-            "autoWidth": false,
-            "responsive": false,
-            "bFilter":true,
-            "lengthMenu": [
-                [ 10, 25, 50, -1 ],
-                [ '10 rows', '25 rows', '50 rows', 'Show all' ]
-            ],
-            "dom": 'Bfrtip',
-            "buttons": [
-                'pageLength','excel'
-            ],
-            "ajax": {
-                "url": HOST_URL + 'purchase/trans/list_po_apprv',
-                "type": "POST",
-                "data": function(data) {
-                    data.tglrange = $('#tglrange').val();
-                    data.idbarang = $('#idbarang_filter').val();
-                    data.namasupplier = $('#namasupplier').val();
-                    data.status = $('#status_filter').val(); //A,P,S,ALL
-                },
-                "dataFilter": function(data) {
-                    var json = jQuery.parseJSON(data);
-                    json.draw = json.dataTables.draw;
-                    json.recordsTotal = json.dataTables.recordsTotal;
-                    json.recordsFiltered = json.dataTables.recordsFiltered;
-                    json.data = json.dataTables.data;
-                    return JSON.stringify(json); // return JSON string
-                }
-            },
-
-            //Set column definition initialisation properties.
-            "columnDefs": [
-                {
-                    "targets": [ -1 ], //last column
-                    "orderable": false, //set not orderable
-                },
-            ],
-
-        });
-
-    };
-
-
-    return initTable();
-}
-
-function reload_tablePOApprvTrx()
-{
-    var table = $('#tablepoapprvTrx');
+    var table = $('#tablevoidpoTrx');
     table.DataTable().ajax.reload(); //reload datatable ajax
     //console.log('HALO HALO BANDUNG');
 }
 
 $('#btn-filter-tx').click(function(){ //button filter event click
-    var table = $('#tablepoTrx');
+    var table = $('#tablevoidpoTrx');
     table.DataTable().ajax.reload(); //reload datatable ajax
     $('#filter').modal('hide');
 });
 $('#btn-reset-tx').click(function(){ //button reset event click
     $('#form-filter')[0].reset();
-    var table = $('#tablepoTrx');
+    var table = $('#tablevoidpoTrx');
     table.DataTable().ajax.reload(); //reload datatable ajax
     $('#filter').modal('hide');
 });
@@ -177,7 +108,7 @@ function documentReadable(){
 
     $.ajax({
         type: 'GET',
-        url: HOST_URL + 'purchase/trans/showing_potemp',
+        url: HOST_URL + 'purchase/trans/showing_voidpotemp',
         data: { docno: docno },
         dataType: 'json',
         dataFilter: function(data) {
@@ -281,7 +212,7 @@ function documentReadable(){
             });
             skipRoleChange = true;
             $('[name="docdate"]').val(json.dataTables.items[0].docdate);
-            $('[name="senddate"]').val(json.dataTables.items[0].senddate);
+            // $('[name="senddate"]').val(json.dataTables.items[0].senddate);
             setJtsValue('[name="jthtempo"]', convertToDbNumber(json.dataTables.items[0].jthtempo));
             setJtsValue('[name="kurs"]', convertToDbNumber(json.dataTables.items[0].kurs));
             $('[name="isinclusive"]').prop(
@@ -290,7 +221,7 @@ function documentReadable(){
             );
             // $('[name="jthtempo"]').val(json.dataTables.items[0].jthtempo);
             $('[name="alamatsupplier"]').val(json.dataTables.items[0].alamatsupplier);
-            $('[name="alamatkirim"]').val(json.dataTables.items[0].alamatkirim);
+            // $('[name="alamatkirim"]').val(json.dataTables.items[0].alamatkirim);
             // $('[name="isinclusive"]').val(json.dataTables.items[0].isinclusive);
             $('[name="keterangan"]').val(json.dataTables.items[0].keterangan);
             $('[name="syarat"]').val(json.dataTables.items[0].syarat);
@@ -323,71 +254,10 @@ function documentReadable(){
 /* FOR INPUT FUNCTION */
 
 
-// +++++++++++++++++++++++++++++++++++++++++++++++++++++ RANAH GROUP ++++++++++++++++++++++++++++++++++++++++//
-
-// var defaultInitialGroupBrng = '';
-// $("#idbarang").select2({
-//     placeholder: "Choose Your Item List",
-//     allowClear: true,
-//     width:'100%',
-//     ajax: {
-//         url: HOST_URL + 'api/globalmodule/list_item',
-//         type: 'POST',
-//         dataType: 'json',
-//         delay: 250,
-//         data: function(params) {
-//             return {
-//                 _search_: params.term, // search term
-//                 _page_: params.page,
-//                 _draw_: true,
-//                 _start_: 1,
-//                 _perpage_: 2,
-//                 _paramglobal_: defaultInitialGroupBrng,
-//                 _parameterx_: defaultInitialGroupBrng,
-//                 term: params.term,
-//             };
-//         },
-//         processResults: function (data, params) {
-//             // var searchTerm = $("#idbarang").data("select2").$dropdown.find("input").val();
-//             // if (data.items.length === 1 && data.items[0].text === searchTerm) {
-//             //     var option = new Option(data.items[0].nmbarang, data.items[0].idbarang, true, true);
-//             //     $('#idbarang').append(option).trigger('change').select2("close");
-//             //     // manually trigger the `select2:select` event
-//             //     $('#idbarang').trigger({
-//             //         type: 'select2:select',
-//             //         params: {
-//             //             data: data
-//             //         }
-//             //     });
-//             // }
-//             params.page = params.page || 1;
-//             return {
-//                 results: data.items,
-//                 pagination: {
-//                     more: (params.page * 30) < data.total_count
-//                 }
-//             };
-//         },
-
-//         cache: false
-//     },
-//     escapeMarkup: function(markup) {
-//         return markup;
-//     }, // let our custom formatter work
-//     // minimumInputLength: 1,
-//     templateResult: formatItem, // omitted for brevity, see the source of this page
-//     templateSelection: formatItemSelection // omitted for brevity, see the source of this page
-// }).on("select2:select", function (e) {
-//     var data = e.params.data;
-//     $('[name="nmbarang"]').val(data.nmbarang.trim()).prop("readonly", true);
-//     $('[name="unit"]').val(data.unit.trim()).prop("readonly", true);
-//     $("#batch").val(null).trigger('change');
-// });
-
 
 function setToApproved(docno) {
     Swal.fire({
-        title: 'Set PO menjadi Approve?',
+        title: 'Set Void PO menjadi Approve?',
         text: "Status dokumen akan diubah menjadi Approve",
         icon: 'question',
         showCancelButton: true,
@@ -397,7 +267,7 @@ function setToApproved(docno) {
     }).then((result) => {
         if (result.isConfirmed) {
             $.ajax({
-                url: HOST_URL + '/purchase/trans/updateStatusPO',
+                url: HOST_URL + '/purchase/trans/updateStatusVoidPO',
                 type: 'POST',
                 data: { docno: docno, status: 'A' },
                 dataType: 'json',
@@ -408,8 +278,7 @@ function setToApproved(docno) {
                             title: 'Berhasil',
                             text: 'Status berhasil diubah menjadi Approve'
                         }).then(() => {
-                            reload_tablePOTrx()
-                            reload_tablePOApprvTrx()
+                            reload_tableVoidPOTrx()
                         });
                     } else {
                         Swal.fire('Gagal', res.message || 'Terjadi kesalahan', 'error');
@@ -425,7 +294,7 @@ function setToApproved(docno) {
 
 function setToDisapproved(docno) {
     Swal.fire({
-        title: 'Set PO menjadi Disapprove?',
+        title: 'Set Void PO menjadi Disapprove?',
         text: "Status dokumen akan diubah menjadi Disapprove",
         icon: 'warning',
         showCancelButton: true,
@@ -435,7 +304,7 @@ function setToDisapproved(docno) {
     }).then((result) => {
         if (result.isConfirmed) {
             $.ajax({
-                url: HOST_URL + '/purchase/trans/updateStatusPO',
+                url: HOST_URL + '/purchase/trans/updateStatusVoidPO',
                 type: 'POST',
                 data: { docno: docno, status: 'F' },
                 dataType: 'json',
@@ -446,8 +315,7 @@ function setToDisapproved(docno) {
                             title: 'Berhasil',
                             text: 'Status berhasil diubah menjadi Disapprove'
                         }).then(() => {
-                            reload_tablePOTrx()
-                            reload_tablePOApprvTrx()
+                            reload_tableVoidPOTrx()
                         });
                     } else {
                         Swal.fire('Gagal', res.message || 'Terjadi kesalahan', 'error');
@@ -462,13 +330,13 @@ function setToDisapproved(docno) {
 }
 
 
-var defaultInitialPP = '';
-$("#docnopp").select2({
-    placeholder: "Choose Your PP",
+var defaultInitialPO = '';
+$("#docnopo").select2({
+    placeholder: "Choose Your PO",
     allowClear: true,
     width:'100%',
     ajax: {
-        url: HOST_URL + 'api/globalmodule/list_pp',
+        url: HOST_URL + 'api/globalmodule/list_po',
         type: 'POST',
         dataType: 'json',
         delay: 250,
@@ -479,8 +347,8 @@ $("#docnopp").select2({
                 _draw_: true,
                 _start_: 1,
                 _perpage_: 2,
-                _paramglobal_: defaultInitialPP,
-                _parameterx_: defaultInitialPP,
+                _paramglobal_: defaultInitialPO,
+                _parameterx_: defaultInitialPO,
                 term: params.term,
             };
         },
@@ -512,8 +380,8 @@ $("#docnopp").select2({
         return markup;
     }, // let our custom formatter work
     // minimumInputLength: 1,
-    templateResult: formatPP, // omitted for brevity, see the source of this page
-    templateSelection: formatPPSelection // omitted for brevity, see the source of this page
+    templateResult: formatPO, // omitted for brevity, see the source of this page
+    templateSelection: formatPOSelection // omitted for brevity, see the source of this page
 }).on("select2:select", function (e) {
     var data = e.params.data;
     // $('[name="nmbarang"]').val(data.nmbarang.trim()).prop("readonly", true);
@@ -522,12 +390,12 @@ $("#docnopp").select2({
 });
 
 /* Format Group */
-function formatPP(repo) {
+function formatPO(repo) {
     if (repo.loading) return repo.text;
     var markup ="<div class='select2-result-repository__description'>" + repo.docno +"   <i class='fa fa-circle-o'></i>   "+ repo.keterangan +"</div>";
     return markup;
 }
-function formatPPSelection(repo) {
+function formatPOSelection(repo) {
     return repo.keterangan || repo.text;
 }
 
@@ -672,10 +540,10 @@ $(document).on('input', '.jtsseparator', function () {
 
 
 /* TABLE PO DETAIL */
-function tablePODetail(){
+function tableVoidPODetail(){
         /* Tabel PO Detail */
     var initTable = function () {
-        var table = $('#tabppdtl');
+        var table = $('#tabvoidpodtl');
         table.DataTable({
             "processing": true, //Feature control the processing indicator.
             "serverSide": true, //Feature control DataTables' server-side processing mode.
@@ -690,7 +558,7 @@ function tablePODetail(){
             "bFilter":true,
             "iDisplayLength": -1,
             "ajax": {
-                "url": HOST_URL + 'purchase/trans/list_tmp_po_dtl',
+                "url": HOST_URL + 'purchase/trans/list_tmp_voidpo_dtl',
                 "type": "POST",
                 "data": function(data) {
                     //data.searchfilter = $('#searchitem').val()+'';
@@ -731,34 +599,34 @@ function tablePODetail(){
 }
 
 
-function reload_table_po_dtl()
+function reload_table_voidpo_dtl()
 {
-    var table = $('#tabppdtl');
+    var table = $('#tabvoidpodtl');
     table.DataTable().ajax.reload(); //reload datatable ajax
 }
 
 
 
 // CHECK ALL
-$('#tabppdtl thead').on('change', '#checkAll', function () {
+$('#tabvoidpodtl thead').on('change', '#checkAll', function () {
     const checked = this.checked;
 
-    $('#tabppdtl tbody .row-check').prop('checked', checked);
+    $('#tabvoidpodtl tbody .row-check').prop('checked', checked);
 });
 
 // JIKA SALAH SATU ROW UNCHECK → CHECKALL MATI
-$('#tabppdtl tbody').on('change', '.row-check', function () {
-    const total = $('#tabppdtl tbody .row-check').length;
-    const checked = $('#tabppdtl tbody .row-check:checked').length;
+$('#tabvoidpodtl tbody').on('change', '.row-check', function () {
+    const total = $('#tabvoidpodtl tbody .row-check').length;
+    const checked = $('#tabvoidpodtl tbody .row-check:checked').length;
 
     $('#checkAll').prop('checked', total === checked);
 });
 
-$('#tabppdtl').on('draw.dt', function () {
+$('#tabvoidpodtl').on('draw.dt', function () {
     $('#checkAll').prop('checked', false);
 });
-function getSelectedPODetail(){
-    return $('#tabppdtl tbody .row-check:checked')
+function getSelectedVoidPODetail(){
+    return $('#tabvoidpodtl tbody .row-check:checked')
         .map(function () {
             return $(this).val();
         }).get();
@@ -807,7 +675,7 @@ function btnUpdateDetail(){
     const id = ids[0];
 
     $.ajax({
-        url: HOST_URL + 'purchase/trans/get_po_detail',
+        url: HOST_URL + 'purchase/trans/get_voidpo_detail',
         type: 'GET',
         data: { id: id },
         dataType: 'json',
@@ -816,17 +684,17 @@ function btnUpdateDetail(){
 
                 $('#idurut').val(res.data.idurut);
                 $('#uniqueid').val(res.data.uniqueid);
-                $('#descriptionpp').val(res.data.descriptionpp);
-                $('#descriptionpo').val(res.data.descriptionpo);
+                // $('#descriptionpp').val(res.data.descriptionpp);
+                // $('#descriptionpo').val(res.data.descriptionpo);
                 $('#docno').val(res.data.docno);
-                $('#docnoppmodal').val(res.data.docnopp);
+                $('#docnopomodal').val(res.data.docnopo);
                 $('#idbarang').val(res.data.idbarang);
                 $('#nmbarang').val(res.data.nmbarang);
                 $('#unit').val(res.data.unit);
                 setJtsValue('[name="qty"]', convertToDbNumber(res.data.qty));
-                setJtsValue('[name="qtybonus"]', convertToDbNumber(res.data.qtybonus));
+                // setJtsValue('[name="qtybonus"]', convertToDbNumber(res.data.qtybonus));
                 setJtsValue('[name="harga"]', convertToDbNumber(res.data.harga));
-                setJtsValue('[name="multidisc"]', convertToDbNumber(res.data.multidisc));
+                // setJtsValue('[name="multidisc"]', convertToDbNumber(res.data.multidisc));
                 setJtsValue('[name="nilai"]', convertToDbNumber(res.data.nilai));
 
 
@@ -838,8 +706,8 @@ function btnUpdateDetail(){
                 // setSelect2Ajax('#idbarang', res.data.idbarang, res.data.idbarang);
                 // setSelect2Ajax('#docnopp', res.data.docnopp, res.data.keterangan);
 
-                $('#modalUpdatePOLabel').text('Update PO Detail');
-                $('#modalUpdatePO').modal('show');
+                $('#modalUpdateVoidPOLabel').text('Update Void PO Detail');
+                $('#modalUpdateVoidPO').modal('show');
 
             }else{
                 Swal.fire({
@@ -853,7 +721,7 @@ function btnUpdateDetail(){
 }
 
 // Reset currentEditId ketika modal ditutup
-$('#modalUpdatePO').on('hidden.bs.modal', function () {
+$('#modalUpdateVoidPO').on('hidden.bs.modal', function () {
     currentEditId = null;
 });
 
@@ -863,16 +731,16 @@ $(document).on('input', '.form-control', function () {
         // Baca nilai qty, harga, dan multidisc
         let qty = parseFloat($('#qty').val().replace(/,/g, '')) || 0;
         let harga = parseFloat($('#harga').val().replace(/,/g, '')) || 0;
-        let multidisc = parseFloat($('#multidisc').val().replace(/,/g, '')) || 0;
+        // let multidisc = parseFloat($('#multidisc').val().replace(/,/g, '')) || 0;
         
         // Hitung nilai awal (qty * harga)
         let nilaiAwal = qty * harga;
         
         // Hitung diskon
-        let diskon = (nilaiAwal * multidisc) / 100;
+        // let diskon = (nilaiAwal * multidisc) / 100;
         
         // Hitung nilai akhir setelah diskon
-        let nilaiAkhir = nilaiAwal - diskon;
+        let nilaiAkhir = nilaiAwal;
         
         // Format ke en-US: separator ribuan = koma, desimal = titik
         $('#nilai').val(nilaiAkhir.toLocaleString('en-US', {
@@ -907,7 +775,7 @@ function btnDeleteDetail(){
         if(!result.isConfirmed) return;
 
         $.ajax({
-            url: HOST_URL + 'purchase/trans/delete_po_detail',
+            url: HOST_URL + 'purchase/trans/delete_voidpo_detail',
             type: 'POST',
             data: { ids: ids },
             dataType: 'json',
@@ -922,7 +790,8 @@ function btnDeleteDetail(){
                         showConfirmButton: false
                     });
 
-                    $('#tabppdtl').DataTable().ajax.reload(null,false);
+                    $('#tabvoidpodtl').DataTable().ajax.reload(null,false);
+                    documentReadable()
 
                 }else{
                     Swal.fire({
@@ -996,7 +865,7 @@ $('#formPOMasters').bootstrapValidator({
     },
     excluded: [':disabled']
 });
-$('#formPOdetail').bootstrapValidator({
+$('#formVoidPOdetail').bootstrapValidator({
     message: 'This value is not valid',
     feedbackIcons: {
         valid: 'fa fa-check',
@@ -1024,26 +893,11 @@ $('#formPOdetail').bootstrapValidator({
 });
 
 
-$('#btn-filter').click(function(){ //button filter event click
-    var table = $('#tlistlbm_wacc');
-    table.DataTable().ajax.reload(); //reload datatable ajax
-    $('#filter').modal('hide');
-});
-$('#btn-reset').click(function(){ //button reset event click
-    $('#form-filter')[0].reset();
-    var table = $('#tlistlbm_wacc');
-    table.DataTable().ajax.reload(); //reload datatable ajax
-    $('#filter').modal('hide');
-});
-
-
-
-
-function savePODetail() {
+function saveVoidPODetail() {
 
     Swal.fire({
         title: 'Konfirmasi',
-        text: 'Simpan data PO Detail?',
+        text: 'Simpan data Void PO Detail?',
         icon: 'question',
         showCancelButton: true,
         confirmButtonText: 'Ya, Simpan',
@@ -1053,10 +907,10 @@ function savePODetail() {
 
         if (!result.isConfirmed) return;
 
-        let formData = new FormData(document.getElementById('formPODetail'));
+        let formData = new FormData(document.getElementById('formVoidPODetail'));
         formData.append('docdate', $('#docdate').val());
         formData.append('cabang', $('#cabang').val());
-        formData.append('senddate', $('#senddate').val());
+        // formData.append('senddate', $('#senddate').val());
         formData.append('jthtempo', convertToDbNumber($('#jthtempo').val()));
         formData.append('kdsupplier', $('#kdsupplier').val());
         formData.append('isinclusive', $('#isinclusive').is(':checked') ? 'YES' : 'NO');
@@ -1064,7 +918,7 @@ function savePODetail() {
         formData.append('idtax', $('#idtax').val());
         formData.append('currcode', $('#currcode').val());
         formData.append('kurs', convertToDbNumber($('#kurs').val()));
-        formData.append('alamatkirim', $('#alamatkirim').val());
+        // formData.append('alamatkirim', $('#alamatkirim').val());
         formData.append('keterangan', $('#keterangan').val());
         // formData.append('estpakai', $('#estpakai').val());
 
@@ -1072,24 +926,24 @@ function savePODetail() {
         formData.set('docno', $('#prefix').val() + '/' + $('#infix').val() + '/' + $('#sufix').val());
         // convert qty ke numeric DB
         let qty = $('#qty').val();
-        let qtybonus = $('#qtybonus').val();
+        // let qtybonus = $('#qtybonus').val();
         let harga = $('#harga').val();
-        let multidisc = $('#multidisc').val();
+        // let multidisc = $('#multidisc').val();
         let nilai = $('#nilai').val();
         formData.set('qty', convertToDbNumber(qty));
-        formData.set('qtybonus', convertToDbNumber(qtybonus));
+        // formData.set('qtybonus', convertToDbNumber(qtybonus));
         formData.set('harga', convertToDbNumber(harga));
-        formData.set('multidisc', convertToDbNumber(multidisc));
+        // formData.set('multidisc', convertToDbNumber(multidisc));
         formData.set('nilai', convertToDbNumber(nilai));
         // formData.set('nilai', convertToDbNumber(nilai));
-        formData.set('descriptionpo', $('#descriptionpo').val());
+        // formData.set('descriptionpo', $('#descriptionpo').val());
         formData.set('uniqueid', $('#uniqueid').val());
-        formData.set('docnopp', $('#docnopp').val());
+        formData.set('docnopo', $('#docnopo').val());
         
         // formData.set('descriptionpo', convertToDbNumber(qty));
 
         $.ajax({
-            url: HOST_URL + 'purchase/trans/savePODetail',
+            url: HOST_URL + 'purchase/trans/saveVoidPODetail',
             type: 'POST',
             data: formData,
             dataType: 'json',
@@ -1139,12 +993,12 @@ function savePODetail() {
                 }
 
                 // Jika hanya tambah detail
-                $('#modalDetailPO').modal('hide');
-                $('#modalUpdatePO').modal('hide');
-                $('#formPOUpdate')[0].reset();
-                reload_table_po_dtl();
+                $('#modalDetailVoidPO').modal('hide');
+                $('#modalUpdateVoidPO').modal('hide');
+                $('#formVoidPOUpdate')[0].reset();
+                reload_table_voidpo_dtl();
                 documentReadable()
-                $('#formPODetail')[0].reset();
+                $('#formVoidPODetail')[0].reset();
             },
 
             error: function (xhr) {
@@ -1165,19 +1019,19 @@ function savePODetail() {
 
 function btnInputDetail() {
 
-    $('#formPODetail')[0].reset();
+    $('#formVoidPODetail')[0].reset();
 
     
     // 🔹 Clear select2
-    $('#docnopp').val(null).trigger('change');
+    $('#docnopo').val(null).trigger('change');
 
     // Jika ada select2 lain, lakukan hal sama
     // $('#selectlain').val(null).trigger('change');
 
     $('#idurut').val(''); // pastikan id kosong (mode insert)
 
-    $('#modalDetailPOLabel').text('Tambah Item Detail');
-    $('#modalDetailPO').modal('show');
+    $('#modalDetailVoidPOLabel').text('Tambah Item Detail');
+    $('#modalDetailVoidPO').modal('show');
 }
 
 
@@ -1267,7 +1121,7 @@ $('#cabang').on('change', function () {
 
                     currentKodeSuffix = res.kode_suffix; // PT / PA / PB
                     $('#infix').val(res.infix);          // YYMM
-                    $('#prefix').val('POB');             // default
+                    $('#prefix').val('VPO');             // default
                     $('#sufix').val(currentKodeSuffix + '0001');
 
                     var infix = (res.infix || '').toString();
@@ -1517,9 +1371,9 @@ $(document).ready(function() {
 
 
 
-    tablePOTrx();
-    tablePOApprvTrx();
-    tablePODetail();
+    tableVoidPOTrx();
+    // tablePOApprvTrx();
+    tableVoidPODetail();
     //read_qrcode();
     $('#checkboxnik').change(function() {
         // this will contain a reference to the checkbox

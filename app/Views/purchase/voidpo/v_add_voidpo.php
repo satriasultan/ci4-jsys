@@ -94,19 +94,19 @@
 ?>
 <div class="row">
     <!-- left column -->
-    <form action="<?= base_url('purchase/trans/finalEntryPO') ?>" method="post" id="formPO">
+    <form action="<?= base_url('purchase/trans/finalEntryVoidPO') ?>" method="post" id="formPO">
         <div class="col-md-12">
             <!-- jquery validation -->
             <div class="card card-primary">
                 <div class="card-header">
-                    <h3 class="card-title"><?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> Purchase Order</h3>
+                    <h3 class="card-title"><?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> Void Purchase Order</h3>
                 </div>
                 <!-- /.card-header -->
                 <!-- form start -->
                 <div class="card-body">
                         <div class="section-block">
                             <div class="section-header">
-                                <i class="fa fa-address-card"></i> Purchase Order (PO)
+                                <i class="fa fa-address-card"></i> Void PO
                             </div>
                             <div class="row">
 
@@ -127,7 +127,7 @@
                                     <div class="row">
                                         <div class="col-md-12">
                                             <div class="form-group">
-                                                <label>No. Jurnal PO</label>
+                                                <label>No. Jurnal Void PO</label>
 
                                                 <div class="d-flex">
                                                     <input type="text"
@@ -177,7 +177,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="row">
+                                    <!-- <div class="row">
                                         <div class="col-md-12">
                                             <div class="form-group">
                                                 <label for="senddate">Tanggal Pengiriman</label>
@@ -188,7 +188,7 @@
                                                     placeholder="Tanggal Pengiriman">
                                             </div>
                                         </div>
-                                    </div>
+                                    </div> -->
                                     <div class="row">
                                         <div class="col-md-12">
                                             <div class="form-group">
@@ -270,13 +270,13 @@
                                                     <input type="text"
                                                         name="kurs"
                                                         id="kurs"
-                                                        class="form-control text-end"
+                                                        class="form-control ratakanan jtsseparator"
                                                         placeholder="Nilai tukar akan muncul disini"
-                                                        readonly>
+                                                        >
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="col-md-12">
+                                        <!-- <div class="col-md-12">
                                             <div class="form-group">
                                                 <label for="alamatkirim">Alamat Kirim</label>
                                                 <textarea name="alamatkirim"
@@ -286,8 +286,8 @@
                                                     placeholder="Alamat Kirim"
                                                     style="text-transform:uppercase;"></textarea>
                                             </div>
-                                        </div>
-                                        <div class="col-md-12" style="margin-top: -30px;">
+                                        </div> -->
+                                        <div class="col-md-12" >
                                             <div class="form-group">
                                                 <label for="keterangan">Keterangan</label>
                                                 <textarea name="keterangan"
@@ -311,7 +311,7 @@
             <div class="card mt-3 card-primary">
                 <div class="card-header clearfix">
                     <h3 class="card-title">
-                        Detail PP & Barang
+                        Detail PO & Barang
                     </h3>
 
                     <div class="float-right d-flex align-items-center gap-2">
@@ -346,23 +346,23 @@
                     <div class="row">
                         <div class="col-md-12">
                             <div class="table-responsive" style="overflow-x: auto;">
-                                <table id="tabppdtl" class="table table-bordered table-striped" style="width:100%;" cellspacing="0">
+                                <table id="tabvoidpodtl" class="table table-bordered table-striped" style="width:100%;" cellspacing="0">
                                     <thead class="bg-primary text-white">
                                         <tr>
                                             <th width="30">
                                                 <input type="checkbox" id="checkAll">
                                             </th>
-                                            <th>PP</th>
+                                            <th>PO</th>
                                             <th>ID Barang</th>
                                             <th>Nama Barang</th>
                                             <th>Satuan</th>
                                             <th>Qty</th>
-                                            <th>Bonus Qty</th>
+                                            <!-- <th>Bonus Qty</th> -->
                                             <th>Harga</th>
-                                            <th>Multi Disc</th>
+                                            <!-- <th>Multi Disc</th> -->
                                             <th>Nilai</th>
-                                            <th>Keterangan PO</th>
-                                            <th>Keterangan PP</th>
+                                            <!-- <th>Keterangan PO</th>
+                                            <th>Keterangan PP</th> -->
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -373,7 +373,7 @@
                     </div>
                     <hr>
                     <div class="row" style="margin-top: 10px;">
-                        <div class="col-md-6">
+                        <!-- <div class="col-md-6">
                             <div class="form-group">
                                 <label for="syarat">Syarat</label>
                                 <textarea name="syarat"
@@ -383,18 +383,18 @@
                                     placeholder="Syarat"
                                     style="text-transform:uppercase;"></textarea>
                             </div>
-                        </div>
+                        </div> -->
 
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <div class="row">
                                 <div class="col-md-12 ">
-                                    <div class="col-md-4" style="float: right;">
+                                    <div class="col-md-3" style="float: right;">
                                         <div class="form-group mb-2">
                                             <div class="row">
-                                                <div class="col-md-4 text-end">
+                                                <div class="col-md-6 text-end">
                                                     <label for="dpp" class="mt-2">DPP</label>
                                                 </div>
-                                                <div class="col-md-8">
+                                                <div class="col-md-6">
                                                     <input type="text"
                                                         name="dpp"
                                                         id="dpp"
@@ -407,13 +407,13 @@
                                 </div>
                                 
                                 <div class="col-md-12 ">
-                                    <div class="col-md-4" style="float: right;">
+                                    <div class="col-md-3" style="float: right;">
                                         <div class="form-group mb-2">
                                             <div class="row">
-                                                <div class="col-md-4 text-end">
+                                                <div class="col-md-6 text-end">
                                                     <label for="jumlahpajak" class="mt-2">Jumlah Pajak</label>
                                                 </div>
-                                                <div class="col-md-8">
+                                                <div class="col-md-6">
                                                     <input type="text"
                                                         name="jumlahpajak"
                                                         id="jumlahpajak"
@@ -426,13 +426,13 @@
                                 </div>
                                 
                                 <div class="col-md-12 ">
-                                    <div class="col-md-4" style="float: right;">
+                                    <div class="col-md-3" style="float: right;">
                                         <div class="form-group mb-3">
                                             <div class="row">
-                                                <div class="col-md-4 text-end">
+                                                <div class="col-md-6 text-end">
                                                     <label for="total" class="mt-2">Total</label>
                                                 </div>
-                                                <div class="col-md-8">
+                                                <div class="col-md-6">
                                                     <input type="text"
                                                         name="total"
                                                         id="total"
@@ -445,13 +445,13 @@
                                     </div>
                                 </div>
                                 
-                                <div class="col-md-12">
+                                <!-- <div class="col-md-12">
                                     <div class="form-group text-end">
                                         <button type="button" class="btn btn-lg btn-primary text-white" title="Down Payment">
                                             <i class="fa fa-money"></i> 
                                         </button>
                                     </div>
-                                </div>
+                                </div> -->
                             </div>
                         </div>
                     </div>
@@ -459,7 +459,7 @@
 
                 </div>
                 <div class="card-footer bg-light">
-                    <a href="<?= base_url('purchase/trans/po') ?>"
+                    <a href="<?= base_url('purchase/trans/voidpo') ?>"
                         class="btn btn-default btn-lg">
                         <i class="fa fa-arrow-left mr-2"></i>
                         Kembali
@@ -489,13 +489,13 @@
 
 
 <!-- ================= MODAL TAX DETAIL ================= -->
-<div class="modal fade" id="modalDetailPO" tabindex="-1" role="dialog" aria-labelledby="modalDetailPOLabel" aria-hidden="true">
+<div class="modal fade" id="modalDetailVoidPO" tabindex="-1" role="dialog" aria-labelledby="modalDetailVoidPOLabel" aria-hidden="true">
     <div class="modal-dialog modal-md" role="document">
         <div class="modal-content">
 
             <!-- HEADER -->
             <div class="modal-header bg-primary">
-                <h5 class="modal-title" id="modalDetailPOLabel">
+                <h5 class="modal-title" id="modalDetailVoidPOLabel">
                     </i> Input Item Detail
                 </h5>
                 <button type="button" class="close text-white" data-bs-dismiss="modal">
@@ -504,7 +504,7 @@
             </div>
 
             <!-- FORM -->
-            <form id="formPODetail">
+            <form id="formVoidPODetail">
                 <div class="modal-body">
 
                     <!-- hidden -->
@@ -517,8 +517,8 @@
                     <div class="row">
                         <div class="col-md-12">
                             <div class="form-group">
-                                <label>PP</label>
-                                <select name="docnopp" id="docnopp"
+                                <label>PO</label>
+                                <select name="docnopo" id="docnopo"
                                         class="form-control select2"
                                         style="width:100%"></select>
                             </div>
@@ -531,13 +531,13 @@
                     <button type="button"
                             class="btn btn-secondary"
                             data-bs-dismiss="modal"
-                            onclick="$('#modalDetailPO').modal('hide')">
+                            onclick="$('#modalDetailVoidPO').modal('hide')">
                         <i class="fa fa-times"></i> Batal
                     </button>
 
                     <button type="button"
                             class="btn btn-primary"
-                            onclick="savePODetail()">
+                            onclick="saveVoidPODetail()">
                         <i class="fa fa-save"></i> Simpan
                     </button>
                 </div>
@@ -547,13 +547,13 @@
 </div>
 
 
-<div class="modal fade" id="modalUpdatePO" tabindex="-1" role="dialog" aria-labelledby="modalUpdatePOLabel" aria-hidden="true">
+<div class="modal fade" id="modalUpdateVoidPO" tabindex="-1" role="dialog" aria-labelledby="modalUpdateVoidPOLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
 
             <!-- HEADER -->
             <div class="modal-header bg-primary">
-                <h5 class="modal-title" id="modalUpdatePOLabel">
+                <h5 class="modal-title" id="modalUpdateVoidPOLabel">
                     </i> Edit Item Detail
                 </h5>
                 <button type="button" class="close text-white" data-bs-dismiss="modal">
@@ -562,7 +562,7 @@
             </div>
 
             <!-- FORM -->
-            <form id="formPOUpdate">
+            <form id="formVoidPOUpdate">
                 <div class="modal-body">
 
                     <!-- hidden -->
@@ -576,8 +576,8 @@
                     <div class="row">
                         <div class="col-md-12">
                             <div class="form-group">
-                                <label>PP</label>
-                                <input name="docnoppmodal" id="docnoppmodal"
+                                <label>PO</label>
+                                <input name="docnopomodal" id="docnopomodal"
                                         class="form-control"
                                         style="width:100%" readonly>
                             </div>
@@ -629,30 +629,10 @@
                         </div>
                         <div class="col-md-2">
                             <div class="form-group">
-                                <label>Bonus Quantity</label>
-                                <input type="text"
-                                        name="qtybonus"
-                                        id="qtybonus"
-                                        class="form-control jtsseparator ratakanan"
-                                        placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
                                 <label>Harga</label>
                                 <input type="text"
                                         name="harga"
                                         id="harga"
-                                        class="form-control jtsseparator ratakanan"
-                                        placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Multi Disc (%)</label>
-                                <input type="text"
-                                        name="multidisc"
-                                        id="multidisc"
                                         class="form-control jtsseparator ratakanan"
                                         placeholder="0.00">
                             </div>
@@ -668,28 +648,6 @@
                                         placeholder="0.00">
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Keterangan PO</label>
-                                <textarea type="text"
-                                        name="descriptionpo"
-                                        rows="4"
-                                        style="text-transform: uppercase;"
-                                        id="descriptionpo"
-                                        class="form-control"></textarea>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Keterangan PP</label>
-                                <textarea type="text"
-                                        name="descriptionpp"
-                                        rows="4"
-                                        style="text-transform: uppercase;"
-                                        id="descriptionpp"
-                                        class="form-control" readonly></textarea>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -698,13 +656,13 @@
                     <button type="button"
                             class="btn btn-secondary"
                             data-bs-dismiss="modal"
-                            onclick="$('#modalUpdatePO').modal('hide')">
+                            onclick="$('#modalUpdateVoidPO').modal('hide')">
                         <i class="fa fa-times"></i> Batal
                     </button>
 
                     <button type="button"
                             class="btn btn-primary"
-                            onclick="savePODetail()">
+                            onclick="saveVoidPODetail()">
                         <i class="fa fa-save"></i> Simpan
                     </button>
                 </div>
@@ -715,7 +673,7 @@
 
 
 
-<script type="application/javascript" src="<?= base_url('assets/pagejs/purchase/po.js') ?>"></script>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/purchase/voidpo.js') ?>"></script>
 <script type="text/javascript">
     $(function() {
         $("#example1").dataTable();
@@ -807,26 +765,7 @@
             $(this).val('');
         });
 
-        document.addEventListener('DOMContentLoaded', function() {
-
-            document.addEventListener('keydown', function(e) {
-
-                const activeTag = document.activeElement.tagName;
-
-                if (
-                    e.ctrlKey &&
-                    e.shiftKey &&
-                    e.code === 'KeyE' &&
-                    !['INPUT','TEXTAREA','SELECT'].includes(activeTag)
-                ) {
-                    e.preventDefault();
-                    console.log('Shortcut triggered');
-                    btnUpdateDetail();
-                }
-
-            });
-
-        });
+        
 
     });
 

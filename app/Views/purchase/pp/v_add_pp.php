@@ -260,6 +260,7 @@
                             </th>
                             <th>ID Barang</th>
                             <th>Nama Barang</th>
+                            <th>Status</th>
                             <th>Satuan</th>
                             <th>Quantity</th>
                             <th>Keterangan</th>

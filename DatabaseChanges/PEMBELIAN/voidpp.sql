@@ -197,6 +197,16 @@ BEGIN
           AND inputby = v_inputby;
 
         -- ===============================
+        -- UPDATE STATUS PP_DTL -> VP
+        -- ===============================
+        UPDATE sc_trx.pp_dtl p
+        SET status = 'VP'
+        FROM sc_tmp.voidpp_dtl t
+        WHERE rtrim(t.docno) = rtrim(OLD.docno)
+        AND t.inputby = v_inputby
+        AND p.uniqueid = t.uniqueid;
+
+        -- ===============================
         -- CLEANUP TMP
         -- ===============================
         DELETE FROM sc_tmp.voidpp
@@ -224,6 +234,16 @@ BEGIN
             inputby, inputdate, status, updateby, updatedate, docnotmp
         FROM sc_tmp.voidpp_dtl
         WHERE rtrim(docno) = rtrim(NEW.docno);
+
+        -- ===============================
+        -- UPDATE STATUS PP_DTL -> VP
+        -- ===============================
+        UPDATE sc_trx.pp_dtl p
+        SET status = 'VP'
+        FROM sc_tmp.voidpp_dtl t
+        WHERE rtrim(t.docno) = rtrim(OLD.docno)
+        AND t.inputby = v_inputby
+        AND p.uniqueid = t.uniqueid;
 
         INSERT INTO sc_trx.voidpp
         (idurut, docno, cabang, docdate, pemohon,

@@ -114,7 +114,7 @@ $routes->group('/master/location', ["namespace" => "App\Controllers\Master"], fu
     $routes->get("showing_data_area/(:any)", "Location::showing_data_area/$1");
     $routes->add('import_area', 'Location::import_area');
     $routes->post("proses_upload", "Location::proses_upload");
-    $routes->add("clear_tmp", "Location::clear_tmp");
+    $routes->add("clear_tmp", "Location::clear_tmp");   
     $routes->add("final_data", "Location::final_data");
     $routes->add("showlabels", "Location::showlabels");
     $routes->add("api_show_showlabels_area(:any)", "Location::api_show_showlabels_area$1");
@@ -236,6 +236,40 @@ $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], f
     $routes->add('savePODetail', 'Purchase::savePODetail');
     $routes->add("get_po_detail(:any)", "Purchase::get_po_detail$1");
     $routes->add("delete_po_detail", "Purchase::delete_po_detail");
+
+
+
+    
+    
+    $routes->add('voidpo', 'Purchase::voidpo');
+    $routes->add('list_voidpo', 'Purchase::list_voidpo');
+    $routes->add('list_voidpo_apprv', 'Purchase::list_voidpo_apprv');
+    
+    $routes->add('addVoidPO', 'Purchase::addVoidPO');
+    $routes->add('detailVoidPO', 'Purchase::detailVoidPO');
+    $routes->add('list_tmp_voidpo_dtl', 'Purchase::list_tmp_voidpo_dtl');
+    // $routes->add('showing_sikbsp_mst', 'Purchase::showing_sikbsp_mst');
+    
+    $routes->add('clearEntryVoidPO', 'Purchase::clearEntryVoidPO');
+    $routes->add('finalEntryVoidPO', 'Purchase::finalEntryVoidPO');
+    $routes->add('showing_voidpotemp', 'Purchase::showing_voidpotemp');
+    $routes->add('updateStatusVoidPO', 'Purchase::updateStatusVoidPO');
+
+    
+    $routes->add('save_voidpo_detail', 'Purchase::save_voidpo_detail');
+    $routes->get('updateVoidPO(:any)', 'Purchase::updateVoidPO$1');
+
+    $routes->add('deleteVoidPODtl', 'Purchase::deleteVoidPODtl');
+    $routes->add('show_voidpo', 'Purchase::show_voidpo');
+    $routes->add('api_voidpo(:any)', 'Purchase::api_voidpo$1');
+    $routes->add('list_trx_voidpo_dtl', 'Purchase::list_trx_voidpo_dtl');
+    $routes->add('showing_voidpotrx', 'Purchase::showing_voidpotrx');
+    $routes->add('getBranchInfoVoidPO', 'Purchase::getBranchInfoVoidPO');
+    $routes->add('getNextSuffixVoidPO', 'Purchase::getNextSuffixVoidPO');
+    $routes->add('initVoidPOHeader', 'Purchase::initVoidPOHeader');
+    $routes->add('saveVoidPODetail', 'Purchase::saveVoidPODetail');
+    $routes->add("get_voidpo_detail(:any)", "Purchase::get_voidpo_detail$1");
+    $routes->add("delete_voidpo_detail", "Purchase::delete_voidpo_detail");
 
 
 
@@ -459,6 +493,7 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
     $routes->add('globalmodule/list_supplier_new', 'Globalmodule::list_supplier_new');
 
     $routes->add('globalmodule/list_pp', 'Globalmodule::list_pp');
+    $routes->add('globalmodule/list_po', 'Globalmodule::list_po');
 
     $routes->add('globalmodule/list_branchjob', 'Globalmodule::list_branchjob');
 

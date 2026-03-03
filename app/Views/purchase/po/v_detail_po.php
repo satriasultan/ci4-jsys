@@ -109,10 +109,10 @@
                                 <i class="fa fa-address-card"></i> Purchase Order (PO)
                             </div>
                             <div class="row">
-
+                                
                                 <!-- LEFT COLUMN -->
                                 <div class="col-md-3">
-
+                                    
                                     <div class="row">
                                         <div class="col-md-8">
                                             <div class="form-group">
@@ -120,9 +120,8 @@
                                                 <select name="cabang" id="cabang" class="form-control" required></select>
                                             </div>
                                         </div>
-
-                                        
                                     </div>
+                                    
 
                                     <div class="row">
                                         <div class="col-md-12">
@@ -158,7 +157,23 @@
                                                 </div>
                                             </div>
                                             <input type="hidden" name="docno" class="form-control col-sm-12" id="docno" maxlength="20"     value="<?= isset($dtldata['docno']) ? esc(trim($dtldata['docno'])) : '' ?>" style="text-transform: uppercase;" readonly>
-                                            
+                                            <div style="position:relative;">
+                                                <?php if(trim($dtldata['status']) == 'A') { ?>
+                                                    <img src="<?= base_url('assets/img/svg/approved-sticker.svg') ?>" 
+                                                        alt="Approved"
+                                                        class="float-end"
+                                                        style="
+                                                            position:absolute;
+                                                            top:-20px;
+                                                            left:50%;
+                                                            transform:translateX(-50%);
+                                                            width:160px;
+                                                            opacity:0.85;
+                                                            z-index:10;
+                                                            pointer-events:none;
+                                                        ">
+                                                <?php } ?>
+                                            </div>
                                     </div>
                                         
                                 </div>
@@ -303,7 +318,6 @@
                         </div>
                 </div>
             </div>
-
             <div class="card mt-3 card-primary">
                 <div class="card-header clearfix">
                     <h3 class="card-title">
