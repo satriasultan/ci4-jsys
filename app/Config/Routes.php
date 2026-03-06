@@ -272,6 +272,38 @@ $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], f
     $routes->add("delete_voidpo_detail", "Purchase::delete_voidpo_detail");
 
 
+    
+    $routes->add('lpb', 'Purchase::lpb');
+    $routes->add('list_lpb', 'Purchase::list_lpb');
+    $routes->add('list_lpb_apprv', 'Purchase::list_lpb_apprv');
+    
+    $routes->add('addLPB', 'Purchase::addLPB');
+    $routes->add('detailLPB', 'Purchase::detailLPB');
+    $routes->add('list_tmp_lpb_dtl', 'Purchase::list_tmp_lpb_dtl');
+    // $routes->add('showing_sikbsp_mst', 'Purchase::showing_sikbsp_mst');
+    
+    $routes->add('clearEntryLPB', 'Purchase::clearEntryLPB');
+    $routes->add('finalEntryLPB', 'Purchase::finalEntryLPB');
+    $routes->add('showing_lpbtemp', 'Purchase::showing_lpbtemp');
+    $routes->add('updateStatusLPB', 'Purchase::updateStatusLPB');
+
+    
+    $routes->add('save_lpb_detail', 'Purchase::save_lpb_detail');
+    $routes->get('updateLPB(:any)', 'Purchase::updateLPB$1');
+
+    $routes->add('deleteLPBDtl', 'Purchase::deleteLPBDtl');
+    $routes->add('show_lpb', 'Purchase::show_lpb');
+    $routes->add('api_lpb(:any)', 'Purchase::api_lpb$1');
+    $routes->add('list_trx_lpb_dtl', 'Purchase::list_trx_lpb_dtl');
+    $routes->add('showing_lpbtrx', 'Purchase::showing_lpbtrx');
+    $routes->add('getBranchInfoLPB', 'Purchase::getBranchInfoLPB');
+    $routes->add('getNextSuffixLPB', 'Purchase::getNextSuffixLPB');
+    $routes->add('initLPBHeader', 'Purchase::initLPBHeader');
+    $routes->add('saveLPBDetail', 'Purchase::saveLPBDetail');
+    $routes->add("get_lpb_detail(:any)", "Purchase::get_lpb_detail$1");
+    $routes->add("delete_lpb_detail", "Purchase::delete_lpb_detail");
+
+
 
 
 });

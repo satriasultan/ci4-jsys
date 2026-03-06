@@ -3783,15 +3783,15 @@ class Purchase extends BaseController
             }
 
 
-            if (trim($status) !== 'APPROVED' && trim($status) !== 'REVISION/EDITING') {
-                    $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
-                        <i class="fa fa-check-circle"></i> Approve</a>';
-            }
+            // if (trim($status) !== 'APPROVED' && trim($status) !== 'REVISION/EDITING') {
+            //         $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
+            //             <i class="fa fa-check-circle"></i> Approve</a>';
+            // }
 
-            if (trim($status) == 'APPROVED') {
-                $disapproveBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToDisapproved(\'' . trim($lm->docno) . '\');">
-                    <i class="fa fa-times-circle"></i> Disapprove</a>';
-            }
+            // if (trim($status) == 'APPROVED') {
+            //     $disapproveBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToDisapproved(\'' . trim($lm->docno) . '\');">
+            //         <i class="fa fa-times-circle"></i> Disapprove</a>';
+            // }
 
 
             $menuContent = '';
@@ -5059,6 +5059,1585 @@ class Purchase extends BaseController
         $param=" and docno='$docno'";
         $datamst = $this->m_purchase->q_voidpo_master($param);
         $datadtl = $this->m_purchase->q_voidpo_dtl($param);
+        $tampungdtl = $datamst->getResult();
+        $detail = $tampungdtl[0] ?? null;        
+        if ($detail) {
+
+            $tujuan = isset($detail->tujuan) ? trim($detail->tujuan) : '';
+        
+            // Tambahkan properti baru isPindah
+            $detail->isPindah = false; // Default value
+            if ($tujuan === 'pindah') {
+                $detail->isPindah = true;
+            }
+
+             // Tambahkan properti baru isPembuangan
+             $detail->isPembuangan = false; // Default value
+             if ($tujuan === 'pembuangan') {
+                 $detail->isPembuangan = true;
+             }
+
+            // Tambahkan properti baru isPinjam
+            $detail->isPinjam = false; // Default value
+            if ($tujuan === 'pinjam') {
+                $detail->isPinjam = true;
+            }
+
+            $isreturn = isset($detail->isreturn) ? trim($detail->isreturn) : '';
+             // Tambahkan properti baru iskembali
+             $detail->iskembali = false; // Default value
+             if ($isreturn === 'kembali') {
+                 $detail->iskembali = true;
+             }
+
+             $detail->istidakkembali = false; // Default value
+             if ($isreturn === 'tidak_kembali') {
+                 $detail->istidakkembali = true;
+             }
+
+             $jenisbarang = isset($detail->jenisbarang) ? trim($detail->jenisbarang) : '';
+              // Tambahkan properti baru isAset
+              $detail->isAset = false; // Default value
+              if ($jenisbarang === 'aset') {
+                  $detail->isAset = true;
+              }
+
+              // Tambahkan properti baru isPersediaan
+              $detail->isPersediaan = false; // Default value
+              if ($jenisbarang === 'persediaan') {
+                  $detail->isPersediaan = true;
+              }
+
+              // Tambahkan properti baru isLainlain
+              $detail->isLainlain = false; // Default value
+              if ($jenisbarang === 'lainlain') {
+                  $detail->isLainlain = true;
+              }
+        }
+
+        header("Content-Type: text/json");
+        return json_encode(
+            array(
+
+                'info' => array([
+                    //'date1' => date('d-m-Y',strtotime($tgl1)),
+                    //'date2' => date('d-m-Y',strtotime($tgl2)),
+                    'date1' => date('d-m-Y'),
+                    'date2' => date('d-m-Y'),
+                    'datenow' => date('d-m-Y'),
+                    'userid' => $nama,
+                    'param' => $param,
+
+                    ]
+                ),
+                'branch' => $databranch->getResult(),
+                'master' => $datamst->getResult(),
+                'detail' => $datadtl->getResult(),
+            ), JSON_PRETTY_PRINT);
+    }
+
+
+
+
+    
+    
+    // =================================== LPB ===========================================
+
+
+     public function lpb()
+    {
+        $data['title']="Penerimaan Pembelian";
+        $dtlbranch=$this->m_global->q_branch()->getRowArray();
+        $branch=$dtlbranch['branch'];
+        /* CODE UNTUK VERSI*/
+        $nama=trim($this->session->get('nama'));
+        $kodemenu='I.P.A.6'; $versirelease='I.P.A.6/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
+        $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
+        $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
+        $data['kodemenu']=$kodemenu; $data['version']=$versidb;
+        /* END CODE UNTUK VERSI */
+
+        $paramerror=" and userid='$nama' and modul='I.P.A.6'";
+        $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
+        $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
+        if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
+        if(isset($dtlerror['nomorakhir1'])) { $nomorakhir1=trim($dtlerror['nomorakhir1']); } else { $nomorakhir1='';  }
+        if(isset($dtlerror['errorcode'])) { $errorcode=trim($dtlerror['errorcode']); } else { $errorcode='';  }
+
+        if($count_err>0 and $errordesc<>''){
+            if ($dtlerror['errorcode']==0){
+                $data['message']="<div class='alert alert-info'>DATA SUCCESSFULLY PROCESSED $nomorakhir1 </div>";
+            } else {
+                $data['message']="<div class='alert alert-info'>$errordesc</div>";
+            }
+
+        }else {
+            if ($errorcode=='0'){
+                $data['message']="<div class='alert alert-info'>DATA SUCCESSFULLY PROCESSED $nomorakhir1 </div>";
+            } else {
+                $data['message']="";
+            }
+
+        }
+        /* Item Entry Master Check */
+        $param = " and coalesce(inputby,'')='$nama'";
+        $dtl = $this->m_purchase->q_lpb_master_temp($param);
+        $logindate = trim($this->session->get('logindate'));
+
+        if ($dtl->getNumRows()>0) {
+            $title = "WARNING !!!";
+            $urlclear = base_url('purchase/trans/clearEntryLPB');
+            $urlnext = base_url('purchase/trans/addLPB');
+            $body = " Entry not finished found....!!!";
+            $data['showUnfinish'] = $this->m_trxerror->unfinish($nama, $urlclear, $urlnext, $title, $body);
+        } else { $data['showUnfinish'] = '' ; }
+
+        $kmenu = 'I.P.A.6';
+        $role = trim($this->session->get('roleid'));
+        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
+        //auto insert unit
+        $pterror = " and userid='$nama'";
+        $this->m_trxerror->q_deltrxerror($pterror);
+        return $this->template->render('purchase/lpb/v_list_lpb',$data);
+    }
+
+    function detailLPB()
+    {
+        /* Penambahan Squence */
+        $data['title']="Detail Penerimaan Pembelian";
+        $dtlbranch=$this->m_global->q_branch()->getRowArray();
+        $branch=$dtlbranch['branch'];
+        /* CODE UNTUK VERSI*/
+        $nama=trim($this->session->get('nama'));
+
+        $docno = $this->request->getGet('docno');
+        if (empty($docno)) {
+            return redirect()->to(base_url('purchase/trans/lpb'));
+        }
+        $kodemenu='I.P.A.6'; $versirelease='I.P.A.6/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
+        $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
+        $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
+        $data['kodemenu']=$kodemenu; $data['version']=$versidb;
+        $data['nama']=$nama; $data['version']=$versidb;
+        /* END CODE UNTUK VERSI */
+
+        $paramerror=" and userid='$nama' and modul='I.P.A.6'";
+        $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
+        $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
+        if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
+        if(isset($dtlerror['nomorakhir1'])) { $nomorakhir1=trim($dtlerror['nomorakhir1']); } else { $nomorakhir1='';  }
+        if(isset($dtlerror['errorcode'])) { $errorcode=trim($dtlerror['errorcode']); } else { $errorcode='';  }
+
+        if($count_err>0 and $errordesc){
+            if ($dtlerror['errorcode']==0){
+                $data['message']="<div class='alert alert-info'>DATA SUKSES DIPROSES $nomorakhir1 </div>";
+            } else {
+                $data['message']="<div class='alert alert-info'>$errordesc</div>";
+            }
+
+        }else {
+            if ($errorcode=='0'){
+                $data['message']="<div class='alert alert-info'>DATA SUKSES DIPROSES $nomorakhir1 </div>";
+            } else {
+                $data['message']="";
+            }
+
+        }
+
+        $decoded_docno = hex2bin($docno); // Decode docno yang dikirim dalam bentuk hex
+        $param = " and coalesce(docno,'') = '$decoded_docno'";
+        $pterror = " and userid='$nama'";
+        $this->m_trxerror->q_deltrxerror($pterror);
+        $data['typeform'] = 'DETAIL';
+        $data['userlogin'] = $nama;
+        $data['docnoParam'] = $decoded_docno;
+        $data['dtldata'] = $this->m_purchase->q_lpb_master($param)->getRowArray();
+        return $this->template->render('purchase/lpb/v_detail_lpb',$data);
+    }
+
+    function list_lpb(){
+        $list = $this->m_purchase->get_t_front_lpb_view();
+        $data = array();
+        $no = $_POST['start'];
+
+
+        $kmenu = 'I.P.A.6';
+        $nama=trim($this->session->get('nama'));
+        $role=trim($this->session->get('roleid'));
+
+        $datadtl['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
+        $dataanu['userinfo'] = $this->m_user->getUser(" and username='$nama'")->getRowArray();
+
+        $canUpdate = isset($datadtl['dtl_akses']['a_update']) && trim($datadtl['dtl_akses']['a_update']) === 't';
+        $canPrint = isset($datadtl['dtl_akses']['a_report']) && trim($datadtl['dtl_akses']['a_report']) === 't';
+        $canView = isset($datadtl['dtl_akses']['a_view']) && trim($datadtl['dtl_akses']['a_view']) === 't';
+        $canApprove = isset($datadtl['dtl_akses']['a_approve1']) && trim($datadtl['dtl_akses']['a_approve1']) === 't';
+
+        foreach ($list as $lm) {
+            $no++;
+            $row = array();
+
+            $status = strtoupper(trim($lm->status_desc));
+            $docno  = trim($lm->docno);
+            $docnoHex = bin2hex($docno);
+
+            
+            $updateBtn = '';
+            $detailBtn = '';
+            $printBtn  = '';
+            $approveBtn  = '';
+            $disapproveBtn  = '';
+
+            // =========================
+            // Build button by access
+            // =========================
+
+            if ($canUpdate && $status != "REVISION/EDITING" && $status != "APPROVED") {
+                $updateBtn = '
+                <a class="dropdown-item bg-warning" 
+                    href="' . base_url('purchase/trans/updateLPB') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'Update This Penerimaan Pembelian : ' . $docno . '\')">
+                    <i class="fa fa-edit"></i> Update Penerimaan Pembelian 
+                </a>';
+            }
+
+            if($canView){
+                $detailBtn = 
+                '<a class="dropdown-item" 
+                    style="background-color:#3badf6;" 
+                    href="' . base_url('purchase/trans/detailLPB') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'View Detail Penerimaan Pembelian : ' . $docno . '\')">
+                    <i class="fa fa-eye"></i> Detail Penerimaan Pembelian 
+                </a>';
+            }
+
+            if($canPrint){
+                $printBtn = '
+                <a class="dropdown-item" 
+                    style="background-color:#00ff8e;" 
+                    href="' . base_url('purchase/trans/show_po') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'Print Penerimaan Pembelian : ' . $docno . '\')">
+                    <i class="fa fa-print"></i> Print Penerimaan Pembelian 
+                </a>';
+            }
+
+
+            // if (trim($status) !== 'APPROVED' && trim($status) !== 'REVISION/EDITING') {
+            //         $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
+            //             <i class="fa fa-check-circle"></i> Approve</a>';
+            // }
+
+            // if (trim($status) == 'APPROVED') {
+            //     $disapproveBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToDisapproved(\'' . trim($lm->docno) . '\');">
+            //         <i class="fa fa-times-circle"></i> Disapprove</a>';
+            // }
+
+
+            $menuContent = '';
+
+            if ($status === 'CETAK/PRINT') {
+
+                // hanya detail jika ada akses
+                if ($canView) {
+                    $menuContent .= $detailBtn;
+                    $menuContent .= $printBtn;
+                }
+
+            } else {
+
+                // selain status tersebut → tampilkan sesuai hak akses
+                if ($canUpdate) $menuContent .= $updateBtn;
+                if ($canPrint)  $menuContent .= $printBtn;
+                if ($canView)   $menuContent .= $detailBtn;
+                if ($canApprove)   $menuContent .= $approveBtn;
+                if ($canApprove)   $menuContent .= $disapproveBtn;
+            }
+
+            // =========================
+            // Final Dropdown (jangan tampil kalau kosong)
+            // =========================
+            if ($menuContent !== '') {
+
+                $dropdownMenu = '
+                    <div class="dropdown">
+                        <button class="btn btn-primary btn-sm dropdown-toggle" 
+                                type="button" 
+                                data-bs-toggle="dropdown" 
+                                aria-expanded="false">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <div class="dropdown-menu">
+                            ' . $menuContent . '
+                        </div>
+                    </div>';
+
+            } else {
+
+                // Tidak punya hak akses apapun
+                $dropdownMenu = '';
+            }
+
+            $row[] = $no;
+            $row[] = $dropdownMenu;
+
+            $row[] = $lm->docno;
+            $row[] = date(
+                'd/m/Y',
+                strtotime(trim($lm->docdate))
+            );
+            $status = $lm->status_desc ?? $lm->status;
+            $badgeClass = 'badge-secondary'; // Default
+
+            switch (strtoupper($status)) {
+                case 'DRAFT':
+                    $badgeClass = 'badge-secondary';
+                    break;
+                case 'REVISION/EDITING':
+                    $badgeClass = 'badge-warning';
+                    break;
+                case 'FINAL USER':
+                    $badgeClass = 'badge-info';
+                    break;
+                case 'CETAK/PRINT':
+                    $badgeClass = 'badge-success ';
+                    break;
+                default:
+                    $badgeClass = 'badge-primary'; // Default (primary) jika status tidak dikenali
+                    break;
+            }
+
+            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
+
+            $row[] = $lm->kdsupplier;
+            $row[] = $lm->nmsupplier;
+            $row[] = $lm->alamatsupplier;
+            $row[] = $lm->nmkota;
+            $row[] = $lm->currcode;
+            // $row[] = date(
+            //     'd/m/Y',
+            //     strtotime(trim($lm->senddate))
+            // );
+            $docdate  = trim($lm->docdate);
+            $jthtempo = (int) $lm->jthtempo;
+
+            if (!empty($docdate)) {
+
+                $date = new \DateTime(trim($lm->docdate));
+                $date->modify("+{$jthtempo} days");
+
+                $jatuhTempo = $date->format('d/m/Y');
+
+            } else {
+                $jatuhTempo = '';
+            }
+
+            $row[] = $jatuhTempo;
+
+            $row[] = $lm->keterangan;
+            $row[] = $lm->nofaktur;
+            $row[] = $lm->nosj;
+
+            $row[] = $lm->nmbranch;
+            
+
+            $data[] = $row;
+        }
+
+        $output = array(
+            "draw" => $_POST['draw'],
+            "recordsTotal" => $this->m_purchase->t_front_lpb_view_count_all(),
+            "recordsFiltered" => $this->m_purchase->t_front_lpb_view_count_filtered(),
+            "data" => $data,
+        );
+        echo $this->fiky_encryption->jDatatable($output);
+    }
+
+    
+    function list_lpb_apprv(){
+        $list = $this->m_purchase->get_t_front_lpb_apprv_view();
+        $data = array();
+        $no = $_POST['start'];
+
+
+        $kmenu = 'I.P.A.6';
+        $nama=trim($this->session->get('nama'));
+        $role=trim($this->session->get('roleid'));
+
+        $datadtl['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
+        $dataanu['userinfo'] = $this->m_user->getUser(" and username='$nama'")->getRowArray();
+
+        $canUpdate = isset($datadtl['dtl_akses']['a_update']) && trim($datadtl['dtl_akses']['a_update']) === 't';
+        $canPrint = isset($datadtl['dtl_akses']['a_report']) && trim($datadtl['dtl_akses']['a_report']) === 't';
+        $canView = isset($datadtl['dtl_akses']['a_view']) && trim($datadtl['dtl_akses']['a_view']) === 't';
+        $canApprove = isset($datadtl['dtl_akses']['a_approve1']) && trim($datadtl['dtl_akses']['a_approve1']) === 't';
+
+        foreach ($list as $lm) {
+            $no++;
+            $row = array();
+
+            $status = strtoupper(trim($lm->status_desc));
+            $docno  = trim($lm->docno);
+            $docnoHex = bin2hex($docno);
+
+            
+            $updateBtn = '';
+            $detailBtn = '';
+            $printBtn  = '';
+            $approveBtn  = '';
+            $disapproveBtn  = '';
+
+            // =========================
+            // Build button by access
+            // =========================
+
+            if ($canUpdate && $status != "REVISION/EDITING" && $status != "APPROVED") {
+                $updateBtn = '
+                <a class="dropdown-item bg-warning" 
+                    href="' . base_url('purchase/trans/updateLPB') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'Update This LPB : ' . $docno . '\')">
+                    <i class="fa fa-edit"></i> Update LPB 
+                </a>';
+            }
+
+            if($canView){
+                $detailBtn = 
+                '<a class="dropdown-item" 
+                    style="background-color:#3badf6;" 
+                    href="' . base_url('purchase/trans/detailLPB') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'View Detail LPB : ' . $docno . '\')">
+                    <i class="fa fa-eye"></i> Detail LPB 
+                </a>';
+            }
+
+            if($canPrint){
+                $printBtn = '
+                <a class="dropdown-item" 
+                    style="background-color:#00ff8e;" 
+                    href="' . base_url('purchase/trans/show_lpb') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'Print LPB : ' . $docno . '\')">
+                    <i class="fa fa-print"></i> Print LPB 
+                </a>';
+            }
+
+
+            if (trim($status) !== 'APPROVED' && trim($status) !== 'REVISION/EDITING') {
+                    $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
+                        <i class="fa fa-check-circle"></i> Approve</a>';
+            }
+
+            if (trim($status) == 'APPROVED') {
+                $disapproveBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToDisapproved(\'' . trim($lm->docno) . '\');">
+                    <i class="fa fa-times-circle"></i> Disapprove</a>';
+            }
+
+
+            $menuContent = '';
+
+            if ($status === 'CETAK/PRINT') {
+
+                // hanya detail jika ada akses
+                if ($canView) {
+                    $menuContent .= $detailBtn;
+                    $menuContent .= $printBtn;
+                }
+
+            } else {
+
+                // selain status tersebut → tampilkan sesuai hak akses
+                if ($canUpdate) $menuContent .= $updateBtn;
+                if ($canPrint)  $menuContent .= $printBtn;
+                if ($canView)   $menuContent .= $detailBtn;
+                if ($canApprove)   $menuContent .= $approveBtn;
+                if ($canApprove)   $menuContent .= $disapproveBtn;
+            }
+
+            // =========================
+            // Final Dropdown (jangan tampil kalau kosong)
+            // =========================
+            if ($menuContent !== '') {
+
+                $dropdownMenu = '
+                    <div class="dropdown">
+                        <button class="btn btn-primary btn-sm dropdown-toggle" 
+                                type="button" 
+                                data-bs-toggle="dropdown" 
+                                aria-expanded="false">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <div class="dropdown-menu">
+                            ' . $menuContent . '
+                        </div>
+                    </div>';
+
+            } else {
+
+                // Tidak punya hak akses apapun
+                $dropdownMenu = '';
+            }
+
+            $row[] = $no;
+            $row[] = $dropdownMenu;
+
+            $row[] = $lm->docno;
+            $row[] = date(
+                'd/m/Y',
+                strtotime(trim($lm->docdate))
+            );
+            
+            $docdate  = trim($lm->docdate);
+            $jthtempo = (int) $lm->jthtempo;
+            
+            if (!empty($docdate)) {
+                
+                $date = new \DateTime(trim($lm->docdate));
+                $date->modify("+{$jthtempo} days");
+                
+                $jatuhTempo = $date->format('d/m/Y');
+                
+                } else {
+                    $jatuhTempo = '';
+                    }
+                    
+            $row[] = $jatuhTempo;
+            $row[] = date(
+                'd/m/Y',
+                strtotime(trim($lm->senddate))
+            );
+            $row[] = $lm->keterangan;
+            $row[] = $lm->kdsupplier;
+            $row[] = $lm->nmsupplier;
+            $status = $lm->status_desc ?? $lm->status;
+            $badgeClass = 'badge-secondary'; // Default
+
+            switch (strtoupper($status)) {
+                case 'DRAFT':
+                    $badgeClass = 'badge-secondary';
+                    break;
+                case 'REVISION/EDITING':
+                    $badgeClass = 'badge-warning';
+                    break;
+                case 'FINAL USER':
+                    $badgeClass = 'badge-info';
+                    break;
+                case 'CETAK/PRINT':
+                    $badgeClass = 'badge-success ';
+                    break;
+                default:
+                    $badgeClass = 'badge-primary'; // Default (primary) jika status tidak dikenali
+                    break;
+            }
+
+            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
+            // $row[] = $lm->alamatsupplier;
+            // $row[] = $lm->nmkota;
+
+            
+
+            $data[] = $row;
+        }
+
+        $output = array(
+            "draw" => $_POST['draw'],
+            "recordsTotal" => $this->m_purchase->t_front_lpb_apprv_view_count_all(),
+            "recordsFiltered" => $this->m_purchase->t_front_lpb_apprv_view_count_filtered(),
+            "data" => $data,
+        );
+        echo $this->fiky_encryption->jDatatable($output);
+    }
+
+    function clearEntryLPB()
+    {
+        $nama=trim($this->session->get('nama'));
+        $param = " and coalesce(inputby,'')='$nama'";
+        $dtl = $this->m_purchase->q_lpb_master_temp($param);
+        // if(isEmpty($dtl->getRowArray()['status'])){
+        //     return redirect()->to(base_url('purchase/trans/pp'));
+        // }
+        $status = trim($dtl->getRowArray()['status']);
+        $builder = $this->db->table('sc_tmp.lpb');
+        $builder_dtl = $this->db->table('sc_tmp.lpb_dtl');
+
+        if ($status==='I') {
+            // $builder= $this->db->table('sc_tmp.standart_usage_mst');
+            $builder->where('inputby',$nama);
+            $builder->delete();
+            // $builderDtl= $this->db->table('sc_tmp.pp');
+            // $builderDtl->where('inputby',$nama);
+            // $builderDtl->delete();
+            return redirect()->to(base_url('purchase/trans/lpb'));
+        } else if ($status==='E') {
+            $builder->where('inputby',$nama);
+            if ($builder->update(array('status' => 'C'))) {
+                $result = array('status' => true, 'messages' => 'Sukses Di Proses');
+                echo json_encode($result);
+                return redirect()->to(base_url('purchase/trans/lpb'));
+            }
+            else {
+                $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+                echo json_encode($result);
+            }
+        } else {
+                // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+                // echo json_encode($result);
+                return redirect()->to(base_url('purchase/trans/lpb'));
+        }
+
+    }
+
+    function addLPB()
+    {
+        /* Penambahan Squence */
+        $data['title']="Input Penerimaan Pembelian";
+        $dtlbranch=$this->m_global->q_branch()->getRowArray();
+        $branch=$dtlbranch['branch'];
+        /* CODE UNTUK VERSI*/
+        $nama=trim($this->session->get('nama'));
+        $kodemenu='I.P.A.6'; $versirelease='I.P.A.6/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
+        $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
+        $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
+        $data['kodemenu']=$kodemenu; $data['version']=$versidb;
+        $data['nama']=$nama; $data['version']=$versidb;
+        /* END CODE UNTUK VERSI */
+
+
+        $paramerror=" and userid='$nama' and modul='I.P.A.6'";
+        $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
+        $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
+        if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
+        if(isset($dtlerror['nomorakhir1'])) { $nomorakhir1=trim($dtlerror['nomorakhir1']); } else { $nomorakhir1='';  }
+        if(isset($dtlerror['errorcode'])) { $errorcode=trim($dtlerror['errorcode']); } else { $errorcode='';  }
+
+        if($count_err>0 and $errordesc<>''){
+            if ($dtlerror['errorcode']==0){
+                $data['message']="<div class='alert alert-info'>DATA SUCCESSFULLY PROCESSED $nomorakhir1 </div>";
+            } else {
+                $data['message']="<div class='alert alert-info'>$errordesc</div>";
+            }
+
+        }else {
+            if ($errorcode=='0'){
+                $data['message']="<div class='alert alert-info'>DATA SUCCESSFULLY PROCESSED $nomorakhir1 </div>";
+            } else {
+                $data['message']="";
+            }
+
+        }
+
+        $param = " and trim(inputby)='$nama'";
+        $data['mst'] = $this->m_purchase->q_lpb_master_temp($param)->getRowArray();
+        $logindate = trim($this->session->get('logindate'));
+
+        $data['typeform'] = 'INPUT';
+        $data['userlogin'] = $nama;
+        $param = " and trim(inputby)='$nama'";
+        $data['dtldata'] = $this->m_purchase->q_lpb_master_temp($param)->getRowArray();
+        $logindate  = trim($this->session->get('logindate'));
+        $ts    = strtotime($logindate);
+
+        $pterror = " and userid='$nama'";
+        $this->m_trxerror->q_deltrxerror($pterror);
+        return $this->template->render('purchase/lpb/v_add_lpb',$data);
+    }
+
+
+   public function getBranchInfoLPB()
+    {
+        $idbranch = trim($this->request->getGet('idbranch'));
+
+        $row = $this->db->table('sc_mst.branchjob')
+            ->select('nmbranch')
+            ->where('idbranch', $idbranch)
+            ->get()
+            ->getRowArray();
+
+        if (!$row) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Cabang tidak ditemukan'
+            ]);
+        }
+
+        // mapping nmbranch → kode suffix
+        $map = [
+            'PT JATIM TAMAN STEEL MFG' => 'PT',
+            'PLANT I'                 => 'PA',
+            'PLANT II'                => 'PB',
+        ];
+
+        $kodeSuffix = $map[trim($row['nmbranch'])] ?? '';
+
+        if ($kodeSuffix === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Mapping cabang belum diset'
+            ]);
+        }
+
+        $logindate = $this->session->get('logindate'); // dd-mm-yyyy
+        $infix = date('ym', strtotime($logindate));
+
+        return $this->response->setJSON([
+            'success'      => true,
+            'kode_suffix'  => $kodeSuffix,
+            'infix'        => $infix
+        ]);
+    }
+
+    public function getNextSuffixLPB()
+    {
+        $prefix      = trim($this->request->getGet('prefix'));
+        $infix       = trim($this->request->getGet('infix'));
+        $kodeSuffix  = trim($this->request->getGet('kode_suffix'));
+
+        $like = $prefix . '/' . $infix . '/' . $kodeSuffix;
+
+        $row = $this->db->table('sc_trx.lpb')
+            ->select('docno')
+            ->like('docno', $like, 'after')
+            ->orderBy('docno', 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRowArray();
+
+        if ($row) {
+            $parts = explode('/', $row['docno']);
+            $last  = substr($parts[2], 2); // ambil angka setelah PT/PA/PB
+            $next  = str_pad(((int)$last) + 1, 4, '0', STR_PAD_LEFT);
+        } else {
+            $next = '0001';
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'suffix'  => $kodeSuffix . $next
+        ]);
+    }
+
+    public function initLPBHeader()
+    {
+        $nama = trim($this->session->get('nama'));
+
+        $docno      = strtoupper($this->request->getPost('docno'));
+        $docdate    = $this->request->getPost('docdate');
+        $cabang     = $this->request->getPost('cabang');
+        $pemohon    = strtoupper($this->request->getPost('pemohon'));
+        // $estpakai   = $this->request->getPost('estpakai');
+        // $keterangan = strtoupper($this->request->getPost('keterangan'));
+
+        if (!$docno || !$docdate || !$cabang) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Header belum lengkap'
+            ]);
+        }
+
+        $builder = $this->db->table('sc_tmp.lpb');
+        $exists = $builder->where('docno', $docno)->countAllResults();
+
+        // HEADER SUDAH ADA → TIDAK PERLU RELOAD
+        if ($exists > 0) {
+            return $this->response->setJSON([
+                'success' => true,
+                'reload'  => false
+            ]);
+        }
+
+        // HEADER BARU → INSERT
+        $builder->insert([
+            'docno'      => $docno,
+            'docdate'    => $docdate,
+            'cabang'     => $cabang,
+            'pemohon'    => $pemohon,
+            // 'estpakai'   => $estpakai,
+            'status'     => 'E',
+            // 'keterangan' => $keterangan,
+            'inputby'    => $nama,
+            'inputdate'  => date('Y-m-d H:i:s')
+        ]);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'reload'  => true   // ⬅ PENTING
+        ]);
+    }
+
+
+
+    public function saveLPBDetail()
+    {
+        $nama   = trim($this->session->get('nama'));
+        $docno  = strtoupper(trim($this->request->getPost('docno')));
+        $docnopo = strtoupper(trim($this->request->getPost('docnopo')));
+        $idurut = $this->request->getPost('idurut'); // HAPUS strtoupper, biarkan apa adanya
+        
+        // Tambahkan mode untuk membedakan add/edit dengan lebih jelas
+        // $mode = $this->request->getPost('mode'); // 'add' atau 'edit'
+
+        if (!$docno || !$docnopo) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Docno atau Docno PP tidak boleh kosong'
+            ]);
+        }
+
+        $db = $this->db;
+        $db->transStart();
+
+        // =====================================================
+        // CEK / INSERT HEADER
+        // =====================================================
+        $builderHeader = $db->table('sc_tmp.lpb');
+
+        $exists = $builderHeader
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->countAllResults();
+
+        $reload = false;
+        // Untuk pengambilan data dari POST
+        
+        if ($exists == 0) {
+            $isinclusive = strtoupper(trim(
+                $this->request->getPost('isinclusive') 
+                ?? $dataprocess->isinclusive 
+                ?? 'NO'
+            ));
+
+            $isinclusive = ($isinclusive === 'YES') ? 'YES' : 'NO';
+
+            $builderHeader->insert([
+                'docno'     => $docno,
+                'cabang'     => $this->request->getPost('cabang'),
+                'docdate'   => date('Y-m-d', strtotime(trim($this->request->getPost('docdate')))),
+                // 'senddate'   => date('Y-m-d', strtotime(trim($this->request->getPost('senddate')))),
+                'jthtempo'     => $this->request->getPost('jthtempo'),
+                'isinclusive'     => $isinclusive,
+                
+                'kdsupplier'    => strtoupper($this->request->getPost('kdsupplier')),
+                'alamatsupplier'    => strtoupper($this->request->getPost('alamatsupplier')),
+                // 'alamatkirim'    => strtoupper($this->request->getPost('alamatkirim')),
+                'idtax'    => strtoupper($this->request->getPost('idtax')),
+                'biayavol'    => ($this->request->getPost('biayavol')),
+                'biayavol2'    => ($this->request->getPost('biayavol2')),
+                'nosj'    => strtoupper($this->request->getPost('nosj')),
+                'nofaktur'    => strtoupper($this->request->getPost('nofaktur')),
+                'currcode'    => strtoupper($this->request->getPost('currcode')),
+                'kurs'    => ($this->request->getPost('kurs')),
+                'keterangan'    => strtoupper($this->request->getPost('keterangan')),
+                'status'    => 'E',
+                'inputby'   => $nama,
+                'inputdate' => date('Y-m-d H:i:s')
+            ]);
+
+            $reload = true;
+        }
+
+        $builderDetail = $db->table('sc_tmp.lpb_dtl');
+        $insertCount = 0;
+        $message = '';
+
+        // CEK MODE: ADD atau EDIT
+        if (!empty($idurut)) {
+            $uniqueid = $this->request->getPost('uniqueid'); // HAPUS strtoupper, biarkan apa adanya
+            // =====================================================
+            // MODE EDIT - UPDATE DATA
+            // =====================================================
+            $qty         = $this->request->getPost('qty');
+            $qtybonus    = $this->request->getPost('qtybonus') ?: 0;
+            $harga       = $this->request->getPost('harga') ?: 0;
+            $multidisc   = $this->request->getPost('multidisc') ?: 0;
+            $volitem   = $this->request->getPost('volitem') ?: 0;
+            $biaya   = $this->request->getPost('biaya') ?: 0;
+            $biaya2   = $this->request->getPost('biaya2') ?: 0;
+            $nilai       = $this->request->getPost('nilai') ?: 0;
+            $descriptionpo = strtoupper($this->request->getPost('descriptionpo'));
+            $idprincipal = strtoupper($this->request->getPost('idprincipal'));
+            $idgudang = strtoupper($this->request->getPost('idgudang'));
+            $idspec = strtoupper($this->request->getPost('idspec'));
+
+            $builderDetail->where('uniqueid', $uniqueid)->update([
+                'qty'          => $qty,
+                'qtybonus'     => $qtybonus,
+                'harga'        => $harga,
+                'multidisc'    => $multidisc,
+                'nilai'        => $nilai,
+                'volitem'      => $volitem,
+
+                'biaya'      => $biaya,
+                'biaya2'      => $biaya2,
+                'idprincipal'      => $idprincipal,
+                'idgudang'      => $idgudang,
+                'idspec'      => $idspec,
+
+                'descriptionpo' => $descriptionpo,
+                'updateby'     => $nama,
+                'updatedate'   => date('Y-m-d H:i:s')
+            ]);
+
+
+
+            
+            
+            $message = 'Data berhasil diupdate';
+            
+        } else {
+            // =====================================================
+            // MODE ADD - INSERT DATA DARI PP
+            // =====================================================
+            $poDetails = $db->query("
+                SELECT 
+                    docno,
+                    idbarang,
+                    uniqueid,
+                    nmbarang,
+                    unit,
+                    qty,
+                    qtybonus,
+                    multidisc,
+                    harga,
+                    nilai,
+                    descriptionpo,
+                    descriptionpp
+                FROM sc_trx.po_dtl
+                WHERE TRIM(docno) = ?
+            ", [$docnopo])->getResult();
+
+            if (empty($poDetails)) {
+                $db->transRollback();   
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Data PO tidak ditemukan'
+                ]);
+            }
+
+            foreach ($poDetails as $row) {
+                // CEK APAKAH ITEM SUDAH ADA DI TMP
+                // $duplicate = $builderDetail
+                //     ->where('docno', $docno)
+                //     ->where('docnopp', $docnopp)
+                //     ->where('idbarang', $row->idbarang)
+                //     ->where('inputby', $nama)
+                //     ->countAllResults();
+
+                $duplicate = $builderDetail
+                    ->where('docno', $docno)
+                    ->where('uniqueid', $row->uniqueid)
+                    ->countAllResults();
+
+                if ($duplicate == 0) {
+                    $builderDetail->insert([
+                        'docno'         => $docno,
+                        'docnopo'       => $docnopo,
+                        'idbarang'      => $row->idbarang,
+                        'uniqueid'      => $row->uniqueid,
+                        'nmbarang'      => $row->nmbarang,
+                        'unit'          => $row->unit,
+                        'qty'           => $row->qty,
+                        'qtybonus'      => 0, // Default 0 untuk new insert
+                        'harga'         => $row->harga, // Default 0 untuk new insert
+                        'multidisc'     => 0, // Default 0 untuk new insert
+                        'volitem'     => 0, // Default 0 untuk new insert
+                        'biaya'     => 0, // Default 0 untuk new insert
+                        'biaya2'     => 0, // Default 0 untuk new insert
+                        'nilai'         => $row->nilai, // Default 0 untuk new insert
+                        'descriptionpp' => $row->descriptionpp,
+                        'descriptionpo' => $row->descriptionpo,
+                        'inputby'       => $nama,
+                        'inputdate'     => date('Y-m-d H:i:s')
+                    ]);
+
+                    $insertCount++;
+                }
+            }
+            
+            $message = $insertCount > 0 
+                        ? "$insertCount item berhasil ditambahkan"
+                        : "Semua item sudah ada sebelumnya";
+        }
+
+        $lpbHeader = $builderHeader->select('idtax')->where('docno', $docno)->get()->getRowArray();
+        $idtax = $lpbHeader['idtax'] ?? '';
+        
+        // Hitung total DPP (sum nilai dari po_dtl)
+        $builderTotalDpp = $db->table('sc_tmp.lpb_dtl');
+        $totalDpp = $builderTotalDpp->select('COALESCE(SUM(nilai), 0) as total_dpp')
+            ->where('docno', $docno)
+            ->get()
+            ->getRowArray();
+        
+        $dpp = $totalDpp['total_dpp'] ?? 0;
+        
+        // Hitung jumlah pajak berdasarkan idtax
+        $jumlahPajak = 0;
+        
+        if (!empty($idtax) && trim($idtax) !== 'NON'  && $dpp > 0) {
+            // Ambil detail tax dari sc_mst.tax_dtl
+            $builderTaxDtl = $db->table('sc_mst.tax_dtl');
+            $taxDetails = $builderTaxDtl->select('percentation')
+                ->where('idtax', $idtax)
+                ->get()
+                ->getResultArray();
+            
+            foreach ($taxDetails as $tax) {
+                $persentase = $tax['percentation'] ?? 0;
+                $jumlahPajak += $dpp * ($persentase / 100);
+            }
+        }
+        
+        // Hitung total (DPP + Jumlah Pajak)
+        $total = $dpp + $jumlahPajak;
+        
+        // Update header LPB
+        $builderHeader->where('docno', $docno)->update([
+            'dpp' => number_format($dpp, 2, '.', ''),
+            'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
+            'total' => number_format($total, 2, '.', ''),
+            'updateby' => $nama,
+            'updatedate' => date('Y-m-d H:i:s')
+        ]);
+
+        $db->transComplete();
+
+        return $this->response->setJSON([
+            'success' => true,
+            'reload'  => $reload,
+            'message' => $message
+        ]);
+    }
+
+
+    public function updateStatusLPB()
+    {
+        $docno = $this->request->getPost('docno');
+        $status = $this->request->getPost('status');
+        if (!$docno || !$status) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Parameter tidak lengkap'
+            ]);
+        }
+
+        $db = \Config\Database::connect();
+        $builder = $db->table('sc_trx.lpb');
+        $builder->where('docno', $docno);
+        /*tambahan sultan*/
+        $info = array('status' => $status);
+        $update = $builder->update($info);
+
+        if ($update) {
+            return $this->response->setJSON(['success' => true]);
+        } else {
+            return $this->response->setJSON(['success' => false, 'message' => 'Gagal update status']);
+        }
+    }
+
+
+
+    function updateLPB()
+    {
+        $nama = trim($this->session->get('nama'));
+        $docno = hex2bin($this->request->getGet('id'));
+        $param = " and coalesce(docno,'')='$docno'";
+        $dtl = $this->m_purchase->q_lpb_master($param)->getRowArray();
+        $status = trim($dtl['status']);
+
+        if ($status === 'F' || $status === 'P') {
+            // Update hanya status di tabel sc_trx.standart_usage_mst
+            $info = array(
+                'status' => 'E',
+            );
+            $builder = $this->db->table('sc_trx.lpb');
+            $builder->where('trim(docno)', $docno);
+            $builder->update($info);
+
+            // Redirect ke halaman addStdUsage
+            return redirect()->to(base_url('purchase/trans/addLPB'));
+        } else {
+            // Jika status bukan 'F', redirect ke halaman mrpgroup
+            return redirect()->to(base_url('purchase/trans/lpb'));
+        }
+    }
+
+    function showing_lpbtrx(){
+        $nama=trim($this->session->get('nama'));
+        $docno = trim($this->request->getGet('docno')); // Ambil parameter docno dari Ajax
+
+        $param = " and docno='$docno'";
+        $data = $this->m_purchase->q_lpb_master($param);
+        $output = array(
+            'status' => true,
+            'total_count' => $data->getNumRows(),
+            'items' => $data->getResult(),
+            'incomplete_getResults' => false,
+        );
+        echo $this->fiky_encryption->jDatatable($output);
+    }
+
+    function showing_lpbtemp(){
+        $docno = trim($this->request->getGet('docno')); // ambil dari GET
+        $nama=trim($this->session->get('nama'));
+        $param = " and docno='$docno'";
+        $data = $this->m_purchase->q_lpb_master_temp($param);
+        $output = array(
+            'status' => true,
+            'total_count' => $data->getNumRows(),
+            'items' => $data->getResult(),
+            'incomplete_getResults' => false,
+        );
+        echo $this->fiky_encryption->jDatatable($output);
+    }
+
+    function showing_lpb_dtl($id){
+        $nama = trim($this->session->get('nama'));
+        $data = $this->m_purchase->q_lpb_dtl_temp(" and docno='$nama' and idurut='$id'")->getRow();
+        echo json_encode($data);
+    }
+
+
+
+    public function get_lpb_detail()
+    {
+        $id = $this->request->getGet('id');
+
+        $row = $this->db->table('sc_tmp.lpb_dtl')
+            ->where('idurut', $id)
+            ->get()
+            ->getRowArray();
+
+        if (!$row) {
+            return $this->response->setJSON([
+                'status' => false,
+                'message' => 'Data tidak ditemukan'
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'status' => true,
+            'data'   => $row
+        ]);
+    }
+
+    public function delete_lpb_detail()
+    {
+        $request = service('request');
+        $db      = \Config\Database::connect();
+        $builder = $db->table('sc_tmp.lpb_dtl');
+        $nama    = trim($this->session->get('nama'));
+
+        $ids = $request->getPost('ids');
+
+        if (empty($ids)) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Parameter ids tidak boleh kosong'
+            ]);
+        }
+
+        if (!is_array($ids)) {
+            $ids = [$ids];
+        }
+
+        $db->transBegin();
+
+        try {
+
+            // ======================================
+            // AMBIL DOCNO DARI DETAIL
+            // ======================================
+            $rows = $builder
+                ->select('docno')
+                ->whereIn('idurut', $ids)
+                ->get()
+                ->getResultArray();
+
+            if (empty($rows)) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Data tidak ditemukan'
+                ]);
+            }
+
+            // karena Anda yakin semua docno sama
+            $docno = $rows[0]['docno'];
+
+            // OPTIONAL VALIDATION (lebih aman)
+            foreach ($rows as $r) {
+                if ($r['docno'] !== $docno) {
+                    $db->transRollback();
+                    return $this->response->setJSON([
+                        'status'  => false,
+                        'message' => 'Docno tidak konsisten'
+                    ]);
+                }
+            }
+
+            // ======================================
+            // DELETE DETAIL
+            // ======================================
+            $builder
+                ->whereIn('idurut', $ids)
+                ->delete();
+
+            if ($db->affectedRows() === 0) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Data tidak ditemukan'
+                ]);
+            }
+
+            // ======================================
+            // RECALCULATE HEADER
+            // ======================================
+            $builderHeader = $db->table('sc_tmp.lpb');
+
+            $lpbHeader = $builderHeader
+                ->select('idtax')
+                ->where('docno', $docno)
+                ->get()
+                ->getRowArray();
+
+            $idtax = $lpbHeader['idtax'] ?? '';
+
+            $builderTotalDpp = $db->table('sc_tmp.lpb_dtl');
+            $totalDpp = $builderTotalDpp
+                ->select('COALESCE(SUM(nilai), 0) as total_dpp')
+                ->where('docno', $docno)
+                ->get()
+                ->getRowArray();
+
+            $dpp = $totalDpp['total_dpp'] ?? 0;
+
+            $jumlahPajak = 0;
+
+            if (!empty($idtax) && trim($idtax) !== 'NON' && $dpp > 0) {
+
+                $builderTaxDtl = $db->table('sc_mst.tax_dtl');
+                $taxDetails = $builderTaxDtl
+                    ->select('percentation')
+                    ->where('idtax', $idtax)
+                    ->get()
+                    ->getResultArray();
+
+                foreach ($taxDetails as $tax) {
+                    $persentase = $tax['percentation'] ?? 0;
+                    $jumlahPajak += $dpp * ($persentase / 100);
+                }
+            }
+
+            $total = $dpp + $jumlahPajak;
+
+            $builderHeader
+                ->where('docno', $docno)
+                ->update([
+                    'dpp'         => number_format($dpp, 2, '.', ''),
+                    'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
+                    'total'       => number_format($total, 2, '.', ''),
+                    'updateby'    => $nama,
+                    'updatedate'  => date('Y-m-d H:i:s')
+                ]);
+
+            $db->transCommit();
+
+            return $this->response->setJSON([
+                'status'  => true,
+                'message' => 'Data PO Detail berhasil dihapus'
+            ]);
+
+        } catch (\Throwable $e) {
+
+            $db->transRollback();
+
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    function list_tmp_lpb_dtl(){
+        $docno = trim($this->request->getPost('docno')); // ambil dari POST
+        $list = $this->m_purchase->get_t_lpb_dtl_temp_view($docno);
+        $data = array();
+        $no = $_POST['start'];
+        foreach ($list as $lm) {
+            $no++;
+            $row = array();
+            // $row[] = $no;
+            $row[] = $lm->idurut;
+            //item
+            $row[] = $lm->docnopo;
+            $row[] = $lm->idbarang;
+            $row[] = $lm->nmbarang;
+            $row[] = $lm->idprincipal;
+            $row[] = $lm->idgudang;
+            $row[] = $lm->idspec;
+            $row[] = $lm->unit;
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->harga, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 0, '.', ',') . '% </div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 0, '.', ',') . '</div>';
+            $row[] = $lm->descriptionpo;
+            $row[] = $lm->descriptionpp;
+            $data[] = $row;
+        }
+
+        $output = array(
+            "draw" => $_POST['draw'],
+            "recordsTotal" => $this->m_purchase->t_lpb_dtl_temp_view_count_all($docno),
+            "recordsFiltered" => $this->m_purchase->t_lpb_dtl_temp_view_count_filtered($docno),
+            "data" => $data,
+        );
+        echo $this->fiky_encryption->jDatatable($output);
+    }
+
+    function list_trx_lpb_dtl(){
+        $docno = trim($this->request->getPost('docno')); // ambil dari POST
+        $list = $this->m_purchase->get_t_lpb_dtl_view($docno);
+        $data = array();
+        $no = $_POST['start'];
+        foreach ($list as $lm) {
+            $no++;
+            $row = array();
+            // $row[] = $no;
+            $row[] = $lm->idurut;
+            //item
+            $row[] = $lm->docnopo;
+            $row[] = $lm->idbarang;
+            $row[] = $lm->nmbarang;
+            $row[] = $lm->idprincipal;
+            $row[] = $lm->idgudang;
+            $row[] = $lm->idspec;
+            $row[] = $lm->unit;
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->harga, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 0, '.', ',') . '</div>';
+            $row[] = $lm->descriptionpo;
+            $row[] = $lm->descriptionpp;
+            $data[] = $row;   
+            
+        }
+
+        $output = array(
+            "draw" => $_POST['draw'],
+            "recordsTotal" => $this->m_purchase->t_lpb_dtl_view_count_all($docno),
+            "recordsFiltered" => $this->m_purchase->t_lpb_dtl_view_count_filtered($docno),
+            "data" => $data,
+        );
+        echo $this->fiky_encryption->jDatatable($output);
+    }
+
+
+    function finalEntryLPB(){
+        $nama = trim($this->session->get('nama'));
+        // $loccode = trim($this->session->get('loccode'));
+        $param = " and coalesce(inputby,'')='$nama'";
+        $paramdtl = " AND COALESCE(inputby, '') = '$nama' AND (COALESCE(unit, '') = ''  OR qty = '0.00' OR qty = '0' OR COALESCE(nmbarang, '') = '' OR COALESCE(descriptionpo, '') = '') ";
+        $paramdtl2 = " and coalesce(inputby,'')='$nama'";
+
+        $header = $this->m_purchase->q_lpb_master_temp($param);
+        $status = trim($header->getRowArray()['status']);
+        $cek = $this->m_purchase->q_lpb_dtl_temp($paramdtl);
+        $cek2 = $this->m_purchase->q_lpb_dtl_temp($paramdtl2);
+
+
+        $builder = $this->db->table('sc_tmp.lpb');
+
+        //INSERT TRX ERROR
+        $builder_trxerror = $this->db->table('sc_mst.trxerror');
+        $builder_trxerror->where('userid', $nama);
+        $builder_trxerror->where('modul', 'I.P.A.6');
+        $builder_trxerror->delete();
+
+
+        if (($status==='E' and $cek->getNumRows() > 0) or ($cek2->getNumRows() <= '0'))
+        {
+            $infotrxerror = array(
+                'userid' => $nama,
+                'errorcode' => 3,
+                'nomorakhir1' => $cek->getNumRows(),
+                'nomorakhir2' => $cek2->getNumRows(),
+                'modul' => 'I.P.A.6',
+            );
+            $builder_trxerror->insert($infotrxerror);
+
+            return redirect()->to(base_url('/purchase/trans/addLPB'));
+        } else {
+            // Ambil dari request POST
+            // $pemohon = strtoupper(trim($this->request->getPost('pemohon')));
+            $docdate   = trim($this->request->getPost('docdate'));
+            // $senddate   = trim($this->request->getPost('senddate'));
+            $jthtempo   = trim($this->request->getPost('jthtempo'));
+            $kdsupplier   = trim($this->request->getPost('kdsupplier'));
+            $alamatsupplier   = trim($this->request->getPost('alamatsupplier'));
+            // $alamatkirim   = trim($this->request->getPost('alamatkirim'));
+            $keterangan   = trim($this->request->getPost('keterangan'));
+            $currcode   = trim($this->request->getPost('currcode'));
+            // $kurs   = trim($this->request->getPost('kurs'));
+            // $isinclusive   = trim($this->request->getPost('isinclusive'));
+            $idtax   = trim($this->request->getPost('idtax'));
+            $keterangan   = trim($this->request->getPost('keterangan'));
+            $isinclusive = $this->request->getPost('isinclusive') ? 'YES' : 'NO';
+
+
+            
+            // **BERSIHKAN FORMAT KURS**
+            $kurs = trim($this->request->getPost('kurs'));
+            $kurs_clean = 0;
+            if (!empty($kurs)) {
+                $kurs_clean = str_replace(',', '', $kurs);
+                // $kurs_clean = str_replace('.', '.', $kurs_clean);
+                // $kurs_clean = floatval($kurs_clean);
+            }
+
+             // Convert expdate ke format YYYY-MM-DD
+            $docdateph = null;
+            if (!empty($docdate)) {
+                $docdateph = date('Y-m-d', strtotime(str_replace('-', '/', $docdate)));
+            }
+
+            // $senddateph = null;
+            // if (!empty($senddate)) {
+            //     $senddateph = date('Y-m-d', strtotime(str_replace('-', '/', $senddate)));
+            // }
+
+            // Update data header dulu sebelum set status F
+            $updateHeader = [
+                'docdate'        => $docdateph,
+                // 'senddate'       => $senddateph,
+                'jthtempo'       => $jthtempo,
+                'kdsupplier'     => strtoupper($kdsupplier),
+                'alamatsupplier' => strtoupper($alamatsupplier),
+                // 'alamatkirim'    => strtoupper($alamatkirim),
+                'keterangan'     => strtoupper($keterangan),
+                'currcode'       => $currcode,
+                'kurs'           => $kurs_clean,
+                'isinclusive'    => strtoupper($isinclusive),
+                'idtax'          => strtoupper($idtax),
+                'keterangan'         => strtoupper($keterangan)
+                // 'pemohon'       => $pemohon (jika masih diperlukan nanti bisa ditambahkan)
+            ];
+
+            $builder->where('inputby', $nama);
+            $builder->update($updateHeader);
+
+            $info = array(
+                'status' => 'F'
+            );
+            $builder->where('inputby',$nama);
+            if ($builder->update($info)) {
+                $paramerror=" and userid='$nama' and modul='I.P.A.6'";
+                $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
+                $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
+
+                // $docno = trim(bin2hex(trim($dtlerror['nomorakhir1'])));
+
+                return redirect()->to(base_url('/purchase/trans/lpb'));
+            } else {
+                $infotrxerror = array(
+                    'userid' => $nama,
+                    'errorcode' => 3,
+                    'nomorakhir1' => $cek->getNumRows(),
+                    'nomorakhir2' => $cek2->getNumRows(),
+                    'modul' => 'I.P.A.6',
+                );
+                $builder_trxerror->insert($infotrxerror);
+                return redirect()->to(base_url('/purchase/trans/addLPB'));
+            }
+
+
+
+        }
+
+    }
+
+
+    function show_lpb(){
+        $nama = trim($this->session->get('nama'));
+        $docno = $this->request->getGet('docno');  // Mengambil 'docno' dari URL
+        //$docdate = $this->request->getPost('docdate');
+        // $idlocation = $this->request->getPost('idlocation');
+        // $idgroup = $this->request->getPost('idgroup');
+        // $formheader = $this->request->getPost('formheader');
+        $nama = trim($this->session->get('nama'));
+        // $docno = hex2bin($this->request->getGet('docno'));
+        $docno = hex2bin($docno);
+        $builder = $this->db->table('sc_trx.lpb');
+
+       $builder = $builder
+            ->where('docno', $docno)
+            ->update([
+                'status'=> 'P',
+                'printby' => $nama,
+                'printdate' => date('Y-m-d H:i:s')
+            ]);
+
+        
+        $enc_docno = $this->fiky_encryption->sealed($docno);
+        
+        //$enc_docdate= $this->fiky_encryption->sealed($docdate);
+        // $enc_idlocation = $this->fiky_encryption->sealed($idlocation);
+        // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
+        // $enc_formheader = $this->fiky_encryption->sealed($formheader);
+
+        $title = " Report Void Permintaan Pembelian";
+
+        //$datajson =  base_url("manufactur/production/api_pp/?enc_idbarang=$enc_idbarang&enc_docdate=$enc_docdate&enc_idlocation=$enc_idlocation&enc_idgroup=$enc_idgroup") ;
+        $datajson =  base_url("purchase/trans/api_lpb/?enc_docno=$enc_docno") ;
+
+        // if($formheader==="HEADER"){
+            $datamrt =  base_url("assets/mrt/report_lpb.mrt") ;
+        // } else {
+        //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
+        // }
+
+        return $this->fiky_report->render($datajson,$datamrt,$title,$nama);
+    }
+
+    function api_lpb(){
+        $nama = trim($this->session->get('nama'));
+
+        $dtlbranch = $this->m_global->q_master_branch()->getRowArray();
+        $branch = strtoupper(trim($dtlbranch['branch']));
+        $docno=trim($this->fiky_encryption->unseal($this->request->getGet('enc_docno')));
+        //$docdate=trim($this->fiky_encryption->unseal($this->request->getGet('enc_docdate')));
+        // $idlocation=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idlocation')));
+        // $idgroup=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idgroup')));
+        //$docno=trim($this->request->getGet('enc_docno'));
+
+       // $ddate = explode(' - ',$docdate);
+       // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
+       // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
+
+        if (empty($docno) or $docno==='') {
+            $param_brg = "";
+        } else {
+            $param_brg = " and docno='$docno'";
+        }
+
+        // //idgroup
+        // if (!empty($idgroup)) {
+        //     $param_group=" and idgroup='$idgroup'";
+        // } else {  $param_group=""; }
+
+
+        $databranch = $this->m_global->q_master_branch();
+        $param=" and docno='$docno'";
+        $datamst = $this->m_purchase->q_lpb_master($param);
+        $datadtl = $this->m_purchase->q_lpb_dtl($param);
         $tampungdtl = $datamst->getResult();
         $detail = $tampungdtl[0] ?? null;        
         if ($detail) {
