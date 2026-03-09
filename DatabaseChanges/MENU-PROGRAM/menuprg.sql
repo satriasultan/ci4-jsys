@@ -55,7 +55,8 @@ INSERT INTO sc_mst.menuprg (
 ('JTS', 3, 'I.P.A.3', 'PURCHASE ORDER (PO)', 'I.P', 'I.P.A', 'P', false, 'fa-lightbulb-o', 'purchase/trans/po', 'LEFT', 'NO'),
 ('JTS', 4, 'I.P.A.4', 'VOID PO', 'I.P', 'I.P.A', 'P', false, 'fa-lightbulb-o', 'purchase/trans/voidpo', 'LEFT', 'NO'),
 ('JTS', 5, 'I.P.A.5', 'UANG MUKA PEMBELIAN', 'I.P', 'I.P.A', 'P', false, 'fa-lightbulb-o', 'purchase/trans/ump', 'LEFT', 'NO'),
-('JTS', 6, 'I.P.A.6', 'PENERIMAAN PEMBELIAN', 'I.P', 'I.P.A', 'P', false, 'fa-lightbulb-o', 'purchase/trans/lpb', 'LEFT', 'NO');
+('JTS', 6, 'I.P.A.6', 'PENERIMAAN PEMBELIAN', 'I.P', 'I.P.A', 'P', false, 'fa-lightbulb-o', 'purchase/trans/lpb', 'LEFT', 'NO'),
+('JTS', 7, 'I.P.A.7', 'RETUR PEMBELIAN', 'I.P', 'I.P.A', 'P', false, 'fa-lightbulb-o', 'purchase/trans/returbeli', 'LEFT', 'NO');
 
 --update sc_mst.menuprg set urut=2 where kodemenu='I.P';
 

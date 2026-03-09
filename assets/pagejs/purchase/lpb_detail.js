@@ -268,7 +268,7 @@ function documentReadable(){
 
 function setToApproved(docno) {
     Swal.fire({
-        title: 'Set Void PO menjadi Approve?',
+        title: 'Set Retur Beli menjadi Approve?',
         text: "Status dokumen akan diubah menjadi Approve",
         icon: 'question',
         showCancelButton: true,
@@ -305,7 +305,7 @@ function setToApproved(docno) {
 
 function setToDisapproved(docno) {
     Swal.fire({
-        title: 'Set Void PO menjadi Disapprove?',
+        title: 'Set Retur Beli menjadi Disapprove?',
         text: "Status dokumen akan diubah menjadi Disapprove",
         icon: 'warning',
         showCancelButton: true,
@@ -718,7 +718,7 @@ function btnUpdateDetail(){
                 // setSelect2Ajax('#idbarang', res.data.idbarang, res.data.idbarang);
                 // setSelect2Ajax('#docnopp', res.data.docnopp, res.data.keterangan);
 
-                $('#modalUpdateLPBLabel').text('Update Void PO Detail');
+                $('#modalUpdateLPBLabel').text('Update Retur Beli Detail');
                 $('#modalUpdateLPB').modal('show');
 
             }else{
@@ -909,7 +909,7 @@ function saveLPBDetail() {
 
     Swal.fire({
         title: 'Konfirmasi',
-        text: 'Simpan data Void PO Detail?',
+        text: 'Simpan data Retur Beli Detail?',
         icon: 'question',
         showCancelButton: true,
         confirmButtonText: 'Ya, Simpan',

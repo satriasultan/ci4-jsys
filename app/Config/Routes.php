@@ -305,6 +305,38 @@ $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], f
 
 
 
+    
+    $routes->add('returbeli', 'Purchase::returbeli');
+    $routes->add('list_returbeli', 'Purchase::list_returbeli');
+    $routes->add('list_returbeli_apprv', 'Purchase::list_returbeli_apprv');
+    
+    $routes->add('addReturBeli', 'Purchase::addReturBeli');
+    $routes->add('detailReturBeli', 'Purchase::detailReturBeli');
+    $routes->add('list_tmp_returbeli_dtl', 'Purchase::list_tmp_returbeli_dtl');
+    // $routes->add('showing_sikbsp_mst', 'Purchase::showing_sikbsp_mst');
+    
+    $routes->add('clearEntryReturBeli', 'Purchase::clearEntryReturBeli');
+    $routes->add('finalEntryReturBeli', 'Purchase::finalEntryReturBeli');
+    $routes->add('showing_returbelitemp', 'Purchase::showing_returbelitemp');
+    $routes->add('updateStatusReturBeli', 'Purchase::updateStatusReturBeli');
+
+    
+    $routes->add('save_returbeli_detail', 'Purchase::save_returbeli_detail');
+    $routes->get('updateReturBeli(:any)', 'Purchase::updateReturBeli$1');
+
+    $routes->add('deleteReturBeliDtl', 'Purchase::deleteReturBeliDtl');
+    $routes->add('show_returbeli', 'Purchase::show_returbeli');
+    $routes->add('api_returbeli(:any)', 'Purchase::api_returbeli$1');
+    $routes->add('list_trx_returbeli_dtl', 'Purchase::list_trx_returbeli_dtl');
+    $routes->add('showing_returbelitrx', 'Purchase::showing_returbelitrx');
+    $routes->add('getBranchInfoReturBeli', 'Purchase::getBranchInfoReturBeli');
+    $routes->add('getNextSuffixReturBeli', 'Purchase::getNextSuffixReturBeli');
+    $routes->add('initReturBeliHeader', 'Purchase::initReturBeliHeader');
+    $routes->add('saveReturBeliDetail', 'Purchase::saveReturBeliDetail');
+    $routes->add("get_returbeli_detail(:any)", "Purchase::get_returbeli_detail$1");
+    $routes->add("delete_returbeli_detail", "Purchase::delete_returbeli_detail");
+
+
 
 });
 
@@ -526,6 +558,7 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
 
     $routes->add('globalmodule/list_pp', 'Globalmodule::list_pp');
     $routes->add('globalmodule/list_po', 'Globalmodule::list_po');
+    $routes->add('globalmodule/list_lpb', 'Globalmodule::list_lpb');
 
     $routes->add('globalmodule/list_branchjob', 'Globalmodule::list_branchjob');
 

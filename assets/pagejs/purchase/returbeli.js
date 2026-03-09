@@ -14,10 +14,10 @@ var table;
 var initTable;
 //"use strict";
 
-function tableLPBTrx(){
+function tableReturBeliTrx(){
     // var lg = languageDatatable;
     var initTable = function () {
-        var table = $('#tablelpbTrx');
+        var table = $('#tablereturbeliTrx');
         table.DataTable({
             "processing": true, //Feature control the processing indicator.
             "serverSide": true, //Feature control DataTables' server-side processing mode.
@@ -40,7 +40,7 @@ function tableLPBTrx(){
                 'pageLength','excel'
             ],
             "ajax": {
-                "url": HOST_URL + 'purchase/trans/list_lpb',
+                "url": HOST_URL + 'purchase/trans/list_returbeli',
                 "type": "POST",
                 "data": function(data) {
                     data.tglrange = $('#tglrange').val();
@@ -74,21 +74,21 @@ function tableLPBTrx(){
     return initTable();
 }
 
-function reload_tableLPBTrx()
+function reload_tableReturBeliTrx()
 {
-    var table = $('#tablelpbTrx');
+    var table = $('#tablereturbeliTrx');
     table.DataTable().ajax.reload(); //reload datatable ajax
     //console.log('HALO HALO BANDUNG');
 }
 
 $('#btn-filter-tx').click(function(){ //button filter event click
-    var table = $('#tablelpbTrx');
+    var table = $('#tablereturbeliTrx');
     table.DataTable().ajax.reload(); //reload datatable ajax
     $('#filter').modal('hide');
 });
 $('#btn-reset-tx').click(function(){ //button reset event click
     $('#form-filter')[0].reset();
-    var table = $('#tablelpbTrx');
+    var table = $('#tablereturbeliTrx');
     table.DataTable().ajax.reload(); //reload datatable ajax
     $('#filter').modal('hide');
 });
@@ -108,7 +108,7 @@ function documentReadable(){
 
     $.ajax({
         type: 'GET',
-        url: HOST_URL + 'purchase/trans/showing_lpbtemp',
+        url: HOST_URL + 'purchase/trans/showing_returbelitemp',
         data: { docno: docno },
         dataType: 'json',
         dataFilter: function(data) {
@@ -214,8 +214,8 @@ function documentReadable(){
             $('[name="docdate"]').val(json.dataTables.items[0].docdate);
             // $('[name="senddate"]').val(json.dataTables.items[0].senddate);
             setJtsValue('[name="jthtempo"]', convertToDbNumber(json.dataTables.items[0].jthtempo));
-            setJtsValue('[name="biayavol"]', convertToDbNumber(json.dataTables.items[0].biayavol));
-            setJtsValue('[name="biayavol2"]', convertToDbNumber(json.dataTables.items[0].biayavol2));
+            // setJtsValue('[name="biayavol"]', convertToDbNumber(json.dataTables.items[0].biayavol));
+            // setJtsValue('[name="biayavol2"]', convertToDbNumber(json.dataTables.items[0].biayavol2));
             setJtsValue('[name="kurs"]', convertToDbNumber(json.dataTables.items[0].kurs));
             $('[name="isinclusive"]').prop(
                 'checked',
@@ -226,7 +226,7 @@ function documentReadable(){
             // $('[name="alamatkirim"]').val(json.dataTables.items[0].alamatkirim);
             // $('[name="isinclusive"]').val(json.dataTables.items[0].isinclusive);
             $('[name="keterangan"]').val(json.dataTables.items[0].keterangan);
-            $('[name="syarat"]').val(json.dataTables.items[0].syarat);
+            $('[name="complain"]').val(json.dataTables.items[0].complain);
 
             setJtsValue('[name="dpp"]', convertToDbNumber(json.dataTables.items[0].dpp));
             setJtsValue('[name="jumlahpajak"]', convertToDbNumber(json.dataTables.items[0].jumlahpajak));
@@ -271,7 +271,7 @@ function formatPrincipalSelection(repo) {
 $("#idprincipal").select2({
     placeholder: "Ketik/Pilih Principal",
     allowClear: true,
-    // dropdownParent: $('#modalUpdateLPB'),
+    // dropdownParent: $('#modalUpdateReturBeli'),
     width: '100%',
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_principal',
@@ -327,7 +327,7 @@ function setToApproved(docno) {
     }).then((result) => {
         if (result.isConfirmed) {
             $.ajax({
-                url: HOST_URL + '/purchase/trans/updateStatusLPB',
+                url: HOST_URL + '/purchase/trans/updateStatusReturBeli',
                 type: 'POST',
                 data: { docno: docno, status: 'A' },
                 dataType: 'json',
@@ -338,7 +338,7 @@ function setToApproved(docno) {
                             title: 'Berhasil',
                             text: 'Status berhasil diubah menjadi Approve'
                         }).then(() => {
-                            reload_tableLPBTrx()
+                            reload_tableReturBeliTrx()
                         });
                     } else {
                         Swal.fire('Gagal', res.message || 'Terjadi kesalahan', 'error');
@@ -364,7 +364,7 @@ function setToDisapproved(docno) {
     }).then((result) => {
         if (result.isConfirmed) {
             $.ajax({
-                url: HOST_URL + '/purchase/trans/updateStatusLPB',
+                url: HOST_URL + '/purchase/trans/updateStatusReturBeli',
                 type: 'POST',
                 data: { docno: docno, status: 'F' },
                 dataType: 'json',
@@ -375,7 +375,7 @@ function setToDisapproved(docno) {
                             title: 'Berhasil',
                             text: 'Status berhasil diubah menjadi Disapprove'
                         }).then(() => {
-                            reload_tableLPBTrx()
+                            reload_tableReturBeliTrx()
                         });
                     } else {
                         Swal.fire('Gagal', res.message || 'Terjadi kesalahan', 'error');
@@ -390,13 +390,13 @@ function setToDisapproved(docno) {
 }
 
 
-var defaultInitialPO = '';
-$("#docnopo").select2({
-    placeholder: "Choose Your PO",
+var defaultInitialLPB = '';
+$("#docnolpb").select2({
+    placeholder: "Choose Your LPB",
     allowClear: true,
     width:'100%',
     ajax: {
-        url: HOST_URL + 'api/globalmodule/list_po',
+        url: HOST_URL + 'api/globalmodule/list_lpb',
         type: 'POST',
         dataType: 'json',
         delay: 250,
@@ -407,8 +407,8 @@ $("#docnopo").select2({
                 _draw_: true,
                 _start_: 1,
                 _perpage_: 2,
-                _paramglobal_: defaultInitialPO,
-                _parameterx_: defaultInitialPO,
+                _paramglobal_: defaultInitialLPB,
+                _parameterx_: defaultInitialLPB,
                 term: params.term,
             };
         },
@@ -440,8 +440,8 @@ $("#docnopo").select2({
         return markup;
     }, // let our custom formatter work
     // minimumInputLength: 1,
-    templateResult: formatPO, // omitted for brevity, see the source of this page
-    templateSelection: formatPOSelection // omitted for brevity, see the source of this page
+    templateResult: formatLPB, // omitted for brevity, see the source of this page
+    templateSelection: formatLPBSelection // omitted for brevity, see the source of this page
 }).on("select2:select", function (e) {
     var data = e.params.data;
     // $('[name="nmbarang"]').val(data.nmbarang.trim()).prop("readonly", true);
@@ -450,12 +450,12 @@ $("#docnopo").select2({
 });
 
 /* Format Group */
-function formatPO(repo) {
+function formatLPB(repo) {
     if (repo.loading) return repo.text;
     var markup ="<div class='select2-result-repository__description'>" + repo.docno +"   <i class='fa fa-circle-o'></i>   "+ repo.keterangan +"</div>";
     return markup;
 }
-function formatPOSelection(repo) {
+function formatLPBSelection(repo) {
     return repo.keterangan || repo.text;
 }
 
@@ -600,10 +600,10 @@ $(document).on('input', '.jtsseparator', function () {
 
 
 /* TABLE PO DETAIL */
-function tableLPBDetail(){
+function tableReturBeliDetail(){
         /* Tabel PO Detail */
     var initTable = function () {
-        var table = $('#tablpbdtl');
+        var table = $('#tabreturbelidtl');
         table.DataTable({
             "processing": true, //Feature control the processing indicator.
             "serverSide": true, //Feature control DataTables' server-side processing mode.
@@ -618,7 +618,7 @@ function tableLPBDetail(){
             "bFilter":true,
             "iDisplayLength": -1,
             "ajax": {
-                "url": HOST_URL + 'purchase/trans/list_tmp_lpb_dtl',
+                "url": HOST_URL + 'purchase/trans/list_tmp_returbeli_dtl',
                 "type": "POST",
                 "data": function(data) {
                     //data.searchfilter = $('#searchitem').val()+'';
@@ -659,34 +659,34 @@ function tableLPBDetail(){
 }
 
 
-function reload_table_lpb_dtl()
+function reload_table_returbeli_dtl()
 {
-    var table = $('#tablpbdtl');
+    var table = $('#tabreturbelidtl');
     table.DataTable().ajax.reload(); //reload datatable ajax
 }
 
 
 
 // CHECK ALL
-$('#tablpbdtl thead').on('change', '#checkAll', function () {
+$('#tabreturbelidtl thead').on('change', '#checkAll', function () {
     const checked = this.checked;
 
-    $('#tablpbdtl tbody .row-check').prop('checked', checked);
+    $('#tabreturbelidtl tbody .row-check').prop('checked', checked);
 });
 
 // JIKA SALAH SATU ROW UNCHECK → CHECKALL MATI
-$('#tablpbdtl tbody').on('change', '.row-check', function () {
-    const total = $('#tablpbdtl tbody .row-check').length;
-    const checked = $('#tablpbdtl tbody .row-check:checked').length;
+$('#tabreturbelidtl tbody').on('change', '.row-check', function () {
+    const total = $('#tabreturbelidtl tbody .row-check').length;
+    const checked = $('#tabreturbelidtl tbody .row-check:checked').length;
 
     $('#checkAll').prop('checked', total === checked);
 });
 
-$('#tablpbdtl').on('draw.dt', function () {
+$('#tabreturbelidtl').on('draw.dt', function () {
     $('#checkAll').prop('checked', false);
 });
-function getSelectedLPBDetail(){
-    return $('#tablpbdtl tbody .row-check:checked')
+function getSelectedReturBeliDetail(){
+    return $('#tabreturbelidtl tbody .row-check:checked')
         .map(function () {
             return $(this).val();
         }).get();
@@ -735,7 +735,7 @@ function btnUpdateDetail(){
     const id = ids[0];
 
     $.ajax({
-        url: HOST_URL + 'purchase/trans/get_lpb_detail',
+        url: HOST_URL + 'purchase/trans/get_returbeli_detail',
         type: 'GET',
         data: { id: id },
         dataType: 'json',
@@ -747,16 +747,16 @@ function btnUpdateDetail(){
                 $('#descriptionpp').val(res.data.descriptionpp);
                 $('#descriptionpo').val(res.data.descriptionpo);
                 $('#docno').val(res.data.docno);
-                $('#docnopomodal').val(res.data.docnopo);
+                $('#docnolpbmodal').val(res.data.docnolpb);
                 $('#idbarang').val(res.data.idbarang);
                 $('#nmbarang').val(res.data.nmbarang);
                 $('#unit').val(res.data.unit);
                 setJtsValue('[name="qty"]', convertToDbNumber(res.data.qty));
-                setJtsValue('[name="qtybonus"]', convertToDbNumber(res.data.qtybonus));
+                // setJtsValue('[name="qtybonus"]', convertToDbNumber(res.data.qtybonus));
                 setJtsValue('[name="harga"]', convertToDbNumber(res.data.harga));
-                setJtsValue('[name="volitem"]', convertToDbNumber(res.data.volitem));
-                setJtsValue('[name="biaya"]', convertToDbNumber(res.data.biaya));
-                setJtsValue('[name="biaya2"]', convertToDbNumber(res.data.biaya2));
+                // setJtsValue('[name="volitem"]', convertToDbNumber(res.data.volitem));
+                // setJtsValue('[name="biaya"]', convertToDbNumber(res.data.biaya));
+                // setJtsValue('[name="biaya2"]', convertToDbNumber(res.data.biaya2));
                 setJtsValue('[name="multidisc"]', convertToDbNumber(res.data.multidisc));
                 setJtsValue('[name="nilai"]', convertToDbNumber(res.data.nilai));
 
@@ -769,8 +769,8 @@ function btnUpdateDetail(){
                 setSelect2Ajax('#idprincipal', res.data.idprincipal, res.data.idprincipal);
                 // setSelect2Ajax('#docnopp', res.data.docnopp, res.data.keterangan);
 
-                $('#modalUpdateLPBLabel').text('Update Retur Beli Detail');
-                $('#modalUpdateLPB').modal('show');
+                $('#modalUpdateReturBeliLabel').text('Update Retur Beli Detail');
+                $('#modalUpdateReturBeli').modal('show');
 
             }else{
                 Swal.fire({
@@ -784,7 +784,7 @@ function btnUpdateDetail(){
 }
 
 // Reset currentEditId ketika modal ditutup
-$('#modalUpdateLPB').on('hidden.bs.modal', function () {
+$('#modalUpdateReturBeli').on('hidden.bs.modal', function () {
     currentEditId = null;
 });
 
@@ -838,7 +838,7 @@ function btnDeleteDetail(){
         if(!result.isConfirmed) return;
 
         $.ajax({
-            url: HOST_URL + 'purchase/trans/delete_lpb_detail',
+            url: HOST_URL + 'purchase/trans/delete_returbeli_detail',
             type: 'POST',
             data: { ids: ids },
             dataType: 'json',
@@ -853,7 +853,7 @@ function btnDeleteDetail(){
                         showConfirmButton: false
                     });
 
-                    $('#tablpbdtl').DataTable().ajax.reload(null,false);
+                    $('#tabreturbelidtl').DataTable().ajax.reload(null,false);
                     documentReadable()
 
                 }else{
@@ -928,7 +928,7 @@ $('#formPOMasters').bootstrapValidator({
     },
     excluded: [':disabled']
 });
-$('#formLPBdetail').bootstrapValidator({
+$('#formReturBelidetail').bootstrapValidator({
     message: 'This value is not valid',
     feedbackIcons: {
         valid: 'fa fa-check',
@@ -956,7 +956,7 @@ $('#formLPBdetail').bootstrapValidator({
 });
 
 
-function saveLPBDetail() {
+function saveReturBeliDetail() {
 
     Swal.fire({
         title: 'Konfirmasi',
@@ -970,7 +970,7 @@ function saveLPBDetail() {
 
         if (!result.isConfirmed) return;
 
-        let formData = new FormData(document.getElementById('formLPBDetail'));
+        let formData = new FormData(document.getElementById('formReturBeliDetail'));
         formData.append('docdate', $('#docdate').val());
         formData.append('cabang', $('#cabang').val());
         // formData.append('senddate', $('#senddate').val());
@@ -978,14 +978,14 @@ function saveLPBDetail() {
         formData.append('kdsupplier', $('#kdsupplier').val());
         formData.append('isinclusive', $('#isinclusive').is(':checked') ? 'YES' : 'NO');
         formData.append('alamatsupplier', $('#alamatsupplier').val());
-        formData.append('nosj', $('#nosj').val());
-        formData.append('nofaktur', $('#nofaktur').val());
+        // formData.append('nosj', $('#nosj').val());
+        // formData.append('nofaktur', $('#nofaktur').val());
         formData.append('idtax', $('#idtax').val());
         formData.append('currcode', $('#currcode').val());
         formData.append('kurs', convertToDbNumber($('#kurs').val()));
-        formData.append('biayavol', convertToDbNumber($('#biayavol').val()));
-        formData.append('biayavol2', convertToDbNumber($('#biayavol').val()));
-        // formData.append('alamatkirim', $('#alamatkirim').val());
+        // formData.append('biayavol', convertToDbNumber($('#biayavol').val()));
+        // formData.append('biayavol2', convertToDbNumber($('#biayavol').val()));
+        formData.append('complain', $('#complain').val());
         formData.append('keterangan', $('#keterangan').val());
         // formData.append('estpakai', $('#estpakai').val());
 
@@ -993,32 +993,32 @@ function saveLPBDetail() {
         formData.set('docno', $('#prefix').val() + '/' + $('#infix').val() + '/' + $('#sufix').val());
         // convert qty ke numeric DB
         let qty = $('#qty').val();
-        let qtybonus = $('#qtybonus').val();
+        // let qtybonus = $('#qtybonus').val();
         let harga = $('#harga').val();
         let multidisc = $('#multidisc').val();
         let nilai = $('#nilai').val();
-        let volitem = $('#volitem').val();
-        let biaya = $('#biaya').val();
-        let biaya2 = $('#biaya2').val();
+        // let volitem = $('#volitem').val();
+        // let biaya = $('#biaya').val();
+        // let biaya2 = $('#biaya2').val();
         formData.set('qty', convertToDbNumber(qty));
-        formData.set('qtybonus', convertToDbNumber(qtybonus));
+        // formData.set('qtybonus', convertToDbNumber(qtybonus));
         formData.set('harga', convertToDbNumber(harga));
         formData.set('multidisc', convertToDbNumber(multidisc));
         formData.set('nilai', convertToDbNumber(nilai));
-        formData.set('volitem', convertToDbNumber(volitem));
-        formData.set('biaya', convertToDbNumber(biaya));
-        formData.set('biaya2', convertToDbNumber(biaya2));
+        // formData.set('volitem', convertToDbNumber(volitem));
+        // formData.set('biaya', convertToDbNumber(biaya));
+        // formData.set('biaya2', convertToDbNumber(biaya2));
         formData.set('descriptionpo', $('#descriptionpo').val());
         formData.set('uniqueid', $('#uniqueid').val());
         formData.set('idprincipal', $('#idprincipal').val());
         formData.set('idgudang', $('#idgudang').val());
         formData.set('idspec', $('#idspec').val());
-        formData.set('docnopo', $('#docnopo').val());
+        formData.set('docnolpb', $('#docnolpb').val());
         
         // formData.set('descriptionpo', convertToDbNumber(qty));
 
         $.ajax({
-            url: HOST_URL + 'purchase/trans/saveLPBDetail',
+            url: HOST_URL + 'purchase/trans/saveReturBeliDetail',
             type: 'POST',
             data: formData,
             dataType: 'json',
@@ -1068,12 +1068,12 @@ function saveLPBDetail() {
                 }
 
                 // Jika hanya tambah detail
-                $('#modalDetailLPB').modal('hide');
-                $('#modalUpdateLPB').modal('hide');
-                $('#formLPBUpdate')[0].reset();
-                reload_table_lpb_dtl();
+                $('#modalDetailReturBeli').modal('hide');
+                $('#modalUpdateReturBeli').modal('hide');
+                $('#formReturBeliUpdate')[0].reset();
+                reload_table_returbeli_dtl();
                 documentReadable()
-                $('#formLPBDetail')[0].reset();
+                $('#formReturBeliDetail')[0].reset();
             },
 
             error: function (xhr) {
@@ -1094,19 +1094,19 @@ function saveLPBDetail() {
 
 function btnInputDetail() {
 
-    $('#formLPBDetail')[0].reset();
+    $('#formReturBeliDetail')[0].reset();
 
     
     // 🔹 Clear select2
-    $('#docnopo').val(null).trigger('change');
+    $('#docnolpb').val(null).trigger('change');
 
     // Jika ada select2 lain, lakukan hal sama
     // $('#selectlain').val(null).trigger('change');
 
     $('#idurut').val(''); // pastikan id kosong (mode insert)
 
-    $('#modalDetailLPBLabel').text('Tambah Item Detail');
-    $('#modalDetailLPB').modal('show');
+    $('#modalDetailReturBeliLabel').text('Tambah Item Detail');
+    $('#modalDetailReturBeli').modal('show');
 }
 
 
@@ -1196,7 +1196,7 @@ $('#cabang').on('change', function () {
 
                     currentKodeSuffix = res.kode_suffix; // PT / PA / PB
                     $('#infix').val(res.infix);          // YYMM
-                    $('#prefix').val('LPB');             // default
+                    $('#prefix').val('RBL');             // default
                     $('#sufix').val(currentKodeSuffix + '0001');
 
                     var infix = (res.infix || '').toString();
@@ -1446,9 +1446,9 @@ $(document).ready(function() {
 
 
 
-    tableLPBTrx();
+    tableReturBeliTrx();
     // tablePOApprvTrx();
-    tableLPBDetail();
+    tableReturBeliDetail();
     //read_qrcode();
     $('#checkboxnik').change(function() {
         // this will contain a reference to the checkbox
