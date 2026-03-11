@@ -32,22 +32,22 @@
                     </button>
                     <div class="dropdown-menu">
                         <?php if (isset($dtl_akses['a_input']) && trim($dtl_akses['a_input']) === 't'): ?>
-                            <a class="dropdown-item" href="<?= base_url('purchase/trans/addPP') ?>"><i class="fa fa-plus"></i><?php echo '   Input'; ?> </a>
+                            <a class="dropdown-item" href="<?= base_url('purchase/trans/addUMB') ?>"><i class="fa fa-plus"></i><?php echo '   Input'; ?> </a>
                         <?php endif; ?>
                             <!-- <a class="dropdown-item disabled" data-bs-toggle="modal" data-bs-target="#filter"  href="#"><i class="fa fa-filter"></i><?php echo '   Filter'; ?></a> -->
-                        <a class="dropdown-item" href="#"  onclick="reload_tablePPTrx()"><i class="fa fa-refresh"></i><?php echo '    Reload'; ?> </a>
+                        <a class="dropdown-item" href="#"  onclick="reload_tableUMBTrx()"><i class="fa fa-refresh"></i><?php echo '    Reload'; ?> </a>
                     </div>
                 </div>
             </div><!-- /.card-header -->
-            <ul class="nav nav-tabs" id="ppTab" role="tablist">
+            <!-- <ul class="nav nav-tabs" id="poTab" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" 
-                            id="pp-tab" 
+                            id="po-tab" 
                             data-bs-toggle="tab" 
-                            data-bs-target="#pp-content" 
+                            data-bs-target="#po-content" 
                             type="button" 
                             role="tab">
-                        Permintaan Pembelian
+                        Purchasing Order
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -57,58 +57,39 @@
                             data-bs-target="#pending-content" 
                             type="button" 
                             role="tab">
-                        Daftar PP Belum Approve
+                        Daftar PO Belum Approve
                     </button>
                 </li>
-            </ul>
+            </ul> -->
+
 			<div class="card-body">
-                <div class="tab-content" id="ppTabContent">
-                    <div class="tab-pane fade show active" id="pp-content" role="tabpanel">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="body table-responsive m-t-40" style='overflow-x:scroll;' cellspacing="0" width="100%">
-                                    <table id="tableppTrx" class="table table-bordered table-striped" >
-                                        <thead class="text-center">
-                                            <tr>
-                                                <th style="min-width:10px; text-align:center; vertical-align:middle;">No.</th>
-                                                <th style="min-width:10px; text-align:center; vertical-align:middle;">Action</th>
-                                                <th style="min-width:100px; text-align:center; vertical-align:middle;">Docno</th>
-                                                <th style="min-width:100px; text-align:center; vertical-align:middle;">Tanggal</th>
-                                                <th style="min-width:50px; text-align:center; vertical-align:middle;">Pemohon</th>
-                                                <th style="min-width:400px; text-align:center; vertical-align:middle;">Remark</th>
-                                                <th style="min-width:150px; text-align:center; vertical-align:middle;">Cost Center</th>
-                                                <th style="min-width:80px; text-align:center; vertical-align:middle;">Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="tab-pane fade" id="pending-content" role="tabpanel">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="body table-responsive m-t-40" style='overflow-x:scroll;' cellspacing="0" width="100%">
-                                    <table id="tableppapprvTrx" class="table table-bordered table-striped" >
-                                        <thead class="text-center">
-                                            <tr>
-                                                <th style="min-width:10px; text-align:center; vertical-align:middle;">No.</th>
-                                                <th style="min-width:10px; text-align:center; vertical-align:middle;">Action</th>
-                                                <th style="min-width:100px; text-align:center; vertical-align:middle;">Docno</th>
-                                                <th style="min-width:100px; text-align:center; vertical-align:middle;">Tanggal</th>
-                                                <th style="min-width:50px; text-align:center; vertical-align:middle;">Pemohon</th>
-                                                <th style="min-width:400px; text-align:center; vertical-align:middle;">Remark</th>
-                                                <th style="min-width:150px; text-align:center; vertical-align:middle;">Cost Center</th>
-                                                <th style="min-width:80px; text-align:center; vertical-align:middle;">Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="table-responsive"  style='overflow-x:auto;'>
+                            <table id="tableumbTrx" class="table table-bordered table-striped"  style="width:100%;" cellspacing="0">
+                                <thead class="text-center">
+                                    <tr>
+                                        <th style="min-width:10px; text-align:center; vertical-align:middle;">No.</th>
+                                        <th style="min-width:10px; text-align:center; vertical-align:middle;">Action</th>
+                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Docno</th>
+                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Tanggal</th>
+                                        <th style="min-width:80px; text-align:center; vertical-align:middle;">Status</th>
+                                        <th style="min-width:50px; text-align:center; vertical-align:middle;">Kode Supplier</th>
+                                        <th style="min-width:350px; text-align:center; vertical-align:middle;">Nama Supplier</th>
+                                        <th style="min-width:150px; text-align:center; vertical-align:middle;">Alamat Supplier</th>
+                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Kota Supplier</th>
+                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Currency</th>
+                                        <!-- <th style="min-width:100px; text-align:center; vertical-align:middle;">Tanggal Kirim</th> -->
+                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Tanggal Jatuh Tempo</th>
+                                        <th style="min-width:50px; text-align:center; vertical-align:middle;">DK</th>
+                                        <th style="min-width:20px; text-align:center; vertical-align:middle;">Nilai</th>
+                                        <th style="min-width:400px; text-align:center; vertical-align:middle;">Keterangan</th>
+                                        <th style="min-width:150px; text-align:center; vertical-align:middle;">Cost Center</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -169,7 +150,7 @@
 <!-- /.modal -->
 
 
-<script type="application/javascript" src="<?= base_url('assets/pagejs/purchase/pp.js') ?>"></script>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/purchase/umb.js') ?>"></script>
 <script type="text/javascript">
     $(function() {
         $("#example1").dataTable();

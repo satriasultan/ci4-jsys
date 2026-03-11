@@ -447,9 +447,15 @@
                                 
                                 <div class="col-md-12">
                                     <div class="form-group text-end">
-                                        <button type="button" class="btn btn-lg btn-primary text-white" title="Down Payment">
-                                            <i class="fa fa-money"></i> 
+                                        <span id="btnDPWrapper" data-bs-toggle="tooltip" title="Down Payment">
+                                        <button id="btnDP"
+                                                type="submit"
+                                                formaction="<?= base_url('purchase/trans/finalEntryPO_DP') ?>"
+                                                class="btn btn-lg btn-primary text-white"
+                                                >
+                                            <i class="fa fa-money"></i>
                                         </button>
+                                        </span>
                                     </div>
                                 </div>
                             </div>

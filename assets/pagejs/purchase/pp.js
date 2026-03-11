@@ -81,6 +81,76 @@ function reload_tablePPTrx()
     //console.log('HALO HALO BANDUNG');
 }
 
+
+
+function tablePPApprvTrx(){
+    // var lg = languageDatatable;
+    var initTable = function () {
+        var table = $('#tableppapprvTrx');
+        table.DataTable({
+            "processing": true, //Feature control the processing indicator.
+            "serverSide": true, //Feature control DataTables' server-side processing mode.
+            "order": [], //Initial no order.
+            "language":  languageDatatable(),
+            "paging": true,
+            "lengthChange": false,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "responsive": false,
+            "bFilter":true,
+            "lengthMenu": [
+                [ 10, 25, 50, -1 ],
+                [ '10 rows', '25 rows', '50 rows', 'Show all' ]
+            ],
+            "dom": 'Bfrtip',
+            "buttons": [
+                'pageLength','excel'
+            ],
+            "ajax": {
+                "url": HOST_URL + 'purchase/trans/list_pp_apprv',
+                "type": "POST",
+                "data": function(data) {
+                    data.tglrange = $('#tglrange').val();
+                    data.idbarang = $('#idbarang_filter').val();
+                    data.namasupplier = $('#namasupplier').val();
+                    data.status = $('#status_filter').val(); //A,P,S,ALL
+                },
+                "dataFilter": function(data) {
+                    var json = jQuery.parseJSON(data);
+                    json.draw = json.dataTables.draw;
+                    json.recordsTotal = json.dataTables.recordsTotal;
+                    json.recordsFiltered = json.dataTables.recordsFiltered;
+                    json.data = json.dataTables.data;
+                    return JSON.stringify(json); // return JSON string
+                }
+            },
+
+            //Set column definition initialisation properties.
+            "columnDefs": [
+                {
+                    "targets": [ -1 ], //last column
+                    "orderable": false, //set not orderable
+                },
+            ],
+
+        });
+
+    };
+
+
+    return initTable();
+}
+
+function reload_tablePPApprvTrx()
+{
+    var table = $('#tableppapprvTrx');
+    table.DataTable().ajax.reload(); //reload datatable ajax
+    //console.log('HALO HALO BANDUNG');
+}
+
+
 $('#btn-filter-tx').click(function(){ //button filter event click
     var table = $('#tableppTrx');
     table.DataTable().ajax.reload(); //reload datatable ajax
@@ -92,6 +162,85 @@ $('#btn-reset-tx').click(function(){ //button reset event click
     table.DataTable().ajax.reload(); //reload datatable ajax
     $('#filter').modal('hide');
 });
+
+
+
+
+function setToApproved(docno) {
+    Swal.fire({
+        title: 'Set PP menjadi Approve?',
+        text: "Status dokumen akan diubah menjadi Approve",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Ya, ubah'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: HOST_URL + '/purchase/trans/updateStatusPP',
+                type: 'POST',
+                data: { docno: docno, status: 'A' },
+                dataType: 'json',
+                success: function(res) {
+                    if (res.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil',
+                            text: 'Status berhasil diubah menjadi Approve'
+                        }).then(() => {
+                            reload_tablePPTrx()
+                            reload_tablePPApprvTrx()
+                        });
+                    } else {
+                        Swal.fire('Gagal', res.message || 'Terjadi kesalahan', 'error');
+                    }
+                },
+                error: function() {
+                    Swal.fire('Error', 'Tidak dapat terhubung ke server', 'error');
+                }
+            });
+        }
+    });
+}
+
+function setToDisapproved(docno) {
+    Swal.fire({
+        title: 'Set PP menjadi Disapprove?',
+        text: "Status dokumen akan diubah menjadi Disapprove",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Ya, ubah'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: HOST_URL + '/purchase/trans/updateStatusPP',
+                type: 'POST',
+                data: { docno: docno, status: 'F' },
+                dataType: 'json',
+                success: function(res) {
+                    if (res.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil',
+                            text: 'Status berhasil diubah menjadi Disapprove'
+                        }).then(() => {
+                            reload_tablePPTrx()
+                            reload_tablePPApprvTrx()
+                        });
+                    } else {
+                        Swal.fire('Gagal', res.message || 'Terjadi kesalahan', 'error');
+                    }
+                },
+                error: function() {
+                    Swal.fire('Error', 'Tidak dapat terhubung ke server', 'error');
+                }
+            });
+        }
+    });
+}
 
 let skipRoleChange = false;
 
@@ -1234,6 +1383,7 @@ $(document).ready(function() {
 
 
     tablePPTrx();
+    tablePPApprvTrx();
     tablePPDetail();
     // tableItem();
     //read_qrcode();

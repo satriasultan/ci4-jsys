@@ -1114,7 +1114,7 @@ $('#cabang').on('change', function () {
 
     if(idbranch){
         $.ajax({
-                url: HOST_URL + '/purchase/trans/getBranchInfoPO',
+                url: HOST_URL + '/purchase/trans/getBranchInfoVoidPO',
                 method: 'GET',
                 data: { idbranch: idbranch },
                 dataType: 'json',
@@ -1177,7 +1177,7 @@ $('#cabang').on('change', function () {
                     }
 
                     $('#docno').val(
-                        'POB/' + res.infix + '/' + currentKodeSuffix + '0001'
+                        'VPO/' + res.infix + '/' + currentKodeSuffix + '0001'
                     );
                 }
             });
@@ -1193,7 +1193,7 @@ $('#prefix').on('blur', function () {
     if (!prefix || !infix || !currentKodeSuffix) return;
 
     $.ajax({
-        url: HOST_URL + '/purchase/trans/getNextSuffixPO',
+        url: HOST_URL + '/purchase/trans/getNextSuffixVoidPO',
         method: 'GET',
         data: {
             prefix: prefix,

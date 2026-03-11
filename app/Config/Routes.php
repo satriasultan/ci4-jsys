@@ -149,9 +149,12 @@ $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], f
 
     $routes->add('pp', 'Purchase::pp');
     $routes->add('list_pp', 'Purchase::list_pp');
+    $routes->add('list_pp_apprv', 'Purchase::list_pp_apprv');
+
     $routes->add('addPP', 'Purchase::addPP');
     $routes->add('detailPP', 'Purchase::detailPP');
     $routes->add('list_tmp_pp_dtl', 'Purchase::list_tmp_pp_dtl');
+    $routes->add('updateStatusPP', 'Purchase::updateStatusPP');
     // $routes->add('showing_sikbsp_mst', 'Purchase::showing_sikbsp_mst');
     
     $routes->add('clearEntryPP', 'Purchase::clearEntryPP');
@@ -218,6 +221,7 @@ $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], f
     
     $routes->add('clearEntryPO', 'Purchase::clearEntryPO');
     $routes->add('finalEntryPO', 'Purchase::finalEntryPO');
+    $routes->add('finalEntryPO_DP', 'Purchase::finalEntryPO_DP');
     $routes->add('showing_potemp', 'Purchase::showing_potemp');
     $routes->add('updateStatusPO', 'Purchase::updateStatusPO');
 
@@ -270,6 +274,34 @@ $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], f
     $routes->add('saveVoidPODetail', 'Purchase::saveVoidPODetail');
     $routes->add("get_voidpo_detail(:any)", "Purchase::get_voidpo_detail$1");
     $routes->add("delete_voidpo_detail", "Purchase::delete_voidpo_detail");
+
+
+    
+    $routes->add('umb', 'Purchase::umb');
+    $routes->add('list_umb', 'Purchase::list_umb');
+    $routes->add('list_umb_apprv', 'Purchase::list_umb_apprv');
+    
+    $routes->add('addUMB', 'Purchase::addUMB');
+    $routes->add('detailUMB', 'Purchase::detailUMB');
+    // $routes->add('showing_sikbsp_mst', 'Purchase::showing_sikbsp_mst');
+    
+    $routes->add('clearEntryUMB', 'Purchase::clearEntryUMB');
+    $routes->add('finalEntryUMB', 'Purchase::finalEntryUMB');
+    $routes->add('showing_umbtemp', 'Purchase::showing_umbtemp');
+    $routes->add('updateStatusUMB', 'Purchase::updateStatusUMB');
+
+    
+    $routes->add('save_umb_detail', 'Purchase::save_umb_detail');
+    $routes->get('updateUMB(:any)', 'Purchase::updateUMB$1');
+
+    $routes->add('deleteUMBDtl', 'Purchase::deleteUMBDtl');
+    $routes->add('show_umb', 'Purchase::show_umb');
+    $routes->add('api_umb(:any)', 'Purchase::api_umb$1');
+    $routes->add('showing_umbtrx', 'Purchase::showing_umbtrx');
+    $routes->add('getBranchInfoUMB', 'Purchase::getBranchInfoUMB');
+    $routes->add('getNextSuffixUMB', 'Purchase::getNextSuffixUMB');
+    $routes->add('initUMBHeader', 'Purchase::initUMBHeader');
+    $routes->add('saveUMBDetail', 'Purchase::saveUMBDetail');
 
 
     
@@ -559,6 +591,7 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
     $routes->add('globalmodule/list_pp', 'Globalmodule::list_pp');
     $routes->add('globalmodule/list_po', 'Globalmodule::list_po');
     $routes->add('globalmodule/list_lpb', 'Globalmodule::list_lpb');
+    $routes->add('globalmodule/get_tax_percent', 'Globalmodule::get_tax_percent');
 
     $routes->add('globalmodule/list_branchjob', 'Globalmodule::list_branchjob');
 

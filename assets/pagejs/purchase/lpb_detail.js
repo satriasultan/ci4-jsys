@@ -1193,7 +1193,7 @@ $('#cabang').on('change', function () {
                     }
 
                     $('#docno').val(
-                        'POB/' + res.infix + '/' + currentKodeSuffix + '0001'
+                        'LPB/' + res.infix + '/' + currentKodeSuffix + '0001'
                     );
                 }
             });

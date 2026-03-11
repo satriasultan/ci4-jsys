@@ -217,7 +217,7 @@ BEGIN
         INSERT INTO sc_trx.po (
             idurut, docno, cabang, docdate, senddate, pemohon, kdsupplier,
             nmsupplier, alamatsupplier, alamatkirim, jthtempo,
-            idtax,isinclusive, currcode, kurs, dpp, 
+            idtax,isinclusive, currcode, kurs, dpp, docnoumb, 
             jumlahpajak, total, syarat,
             keterangan, status, inputby, inputdate,
             updateby, updatedate, printby, printdate
@@ -225,7 +225,7 @@ BEGIN
         SELECT
             idurut, v_docno, cabang, docdate, senddate, pemohon, kdsupplier,
             nmsupplier, alamatsupplier, alamatkirim, jthtempo,
-            idtax,isinclusive, currcode, kurs, dpp, 
+            idtax,isinclusive, currcode, kurs, dpp, docnoumb, 
             jumlahpajak, total, syarat,
             keterangan, 'F', inputby, inputdate,
             updateby, updatedate, printby, printdate
@@ -309,14 +309,14 @@ BEGIN
         INSERT INTO sc_trx.po
         (idurut, docno, cabang, docdate, senddate, pemohon, kdsupplier,
         nmsupplier, alamatsupplier, alamatkirim, jthtempo,
-        idtax,isinclusive, currcode, kurs, dpp, 
+        idtax,isinclusive, currcode, kurs, dpp, docnoumb, 
         jumlahpajak, total, syarat,
         keterangan, status, inputby, inputdate,
         updateby, updatedate, printby, printdate, docnotmp)
         SELECT
             idurut, NEW.docnotmp, cabang, docdate, senddate, pemohon, kdsupplier,
             nmsupplier, alamatsupplier, alamatkirim, jthtempo,
-            idtax,isinclusive, currcode, kurs, dpp, 
+            idtax,isinclusive, currcode, kurs, dpp, docnoumb, 
             jumlahpajak, total, syarat,
             keterangan, status, inputby, inputdate,
             updateby, updatedate, printby, printdate, docnotmp
@@ -390,14 +390,14 @@ BEGIN
             (
                 idurut, docno, cabang, docdate, senddate, pemohon, kdsupplier,
                 nmsupplier, alamatsupplier, alamatkirim, jthtempo,
-                idtax,isinclusive, currcode, kurs, dpp, 
+                idtax,isinclusive, currcode, kurs, dpp, docnoumb, 
                 jumlahpajak, total, syarat,
                 keterangan, status, inputby, inputdate, updateby, updatedate,
                 printby, printdate, docnotmp
             )
 			SELECT  idurut, NEW.docno, cabang, docdate, senddate, pemohon, kdsupplier,
             nmsupplier, alamatsupplier, alamatkirim, jthtempo,
-            idtax,isinclusive, currcode, kurs, dpp, 
+            idtax,isinclusive, currcode, kurs, dpp, docnoumb, 
             jumlahpajak, total, syarat,
             keterangan, status , inputby, inputdate, updateby, updatedate,
             printby, printdate, NEW.docno
@@ -438,4 +438,14 @@ ADD COLUMN uniqueid VARCHAR(64)
 
 ALTER TABLE sc_trx.po_dtl
 ADD COLUMN uniqueid VARCHAR(64)
+
+
+
+
+
+ALTER TABLE sc_tmp.po
+ADD COLUMN docnoumb character(30)
+
+ALTER TABLE sc_trx.po
+ADD COLUMN docnoumb character(30)
 

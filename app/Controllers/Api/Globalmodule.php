@@ -2602,4 +2602,29 @@ class Globalmodule extends BaseController
         );
 
     }
+
+
+    
+    public function get_tax_percent()
+    {
+        $db = db_connect();
+        $idtax = $this->request->getPost('idtax');
+
+        $tax = $db->table('sc_mst.tax_dtl')
+            ->select('percentation')
+            ->where('idtax', $idtax)
+            ->get()
+            ->getResultArray();
+
+        $percent = 0;
+
+        foreach ($tax as $t) {
+            $percent += $t['percentation'];
+        }
+
+        return $this->response->setJSON([
+            'percent' => $percent
+        ]);
+    }
+
 }

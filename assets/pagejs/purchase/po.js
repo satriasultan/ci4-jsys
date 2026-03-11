@@ -295,6 +295,15 @@ function documentReadable(){
             $('[name="keterangan"]').val(json.dataTables.items[0].keterangan);
             $('[name="syarat"]').val(json.dataTables.items[0].syarat);
 
+            var docnoUMB = (json.dataTables.items[0].docnoumb || '').trim();
+            if(docnoUMB === ''){
+                $('#btnDP').prop('disabled', false);
+                $('#btnDPWrapper').attr('title','Create Down Payment');
+            }else{
+                $('#btnDP').prop('disabled', true);
+                $('#btnDPWrapper').attr('title','PO sudah ada Down Payment');
+            }
+
             setJtsValue('[name="dpp"]', convertToDbNumber(json.dataTables.items[0].dpp));
             setJtsValue('[name="jumlahpajak"]', convertToDbNumber(json.dataTables.items[0].jumlahpajak));
             setJtsValue('[name="total"]', convertToDbNumber(json.dataTables.items[0].total));
@@ -649,11 +658,49 @@ $("#idtax").select2({
     templateResult: formatTax, // omitted for brevity, see the source of this page
     templateSelection: formatTaxSelection // omitted for brevity, see the source of this page
 }).on("select2:select", function (e) {
-    // var data = e.params.data;
+
+    hitungPajak();
+
+}).on("select2:clear", function (e) {
+
+    hitungPajak();
 
 });
 
 
+
+function hitungPajak() {
+
+    let dpp = $('#dpp').val().replace(/,/g,'');
+    let idtax = $('#idtax').val();
+
+    if(!dpp) dpp = 0;
+
+    if(!idtax){
+        $('#jumlahpajak').val('0');
+        $('#total').val(dpp);
+        return;
+    }
+
+    $.ajax({
+        url: HOST_URL + 'api/globalmodule/get_tax_percent',
+        type: 'POST',
+        data: {idtax:idtax},
+        dataType:'json',
+        success:function(res){
+
+            let percent = res.percent || 0;
+
+            let jumlahPajak = dpp * percent / 100;
+            let total = parseFloat(dpp) + jumlahPajak;
+
+            $('#jumlahpajak').val(jumlahPajak.toLocaleString());
+            $('#total').val(total.toLocaleString());
+
+        }
+    });
+
+}
 
 function setJtsValue(selector, value) {
     $(selector).val(value);
