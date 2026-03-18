@@ -317,7 +317,7 @@
                     <div class="float-right d-flex align-items-center gap-2">
                         <button type="button"
                                 class="btn btn-success btn-lg action-btn"
-                                data-toggle="tooltip"
+                                data-bs-toggle="tooltip"
                                 title="Input Data"
                                 onclick="btnInputDetail()">
                             <i class="fa fa-plus"></i>
@@ -325,7 +325,7 @@
 
                         <button type="button"
                                 class="btn btn-warning btn-lg action-btn"
-                                data-toggle="tooltip"
+                                data-bs-toggle="tooltip"
                                 title="Update Data"
                                 onclick="btnUpdateDetail()">
                             <i class="fa fa-edit"></i>
@@ -333,7 +333,7 @@
 
                         <button type="button"
                                 class="btn btn-danger btn-lg action-btn"
-                                data-toggle="tooltip"
+                                data-bs-toggle="tooltip"
                                 title="Hapus Data"
                                 onclick="btnDeleteDetail()">
                             <i class="fa fa-trash"></i>

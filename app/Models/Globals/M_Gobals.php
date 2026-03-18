@@ -361,4 +361,8 @@ group by docno order by docno asc");
         return $this->db->query("select *, trim(docno) as id from sc_trx.lpb where coalesce(trim(docno),'')!='' $param ");
     }
 
+    function q_so($param){
+        return $this->db->query("select *, trim(docno) as id from sc_trx.salesorder where trim(status)='A' and coalesce(trim(docno),'')!='' $param ");
+    }
+
 }

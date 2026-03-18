@@ -94,25 +94,25 @@
 ?>
 <div class="row">
     <!-- left column -->
-    <form action="<?= base_url('purchase/trans/finalEntryPO') ?>" method="post" id="formPO">
+    <form action="<?= base_url('sales/postsales/finalEntryPenjualan') ?>" method="post" id="formPO">
         <div class="col-md-12">
             <!-- jquery validation -->
             <div class="card card-primary">
                 <div class="card-header">
-                    <h3 class="card-title"><?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> Purchase Order</h3>
+                    <h3 class="card-title"><?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> Penjualan</h3>
                 </div>
                 <!-- /.card-header -->
                 <!-- form start -->
                 <div class="card-body">
                         <div class="section-block">
                             <div class="section-header">
-                                <i class="fa fa-address-card"></i> Purchase Order (PO)
+                                <i class="fa fa-address-card"></i> Penjualan
                             </div>
                             <div class="row">
-                                
+
                                 <!-- LEFT COLUMN -->
                                 <div class="col-md-3">
-                                    
+
                                     <div class="row">
                                         <div class="col-md-8">
                                             <div class="form-group">
@@ -120,13 +120,14 @@
                                                 <select name="cabang" id="cabang" class="form-control" required></select>
                                             </div>
                                         </div>
+
+                                        
                                     </div>
-                                    
 
                                     <div class="row">
                                         <div class="col-md-12">
                                             <div class="form-group">
-                                                <label>No. Jurnal PO</label>
+                                                <label>No. Jurnal Penjualan</label>
 
                                                 <div class="d-flex">
                                                     <input type="text"
@@ -157,23 +158,7 @@
                                                 </div>
                                             </div>
                                             <input type="hidden" name="docno" class="form-control col-sm-12" id="docno" maxlength="20"     value="<?= isset($dtldata['docno']) ? esc(trim($dtldata['docno'])) : '' ?>" style="text-transform: uppercase;" readonly>
-                                            <div style="position:relative;">
-                                                <?php if(trim($dtldata['status']) == 'A') { ?>
-                                                    <img src="<?= base_url('assets/img/svg/approved-sticker.svg') ?>" 
-                                                        alt="Approved"
-                                                        class="float-end"
-                                                        style="
-                                                            position:absolute;
-                                                            top:-20px;
-                                                            left:50%;
-                                                            transform:translateX(-50%);
-                                                            width:160px;
-                                                            opacity:0.85;
-                                                            z-index:10;
-                                                            pointer-events:none;
-                                                        ">
-                                                <?php } ?>
-                                            </div>
+                                            
                                     </div>
                                         
                                 </div>
@@ -189,18 +174,6 @@
                                                 id="docdate"
                                                 class="form-control"
                                                 placeholder="Tanggal">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-12">
-                                            <div class="form-group">
-                                                <label for="senddate">Tanggal Pengiriman</label>
-                                                <input type="text"
-                                                    name="senddate"
-                                                    id="senddate"
-                                                    class="form-control"
-                                                    placeholder="Tanggal Pengiriman">
                                             </div>
                                         </div>
                                     </div>
@@ -227,42 +200,60 @@
                                     <div class="row">
                                         <div class="col-md-12">
                                             <div class="form-group">
-                                                <label for="kdsupplier">Supplier</label>
-                                                <select name="kdsupplier" id="kdsupplier" class="form-control select2" required></select>
+                                                <label for="kdcustomer">Customer</label>
+                                                <select name="kdcustomer" id="kdcustomer" class="form-control select2" required></select>
                                             </div>
                                         </div>
                                         <div class="col-md-12">
                                             <div class="form-group">
-                                                <label for="alamatsupplier">Alamat Supplier</label>
-                                                <textarea name="alamatsupplier"
-                                                    id="alamatsupplier"
+                                                <label for="alamatcustomer">Alamat Customer</label>
+                                                <textarea name="alamatcustomer"
+                                                    id="alamatcustomer"
                                                     class="form-control"
                                                     rows="2"
-                                                    placeholder="Alamat Supplier"
+                                                    placeholder="Alamat Customer"
                                                     style="text-transform:uppercase;"></textarea>
                                             </div>
                                         </div>
-                                        <div class="col-md-6" style="margin-top: -20px;">
+                                        <div class="col-md-12" style="margin-top: -27px;">
                                             <div class="form-group">
-                                                <label for="idtax">Pajak</label>
-                                                <select name="idtax" id="idtax" class="form-control select2" required></select>
+                                                <label for="kdcustomerdeliv">Deliver To</label>
+                                                <select name="kdcustomerdeliv" id="kdcustomerdeliv" class="form-control select2" required></select>
                                             </div>
                                         </div>
-                                        <div class="col-md-3" style="margin-top: 10px;">
+                                        <div class="col-md-12" style="margin-top: -17px;">
                                             <div class="form-group">
-                                            <!-- Radio untuk Interngroup -->
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" name="isinclusive" id="isinclusive" value="1" <?= isset($data['isinclusive']) && $data['isinclusive'] == '1' ? 'checked' : '' ?>>
-                                                <label class="form-check-label" for="isinclusive">
-                                                    Inclusive
-                                                </label>
+                                                <label for="alamatcustomerdeliv">Alamat Kirim Ke</label>
+                                                <textarea name="alamatcustomerdeliv"
+                                                    id="alamatcustomerdeliv"
+                                                    class="form-control"
+                                                    rows="2"
+                                                    placeholder="Alamat Kirim Ke"
+                                                    style="text-transform:uppercase;"></textarea>
                                             </div>
-                                        </div>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="row">
+                                        <div class="col-md-6" >
+                                            <div class="form-group">
+                                                <label for="gradecustomer">Grade Actual</label>
+                                                <input name="gradecustomer"
+                                                    id="gradecustomer"
+                                                    class="form-control"
+                                                    type="text"
+                                                    placeholder="Grade Actual" disabled
+                                                    style="text-transform:uppercase;">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6" style="margin-top: 27px;">
+                                            <div class="form-group">
+                                                <button type="button" class="btn btn-warning" title="Change Grade Temp.">
+                                                    <i class="fa fa-edit"></i> Change Grade Temp.
+                                                </button>
+                                            </div>
+                                        </div>
                                         <div class="row align-items-end">
                                             <div class="col-md-4">
                                                 <div class="mb-3">
@@ -281,13 +272,13 @@
                                                     <input type="text"
                                                         name="kurs"
                                                         id="kurs"
-                                                        class="form-control text-end"
+                                                        class="form-control ratakanan jtsseparator"
                                                         placeholder="Nilai tukar akan muncul disini"
-                                                        readonly>
+                                                        >
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="col-md-12">
+                                        <!-- <div class="col-md-12">
                                             <div class="form-group">
                                                 <label for="alamatkirim">Alamat Kirim</label>
                                                 <textarea name="alamatkirim"
@@ -297,16 +288,48 @@
                                                     placeholder="Alamat Kirim"
                                                     style="text-transform:uppercase;"></textarea>
                                             </div>
-                                        </div>
-                                        <div class="col-md-12" style="margin-top: -30px;">
+                                        </div> -->
+                                        <div class="col-md-6">
                                             <div class="form-group">
-                                                <label for="keterangan">Keterangan</label>
-                                                <textarea name="keterangan"
-                                                    id="keterangan"
-                                                    class="form-control"
-                                                    rows="2"
-                                                    placeholder="Keterangan"
-                                                    style="text-transform:uppercase;"></textarea>
+                                                <label for="idtax">Pajak</label>
+                                                <select name="idtax" id="idtax" class="form-control select2" required></select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3" style="margin-top: 30px;">
+                                            <div class="form-group">
+                                                <!-- Radio untuk Interngroup -->
+                                                <div class="form-check">
+                                                    <input class="form-check-input" 
+                                                        type="checkbox" 
+                                                        name="isinclusive" 
+                                                        id="isinclusive"
+                                                        <?= isset($data['isinclusive']) && $data['isinclusive'] === 'YES' ? 'checked' : '' ?>>
+                                                    <label class="form-check-label" for="isinclusive">
+                                                        Inclusive
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="kdsalesman">Salesman</label>
+                                                <select name="kdsalesman" id="kdsalesman" class="form-control" required>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3" style="margin-top: 30px;">
+                                            <div class="form-group">
+                                                <!-- Radio untuk Interngroup -->
+                                                <div class="form-check">
+                                                    <input class="form-check-input" 
+                                                        type="checkbox" 
+                                                        name="isopenprice" 
+                                                        id="isopenprice"
+                                                        <?= isset($data['isopenprice']) && $data['isopenprice'] === 'YES' ? 'checked' : '' ?>>
+                                                    <label class="form-check-label" for="isopenprice">
+                                                        Open Price
+                                                    </label>
+                                                </div>
                                             </div>
                                         </div>
 
@@ -318,61 +341,42 @@
                         </div>
                 </div>
             </div>
+
             <div class="card mt-3 card-primary">
                 <div class="card-header clearfix">
                     <h3 class="card-title">
-                        Detail PP & Barang
+                        Detail Barang
                     </h3>
-
-                    <div class="float-right d-flex align-items-center gap-2">
-                        <!-- <button type="button"
-                                class="btn btn-success btn-lg action-btn"
-                                data-bs-toggle="tooltip"
-                                title="Input Data"
-                                onclick="btnInputDetail()">
-                            <i class="fa fa-plus"></i>
-                        </button>
-
-                        <button type="button"
-                                class="btn btn-warning btn-lg action-btn"
-                                data-bs-toggle="tooltip"
-                                title="Update Data"
-                                onclick="btnUpdateDetail()">
-                            <i class="fa fa-edit"></i>
-                        </button>
-
-                        <button type="button"
-                                class="btn btn-danger btn-lg action-btn"
-                                data-bs-toggle="tooltip"
-                                title="Hapus Data"
-                                onclick="btnDeleteDetail()">
-                            <i class="fa fa-trash"></i>
-                        </button> -->
-
-
                     </div>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-12">
                             <div class="table-responsive" style="overflow-x: auto;">
-                                <table id="tabppdtl" class="table table-bordered table-striped" style="width:100%;" cellspacing="0">
+                                <table id="tabpenjualandtl" class="table table-bordered table-striped" style="width:100%;" cellspacing="0">
                                     <thead class="bg-primary text-white">
                                         <tr>
                                             <th width="30">
                                                 <input type="checkbox" id="checkAll">
                                             </th>
-                                            <th>PP</th>
+                                            <th>No. SJ</th>
+                                            <th>SO</th>
                                             <th>ID Barang</th>
                                             <th>Nama Barang</th>
+                                            <th>Principal</th>
+                                            <th>Gudang</th>
+                                            <th>Spec</th>
                                             <th>Satuan</th>
                                             <th>Qty</th>
-                                            <th>Bonus Qty</th>
+                                            <!-- <th>Bonus Qty</th> -->
                                             <th>Harga</th>
                                             <th>Multi Disc</th>
+                                            <!-- <th>Vol/Item</th>
+                                            <th>Biaya 1</th>
+                                            <th>Biaya 2</th> -->
                                             <th>Nilai</th>
-                                            <th>Keterangan PO</th>
-                                            <th>Keterangan PP</th>
+                                            <th>Keterangan</th>
+                                            <!-- <th>Keterangan PP</th> -->
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -384,14 +388,30 @@
                     <hr>
                     <div class="row" style="margin-top: 10px;">
                         <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="syarat">Syarat</label>
-                                <textarea name="syarat"
-                                    id="syarat"
-                                    class="form-control"
-                                    rows="4"
-                                    placeholder="Syarat"
-                                    style="text-transform:uppercase;"></textarea>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label for="keterangan">Keterangan</label>
+                                        <textarea name="keterangan"
+                                            id="keterangan"
+                                            class="form-control"
+                                            rows="3"
+                                            placeholder="Keterangan"
+                                            style="text-transform:uppercase;"></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="carabayar">Cara Bayar</label>
+                                        <input name="carabayar"
+                                            id="carabayar"
+                                            class="form-control"
+                                            type="text"
+                                            maxlength="30"
+                                            placeholder="Cara Bayar"
+                                            style="text-transform:uppercase;">
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -401,10 +421,10 @@
                                     <div class="col-md-4" style="float: right;">
                                         <div class="form-group mb-2">
                                             <div class="row">
-                                                <div class="col-md-4 text-end">
+                                                <div class="col-md-6 text-end">
                                                     <label for="dpp" class="mt-2">DPP</label>
                                                 </div>
-                                                <div class="col-md-8">
+                                                <div class="col-md-6">
                                                     <input type="text"
                                                         name="dpp"
                                                         id="dpp"
@@ -420,10 +440,10 @@
                                     <div class="col-md-4" style="float: right;">
                                         <div class="form-group mb-2">
                                             <div class="row">
-                                                <div class="col-md-4 text-end">
+                                                <div class="col-md-6 text-end">
                                                     <label for="jumlahpajak" class="mt-2">Jumlah Pajak</label>
                                                 </div>
-                                                <div class="col-md-8">
+                                                <div class="col-md-6">
                                                     <input type="text"
                                                         name="jumlahpajak"
                                                         id="jumlahpajak"
@@ -439,10 +459,10 @@
                                     <div class="col-md-4" style="float: right;">
                                         <div class="form-group mb-3">
                                             <div class="row">
-                                                <div class="col-md-4 text-end">
+                                                <div class="col-md-6 text-end">
                                                     <label for="total" class="mt-2">Total</label>
                                                 </div>
-                                                <div class="col-md-8">
+                                                <div class="col-md-6">
                                                     <input type="text"
                                                         name="total"
                                                         id="total"
@@ -457,19 +477,19 @@
                                 
                                 <!-- <div class="col-md-12">
                                     <div class="form-group text-end">
-                                        <button type="button" class="btn btn-primary text-white">
-                                            <i class="fa fa-money"></i> Down Payment
+                                        <button type="button" class="btn btn-lg btn-primary text-white" title="Down Payment">
+                                            <i class="fa fa-money"></i> 
                                         </button>
                                     </div>
                                 </div> -->
                             </div>
                         </div>
                     </div>
-                    <!-- <hr> -->
+                    <hr>
 
                 </div>
                 <div class="card-footer bg-light">
-                    <a href="<?= base_url('purchase/trans/po') ?>"
+                    <a href="<?= base_url('sales/postsales/penjualan') ?>"
                         class="btn btn-default btn-lg">
                         <i class="fa fa-arrow-left mr-2"></i>
                         Kembali
@@ -489,16 +509,13 @@
 </div>
 
 
-
-
-<!-- ================= MODAL TAX DETAIL ================= -->
-<div class="modal fade" id="modalDetailPO" tabindex="-1" role="dialog" aria-labelledby="modalDetailPOLabel" aria-hidden="true">
+<div class="modal fade" id="modalDetailPenjualan" tabindex="-1" role="dialog" aria-labelledby="modalDetailPenjualanLabel" aria-hidden="true">
     <div class="modal-dialog modal-md" role="document">
         <div class="modal-content">
 
             <!-- HEADER -->
             <div class="modal-header bg-primary">
-                <h5 class="modal-title" id="modalDetailPOLabel">
+                <h5 class="modal-title" id="modalDetailPenjualanLabel">
                     </i> Input Item Detail
                 </h5>
                 <button type="button" class="close text-white" data-bs-dismiss="modal">
@@ -507,7 +524,7 @@
             </div>
 
             <!-- FORM -->
-            <form id="formPODetail">
+            <form id="formPenjualanDetail">
                 <div class="modal-body">
 
                     <!-- hidden -->
@@ -520,8 +537,16 @@
                     <div class="row">
                         <div class="col-md-12">
                             <div class="form-group">
-                                <label>PP</label>
-                                <select name="docnopp" id="docnopp"
+                                <label>No. Surat Jalan</label>
+                                <select name="docnosj" id="docnosj"
+                                        class="form-control select2"
+                                        style="width:100%"></select>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label>No. Sales Order</label>
+                                <select name="docnoso" id="docnoso"
                                         class="form-control select2"
                                         style="width:100%"></select>
                             </div>
@@ -534,13 +559,13 @@
                     <button type="button"
                             class="btn btn-secondary"
                             data-bs-dismiss="modal"
-                            onclick="$('#modalDetailPO').modal('hide')">
+                            onclick="$('#modalDetailPenjualan').modal('hide')">
                         <i class="fa fa-times"></i> Batal
                     </button>
 
                     <button type="button"
                             class="btn btn-primary"
-                            onclick="savePODetail()">
+                            onclick="savePenjualanDetail()">
                         <i class="fa fa-save"></i> Simpan
                     </button>
                 </div>
@@ -550,13 +575,14 @@
 </div>
 
 
-<div class="modal fade" id="modalUpdatePO" tabindex="-1" role="dialog" aria-labelledby="modalUpdatePOLabel" aria-hidden="true">
+<!-- ================= MODAL TAX DETAIL ================= -->
+<div class="modal fade" id="modalUpdatePenjualan" tabindex="-1" role="dialog" aria-labelledby="modalUpdatePenjualanLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
 
             <!-- HEADER -->
             <div class="modal-header bg-primary">
-                <h5 class="modal-title" id="modalUpdatePOLabel">
+                <h5 class="modal-title" id="modalUpdatePenjualanLabel">
                     </i> Edit Item Detail
                 </h5>
                 <button type="button" class="close text-white" data-bs-dismiss="modal">
@@ -565,38 +591,45 @@
             </div>
 
             <!-- FORM -->
-            <form id="formPOUpdate">
+            <form id="formPenjualanUpdate">
                 <div class="modal-body">
 
                     <!-- hidden -->
                     <input type="hidden" name="idurut" id="idurut">
                     <input type="hidden" name="uniqueid" id="uniqueid">
                     <input type="hidden" name="docno" id="docno">
-                    <!-- <input type="hidden" name="status" id="status" value="P">
-                    <input type="hidden" name="chold" id="chold" value="NO"> -->
+                    <!-- <input type="hidden" name="status" id="status" value="P">-->
 
                     <!-- ROW 1 -->
                     <div class="row">
-                        <div class="col-md-12">
+                        <div class="col-md-3">
                             <div class="form-group">
-                                <label>PP</label>
-                                <input name="docnoppmodal" id="docnoppmodal"
+                                <label>No. Surat Jalan</label>
+                                <input name="docnosjmodal" id="docnosjmodal"
                                         class="form-control"
                                         style="width:100%" readonly>
                             </div>
                         </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="form-group">
-                                <label>ID Barang</label>
-                                <input name="idbarang" id="idbarang"
+                                <label>No. Sales Order</label>
+                                <input name="docnosomodal" id="docnosomodal"
                                         class="form-control"
                                         style="width:100%" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label>ID Barang</label>
+                                <input name="idbarang" 
+                                        id="idbarang"
+                                        class="form-control"
+                                        type="text"
+                                        style="text-transform:uppercase" readonly>
                             </div>
                         </div>
 
-                        <div class="col-md-8">
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label>Nama Barang</label>
                                 <input type="text"
@@ -608,10 +641,32 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- ROW 2 -->
                     <div class="row">
-                        <div class="col-md-2">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Principal</label>
+                                <select name="idprincipal" id="idprincipal"
+                                        class="form-control select2"
+                                        style="width:100%"></select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Gudang</label>
+                                <select name="idgudang" id="idgudang"
+                                        class="form-control select2"
+                                        style="width:100%"></select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Spec</label>
+                                <input name="idspec" id="idspec"
+                                        class="form-control"
+                                        style="width:100%">
+                            </div>
+                        </div>
+                        <div class="col-md-1">
                             <div class="form-group">
                                 <label>Satuan</label>
                                 <input name="unit" id="unit"
@@ -630,16 +685,9 @@
                                         placeholder="0.00">
                             </div>
                         </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Bonus Quantity</label>
-                                <input type="text"
-                                        name="qtybonus"
-                                        id="qtybonus"
-                                        class="form-control jtsseparator ratakanan"
-                                        placeholder="0.00">
-                            </div>
-                        </div>
+                    </div>
+                    <!-- ROW 2 -->
+                    <div class="row">
                         <div class="col-md-2">
                             <div class="form-group">
                                 <label>Harga</label>
@@ -671,26 +719,15 @@
                                         placeholder="0.00">
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <div class="form-group">
-                                <label>Keterangan PO</label>
+                                <label>Description</label>
                                 <textarea type="text"
-                                        name="descriptionpo"
-                                        rows="4"
+                                        name="description"
+                                        rows="2"
                                         style="text-transform: uppercase;"
-                                        id="descriptionpo"
+                                        id="description"
                                         class="form-control"></textarea>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Keterangan PP</label>
-                                <textarea type="text"
-                                        name="descriptionpp"
-                                        rows="4"
-                                        style="text-transform: uppercase;"
-                                        id="descriptionpp"
-                                        class="form-control" readonly></textarea>
                             </div>
                         </div>
                     </div>
@@ -701,13 +738,13 @@
                     <button type="button"
                             class="btn btn-secondary"
                             data-bs-dismiss="modal"
-                            onclick="$('#modalUpdatePO').modal('hide')">
+                            onclick="$('#modalUpdatePenjualan').modal('hide')">
                         <i class="fa fa-times"></i> Batal
                     </button>
 
                     <button type="button"
                             class="btn btn-primary"
-                            onclick="savePODetail()">
+                            onclick="savePenjualanDetail()">
                         <i class="fa fa-save"></i> Simpan
                     </button>
                 </div>
@@ -718,7 +755,8 @@
 
 
 
-<script type="application/javascript" src="<?= base_url('assets/pagejs/purchase/po_detail.js') ?>"></script>
+
+<script type="application/javascript" src="<?= base_url('assets/pagejs/sales/postsales/penjualan/penjualan_detail.js') ?>"></script>
 <script type="text/javascript">
     $(function() {
         $("#example1").dataTable();
@@ -755,7 +793,7 @@
 
 
 
-        $('#senddate').daterangepicker({
+        $('#delivdate').daterangepicker({
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
@@ -764,12 +802,12 @@
         });
 
         // handler apply/cancel
-        $('#senddate').on('apply.daterangepicker', function(ev, picker) {
+        $('#delivdate').on('apply.daterangepicker', function(ev, picker) {
             $(this).val(picker.startDate.format('YYYY-MM-DD'));
             // jika butuh validasi bootstrapValidator:
-            // $('#formInputTransfers').bootstrapValidator('updateStatus', 'senddate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'senddate');
+            // $('#formInputTransfers').bootstrapValidator('updateStatus', 'delivdate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'delivdate');
         });
-        $('#senddate').on('cancel.daterangepicker', function(ev, picker) {
+        $('#delivdate').on('cancel.daterangepicker', function(ev, picker) {
             $(this).val('');
         });
 

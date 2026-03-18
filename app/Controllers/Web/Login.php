@@ -113,7 +113,8 @@ order by msession);");
                 'kddept' => trim($dtl['kddept']),
                 'roleid' => trim($dtl['roleid']),
                 'site_lang' => trim($dtl['lang']),
-                'logindate' => $logindate
+                'logindate' => $logindate,
+                'bagian' => trim($dtl['kddept']),
             ];
             $this->session->set($newdata);
             $blog = $this->db->table('sc_log.log_time');

@@ -373,6 +373,209 @@ $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], f
 });
 
 
+
+//POST SALES
+$routes->group('/sales/postsales', ["namespace" => "App\Controllers\Sales"], function ($routes) {
+    
+    $routes->add('salesorder', 'Postsales::salesorder');
+    $routes->add('list_salesorder', 'Postsales::list_salesorder');
+    $routes->add('list_salesorder_apprv', 'Postsales::list_salesorder_apprv');
+    
+    $routes->add('addSalesOrder', 'Postsales::addSalesOrder');
+    $routes->add('detailSalesOrder', 'Postsales::detailSalesOrder');
+    $routes->add('list_tmp_salesorder_dtl', 'Postsales::list_tmp_salesorder_dtl');
+    // $routes->add('showing_sikbsp_mst', 'Postsales::showing_sikbsp_mst');
+    
+    $routes->add('clearEntrySalesOrder', 'Postsales::clearEntrySalesOrder');
+    $routes->add('finalEntrySalesOrder', 'Postsales::finalEntrySalesOrder');
+    $routes->add('showing_salesordertemp', 'Postsales::showing_salesordertemp');
+    $routes->add('updateStatusSalesOrder', 'Postsales::updateStatusSalesOrder');
+
+    
+    $routes->add('save_salesorder_detail', 'Postsales::save_salesorder_detail');
+    $routes->get('updateSalesOrder(:any)', 'Postsales::updateSalesOrder$1');
+
+    $routes->add('deleteSalesOrderDtl', 'Postsales::deleteSalesOrderDtl');
+    $routes->add('show_salesorder', 'Postsales::show_salesorder');
+    $routes->add('api_salesorder(:any)', 'Postsales::api_salesorder$1');
+    $routes->add('list_trx_salesorder_dtl', 'Postsales::list_trx_salesorder_dtl');
+    $routes->add('showing_salesordertrx', 'Postsales::showing_salesordertrx');
+    $routes->add('getBranchInfoSalesOrder', 'Postsales::getBranchInfoSalesOrder');
+    $routes->add('getNextSuffixSalesOrder', 'Postsales::getNextSuffixSalesOrder');
+    $routes->add('initSalesOrderHeader', 'Postsales::initSalesOrderHeader');
+    $routes->add('saveSalesOrderDetail', 'Postsales::saveSalesOrderDetail');
+    $routes->add("get_salesorder_detail(:any)", "Postsales::get_salesorder_detail$1");
+    $routes->add("delete_salesorder_detail", "Postsales::delete_salesorder_detail");
+
+
+
+
+    
+    $routes->add('penjualan', 'Postsales::penjualan');
+    $routes->add('list_penjualan', 'Postsales::list_penjualan');
+    $routes->add('list_penjualan_apprv', 'Postsales::list_penjualan_apprv');
+    
+    $routes->add('addPenjualan', 'Postsales::addPenjualan');
+    $routes->add('detailPenjualan', 'Postsales::detailPenjualan');
+    $routes->add('list_tmp_penjualan_dtl', 'Postsales::list_tmp_penjualan_dtl');
+    // $routes->add('showing_sikbsp_mst', 'Postsales::showing_sikbsp_mst');
+    
+    $routes->add('clearEntryPenjualan', 'Postsales::clearEntryPenjualan');
+    $routes->add('finalEntryPenjualan', 'Postsales::finalEntryPenjualan');
+    $routes->add('showing_penjualantemp', 'Postsales::showing_penjualantemp');
+    $routes->add('updateStatusPenjualan', 'Postsales::updateStatusPenjualan');
+
+    
+    $routes->add('save_penjualan_detail', 'Postsales::save_penjualan_detail');
+    $routes->get('updatePenjualan(:any)', 'Postsales::updatePenjualan$1');
+
+    $routes->add('deletePenjualanDtl', 'Postsales::deletePenjualanDtl');
+    $routes->add('show_penjualan', 'Postsales::show_penjualan');
+    $routes->add('api_penjualan(:any)', 'Postsales::api_penjualan$1');
+    $routes->add('list_trx_penjualan_dtl', 'Postsales::list_trx_penjualan_dtl');
+    $routes->add('showing_penjualantrx', 'Postsales::showing_penjualantrx');
+    $routes->add('getBranchInfoPenjualan', 'Postsales::getBranchInfoPenjualan');
+    $routes->add('getNextSuffixPenjualan', 'Postsales::getNextSuffixPenjualan');
+    $routes->add('initPenjualanHeader', 'Postsales::initPenjualanHeader');
+    $routes->add('savePenjualanDetail', 'Postsales::savePenjualanDetail');
+    $routes->add("get_penjualan_detail(:any)", "Postsales::get_penjualan_detail$1");
+    $routes->add("delete_penjualan_detail", "Postsales::delete_penjualan_detail");
+
+
+
+
+    $routes->add('salesorderexternal', 'Postsales::salesorderexternal');
+    $routes->add('list_salesorderexternal', 'Postsales::list_salesorderexternal');
+    $routes->add('addSalesOrderExternal', 'Postsales::addSalesOrderExternal');
+    $routes->add('detailSalesOrderExternal', 'Postsales::detailSalesOrderExternal');
+    $routes->add('list_t_salesorderexternal_dtl', 'Postsales::list_t_salesorderexternal_dtl');
+    // $routes->add('showing_sikbsp_mst', 'Postsales::showing_sikbsp_mst');
+    $routes->add('showing_salesorderexternaltemp', 'Postsales::showing_salesorderexternaltemp');
+    $routes->add('saveSalesOrderExternal', 'Postsales::saveSalesOrderExternal');
+    $routes->add('clearEntrySalesOrderExternal', 'Postsales::clearEntrySalesOrderExternal');
+    $routes->add('finalEntrySalesOrderExternal', 'Postsales::finalEntrySalesOrderExternal');
+    $routes->get('updateSalesOrderExternal(:any)', 'Postsales::updateSalesOrderExternal$1');
+    $routes->get('deleteSalesOrderExternal(:any)', 'Postsales::deleteSalesOrderExternal$1');
+    $routes->add('insert_detail_salesorderexternal', 'Postsales::insert_detail_salesorderexternal');
+    $routes->add('insertNewSalesOrderExternal', 'Postsales::insertNewSalesOrderExternal');
+    $routes->post("update_detail_salesorderexternal", "Postsales::update_detail_salesorderexternal");
+    $routes->add('deleteSalesOrderExternalDtl', 'Postsales::deleteSalesOrderExternalDtl');
+    $routes->add('show_salesorderexternal', 'Postsales::show_salesorderexternal');
+    $routes->add('api_salesorderexternal(:any)', 'Postsales::api_salesorderexternal$1');
+    $routes->add('list_t_salesorderexternal_dtltrx', 'Postsales::list_t_salesorderexternal_dtltrx');
+    $routes->add('showing_salesorderexternaltrx', 'Postsales::showing_salesorderexternaltrx');
+    $routes->add('getRolePOSOE(:any)', 'Postsales::getRolePOSOE$1');
+    $routes->add('getRate(:any)', 'Postsales::getRate$1');
+
+
+    $routes->add('soi', 'Postsales::soi');
+    $routes->add('list_soi', 'Postsales::list_soi');
+    $routes->add('addSOI', 'Postsales::addSOI');
+    $routes->add('detailSOI', 'Postsales::detailSOI');
+    $routes->add('list_t_soi_dtl', 'Postsales::list_t_soi_dtl');
+    // $routes->add('showing_sikbsp_mst', 'Postsales::showing_sikbsp_mst');
+    $routes->add('showing_soitemp', 'Postsales::showing_soitemp');
+    $routes->add('saveSOI', 'Postsales::saveSOI');
+    $routes->add('clearEntrySOI', 'Postsales::clearEntrySOI');
+    $routes->add('finalEntrySOI', 'Postsales::finalEntrySOI');
+    $routes->get('updateSOI(:any)', 'Postsales::updateSOI$1');
+    $routes->get('deleteSOI(:any)', 'Postsales::deleteSOI$1');
+    $routes->add('insert_detail_soi', 'Postsales::insert_detail_soi');
+    $routes->add('insertNewSOI', 'Postsales::insertNewSOI');
+    $routes->post("update_detail_soi", "Postsales::update_detail_soi");
+    $routes->add('deleteSOIDtl', 'Postsales::deleteSOIDtl');
+    $routes->add('show_soi', 'Postsales::show_soi');
+    $routes->add('api_soi(:any)', 'Postsales::api_soi$1');
+    $routes->add('list_t_soi_dtltrx', 'Postsales::list_t_soi_dtltrx');
+    $routes->add('showing_soitrx', 'Postsales::showing_soitrx');
+    $routes->add('getRolePOSOI(:any)', 'Postsales::getRolePOSOI$1');
+    $routes->add('getRate(:any)', 'Postsales::getRate$1');
+    $routes->add('importSOIDetailFromPO', 'Postsales::importSOIDetailFromPO');
+    $routes->add('clearTmpSOIDetail', 'Postsales::clearTmpSOIDetail');
+
+
+});
+
+
+//PRE SALES
+$routes->group('/sales/presales', ["namespace" => "App\Controllers\Sales"], function ($routes) {
+
+    $routes->add('/', 'PreSales::taskmanagement');
+    $routes->add('list_task', 'PreSales::list_task');
+    $routes->add('list_task_board', 'PreSales::list_task_board');
+    $routes->add('addTask', 'PreSales::addTask');
+    $routes->post('updateTask', 'PreSales::updateTask');
+
+
+
+    $routes->add('offering', 'PreSales::offering');
+    $routes->add('list_offering', 'PreSales::list_offering');
+    $routes->post('saveOffering', 'PreSales::saveOffering');
+    $routes->add('input_offering', 'PreSales::input_offering');
+    $routes->get('showing_offering(:any)', 'PreSales::showing_offering$1');
+    $routes->add('submitOffering', 'PreSales::saveOffering');
+    $routes->get("editOffering/(:any)/(:any)", "PreSales::editOffering/$1/$2");
+    $routes->get("hapusOffering/(:any)/(:any)", "PreSales::hapusOffering/$1/$2");
+    // $routes->add('showing_exchange_rate', 'PreSales::showing_exchange_rate');
+    $routes->add('showing_item(:any)', 'PreSales::showing_item$1');
+    $routes->add('getRolePO(:any)', 'PreSales::getRolePO$1');
+
+
+    $routes->add('insertNewItem', 'PreSales::insertNewItem');
+    $routes->post("update_item", "PreSales::update_item");
+    $routes->add('deleteItem', 'PreSales::deleteItem');
+
+
+    //PENAWARAN HARGA
+    $routes->add('priceproposal', 'Presales::offering');
+    $routes->add('list_offering', 'Presales::list_offering');
+    $routes->add('addOffering', 'Presales::addOffering');
+    $routes->add('detailOffering', 'Presales::detailOffering');
+    $routes->add('list_t_offering_dtl', 'Presales::list_t_offering_dtl');
+    // $routes->add('showing_sikbsp_mst', 'Presales::showing_sikbsp_mst');
+    $routes->add('saveOffering', 'Presales::saveOffering');
+    $routes->add('clearEntryOffering', 'Presales::clearEntryOffering');
+    $routes->add('finalEntryOffering', 'Presales::finalEntryOffering');
+    $routes->add('showing_offeringtemp', 'Presales::showing_offeringtemp');
+
+    $routes->get('updateOffering(:any)', 'Presales::updateOffering$1');
+    $routes->get('deleteOffering(:any)', 'Presales::deleteOffering$1');
+    $routes->add('insert_detail_offering', 'Presales::insert_detail_offering');
+    $routes->add('insertNewOffering', 'Presales::insertNewOffering');
+    $routes->post("update_detail_offering", "Presales::update_detail_offering");
+    $routes->add('deleteOfferingDtl', 'Presales::deleteOfferingDtl');
+    $routes->add('show_offering', 'Presales::show_offering');
+    $routes->add('api_offering(:any)', 'Presales::api_offering$1');
+    $routes->add('list_t_offering_dtltrx', 'Presales::list_t_offering_dtltrx');
+    $routes->add('showing_offeringtrx', 'Presales::showing_offeringtrx');
+
+
+    //PROFORMA INVOICE
+    $routes->add('performainvoice', 'Presales::proforma');
+    $routes->add('list_proforma', 'Presales::list_proforma');
+    $routes->add('addProforma', 'Presales::addProforma');
+    $routes->add('detailProforma', 'Presales::detailProforma');
+    $routes->add('list_t_proforma_dtl', 'Presales::list_t_proforma_dtl');
+    // $routes->add('showing_sikbsp_mst', 'Presales::showing_sikbsp_mst');
+    $routes->add('showing_proformatemp', 'Presales::showing_proformatemp');
+    $routes->add('saveProforma', 'Presales::saveProforma');
+    $routes->add('clearEntryProforma', 'Presales::clearEntryProforma');
+    $routes->add('finalEntryProforma', 'Presales::finalEntryProforma');
+    $routes->get('updateProforma(:any)', 'Presales::updateProforma$1');
+    $routes->get('deleteProforma(:any)', 'Presales::deleteProforma$1');
+    $routes->add('insert_detail_proforma', 'Presales::insert_detail_proforma');
+    $routes->add('insertNewProforma', 'Presales::insertNewProforma');
+    $routes->post("update_detail_proforma", "Presales::update_detail_proforma");
+    $routes->add('deleteProformaDtl', 'Presales::deleteProformaDtl');
+    $routes->add('show_proforma', 'Presales::show_proforma');
+    $routes->add('api_proforma(:any)', 'Presales::api_proforma$1');
+    $routes->add('list_t_proforma_dtltrx', 'Presales::list_t_proforma_dtltrx');
+    $routes->add('showing_proformatrx', 'Presales::showing_proformatrx');
+    $routes->add('getRolePOProforma(:any)', 'Presales::getRolePOProforma$1');
+
+});
+
+
 $routes->group('/master/data', ["namespace" => "App\Controllers\Master"], function ($routes) {
     $routes->add('supplier', 'Suppliers::supplier');
     $routes->post("list_suppliers", "Suppliers::list_suppliers");
@@ -591,6 +794,8 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
     $routes->add('globalmodule/list_pp', 'Globalmodule::list_pp');
     $routes->add('globalmodule/list_po', 'Globalmodule::list_po');
     $routes->add('globalmodule/list_lpb', 'Globalmodule::list_lpb');
+
+    $routes->add('globalmodule/list_so', 'Globalmodule::list_so');
     $routes->add('globalmodule/get_tax_percent', 'Globalmodule::get_tax_percent');
 
     $routes->add('globalmodule/list_branchjob', 'Globalmodule::list_branchjob');

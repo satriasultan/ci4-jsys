@@ -41,6 +41,9 @@ use App\Models\Master\M_KelompokBrg;
 use App\Models\Master\M_Principal;
 use App\Models\Master\M_Tax;
 use App\Models\Purchase\M_Purchase;
+use App\Models\Sales\M_Sales;
+use App\Models\Sales\M_Presales;
+use App\Models\Sales\M_Postsales;
 use App\Models\Purchase\M_Purchaseorder;
 use App\Models\Stock\M_Balance;
 use App\Models\Stock\M_Bbk;
@@ -159,5 +162,9 @@ class BaseController extends Controller
         $this->m_principal = new M_Principal();
         $this->m_tax = new M_Tax();
         $this->m_purchase = new M_Purchase();
+        $this->m_sales = new M_Sales();
+        $this->m_presales = new M_Presales();
+        $this->m_postsales = new M_Postsales();
+
     }
 }

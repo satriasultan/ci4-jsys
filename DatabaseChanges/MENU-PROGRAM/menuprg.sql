@@ -86,3 +86,27 @@ INSERT INTO sc_mst.menuprg (
 ('JTS', 4, 'I.Q.A.4', 'AJUSTMENT ITEM (VALUE)', 'I.Q', 'I.Q.A', 'P', false, 'fa-lightbulb-o', 'persediaan/trans/ajustment_item_value', 'LEFT', 'NO'),
 ('JTS', 5, 'I.Q.A.5', 'PEMAKAIAN BARANG', 'I.Q', 'I.Q.A', 'P', false, 'fa-lightbulb-o', 'persediaan/trans/pmk_brng', 'LEFT', 'NO'),
 ('JTS', 6, 'I.Q.A.6', 'PENERIMAAN BARANG', 'I.Q', 'I.Q.A', 'P', false, 'fa-lightbulb-o', 'persediaan/trans/pnm_barang', 'LEFT', 'NO');
+
+
+
+-- PENJUALAN
+
+--DELETE TERLEBIH DAHULU
+DELETE FROM sc_mst.menuprg where kodemenu like '%I.S%'
+--SALES
+INSERT INTO sc_mst.menuprg (
+    branch, urut, kodemenu, namamenu, parentmenu, parentsub, child, holdmenu, iconmenu, linkmenu, menuposition, chold
+) VALUES
+('JTS', 6, 'I.S', 'PENJUALAN', '', '', 'U', 'false', 'fa-area-chart', '#', 'LEFT', 'NO'),
+('JTS', 1, 'I.S.A', 'PRE PENJUALAN', 'I.S', '', 'S', 'false', 'fa-list-alt', '#', 'LEFT', 'NO'),
+-- ('JTS', 1, 'I.S.A.1', 'TASK MANAGEMENT', 'I.S', 'I.S.A', 'P', 'false', 'fa-tasks', 'sales/presales', 'LEFT', 'NO'),
+-- ('JTS', 2, 'I.S.A.2', 'PRICE PROPOSAL', 'I.S', 'I.S.A', 'P', 'false', 'fa-handshake-o', 'sales/presales/priceproposal', 'LEFT', 'NO'),
+-- ('JTS', 3, 'I.S.A.3', 'PROFORMA INVOICE', 'I.S', 'I.S.A', 'P', 'false', 'fa-money', 'sales/presales/performainvoice', 'LEFT', 'NO'),
+('JTS', 2, 'I.S.B', 'POST PENJUALAN', 'I.S', '', 'S', 'false', 'fa-handshake-o', '#', 'LEFT', 'NO'),
+('JTS', 1, 'I.S.B.1', 'SALES ORDER', 'I.S', 'I.S.B', 'P', 'false', 'fa-file-text', 'sales/postsales/salesorder', 'LEFT', 'NO'),
+('JTS', 2, 'I.S.B.2', 'PENJUALAN', 'I.S', 'I.S.B', 'P', 'false', 'fa-file-text', 'sales/postsales/penjualan', 'LEFT', 'NO')
+-- ('JTS', 3, 'I.S.B.3', 'SALES ORDER EXTERNAL', 'I.S', 'I.S.B', 'P', 'false', 'fa-file-text', 'sales/postsales/salesorderexternal', 'LEFT', 'NO'),
+-- ('JTS', 4, 'I.S.B.4', 'SOI', 'I.S', 'I.S.B', 'P', 'false', 'fa-file-text-o', 'sales/postsales/soi', 'LEFT', 'NO'),
+-- ('JTS', 5, 'I.S.B.5', 'DELIVERY SPEC', 'I.S', 'I.S.B', 'P', 'false', 'fa-list', 'sales/postsales/deliveryspec', 'LEFT', 'NO'),
+-- ('JTS', 6, 'I.S.B.6', 'DELIVERY ORDER', 'I.S', 'I.S.B', 'P', 'false', 'fa-truck', 'sales/postsales/deliveryorder', 'LEFT', 'NO')
+;
