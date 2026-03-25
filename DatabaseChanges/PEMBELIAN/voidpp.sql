@@ -206,6 +206,25 @@ BEGIN
         AND t.inputby = v_inputby
         AND p.uniqueid = t.uniqueid;
 
+        
+        UPDATE sc_trx.pp_dtl ppd
+        SET qtypo = COALESCE(ppd.qtypo, 0) + pod.qty_used
+            -- updateby = v_inputby,
+            -- updatedate = CURRENT_TIMESTAMP
+        FROM (
+            SELECT 
+                uniqueid,
+                SUM(qty) as qty_used
+            FROM sc_tmp.voidpp_dtl
+            WHERE rtrim(docno) = rtrim(NEW.docno)
+                AND inputby = NEW.inputby
+                AND uniqueid IS NOT NULL
+                AND uniqueid <> ''
+            GROUP BY uniqueid
+        ) pod
+        WHERE ppd.uniqueid = pod.uniqueid;
+
+
         -- ===============================
         -- CLEANUP TMP
         -- ===============================
@@ -244,6 +263,25 @@ BEGIN
         WHERE rtrim(t.docno) = rtrim(OLD.docno)
         AND t.inputby = v_inputby
         AND p.uniqueid = t.uniqueid;
+
+        
+        UPDATE sc_trx.pp_dtl ppd
+        SET qtypo = COALESCE(ppd.qtypo, 0) + pod.qty_used
+            -- updateby = v_inputby,
+            -- updatedate = CURRENT_TIMESTAMP
+        FROM (
+            SELECT 
+                uniqueid,
+                SUM(qty) as qty_used
+            FROM sc_tmp.voidpp_dtl
+            WHERE rtrim(docno) = rtrim(NEW.docno)
+                AND inputby = NEW.inputby
+                AND uniqueid IS NOT NULL
+                AND uniqueid <> ''
+            GROUP BY uniqueid
+        ) pod
+        WHERE ppd.uniqueid = pod.uniqueid;
+
 
         INSERT INTO sc_trx.voidpp
         (idurut, docno, cabang, docdate, pemohon,

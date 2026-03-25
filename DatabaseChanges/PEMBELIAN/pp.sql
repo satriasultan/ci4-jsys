@@ -343,3 +343,28 @@ ADD COLUMN uniqueid VARCHAR(64)
 
 ALTER TABLE sc_trx.pp_dtl
 ADD COLUMN uniqueid VARCHAR(64)
+
+
+
+
+
+
+-- Tambahkan kolom di sc_trx.pp_dtl
+ALTER TABLE sc_trx.pp_dtl 
+ADD COLUMN idtax character(20),
+ADD COLUMN currcode character(3),
+ADD COLUMN kurs numeric(18,2),
+ADD COLUMN nilaikonversi numeric(18,2),
+ADD COLUMN nilaipajak numeric(18,2),
+ADD COLUMN IF NOT EXISTS qtypo numeric(18,2) DEFAULT 0,
+ADD COLUMN IF NOT EXISTS qtyvoid numeric(18,2) DEFAULT 0;
+
+-- Tambahkan kolom di sc_tmp.pp_dtl
+ALTER TABLE sc_tmp.pp_dtl 
+ADD COLUMN idtax character(20),
+ADD COLUMN currcode character(3),
+ADD COLUMN kurs numeric(18,2),
+ADD COLUMN nilaikonversi numeric(18,2),
+ADD COLUMN nilaipajak numeric(18,2),
+ADD COLUMN IF NOT EXISTS qtypo numeric(18,2) DEFAULT 0,
+ADD COLUMN IF NOT EXISTS qtyvoid numeric(18,2) DEFAULT 0;

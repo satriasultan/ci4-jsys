@@ -282,6 +282,24 @@ BEGIN
         WHERE rtrim(docno) = rtrim(OLD.docno)
             AND inputby = v_inputby;
 
+
+        UPDATE sc_trx.po_dtl ppd
+        SET qtylpb = COALESCE(ppd.qtylpb, 0) + pod.qty_used
+            -- updateby = v_inputby,
+            -- updatedate = CURRENT_TIMESTAMP
+        FROM (
+            SELECT 
+                uniqueid,
+                SUM(qty) as qty_used
+            FROM sc_tmp.po_dtl
+            WHERE rtrim(docno) = rtrim(OLD.docno)
+                AND inputby = v_inputby
+                AND uniqueid IS NOT NULL
+                AND uniqueid <> ''
+            GROUP BY uniqueid
+        ) pod
+        WHERE ppd.uniqueid = pod.uniqueid;
+
         -- UPDATE sc_trx.pp p
         --     SET status = 'PO'
         --     WHERE p.docno IN (
@@ -326,6 +344,23 @@ BEGIN
             inputby, inputdate, status, updateby, updatedate, docnotmp
         FROM sc_tmp.lpb_dtl
         WHERE rtrim(docno) = rtrim(NEW.docno);
+
+        UPDATE sc_trx.po_dtl ppd
+        SET qtylpb = COALESCE(ppd.qtylpb, 0) + pod.qty_used
+            -- updateby = v_inputby,
+            -- updatedate = CURRENT_TIMESTAMP
+        FROM (
+            SELECT 
+                uniqueid,
+                SUM(qty) as qty_used
+            FROM sc_tmp.po_dtl
+            WHERE rtrim(docno) = rtrim(OLD.docno)
+                AND inputby = v_inputby
+                AND uniqueid IS NOT NULL
+                AND uniqueid <> ''
+            GROUP BY uniqueid
+        ) pod
+        WHERE ppd.uniqueid = pod.uniqueid;
 
                 -- ===============================
         -- UPDATE STATUS PP MENJADI 'PO'
@@ -479,4 +514,23 @@ CREATE OR REPLACE TRIGGER tr_lpb
 
 -- ALTER TABLE sc_trx.lpb_dtl
 -- ADD COLUMN uniqueid VARCHAR(64)
+
+
+-- Tambahkan kolom di sc_trx.lpb_dtl
+ALTER TABLE sc_trx.lpb_dtl 
+ADD COLUMN idtax character(20),
+ADD COLUMN currcode character(3),
+ADD COLUMN kurs numeric(18,2),
+ADD COLUMN nilaikonversi numeric(18,2),
+ADD COLUMN nilaipajak numeric(18,2),
+ADD COLUMN IF NOT EXISTS qtyretur numeric(18,2) DEFAULT 0;
+
+-- Tambahkan kolom di sc_tmp.lpb_dtl
+ALTER TABLE sc_tmp.lpb_dtl 
+ADD COLUMN idtax character(20),
+ADD COLUMN currcode character(3),
+ADD COLUMN kurs numeric(18,2),
+ADD COLUMN nilaikonversi numeric(18,2),
+ADD COLUMN nilaipajak numeric(18,2),    
+ADD COLUMN IF NOT EXISTS qtyretur numeric(18,2) DEFAULT 0;
 
