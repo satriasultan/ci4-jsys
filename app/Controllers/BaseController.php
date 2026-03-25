@@ -40,11 +40,12 @@ use App\Models\Master\M_JenisProduk;
 use App\Models\Master\M_KelompokBrg;
 use App\Models\Master\M_Principal;
 use App\Models\Master\M_Tax;
+use App\Models\Persediaan\M_Persediaan;
 use App\Models\Purchase\M_Purchase;
+use App\Models\Purchase\M_Purchaseorder;
 use App\Models\Sales\M_Sales;
 use App\Models\Sales\M_Presales;
 use App\Models\Sales\M_Postsales;
-use App\Models\Purchase\M_Purchaseorder;
 use App\Models\Stock\M_Balance;
 use App\Models\Stock\M_Bbk;
 use App\Models\Stock\M_Bbm;
@@ -165,6 +166,6 @@ class BaseController extends Controller
         $this->m_sales = new M_Sales();
         $this->m_presales = new M_Presales();
         $this->m_postsales = new M_Postsales();
-
+        $this->m_persediaan = new M_Persediaan();
     }
 }

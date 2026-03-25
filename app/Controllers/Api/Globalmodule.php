@@ -1667,14 +1667,32 @@ class Globalmodule extends BaseController
     /* BATCH PER ITEM & PERGUDANG */
     function list_batch_item(){
         $branch = trim($this->session->get('branch'));
-        $loccode = trim($this->session->get('loccode'));
+        $loccode_sessions = trim($this->session->get('loccode'));
+        $loccodePost = trim($this->request->getPost('loccode'));
+        $loccodeGet = trim($this->request->getGet('loccode'));
+
         $search = strtoupper(trim($this->request->getPost('_search_')));
         $perpage = $this->request->getPost('_perpage_');
         $px = trim($this->request->getPost('_parameterx_'));
         $perpage = intval($perpage);
         $page = $this->request->getPost('_page_');
-        $varGet = trim($this->request->getGet('var'));
-        $varPost = trim($this->request->getPost('var'));
+        $varGet = trim($this->request->getGet('_var_'));
+        $varPost = trim($this->request->getPost('_var_'));
+
+
+        if (!empty($loccodeGet) or $loccodeGet!=='') {
+            $pidlocationGet= " and coalesce(idlocation,'')='$loccodeGet'";
+        } else {
+            $pidlocationGet= "";
+        }
+        if (!empty($loccodePost) or $loccodePost!=='') {
+            $pidlocationPost= " and coalesce(idlocation,'')='$loccodePost'";
+        } else {
+            $pidlocationPost= "";
+        }
+
+
+
         if (!empty($varGet) or $varGet!=='') {
             $paramglobal1= " and batch='$varGet'";
         } else {
@@ -1689,10 +1707,10 @@ class Globalmodule extends BaseController
         if (!empty($px) or $px!=='') {
             $paramitem= " and idbarang='$px'";
         } else {
-            $paramitem= " and idbarang='$px'";
+            $paramitem= "";
         }
 
-        $parameterx = " and coalesce(idlocation,'')='$loccode'";
+        $parameterx = " $pidlocationGet $pidlocationPost ";
         $page = intval($page);
         $limit = $perpage * $page;
 
@@ -1716,8 +1734,9 @@ class Globalmodule extends BaseController
 
         $idbarang =  strtoupper(trim($this->request->getPost('idbarang')));
         $batch =  strtoupper(trim($this->request->getPost('batch')));
-        $idlocation =  strtoupper(trim($this->session->get('loccode')));
+        $idlocation =  strtoupper(trim($this->request->getPost('loccode')));
         $parameter = " and idbarang='$idbarang' and batch='$batch' and idlocation='$idlocation'";
+        $dtl = $this->m_global->q_master_barang(" and idbarang='$idbarang' ")->getRowArray();
         $cekstkgdw = $this->m_balance->q_stkgdw_batch_selecting($parameter)->getNumRows();
         if (!empty($idbarang) and !empty($batch) and $cekstkgdw<=0) {
             $builder = $this->db->table('sc_mst.stkgdw');
@@ -1726,6 +1745,8 @@ class Globalmodule extends BaseController
                 'batch' => $batch,
                 'idlocation' => $idlocation,
                 'idarea' => $idlocation.'.0000',
+                'unit' => trim($dtl['unit']),
+                'defaultcurrency' => trim($dtl['defaultcurrency']),
             );
             $builder->insert($info);
 
@@ -2389,9 +2410,10 @@ class Globalmodule extends BaseController
 
     }
 
-    
-    
-    
+
+
+
+
     function list_supplier_new(){
         $branch = $this->session->get('branch');
         $idbu = $this->session->get('idbu');
@@ -2444,8 +2466,8 @@ class Globalmodule extends BaseController
 
 
 
-    
-    
+
+
     function list_pp(){
         $branch = $this->session->get('branch');
         $idbu = $this->session->get('idbu');
@@ -2497,8 +2519,8 @@ class Globalmodule extends BaseController
     }
 
 
-    
-    
+
+
     function list_po(){
         $branch = $this->session->get('branch');
         $idbu = $this->session->get('idbu');
@@ -2550,9 +2572,9 @@ class Globalmodule extends BaseController
     }
 
 
-    
-    
-    
+
+
+
     function list_lpb(){
         $branch = $this->session->get('branch');
         $idbu = $this->session->get('idbu');
@@ -2604,9 +2626,9 @@ class Globalmodule extends BaseController
     }
 
 
-    
-    
-    
+
+
+
     function list_so(){
         $branch = $this->session->get('branch');
         $idbu = $this->session->get('idbu');
@@ -2658,7 +2680,7 @@ class Globalmodule extends BaseController
     }
 
 
-    
+
     public function get_tax_percent()
     {
         $db = db_connect();
@@ -2681,4 +2703,6 @@ class Globalmodule extends BaseController
         ]);
     }
 
+
 }
+

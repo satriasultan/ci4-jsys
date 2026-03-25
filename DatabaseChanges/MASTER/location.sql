@@ -83,3 +83,13 @@ VALUES
 ('GK-1','GUDANG KECIL - EAF','NO',5141),
 ('GK-2','GUDANG KECIL - LF','NO',5141),
 ('GK-3','GUDANG KECIL - CCM','NO',5141);
+
+
+
+
+/* TAMBAHKAN 1 KOLOM ID BRANCH JOB UNTUK HIRARKI */
+
+alter table sc_mst.mlocation add column idbranchjob char(20), add column nmbranchjob character(50);
+
+
+

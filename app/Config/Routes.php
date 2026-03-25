@@ -114,7 +114,7 @@ $routes->group('/master/location', ["namespace" => "App\Controllers\Master"], fu
     $routes->get("showing_data_area/(:any)", "Location::showing_data_area/$1");
     $routes->add('import_area', 'Location::import_area');
     $routes->post("proses_upload", "Location::proses_upload");
-    $routes->add("clear_tmp", "Location::clear_tmp");   
+    $routes->add("clear_tmp", "Location::clear_tmp");
     $routes->add("final_data", "Location::final_data");
     $routes->add("showlabels", "Location::showlabels");
     $routes->add("api_show_showlabels_area(:any)", "Location::api_show_showlabels_area$1");
@@ -144,8 +144,9 @@ $routes->group('/master/role', ["namespace" => "App\Controllers\Master"], functi
 });
 
 
+
 $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], function ($routes) {
-    
+
 
     $routes->add('pp', 'Purchase::pp');
     $routes->add('list_pp', 'Purchase::list_pp');
@@ -156,7 +157,7 @@ $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], f
     $routes->add('list_tmp_pp_dtl', 'Purchase::list_tmp_pp_dtl');
     $routes->add('updateStatusPP', 'Purchase::updateStatusPP');
     // $routes->add('showing_sikbsp_mst', 'Purchase::showing_sikbsp_mst');
-    
+
     $routes->add('clearEntryPP', 'Purchase::clearEntryPP');
     $routes->add('finalEntryPP', 'Purchase::finalEntryPP');
     $routes->add('showing_pptemp', 'Purchase::showing_pptemp');
@@ -180,14 +181,14 @@ $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], f
 
 
 
-    
+
     $routes->add('voidpp', 'Purchase::voidpp');
     $routes->add('list_voidpp', 'Purchase::list_voidpp');
     $routes->add('addVoidPP', 'Purchase::addVoidPP');
     $routes->add('detailVoidPP', 'Purchase::detailVoidPP');
     $routes->add('list_tmp_voidpp_dtl', 'Purchase::list_tmp_voidpp_dtl');
     // $routes->add('showing_sikbsp_mst', 'Purchase::showing_sikbsp_mst');
-    
+
     $routes->add('clearEntryVoidPP', 'Purchase::clearEntryVoidPP');
     $routes->add('finalEntryVoidPP', 'Purchase::finalEntryVoidPP');
     $routes->add('showing_voidpptemp', 'Purchase::showing_voidpptemp');
@@ -209,23 +210,23 @@ $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], f
 
 
 
-    
+
     $routes->add('po', 'Purchase::po');
     $routes->add('list_po', 'Purchase::list_po');
     $routes->add('list_po_apprv', 'Purchase::list_po_apprv');
-    
+
     $routes->add('addPO', 'Purchase::addPO');
     $routes->add('detailPO', 'Purchase::detailPO');
     $routes->add('list_tmp_po_dtl', 'Purchase::list_tmp_po_dtl');
     // $routes->add('showing_sikbsp_mst', 'Purchase::showing_sikbsp_mst');
-    
+
     $routes->add('clearEntryPO', 'Purchase::clearEntryPO');
     $routes->add('finalEntryPO', 'Purchase::finalEntryPO');
     $routes->add('finalEntryPO_DP', 'Purchase::finalEntryPO_DP');
     $routes->add('showing_potemp', 'Purchase::showing_potemp');
     $routes->add('updateStatusPO', 'Purchase::updateStatusPO');
 
-    
+
     $routes->add('save_po_detail', 'Purchase::save_po_detail');
     $routes->get('updatePO(:any)', 'Purchase::updatePO$1');
 
@@ -243,23 +244,23 @@ $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], f
 
 
 
-    
-    
+
+
     $routes->add('voidpo', 'Purchase::voidpo');
     $routes->add('list_voidpo', 'Purchase::list_voidpo');
     $routes->add('list_voidpo_apprv', 'Purchase::list_voidpo_apprv');
-    
+
     $routes->add('addVoidPO', 'Purchase::addVoidPO');
     $routes->add('detailVoidPO', 'Purchase::detailVoidPO');
     $routes->add('list_tmp_voidpo_dtl', 'Purchase::list_tmp_voidpo_dtl');
     // $routes->add('showing_sikbsp_mst', 'Purchase::showing_sikbsp_mst');
-    
+
     $routes->add('clearEntryVoidPO', 'Purchase::clearEntryVoidPO');
     $routes->add('finalEntryVoidPO', 'Purchase::finalEntryVoidPO');
     $routes->add('showing_voidpotemp', 'Purchase::showing_voidpotemp');
     $routes->add('updateStatusVoidPO', 'Purchase::updateStatusVoidPO');
 
-    
+
     $routes->add('save_voidpo_detail', 'Purchase::save_voidpo_detail');
     $routes->get('updateVoidPO(:any)', 'Purchase::updateVoidPO$1');
 
@@ -276,21 +277,21 @@ $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], f
     $routes->add("delete_voidpo_detail", "Purchase::delete_voidpo_detail");
 
 
-    
+
     $routes->add('umb', 'Purchase::umb');
     $routes->add('list_umb', 'Purchase::list_umb');
     $routes->add('list_umb_apprv', 'Purchase::list_umb_apprv');
-    
+
     $routes->add('addUMB', 'Purchase::addUMB');
     $routes->add('detailUMB', 'Purchase::detailUMB');
     // $routes->add('showing_sikbsp_mst', 'Purchase::showing_sikbsp_mst');
-    
+
     $routes->add('clearEntryUMB', 'Purchase::clearEntryUMB');
     $routes->add('finalEntryUMB', 'Purchase::finalEntryUMB');
     $routes->add('showing_umbtemp', 'Purchase::showing_umbtemp');
     $routes->add('updateStatusUMB', 'Purchase::updateStatusUMB');
 
-    
+
     $routes->add('save_umb_detail', 'Purchase::save_umb_detail');
     $routes->get('updateUMB(:any)', 'Purchase::updateUMB$1');
 
@@ -304,22 +305,22 @@ $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], f
     $routes->add('saveUMBDetail', 'Purchase::saveUMBDetail');
 
 
-    
+
     $routes->add('lpb', 'Purchase::lpb');
     $routes->add('list_lpb', 'Purchase::list_lpb');
     $routes->add('list_lpb_apprv', 'Purchase::list_lpb_apprv');
-    
+
     $routes->add('addLPB', 'Purchase::addLPB');
     $routes->add('detailLPB', 'Purchase::detailLPB');
     $routes->add('list_tmp_lpb_dtl', 'Purchase::list_tmp_lpb_dtl');
     // $routes->add('showing_sikbsp_mst', 'Purchase::showing_sikbsp_mst');
-    
+
     $routes->add('clearEntryLPB', 'Purchase::clearEntryLPB');
     $routes->add('finalEntryLPB', 'Purchase::finalEntryLPB');
     $routes->add('showing_lpbtemp', 'Purchase::showing_lpbtemp');
     $routes->add('updateStatusLPB', 'Purchase::updateStatusLPB');
 
-    
+
     $routes->add('save_lpb_detail', 'Purchase::save_lpb_detail');
     $routes->get('updateLPB(:any)', 'Purchase::updateLPB$1');
 
@@ -337,22 +338,22 @@ $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], f
 
 
 
-    
+
     $routes->add('returbeli', 'Purchase::returbeli');
     $routes->add('list_returbeli', 'Purchase::list_returbeli');
     $routes->add('list_returbeli_apprv', 'Purchase::list_returbeli_apprv');
-    
+
     $routes->add('addReturBeli', 'Purchase::addReturBeli');
     $routes->add('detailReturBeli', 'Purchase::detailReturBeli');
     $routes->add('list_tmp_returbeli_dtl', 'Purchase::list_tmp_returbeli_dtl');
     // $routes->add('showing_sikbsp_mst', 'Purchase::showing_sikbsp_mst');
-    
+
     $routes->add('clearEntryReturBeli', 'Purchase::clearEntryReturBeli');
     $routes->add('finalEntryReturBeli', 'Purchase::finalEntryReturBeli');
     $routes->add('showing_returbelitemp', 'Purchase::showing_returbelitemp');
     $routes->add('updateStatusReturBeli', 'Purchase::updateStatusReturBeli');
 
-    
+
     $routes->add('save_returbeli_detail', 'Purchase::save_returbeli_detail');
     $routes->get('updateReturBeli(:any)', 'Purchase::updateReturBeli$1');
 
@@ -376,22 +377,22 @@ $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], f
 
 //POST SALES
 $routes->group('/sales/postsales', ["namespace" => "App\Controllers\Sales"], function ($routes) {
-    
+
     $routes->add('salesorder', 'Postsales::salesorder');
     $routes->add('list_salesorder', 'Postsales::list_salesorder');
     $routes->add('list_salesorder_apprv', 'Postsales::list_salesorder_apprv');
-    
+
     $routes->add('addSalesOrder', 'Postsales::addSalesOrder');
     $routes->add('detailSalesOrder', 'Postsales::detailSalesOrder');
     $routes->add('list_tmp_salesorder_dtl', 'Postsales::list_tmp_salesorder_dtl');
     // $routes->add('showing_sikbsp_mst', 'Postsales::showing_sikbsp_mst');
-    
+
     $routes->add('clearEntrySalesOrder', 'Postsales::clearEntrySalesOrder');
     $routes->add('finalEntrySalesOrder', 'Postsales::finalEntrySalesOrder');
     $routes->add('showing_salesordertemp', 'Postsales::showing_salesordertemp');
     $routes->add('updateStatusSalesOrder', 'Postsales::updateStatusSalesOrder');
 
-    
+
     $routes->add('save_salesorder_detail', 'Postsales::save_salesorder_detail');
     $routes->get('updateSalesOrder(:any)', 'Postsales::updateSalesOrder$1');
 
@@ -410,22 +411,22 @@ $routes->group('/sales/postsales', ["namespace" => "App\Controllers\Sales"], fun
 
 
 
-    
+
     $routes->add('penjualan', 'Postsales::penjualan');
     $routes->add('list_penjualan', 'Postsales::list_penjualan');
     $routes->add('list_penjualan_apprv', 'Postsales::list_penjualan_apprv');
-    
+
     $routes->add('addPenjualan', 'Postsales::addPenjualan');
     $routes->add('detailPenjualan', 'Postsales::detailPenjualan');
     $routes->add('list_tmp_penjualan_dtl', 'Postsales::list_tmp_penjualan_dtl');
     // $routes->add('showing_sikbsp_mst', 'Postsales::showing_sikbsp_mst');
-    
+
     $routes->add('clearEntryPenjualan', 'Postsales::clearEntryPenjualan');
     $routes->add('finalEntryPenjualan', 'Postsales::finalEntryPenjualan');
     $routes->add('showing_penjualantemp', 'Postsales::showing_penjualantemp');
     $routes->add('updateStatusPenjualan', 'Postsales::updateStatusPenjualan');
 
-    
+
     $routes->add('save_penjualan_detail', 'Postsales::save_penjualan_detail');
     $routes->get('updatePenjualan(:any)', 'Postsales::updatePenjualan$1');
 
@@ -800,6 +801,8 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
 
     $routes->add('globalmodule/list_branchjob', 'Globalmodule::list_branchjob');
 
+    $routes->add('globalmodule/list_branchjob', 'Globalmodule::list_branchjob');
+
 
     //validator & request keluar
     $routes->add('validatorabsensi', 'ValidatorAbsensi::index');
@@ -823,6 +826,99 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
 
 });
 
+
+$routes->group('/persediaan/trans', ["namespace" => "App\Controllers\Persediaan"], function ($routes) {
+
+
+    $routes->add('perintah_transfer', 'Persediaan::perintah_transfer');
+    $routes->add('addSPKtransfers', 'Persediaan::addSPKtransfers');
+    $routes->add('saveSPKTransferDetail', 'Persediaan::saveSPKTransferDetail');
+    $routes->add('showing_spk_mst_tmp', 'Persediaan::showing_spk_mst_tmp');
+    $routes->add('clearSpkTransfers', 'Persediaan::clearSpkTransfers');
+    $routes->add('list_tmp_spk_transfers_dtl', 'Persediaan::list_tmp_spk_transfers_dtl');
+    $routes->add('get_tmp_spk_transfer_dtl(:any)', 'Persediaan::get_tmp_spk_transfer_dtl$1');
+    $routes->add('deleteSPKTransferDetail', 'Persediaan::deleteSPKTransferDetail');
+    $routes->add('finalSpkTransfers', 'Persediaan::finalSpkTransfers');
+    $routes->add('list_spk_transfers', 'Persediaan::list_spk_transfers');
+    $routes->add('updateSPKTransfers', 'Persediaan::updateSPKTransfers');
+    $routes->add('detailSpkTransfers(:any)', 'Persediaan::detailSpkTransfers$1');
+//TRX
+    $routes->add('get_trx_spk_transfer_dtl(:any)', 'Persediaan::get_trx_spk_transfer_dtl$1');
+    $routes->add('showing_spk_mst_trx', 'Persediaan::showing_spk_mst_trx');
+    $routes->add('list_trx_spk_transfers_dtl', 'Persediaan::list_trx_spk_transfers_dtl');
+
+
+    // TRANSFER LOKASI
+
+    $routes->add('transfer_lokasi', 'Persediaan::transfer_lokasi');
+    $routes->add('addTransferLokasi', 'Persediaan::addTransferLokasi');
+    $routes->add('saveTransferLocationDetail', 'Persediaan::saveTransferLocationDetail');
+    $routes->add('showing_transfer_location_mst_tmp', 'Persediaan::showing_transfer_location_mst_tmp');
+    $routes->add('clearTransferLokasi', 'Persediaan::clearTransferLokasi');
+    $routes->add('list_tmp_transfer_location_dtl', 'Persediaan::list_tmp_transfer_location_dtl');
+    $routes->add('get_tmp_transfer_location_dtl(:any)', 'Persediaan::get_tmp_transfer_location_dtl$1');
+    $routes->add('deleteSPKTransferDetail', 'Persediaan::deleteSPKTransferDetail');
+    $routes->add('finalTransferLocation', 'Persediaan::finalTransferLocation');
+    $routes->add('list_trx_transfer_location', 'Persediaan::list_trx_transfer_location');
+    $routes->add('updateTransfersLocation', 'Persediaan::updateTransfersLocation');
+    $routes->add('detailTransfersLocation(:any)', 'Persediaan::detailTransfersLocation$1');
+//TRX
+    $routes->add('get_trx_transfer_location_dtl(:any)', 'Persediaan::get_trx_transfer_location_dtl$1');
+    $routes->add('showing_transfer_mst_trx', 'Persediaan::showing_transfer_mst_trx');
+    $routes->add('list_trx_spk_transfers_dtl', 'Persediaan::list_trx_spk_transfers_dtl');
+$routes->add('getBranchInfoStockTransfers', 'Persediaan::getBranchInfoStockTransfers');
+    $routes->add('getNextSuffixStockTransfers', 'Persediaan::getNextSuffixStockTransfers');
+
+
+    /* ajustment stock */
+    $routes->add('ajustment_stock', 'Persediaan::ajustment_stock');
+    $routes->add('add_ajustment_stock_mst', 'Persediaan::add_ajustment_stock_mst');
+    $routes->add('list_tmp_ajustment_stock_dtl', 'Persediaan::list_tmp_ajustment_stock_dtl');
+    $routes->add('save_ajustment_stock_detail', 'Persediaan::save_ajustment_stock_detail');
+    $routes->add('showing_ajustment_stock_mst_tmp', 'Persediaan::showing_ajustment_stock_mst_tmp');
+    $routes->add('clear_ajustment_stock', 'Persediaan::clear_ajustment_stock');
+    $routes->add('list_tmp_transfer_location_dtl', 'Persediaan::list_tmp_transfer_location_dtl');
+    $routes->add('get_tmp_ajustment_stock_dtl(:any)', 'Persediaan::get_tmp_ajustment_stock_dtl$1');
+    $routes->add('deleteAjustmentStockDetail', 'Persediaan::deleteAjustmentStockDetail');
+    $routes->add('final_ajustment_stock_mst', 'Persediaan::final_ajustment_stock_mst');
+
+    $routes->add('updateAjustmentStock', 'Persediaan::updateAjustmentStock');
+    $routes->add('detailAjustmentStock(:any)', 'Persediaan::detailAjustmentStock$1');
+    $routes->add('cancelAjustmentStock(:any)', 'Persediaan::cancelAjustmentStock$1');
+//TRX
+    $routes->add('get_trx_ajustment_stock_mst_dtl(:any)', 'Persediaan::get_trx_ajustment_stock_mst_dtl$1');
+    $routes->add('showing_ajustment_stock_mst', 'Persediaan::showing_ajustment_stock_mst');
+    $routes->add('list_trx_ajustment_stock_mst', 'Persediaan::list_trx_ajustment_stock_mst');
+    $routes->add('list_trx_ajustment_stock_dtl', 'Persediaan::list_trx_ajustment_stock_dtl');
+    $routes->add('getBranch_ajustment_stock', 'Persediaan::getBranch_ajustment_stock');
+    $routes->add('getNextSuffix_ajustment_stock', 'Persediaan::getNextSuffix_ajustment_stock');
+
+
+    /* ajustment item value  */
+    $routes->add('ajustment_item_value', 'Persediaan::ajustment_item_value');
+
+
+    /* Pemakaian Barang */
+    $routes->add('pmk_brng', 'Persediaan::pmk_brng');
+    $routes->add('add_pmk_brng', 'Persediaan::add_ajustment_pmk_brng');
+    $routes->add('list_tmp_pmk_brng_dtl', 'Persediaan::list_tmp_pmk_brng_dtl');
+    $routes->add('save_pmk_brng_detail', 'Persediaan::save_pmk_brng_detail');
+    $routes->add('showing_pmk_brng_mst_tmp', 'Persediaan::showing_pmk_brng_mst_tmp');
+    $routes->add('clear_pmk_brng', 'Persediaan::clear_pmk_brng');
+    $routes->add('list_tmp_pmk_brng_dtl', 'Persediaan::list_tmp_pmk_brng_dtl');
+    $routes->add('get_tmp_pmk_brng_dtl(:any)', 'Persediaan::get_tmp_pmk_brng_dtl$1');
+    $routes->add('delete_pmk_brng', 'Persediaan::delete_pmk_brng');
+    $routes->add('final_pmk_brng_mst', 'Persediaan::final_pmk_brng_mst');
+
+    $routes->add('update_pmk_brng', 'Persediaan::update_pmk_brng');
+    $routes->add('detail_pmk_brng(:any)', 'Persediaan::detail_pmk_brng$1');
+//TRX
+    $routes->add('get_trx_pmk_brng_mst_dtl(:any)', 'Persediaan::get_trx_pmk_brng_mst_dtl$1');
+    $routes->add('showing_pmk_brng_mst', 'Persediaan::showing_pmk_brng_mst');
+    $routes->add('list_pmk_brng', 'Persediaan::list_trx_pmk_brng');
+    $routes->add('getBranch_pmk_brng', 'Persediaan::getBranch_pmk_brng');
+    $routes->add('getNextSuffix_pmk_brng', 'Persediaan::getNextSuffix_pmk_brng');
+});
 
 
 
