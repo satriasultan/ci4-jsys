@@ -772,6 +772,7 @@ var defaultInitialPP = '';
 $("#docnopp").select2({
     placeholder: "Choose Your PP",
     allowClear: true,
+    dropdownParent: $('#modalDetailVoidPP'),
     width:'100%',
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_pp',

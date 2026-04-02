@@ -179,6 +179,7 @@ var defaultInitialGroupBrng = '';
 $("#idbarang").select2({
     placeholder: "Choose Your Item List",
     allowClear: true,
+    dropdownParent: $('#modalDetailPP'),
     width:'100%',
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_item',

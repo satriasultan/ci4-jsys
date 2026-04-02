@@ -138,6 +138,7 @@ class Purchase extends BaseController
         $canPrint  = isset($datadtl['dtl_akses']['a_report']) && trim($datadtl['dtl_akses']['a_report']) === 't';
         $canView   = isset($datadtl['dtl_akses']['a_view'])   && trim($datadtl['dtl_akses']['a_view']) === 't';
         $canInput  = isset($datadtl['dtl_akses']['a_input'])  && trim($datadtl['dtl_akses']['a_input']) === 't';
+        $canApprove = isset($datadtl['dtl_akses']['a_approve1']) && trim($datadtl['dtl_akses']['a_approve1']) === 't';
 
         foreach ($list as $lm) {
             $no++;
@@ -150,6 +151,7 @@ class Purchase extends BaseController
             $updateBtn = '';
             $detailBtn = '';
             $printBtn  = '';
+            $disapproveBtn  = '';
 
             // =========================
             // Build button by access
@@ -157,7 +159,7 @@ class Purchase extends BaseController
 
             if ($canUpdate && trim($lm->pemohon) == $nama && empty($lm->printby) &&
                 empty($lm->printdate) && 
-                trim($status) !== 'DITARIK PO'
+                trim($status) == 'FINAL USER'
             ) {
 
                 $updateBtn = '
@@ -166,6 +168,14 @@ class Purchase extends BaseController
                     onclick="return confirm(\'Update This PP : ' . $docno . '\')">
                         <i class="fa fa-edit"></i> Update Permintaan Pembelian 
                     </a>';
+            }
+
+            if ($canUpdate && trim($lm->pemohon) == $nama && empty($lm->printby) &&
+                empty($lm->printdate) && 
+                trim($status) == 'FINAL USER'
+            ) {
+                $disapproveBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToCancel(\'' . trim($lm->docno) . '\');">
+                    <i class="fa fa-undo"></i> Batalkan Permintaan Pembelian</a>';
             }
 
             if ($canView) {
@@ -183,9 +193,14 @@ class Purchase extends BaseController
                     <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
                     href="' . base_url('purchase/trans/show_pp') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Print PP : ' . $docno . '\')">
-                        <i class="fa fa-print"></i> Print Permintaan Pembelian 
+                    onclick="return confirm(\'Preview PP : ' . $docno . '\')">
+                        <i class="fa fa-print"></i> Preview Permintaan Pembelian 
                     </a>';
+            }
+
+            if (trim($status) == 'APPROVED') {
+                $disapproveBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToDisapproved(\'' . trim($lm->docno) . '\');">
+                    <i class="fa fa-times-circle"></i> Disapprove</a>';
             }
 
             // =========================
@@ -198,6 +213,7 @@ class Purchase extends BaseController
                 // hanya detail jika ada akses
                 if ($canView) {
                     $menuContent .= $detailBtn;
+                    $menuContent .= $printBtn;
                 }
 
             } else {
@@ -206,6 +222,7 @@ class Purchase extends BaseController
                 if ($canUpdate) $menuContent .= $updateBtn;
                 if ($canPrint)  $menuContent .= $printBtn;
                 if ($canView)   $menuContent .= $detailBtn;
+                if ($canApprove)   $menuContent .= $disapproveBtn;
             }
 
             // =========================
@@ -257,7 +274,10 @@ class Purchase extends BaseController
                     $badgeClass = 'badge-success';
                     break;
                 case 'CETAK/PRINT':
-                    $badgeClass = 'badge-primary ';
+                    $badgeClass = 'badge-cetak';
+                    break;
+                case 'CANCELED':
+                    $badgeClass = 'badge-danger ';
                     break;
                 default:
                     $badgeClass = 'badge-primary'; // Default (primary) jika status tidak dikenali
@@ -318,7 +338,7 @@ class Purchase extends BaseController
 
             if ($canUpdate && trim($lm->pemohon) == $nama && empty($lm->printby) &&
                 empty($lm->printdate) && 
-                trim($status) !== 'DITARIK PO'
+                trim($status) == 'FINAL USER'
             ) {
 
                 $updateBtn = '
@@ -794,6 +814,7 @@ class Purchase extends BaseController
                 'nmbarang'    => $nmbarang,
                 'unit'        => $unit,
                 'qty'         => $qty,
+                'qtypo'         => 0,
                 'description' => $description,
                 'updateby'     => $nama,
                 'updatedate'   => date('Y-m-d H:i:s')
@@ -817,6 +838,7 @@ class Purchase extends BaseController
                 'nmbarang'    => $nmbarang,
                 'unit'        => $unit,
                 'qty'         => $qty,
+                'qtypo'         => 0,
                 'description' => $description,
                 'status'      => 'F',
                 'inputby'     => $nama,
@@ -1135,6 +1157,8 @@ class Purchase extends BaseController
 
 
     function show_pp(){
+        $module = 'PP';
+        $table = 'sc_trx.pp';
         $nama = trim($this->session->get('nama'));
         $docno = $this->request->getGet('docno');  // Mengambil 'docno' dari URL
         //$docdate = $this->request->getPost('docdate');
@@ -1146,13 +1170,13 @@ class Purchase extends BaseController
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.pp');
 
-       $builder = $builder
-            ->where('docno', $docno)
-            ->update([
-                'status'=> 'P',
-                'printby' => $nama,
-                'printdate' => date('Y-m-d H:i:s')
-            ]);
+//       $builder = $builder
+//            ->where('docno', $docno)
+//            ->update([
+//                'status'=> 'P',
+//                'printby' => $nama,
+//                'printdate' => date('Y-m-d H:i:s')
+//            ]);
 
         
         $enc_docno = $this->fiky_encryption->sealed($docno);
@@ -1173,7 +1197,7 @@ class Purchase extends BaseController
         //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
         // }
 
-        return $this->fiky_report->render($datajson,$datamrt,$title,$nama);
+        return $this->fiky_report->render($datajson,$datamrt,$title,$nama,$module,$table,$docno);
     }
 
     function api_pp(){
@@ -1210,57 +1234,8 @@ class Purchase extends BaseController
         $tampungdtl = $datamst->getResult();
         $detail = $tampungdtl[0] ?? null;        
         if ($detail) {
+            $detail->namauser = $nama;
 
-            $tujuan = isset($detail->tujuan) ? trim($detail->tujuan) : '';
-        
-            // Tambahkan properti baru isPindah
-            $detail->isPindah = false; // Default value
-            if ($tujuan === 'pindah') {
-                $detail->isPindah = true;
-            }
-
-             // Tambahkan properti baru isPembuangan
-             $detail->isPembuangan = false; // Default value
-             if ($tujuan === 'pembuangan') {
-                 $detail->isPembuangan = true;
-             }
-
-            // Tambahkan properti baru isPinjam
-            $detail->isPinjam = false; // Default value
-            if ($tujuan === 'pinjam') {
-                $detail->isPinjam = true;
-            }
-
-            $isreturn = isset($detail->isreturn) ? trim($detail->isreturn) : '';
-             // Tambahkan properti baru iskembali
-             $detail->iskembali = false; // Default value
-             if ($isreturn === 'kembali') {
-                 $detail->iskembali = true;
-             }
-
-             $detail->istidakkembali = false; // Default value
-             if ($isreturn === 'tidak_kembali') {
-                 $detail->istidakkembali = true;
-             }
-
-             $jenisbarang = isset($detail->jenisbarang) ? trim($detail->jenisbarang) : '';
-              // Tambahkan properti baru isAset
-              $detail->isAset = false; // Default value
-              if ($jenisbarang === 'aset') {
-                  $detail->isAset = true;
-              }
-
-              // Tambahkan properti baru isPersediaan
-              $detail->isPersediaan = false; // Default value
-              if ($jenisbarang === 'persediaan') {
-                  $detail->isPersediaan = true;
-              }
-
-              // Tambahkan properti baru isLainlain
-              $detail->isLainlain = false; // Default value
-              if ($jenisbarang === 'lainlain') {
-                  $detail->isLainlain = true;
-              }
         }
 
         header("Content-Type: text/json");
@@ -1830,6 +1805,8 @@ class Purchase extends BaseController
                 nmbarang,
                 unit,
                 qty,
+                qtypo,
+                qtyvoid,
                 description
             FROM sc_trx.pp_dtl
             WHERE TRIM(docno) = ?
@@ -1858,6 +1835,12 @@ class Purchase extends BaseController
             //     ->where('idbarang', $row->idbarang)
             //     ->where('inputby', $nama)
             //     ->countAllResults();
+            $sisaQty = $row->qty - ($row->qtypo + $row->qtyvoid);
+                
+            // Jika sisa quantity <= 0, skip item ini
+            if ($sisaQty <= 0) {
+                continue; // Lewati item ini
+            }
 
             $duplicate = $builderDetail
                 ->where('uniqueid', $row->uniqueid)
@@ -1873,7 +1856,7 @@ class Purchase extends BaseController
                     'nmbarang'    => $row->nmbarang,
                     'uniqueid'    => $row->uniqueid,
                     'unit'        => $row->unit,
-                    'qty'         => $row->qty,
+                    'qty'         => $sisaQty,
                     'description' => $row->description,
                     'inputby'     => $nama,
                     'inputdate'   => date('Y-m-d H:i:s')
@@ -2519,8 +2502,8 @@ class Purchase extends BaseController
                 <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
                     href="' . base_url('purchase/trans/show_po') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Print PO : ' . $docno . '\')">
-                    <i class="fa fa-print"></i> Print PO 
+                    onclick="return confirm(\'Preview PO : ' . $docno . '\')">
+                    <i class="fa fa-print"></i> Preview PO 
                 </a>';
             }
 
@@ -3146,16 +3129,60 @@ class Purchase extends BaseController
             $nilai       = $this->request->getPost('nilai') ?: 0;
             $descriptionpo = strtoupper($this->request->getPost('descriptionpo'));
 
+
+            // Ambil kurs dari header PO
+            $poHeader = $builderHeader->select('kurs, idtax')->where('docno', $docno)->get()->getRowArray();
+            $kurs = $poHeader['kurs'] ?? 0;
+            $idtax = $poHeader['idtax'] ?? '';
+            
+            // Hitung nilaikonversi = nilai * kurs
+            $nilaikonversi = $nilai * $kurs;
+            
+            // Hitung nilaipajak berdasarkan idtax
+            $nilaipajak = 0;
+            if (!empty($idtax) && trim($idtax) !== 'NON' && $nilai > 0) {
+                // Ambil detail tax dari sc_mst.tax_dtl
+                $builderTaxDtl = $db->table('sc_mst.tax_dtl');
+                $taxDetails = $builderTaxDtl->select('percentation')
+                    ->where('idtax', $idtax)
+                    ->get()
+                    ->getResultArray();
+                
+                $totalPersentase = 0;
+                foreach ($taxDetails as $tax) {
+                    $persentase = $tax['percentation'] ?? 0;
+                    $totalPersentase += $persentase;
+                }
+                
+                // Hitung nilaipajak = nilai + (nilai * totalPersentase / 100)
+                $nilaipajak = $nilai + ($nilai * $totalPersentase / 100);
+            } else {
+                // Jika NON pajak, nilaipajak sama dengan nilai
+                $nilaipajak = $nilai;
+            }
+
             $builderDetail->where('uniqueid', $uniqueid)->update([
                 'qty'          => $qty,
                 'qtybonus'     => $qtybonus,
                 'harga'        => $harga,
                 'multidisc'    => $multidisc,
                 'nilai'        => $nilai,
+                'nilaikonversi' => $nilaikonversi,  // Tambahkan ini
+                'nilaipajak'   => $nilaipajak,      // Tambahkan ini
                 'descriptionpo' => $descriptionpo,
                 'updateby'     => $nama,
                 'updatedate'   => date('Y-m-d H:i:s')
             ]);
+            // $builderDetail->where('uniqueid', $uniqueid)->update([
+            //     'qty'          => $qty,
+            //     'qtybonus'     => $qtybonus,
+            //     'harga'        => $harga,
+            //     'multidisc'    => $multidisc,
+            //     'nilai'        => $nilai,
+            //     'descriptionpo' => $descriptionpo,
+            //     'updateby'     => $nama,
+            //     'updatedate'   => date('Y-m-d H:i:s')
+            // ]);
 
 
 
@@ -3214,6 +3241,8 @@ class Purchase extends BaseController
                     nmbarang,
                     unit,
                     qty,
+                    qtypo,
+                    qtyvoid,
                     description
                 FROM sc_trx.pp_dtl
                 WHERE TRIM(docno) = ?
@@ -3237,6 +3266,13 @@ class Purchase extends BaseController
                 //     ->where('inputby', $nama)
                 //     ->countAllResults();
 
+                $sisaQty = $row->qty - ($row->qtypo + $row->qtyvoid);
+                
+                // Jika sisa quantity <= 0, skip item ini
+                if ($sisaQty <= 0) {
+                    continue; // Lewati item ini
+                }
+
                 $duplicate = $builderDetail
                     ->where('uniqueid', $row->uniqueid)
                     ->countAllResults();
@@ -3249,7 +3285,10 @@ class Purchase extends BaseController
                         'uniqueid'      => $row->uniqueid,
                         'nmbarang'      => $row->nmbarang,
                         'unit'          => $row->unit,
-                        'qty'           => $row->qty,
+                        'qty'           => $sisaQty,
+                        'kurs'          => strtoupper($this->request->getPost('kurs')),
+                        'idtax'         => strtoupper($this->request->getPost('idtax')),
+                        'currcode'      => strtoupper($this->request->getPost('currcode')),
                         'qtybonus'      => 0, // Default 0 untuk new insert
                         'harga'         => 0, // Default 0 untuk new insert
                         'multidisc'     => 0, // Default 0 untuk new insert
@@ -3461,11 +3500,11 @@ class Purchase extends BaseController
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->harga, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 0, '.', ',') . '% </div>';
-            $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->harga, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 2, '.', ',') . '% </div>';
+            $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 2, '.', ',') . '</div>';
             $row[] = $lm->descriptionpo;
             $row[] = $lm->descriptionpp;
             $data[] = $row;
@@ -3495,11 +3534,11 @@ class Purchase extends BaseController
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->harga, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->harga, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 2, '.', ',') . '</div>';
             $row[] = $lm->descriptionpo;
             $row[] = $lm->descriptionpp;
             $data[] = $row;   
@@ -3945,6 +3984,8 @@ class Purchase extends BaseController
 
 
     function show_po(){
+        $module = 'PO';
+        $table = 'sc_trx.po';
         $nama = trim($this->session->get('nama'));
         $docno = $this->request->getGet('docno');  // Mengambil 'docno' dari URL
         //$docdate = $this->request->getPost('docdate');
@@ -3956,13 +3997,13 @@ class Purchase extends BaseController
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.po');
 
-       $builder = $builder
-            ->where('docno', $docno)
-            ->update([
-                'status'=> 'P',
-                'printby' => $nama,
-                'printdate' => date('Y-m-d H:i:s')
-            ]);
+    //    $builder = $builder
+    //         ->where('docno', $docno)
+    //         ->update([
+    //             'status'=> 'P',
+    //             'printby' => $nama,
+    //             'printdate' => date('Y-m-d H:i:s')
+    //         ]);
 
         
         $enc_docno = $this->fiky_encryption->sealed($docno);
@@ -3972,7 +4013,7 @@ class Purchase extends BaseController
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
         // $enc_formheader = $this->fiky_encryption->sealed($formheader);
 
-        $title = " Report Void Permintaan Pembelian";
+        $title = " Report Purchase Order";
 
         //$datajson =  base_url("manufactur/production/api_pp/?enc_idbarang=$enc_idbarang&enc_docdate=$enc_docdate&enc_idlocation=$enc_idlocation&enc_idgroup=$enc_idgroup") ;
         $datajson =  base_url("purchase/trans/api_po/?enc_docno=$enc_docno") ;
@@ -3983,7 +4024,7 @@ class Purchase extends BaseController
         //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
         // }
 
-        return $this->fiky_report->render($datajson,$datamrt,$title,$nama);
+        return $this->fiky_report->render($datajson,$datamrt,$title,$nama,$module,$table,$docno);
     }
 
     function api_po(){
@@ -4021,56 +4062,29 @@ class Purchase extends BaseController
         $detail = $tampungdtl[0] ?? null;        
         if ($detail) {
 
-            $tujuan = isset($detail->tujuan) ? trim($detail->tujuan) : '';
-        
-            // Tambahkan properti baru isPindah
-            $detail->isPindah = false; // Default value
-            if ($tujuan === 'pindah') {
-                $detail->isPindah = true;
-            }
 
-             // Tambahkan properti baru isPembuangan
-             $detail->isPembuangan = false; // Default value
-             if ($tujuan === 'pembuangan') {
-                 $detail->isPembuangan = true;
-             }
+            // 🔹 Ambil nmsupplier berdasarkan kdsupplier
+            $kdsupplier = trim($detail->kdsupplier);
 
-            // Tambahkan properti baru isPinjam
-            $detail->isPinjam = false; // Default value
-            if ($tujuan === 'pinjam') {
-                $detail->isPinjam = true;
-            }
+            $supplier = $this->db->query("
+                SELECT nmsupplier 
+                FROM sc_mst.mstsupplier 
+                WHERE TRIM(kdsupplier) = ?
+                LIMIT 1
+            ", [$kdsupplier])->getRow();
 
-            $isreturn = isset($detail->isreturn) ? trim($detail->isreturn) : '';
-             // Tambahkan properti baru iskembali
-             $detail->iskembali = false; // Default value
-             if ($isreturn === 'kembali') {
-                 $detail->iskembali = true;
-             }
+            // 🔹 Set ke object detail
+            $detail->nmsupplierdata = $supplier->nmsupplier ?? '';
+            $nilai = $detail->total; // dari database
 
-             $detail->istidakkembali = false; // Default value
-             if ($isreturn === 'tidak_kembali') {
-                 $detail->istidakkembali = true;
-             }
+            $data['total'] = $nilai;
+            $data['total_terbilang'] = strtoupper($this->terbilang($nilai));
+            $detail->terbilang = $data['total_terbilang'];
 
-             $jenisbarang = isset($detail->jenisbarang) ? trim($detail->jenisbarang) : '';
-              // Tambahkan properti baru isAset
-              $detail->isAset = false; // Default value
-              if ($jenisbarang === 'aset') {
-                  $detail->isAset = true;
-              }
 
-              // Tambahkan properti baru isPersediaan
-              $detail->isPersediaan = false; // Default value
-              if ($jenisbarang === 'persediaan') {
-                  $detail->isPersediaan = true;
-              }
-
-              // Tambahkan properti baru isLainlain
-              $detail->isLainlain = false; // Default value
-              if ($jenisbarang === 'lainlain') {
-                  $detail->isLainlain = true;
-              }
+            
+            $detail->namauser = $nama;
+            
         }
 
         header("Content-Type: text/json");
@@ -4094,6 +4108,58 @@ class Purchase extends BaseController
             ), JSON_PRETTY_PRINT);
     }
 
+
+    function penyebut($nilai) {
+        $nilai = abs($nilai);
+        $huruf = array("", "satu", "dua", "tiga", "empat", "lima", "enam",
+                    "tujuh", "delapan", "sembilan", "sepuluh", "sebelas");
+        $temp = "";
+
+        if ($nilai < 12) {
+            $temp = " " . $huruf[$nilai];
+        } else if ($nilai < 20) {
+            $temp = $this->penyebut($nilai - 10) . " belas";
+        } else if ($nilai < 100) {
+            $temp = $this->penyebut($nilai / 10) . " puluh" . $this->penyebut($nilai % 10);
+        } else if ($nilai < 200) {
+            $temp = " seratus" . $this->penyebut($nilai - 100);
+        } else if ($nilai < 1000) {
+            $temp = $this->penyebut($nilai / 100) . " ratus" . $this->penyebut($nilai % 100);
+        } else if ($nilai < 2000) {
+            $temp = " seribu" . $this->penyebut($nilai - 1000);
+        } else if ($nilai < 1000000) {
+            $temp = $this->penyebut($nilai / 1000) . " ribu" . $this->penyebut($nilai % 1000);
+        } else if ($nilai < 1000000000) {
+            $temp = $this->penyebut($nilai / 1000000) . " juta" . $this->penyebut($nilai % 1000000);
+        } else if ($nilai < 1000000000000) {
+            $temp = $this->penyebut($nilai / 1000000000) . " milyar" . $this->penyebut($nilai % 1000000000);
+        }
+
+        return $temp;
+    }
+
+    function terbilang($nilai) {
+        $nilai = floatval($nilai);
+
+        $integer = floor($nilai);
+        $decimal = $nilai - $integer;
+
+        $hasil = trim($this->penyebut($integer));
+
+        // Handle decimal (koma)
+        if ($decimal > 0) {
+            $decimalStr = substr(strstr(number_format($nilai, 2, '.', ''), '.'), 1);
+            $angka = ["0"=>"nol","1"=>"satu","2"=>"dua","3"=>"tiga","4"=>"empat","5"=>"lima","6"=>"enam","7"=>"tujuh","8"=>"delapan","9"=>"sembilan"];
+
+            $hasil .= " koma";
+
+            for ($i = 0; $i < strlen($decimalStr); $i++) {
+                $hasil .= " " . $angka[$decimalStr[$i]];
+            }
+        }
+
+        return strtoupper($hasil);
+    }
 
 
 
@@ -4907,12 +4973,46 @@ class Purchase extends BaseController
             $nilai       = $this->request->getPost('nilai') ?: 0;
             $descriptionpo = strtoupper($this->request->getPost('descriptionpo'));
 
+
+             // Ambil kurs dari header PO
+            $voidpoHeader = $builderHeader->select('kurs, idtax')->where('docno', $docno)->get()->getRowArray();
+            $kurs = $voidpoHeader['kurs'] ?? 0;
+            $idtax = $voidpoHeader['idtax'] ?? '';
+            
+            // Hitung nilaikonversi = nilai * kurs
+            $nilaikonversi = $nilai * $kurs;
+            
+            // Hitung nilaipajak berdasarkan idtax
+            $nilaipajak = 0;
+            if (!empty($idtax) && trim($idtax) !== 'NON' && $nilai > 0) {
+                // Ambil detail tax dari sc_mst.tax_dtl
+                $builderTaxDtl = $db->table('sc_mst.tax_dtl');
+                $taxDetails = $builderTaxDtl->select('percentation')
+                    ->where('idtax', $idtax)
+                    ->get()
+                    ->getResultArray();
+                
+                $totalPersentase = 0;
+                foreach ($taxDetails as $tax) {
+                    $persentase = $tax['percentation'] ?? 0;
+                    $totalPersentase += $persentase;
+                }
+                
+                // Hitung nilaipajak = nilai + (nilai * totalPersentase / 100)
+                $nilaipajak = $nilai + ($nilai * $totalPersentase / 100);
+            } else {
+                // Jika NON pajak, nilaipajak sama dengan nilai
+                $nilaipajak = $nilai;
+            }
+
             $builderDetail->where('uniqueid', $uniqueid)->update([
                 'qty'          => $qty,
                 // 'qtybonus'     => $qtybonus,
                 'harga'        => $harga,
                 // 'multidisc'    => $multidisc,
                 'nilai'        => $nilai,
+                'nilaikonversi' => $nilaikonversi,
+                'nilaipajak'   => $nilaipajak,    
                 'descriptionpo' => $descriptionpo,
                 'updateby'     => $nama,
                 'updatedate'   => date('Y-m-d H:i:s')
@@ -4936,6 +5036,8 @@ class Purchase extends BaseController
                     nmbarang,
                     unit,
                     qty,
+                    qtylpb,
+                    qtyvoid,
                     harga,
                     nilai,
                     descriptionpo,
@@ -4960,6 +5062,12 @@ class Purchase extends BaseController
                 //     ->where('idbarang', $row->idbarang)
                 //     ->where('inputby', $nama)
                 //     ->countAllResults();
+                $sisaQty = $row->qty - ($row->qtylpb + $row->qtyvoid);
+                
+                // Jika sisa quantity <= 0, skip item ini
+                if ($sisaQty <= 0) {
+                    continue; // Lewati item ini
+                }
 
                 $duplicate = $builderDetail
                     ->where('docno', $docno)
@@ -4974,7 +5082,10 @@ class Purchase extends BaseController
                         'uniqueid'      => $row->uniqueid,
                         'nmbarang'      => $row->nmbarang,
                         'unit'          => $row->unit,
-                        'qty'           => $row->qty,
+                        'qty'           => $sisaQty,
+                        'kurs'          => strtoupper($this->request->getPost('kurs')),
+                        'idtax'         => strtoupper($this->request->getPost('idtax')),
+                        'currcode'      => strtoupper($this->request->getPost('currcode')),
                         // 'qtybonus'      => 0, // Default 0 untuk new insert
                         'harga'         => $row->harga, // Default 0 untuk new insert
                         // 'multidisc'     => 0, // Default 0 untuk new insert
@@ -5566,56 +5677,7 @@ class Purchase extends BaseController
         $detail = $tampungdtl[0] ?? null;        
         if ($detail) {
 
-            $tujuan = isset($detail->tujuan) ? trim($detail->tujuan) : '';
-        
-            // Tambahkan properti baru isPindah
-            $detail->isPindah = false; // Default value
-            if ($tujuan === 'pindah') {
-                $detail->isPindah = true;
-            }
-
-             // Tambahkan properti baru isPembuangan
-             $detail->isPembuangan = false; // Default value
-             if ($tujuan === 'pembuangan') {
-                 $detail->isPembuangan = true;
-             }
-
-            // Tambahkan properti baru isPinjam
-            $detail->isPinjam = false; // Default value
-            if ($tujuan === 'pinjam') {
-                $detail->isPinjam = true;
-            }
-
-            $isreturn = isset($detail->isreturn) ? trim($detail->isreturn) : '';
-             // Tambahkan properti baru iskembali
-             $detail->iskembali = false; // Default value
-             if ($isreturn === 'kembali') {
-                 $detail->iskembali = true;
-             }
-
-             $detail->istidakkembali = false; // Default value
-             if ($isreturn === 'tidak_kembali') {
-                 $detail->istidakkembali = true;
-             }
-
-             $jenisbarang = isset($detail->jenisbarang) ? trim($detail->jenisbarang) : '';
-              // Tambahkan properti baru isAset
-              $detail->isAset = false; // Default value
-              if ($jenisbarang === 'aset') {
-                  $detail->isAset = true;
-              }
-
-              // Tambahkan properti baru isPersediaan
-              $detail->isPersediaan = false; // Default value
-              if ($jenisbarang === 'persediaan') {
-                  $detail->isPersediaan = true;
-              }
-
-              // Tambahkan properti baru isLainlain
-              $detail->isLainlain = false; // Default value
-              if ($jenisbarang === 'lainlain') {
-                  $detail->isLainlain = true;
-              }
+            $detail->namauser = $nama;
         }
 
         header("Content-Type: text/json");
@@ -6969,9 +7031,9 @@ class Purchase extends BaseController
                 $printBtn = '
                 <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
-                    href="' . base_url('purchase/trans/show_po') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Print Penerimaan Pembelian : ' . $docno . '\')">
-                    <i class="fa fa-print"></i> Print Penerimaan Pembelian 
+                    href="' . base_url('purchase/trans/show_lpb') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'Preview Penerimaan Pembelian : ' . $docno . '\')">
+                    <i class="fa fa-print"></i> Preview Penerimaan Pembelian 
                 </a>';
             }
 
@@ -7610,12 +7672,45 @@ class Purchase extends BaseController
             $idgudang = strtoupper($this->request->getPost('idgudang'));
             $idspec = strtoupper($this->request->getPost('idspec'));
 
+             // Ambil kurs dari header PO
+            $lpbHeader = $builderHeader->select('kurs, idtax')->where('docno', $docno)->get()->getRowArray();
+            $kurs = $lpbHeader['kurs'] ?? 0;
+            $idtax = $lpbHeader['idtax'] ?? '';
+            
+            // Hitung nilaikonversi = nilai * kurs
+            $nilaikonversi = $nilai * $kurs;
+            
+            // Hitung nilaipajak berdasarkan idtax
+            $nilaipajak = 0;
+            if (!empty($idtax) && trim($idtax) !== 'NON' && $nilai > 0) {
+                // Ambil detail tax dari sc_mst.tax_dtl
+                $builderTaxDtl = $db->table('sc_mst.tax_dtl');
+                $taxDetails = $builderTaxDtl->select('percentation')
+                    ->where('idtax', $idtax)
+                    ->get()
+                    ->getResultArray();
+                
+                $totalPersentase = 0;
+                foreach ($taxDetails as $tax) {
+                    $persentase = $tax['percentation'] ?? 0;
+                    $totalPersentase += $persentase;
+                }
+                
+                // Hitung nilaipajak = nilai + (nilai * totalPersentase / 100)
+                $nilaipajak = $nilai + ($nilai * $totalPersentase / 100);
+            } else {
+                // Jika NON pajak, nilaipajak sama dengan nilai
+                $nilaipajak = $nilai;
+            }
+
             $builderDetail->where('uniqueid', $uniqueid)->update([
                 'qty'          => $qty,
                 'qtybonus'     => $qtybonus,
                 'harga'        => $harga,
                 'multidisc'    => $multidisc,
                 'nilai'        => $nilai,
+                'nilaikonversi' => $nilaikonversi,  // Tambahkan ini
+                'nilaipajak'   => $nilaipajak,      // Tambahkan ini
                 'volitem'      => $volitem,
 
                 'biaya'      => $biaya,
@@ -7647,6 +7742,8 @@ class Purchase extends BaseController
                     nmbarang,
                     unit,
                     qty,
+                    qtylpb,
+                    qtyvoid,
                     qtybonus,
                     multidisc,
                     harga,
@@ -7674,10 +7771,27 @@ class Purchase extends BaseController
                 //     ->where('inputby', $nama)
                 //     ->countAllResults();
 
+                
+                $sisaQty = $row->qty - ($row->qtylpb + $row->qtyvoid);
+                
+                // Jika sisa quantity <= 0, skip item ini
+                if ($sisaQty <= 0) {
+                    continue; // Lewati item ini
+                }
+
                 $duplicate = $builderDetail
                     ->where('docno', $docno)
                     ->where('uniqueid', $row->uniqueid)
                     ->countAllResults();
+
+                $barang = $this->db->query("
+                    SELECT deflocation 
+                    FROM sc_mst.mbarang 
+                    WHERE TRIM(idbarang) = ?
+                    LIMIT 1
+                ", [trim($row->idbarang)])->getRow();
+
+                $deflocation = $barang->deflocation ?? null;
 
                 if ($duplicate == 0) {
                     $builderDetail->insert([
@@ -7686,8 +7800,9 @@ class Purchase extends BaseController
                         'idbarang'      => $row->idbarang,
                         'uniqueid'      => $row->uniqueid,
                         'nmbarang'      => $row->nmbarang,
+                        'idgudang'      => $deflocation,
                         'unit'          => $row->unit,
-                        'qty'           => $row->qty,
+                        'qty'           => $sisaQty,
                         'qtybonus'      => 0, // Default 0 untuk new insert
                         'harga'         => $row->harga, // Default 0 untuk new insert
                         'multidisc'     => 0, // Default 0 untuk new insert
@@ -8029,14 +8144,14 @@ class Purchase extends BaseController
             $row[] = $lm->idgudang;
             $row[] = $lm->idspec;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->harga, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 0, '.', ',') . '% </div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->harga, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 2, '.', ',') . '% </div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 2, '.', ',') . '</div>';
             $row[] = $lm->descriptionpo;
             $row[] = $lm->descriptionpp;
             $data[] = $row;
@@ -8069,14 +8184,14 @@ class Purchase extends BaseController
             $row[] = $lm->idgudang;
             $row[] = $lm->idspec;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->harga, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->harga, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 2, '.', ',') . '</div>';
             $row[] = $lm->descriptionpo;
             $row[] = $lm->descriptionpp;
             $data[] = $row;   
@@ -8138,6 +8253,8 @@ class Purchase extends BaseController
             // $alamatkirim   = trim($this->request->getPost('alamatkirim'));
             $keterangan   = trim($this->request->getPost('keterangan'));
             $currcode   = trim($this->request->getPost('currcode'));
+            $nosj   = trim($this->request->getPost('nosj'));
+            $nofaktur   = trim($this->request->getPost('nofaktur'));
             // $kurs   = trim($this->request->getPost('kurs'));
             // $isinclusive   = trim($this->request->getPost('isinclusive'));
             $idtax   = trim($this->request->getPost('idtax'));
@@ -8174,6 +8291,8 @@ class Purchase extends BaseController
                 'kdsupplier'     => strtoupper($kdsupplier),
                 'alamatsupplier' => strtoupper($alamatsupplier),
                 // 'alamatkirim'    => strtoupper($alamatkirim),
+                'nofaktur'     => strtoupper($nofaktur),
+                'nosj'     => strtoupper($nosj),
                 'keterangan'     => strtoupper($keterangan),
                 'currcode'       => $currcode,
                 'kurs'           => $kurs_clean,
@@ -8218,6 +8337,8 @@ class Purchase extends BaseController
 
 
     function show_lpb(){
+        $module = "Penerimaan Pembelian";
+        $table = "sc_trx.lpb";
         $nama = trim($this->session->get('nama'));
         $docno = $this->request->getGet('docno');  // Mengambil 'docno' dari URL
         //$docdate = $this->request->getPost('docdate');
@@ -8229,13 +8350,13 @@ class Purchase extends BaseController
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.lpb');
 
-       $builder = $builder
-            ->where('docno', $docno)
-            ->update([
-                'status'=> 'P',
-                'printby' => $nama,
-                'printdate' => date('Y-m-d H:i:s')
-            ]);
+    //    $builder = $builder
+    //         ->where('docno', $docno)
+    //         ->update([
+    //             'status'=> 'P',
+    //             'printby' => $nama,
+    //             'printdate' => date('Y-m-d H:i:s')
+    //         ]);
 
         
         $enc_docno = $this->fiky_encryption->sealed($docno);
@@ -8245,7 +8366,7 @@ class Purchase extends BaseController
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
         // $enc_formheader = $this->fiky_encryption->sealed($formheader);
 
-        $title = " Report Void Permintaan Pembelian";
+        $title = " Report Penerimaan Pembelian";
 
         //$datajson =  base_url("manufactur/production/api_pp/?enc_idbarang=$enc_idbarang&enc_docdate=$enc_docdate&enc_idlocation=$enc_idlocation&enc_idgroup=$enc_idgroup") ;
         $datajson =  base_url("purchase/trans/api_lpb/?enc_docno=$enc_docno") ;
@@ -8256,7 +8377,7 @@ class Purchase extends BaseController
         //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
         // }
 
-        return $this->fiky_report->render($datajson,$datamrt,$title,$nama);
+        return $this->fiky_report->render($datajson,$datamrt,$title,$nama,$module,$table,$docno);
     }
 
     function api_lpb(){
@@ -8294,56 +8415,51 @@ class Purchase extends BaseController
         $detail = $tampungdtl[0] ?? null;        
         if ($detail) {
 
-            $tujuan = isset($detail->tujuan) ? trim($detail->tujuan) : '';
-        
-            // Tambahkan properti baru isPindah
-            $detail->isPindah = false; // Default value
-            if ($tujuan === 'pindah') {
-                $detail->isPindah = true;
+            // 🔹 Ambil nmsupplier berdasarkan kdsupplier
+            $kdsupplier = trim($detail->kdsupplier);
+
+            $supplier = $this->db->query("
+                SELECT nmsupplier 
+                FROM sc_mst.mstsupplier 
+                WHERE TRIM(kdsupplier) = ?
+                LIMIT 1
+            ", [$kdsupplier])->getRow();
+
+            // 🔹 Set ke object detail
+            $detail->nmsupplierdata = $supplier->nmsupplier ?? '';
+
+
+
+             // 🔹 Ambil nmsupplier berdasarkan currcode
+            $currcode = trim($detail->currcode);
+
+            $curr = $this->db->query("
+                SELECT currname 
+                FROM sc_mst.currency 
+                WHERE TRIM(currcode) = ?
+                LIMIT 1
+            ", [$currcode])->getRow();
+
+            // 🔹 Set ke object detail
+            $detail->currname = $curr->currname ?? '';
+
+
+            $jthtempo = !empty($detail->jthtempo) ? (int) $detail->jthtempo : 0;
+
+            if (!empty(trim($detail->docdate)) && $jthtempo > 0) {
+                $date = new \DateTime(trim($detail->docdate));
+                $date->modify("+{$jthtempo} days");
+                $jatuhTempo = $date->format('Y-m-d'); // Format database: 2026-04-13
+            } else if (!empty(trim($detail->docdate))) {
+                $jatuhTempo = trim($detail->docdate); // Langsung pakai docdate asli
+            } else {
+                $jatuhTempo = '';
             }
 
-             // Tambahkan properti baru isPembuangan
-             $detail->isPembuangan = false; // Default value
-             if ($tujuan === 'pembuangan') {
-                 $detail->isPembuangan = true;
-             }
+            $detail->jatuhtempodate = $jatuhTempo;
+            $detail->namauser = $nama;
 
-            // Tambahkan properti baru isPinjam
-            $detail->isPinjam = false; // Default value
-            if ($tujuan === 'pinjam') {
-                $detail->isPinjam = true;
-            }
-
-            $isreturn = isset($detail->isreturn) ? trim($detail->isreturn) : '';
-             // Tambahkan properti baru iskembali
-             $detail->iskembali = false; // Default value
-             if ($isreturn === 'kembali') {
-                 $detail->iskembali = true;
-             }
-
-             $detail->istidakkembali = false; // Default value
-             if ($isreturn === 'tidak_kembali') {
-                 $detail->istidakkembali = true;
-             }
-
-             $jenisbarang = isset($detail->jenisbarang) ? trim($detail->jenisbarang) : '';
-              // Tambahkan properti baru isAset
-              $detail->isAset = false; // Default value
-              if ($jenisbarang === 'aset') {
-                  $detail->isAset = true;
-              }
-
-              // Tambahkan properti baru isPersediaan
-              $detail->isPersediaan = false; // Default value
-              if ($jenisbarang === 'persediaan') {
-                  $detail->isPersediaan = true;
-              }
-
-              // Tambahkan properti baru isLainlain
-              $detail->isLainlain = false; // Default value
-              if ($jenisbarang === 'lainlain') {
-                  $detail->isLainlain = true;
-              }
+            
         }
 
         header("Content-Type: text/json");

@@ -378,121 +378,121 @@ $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], f
 //POST SALES
 $routes->group('/sales/postsales', ["namespace" => "App\Controllers\Sales"], function ($routes) {
 
-    $routes->add('salesorder', 'Postsales::salesorder');
-    $routes->add('list_salesorder', 'Postsales::list_salesorder');
-    $routes->add('list_salesorder_apprv', 'Postsales::list_salesorder_apprv');
+    $routes->add('salesorder', 'PostSales::salesorder');
+    $routes->add('list_salesorder', 'PostSales::list_salesorder');
+    $routes->add('list_salesorder_apprv', 'PostSales::list_salesorder_apprv');
 
-    $routes->add('addSalesOrder', 'Postsales::addSalesOrder');
-    $routes->add('detailSalesOrder', 'Postsales::detailSalesOrder');
-    $routes->add('list_tmp_salesorder_dtl', 'Postsales::list_tmp_salesorder_dtl');
-    // $routes->add('showing_sikbsp_mst', 'Postsales::showing_sikbsp_mst');
+    $routes->add('addSalesOrder', 'PostSales::addSalesOrder');
+    $routes->add('detailSalesOrder', 'PostSales::detailSalesOrder');
+    $routes->add('list_tmp_salesorder_dtl', 'PostSales::list_tmp_salesorder_dtl');
+    // $routes->add('showing_sikbsp_mst', 'PostSales::showing_sikbsp_mst');
 
-    $routes->add('clearEntrySalesOrder', 'Postsales::clearEntrySalesOrder');
-    $routes->add('finalEntrySalesOrder', 'Postsales::finalEntrySalesOrder');
-    $routes->add('showing_salesordertemp', 'Postsales::showing_salesordertemp');
-    $routes->add('updateStatusSalesOrder', 'Postsales::updateStatusSalesOrder');
-
-
-    $routes->add('save_salesorder_detail', 'Postsales::save_salesorder_detail');
-    $routes->get('updateSalesOrder(:any)', 'Postsales::updateSalesOrder$1');
-
-    $routes->add('deleteSalesOrderDtl', 'Postsales::deleteSalesOrderDtl');
-    $routes->add('show_salesorder', 'Postsales::show_salesorder');
-    $routes->add('api_salesorder(:any)', 'Postsales::api_salesorder$1');
-    $routes->add('list_trx_salesorder_dtl', 'Postsales::list_trx_salesorder_dtl');
-    $routes->add('showing_salesordertrx', 'Postsales::showing_salesordertrx');
-    $routes->add('getBranchInfoSalesOrder', 'Postsales::getBranchInfoSalesOrder');
-    $routes->add('getNextSuffixSalesOrder', 'Postsales::getNextSuffixSalesOrder');
-    $routes->add('initSalesOrderHeader', 'Postsales::initSalesOrderHeader');
-    $routes->add('saveSalesOrderDetail', 'Postsales::saveSalesOrderDetail');
-    $routes->add("get_salesorder_detail(:any)", "Postsales::get_salesorder_detail$1");
-    $routes->add("delete_salesorder_detail", "Postsales::delete_salesorder_detail");
+    $routes->add('clearEntrySalesOrder', 'PostSales::clearEntrySalesOrder');
+    $routes->add('finalEntrySalesOrder', 'PostSales::finalEntrySalesOrder');
+    $routes->add('showing_salesordertemp', 'PostSales::showing_salesordertemp');
+    $routes->add('updateStatusSalesOrder', 'PostSales::updateStatusSalesOrder');
 
 
+    $routes->add('save_salesorder_detail', 'PostSales::save_salesorder_detail');
+    $routes->get('updateSalesOrder(:any)', 'PostSales::updateSalesOrder$1');
 
-
-
-    $routes->add('penjualan', 'Postsales::penjualan');
-    $routes->add('list_penjualan', 'Postsales::list_penjualan');
-    $routes->add('list_penjualan_apprv', 'Postsales::list_penjualan_apprv');
-
-    $routes->add('addPenjualan', 'Postsales::addPenjualan');
-    $routes->add('detailPenjualan', 'Postsales::detailPenjualan');
-    $routes->add('list_tmp_penjualan_dtl', 'Postsales::list_tmp_penjualan_dtl');
-    // $routes->add('showing_sikbsp_mst', 'Postsales::showing_sikbsp_mst');
-
-    $routes->add('clearEntryPenjualan', 'Postsales::clearEntryPenjualan');
-    $routes->add('finalEntryPenjualan', 'Postsales::finalEntryPenjualan');
-    $routes->add('showing_penjualantemp', 'Postsales::showing_penjualantemp');
-    $routes->add('updateStatusPenjualan', 'Postsales::updateStatusPenjualan');
-
-
-    $routes->add('save_penjualan_detail', 'Postsales::save_penjualan_detail');
-    $routes->get('updatePenjualan(:any)', 'Postsales::updatePenjualan$1');
-
-    $routes->add('deletePenjualanDtl', 'Postsales::deletePenjualanDtl');
-    $routes->add('show_penjualan', 'Postsales::show_penjualan');
-    $routes->add('api_penjualan(:any)', 'Postsales::api_penjualan$1');
-    $routes->add('list_trx_penjualan_dtl', 'Postsales::list_trx_penjualan_dtl');
-    $routes->add('showing_penjualantrx', 'Postsales::showing_penjualantrx');
-    $routes->add('getBranchInfoPenjualan', 'Postsales::getBranchInfoPenjualan');
-    $routes->add('getNextSuffixPenjualan', 'Postsales::getNextSuffixPenjualan');
-    $routes->add('initPenjualanHeader', 'Postsales::initPenjualanHeader');
-    $routes->add('savePenjualanDetail', 'Postsales::savePenjualanDetail');
-    $routes->add("get_penjualan_detail(:any)", "Postsales::get_penjualan_detail$1");
-    $routes->add("delete_penjualan_detail", "Postsales::delete_penjualan_detail");
+    $routes->add('deleteSalesOrderDtl', 'PostSales::deleteSalesOrderDtl');
+    $routes->add('show_salesorder', 'PostSales::show_salesorder');
+    $routes->add('api_salesorder(:any)', 'PostSales::api_salesorder$1');
+    $routes->add('list_trx_salesorder_dtl', 'PostSales::list_trx_salesorder_dtl');
+    $routes->add('showing_salesordertrx', 'PostSales::showing_salesordertrx');
+    $routes->add('getBranchInfoSalesOrder', 'PostSales::getBranchInfoSalesOrder');
+    $routes->add('getNextSuffixSalesOrder', 'PostSales::getNextSuffixSalesOrder');
+    $routes->add('initSalesOrderHeader', 'PostSales::initSalesOrderHeader');
+    $routes->add('saveSalesOrderDetail', 'PostSales::saveSalesOrderDetail');
+    $routes->add("get_salesorder_detail(:any)", "PostSales::get_salesorder_detail$1");
+    $routes->add("delete_salesorder_detail", "PostSales::delete_salesorder_detail");
 
 
 
 
-    $routes->add('salesorderexternal', 'Postsales::salesorderexternal');
-    $routes->add('list_salesorderexternal', 'Postsales::list_salesorderexternal');
-    $routes->add('addSalesOrderExternal', 'Postsales::addSalesOrderExternal');
-    $routes->add('detailSalesOrderExternal', 'Postsales::detailSalesOrderExternal');
-    $routes->add('list_t_salesorderexternal_dtl', 'Postsales::list_t_salesorderexternal_dtl');
-    // $routes->add('showing_sikbsp_mst', 'Postsales::showing_sikbsp_mst');
-    $routes->add('showing_salesorderexternaltemp', 'Postsales::showing_salesorderexternaltemp');
-    $routes->add('saveSalesOrderExternal', 'Postsales::saveSalesOrderExternal');
-    $routes->add('clearEntrySalesOrderExternal', 'Postsales::clearEntrySalesOrderExternal');
-    $routes->add('finalEntrySalesOrderExternal', 'Postsales::finalEntrySalesOrderExternal');
-    $routes->get('updateSalesOrderExternal(:any)', 'Postsales::updateSalesOrderExternal$1');
-    $routes->get('deleteSalesOrderExternal(:any)', 'Postsales::deleteSalesOrderExternal$1');
-    $routes->add('insert_detail_salesorderexternal', 'Postsales::insert_detail_salesorderexternal');
-    $routes->add('insertNewSalesOrderExternal', 'Postsales::insertNewSalesOrderExternal');
-    $routes->post("update_detail_salesorderexternal", "Postsales::update_detail_salesorderexternal");
-    $routes->add('deleteSalesOrderExternalDtl', 'Postsales::deleteSalesOrderExternalDtl');
-    $routes->add('show_salesorderexternal', 'Postsales::show_salesorderexternal');
-    $routes->add('api_salesorderexternal(:any)', 'Postsales::api_salesorderexternal$1');
-    $routes->add('list_t_salesorderexternal_dtltrx', 'Postsales::list_t_salesorderexternal_dtltrx');
-    $routes->add('showing_salesorderexternaltrx', 'Postsales::showing_salesorderexternaltrx');
-    $routes->add('getRolePOSOE(:any)', 'Postsales::getRolePOSOE$1');
-    $routes->add('getRate(:any)', 'Postsales::getRate$1');
+
+    $routes->add('penjualan', 'PostSales::penjualan');
+    $routes->add('list_penjualan', 'PostSales::list_penjualan');
+    $routes->add('list_penjualan_apprv', 'PostSales::list_penjualan_apprv');
+
+    $routes->add('addPenjualan', 'PostSales::addPenjualan');
+    $routes->add('detailPenjualan', 'PostSales::detailPenjualan');
+    $routes->add('list_tmp_penjualan_dtl', 'PostSales::list_tmp_penjualan_dtl');
+    // $routes->add('showing_sikbsp_mst', 'PostSales::showing_sikbsp_mst');
+
+    $routes->add('clearEntryPenjualan', 'PostSales::clearEntryPenjualan');
+    $routes->add('finalEntryPenjualan', 'PostSales::finalEntryPenjualan');
+    $routes->add('showing_penjualantemp', 'PostSales::showing_penjualantemp');
+    $routes->add('updateStatusPenjualan', 'PostSales::updateStatusPenjualan');
 
 
-    $routes->add('soi', 'Postsales::soi');
-    $routes->add('list_soi', 'Postsales::list_soi');
-    $routes->add('addSOI', 'Postsales::addSOI');
-    $routes->add('detailSOI', 'Postsales::detailSOI');
-    $routes->add('list_t_soi_dtl', 'Postsales::list_t_soi_dtl');
-    // $routes->add('showing_sikbsp_mst', 'Postsales::showing_sikbsp_mst');
-    $routes->add('showing_soitemp', 'Postsales::showing_soitemp');
-    $routes->add('saveSOI', 'Postsales::saveSOI');
-    $routes->add('clearEntrySOI', 'Postsales::clearEntrySOI');
-    $routes->add('finalEntrySOI', 'Postsales::finalEntrySOI');
-    $routes->get('updateSOI(:any)', 'Postsales::updateSOI$1');
-    $routes->get('deleteSOI(:any)', 'Postsales::deleteSOI$1');
-    $routes->add('insert_detail_soi', 'Postsales::insert_detail_soi');
-    $routes->add('insertNewSOI', 'Postsales::insertNewSOI');
-    $routes->post("update_detail_soi", "Postsales::update_detail_soi");
-    $routes->add('deleteSOIDtl', 'Postsales::deleteSOIDtl');
-    $routes->add('show_soi', 'Postsales::show_soi');
-    $routes->add('api_soi(:any)', 'Postsales::api_soi$1');
-    $routes->add('list_t_soi_dtltrx', 'Postsales::list_t_soi_dtltrx');
-    $routes->add('showing_soitrx', 'Postsales::showing_soitrx');
-    $routes->add('getRolePOSOI(:any)', 'Postsales::getRolePOSOI$1');
-    $routes->add('getRate(:any)', 'Postsales::getRate$1');
-    $routes->add('importSOIDetailFromPO', 'Postsales::importSOIDetailFromPO');
-    $routes->add('clearTmpSOIDetail', 'Postsales::clearTmpSOIDetail');
+    $routes->add('save_penjualan_detail', 'PostSales::save_penjualan_detail');
+    $routes->get('updatePenjualan(:any)', 'PostSales::updatePenjualan$1');
+
+    $routes->add('deletePenjualanDtl', 'PostSales::deletePenjualanDtl');
+    $routes->add('show_penjualan', 'PostSales::show_penjualan');
+    $routes->add('api_penjualan(:any)', 'PostSales::api_penjualan$1');
+    $routes->add('list_trx_penjualan_dtl', 'PostSales::list_trx_penjualan_dtl');
+    $routes->add('showing_penjualantrx', 'PostSales::showing_penjualantrx');
+    $routes->add('getBranchInfoPenjualan', 'PostSales::getBranchInfoPenjualan');
+    $routes->add('getNextSuffixPenjualan', 'PostSales::getNextSuffixPenjualan');
+    $routes->add('initPenjualanHeader', 'PostSales::initPenjualanHeader');
+    $routes->add('savePenjualanDetail', 'PostSales::savePenjualanDetail');
+    $routes->add("get_penjualan_detail(:any)", "PostSales::get_penjualan_detail$1");
+    $routes->add("delete_penjualan_detail", "PostSales::delete_penjualan_detail");
+
+
+
+
+    $routes->add('salesorderexternal', 'PostSales::salesorderexternal');
+    $routes->add('list_salesorderexternal', 'PostSales::list_salesorderexternal');
+    $routes->add('addSalesOrderExternal', 'PostSales::addSalesOrderExternal');
+    $routes->add('detailSalesOrderExternal', 'PostSales::detailSalesOrderExternal');
+    $routes->add('list_t_salesorderexternal_dtl', 'PostSales::list_t_salesorderexternal_dtl');
+    // $routes->add('showing_sikbsp_mst', 'PostSales::showing_sikbsp_mst');
+    $routes->add('showing_salesorderexternaltemp', 'PostSales::showing_salesorderexternaltemp');
+    $routes->add('saveSalesOrderExternal', 'PostSales::saveSalesOrderExternal');
+    $routes->add('clearEntrySalesOrderExternal', 'PostSales::clearEntrySalesOrderExternal');
+    $routes->add('finalEntrySalesOrderExternal', 'PostSales::finalEntrySalesOrderExternal');
+    $routes->get('updateSalesOrderExternal(:any)', 'PostSales::updateSalesOrderExternal$1');
+    $routes->get('deleteSalesOrderExternal(:any)', 'PostSales::deleteSalesOrderExternal$1');
+    $routes->add('insert_detail_salesorderexternal', 'PostSales::insert_detail_salesorderexternal');
+    $routes->add('insertNewSalesOrderExternal', 'PostSales::insertNewSalesOrderExternal');
+    $routes->post("update_detail_salesorderexternal", "PostSales::update_detail_salesorderexternal");
+    $routes->add('deleteSalesOrderExternalDtl', 'PostSales::deleteSalesOrderExternalDtl');
+    $routes->add('show_salesorderexternal', 'PostSales::show_salesorderexternal');
+    $routes->add('api_salesorderexternal(:any)', 'PostSales::api_salesorderexternal$1');
+    $routes->add('list_t_salesorderexternal_dtltrx', 'PostSales::list_t_salesorderexternal_dtltrx');
+    $routes->add('showing_salesorderexternaltrx', 'PostSales::showing_salesorderexternaltrx');
+    $routes->add('getRolePOSOE(:any)', 'PostSales::getRolePOSOE$1');
+    $routes->add('getRate(:any)', 'PostSales::getRate$1');
+
+
+    $routes->add('soi', 'PostSales::soi');
+    $routes->add('list_soi', 'PostSales::list_soi');
+    $routes->add('addSOI', 'PostSales::addSOI');
+    $routes->add('detailSOI', 'PostSales::detailSOI');
+    $routes->add('list_t_soi_dtl', 'PostSales::list_t_soi_dtl');
+    // $routes->add('showing_sikbsp_mst', 'PostSales::showing_sikbsp_mst');
+    $routes->add('showing_soitemp', 'PostSales::showing_soitemp');
+    $routes->add('saveSOI', 'PostSales::saveSOI');
+    $routes->add('clearEntrySOI', 'PostSales::clearEntrySOI');
+    $routes->add('finalEntrySOI', 'PostSales::finalEntrySOI');
+    $routes->get('updateSOI(:any)', 'PostSales::updateSOI$1');
+    $routes->get('deleteSOI(:any)', 'PostSales::deleteSOI$1');
+    $routes->add('insert_detail_soi', 'PostSales::insert_detail_soi');
+    $routes->add('insertNewSOI', 'PostSales::insertNewSOI');
+    $routes->post("update_detail_soi", "PostSales::update_detail_soi");
+    $routes->add('deleteSOIDtl', 'PostSales::deleteSOIDtl');
+    $routes->add('show_soi', 'PostSales::show_soi');
+    $routes->add('api_soi(:any)', 'PostSales::api_soi$1');
+    $routes->add('list_t_soi_dtltrx', 'PostSales::list_t_soi_dtltrx');
+    $routes->add('showing_soitrx', 'PostSales::showing_soitrx');
+    $routes->add('getRolePOSOI(:any)', 'PostSales::getRolePOSOI$1');
+    $routes->add('getRate(:any)', 'PostSales::getRate$1');
+    $routes->add('importSOIDetailFromPO', 'PostSales::importSOIDetailFromPO');
+    $routes->add('clearTmpSOIDetail', 'PostSales::clearTmpSOIDetail');
 
 
 });
@@ -802,6 +802,8 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
     $routes->add('globalmodule/list_branchjob', 'Globalmodule::list_branchjob');
 
     $routes->add('globalmodule/list_branchjob', 'Globalmodule::list_branchjob');
+
+    $routes->add('globalmodule/updatePrintStatus', 'Globalmodule::updatePrintStatus');
 
 
     //validator & request keluar

@@ -193,7 +193,7 @@ function documentReadable(){
             $('[name="prefix"]').val(prefixParts[0]).prop('readonly', true);
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
             $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
-
+            defaultInitialPP = prefixParts[2].substring(0, 2);
 
             $.ajax({
                 type: 'GET',
@@ -475,6 +475,7 @@ var defaultInitialPP = '';
 $("#docnopp").select2({
     placeholder: "Choose Your PP",
     allowClear: true,
+    dropdownParent: $('#modalDetailPO'),
     width:'100%',
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_pp',
@@ -1212,6 +1213,13 @@ function savePODetail() {
 
 function btnInputDetail() {
 
+    let cabang = $('#cabang').val();
+
+    if (!cabang || cabang.trim() === '') {
+        alert('Cabang harus dipilih terlebih dahulu');
+        $('#cabang').focus();
+        return; // stop proses
+    }
     $('#formPODetail')[0].reset();
 
     
@@ -1288,6 +1296,7 @@ $("#kdsupplier").select2({
         var selectedData = e.params.data;
         
         $("#alamatsupplier").val(selectedData.alamat || '').prop('disabled', true);
+        $("#jthtempo").val(selectedData.jthtempo || '')
         // $("#phone").val(selectedData.phone || '').prop('disabled', true);
     }
 });
@@ -1316,7 +1325,7 @@ $('#cabang').on('change', function () {
                     $('#infix').val(res.infix);          // YYMM
                     $('#prefix').val('POB');             // default
                     $('#sufix').val(currentKodeSuffix + '0001');
-
+                    defaultInitialPP = currentKodeSuffix
                     var infix = (res.infix || '').toString();
                     if (infix.length === 4) {
                         $('#docdate').prop('disabled', false);

@@ -124,6 +124,7 @@ function documentReadable(){
             $('[name="prefix"]').val(prefixParts[0]).prop('readonly', true);
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
             $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
+            defaultInitialPO = prefixParts[2].substring(0, 2);
 
 
             $.ajax({
@@ -333,6 +334,7 @@ function setToDisapproved(docno) {
 var defaultInitialPO = '';
 $("#docnopo").select2({
     placeholder: "Choose Your PO",
+    dropdownParent: $('#modalDetailVoidPO'),
     allowClear: true,
     width:'100%',
     ajax: {
@@ -1019,6 +1021,14 @@ function saveVoidPODetail() {
 
 function btnInputDetail() {
 
+    let cabang = $('#cabang').val();
+
+    if (!cabang || cabang.trim() === '') {
+        alert('Cabang harus dipilih terlebih dahulu');
+        $('#cabang').focus();
+        return; // stop proses
+    }
+
     $('#formVoidPODetail')[0].reset();
 
     
@@ -1095,6 +1105,7 @@ $("#kdsupplier").select2({
         var selectedData = e.params.data;
         
         $("#alamatsupplier").val(selectedData.alamat || '').prop('disabled', true);
+        $("#jthtempo").val(selectedData.jthtempo || '')
         // $("#phone").val(selectedData.phone || '').prop('disabled', true);
     }
 });
@@ -1123,6 +1134,7 @@ $('#cabang').on('change', function () {
                     $('#infix').val(res.infix);          // YYMM
                     $('#prefix').val('VPO');             // default
                     $('#sufix').val(currentKodeSuffix + '0001');
+                    defaultInitialPO = currentKodeSuffix
 
                     var infix = (res.infix || '').toString();
                     if (infix.length === 4) {

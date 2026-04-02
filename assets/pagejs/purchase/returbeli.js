@@ -393,6 +393,7 @@ function setToDisapproved(docno) {
 var defaultInitialLPB = '';
 $("#docnolpb").select2({
     placeholder: "Choose Your LPB",
+    dropdownParent: $('#modalDetailReturBeli'),
     allowClear: true,
     width:'100%',
     ajax: {

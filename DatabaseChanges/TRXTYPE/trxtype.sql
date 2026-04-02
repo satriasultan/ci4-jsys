@@ -4,6 +4,7 @@ DELETE FROM sc_mst.trxtype WHERE jenistrx = 'I.P.A.1';
 INSERT INTO sc_mst.trxtype (kdtrx, jenistrx, uraian) VALUES
     ('I', 'I.P.A.1', 'DRAFT'),
     ('E', 'I.P.A.1', 'REVISION/EDITING'),
+    ('C', 'I.P.A.1', 'CANCELED'),
     ('F', 'I.P.A.1', 'FINAL USER'),
     ('A', 'I.P.A.1', 'APPROVED'),
     ('P', 'I.P.A.1', 'CETAK/PRINT');

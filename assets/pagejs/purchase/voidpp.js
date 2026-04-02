@@ -124,6 +124,7 @@ function documentReadable(){
             $('[name="prefix"]').val(prefixParts[0]).prop('readonly', true);
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
             $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
+            defaultInitialPP = json.dataTables.items[0].cabang.trim() == '01' ? 'PT' : json.dataTables.items[0].cabang.trim() == '01.01' ? 'PA' : 'PB'
 
             //$('[name="idgroup"]').val(json.dataTables.items[0].idgroup);
             $.ajax({
@@ -238,8 +239,11 @@ function documentReadable(){
 var defaultInitialPP = '';
 $("#docnopp").select2({
     placeholder: "Choose Your PP",
+    dropdownParent: $('#modalDetailVoidPP'),
     allowClear: true,
     width:'100%',
+    maximumSelectionLength: 1,
+    multiple: false,
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_pp',
         type: 'POST',
@@ -258,12 +262,12 @@ $("#docnopp").select2({
             };
         },
         processResults: function (data, params) {
-            // var searchTerm = $("#idbarang").data("select2").$dropdown.find("input").val();
+            // var searchTerm = $("#docnopp").data("select2").$dropdown.find("input").val();
             // if (data.items.length === 1 && data.items[0].text === searchTerm) {
-            //     var option = new Option(data.items[0].nmbarang, data.items[0].idbarang, true, true);
-            //     $('#idbarang').append(option).trigger('change').select2("close");
+            //     var option = new Option(data.items[0].keterangan, data.items[0].docno, true, true);
+            //     $('#docnopp').append(option).trigger('change').select2("close");
             //     // manually trigger the `select2:select` event
-            //     $('#idbarang').trigger({
+            //     $('#docnopp').trigger({
             //         type: 'select2:select',
             //         params: {
             //             data: data
@@ -786,6 +790,7 @@ $('#cabang').on('change', function () {
                     $('#infix').val(res.infix);          // YYMM
                     $('#prefix').val('VPP');             // default
                     $('#sufix').val(currentKodeSuffix + '0001');
+                    defaultInitialPP = idbranch == '01' ? 'PT' : idbranch == '01.01' ? 'PA' : 'PB'
 
                     var infix = (res.infix || '').toString();
                     if (infix.length === 4) {

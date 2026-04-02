@@ -666,7 +666,7 @@
                                 <label>Spec</label>
                                 <input name="idspec" id="idspec"
                                         class="form-control"
-                                        style="width:100%">
+                                        style="width:100%; text-transform: uppercase;">
                             </div>
                         </div>
                     </div>

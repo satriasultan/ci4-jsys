@@ -2481,27 +2481,25 @@ class Globalmodule extends BaseController
         $pg = trim($this->request->getPost('_paramglobal_'));
         $page = intval($page);
         $limit = $perpage * $page;
-
-        if (!empty($pg) or $pg!=='') {
-            $paramglobal = " and trim(coalesce(docno,'')) ='$pg'";
-        } else {
-            $paramglobal = "";
+        
+        if (!empty($pg)) {
+            $paramglobal = " and substring(trim(pp.docno) from '.*/([A-Z]{2})') = '$pg'";
         }
 
         $varGet = trim($this->request->getGet('var'));
         $varPost = trim($this->request->getPost('var'));
         if (!empty($varGet) or $varGet!=='') {
-            $paramglobal1= " and docno='$varGet'";
+            $paramglobal1= " and pp.docno='$varGet'";
         } else {
             $paramglobal1= "";
         }
         if (!empty($varPost) or $varPost!=='') {
-            $paramglobal2= " and docno='$varGet'";
+            $paramglobal2= " and pp.docno='$varGet'";
         } else {
             $paramglobal2= "";
         }
 
-        $param=" and (docno like '%$search%' $paramglobal $paramglobal1 $paramglobal2 ) or (upper(keterangan) like '%$search%' $paramglobal $paramglobal1 $paramglobal2 ) order by docno asc";
+        $param=" and ((pp.docno like '%$search%' $paramglobal $paramglobal1 $paramglobal2 ) or (upper(keterangan) like '%$search%' $paramglobal $paramglobal1 $paramglobal2 )) order by pp.docno asc";
         //$param="";
         // $getResult = $this->m_skperingatan->q_mst_karyawan()->getResult();
         $getResult = $this->m_global->q_pp($param)->getResult();
@@ -2535,26 +2533,29 @@ class Globalmodule extends BaseController
         $page = intval($page);
         $limit = $perpage * $page;
 
-        if (!empty($pg) or $pg!=='') {
-            $paramglobal = " and trim(coalesce(docno,'')) ='$pg'";
-        } else {
-            $paramglobal = "";
+        // if (!empty($pg) or $pg!=='') {
+        //     $paramglobal = " and trim(coalesce(docno,'')) ='$pg'";
+        // } else {
+        //     $paramglobal = "";
+        // }
+        if (!empty($pg)) {
+            $paramglobal = " and substring(trim(po.docno) from '.*/([A-Z]{2})') = '$pg'";
         }
 
         $varGet = trim($this->request->getGet('var'));
         $varPost = trim($this->request->getPost('var'));
         if (!empty($varGet) or $varGet!=='') {
-            $paramglobal1= " and docno='$varGet'";
+            $paramglobal1= " and po.docno='$varGet'";
         } else {
             $paramglobal1= "";
         }
         if (!empty($varPost) or $varPost!=='') {
-            $paramglobal2= " and docno='$varGet'";
+            $paramglobal2= " and po.docno='$varGet'";
         } else {
             $paramglobal2= "";
         }
 
-        $param=" and (docno like '%$search%' $paramglobal $paramglobal1 $paramglobal2 ) or (upper(keterangan) like '%$search%' $paramglobal $paramglobal1 $paramglobal2 ) order by docno asc";
+        $param=" and ((po.docno like '%$search%' $paramglobal $paramglobal1 $paramglobal2 ) or (upper(keterangan) like '%$search%' $paramglobal $paramglobal1 $paramglobal2 )) order by po.docno asc";
         //$param="";
         // $getResult = $this->m_skperingatan->q_mst_karyawan()->getResult();
         $getResult = $this->m_global->q_po($param)->getResult();
@@ -2701,6 +2702,30 @@ class Globalmodule extends BaseController
         return $this->response->setJSON([
             'percent' => $percent
         ]);
+    }
+
+
+    public function updatePrintStatus()
+    {
+        $request = service('request');
+        $data = $request->getJSON();
+
+        $docno = $data->docno;
+        $table = $data->table;
+
+        $db = \Config\Database::connect();
+
+        // optional: whitelist table
+
+        $OYE = $db->table($table)
+            ->set('status', 'P')
+            ->where('docno', $docno)
+            ->update();
+
+        if (!$OYE) {
+            return $this->response->setJSON(['status' => 'invalid table']);
+        }
+        return $this->response->setJSON(['status' => 'ok']);
     }
 
 

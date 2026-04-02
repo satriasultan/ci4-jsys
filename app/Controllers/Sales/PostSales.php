@@ -1601,9 +1601,9 @@ class PostSales extends BaseController
                 $printBtn = '
                 <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
-                    href="' . base_url('sales/postsales/show_po') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Print Sales Order : ' . $docno . '\')">
-                    <i class="fa fa-print"></i> Print Sales Order 
+                    href="' . base_url('sales/postsales/show_salesorder') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'Preview Sales Order : ' . $docno . '\')">
+                    <i class="fa fa-print"></i> Preview Sales Order 
                 </a>';
             }
 
@@ -2864,6 +2864,8 @@ class PostSales extends BaseController
 
 
     function show_salesorder(){
+         $module = "Sales Order";
+        $table = "sc_trx.salesorder";
         $nama = trim($this->session->get('nama'));
         $docno = $this->request->getGet('docno');  // Mengambil 'docno' dari URL
         //$docdate = $this->request->getPost('docdate');
@@ -2875,13 +2877,13 @@ class PostSales extends BaseController
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.salesorder');
 
-       $builder = $builder
-            ->where('docno', $docno)
-            ->update([
-                'status'=> 'P',
-                'printby' => $nama,
-                'printdate' => date('Y-m-d H:i:s')
-            ]);
+    //    $builder = $builder
+    //         ->where('docno', $docno)
+    //         ->update([
+    //             'status'=> 'P',
+    //             'printby' => $nama,
+    //             'printdate' => date('Y-m-d H:i:s')
+    //         ]);
 
         
         $enc_docno = $this->fiky_encryption->sealed($docno);
@@ -2891,7 +2893,7 @@ class PostSales extends BaseController
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
         // $enc_formheader = $this->fiky_encryption->sealed($formheader);
 
-        $title = " Report Void Permintaan Pembelian";
+        $title = " Report Sales Order";
 
         //$datajson =  base_url("manufactur/production/api_pp/?enc_idbarang=$enc_idbarang&enc_docdate=$enc_docdate&enc_idlocation=$enc_idlocation&enc_idgroup=$enc_idgroup") ;
         $datajson =  base_url("sales/postsales/api_salesorder/?enc_docno=$enc_docno") ;
@@ -2902,7 +2904,7 @@ class PostSales extends BaseController
         //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
         // }
 
-        return $this->fiky_report->render($datajson,$datamrt,$title,$nama);
+        return $this->fiky_report->render($datajson,$datamrt,$title,$nama,$module,$table,$docno);
     }
 
     function api_salesorder(){
@@ -2940,56 +2942,19 @@ class PostSales extends BaseController
         $detail = $tampungdtl[0] ?? null;        
         if ($detail) {
 
-            $tujuan = isset($detail->tujuan) ? trim($detail->tujuan) : '';
-        
-            // Tambahkan properti baru isPindah
-            $detail->isPindah = false; // Default value
-            if ($tujuan === 'pindah') {
-                $detail->isPindah = true;
-            }
+            $kdcustomer = trim($detail->kdcustomer);
 
-             // Tambahkan properti baru isPembuangan
-             $detail->isPembuangan = false; // Default value
-             if ($tujuan === 'pembuangan') {
-                 $detail->isPembuangan = true;
-             }
+            $customer = $this->db->query("
+                SELECT nmcustomer 
+                FROM sc_mst.customer 
+                WHERE TRIM(kdcustomer) = ?
+                LIMIT 1
+            ", [$kdcustomer])->getRow();
 
-            // Tambahkan properti baru isPinjam
-            $detail->isPinjam = false; // Default value
-            if ($tujuan === 'pinjam') {
-                $detail->isPinjam = true;
-            }
+            // 🔹 Set ke object detail
+            $detail->nmcustomerdata = $customer->nmcustomer ?? '';
+            $detail->namauser = $nama;
 
-            $isreturn = isset($detail->isreturn) ? trim($detail->isreturn) : '';
-             // Tambahkan properti baru iskembali
-             $detail->iskembali = false; // Default value
-             if ($isreturn === 'kembali') {
-                 $detail->iskembali = true;
-             }
-
-             $detail->istidakkembali = false; // Default value
-             if ($isreturn === 'tidak_kembali') {
-                 $detail->istidakkembali = true;
-             }
-
-             $jenisbarang = isset($detail->jenisbarang) ? trim($detail->jenisbarang) : '';
-              // Tambahkan properti baru isAset
-              $detail->isAset = false; // Default value
-              if ($jenisbarang === 'aset') {
-                  $detail->isAset = true;
-              }
-
-              // Tambahkan properti baru isPersediaan
-              $detail->isPersediaan = false; // Default value
-              if ($jenisbarang === 'persediaan') {
-                  $detail->isPersediaan = true;
-              }
-
-              // Tambahkan properti baru isLainlain
-              $detail->isLainlain = false; // Default value
-              if ($jenisbarang === 'lainlain') {
-                  $detail->isLainlain = true;
-              }
         }
 
         header("Content-Type: text/json");

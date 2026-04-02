@@ -344,6 +344,7 @@ function setToDisapproved(docno) {
 var defaultInitialPO = '';
 $("#docnopo").select2({
     placeholder: "Choose Your PO",
+    dropdownParent: $('#modalDetailLPB'),
     allowClear: true,
     width:'100%',
     ajax: {

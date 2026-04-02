@@ -124,6 +124,7 @@ function documentReadable(){
             $('[name="prefix"]').val(prefixParts[0]).prop('readonly', true);
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
             $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
+            defaultInitialPO = prefixParts[2].substring(0, 2);
 
 
             $.ajax({
@@ -226,6 +227,8 @@ function documentReadable(){
             // $('[name="alamatkirim"]').val(json.dataTables.items[0].alamatkirim);
             // $('[name="isinclusive"]').val(json.dataTables.items[0].isinclusive);
             $('[name="keterangan"]').val(json.dataTables.items[0].keterangan);
+            $('[name="nosj"]').val(json.dataTables.items[0].nosj);
+            $('[name="nofaktur"]').val(json.dataTables.items[0].nofaktur);
             $('[name="syarat"]').val(json.dataTables.items[0].syarat);
 
             setJtsValue('[name="dpp"]', convertToDbNumber(json.dataTables.items[0].dpp));
@@ -271,7 +274,7 @@ function formatPrincipalSelection(repo) {
 $("#idprincipal").select2({
     placeholder: "Ketik/Pilih Principal",
     allowClear: true,
-    // dropdownParent: $('#modalUpdateLPB'),
+    dropdownParent: $('#modalUpdateLPB'),
     width: '100%',
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_principal',
@@ -313,6 +316,77 @@ $("#idprincipal").select2({
 }).on('select2:select', function (e) {
 });
 
+
+var defaultInitialLocation = '';
+$("#idgudang").select2({
+    placeholder: " -- Pilih Gudang Asal -- ",
+    allowClear: true,
+    width: '100%',
+    dropdownParent: $('#modalUpdateLPB'),
+    // minimumInputLength: 2, // only start searching when the user has input 3 or more characters
+    maximumSelectionLength: 1,
+    multiple: false,
+    ajax: {
+        url: HOST_URL + 'api/globalmodule/list_mlocation',
+        type: 'POST',
+        dataType: 'json',
+        delay: 250,
+        data: function(params) {
+            return {
+                _search_: params.term, // search term
+                _page_: params.page,
+                _draw_: true,
+                _start_: 1,
+                _perpage_: 2,
+                _paramglobal_: defaultInitialLocation,
+                _parameterx_: defaultInitialLocation,
+                term: params.term,
+            };
+        },
+        processResults: function(data, params) {
+
+            // var searchTerm = $("#idgudang").data("select2").$dropdown.find("input").val();
+            // if (data.items.length === 1 && data.items[0].text === searchTerm) {
+            //     var option = new Option(data.items[0].nmlocation, data.items[0].idlocation, true, true);
+            //     $('#idgudang').append(option).trigger('change').select2("close");
+            //     // manually trigger the `select2:select` event
+            //     $('#idgudang').trigger({
+            //         type: 'select2:select',
+            //         params: {
+            //             data: data
+            //         }
+            //     });
+            // }
+            params.page = params.page || 1;
+
+            return {
+                results: data.items,
+                pagination: {
+                    more: (params.page * 30) < data.total_count
+                }
+            };
+        },
+        cache: true
+    },
+    escapeMarkup: function(markup) {
+        return markup;
+    }, // let our custom formatter work
+    // minimumInputLength: 1,
+    templateResult: formatLocation, // omitted for brevity, see the source of this page
+    templateSelection: formatLocationSelection // omitted for brevity, see the source of this page
+}).on("change", function () {
+   /*Sementara TUtup Location */
+});
+/* Format Group */
+function formatLocation(repo) {
+    if (repo.loading) return repo.text;
+    var markup ="<div class='select2-result-repository__description'>" + repo.idlocation +"   <i class='fa fa-circle-o'></i>   "+ repo.nmlocation +"</div>";
+    return markup;
+}
+
+function formatLocationSelection(repo) {
+    return repo.nmlocation || repo.text;
+}
 
 
 function setToApproved(docno) {
@@ -394,6 +468,7 @@ var defaultInitialPO = '';
 $("#docnopo").select2({
     placeholder: "Choose Your PO",
     allowClear: true,
+    dropdownParent: $('#modalDetailLPB'),
     width:'100%',
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_po',
@@ -700,13 +775,29 @@ function getCheckedDetailIds(){
     return ids;
 }
 
-
+function resetSelect2Fields() {
+    // Reset idprincipal
+    $('[name="idprincipal"]').val(null).trigger('change');
+    $('[name="idprincipal"]').empty();
+    
+    // Reset idgudang
+    $('[name="idgudang"]').val(null).trigger('change');
+    $('[name="idgudang"]').empty();
+}
 
 function setSelect2Ajax(selector, value, text) {
     if (!value) return;
-
-    let option = new Option(text || value, value, true, true);
-    $(selector).append(option).trigger('change');
+    
+    var $select = $(selector);
+    
+    // Cek apakah option sudah ada
+    if (!$select.find('option[value="' + value + '"]').length) {
+        var option = new Option(text || value, value, true, true);
+        $select.append(option);
+    }
+    
+    // Set value
+    $select.val(value).trigger('change');
 }
 
 let currentEditId = null;
@@ -733,6 +824,7 @@ function btnUpdateDetail(){
     }
 
     const id = ids[0];
+    resetSelect2Fields();
 
     $.ajax({
         url: HOST_URL + 'purchase/trans/get_lpb_detail',
@@ -750,6 +842,7 @@ function btnUpdateDetail(){
                 $('#docnopomodal').val(res.data.docnopo);
                 $('#idbarang').val(res.data.idbarang);
                 $('#nmbarang').val(res.data.nmbarang);
+                $('#idspec').val(res.data.idspec);
                 $('#unit').val(res.data.unit);
                 setJtsValue('[name="qty"]', convertToDbNumber(res.data.qty));
                 setJtsValue('[name="qtybonus"]', convertToDbNumber(res.data.qtybonus));
@@ -766,7 +859,45 @@ function btnUpdateDetail(){
                 // $('#qtybonus').val(res.data.qtybonus);
                 // $('#harga').val(res.data.harga);
                 // $('#multidisc').val(res.data.multidisc);
-                setSelect2Ajax('#idprincipal', res.data.idprincipal, res.data.idprincipal);
+                // setSelect2Ajax('#idprincipal', res.data.idprincipal, res.data.idprincipal);
+                // setSelect2Ajax('#idgudang', res.data.idgudang, res.data.idgudang);
+                $.ajax({
+                    type: 'GET',
+                    url: HOST_URL + 'api/globalmodule/list_principal' + '?var=' + res.data.idprincipal,
+                    dataType: 'json',
+                    delay: 250,
+                }).then(function (datax) {
+                    // create the option and append to Select2
+                    var option = new Option(datax.items[0].nmprincipal, datax.items[0].idprincipal, true, true);
+                    $('[name="idprincipal"]').append(option).trigger('change')
+
+                    // manually trigger the `select2:select` event
+                    $('[name="idprincipal"]').trigger({
+                        type: 'select2:select',
+                        params: {
+                            data: datax
+                        }
+                    });
+                });
+
+                $.ajax({
+                    type: 'GET',
+                    url: HOST_URL + 'api/globalmodule/list_mlocation' + '?var=' + res.data.idgudang,
+                    dataType: 'json',
+                    delay: 250,
+                }).then(function (datax) {
+                    // create the option and append to Select2
+                    var option = new Option(datax.items[0].nmlocation, datax.items[0].idlocation, true, true);
+                    $('[name="idgudang"]').append(option).trigger('change')
+
+                    // manually trigger the `select2:select` event
+                    $('[name="idgudang"]').trigger({
+                        type: 'select2:select',
+                        params: {
+                            data: datax
+                        }
+                    });
+                });
                 // setSelect2Ajax('#docnopp', res.data.docnopp, res.data.keterangan);
 
                 $('#modalUpdateLPBLabel').text('Update Retur Beli Detail');
@@ -1094,6 +1225,14 @@ function saveLPBDetail() {
 
 function btnInputDetail() {
 
+    let cabang = $('#cabang').val();
+
+    if (!cabang || cabang.trim() === '') {
+        alert('Cabang harus dipilih terlebih dahulu');
+        $('#cabang').focus();
+        return; // stop proses
+    }
+
     $('#formLPBDetail')[0].reset();
 
     
@@ -1198,6 +1337,7 @@ $('#cabang').on('change', function () {
                     $('#infix').val(res.infix);          // YYMM
                     $('#prefix').val('LPB');             // default
                     $('#sufix').val(currentKodeSuffix + '0001');
+                    defaultInitialPO = currentKodeSuffix
 
                     var infix = (res.infix || '').toString();
                     if (infix.length === 4) {

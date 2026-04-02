@@ -270,13 +270,13 @@ BEGIN
         INSERT INTO sc_trx.lpb_dtl (
             idurut, docno, docnopo, idbarang, uniqueid,  nmbarang,
             idprincipal, idgudang, idspec, volitem, biaya, biaya2, unit, qty, 
-            harga, nilai, descriptionpo, descriptionpp,
+            harga, nilai, descriptionpo, descriptionpp, multidisc,
             inputby, inputdate, status, updateby, updatedate
         )
         SELECT
             idurut, v_docno, docnopo, idbarang, uniqueid,  nmbarang,
             idprincipal, idgudang, idspec, volitem, biaya, biaya2, unit, qty, 
-            harga, nilai, descriptionpo, descriptionpp,
+            harga, nilai, descriptionpo, descriptionpp, multidisc,
             inputby, inputdate, status, updateby, updatedate
         FROM sc_tmp.lpb_dtl
         WHERE rtrim(docno) = rtrim(OLD.docno)
@@ -291,7 +291,7 @@ BEGIN
             SELECT 
                 uniqueid,
                 SUM(qty) as qty_used
-            FROM sc_tmp.po_dtl
+            FROM sc_tmp.lpb_dtl
             WHERE rtrim(docno) = rtrim(OLD.docno)
                 AND inputby = v_inputby
                 AND uniqueid IS NOT NULL
@@ -335,12 +335,12 @@ BEGIN
         INSERT INTO sc_trx.lpb_dtl
         (idurut, docno, docnopo, idbarang, uniqueid,  nmbarang,
         idprincipal, idgudang, idspec, volitem, biaya, biaya2, unit, qty, 
-        harga, nilai, descriptionpo, descriptionpp,
+        harga, nilai, descriptionpo, descriptionpp, multidisc,
         inputby, inputdate, status, updateby, updatedate, docnotmp)
         SELECT
             idurut, NEW.docnotmp, docnopo, idbarang, uniqueid,  nmbarang,
             idprincipal, idgudang, idspec, volitem, biaya, biaya2, unit, qty, 
-            harga, nilai, descriptionpo, descriptionpp,
+            harga, nilai, descriptionpo, descriptionpp, multidisc,
             inputby, inputdate, status, updateby, updatedate, docnotmp
         FROM sc_tmp.lpb_dtl
         WHERE rtrim(docno) = rtrim(NEW.docno);
@@ -353,7 +353,7 @@ BEGIN
             SELECT 
                 uniqueid,
                 SUM(qty) as qty_used
-            FROM sc_tmp.po_dtl
+            FROM sc_tmp.lpb_dtl
             WHERE rtrim(docno) = rtrim(OLD.docno)
                 AND inputby = v_inputby
                 AND uniqueid IS NOT NULL
@@ -450,11 +450,11 @@ BEGIN
 			INSERT INTO sc_tmp.lpb_dtl
 			( idurut, docno, docnopo, idbarang, uniqueid, nmbarang,
             idprincipal, idgudang, idspec, volitem, biaya, biaya2, unit, qty, 
-            harga, nilai, descriptionpo, descriptionpp,
+            harga, nilai, descriptionpo, descriptionpp, multidisc,
             inputby, inputdate, status, updateby, updatedate, docnotmp)
 			SELECT idurut, NEW.docno, docnopo, idbarang, uniqueid, nmbarang,
             idprincipal, idgudang, idspec, volitem, biaya, biaya2, unit, qty, 
-            harga, nilai, descriptionpo, descriptionpp,
+            harga, nilai, descriptionpo, descriptionpp, multidisc,
             inputby, inputdate, status, updateby, updatedate, NEW.docno
 			FROM sc_trx.lpb_dtl 
 			WHERE docno = NEW.docno;

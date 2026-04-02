@@ -348,13 +348,32 @@ group by docno order by docno asc");
     function q_supplier_new($param){
         return $this->db->query("select *, trim(kdsupplier) as id from sc_mst.mstsupplier where coalesce(trim(chold),'NO')!='YES' AND coalesce(trim(kdsupplier),'')!='' $param ");
     }
-
     function q_pp($param){
-        return $this->db->query("select *, trim(docno) as id from sc_trx.pp where coalesce(trim(docno),'')!='' $param ");
+        return $this->db->query("
+            SELECT DISTINCT 
+                pp.*, 
+                trim(pp.docno) as id 
+            FROM sc_trx.pp 
+            INNER JOIN sc_trx.pp_dtl ON pp.docno = pp_dtl.docno 
+            WHERE coalesce(trim(pp.docno),'') != '' 
+                AND (pp_dtl.qty - (coalesce(pp_dtl.qtypo, 0) + coalesce(pp_dtl.qtyvoid, 0))) > 0
+                AND (trim(pp.status) = 'P' or trim(pp.status) = 'PO')
+                $param
+        ");
     }
 
     function q_po($param){
-        return $this->db->query("select *, trim(docno) as id from sc_trx.po where coalesce(trim(docno),'')!='' $param ");
+        return $this->db->query("
+            SELECT DISTINCT 
+                po.*, 
+                trim(po.docno) as id 
+            FROM sc_trx.po 
+            INNER JOIN sc_trx.po_dtl ON po.docno = po_dtl.docno 
+            WHERE coalesce(trim(po.docno),'') != '' 
+                AND (po_dtl.qty - (coalesce(po_dtl.qtylpb, 0) + coalesce(po_dtl.qtyvoid, 0))) > 0
+                AND (trim(po.status) = 'P')
+                $param
+        ");
     }
 
     function q_lpb($param){

@@ -256,14 +256,14 @@ BEGIN
 
         
         UPDATE sc_trx.po_dtl ppd
-        SET qtylpb = COALESCE(ppd.qtylpb, 0) + pod.qty_used
+        SET qtyvoid = COALESCE(ppd.qtyvoid, 0) + pod.qty_used
             -- updateby = v_inputby,
             -- updatedate = CURRENT_TIMESTAMP
         FROM (
             SELECT 
                 uniqueid,
                 SUM(qty) as qty_used
-            FROM sc_tmp.po_dtl
+            FROM sc_tmp.voidpo_dtl
             WHERE rtrim(docno) = rtrim(OLD.docno)
                 AND inputby = v_inputby
                 AND uniqueid IS NOT NULL
@@ -318,14 +318,14 @@ BEGIN
         
         
         UPDATE sc_trx.po_dtl ppd
-        SET qtylpb = COALESCE(ppd.qtylpb, 0) + pod.qty_used
+        SET qtyvoid = COALESCE(ppd.qtyvoid, 0) + pod.qty_used
             -- updateby = v_inputby,
             -- updatedate = CURRENT_TIMESTAMP
         FROM (
             SELECT 
                 uniqueid,
                 SUM(qty) as qty_used
-            FROM sc_tmp.po_dtl
+            FROM sc_tmp.voidpo_dtl
             WHERE rtrim(docno) = rtrim(OLD.docno)
                 AND inputby = v_inputby
                 AND uniqueid IS NOT NULL

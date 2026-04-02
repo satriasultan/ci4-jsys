@@ -44,9 +44,9 @@ function tablePPTrx(){
                 "type": "POST",
                 "data": function(data) {
                     data.tglrange = $('#tglrange').val();
-                    data.idbarang = $('#idbarang_filter').val();
-                    data.namasupplier = $('#namasupplier').val();
-                    data.status = $('#status_filter').val(); //A,P,S,ALL
+                    // data.idbarang = $('#idbarang_filter').val();
+                    // data.namasupplier = $('#namasupplier').val();
+                    data.status_filter = $('#status_filter').val(); //A,P,S,ALL
                 },
                 "dataFilter": function(data) {
                     var json = jQuery.parseJSON(data);
@@ -80,6 +80,19 @@ function reload_tablePPTrx()
     table.DataTable().ajax.reload(); //reload datatable ajax
     //console.log('HALO HALO BANDUNG');
 }
+
+
+$('#btn-filter').click(function(){ //button filter event click
+    var table = $('#tableppTrx');
+    table.DataTable().ajax.reload(); //reload datatable ajax
+    $('#filter').modal('hide');
+});
+$('#btn-reset').click(function(){ //button reset event click
+    $('#form-filter')[0].reset();
+    var table = $('#tableppTrx');
+    table.DataTable().ajax.reload(); //reload datatable ajax
+    $('#filter').modal('hide');
+});
 
 
 
@@ -151,18 +164,45 @@ function reload_tablePPApprvTrx()
 }
 
 
-$('#btn-filter-tx').click(function(){ //button filter event click
-    var table = $('#tableppTrx');
-    table.DataTable().ajax.reload(); //reload datatable ajax
-    $('#filter').modal('hide');
-});
-$('#btn-reset-tx').click(function(){ //button reset event click
-    $('#form-filter')[0].reset();
-    var table = $('#tableppTrx');
-    table.DataTable().ajax.reload(); //reload datatable ajax
-    $('#filter').modal('hide');
-});
 
+
+function setToCancel(docno) {
+    Swal.fire({
+        title: 'Batalkan pengajuan PP?',
+        text: "Pengajuan dokumen akan dibatalkan",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, Batalkan'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: HOST_URL + '/purchase/trans/updateStatusPP',
+                type: 'POST',
+                data: { docno: docno, status: 'C' },
+                dataType: 'json',
+                success: function(res) {
+                    if (res.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil',
+                            text: 'Pengajuan dokumen berhasil dibatalkan'
+                        }).then(() => {
+                            reload_tablePPTrx()
+                            reload_tablePPApprvTrx()
+                        });
+                    } else {
+                        Swal.fire('Gagal', res.message || 'Terjadi kesalahan', 'error');
+                    }
+                },
+                error: function() {
+                    Swal.fire('Error', 'Tidak dapat terhubung ke server', 'error');
+                }
+            });
+        }
+    });
+}
 
 
 
@@ -328,6 +368,7 @@ $("#idbarang").select2({
     placeholder: "Choose Your Item List",
     allowClear: true,
     width:'100%',
+    dropdownParent: $('#modalDetailPP'),
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_item',
         type: 'POST',

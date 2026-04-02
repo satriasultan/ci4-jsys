@@ -208,7 +208,7 @@ BEGIN
 
         
         UPDATE sc_trx.pp_dtl ppd
-        SET qtypo = COALESCE(ppd.qtypo, 0) + pod.qty_used
+        SET qtyvoid = COALESCE(ppd.qtyvoid, 0) + pod.qty_used
             -- updateby = v_inputby,
             -- updatedate = CURRENT_TIMESTAMP
         FROM (
@@ -266,7 +266,7 @@ BEGIN
 
         
         UPDATE sc_trx.pp_dtl ppd
-        SET qtypo = COALESCE(ppd.qtypo, 0) + pod.qty_used
+        SET qtyvoid = COALESCE(ppd.qtyvoid, 0) + pod.qty_used
             -- updateby = v_inputby,
             -- updatedate = CURRENT_TIMESTAMP
         FROM (

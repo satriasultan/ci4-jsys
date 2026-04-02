@@ -299,12 +299,14 @@ class M_Purchase extends Model
     z.uraian as status_desc
     from sc_trx.pp a 
     left outer join sc_mst.branchjob b on a.cabang=b.idbranch
-    left outer join sc_mst.trxtype z on a.status=z.kdtrx and z.jenistrx='I.P.A.1') as x";
+    left outer join sc_mst.trxtype z on a.status=z.kdtrx and z.jenistrx='I.P.A.1'
+    ) as x";
     var $t_front_pp_view_column = array('docno','docdate','pemohon','keterangan','nmbranch','status_desc');
     var $t_front_pp_view_order = array('inputdate' => 'desc'); // default order
     private function _get_query_front_pp()
     {
         $this->session = \Config\Services::session();
+        $this->request = \Config\Services::request();
         $loccode=trim($this->session->get('loccode'));
         $nama=trim($this->session->get('nama'));
 
@@ -318,6 +320,24 @@ class M_Purchase extends Model
         //     "left"
         // );
         $builder->select("x.*");
+        
+        $tglrange = $this->request->getPost('tglrange');
+        if (!empty($tglrange)) {
+            $dates = explode(' - ', $tglrange);
+            if (count($dates) == 2) {
+                $start = \DateTime::createFromFormat('d-m-Y', trim($dates[0]))->format('Y-m-d');
+                $end   = \DateTime::createFromFormat('d-m-Y', trim($dates[1]))->format('Y-m-d');
+                $builder->where("docdate BETWEEN '{$start}' AND '{$end}'");
+            }
+        }
+
+        
+        $status_filter = $this->request->getPost('status_filter');
+        if (!empty($status_filter) && $status_filter !== 'ALL') {
+            $builder->where('trim(x.status)', $status_filter);
+        } else if(($status_filter) == 'ALL'){
+            $builder->where('trim(x.status) !=', 'C');
+        }
         // $builder->where('inputby', $nama);
 
         $i = 0;
