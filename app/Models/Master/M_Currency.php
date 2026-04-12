@@ -7,48 +7,48 @@ use CodeIgniter\Model;
 class M_Currency extends Model
 {
 
-    
-var $t_currency_view = "(select a.* from sc_mst.currency a) as x";
 
-var $t_currency_view_column = array('id','currcode','currname');
-var $t_currency_view_order = array("id" => 'desc'); // Default order
+    var $t_currency_view = "(select a.* from sc_mst.currency a) as x";
 
-private function _get_query_t_currency()
-{
-    $builder = $this->db->table($this->t_currency_view);
+    var $t_currency_view_column = array('id','currcode','currname');
+    var $t_currency_view_order = array("id" => 'desc'); // Default order
 
-    $this->request = \Config\Services::request();
-    // ✅ Pencarian (search) di DataTables
-    $i = 0;
-    foreach ($this->t_currency_view_column as $Bank) {
-        if (isset($_POST['search']['value']) && $_POST['search']['value']) {
-            if ($i === 0) {
-                $builder->groupStart(); // Mulai grup pencarian
-                $builder->like("upper(cast(" . strtoupper($Bank) . " as varchar))", strtoupper($_POST['search']['value']));
-            } else {
-                $builder->orLike("upper(cast(" . strtoupper($Bank) . " as varchar))", strtoupper($_POST['search']['value']));
+    private function _get_query_t_currency()
+    {
+        $builder = $this->db->table($this->t_currency_view);
+
+        $this->request = \Config\Services::request();
+        // ✅ Pencarian (search) di DataTables
+        $i = 0;
+        foreach ($this->t_currency_view_column as $Bank) {
+            if (isset($_POST['search']['value']) && $_POST['search']['value']) {
+                if ($i === 0) {
+                    $builder->groupStart(); // Mulai grup pencarian
+                    $builder->like("upper(cast(" . strtoupper($Bank) . " as varchar))", strtoupper($_POST['search']['value']));
+                } else {
+                    $builder->orLike("upper(cast(" . strtoupper($Bank) . " as varchar))", strtoupper($_POST['search']['value']));
+                }
+
+                if (count($this->t_currency_view_column) - 1 == $i) {
+                    $builder->groupEnd(); // Akhiri grup pencarian
+                }
             }
+            $i++;
+        }
 
-            if (count($this->t_currency_view_column) - 1 == $i) {
-                $builder->groupEnd(); // Akhiri grup pencarian
+        // ✅ Sorting di DataTables
+        if (isset($_POST['order'])) {
+            if ($_POST['order']['0']['column'] != 0) {
+                $builder->orderBy($this->t_currency_view_column[$_POST['order']['0']['column'] - 1], $_POST['order']['0']['dir']);
+            }
+        } elseif (isset($this->t_currency_view_order)) {
+            foreach ($this->t_currency_view_order as $key => $Bank) {
+                $builder->orderBy($key, $Bank);
             }
         }
-        $i++;
-    }
 
-    // ✅ Sorting di DataTables
-    if (isset($_POST['order'])) {
-        if ($_POST['order']['0']['column'] != 0) {
-            $builder->orderBy($this->t_currency_view_column[$_POST['order']['0']['column'] - 1], $_POST['order']['0']['dir']);
-        }
-    } elseif (isset($this->t_currency_view_order)) {
-        foreach ($this->t_currency_view_order as $key => $Bank) {
-            $builder->orderBy($key, $Bank);
-        }
+        return $builder;
     }
-
-    return $builder;
-}
 
 
     function get_t_currency_view(){
@@ -97,7 +97,7 @@ private function _get_query_t_currency()
         $nama=trim($this->session->get('nama'));
 
         $builder = $this->db->table($this->t_exchangerate_view . ' AS x');  // Menambahkan alias 'x' untuk tabel utama
-        
+
         $builder->join('sc_mst.currency AS c', 'c.id = x.idcurr', 'left');
 
         // Memilih kolom yang dibutuhkan

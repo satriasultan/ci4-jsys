@@ -1,6 +1,6 @@
 -- Table: sc_mst.mlocation
 
--- DROP TABLE IF EXISTS sc_mst.mlocation;
+-- DROP TABLE IF EXISTS sc_mst.principal;
 
 -- KALAU TABLE COST CENTER BELUM ADA JALANKAN INI
 CREATE TABLE IF NOT EXISTS sc_mst.principal

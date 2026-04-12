@@ -1181,6 +1181,11 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.Q.A.1' and 
         return $this->db->query("select * from sc_trx.pnm_brng_dtl where docno is not null $param order by idurut desc");
     }
 
+    public function q_tmp_pnm_brng_dtl_summary($param)
+    {
+        return $this->db->query("select sum(qty) as total_qty , sum(valsum) as valsum  from sc_tmp.pnm_brng_dtl where docno is not null $param;");
+    }
+
 
     /* *********************************************************8888 PEMAKAIAN BARANG ******************************************************************* */
 

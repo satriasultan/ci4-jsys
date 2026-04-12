@@ -900,7 +900,7 @@ function btnUpdateDetail(){
                 });
                 // setSelect2Ajax('#docnopp', res.data.docnopp, res.data.keterangan);
 
-                $('#modalUpdateLPBLabel').text('Update Retur Beli Detail');
+                $('#modalUpdateLPBLabel').text('Update Penerimaan Pembelian');
                 $('#modalUpdateLPB').modal('show');
 
             }else{
@@ -1091,7 +1091,7 @@ function saveLPBDetail() {
 
     Swal.fire({
         title: 'Konfirmasi',
-        text: 'Simpan data Retur Beli Detail?',
+        text: 'Simpan data Penerimaan Pembelian?',
         icon: 'question',
         showCancelButton: true,
         confirmButtonText: 'Ya, Simpan',

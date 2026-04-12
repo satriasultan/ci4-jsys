@@ -2599,7 +2599,7 @@ class Persediaan extends BaseController
     function pmk_brng()
     {
         //I.Q.A.5
-        $data['title']="Pemakaian Barang Stock";
+        $data['title']="Pemakaian Barang";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
@@ -2646,7 +2646,7 @@ class Persediaan extends BaseController
             $data['showUnfinish'] = $this->m_trxerror->unfinish($nama, $urlclear, $urlnext, $title, $body);
         } else { $data['showUnfinish'] = '' ; }
 
-        $kmenu = 'I.Q.A.3';
+        $kmenu = 'I.Q.A.5';
         $role = trim($this->session->get('roleid'));
         $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
         //auto insert unit
@@ -2663,7 +2663,7 @@ class Persediaan extends BaseController
         $no = $_POST['start'];
 
 
-        $kmenu = 'I.Q.A.3';
+        $kmenu = 'I.Q.A.5';
         $nama=trim($this->session->get('nama'));
         $role=trim($this->session->get('roleid'));
 
@@ -2693,13 +2693,13 @@ class Persediaan extends BaseController
 
             if ($canUpdate && trim($lm->pemohon) == $nama && empty($lm->printby) &&
                 empty($lm->printdate) &&
-                trim($status) !== 'DITARIK PO'
+                trim($status) !== 'DITARIK '
             ) {
 
                 $updateBtn = '
                     <a class="dropdown-item bg-warning" 
-                    href="' . base_url('persediaan/trans/updateTransfersLocation') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Update Transfers Location : ' . $docno . '\')">
+                    href="' . base_url('persediaan/trans/updatePmkBrg') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'Update Pemakaian Barang : ' . $docno . '\')">
                         <i class="fa fa-edit"></i> Update 
                     </a>';
             }
@@ -2708,8 +2708,8 @@ class Persediaan extends BaseController
                 $detailBtn = '
                     <a class="dropdown-item" 
                     style="background-color:#3badf6;" 
-                    href="' . base_url('persediaan/trans/detailTransfersLocation') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'View Detail Transfer Location : ' . $docno . '\')">
+                    href="' . base_url('persediaan/trans/detail_pmk_brng_mst') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'View Detail Pemakai Barang : ' . $docno . '\')">
                         <i class="fa fa-eye"></i> Detail 
                     </a>';
             }
@@ -2718,8 +2718,8 @@ class Persediaan extends BaseController
                 $printBtn = '
                     <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
-                    href="' . base_url('persediaan/trans/showPrint') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Print Transfer Lokasi : ' . $docno . '\')">
+                    href="' . base_url('persediaan/trans/showPrintPmkBrg') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'Print Pemakaian Barang : ' . $docno . '\')">
                         <i class="fa fa-print"></i> Print 
                     </a>';
             }
@@ -2772,12 +2772,13 @@ class Persediaan extends BaseController
             $row[] = $dropdownMenu;
 
             $row[] = $lm->docno;
+            $row[] = $lm->cabang;
+            $row[] = $lm->idcostcenter;
             $row[] = $lm->docdate;
-            $row[] = $lm->idlocation_from;
-            $row[] = $lm->idlocation_to;
-            $row[] = $lm->idlocation_transit;
+
             $row[] = $lm->nmstatus;
             $row[] = $lm->description;
+            $row[] = $lm->inputby;
 
 
             $data[] = $row;
@@ -2793,12 +2794,12 @@ class Persediaan extends BaseController
     }
     function add_pmk_brng_mst(){
         /* Penambahan Squence */
-        $data['title']="Add Ajustment Stock";
+        $data['title']="Input Pemakaian Barang";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.Q.A.3'; $versirelease='I.Q.A.3/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.Q.A.5'; $versirelease='I.Q.A.5/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -2807,7 +2808,7 @@ class Persediaan extends BaseController
         /* END CODE UNTUK VERSI */
 
 
-        $paramerror=" and userid='$nama' and modul='I.Q.A.3'";
+        $paramerror=" and userid='$nama' and modul='I.Q.A.5'";
         $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
         $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
         if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
@@ -2843,7 +2844,7 @@ class Persediaan extends BaseController
 
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
-        return $this->template->render('persediaan/pmk_brng/v_add_pmk_brng',$data);
+        return $this->template->render('persediaan/pmk_brng/v_add_pmk_brg',$data);
     }
 
 
@@ -2879,7 +2880,7 @@ class Persediaan extends BaseController
 
             $insertHeader = $builderHeader->insert([
                 'docno'      => $docno,
-                'doctype'    => 'TRANSFER LOCATION',
+                'doctype'    => 'PMKBRG',
                 'docref'     => trim($this->request->getPost('docref')),
                 'docdate'    => trim($this->request->getPost('docdate')),
                 'cabang'     => trim($this->request->getPost('cabang')),
@@ -2887,6 +2888,7 @@ class Persediaan extends BaseController
                 'pemohon'    => strtoupper(trim($this->request->getPost('pemohon'))),
                 'estpakai'   => $this->request->getPost('estpakai'),
                 'idlocation_from'    => strtoupper(trim($this->request->getPost('idlocation_from'))),
+                'idcostcenter'    => strtoupper(trim($this->request->getPost('idcostcenter'))),
 //                'idlocation_to'      => strtoupper(trim($this->request->getPost('idlocation_to'))),
 //                'idlocation_transit' => strtoupper(trim($this->request->getPost('idlocation_transit'))),
                 'status'     => 'E',
@@ -2914,7 +2916,9 @@ class Persediaan extends BaseController
         $idbarang    = trim($this->request->getPost('idbarang'));
         $nmbarang    = strtoupper(trim($this->request->getPost('nmbarang')));
         $unit        = strtoupper(trim($this->request->getPost('unit')));
+        $idlocation    = trim($this->request->getPost('idlocation_dtl'));
         $qtystock    = trim($this->request->getPost('qtystock'));
+        $batch    = trim($this->request->getPost('batch'));
         $qty         = (float) $this->request->getPost('qty');
         $description = strtoupper(trim($this->request->getPost('description')));
 
@@ -2965,7 +2969,9 @@ class Persediaan extends BaseController
                 ->update([
                     'idbarang'    => $idbarang,
                     'nmbarang'    => $nmbarang,
+                    'idlocation'    => $idlocation,
                     'unit'        => $unit,
+                    'batch'         => $batch,
                     'qty'         => $qty,
                     'description' => $description,
                     'updateby'    => $nama,
@@ -2993,6 +2999,7 @@ class Persediaan extends BaseController
                 'docno'       => $docno,
                 'idbarang'    => $idbarang,
                 'nmbarang'    => $nmbarang,
+                'batch'         => $batch,
                 'unit'        => $unit,
                 'qty'         => $qty,
                 'description' => $description,
@@ -3089,7 +3096,7 @@ class Persediaan extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-    function final_pmk_brng_mst(){
+    function final_pmk_barang(){
         $nama = trim($this->session->get('nama'));
         // $loccode = trim($this->session->get('loccode'));
         $param = " and coalesce(inputby,'')='$nama'";
@@ -3107,7 +3114,7 @@ class Persediaan extends BaseController
         //INSERT TRX ERROR
         $builder_trxerror = $this->db->table('sc_mst.trxerror');
         $builder_trxerror->where('userid', $nama);
-        $builder_trxerror->where('modul', 'I.Q.A.1');
+        $builder_trxerror->where('modul', 'I.Q.A.5');
         $builder_trxerror->delete();
 
 
@@ -3118,11 +3125,11 @@ class Persediaan extends BaseController
                 'errorcode' => 3,
                 'nomorakhir1' => $cek->getNumRows(),
                 'nomorakhir2' => $cek2->getNumRows(),
-                'modul' => 'I.Q.A.3',
+                'modul' => 'I.Q.A.5',
             );
             $builder_trxerror->insert($infotrxerror);
 
-            return redirect()->to(base_url('/persediaan/trans/addTransferLokasi'));
+            return redirect()->to(base_url('/persediaan/trans/add_pmk_brg_mst'));
         } else {
             // Ambil dari request POST
             //$pemohon = strtoupper(trim($this->request->getPost('pemohon')));
@@ -3147,7 +3154,7 @@ class Persediaan extends BaseController
             );
             $builder->where('inputby',$nama);
             if ($builder->update($info)) {
-                $paramerror=" and userid='$nama' and modul='I.Q.A.1'";
+                $paramerror=" and userid='$nama' and modul='I.Q.A.5'";
                 $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
                 $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
 
@@ -3160,10 +3167,10 @@ class Persediaan extends BaseController
                     'errorcode' => 3,
                     'nomorakhir1' => $cek->getNumRows(),
                     'nomorakhir2' => $cek2->getNumRows(),
-                    'modul' => 'I.Q.A.1',
+                    'modul' => 'I.Q.A.5',
                 );
                 $builder_trxerror->insert($infotrxerror);
-                return redirect()->to(base_url('/persediaan/trans/addTransferLokasi'));
+                return redirect()->to(base_url('/persediaan/trans/add_pmk_brg_mst'));
             }
 
 
@@ -3185,6 +3192,8 @@ class Persediaan extends BaseController
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
+            $row[] = $lm->idlocation;
+            $row[] = $lm->batch;
             $row[] = $lm->unit;
             $row[] = '<div class="ratakanan">'. $lm->qty  . '</div>';
             $row[] = $lm->description;
@@ -3201,7 +3210,7 @@ class Persediaan extends BaseController
     }
 
 
-    function update_pmk_brng_mst()
+    function updatePmkBrg()
     {
         $nama = trim($this->session->get('nama'));
         $docno = hex2bin($this->request->getGet('id'));
@@ -3221,7 +3230,7 @@ class Persediaan extends BaseController
             $builder->update($info);
 
             // Redirect ke halaman addStdUsage
-            return redirect()->to(base_url('persediaan/trans/addTransferLokasi'));
+            return redirect()->to(base_url('persediaan/trans/add_pmk_brng_mst'));
         } else {
             // Jika status bukan 'F', redirect ke halaman mrpgroup
             return redirect()->to(base_url('persediaan/trans/pmk_brng'));
@@ -3230,7 +3239,7 @@ class Persediaan extends BaseController
     function detail_pmk_brng_mst()
     {
         /* Penambahan Squence */
-        $data['title']="Detail Transfer Lokasi";
+        $data['title']="Detail Pemakaian Barang ";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
@@ -3240,7 +3249,7 @@ class Persediaan extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('persediaan/trans/perintah_transfer'));
         }
-        $kodemenu='I.Q.A.3'; $versirelease='I.Q.A.3/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.Q.A.5'; $versirelease='I.Q.A.5/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -3248,7 +3257,7 @@ class Persediaan extends BaseController
         $data['nama']=$nama; $data['version']=$versidb;
         /* END CODE UNTUK VERSI */
 
-        $paramerror=" and userid='$nama' and modul='I.Q.A.3'";
+        $paramerror=" and userid='$nama' and modul='I.Q.A.5'";
         $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
         $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
         if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
@@ -3279,7 +3288,7 @@ class Persediaan extends BaseController
         $data['userlogin'] = $nama;
         $data['docnoParam'] = $decoded_docno;
         $data['dtldata'] = $this->m_persediaan->q_trx_pmk_brng_mst($param)->getRowArray();
-        return $this->template->render('persediaan/transfer/v_detail_transfer_location',$data);
+        return $this->template->render('persediaan/pmk_brng/v_detail_pmk_brng',$data);
     }
 
     public function getBranch_pmk_brng()
@@ -3356,7 +3365,52 @@ class Persediaan extends BaseController
         ]);
     }
 
+    public function delete_pmk_brng()
+    {
+        $ids = $this->request->getPost('ids');
 
+        if (!$ids || !is_array($ids)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Data tidak valid'
+            ]);
+        }
+
+        $db = \Config\Database::connect();
+        $builder = $db->table('sc_tmp.pmk_brng_dtl');
+
+        try {
+
+            $db->transBegin(); // START TRANSACTION
+
+            $builder->whereIn('idurut', $ids)->delete();
+
+            // Cek apakah semua benar-benar terhapus
+            if ($db->affectedRows() !== count($ids)) {
+                throw new \Exception('Sebagian data gagal dihapus');
+            }
+
+            if ($db->transStatus() === false) {
+                throw new \Exception('Transaksi gagal');
+            }
+
+            $db->transCommit(); // COMMIT jika sukses semua
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Semua data berhasil dihapus'
+            ]);
+
+        } catch (\Throwable $e) {
+
+            $db->transRollback(); // ROLLBACK jika ada error
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Gagal menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
     function clear_pmk_brng()
     {
         $nama=trim($this->session->get('nama'));
@@ -3396,11 +3450,11 @@ class Persediaan extends BaseController
 
     }
 
-    /* PEMAKAIAN BARANG  */
+    /* ************************************************************ PENERIMAAN BARANG  ************************************************************************/
     function pnm_barang()
     {
-        //I.Q.A.5
-        $data['title']="Penerimaan Barang Stock";
+        //I.Q.A.6
+        $data['title']="Penerimaan Barang";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
@@ -3436,35 +3490,35 @@ class Persediaan extends BaseController
         }
         /* Item Entry Master Check */
         $param = " and coalesce(inputby,'')='$nama'";
-        $dtl = $this->m_persediaan->q_tmp_pnm_barang_mst($param);
+        $dtl = $this->m_persediaan->q_tmp_pnm_brng_mst($param);
         $logindate = trim($this->session->get('logindate'));
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
-            $urlclear = base_url('persediaan/trans/clear_pnm_barang');
-            $urlnext = base_url('persediaan/trans/add_pnm_barang_mst');
+            $urlclear = base_url('persediaan/trans/clear_pnm_brng');
+            $urlnext = base_url('persediaan/trans/add_pnm_brng_mst');
             $body = " Entry not finished found....!!!";
             $data['showUnfinish'] = $this->m_trxerror->unfinish($nama, $urlclear, $urlnext, $title, $body);
         } else { $data['showUnfinish'] = '' ; }
 
-        $kmenu = 'I.Q.A.3';
+        $kmenu = 'I.Q.A.6';
         $role = trim($this->session->get('roleid'));
         $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
         //auto insert unit
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
-        return $this->template->render('persediaan/pnm_barang/v_pnm_barang',$data);
+        return $this->template->render('persediaan/pnm_brng/v_pnm_brng',$data);
 
 
     }
 
-    function list_trx_pnm_barang_mst(){
-        $list = $this->m_persediaan->get_trx_pnm_barang_mst_view();
+    function list_trx_pnm_brng_mst(){
+        $list = $this->m_persediaan->get_trx_pnm_brng_mst_view();
         $data = array();
         $no = $_POST['start'];
 
 
-        $kmenu = 'I.Q.A.3';
+        $kmenu = 'I.Q.A.6';
         $nama=trim($this->session->get('nama'));
         $role=trim($this->session->get('roleid'));
 
@@ -3494,13 +3548,13 @@ class Persediaan extends BaseController
 
             if ($canUpdate && trim($lm->pemohon) == $nama && empty($lm->printby) &&
                 empty($lm->printdate) &&
-                trim($status) !== 'DITARIK PO'
+                trim($status) !== 'DITARIK '
             ) {
 
                 $updateBtn = '
                     <a class="dropdown-item bg-warning" 
-                    href="' . base_url('persediaan/trans/updateTransfersLocation') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Update Transfers Location : ' . $docno . '\')">
+                    href="' . base_url('persediaan/trans/updatepnmBrg') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'Update Pemakaian Barang : ' . $docno . '\')">
                         <i class="fa fa-edit"></i> Update 
                     </a>';
             }
@@ -3509,8 +3563,8 @@ class Persediaan extends BaseController
                 $detailBtn = '
                     <a class="dropdown-item" 
                     style="background-color:#3badf6;" 
-                    href="' . base_url('persediaan/trans/detailTransfersLocation') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'View Detail Transfer Location : ' . $docno . '\')">
+                    href="' . base_url('persediaan/trans/detail_pnm_brng_mst') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'View Detail Pemakai Barang : ' . $docno . '\')">
                         <i class="fa fa-eye"></i> Detail 
                     </a>';
             }
@@ -3519,8 +3573,8 @@ class Persediaan extends BaseController
                 $printBtn = '
                     <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
-                    href="' . base_url('persediaan/trans/showPrint') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Print Transfer Lokasi : ' . $docno . '\')">
+                    href="' . base_url('persediaan/trans/showPrintpnmBrg') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'Print Pemakaian Barang : ' . $docno . '\')">
                         <i class="fa fa-print"></i> Print 
                     </a>';
             }
@@ -3573,12 +3627,13 @@ class Persediaan extends BaseController
             $row[] = $dropdownMenu;
 
             $row[] = $lm->docno;
+            $row[] = $lm->cabang;
+            $row[] = $lm->idcostcenter;
             $row[] = $lm->docdate;
-            $row[] = $lm->idlocation_from;
-            $row[] = $lm->idlocation_to;
-            $row[] = $lm->idlocation_transit;
+
             $row[] = $lm->nmstatus;
             $row[] = $lm->description;
+            $row[] = $lm->inputby;
 
 
             $data[] = $row;
@@ -3586,20 +3641,20 @@ class Persediaan extends BaseController
 
         $output = array(
             "draw" => $_POST['draw'],
-            "recordsTotal" => $this->m_persediaan->trx_pnm_barang_mst_view_count_all(),
-            "recordsFiltered" => $this->m_persediaan->trx_pnm_barang_mst_view_count_filtered(),
+            "recordsTotal" => $this->m_persediaan->trx_pnm_brng_mst_view_count_all(),
+            "recordsFiltered" => $this->m_persediaan->trx_pnm_brng_mst_view_count_filtered(),
             "data" => $data,
         );
         echo $this->fiky_encryption->jDatatable($output);
     }
-    function add_pnm_barang_mst(){
+    function add_pnm_brng_mst(){
         /* Penambahan Squence */
-        $data['title']="Add Ajustment Stock";
+        $data['title']="Input Penerimaan Barang";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.Q.A.3'; $versirelease='I.Q.A.3/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.Q.A.6'; $versirelease='I.Q.A.6/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -3608,7 +3663,7 @@ class Persediaan extends BaseController
         /* END CODE UNTUK VERSI */
 
 
-        $paramerror=" and userid='$nama' and modul='I.Q.A.3'";
+        $paramerror=" and userid='$nama' and modul='I.Q.A.6'";
         $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
         $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
         if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
@@ -3632,23 +3687,23 @@ class Persediaan extends BaseController
         }
 
         $param = " and trim(inputby)='$nama'";
-        $data['mst'] = $this->m_persediaan->q_tmp_pnm_barang_mst($param)->getRowArray();
+        $data['mst'] = $this->m_persediaan->q_tmp_pnm_brng_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
 
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
         $param = " and trim(inputby)='$nama'";
-        $data['dtldata'] = $this->m_persediaan->q_tmp_pnm_barang_mst($param)->getRowArray();
+        $data['dtldata'] = $this->m_persediaan->q_tmp_pnm_brng_mst($param)->getRowArray();
         $logindate  = trim($this->session->get('logindate'));
         $ts    = strtotime($logindate);
 
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
-        return $this->template->render('persediaan/pnm_barang/v_add_pnm_barang',$data);
+        return $this->template->render('persediaan/pnm_brng/v_add_pnm_brg',$data);
     }
 
 
-    public function save_pnm_barang_detail()
+    public function save_pnm_brng_detail()
     {
         $nama = trim($this->session->get('nama'));
         $docno  = strtoupper($this->request->getPost('docno'));
@@ -3664,7 +3719,7 @@ class Persediaan extends BaseController
         $db = $this->db;
         $db->transStart();
 
-        $builderHeader = $db->table('sc_tmp.pnm_barang_mst');
+        $builderHeader = $db->table('sc_tmp.pnm_brng_mst');
 
         $exists = $builderHeader
             ->where('docno', $docno)
@@ -3680,7 +3735,7 @@ class Persediaan extends BaseController
 
             $insertHeader = $builderHeader->insert([
                 'docno'      => $docno,
-                'doctype'    => 'TRANSFER LOCATION',
+                'doctype'    => 'PNMBRG',
                 'docref'     => trim($this->request->getPost('docref')),
                 'docdate'    => trim($this->request->getPost('docdate')),
                 'cabang'     => trim($this->request->getPost('cabang')),
@@ -3688,6 +3743,7 @@ class Persediaan extends BaseController
                 'pemohon'    => strtoupper(trim($this->request->getPost('pemohon'))),
                 'estpakai'   => $this->request->getPost('estpakai'),
                 'idlocation_from'    => strtoupper(trim($this->request->getPost('idlocation_from'))),
+                'idcostcenter'    => strtoupper(trim($this->request->getPost('idcostcenter'))),
 //                'idlocation_to'      => strtoupper(trim($this->request->getPost('idlocation_to'))),
 //                'idlocation_transit' => strtoupper(trim($this->request->getPost('idlocation_transit'))),
                 'status'     => 'E',
@@ -3715,8 +3771,12 @@ class Persediaan extends BaseController
         $idbarang    = trim($this->request->getPost('idbarang'));
         $nmbarang    = strtoupper(trim($this->request->getPost('nmbarang')));
         $unit        = strtoupper(trim($this->request->getPost('unit')));
+        $idlocation    = trim($this->request->getPost('idlocation_dtl'));
         $qtystock    = trim($this->request->getPost('qtystock'));
+        $batch    = trim($this->request->getPost('batch'));
         $qty         = (float) $this->request->getPost('qty');
+        $val         = (float) $this->request->getPost('val');
+        $valsum         = (float) $this->request->getPost('valsum');
         $description = strtoupper(trim($this->request->getPost('description')));
 
         if (!$idbarang) {
@@ -3728,7 +3788,7 @@ class Persediaan extends BaseController
             ]);
         }
 
-        $builderDetail = $db->table('sc_tmp.pnm_barang_dtl');
+        $builderDetail = $db->table('sc_tmp.pnm_brng_dtl');
 
         // =========================
         // CEK DUPLIKASI
@@ -3764,10 +3824,15 @@ class Persediaan extends BaseController
             $updateDetail = $builderDetail
                 ->where('idurut', $idurut)
                 ->update([
+                    'doctype'    => 'PNMBRG',
                     'idbarang'    => $idbarang,
                     'nmbarang'    => $nmbarang,
+                    'idlocation'    => $idlocation,
                     'unit'        => $unit,
+                    'batch'         => $batch,
                     'qty'         => $qty,
+                    'val'         => $val,
+                    'valsum'         => $valsum,
                     'description' => $description,
                     'updateby'    => $nama,
                     'updatedate'  => date('Y-m-d H:i:s')
@@ -3792,10 +3857,15 @@ class Persediaan extends BaseController
 
             $insertDetail = $builderDetail->insert([
                 'docno'       => $docno,
+                'doctype'    => 'PNMBRG',
+                'idlocation'    => $idlocation,
                 'idbarang'    => $idbarang,
                 'nmbarang'    => $nmbarang,
+                'batch'         => $batch,
                 'unit'        => $unit,
                 'qty'         => $qty,
+                'val'         => $val,
+                'valsum'         => $valsum,
                 'description' => $description,
                 'inputby'     => $nama,
                 'inputdate'   => $inputdate,
@@ -3829,11 +3899,11 @@ class Persediaan extends BaseController
     }
 
 
-    function showing_pnm_barang_mst_tmp(){
+    function showing_pnm_brng_mst_tmp(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
         $param = " and docno='$docno'";
-        $data = $this->m_persediaan->q_tmp_pnm_barang_mst($param);
+        $data = $this->m_persediaan->q_tmp_pnm_brng_mst($param);
         $output = array(
             'status' => true,
             'total_count' => $data->getNumRows(),
@@ -3843,12 +3913,12 @@ class Persediaan extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-    public function get_tmp_pnm_barang_dtl()
+    public function get_tmp_pnm_brng_dtl()
     {
         $id = $this->request->getGet('id');
 
         $data = $this->m_persediaan
-            ->q_tmp_pnm_barang_dtl(" and idurut='$id'");
+            ->q_tmp_pnm_brng_dtl(" and idurut='$id'");
 
         $output = array(
             'status' => true,
@@ -3860,11 +3930,11 @@ class Persediaan extends BaseController
     }
 
     // UNTUK TRX
-    function showing_pnm_barang_mst(){
+    function showing_pnm_brng_mst(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
         $param = " and docno='$docno'";
-        $data = $this->m_persediaan->q_trx_pnm_barang_mst($param);
+        $data = $this->m_persediaan->q_trx_pnm_brng_mst($param);
         $output = array(
             'status' => true,
             'total_count' => $data->getNumRows(),
@@ -3874,12 +3944,12 @@ class Persediaan extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-    public function get_trx_pnm_barang_mst_dtl()
+    public function get_trx_pnm_brng_mst_dtl()
     {
         $id = $this->request->getGet('id');
 
         $data = $this->m_persediaan
-            ->q_trx_pnm_barang_mst_dtl(" and idurut='$id'");
+            ->q_trx_pnm_brng_mst_dtl(" and idurut='$id'");
 
         $output = array(
             'status' => true,
@@ -3890,25 +3960,37 @@ class Persediaan extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-    function final_pnm_barang_mst(){
+    public function get_summary_pnm() {
+        $docno = trim($this->request->getPost('docno'));
+
+        // Query sum ke database
+        $summary = $this->m_persediaan->q_tmp_pnm_brng_dtl_summary(" and docno='$docno'")->getRowArray();
+
+        echo json_encode([
+            'total_qty'   => number_format($summary['total_qty'], 2, '.', ','),
+            'total_nilai' => number_format($summary['valsum'], 2, '.', ',')
+        ]);
+    }
+
+    function final_pnm_barang(){
         $nama = trim($this->session->get('nama'));
         // $loccode = trim($this->session->get('loccode'));
         $param = " and coalesce(inputby,'')='$nama'";
         $paramdtl = " AND COALESCE(inputby, '') = '$nama'";
         $paramdtl2 = " and coalesce(inputby,'')='$nama'";
 
-        $header = $this->m_persediaan->q_tmp_pnm_barang_mst($param);
+        $header = $this->m_persediaan->q_tmp_pnm_brng_mst($param);
         $status = trim($header->getRowArray()['status']);
-        $cek = $this->m_persediaan->q_tmp_pnm_barang_mst($paramdtl);
-        $cek2 = $this->m_persediaan->q_tmp_pnm_barang_mst($paramdtl2);
+        $cek = $this->m_persediaan->q_tmp_pnm_brng_mst($paramdtl);
+        $cek2 = $this->m_persediaan->q_tmp_pnm_brng_mst($paramdtl2);
 
 
-        $builder = $this->db->table(' sc_tmp.pnm_barang_mst');
+        $builder = $this->db->table(' sc_tmp.pnm_brng_mst');
 
         //INSERT TRX ERROR
         $builder_trxerror = $this->db->table('sc_mst.trxerror');
         $builder_trxerror->where('userid', $nama);
-        $builder_trxerror->where('modul', 'I.Q.A.1');
+        $builder_trxerror->where('modul', 'I.Q.A.6');
         $builder_trxerror->delete();
 
 
@@ -3919,11 +4001,11 @@ class Persediaan extends BaseController
                 'errorcode' => 3,
                 'nomorakhir1' => $cek->getNumRows(),
                 'nomorakhir2' => $cek2->getNumRows(),
-                'modul' => 'I.Q.A.3',
+                'modul' => 'I.Q.A.6',
             );
             $builder_trxerror->insert($infotrxerror);
 
-            return redirect()->to(base_url('/persediaan/trans/addTransferLokasi'));
+            return redirect()->to(base_url('/persediaan/trans/add_pnm_brg_mst'));
         } else {
             // Ambil dari request POST
             //$pemohon = strtoupper(trim($this->request->getPost('pemohon')));
@@ -3948,7 +4030,7 @@ class Persediaan extends BaseController
             );
             $builder->where('inputby',$nama);
             if ($builder->update($info)) {
-                $paramerror=" and userid='$nama' and modul='I.Q.A.1'";
+                $paramerror=" and userid='$nama' and modul='I.Q.A.6'";
                 $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
                 $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
 
@@ -3961,10 +4043,10 @@ class Persediaan extends BaseController
                     'errorcode' => 3,
                     'nomorakhir1' => $cek->getNumRows(),
                     'nomorakhir2' => $cek2->getNumRows(),
-                    'modul' => 'I.Q.A.1',
+                    'modul' => 'I.Q.A.6',
                 );
                 $builder_trxerror->insert($infotrxerror);
-                return redirect()->to(base_url('/persediaan/trans/addTransferLokasi'));
+                return redirect()->to(base_url('/persediaan/trans/pnm_barang'));
             }
 
 
@@ -3973,9 +4055,9 @@ class Persediaan extends BaseController
 
     }
 
-    function list_tmp_pnm_barang_dtl(){
+    function list_tmp_pnm_brng_dtl(){
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
-        $list = $this->m_persediaan->get_tmp_pnm_barang_dtl_view($docno);
+        $list = $this->m_persediaan->get_tmp_pnm_brng_dtl_view($docno);
         $data = array();
         $no = $_POST['start'];
         foreach ($list as $lm) {
@@ -3986,28 +4068,33 @@ class Persediaan extends BaseController
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
+            $row[] = $lm->idlocation;
+            $row[] = $lm->batch;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. $lm->qty  . '</div>';
+// Menambahkan number_format: (variabel, jumlah desimal, pemisah desimal, pemisah ribuan)
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->val, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->valsum, 2, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
 
         $output = array(
             "draw" => $_POST['draw'],
-            "recordsTotal" => $this->m_persediaan->get_tmp_pnm_barang_dtl_view($docno),
-            "recordsFiltered" => $this->m_persediaan->tmp_pnm_barang_dtl_view_count_filtered($docno),
+            "recordsTotal" => $this->m_persediaan->get_tmp_pnm_brng_dtl_view($docno),
+            "recordsFiltered" => $this->m_persediaan->tmp_pnm_brng_dtl_view_count_filtered($docno),
             "data" => $data,
         );
         echo $this->fiky_encryption->jDatatable($output);
     }
 
 
-    function update_pnm_barang_mst()
+    function updatepnmBrg()
     {
         $nama = trim($this->session->get('nama'));
         $docno = hex2bin($this->request->getGet('id'));
         $param = " and coalesce(docno,'')='$docno'";
-        $dtl = $this->m_persediaan->q_trx_pnm_barang_mst($param)->getRowArray();
+        $dtl = $this->m_persediaan->q_trx_pnm_brng_mst($param)->getRowArray();
         $status = trim($dtl['status']);
 
         if ($status === 'F' || $status === 'P') {
@@ -4017,21 +4104,21 @@ class Persediaan extends BaseController
                 'updatedate' => date('Y-m-d H:i:s'),
                 'updateby' => $nama,
             );
-            $builder = $this->db->table('sc_trx.pnm_barang_mst');
+            $builder = $this->db->table('sc_trx.pnm_brng_mst');
             $builder->where('trim(docno)', $docno);
             $builder->update($info);
 
             // Redirect ke halaman addStdUsage
-            return redirect()->to(base_url('persediaan/trans/addTransferLokasi'));
+            return redirect()->to(base_url('persediaan/trans/add_pnm_brng_mst'));
         } else {
             // Jika status bukan 'F', redirect ke halaman mrpgroup
-            return redirect()->to(base_url('persediaan/trans/pnm_barang'));
+            return redirect()->to(base_url('persediaan/trans/pnm_brng'));
         }
     }
-    function detail_pnm_barang_mst()
+    function detail_pnm_brng_mst()
     {
         /* Penambahan Squence */
-        $data['title']="Detail Transfer Lokasi";
+        $data['title']="Detail Pemakaian Barang ";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
@@ -4041,7 +4128,7 @@ class Persediaan extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('persediaan/trans/perintah_transfer'));
         }
-        $kodemenu='I.Q.A.3'; $versirelease='I.Q.A.3/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.Q.A.6'; $versirelease='I.Q.A.6/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -4049,7 +4136,7 @@ class Persediaan extends BaseController
         $data['nama']=$nama; $data['version']=$versidb;
         /* END CODE UNTUK VERSI */
 
-        $paramerror=" and userid='$nama' and modul='I.Q.A.3'";
+        $paramerror=" and userid='$nama' and modul='I.Q.A.6'";
         $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
         $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
         if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
@@ -4079,11 +4166,11 @@ class Persediaan extends BaseController
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
         $data['docnoParam'] = $decoded_docno;
-        $data['dtldata'] = $this->m_persediaan->q_trx_pnm_barang_mst($param)->getRowArray();
-        return $this->template->render('persediaan/transfer/v_detail_transfer_location',$data);
+        $data['dtldata'] = $this->m_persediaan->q_trx_pnm_brng_mst($param)->getRowArray();
+        return $this->template->render('persediaan/pnm_brng/v_detail_pnm_brng',$data);
     }
 
-    public function getBranch_pnm_barang()
+    public function getBranch_pnm_brng()
     {
         $idbranch = trim($this->request->getGet('idbranch'));
 
@@ -4127,7 +4214,7 @@ class Persediaan extends BaseController
         ]);
     }
 
-    public function getNextSuffix_pnm_barang()
+    public function getNextSuffix_pnm_brng()
     {
         $prefix      = trim($this->request->getGet('prefix'));
         $infix       = trim($this->request->getGet('infix'));
@@ -4135,7 +4222,7 @@ class Persediaan extends BaseController
 
         $like = $prefix . '/' . $infix . '/' . $kodeSuffix;
 
-        $row = $this->db->table('sc_trx.pnm_barang_mst')
+        $row = $this->db->table('sc_trx.pnm_brng_mst')
             ->select('docno')
             ->like('docno', $like, 'after')
             ->orderBy('docno', 'DESC')
@@ -4157,18 +4244,63 @@ class Persediaan extends BaseController
         ]);
     }
 
+    public function delete_pnm_brng()
+    {
+        $ids = $this->request->getPost('ids');
 
-    function clear_pnm_barang()
+        if (!$ids || !is_array($ids)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Data tidak valid'
+            ]);
+        }
+
+        $db = \Config\Database::connect();
+        $builder = $db->table('sc_tmp.pnm_brng_dtl');
+
+        try {
+
+            $db->transBegin(); // START TRANSACTION
+
+            $builder->whereIn('idurut', $ids)->delete();
+
+            // Cek apakah semua benar-benar terhapus
+            if ($db->affectedRows() !== count($ids)) {
+                throw new \Exception('Sebagian data gagal dihapus');
+            }
+
+            if ($db->transStatus() === false) {
+                throw new \Exception('Transaksi gagal');
+            }
+
+            $db->transCommit(); // COMMIT jika sukses semua
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Semua data berhasil dihapus'
+            ]);
+
+        } catch (\Throwable $e) {
+
+            $db->transRollback(); // ROLLBACK jika ada error
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Gagal menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+    function clear_pnm_brng()
     {
         $nama=trim($this->session->get('nama'));
         $param = " and coalesce(inputby,'')='$nama'";
-        $dtl = $this->m_persediaan->q_tmp_pnm_barang_mst($param);
+        $dtl = $this->m_persediaan->q_tmp_pnm_brng_mst($param);
         // if(isEmpty($dtl->getRowArray()['status'])){
         //     return redirect()->to(base_url('persediaan/trans/pp'));
         // }
         $status = trim($dtl->getRowArray()['status']);
-        $builder = $this->db->table('sc_tmp.pnm_barang_mst');
-        $builder_dtl = $this->db->table('sc_tmp.transfer_location_dtl_mst');
+        $builder = $this->db->table('sc_tmp.pnm_brng_mst');
+        $builder_dtl = $this->db->table('sc_tmp.pnm_brng_dtl');
 
         if ($status==='I') {
             // $builder= $this->db->table('sc_tmp.standart_usage_mst');

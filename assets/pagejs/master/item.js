@@ -550,6 +550,13 @@ function saveInputItem() {
                 var formdata = false;
                 if (window.FormData){
                     formdata = new FormData(form[0]);
+                    // append select2
+                    let data = $('#idgroup').select2('data');
+
+                    if (data.length > 0) {
+                        formdata.append('idgroup', data[0].id);
+                        formdata.append('grouptype', data[0].grouptype);
+                    }
                 }
                 $.ajax({
                     url: HOST_URL + 'master/data/saveDataItem',

@@ -1,10 +1,10 @@
 --I.Q.A.6
 
---drop table sc_tmp.penerimaan_brng_mst;
-CREATE TABLE IF NOT EXISTS sc_tmp.penerimaan_brng_mst
+--drop table sc_tmp.pnm_brng_mst;
+CREATE TABLE IF NOT EXISTS sc_tmp.pnm_brng_mst
 (
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
-    doctype character(20) default 'penerimaan_brng' ,
+    doctype character(20) default 'pnm_brng' ,
     docdate character(20) COLLATE pg_catalog."default",
     docref character(30) COLLATE pg_catalog."default",
     cabang character (30 ) COLLATE pg_catalog."default",    
@@ -23,16 +23,16 @@ CREATE TABLE IF NOT EXISTS sc_tmp.penerimaan_brng_mst
     printby character varying(50) COLLATE pg_catalog."default",
     printdate timestamp without time zone,
     docnotmp character(30) COLLATE pg_catalog."default",
-    CONSTRAINT pk_tmp_penerimaan_brng_mst PRIMARY KEY (docno)
+    CONSTRAINT pk_tmp_pnm_brng_mst PRIMARY KEY (docno)
 )
 
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS sc_tmp.penerimaan_brng_mst
+ALTER TABLE IF EXISTS sc_tmp.pnm_brng_mst
     OWNER to postgres;
 
 
---drop table sc_trx.penerimaan_brng_mst;
+--drop table sc_trx.pnm_brng_mst;
 CREATE TABLE IF NOT EXISTS sc_trx.pnm_brng_mst
 (
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
@@ -124,7 +124,16 @@ ALTER TABLE IF EXISTS sc_trx.pnm_brng_dtl
 
 
 
+alter table sc_tmp.pnm_brng_mst add column idcostcenter character(10);
+alter table sc_trx.pnm_brng_mst add column idcostcenter character(10); 
 
+
+alter table sc_tmp.pnm_brng_dtl add column idcostcenter character(10), add column batch character(100);
+alter table sc_trx.pnm_brng_dtl add column idcostcenter character(10), add column batch character(100);
+
+
+alter table sc_tmp.pnm_brng_dtl add column idlocation character(10), add column idcoa character(20);
+alter table sc_trx.pnm_brng_dtl add column idlocation character(10), add column idcoa character(20);
 
 
 -- FUNCTION: sc_tmp.tr_tmp_pnm_brng_mst()
@@ -196,9 +205,9 @@ BEGIN
 
         -- ===============================
         INSERT INTO sc_trx.pnm_brng_mst (
-            docno,doctype,docdate,docref,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,status,description,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp
+            docno,doctype,docdate,docref,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,status,description,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp,idcostcenter
         )
-        (SELECT v_docno,doctype,docdate,docref,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,'F',description,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp FROM sc_tmp.pnm_brng_mst
+        (SELECT v_docno,doctype,docdate,docref,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,'F',description,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp,idcostcenter FROM sc_tmp.pnm_brng_mst
         WHERE rtrim(docno) = rtrim(OLD.docno)
           AND inputby = v_inputby
           AND inputdate = v_inputdate);
@@ -207,9 +216,69 @@ BEGIN
         -- INSERT DETAIL
         -- ===============================
         INSERT INTO sc_trx.pnm_brng_dtl 
-		(docno,docref,doctype,idbarang,nmbarang,unit,qtystock,qty,description,status,val,valsum,inputby,inputdate,updateby,updatedate,iduniq,docnotmp,idurut)
-        (SELECT v_docno,docref,doctype,idbarang,nmbarang,unit,qtystock,qty,description,'F' AS status,val,valsum,inputby,inputdate,updateby,updatedate,iduniq,docnotmp,idurut
+		(docno,docref,doctype,idbarang,nmbarang,unit,qtystock,qty,description,status,val,valsum,inputby,inputdate,updateby,updatedate,iduniq,docnotmp,idurut,idcostcenter,batch,idlocation,idcoa)
+        (SELECT v_docno,docref,doctype,idbarang,nmbarang,unit,qtystock,qty,description,'F' AS status,val,valsum,inputby,inputdate,updateby,updatedate,iduniq,docnotmp,idurut,idcostcenter,batch,idlocation,idcoa
 		FROM sc_tmp.pnm_brng_dtl WHERE rtrim(docno) = rtrim(OLD.docno) AND inputby = v_inputby);
+
+
+
+-- =========================================
+-- INSERT KE STKBLC DARI TMP 🔥
+-- =========================================
+DELETE FROM sc_trx.stkblc
+WHERE docno = v_docno
+  AND doctype = 'PNM';
+
+INSERT INTO sc_trx.stkblc (
+    idlocation,
+    idarea,
+    batch,
+    idbarang,
+    trxdate,
+    doctype,
+    docno,
+    docref,
+    qty_in,
+    pricelst_in,
+    hist,
+    ctype,
+    currcode,
+    currvalue,
+    created_at,
+    created_by
+)
+SELECT
+    d.idlocation,
+    h.cabang,
+    COALESCE(NULLIF(TRIM(d.batch),''),''),
+    d.idbarang,
+
+    -- 🔥 tanggal dokumen + jam sekarang
+    h.docdate::date + CURRENT_TIME,
+
+    'PNM',
+    v_docno,
+    h.docref,
+
+    d.qty,
+    COALESCE(d.val,0),
+
+    'PENERIMAAN',
+    'IN',
+
+    'IDR',
+    1,
+
+    NOW(),
+    h.inputby
+
+FROM sc_tmp.pnm_brng_dtl d
+JOIN sc_tmp.pnm_brng_mst h
+  ON h.docno = d.docno
+
+WHERE TRIM(d.docno) = TRIM(OLD.docno)
+  AND h.inputby = v_inputby
+  AND COALESCE(d.qty,0) > 0;
 
         -- ===============================
         -- CLEANUP TMP
@@ -231,20 +300,81 @@ BEGIN
         DELETE FROM sc_trx.pnm_brng_mst WHERE docno = NEW.docnotmp;
         DELETE FROM sc_trx.pnm_brng_dtl WHERE docno = NEW.docnotmp;
 
-        -- ===============================
-        INSERT INTO sc_trx.pnm_brng_mst (
-            docno,doctype,docdate,docref,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,status,description,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp
-        )
-        (SELECT new.docnotmp,doctype,docdate,docref,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,'F',description,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp FROM sc_tmp.pnm_brng_mst
-        WHERE trim(docno) = trim(NEW.docnotmp));
 
         -- ===============================
         -- INSERT DETAIL
         -- ===============================
         INSERT INTO sc_trx.pnm_brng_dtl 
-		(docno,docref,doctype,idbarang,nmbarang,unit,qtystock,qty,description,status,val,valsum,inputby,inputdate,updateby,updatedate,iduniq,docnotmp,idurut)
-        (SELECT NEW.docnotmp,docref,doctype,idbarang,nmbarang,unit,qtystock,qty,description,'F' AS status,val,valsum,inputby,inputdate,updateby,updatedate,iduniq,docnotmp,idurut
-		FROM sc_tmp.pnm_brng_dtl WHERE rtrim(docno) = rtrim(NEW.docno));
+		(docno,docref,doctype,idbarang,nmbarang,unit,qtystock,qty,description,status,val,valsum,inputby,inputdate,updateby,updatedate,iduniq,docnotmp,idurut,idcostcenter,batch,idlocation,idcoa)
+        (SELECT NEW.docnotmp,docref,doctype,idbarang,nmbarang,unit,qtystock,qty,description,'F' AS status,val,valsum,inputby,inputdate,updateby,updatedate,iduniq,docnotmp,idurut,idcostcenter,batch,idlocation,idcoa
+		FROM sc_tmp.pnm_brng_dtl WHERE rtrim(docno) = trim(NEW.docno));
+		
+        -- ===============================
+        INSERT INTO sc_trx.pnm_brng_mst (
+            docno,doctype,docdate,docref,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,status,description,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp,idcostcenter
+        )
+        (SELECT new.docnotmp,doctype,docdate,docref,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,'F',description,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp,idcostcenter FROM sc_tmp.pnm_brng_mst
+        WHERE trim(docno) = trim(NEW.docno));
+
+		
+		
+-- =========================================
+-- INSERT KE STKBLC DARI TMP 🔥
+-- =========================================
+DELETE FROM sc_trx.stkblc
+WHERE docno = v_docno
+  AND doctype = 'PNM';
+
+INSERT INTO sc_trx.stkblc (
+    idlocation,
+    idarea,
+    batch,
+    idbarang,
+    trxdate,
+    doctype,
+    docno,
+    docref,
+    qty_in,
+    pricelst_in,
+    hist,
+    ctype,
+    currcode,
+    currvalue,
+    created_at,
+    created_by
+)
+SELECT
+    d.idlocation,
+    h.cabang,
+    COALESCE(NULLIF(TRIM(d.batch),''),''),
+    d.idbarang,
+
+    -- 🔥 tanggal dokumen + jam sekarang
+    h.docdate::date + CURRENT_TIME,
+
+    'PNM',
+    v_docno,
+    h.docref,
+
+    d.qty,
+    COALESCE(d.val,0),
+
+    'PENERIMAAN',
+    'IN',
+
+    'IDR',
+    1,
+
+    NOW(),
+    h.inputby
+
+FROM sc_tmp.pnm_brng_dtl d
+JOIN sc_tmp.pnm_brng_mst h
+  ON h.docno = d.docno
+
+WHERE TRIM(d.docno) = TRIM(OLD.docno)
+  AND h.inputby = v_inputby
+  AND COALESCE(d.qty,0) > 0;
 		
 
         DELETE FROM sc_tmp.pnm_brng_mst WHERE rtrim(docno) = rtrim(NEW.docno);
@@ -268,10 +398,14 @@ BEGIN
 END;
 $BODY$;
 
+-- FUNCTION: sc_tmp.tr_tmp_pnm_brng_mst()
+-- Trigger: tr_tmp_pnm_brng_mst
 
+-- DROP TRIGGER IF EXISTS tr_tmp_pnm_brng_mst ON sc_tmp.pnm_brng_mst;
 
-CREATE TRIGGER tr_tmp_pnm_brng_mst
-    AFTER UPDATE ON sc_tmp.pnm_brng_mst
+CREATE OR REPLACE TRIGGER tr_tmp_pnm_brng_mst
+    AFTER UPDATE 
+    ON sc_tmp.pnm_brng_mst
     FOR EACH ROW
     EXECUTE FUNCTION sc_tmp.tr_tmp_pnm_brng_mst();
 
@@ -297,20 +431,22 @@ DECLARE
 BEGIN		
 
 		IF (OLD.STATUS='F' AND NEW.STATUS='E') THEN
-        -- ===============================
-        INSERT INTO sc_tmp.pnm_brng_mst (
-            docno,doctype,docdate,docref,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,status,description,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp
-        )
-        (SELECT docno,doctype,docdate,docref,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,'E',description,inputby,inputdate,updateby,updatedate,printby,printdate,docno as docnotmp FROM sc_trx.pnm_brng_mst
-        WHERE trim(docno) = new.docno);
-
-        -- ===============================
+		        -- ===============================
         -- INSERT DETAIL
         -- ===============================
         INSERT INTO sc_tmp.pnm_brng_dtl 
-		(docno,docref,doctype,idbarang,nmbarang,unit,qtystock,qty,description,status,val,valsum,inputby,inputdate,updateby,updatedate,iduniq,docnotmp,idurut)
-        (SELECT docno,docref,doctype,idbarang,nmbarang,unit,qtystock,qty,description,'F' AS status,val,valsum,inputby,inputdate,updateby,updatedate,iduniq,docno as docnotmp ,idurut
+		(docno,docref,doctype,idbarang,nmbarang,unit,qtystock,qty,description,status,val,valsum,inputby,inputdate,updateby,updatedate,iduniq,docnotmp,idurut,idcostcenter,batch,idlocation,idcoa)
+        (SELECT new.updateby,docref,doctype,idbarang,nmbarang,unit,qtystock,qty,description,'F' AS status,val,valsum,inputby,inputdate,updateby,updatedate,iduniq,docno as docnotmp ,idurut,idcostcenter,batch,idlocation,idcoa
 		FROM sc_trx.pnm_brng_dtl WHERE trim(docno) =  trim(new.docno));
+		
+        -- ===============================
+        INSERT INTO sc_tmp.pnm_brng_mst (
+            docno,doctype,docdate,docref,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,status,description,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp,idcostcenter
+        )
+        (SELECT new.updateby,doctype,docdate,docref,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,'E',description,inputby,inputdate,updateby,updatedate,printby,printdate,docno as docnotmp,idcostcenter FROM sc_trx.pnm_brng_mst
+        WHERE trim(docno) = trim(new.docno));
+
+
 
 		END IF;	
 			
@@ -323,8 +459,6 @@ ALTER FUNCTION sc_trx.tr_trx_pnm_brng_mst()
     OWNER TO postgres;
 
 
-    
-
 -- FUNCTION: sc_trx.tr_trx_pnm_brng_mst()
 -- Trigger: tr_trx_pnm_brng_mst
 
@@ -336,3 +470,5 @@ CREATE OR REPLACE TRIGGER tr_trx_pnm_brng_mst
     FOR EACH ROW
     EXECUTE FUNCTION sc_trx.tr_trx_pnm_brng_mst();
 
+
+    

@@ -1,3 +1,8 @@
+drop table sc_trx.voidpp;
+drop table sc_tmp.voidpp;
+
+drop table sc_trx.voidpp_dtl;
+drop table sc_tmp.voidpp_dtl;
 
 CREATE TABLE IF NOT EXISTS sc_tmp.voidpp
 (
@@ -395,8 +400,8 @@ CREATE OR REPLACE TRIGGER tr_voidpp
     
 
 ALTER TABLE sc_tmp.voidpp_dtl
-ADD COLUMN uniqueid VARCHAR(64)
+ADD COLUMN uniqueid VARCHAR(64);
 
 ALTER TABLE sc_trx.voidpp_dtl
-ADD COLUMN uniqueid VARCHAR(64)
+ADD COLUMN uniqueid VARCHAR(64);
 

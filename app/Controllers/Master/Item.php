@@ -348,7 +348,8 @@ class Item extends BaseController
         $phpproduksi  = trim($this->request->getPost('phpproduksi') ?? '');
         $pjasa        = trim($this->request->getPost('pjasa') ?? '');
         $pwaste       = trim($this->request->getPost('pwaste') ?? '');
-        
+        $grouptype       = trim($this->request->getPost('grouptype') ?? '');
+
         $discontinue = strtoupper(trim($this->request->getPost('discontinue') ?? 'NO'));
         $issn = strtoupper(trim($this->request->getPost('issn') ?? 'NO'));
 
@@ -417,6 +418,7 @@ class Item extends BaseController
                     'issn'            => $issn,
                     'inputby' => $inputby,
                     'inputdate' => $inputdate,
+                    'grouptype' => $grouptype,
                 );
 
                 if ($builder_mbarang->insert($info)) {
@@ -494,6 +496,7 @@ class Item extends BaseController
                     'issn'            => $issn,
                     'inputby' => $inputby,
                     'inputdate' => $inputdate,
+                    'grouptype' => $grouptype,
                 );
                 $builder_mbarang->where('id',$id);
                 if ($builder_mbarang->update($infoX)) {

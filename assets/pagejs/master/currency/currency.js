@@ -809,7 +809,7 @@ $("#update_exchange").click(function (e) {
             const exchangedate = row.find(`input[name='exchangedate_${idurut}']`).val() || null;
 
             const nilai = convertToDbNumber(row.find(`input[name='nilai_${idurut}']`).val()) || 0;
-            
+
             // Simpan data jika idurut valid
             if (idurut) {
                 updatedData.push({
@@ -874,7 +874,7 @@ $("#update_exchange").click(function (e) {
 
 function formatNumber(value) {
     if (!value) return '0';
-    
+
     // Pastikan nilai adalah angka dan hilangkan desimal jika ".00"
     let num = parseFloat(value);
     return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(num);
@@ -1720,9 +1720,9 @@ function submitCurrency() {
                             icon: 'success',
                         }).then((result) => {
                             if(result.isConfirmed){
-                                window.location.href = HOST_URL + 'master/data/editCurrency/' + 
-                                    res.redirect_data.enc_id + '/' + 
-                                    res.redirect_data.enc_currname;                            
+                                window.location.href = HOST_URL + 'master/data/editCurrency/' +
+                                    res.redirect_data.enc_id + '/' +
+                                    res.redirect_data.enc_currname;
                             }
                         });
                     } else {
@@ -1842,7 +1842,7 @@ function saveFinalCurrency() {
                             icon: 'success',
                         }).then((result) => {
                             if(result.isConfirmed){
-                                window.location.href = HOST_URL + 'master/data/currency/';                    
+                                window.location.href = HOST_URL + 'master/data/currency/';
                             }
                         });
                     } else {

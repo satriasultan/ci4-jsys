@@ -6,7 +6,7 @@ use App\Controllers\BaseController;
 
 class Currency extends BaseController
 {
-    
+
     //CURRENCY
     public function currency()
     {
@@ -46,7 +46,7 @@ class Currency extends BaseController
         }
         //auto insert unit
         $pterror = " and userid='$nama'";
-          //BAWA INI PENTING SEKALI DI SETIAP MENU
+        //BAWA INI PENTING SEKALI DI SETIAP MENU
         $kmenu = 'I.M.B.4';
         $role = trim($this->session->get('roleid'));
         $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
@@ -59,7 +59,7 @@ class Currency extends BaseController
         $kmenu = 'I.M.B.4';
         $role = trim($this->session->get('roleid'));
         $nama = trim($this->session->get('nama'));
-        
+
         $datadtl['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
         $dataanu['userinfo'] = $this->m_user->getUser(" and username='$nama'")->getRowArray();
         // $bagian = trim($dataanu['userinfo']['bagian']);
@@ -79,7 +79,7 @@ class Currency extends BaseController
             $no++;
             $row = array();
             $row[] = $no;
-            
+
             $btnActions = '';
 
             if ($canView || $canUpdate || $canDelete) {
@@ -216,14 +216,14 @@ class Currency extends BaseController
             ];
 
             $builder->insert($data_insert);
-            
+
             // Get the last inserted ID
             $inserted_id = $this->db->insertID();
-            
+
             // Encrypt ID dan currname untuk redirect
             $enc_id = $this->fiky_encryption->sealed(trim($inserted_id));
             $enc_currname = $this->fiky_encryption->sealed(trim($currname));
-            
+
             return $this->response->setJSON([
                 'status' => true,
                 'messages' => 'Data berhasil disimpan. Kode Currency: ' . $currcode,
@@ -232,7 +232,7 @@ class Currency extends BaseController
                     'enc_currname' => $enc_currname
                 ]
             ]);
-            
+
         } else if ($tipe === 'UPDATE') {
             $data_update = [
                 'currname' => $currname,
@@ -242,7 +242,7 @@ class Currency extends BaseController
             ];
 
             $builder->where('id', $id)->update($data_update);
-            
+
             return $this->response->setJSON([
                 'status' => true,
                 'messages' => 'Data berhasil diupdate. Kode Currency: ' . $currcode
@@ -321,7 +321,7 @@ class Currency extends BaseController
     }
 
 
-    
+
     public function input_currency()
     {
         $loccode = trim($this->session->get('loccode'));
@@ -371,7 +371,7 @@ class Currency extends BaseController
         $role = trim($this->session->get('roleid'));
         $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kodemenu)->getRowArray();
         $data['userinfo'] = $this->m_user->getUser(" AND username = '$nama'")->getRowArray();
-    
+
         // Hapus error log lama
         $pterror = " AND userid = '$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
@@ -452,7 +452,7 @@ class Currency extends BaseController
     }
 
 
-    
+
     public function detailCurrency($enc_id = null, $enc_currname = null)
     {
         $loccode = trim($this->session->get('loccode'));
@@ -534,9 +534,9 @@ class Currency extends BaseController
             // return $this->template->render('master/currency/v_list_currency', $data);
             return redirect()->to(base_url('master/currency/master/currency'))->with('error', 'ID Currency tidak valid.');
         }
-        
+
         $idcurrency = trim($this->fiky_encryption->unseal($enc_idcurrency));
-        
+
         if (!$idcurrency) {
             $data['error'] = 'ID Currency gagal didekripsi.';
             // return $this->template->render('master/currency/v_list_currency', $data);
@@ -548,13 +548,13 @@ class Currency extends BaseController
         if (!$cek) {
             $data['error'] = 'Data Currency tidak ditemukan.';
         } else {
-              // Proses hapus
-                try {
-                    $this->db->table('sc_mst.currency')->where('id', $idcurrency)->delete();
-                    return redirect()->to(base_url('master/currency/master/currency'))->with('success', 'Data Currency berhasil dihapus.');
-                } catch (\Exception $e) {
-                    return redirect()->to(base_url('master/currency/master/currency'))->with('error', 'Gagal menghapus data Currency: ' . $e->getMessage());
-                }
+            // Proses hapus
+            try {
+                $this->db->table('sc_mst.currency')->where('id', $idcurrency)->delete();
+                return redirect()->to(base_url('master/currency/master/currency'))->with('success', 'Data Currency berhasil dihapus.');
+            } catch (\Exception $e) {
+                return redirect()->to(base_url('master/currency/master/currency'))->with('error', 'Gagal menghapus data Currency: ' . $e->getMessage());
+            }
         }
     }
 
@@ -623,11 +623,11 @@ class Currency extends BaseController
             // $row[] = '<input type="text" class=" ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;"  id="pricelst_'.$lm->id.'" name="pricelst_'.$lm->id.'" value="'.number_format($lm->pricelst, 2, '.', '').'" disabled >';
             $row[] = '<input type="text" class="" style="margin:0px; background-color:#d6d5d5;width: 100%;" id="exchangedate_'.$lm->id.'" name="exchangedate_'.$lm->id.'" value="'.($lm->exchangedate ? htmlspecialchars(date('d-m-Y H:i:s', strtotime($lm->exchangedate)), ENT_QUOTES, 'UTF-8') : '').'" disabled >';
 
-            
+
             $row[] = '<input type="text" class=" ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;" id="nilai_'.$lm->id.'" name="nilai_'.$lm->id.'" value="'.number_format($lm->nilai, 2, '.', ',').'" disabled >';
             // $row[] = '<input type="text" class=" ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;" id="pricelst_'.$lm->idurut.'" name="pricelst_'.$lm->idurut.'" value="'.number_format($lm->pricelst, 2, ',', '.').'" disabled >';
 
-            
+
             $data[] = $row;
         }
 
@@ -658,7 +658,7 @@ class Currency extends BaseController
                 $idurut = $update['idurut'] ?? null;
                 $nilai = $update['nilai'] ?? 0;
 
-                
+
                 $exchangedate_input = $update['exchangedate'] ?? '';
                 $exchangedate = null;
 
@@ -724,7 +724,7 @@ class Currency extends BaseController
         }
     }
 
-    
+
     public function deleteExchangeRate()
     {
         $id = $this->request->getPost('id'); // Ambil array ID

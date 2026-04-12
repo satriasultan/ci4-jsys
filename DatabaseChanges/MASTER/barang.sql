@@ -48,3 +48,6 @@ add column pjasa CHARACTER(20),
 add column pwaste CHARACTER(20),
 add column discontinue CHARACTER(6),
 add column issn CHARACTER(6);
+
+ALTER TABLE sc_mst.mbarang
+ADD COLUMN grouptype character(10) default 'STOCK';

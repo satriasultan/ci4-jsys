@@ -1,8 +1,10 @@
 
 -- JALANKAN INI DULU
+DROP TABLE IF EXISTS sc_tmp.voidpo;
+DROP TABLE IF EXISTS sc_trx.voidpo;
 
-DROP TABLE IF EXISTS sc_tmp.voidpo_dtl
-DROP TABLE IF EXISTS sc_trx.voidpo_dtl
+DROP TABLE IF EXISTS sc_tmp.voidpo_dtl;
+DROP TABLE IF EXISTS sc_trx.voidpo_dtl;
 
 
 

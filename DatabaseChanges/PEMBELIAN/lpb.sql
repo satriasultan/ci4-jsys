@@ -1,8 +1,9 @@
 
 -- JALANKAN INI DULU
-
-DROP TABLE IF EXISTS sc_tmp.lpb_dtl
-DROP TABLE IF EXISTS sc_trx.lpb_dtl
+DROP TABLE IF EXISTS sc_trx.lpb;
+DROP TABLE IF EXISTS sc_tmp.lpb;
+DROP TABLE IF EXISTS sc_tmp.lpb_dtl;
+DROP TABLE IF EXISTS sc_trx.lpb_dtl;
 
 
 
@@ -271,13 +272,13 @@ BEGIN
             idurut, docno, docnopo, idbarang, uniqueid,  nmbarang,
             idprincipal, idgudang, idspec, volitem, biaya, biaya2, unit, qty, 
             harga, nilai, descriptionpo, descriptionpp, multidisc,
-            inputby, inputdate, status, updateby, updatedate
+            inputby, inputdate, status, updateby, updatedate,idtax,currcode,kurs,nilaikonversi,nilaipajak,qtyretur
         )
         SELECT
             idurut, v_docno, docnopo, idbarang, uniqueid,  nmbarang,
             idprincipal, idgudang, idspec, volitem, biaya, biaya2, unit, qty, 
             harga, nilai, descriptionpo, descriptionpp, multidisc,
-            inputby, inputdate, status, updateby, updatedate
+            inputby, inputdate, status, updateby, updatedate,idtax,currcode,kurs,nilaikonversi,nilaipajak,qtyretur
         FROM sc_tmp.lpb_dtl
         WHERE rtrim(docno) = rtrim(OLD.docno)
             AND inputby = v_inputby;
@@ -310,6 +311,98 @@ BEGIN
         --         AND docnopp IS NOT NULL
         --         AND docnopp <> ''
         -- );
+/* NILAI PERSEDIAAN DAN NILAI COA */
+-- =========================================
+-- UPSERT STKBLC (SOURCE: sc_tmp)
+-- =========================================
+PERFORM sc_trx.sp_unpost_by_doc(v_docno,'GR');
+DELETE FROM sc_trx.stkblc WHERE docno = v_docno;
+INSERT INTO sc_trx.stkblc (
+    idlocation,
+    idarea,
+    batch,
+    idbarang,
+
+    trxdate,
+    doctype,
+    docno,
+    docref,
+
+    qty_in,
+    pricelst_in,
+
+    currcode,
+    currvalue,
+
+    hist,
+    ctype,
+
+    idgroup,
+    grouptype,
+
+    is_posted,
+    posted_at
+)
+SELECT
+    d.idgudang,
+    trim(d.idgudang)||'00',
+    COALESCE(d.idspec,''),
+    d.idbarang,
+
+    CAST(h.docdate AS DATE) + (NOW()::time),
+    'GR',
+    v_docno,
+    d.docnopo,
+
+    -- 🔥 KEY LOGIC DI SINI
+    CASE 
+        WHEN d.grouptype = 'NON STOCK' THEN 0
+        ELSE (COALESCE(d.qty,0) + COALESCE(d.qtybonus,0))
+    END AS qty_in,
+
+    COALESCE(d.harga,0),
+
+    h.currcode,
+    COALESCE(h.kurs,1),
+
+    'LPB',
+
+    -- 🔥 CTYPE
+    CASE 
+        WHEN d.grouptype = 'NON STOCK' THEN 'NON'
+        ELSE 'IN'
+    END AS ctype,
+
+    d.idgroup,
+    d.grouptype,
+
+    FALSE,
+    NULL
+
+FROM sc_tmp.lpb h
+JOIN sc_tmp.lpb_dtl d
+    ON rtrim(d.docno) = rtrim(h.docno)
+
+WHERE rtrim(h.docno) = rtrim(OLD.docno)
+  AND h.inputby = v_inputby
+
+ON CONFLICT (docno, idbarang, idlocation, batch)
+DO UPDATE SET
+    qty_in = EXCLUDED.qty_in,
+    pricelst_in = EXCLUDED.pricelst_in,
+    currcode = EXCLUDED.currcode,
+    currvalue = EXCLUDED.currvalue,
+    idgroup = EXCLUDED.idgroup,
+    grouptype = EXCLUDED.grouptype,
+    is_posted = FALSE,
+    posted_at = NULL;
+	
+	
+/* END NILAI PERSEDIAAN DAN NILAI COA */	
+PERFORM sc_trx.sp_post_gl(v_inputby);	
+
+
+
 
         -- -- ===============================
         -- -- CLEANUP TMP
@@ -336,12 +429,12 @@ BEGIN
         (idurut, docno, docnopo, idbarang, uniqueid,  nmbarang,
         idprincipal, idgudang, idspec, volitem, biaya, biaya2, unit, qty, 
         harga, nilai, descriptionpo, descriptionpp, multidisc,
-        inputby, inputdate, status, updateby, updatedate, docnotmp)
+        inputby, inputdate, status, updateby, updatedate, docnotmp,idtax,currcode,kurs,nilaikonversi,nilaipajak,qtyretur)
         SELECT
             idurut, NEW.docnotmp, docnopo, idbarang, uniqueid,  nmbarang,
             idprincipal, idgudang, idspec, volitem, biaya, biaya2, unit, qty, 
             harga, nilai, descriptionpo, descriptionpp, multidisc,
-            inputby, inputdate, status, updateby, updatedate, docnotmp
+            inputby, inputdate, status, updateby, updatedate, docnotmp,idtax,currcode,kurs,nilaikonversi,nilaipajak,qtyretur
         FROM sc_tmp.lpb_dtl
         WHERE rtrim(docno) = rtrim(NEW.docno);
 
@@ -394,6 +487,102 @@ BEGIN
             updateby, updatedate, printby, printdate, docnotmp
         FROM sc_tmp.lpb
         WHERE rtrim(docno) = rtrim(NEW.docno);
+
+
+
+/* NILAI PERSEDIAAN DAN NILAI COA */
+-- =========================================
+-- UPSERT STKBLC (SOURCE: sc_tmp)
+-- =========================================
+-- =========================================
+-- UPSERT STKBLC (DOCNOTMP - sc_tmp)
+-- =========================================
+PERFORM sc_trx.sp_unpost_by_doc(NEW.docnotmp,'GR');
+DELETE FROM sc_trx.stkblc WHERE docno = NEW.docnotmp;
+INSERT INTO sc_trx.stkblc (
+    idlocation,
+    idarea,
+    batch,
+    idbarang,
+
+    trxdate,
+    doctype,
+    docno,
+    docref,
+
+    qty_in,
+    pricelst_in,
+
+    currcode,
+    currvalue,
+
+    hist,
+    ctype,
+
+    idgroup,
+    grouptype,
+
+    is_posted,
+    posted_at
+)
+SELECT
+    d.idgudang,
+    trim(d.idgudang)||'00',
+    COALESCE(d.idspec,''),
+    d.idbarang,
+
+    CAST(h.docdate AS DATE) + (NOW()::time),
+    'GR',
+    new.docnotmp,
+    d.docnopo,
+
+    -- 🔥 KEY LOGIC DI SINI
+    CASE 
+        WHEN d.grouptype = 'NON STOCK' THEN 0
+        ELSE (COALESCE(d.qty,0) + COALESCE(d.qtybonus,0))
+    END AS qty_in,
+
+    COALESCE(d.harga,0),
+
+    h.currcode,
+    COALESCE(h.kurs,1),
+
+    'LPB',
+
+    -- 🔥 CTYPE
+    CASE 
+        WHEN d.grouptype = 'NON STOCK' THEN 'NON'
+        ELSE 'IN'
+    END AS ctype,
+
+    d.idgroup,
+    d.grouptype,
+
+    FALSE,
+    NULL
+
+FROM sc_tmp.lpb h
+JOIN sc_tmp.lpb_dtl d
+    ON rtrim(d.docno) = rtrim(h.docno)
+
+WHERE rtrim(h.docno) = rtrim(OLD.docno)
+  AND h.inputby = v_inputby
+
+ON CONFLICT (docno, idbarang, idlocation, batch)
+DO UPDATE SET
+    qty_in = EXCLUDED.qty_in,
+    pricelst_in = EXCLUDED.pricelst_in,
+    currcode = EXCLUDED.currcode,
+    currvalue = EXCLUDED.currvalue,
+    idgroup = EXCLUDED.idgroup,
+    grouptype = EXCLUDED.grouptype,
+    is_posted = FALSE,
+    posted_at = NULL;
+	
+	
+/* END NILAI PERSEDIAAN DAN NILAI COA */
+PERFORM sc_trx.sp_post_gl(v_inputby);
+
 
         DELETE FROM sc_tmp.lpb WHERE rtrim(docno) = rtrim(NEW.docno);
         DELETE FROM sc_tmp.lpb_dtl WHERE rtrim(docno) = rtrim(NEW.docno);
@@ -451,11 +640,11 @@ BEGIN
 			( idurut, docno, docnopo, idbarang, uniqueid, nmbarang,
             idprincipal, idgudang, idspec, volitem, biaya, biaya2, unit, qty, 
             harga, nilai, descriptionpo, descriptionpp, multidisc,
-            inputby, inputdate, status, updateby, updatedate, docnotmp)
+            inputby, inputdate, status, updateby, updatedate, docnotmp,idtax,currcode,kurs,nilaikonversi,nilaipajak,qtyretur)
 			SELECT idurut, NEW.docno, docnopo, idbarang, uniqueid, nmbarang,
             idprincipal, idgudang, idspec, volitem, biaya, biaya2, unit, qty, 
             harga, nilai, descriptionpo, descriptionpp, multidisc,
-            inputby, inputdate, status, updateby, updatedate, NEW.docno
+            inputby, inputdate, status, updateby, updatedate, NEW.docno,idtax,currcode,kurs,nilaikonversi,nilaipajak,qtyretur
 			FROM sc_trx.lpb_dtl 
 			WHERE docno = NEW.docno;
 
