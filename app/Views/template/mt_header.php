@@ -9,15 +9,23 @@ $this->session = \Config\Services::session();
         <!-- Logo -->
         <!-- ============================================================== -->
         <div class="navbar-header">
-            <a class="navbar-brand" href="index.html">
-                <!-- Logo icon -->
-                <b>
-                    <!-- Dark Logo icon -->
-                    <img src="<?php echo base_url('assets/img/logo-depan/jts.ico') ?>" style="width: 30%"  alt="homepage" class="dark-logo" />
-                    <!-- Light Logo icon -->
-                    <img src="<?php echo base_url('assets/img/logo-depan/jts.ico') ?>" style="width: 30%" alt="homepage" class="light-logo" />
-                    <span class="brand-text font-weight-light" style="font-size: 130%; font-weight: bolder;">J-Accounting</span>
-                </b>
+            <a class="navbar-brand d-flex align-items-center" href="<?= base_url('dashboard/menu') ?>">
+
+                <!-- LOGO -->
+                <img src="<?= base_url('assets/img/logo-depan/jts.ico') ?>"
+                     style="width: 52px; margin-right: 32px;"
+                     alt="logo" />
+
+                <!-- TEXT -->
+                <div style="line-height: 1.1;">
+                    <div style="font-size: 32px; font-weight: 800; color:#ffffff; letter-spacing:1px;">
+                        J-SYS
+                    </div>
+                    <div style="font-size: 18px; color:rgba(255,255,255,0.75); letter-spacing:1.5px;">
+                        J-ACCOUNTING
+                    </div>
+                </div>
+
             </a>
         </div>
         <!-- ============================================================== -->

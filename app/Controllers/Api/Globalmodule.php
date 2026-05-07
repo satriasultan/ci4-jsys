@@ -1680,16 +1680,16 @@ class Globalmodule extends BaseController
         $varPost = trim($this->request->getPost('_var_'));
 
 
-        if (!empty($loccodeGet) or $loccodeGet!=='') {
-            $pidlocationGet= " and coalesce(idlocation,'')='$loccodeGet'";
-        } else {
-            $pidlocationGet= "";
-        }
-        if (!empty($loccodePost) or $loccodePost!=='') {
-            $pidlocationPost= " and coalesce(idlocation,'')='$loccodePost'";
-        } else {
-            $pidlocationPost= "";
-        }
+//        if (!empty($loccodeGet) or $loccodeGet!=='') {
+//            $pidlocationGet= " and coalesce(idlocation,'')='$loccodeGet'";
+//        } else {
+//            $pidlocationGet= "";
+//        }
+//        if (!empty($loccodePost) or $loccodePost!=='') {
+//            $pidlocationPost= " and coalesce(idlocation,'')='$loccodePost'";
+//        } else {
+//            $pidlocationPost= "";
+//        }
 
 
 
@@ -1699,9 +1699,10 @@ class Globalmodule extends BaseController
             $paramglobal1= "";
         }
         if (!empty($varPost) or $varPost!=='') {
-            $paramglobal2= " and batch='$varPost'";
+            $paramglobal2= " and trim(batch)='$varPost'";
         } else {
-            $paramglobal2= "";
+            $paramglobal2= " ";
+            //$paramglobal2= " and trim(batch)='$varPost'";
         }
 
         if (!empty($px) or $px!=='') {
@@ -1710,11 +1711,11 @@ class Globalmodule extends BaseController
             $paramitem= "";
         }
 
-        $parameterx = " $pidlocationGet $pidlocationPost ";
+        //$parameterx = " $pidlocationGet $pidlocationPost ";
         $page = intval($page);
         $limit = $perpage * $page;
 
-        $param=" and (batch like '%$search%' $paramitem $paramglobal1 $paramglobal2 $parameterx ) ";
+        $param=" and (batch like '%$search%' $paramitem $paramglobal1 $paramglobal2  ) ";
         $getResult = $this->m_balance->q_stkgdw_batch_selecting($param)->getResult();
         $count = $this->m_balance->q_stkgdw_batch_selecting($param)->getNumRows();
         header('Content-Type: application/json');
@@ -1734,19 +1735,14 @@ class Globalmodule extends BaseController
 
         $idbarang =  strtoupper(trim($this->request->getPost('idbarang')));
         $batch =  strtoupper(trim($this->request->getPost('batch')));
-        $idlocation =  strtoupper(trim($this->request->getPost('loccode')));
-        $parameter = " and idbarang='$idbarang' and batch='$batch' and idlocation='$idlocation'";
-        $dtl = $this->m_global->q_master_barang(" and idbarang='$idbarang' ")->getRowArray();
+        //$idlocation =  strtoupper(trim($this->request->getPost('loccode')));
+        $parameter = " and idbarang='$idbarang' and batch='$batch'";
         $cekstkgdw = $this->m_balance->q_stkgdw_batch_selecting($parameter)->getNumRows();
         if (!empty($idbarang) and !empty($batch) and $cekstkgdw<=0) {
-            $builder = $this->db->table('sc_mst.stkgdw');
+            $builder = $this->db->table('sc_mst.batch');
             $info = array(
                 'idbarang' => $idbarang,
                 'batch' => $batch,
-                'idlocation' => $idlocation,
-                'idarea' => $idlocation.'.0000',
-                'unit' => trim($dtl['unit']),
-                'defaultcurrency' => trim($dtl['defaultcurrency']),
             );
             $builder->insert($info);
 
@@ -1755,7 +1751,6 @@ class Globalmodule extends BaseController
                 array(
                     'idbarang' => $idbarang,
                     'batch' => $batch,
-                    'idlocation' => $idlocation,
                     'messages' => $batch.' Berhasil Ditambahkan',
                     'status' => true,
                 ),
@@ -1767,8 +1762,7 @@ class Globalmodule extends BaseController
                 array(
                     'idbarang' => $idbarang,
                     'batch' => $batch,
-                    'idlocation' => $idlocation,
-                    'messages' => 'Pilih Barang Terlebih Dahulu',
+                    'messages' => 'Batch sudah ada/Pilih Batch',
                     'status' => false,
                 ),
                 JSON_PRETTY_PRINT
@@ -2481,7 +2475,7 @@ class Globalmodule extends BaseController
         $pg = trim($this->request->getPost('_paramglobal_'));
         $page = intval($page);
         $limit = $perpage * $page;
-        
+
         if (!empty($pg)) {
             $paramglobal = " and substring(trim(pp.docno) from '.*/([A-Z]{2})') = '$pg'";
         }
@@ -2681,7 +2675,6 @@ class Globalmodule extends BaseController
     }
 
 
-
     public function get_tax_percent()
     {
         $db = db_connect();
@@ -2728,6 +2721,72 @@ class Globalmodule extends BaseController
         return $this->response->setJSON(['status' => 'ok']);
     }
 
+
+    /* AVERAGE STOCK / PERSEDIAAN  */
+    function list_avg_stock(){
+        $branch = trim($this->session->get('branch'));
+        $loccode_sessions = trim($this->session->get('loccode'));
+        $loccodePost = trim($this->request->getPost('loccode'));
+        $loccodeGet = trim($this->request->getGet('loccode'));
+
+        $search = strtoupper(trim($this->request->getPost('_search_')));
+        $perpage = $this->request->getPost('_perpage_');
+        $px = trim($this->request->getPost('_parameterx_'));
+        $perpage = intval($perpage);
+        $page = $this->request->getPost('_page_');
+        $varGet = trim($this->request->getGet('_var_'));
+        $varPost = trim($this->request->getPost('_var_'));
+
+
+        if (!empty($loccodeGet) or $loccodeGet!=='') {
+            $pidlocationGet= " and coalesce(idlocation,'')='$loccodeGet'";
+        } else {
+            $pidlocationGet= "";
+        }
+        if (!empty($loccodePost) or $loccodePost!=='') {
+            $pidlocationPost= " and coalesce(idlocation,'')='$loccodePost'";
+        } else {
+            $pidlocationPost= "";
+        }
+
+
+
+        if (!empty($varGet) or $varGet!=='') {
+            $paramglobal1= " and batch='$varGet'";
+        } else {
+            $paramglobal1= " and trim(batch)=''";
+        }
+        if (!empty($varPost) or $varPost!=='') {
+            $paramglobal2= " and trim(batch)='$varPost'";
+        } else {
+            $paramglobal2= " and trim(batch)=''";
+            //$paramglobal2= " and trim(batch)='$varPost'";
+        }
+
+        if (!empty($px) or $px!=='') {
+            $paramitem= " and idbarang='$px'";
+        } else {
+            $paramitem= "";
+        }
+
+        $parameterx = " $pidlocationGet $pidlocationPost ";
+        $page = intval($page);
+        $limit = $perpage * $page;
+
+        $param=" and (batch like '%$search%' $paramitem $paramglobal1 $paramglobal2 $parameterx ) ";
+        $getResult = $this->m_balance->q_stkblc_avgcost_selecting($param)->getResult();
+        $count = $this->m_balance->q_stkblc_avgcost_selecting($param)->getNumRows();
+        header('Content-Type: application/json');
+        echo json_encode(
+            array(
+                'total_count' => $count,
+                'items' => $getResult,
+                'incomplete_getResults' => false,
+                'param' => $param,
+            ),
+            JSON_PRETTY_PRINT
+        );
+    }
 
 }
 

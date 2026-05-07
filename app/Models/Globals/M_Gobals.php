@@ -348,6 +348,7 @@ group by docno order by docno asc");
     function q_supplier_new($param){
         return $this->db->query("select *, trim(kdsupplier) as id from sc_mst.mstsupplier where coalesce(trim(chold),'NO')!='YES' AND coalesce(trim(kdsupplier),'')!='' $param ");
     }
+
     function q_pp($param){
         return $this->db->query("
             SELECT DISTINCT 

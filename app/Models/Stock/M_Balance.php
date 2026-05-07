@@ -122,10 +122,23 @@ where idbarang is not null $param
     }
 
     function q_stkgdw_batch_selecting($param){
-        return $this->db->query("select trim(batch) as id,trim(idlocation) as idlocation, trim(batch) as batch,trim(idbarang) as idbarang from sc_mst.stkgdw
-where idbarang is not null $param
-group by idlocation ,batch,idbarang 
+        return $this->db->query("SELECT 
+    TRIM(idurut::text)        AS id,
+    TRIM(idurut::text)        AS idurut,
+    TRIM(idbarang)            AS idbarang,
+    TRIM(batch)               AS batch,
+    produksi_date             AS produksi_date,
+    expired_date              AS expired_date,
+    TRIM(status)              AS status,
+    created_at                AS created_at,
+    TRIM(created_by)          AS created_by
+FROM sc_mst.batch where idbarang is not null $param;
 ");
+//
+//        return $this->db->query("select trim(batch) as id,trim(idlocation) as idlocation, trim(batch) as batch,trim(idbarang) as idbarang from sc_mst.stkgdw
+//where idbarang is not null $param
+//group by idlocation ,batch,idbarang
+//");
     }
 
     function q_openingstock_tmp_param($param){
@@ -1367,7 +1380,36 @@ left outer join sc_mst.marea d on a.idarea=d.idarea) as x where idbarang is not 
 
 
 
+    function q_stkblc_avgcost_selecting($param){
+        return $this->db->query("SELECT *
+FROM (
+    SELECT  
+        TRIM(a.idbarang)     AS idbarang,
+        TRIM(b.nmbarang)     AS nmbarang,
+        TRIM(b.idgroup)      AS idgroup,
+        TRIM(b.grouptype)    AS grouptype,
 
+        TRIM(a.idlocation)   AS idlocation,
+        TRIM(l.nmlocation)   AS nmlocation,
+
+        TRIM(a.batch)        AS batch,
+
+        round(a.qty,2) as qty,
+        round(a.total_value,2) as total_value,
+        round(a.avg_cost,2) as avg_cost,
+        'IDR' AS currcode,
+        TRIM(b.unit)         AS unit,
+        a.updated_at
+
+    FROM sc_trx.stkblc_avgcost a
+
+    LEFT JOIN sc_mst.mbarang b
+        ON TRIM(b.idbarang) = TRIM(a.idbarang)
+
+    LEFT JOIN sc_mst.mlocation l
+        ON TRIM(l.idlocation) = TRIM(a.idlocation)
+) x where idbarang is not null $param ;");
+    }
 
 
 

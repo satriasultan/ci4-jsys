@@ -46,6 +46,34 @@ class Dashboard extends BaseController
         //echo 'MASUK DASHBOARD';
     }
 
+    public function menu()
+    {
+
+        $viewData['title']="Home";
+        $viewData['currentperiod'] = date("Y-m");
+
+        if (trim($this->session->get('roleid'))==='AD') {
+            //return redirect()->to(base_url('/capital/administration/admin_transaction'));
+            return redirect()->to(base_url('/dashboarduser'));
+        }
+
+        $roleid = $this->session->get('roleid');
+        $viewData['roleid'] = trim($this->session->get('roleid'));
+        $viewData['akses']= $this->m_global->list_akses_role($roleid)->getRowArray();
+
+        $day=4;
+        $viewData['title_recent'] = 'Aktifitas '. $day .' Hari Terakhir (Recent Latest Employee Activity)';
+        //$data['list_recent']=$this->m_stspeg->q_recent_employee_activities($param=4)->getResult();
+        $viewData['formppcount'] = $this->m_dashboarduser->_get_query_formppcount();
+        $viewData['formiicount'] = $this->m_dashboarduser->_get_query_formiicount();
+        $viewData['formpkcount'] = $this->m_dashboarduser->_get_query_formpkcount();
+        $viewData['totalformppcount'] = $this->m_dashboarduser->_get_query_totalformppcount();
+        $viewData['totalformiicount'] = $this->m_dashboarduser->_get_query_totalformiicount();
+        $viewData['totalformpkcount'] = $this->m_dashboarduser->_get_query_totalformpkcount();
+        return $this->template->render("dashboard/v_menu", $viewData);
+        //echo 'MASUK DASHBOARD';
+    }
+
     function list_jasapembayaran(){
         $list = $this->m_dashboard->get_reminder_jasa_pembayaran_view();
         $data = array();

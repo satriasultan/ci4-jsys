@@ -45,11 +45,12 @@ require_once $helper;
         options.appearance.backgroundColor = Stimulsoft.System.Drawing.Color.lightGray;
         options.appearance.showTooltips = false;
 
-        options.exports.showExportToPdf = true;
-        options.exports.ShowExportToWord2007 = true;
+        options.exports.showExportToPdf = false;
+        options.exports.ShowExportToWord2007 = false;
         options.appearance.fullScreenMode = true;
 
-
+        options.toolbar.showSaveButton = false;
+        options.toolbar.showExportButton = false;
 
 
 
@@ -147,6 +148,26 @@ require_once $helper;
         function onLoad() {
             viewer.renderHtml("viewerContent");
         }
+
+        viewer.onPrintReport = function (args) {
+
+            fetch("<?= base_url('api/globalmodule/updatePrintStatus') ?>", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    docno: "<?= $docno ?>",
+                    table: "<?= $table ?>"
+                })
+            })
+                .then(res => res.json())
+                .then(res => {
+                    console.log("Update status:", res);
+                });
+
+            args.fileName = "Laporan_Custom";
+        };
     </script>
 </head>
 <body onload="onLoad();">

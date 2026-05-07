@@ -175,25 +175,47 @@
 </style>
 <div class="content-header">
     <div class="container-fluid">
-        <div class="row mb-2">
+        <div class="row mb-2 align-items-center">
+
+            <!-- LEFT -->
             <div class="col-sm-6">
-                <h1 class="m-0"><?php echo ucwords(strtolower(trim($title)));?></h1>
-            </div><!-- /.col -->
-            <div class="col-sm-6">
-                <ol class="breadcrumb float-sm-right">
-                    <div class="float-right" style="margin-right: 10px;vertical-align:middle;padding-top: 0.7%;"><i style="color:transparent;"><?php echo $t; ?></i> Versi: <?php echo $version; ?></div>
-                    <input type="hidden" id="classmenu" value="<?= str_replace('.','_',$kodemenu) ?>" required>
+                <h1 class="m-0">Standart Cost Produksi</h1>
+            </div>
+
+            <!-- RIGHT -->
+            <div class="col-sm-6 d-flex justify-content-end align-items-center">
+
+                <!-- VERSION -->
+                <div style="margin-right: 10px; font-size: 13px;">
+                    Versi: <?php echo $version; ?>
+                </div>
+
+                <!-- BREADCRUMB -->
+                <ol class="breadcrumb mb-0">
+
+                    <input type="hidden" id="classmenu" value="<?= str_replace('.','_',$kodemenu) ?>">
+
                     <?php foreach ($y as $y1) { ?>
-                        <?php if( trim($y1->kodemenu)!=trim($kodemenu)) { ?>
-                            <li class="breadcrumb-item"><a href="<?php echo base_url( trim($y1->linkmenu)) ; ?>"><i class="fa <?php echo trim($y1->iconmenu); ?>"></i> <?php echo  trim($y1->namamenu); ?></a></li>
+                        <?php if (trim($y1->kodemenu) != trim($kodemenu)) { ?>
+                            <li class="breadcrumb-item">
+                                <a href="<?= base_url(trim($y1->linkmenu)) ?>">
+                                    <i class="fa <?= trim($y1->iconmenu); ?>"></i>
+                                    <?= trim($y1->namamenu); ?>
+                                </a>
+                            </li>
                         <?php } else { ?>
-                            <li class="breadcrumb-item active"><i class="fa <?php echo trim($y1->iconmenu); ?>"></i> <?php echo trim($y1->namamenu); ?></li>
+                            <li class="breadcrumb-item active">
+                                <i class="fa <?= trim($y1->iconmenu); ?>"></i>
+                                <?= trim($y1->namamenu); ?>
+                            </li>
                         <?php } ?>
                     <?php } ?>
+
                 </ol>
-            </div><!-- /.col -->
-        </div><!-- /.row -->
-    </div><!-- /.container-fluid -->
+            </div>
+
+        </div>
+    </div>
 </div>
 
 <?php echo $message;?>
@@ -203,12 +225,12 @@
 ?>
 <div class="row">
     <!-- left column -->
-    <form action="<?= base_url('persediaan/trans/final_pnm_barang') ?>" method="post" id="formPenerimaanBarang">
+    <form action="<?= base_url('persediaan/trans/final_input_standart_cost') ?>" method="post" id="formStandarCostMst">
         <div class="col-md-12">
             <!-- jquery validation -->
             <div class="card card-primary">
                 <div class="card-header">
-                    <h3 class="card-title"><?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> Penerimaan</h3>
+                    <h3 class="card-title"><?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> Standart Cost</h3>
                 </div>
                 <!-- /.card-header -->
                 <!-- form start -->
@@ -267,7 +289,7 @@
                                                 </div>
                                             </div>
                                             <input type="hidden" name="docno" class="form-control col-sm-12" id="docno" maxlength="20"     value="<?= isset($dtldata['docno']) ? esc(trim($dtldata['docno'])) : '' ?>" style="text-transform: uppercase;" readonly>
-                                            <div class="col-md-6">
+                                            <div class="col-md-3">
                                                 <div class="form-group">
                                                     <label for="docdate">Tanggal</label>
                                                     <input type="text"
@@ -277,13 +299,36 @@
                                                     placeholder="Tanggal">
                                                 </div>
                                             </div>
-<!--                                            <div class="col-md-6">-->
-<!--                                                <label for="idlocation_from">Dari Gudang</label>-->
-<!--                                                <select name="idlocation_from" id="idlocation_from" class="form-control" required></select>-->
-<!--                                            </div>-->
-                                            <div class="col-md-6">
-                                                <label for="idcostcenter">Bagian Costcenter</label>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label for="activedate">Active Date</label>
+                                                    <input type="text"
+                                                           name="activedate"
+                                                           id="activedate"
+                                                           class="form-control"
+                                                           placeholder="Active Date">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Penyesuaian 1</label>
+                                                <select name="penyesuaian_a" id="penyesuaian_a"
+                                                        class="form-select select2 getLastStock"
+                                                        style="width:100%"></select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Penyesuaian 2</label>
+                                                <select name="penyesuaian_b" id="penyesuaian_b"
+                                                        class="form-select select2 getLastStock"
+                                                        style="width:100%"></select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="idcostcenter">Bagian</label>
                                                 <select name="idcostcenter" id="idcostcenter" class="form-control" required></select>
+                                            </div>
+                                            <div class="col-md-2 d-flex align-items-end">
+                                                <button type="button" class="btn btn-danger w-100">
+                                                    <i class="fa fa-sliders"></i> Adjustment
+                                                </button>
                                             </div>
                                     </div>
                                 </div>
@@ -322,7 +367,7 @@
                                 id="btnUpdateDetail"
                                 class="btn btn-warning btn-lg action-btn"
                                 title="Update Data"
-                                onclick="updatepnmBrgDtl()">
+                                onclick="updateStandartCost()">
                             <i class="fa fa-edit"></i>
                         </button>
 
@@ -339,28 +384,18 @@
                 </div>
                 <div class="card-body p-3">
                     <div class="table-responsive">
-                        <table id="tmptabpnmsdtl" class="table table-hover align-middle custom-table">
+                        <table id="tmp_stdcost" class="table table-hover align-middle custom-table">
                             <thead>
-                            <tr class="bg-light">
-                                <th colspan="6" class="text-end border-0">GRAND TOTAL :</th>
-                                <th id="totalQty" class="text-end border border-secondary">0</th>
-
-                                <th class="border-0"></th>
-                                <th id="totalNilai" class="text-end border border-secondary">0</th>
-                                <th class="border-0"></th>
-                            </tr>
                             <tr>
                                 <th class="text-center" width="40">
                                     <input type="checkbox" id="checkAll">
                                 </th>
                                 <th>ID Barang</th>
                                 <th>Nama Barang</th>
-                                <th>Gudang</th>
-                                <th>Spec</th>
                                 <th>Satuan</th>
-                                <th class="text-end">Qty</th>
-                                <th class="text-end">Harga</th>
-                                <th class="text-end">Nilai</th>
+                                <th class="text-end">Actual Std Cost</th>
+                                <th class="text-end">Last Std Cost</th>
+                                <th class="text-end">New Std Cost</th>
                                 <th>Keterangan</th>
                             </tr>
                             </thead>
@@ -371,7 +406,7 @@
                 </div>
 
                 <div class="card-footer bg-light">
-                    <a href="<?= base_url('persediaan/trans/pnm_barang') ?>"
+                    <a href="<?= base_url('production/trans/clearStandartCostTmp') ?>"
                         class="btn btn-default btn-lg">
                         <i class="fa fa-arrow-left mr-2"></i>
                         Kembali
@@ -401,20 +436,20 @@
 
 
 <!-- ================= MODAL TAX DETAIL ================= -->
-<div class="modal fade" id="modalDetailpnm" tabindex="-1" role="dialog" aria-labelledby="modalDetailPemakaianBarang" aria-hidden="true">
+<div class="modal fade" id="modalDtlStandartCost" tabindex="-1" role="dialog" aria-labelledby="modalDtlStandartCost" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
 
             <!-- HEADER -->
             <div class="modal-header bg-primary">
-                <h5 class="modal-title" id="modalDetailPemakaianBarang">
+                <h5 class="modal-title" id="modalDtlStandartCostTitle">
                     Input Item Detail
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
 
             <!-- FORM -->
-            <form id="formPenerimaanStockDtl">
+            <form id="formStandartCostDtl">
 
                 <div class="modal-body">
 
@@ -422,35 +457,14 @@
 
                     <!-- ROW 1 -->
                     <div class="row g-3">
-
-                        <div class="col-md-4">
-                            <label class="form-label">Pilih Gudang</label>
-                            <select name="idlocation_dtl" id="idlocation_dtl" class="form-select" required></select>
-                        </div>
-
-                        <div class="col-md-4">
+                        <div class="col-md-5">
                             <label class="form-label">ID Barang</label>
                             <select name="idbarang" id="idbarang"
                                     class="form-select select2 "
                                     style="width:100%"></select>
                         </div>
 
-                        <div class="col-md-4">
-                            <label class="form-label">Batch / Spesifikasi</label>
-
-                            <div class="input-group">
-                                <select name="batch" id="batch" class="form-select getsisastock"></select>
-
-                                <button type="button"
-                                        id="btnNew"
-                                        onclick="new_spec()"
-                                        class="btn btn-primary">
-                                    New Spec
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="col-md-4">
+                        <div class="col-md-5">
                             <label class="form-label">Nama Barang</label>
                             <input type="text"
                                    name="nmbarang"
@@ -463,15 +477,6 @@
 
 
                         <div class="col-md-2">
-                            <label class="form-label">Qty</label>
-                            <input type="text"
-                                   name="qty"
-                                   id="qty"
-                                   class="form-control jtsseparator text-end getsisastock"
-                                   placeholder="0.00" required>
-                        </div>
-
-                        <div class="col-md-2">
                             <label class="form-label">Satuan</label>
                             <input name="unit"
                                    id="unit"
@@ -479,18 +484,26 @@
                                    readonly>
                         </div>
                         <div class="col-md-2">
-                            <label class="form-label">Harga</label>
+                            <label class="form-label">Actual Cost</label>
                             <input type="text"
-                                   name="val"
-                                   id="val"
+                                   name="actualcost"
+                                   id="actualcost"
                                    class="form-control jtsseparator text-end getsisastock"
                                    placeholder="0.00" required>
                         </div>
                         <div class="col-md-2">
-                            <label class="form-label">Nilai</label>
+                            <label class="form-label">Last Std Cost</label>
                             <input type="text"
-                                   name="valsum"
-                                   id="valsum"
+                                   name="lastcost"
+                                   id="lastcost"
+                                   class="form-control jtsseparator text-end getsisastock"
+                                   placeholder="0.00" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">New Std Cost</label>
+                            <input type="text"
+                                   name="newcost"
+                                   id="newcost"
                                    class="form-control jtsseparator text-end"
                                    placeholder="0.00" required>
                         </div>
@@ -529,9 +542,9 @@
                         </div>
  */ ?>
                         <div class="col-md-6">
-                            <label class="form-label">Keterangan Detail</label>
-                            <textarea name="description"
-                                      id="description"
+                            <label class="form-label">Description Detail</label>
+                            <textarea name="description_detail"
+                                      id="description_detail"
                                       rows="3"
                                       class="form-control"
                                       style="text-transform:uppercase"></textarea>
@@ -546,8 +559,8 @@
                 <div class="modal-footer">
 
                     <button type="button"
-                            class="btn btn-primary savepnmBrng"
-                            onclick="savePnmBrg()">
+                            class="btn btn-primary save_standart_cost"
+                            onclick="save_standart_cost()">
                         <i class="fa fa-save"></i> Simpan
                     </button>
 
@@ -566,7 +579,7 @@
 
 
 
-<script type="application/javascript" src="<?= base_url('assets/pagejs/persediaan/pnm_brng/pnm_brng.js') ?>"></script>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/production/standart_cost/standart_cost.js') ?>"></script>
 <script type="text/javascript">
     $(function() {
         $("#example1").dataTable();
@@ -600,7 +613,23 @@
         $('#docdate').on('cancel.daterangepicker', function(ev, picker) {
             $(this).val('');
         });
+        $('#activedate').daterangepicker({
+            autoUpdateInput: false,
+            singleDatePicker: true,
+            showDropdowns: true,
+            locale: { format: 'YYYY-MM-DD' },
+            cancelLabel: 'Clear'
+        });
 
+        // handler apply/cancel
+        $('#activedate').on('apply.daterangepicker', function(ev, picker) {
+            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            // jika butuh validasi bootstrapValidator:
+            // $('#formInputTransfers').bootstrapValidator('updateStatus', 'activedate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'activedate');
+        });
+        $('#activedate').on('cancel.daterangepicker', function(ev, picker) {
+            $(this).val('');
+        });
 
 
         $('#estpakai').daterangepicker({

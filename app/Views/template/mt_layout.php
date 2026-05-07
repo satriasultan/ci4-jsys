@@ -24,7 +24,7 @@ use App\Libraries\Fiky_encryption;
     <meta name="author" content="">
     <!-- Favicon icon -->
     <link rel="icon" type="image/png" sizes="16x16" href="<?php echo base_url('assets/img/logo-depan/jts.ico') ?>">
-    <title>Jsys - Jatim Taman Steel Mfg</title>
+    <title>J-Accounting</title>
     <?php $this->fiky_encryption = new Fiky_encryption(); ?>
     <?php echo $_ini_stylenya;?>
 

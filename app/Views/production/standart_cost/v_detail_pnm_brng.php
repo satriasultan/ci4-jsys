@@ -1,5 +1,5 @@
 <style>
-    
+
     .section-block {
         background-color: #e8e8e8;
         border-left: 4px solid #007bff;
@@ -8,10 +8,10 @@
         border-radius: 6px;
         margin-bottom: 30px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-                    box-shadow 0.4s ease, 
-                    border-color 0.4s ease;
-        
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.4s ease,
+        border-color 0.4s ease;
+
         transform: scale(1);
         will-change: transform;
     }
@@ -53,10 +53,10 @@
     .section-divider {
         height: 1px;
         background: linear-gradient(
-            to right,
-            #007bff 0%,
-            #cfe2ff 30%,
-            #e8e8e8 100%
+                to right,
+                #007bff 0%,
+                #cfe2ff 30%,
+                #e8e8e8 100%
         );
         margin: 24px 0;
         border: none;
@@ -164,231 +164,234 @@
     }
 
 
-    /* Table Head Untuk Total Row */
-
-     #totalQty, #totalNilai {
-         border: 2px solid #6c757d !important; /* Border abu-abu tebal */
-         background-color: #f8f9fa;            /* Warna latar sedikit kontras */
-         border-radius: 4px;                   /* Membuat sudut sedikit melengkung */
-     }
-
 </style>
 <div class="content-header">
     <div class="container-fluid">
-        <div class="row mb-2">
+        <div class="row mb-2 align-items-center">
+
+            <!-- LEFT -->
             <div class="col-sm-6">
-                <h1 class="m-0"><?php echo ucwords(strtolower(trim($title)));?></h1>
-            </div><!-- /.col -->
-            <div class="col-sm-6">
-                <ol class="breadcrumb float-sm-right">
-                    <div class="float-right" style="margin-right: 10px;vertical-align:middle;padding-top: 0.7%;"><i style="color:transparent;"><?php echo $t; ?></i> Versi: <?php echo $version; ?></div>
-                    <input type="hidden" id="classmenu" value="<?= str_replace('.','_',$kodemenu) ?>" required>
+                <h1 class="m-0">Standart Cost Produksi</h1>
+            </div>
+
+            <!-- RIGHT -->
+            <div class="col-sm-6 d-flex justify-content-end align-items-center">
+
+                <!-- VERSION -->
+                <div style="margin-right: 10px; font-size: 13px;">
+                    Versi: <?php echo $version; ?>
+                </div>
+
+                <!-- BREADCRUMB -->
+                <ol class="breadcrumb mb-0">
+
+                    <input type="hidden" id="classmenu" value="<?= str_replace('.','_',$kodemenu) ?>">
+
                     <?php foreach ($y as $y1) { ?>
-                        <?php if( trim($y1->kodemenu)!=trim($kodemenu)) { ?>
-                            <li class="breadcrumb-item"><a href="<?php echo base_url( trim($y1->linkmenu)) ; ?>"><i class="fa <?php echo trim($y1->iconmenu); ?>"></i> <?php echo  trim($y1->namamenu); ?></a></li>
+                        <?php if (trim($y1->kodemenu) != trim($kodemenu)) { ?>
+                            <li class="breadcrumb-item">
+                                <a href="<?= base_url(trim($y1->linkmenu)) ?>">
+                                    <i class="fa <?= trim($y1->iconmenu); ?>"></i>
+                                    <?= trim($y1->namamenu); ?>
+                                </a>
+                            </li>
                         <?php } else { ?>
-                            <li class="breadcrumb-item active"><i class="fa <?php echo trim($y1->iconmenu); ?>"></i> <?php echo trim($y1->namamenu); ?></li>
+                            <li class="breadcrumb-item active">
+                                <i class="fa <?= trim($y1->iconmenu); ?>"></i>
+                                <?= trim($y1->namamenu); ?>
+                            </li>
                         <?php } ?>
                     <?php } ?>
-                </ol>
-            </div><!-- /.col -->
-        </div><!-- /.row -->
-    </div><!-- /.container-fluid -->
-</div>
 
+                </ol>
+            </div>
+
+        </div>
+    </div>
+</div>
 <?php echo $message;?>
 <?php
-    $isIT = isset($userinfo['rolename']) && trim($userinfo['rolename']) === 'IT';
-    $disabled = $isIT ? '' : 'disabled';
+$isIT = isset($userinfo['rolename']) && trim($userinfo['rolename']) === 'IT';
+$disabled = $isIT ? '' : 'disabled';
 ?>
 <div class="row">
     <!-- left column -->
-    <form action="<?= base_url('persediaan/trans/final_pnm_barang') ?>" method="post" id="formPenerimaanBarang">
+    <form action="<?= base_url('persediaan/trans/final_pmk_barang') ?>" method="post" id="formPemakaianBarang">
         <div class="col-md-12">
             <!-- jquery validation -->
             <div class="card card-primary">
                 <div class="card-header">
-                    <h3 class="card-title"><?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> Penerimaan</h3>
+                    <h3 class="card-title"><?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> Pemakaian Barang</h3>
                 </div>
                 <!-- /.card-header -->
                 <!-- form start -->
                 <div class="card-body">
-                        <div class="section-block">
-                            <div class="section-header">
-                                <i class="fa fa-address-card"></i> Master
-                            </div>
-                            <div class="row">
+                    <div class="section-block">
+                        <div class="section-header">
+                            <i class="fa fa-address-card"></i> Master
+                        </div>
+                        <div class="row">
 
-                                <!-- LEFT COLUMN -->
-                                <div class="col-md-6" >
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label for="cabang">Cabang / Job</label>
-                                                <select name="cabang" id="cabang" class="form-control" required></select>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label for="pemohon">Pemohon</label>
-                                                <input type="text" name="pemohon" id="pemohon" class="form-control" maxlength="50" placeholder="Pemohon" readonly value="<?= esc(strtoupper($userlogin)) ?>">
-                                            </div>
+                            <!-- LEFT COLUMN -->
+                            <div class="col-md-6" >
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="cabang">Cabang / Job</label>
+                                            <select name="cabang" id="cabang" class="form-control" required></select>
                                         </div>
                                     </div>
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label>No. Jurnal</label>
-                                                <div class="d-flex">
-                                                    <input type="text"
-                                                        name="prefix"
-                                                        id="prefix"
-                                                        class="form-control me-1"
-                                                        maxlength="3"
-                                                        style="text-transform: uppercase;"
-                                                        pattern="[A-Z0-9]+">
-
-                                                    <span class="px-2 align-self-center">/</span>
-
-                                                    <input type="text"
-                                                        name="infix"
-                                                        id="infix"
-                                                        class="form-control mx-1"
-                                                        readonly>
-
-                                                    <span class="px-2 align-self-center">/</span>
-
-                                                    <input type="text"
-                                                        name="sufix"
-                                                        id="sufix"
-                                                        class="form-control ms-1"
-                                                        readonly>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <input type="hidden" name="docno" class="form-control col-sm-12" id="docno" maxlength="20"     value="<?= isset($dtldata['docno']) ? esc(trim($dtldata['docno'])) : '' ?>" style="text-transform: uppercase;" readonly>
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label for="docdate">Tanggal</label>
-                                                    <input type="text"
-                                                    name="docdate"
-                                                    id="docdate"
-                                                    class="form-control"
-                                                    placeholder="Tanggal">
-                                                </div>
-                                            </div>
-<!--                                            <div class="col-md-6">-->
-<!--                                                <label for="idlocation_from">Dari Gudang</label>-->
-<!--                                                <select name="idlocation_from" id="idlocation_from" class="form-control" required></select>-->
-<!--                                            </div>-->
-                                            <div class="col-md-6">
-                                                <label for="idcostcenter">Bagian Costcenter</label>
-                                                <select name="idcostcenter" id="idcostcenter" class="form-control" required></select>
-                                            </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="pemohon">Pemohon</label>
+                                            <input type="text" name="pemohon" id="pemohon" class="form-control" maxlength="50" placeholder="Pemohon" readonly value="<?= esc(strtoupper($userlogin)) ?>">
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-md-6  border border-dark" >
-                                    <div class="row">
-                                        <div class="col-md-12">
-                                            <div class="form-group">
-                                                <label for="keterangan">Keterangan</label>
-                                                <textarea name="keterangan" id="keterangan" class="form-control" rows="5" placeholder="Catatan / Informasi..." style="text-transform:uppercase;"></textarea>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>No. Jurnal</label>
+                                            <div class="d-flex">
+                                                <input type="text"
+                                                       name="prefix"
+                                                       id="prefix"
+                                                       class="form-control me-1"
+                                                       maxlength="3"
+                                                       style="text-transform: uppercase;"
+                                                       pattern="[A-Z0-9]+">
+
+                                                <span class="px-2 align-self-center">/</span>
+
+                                                <input type="text"
+                                                       name="infix"
+                                                       id="infix"
+                                                       class="form-control mx-1"
+                                                       readonly>
+
+                                                <span class="px-2 align-self-center">/</span>
+
+                                                <input type="text"
+                                                       name="sufix"
+                                                       id="sufix"
+                                                       class="form-control ms-1"
+                                                       readonly>
                                             </div>
                                         </div>
                                     </div>
-
-                                </div> <!-- END ROW 2-->
-
+                                    <input type="hidden" name="docno" class="form-control col-sm-12" id="docno" maxlength="20"     value="<?= isset($dtldata['docno']) ? esc(trim($dtldata['docno'])) : '' ?>" style="text-transform: uppercase;" readonly>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="docdate">Tanggal</label>
+                                            <input type="text"
+                                                   name="docdate"
+                                                   id="docdate"
+                                                   class="form-control"
+                                                   placeholder="Tanggal">
+                                        </div>
+                                    </div>
+                                    <!--                                            <div class="col-md-6">-->
+                                    <!--                                                <label for="idlocation_from">Dari Gudang</label>-->
+                                    <!--                                                <select name="idlocation_from" id="idlocation_from" class="form-control" required></select>-->
+                                    <!--                                            </div>-->
+                                    <div class="col-md-6">
+                                        <label for="idcostcenter">Bagian Costcenter</label>
+                                        <select name="idcostcenter" id="idcostcenter" class="form-control" required></select>
+                                    </div>
+                                </div>
                             </div>
-                </div>
-            </div>
+                            <div class="col-md-6  border border-dark" >
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="keterangan">Keterangan</label>
+                                            <textarea name="keterangan" id="keterangan" class="form-control" rows="5" placeholder="Catatan / Informasi..." style="text-transform:uppercase;"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
 
-            <div class="card mt-3 card-primary">
-                <div class="card-header clearfix">
-                    <h3 class="card-title">
-                        Detail Barang
-                    </h3>
+                            </div> <!-- END ROW 2-->
 
-                    <div class="float-right d-flex align-items-center gap-2">
-                        <button type="button"
-                                class="btn btn-success btn-lg action-btn"
-                                data-toggle="tooltip"
-                                title="Input Data"
-                                id = "btnAddDetail">
-                            <i class="fa fa-plus"></i>
-                        </button>
-
-                        <button type="button"
-                                id="btnUpdateDetail"
-                                class="btn btn-warning btn-lg action-btn"
-                                title="Update Data"
-                                onclick="updatepnmBrgDtl()">
-                            <i class="fa fa-edit"></i>
-                        </button>
-
-                        <button type="button"
-                                class="btn btn-danger btn-lg action-btn"
-                                data-toggle="tooltip"
-                                title="Hapus Data"
-                                onclick="btnDeleteDetail()">
-                            <i class="fa fa-trash"></i>
-                        </button>
-
-
-                    </div>
-                </div>
-                <div class="card-body p-3">
-                    <div class="table-responsive">
-                        <table id="tmptabpnmsdtl" class="table table-hover align-middle custom-table">
-                            <thead>
-                            <tr class="bg-light">
-                                <th colspan="6" class="text-end border-0">GRAND TOTAL :</th>
-                                <th id="totalQty" class="text-end border border-secondary">0</th>
-
-                                <th class="border-0"></th>
-                                <th id="totalNilai" class="text-end border border-secondary">0</th>
-                                <th class="border-0"></th>
-                            </tr>
-                            <tr>
-                                <th class="text-center" width="40">
-                                    <input type="checkbox" id="checkAll">
-                                </th>
-                                <th>ID Barang</th>
-                                <th>Nama Barang</th>
-                                <th>Gudang</th>
-                                <th>Spec</th>
-                                <th>Satuan</th>
-                                <th class="text-end">Qty</th>
-                                <th class="text-end">Harga</th>
-                                <th class="text-end">Nilai</th>
-                                <th>Keterangan</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
+                        </div>
                     </div>
                 </div>
 
-                <div class="card-footer bg-light">
-                    <a href="<?= base_url('persediaan/trans/pnm_barang') ?>"
-                        class="btn btn-default btn-lg">
-                        <i class="fa fa-arrow-left mr-2"></i>
-                        Kembali
-                    </a>
-                    <?php if ($typeform != 'DETAIL' && $dtldata != null): ?>
-                        <button type="submit"
-                                onclick="return confirm('Simpan Data?')"
-                                class="btn btn-success btn-lg float-right">
-                            <i class="fa fa-save"></i> Simpan Final Data
-                        </button>
-                    <?php endif; ?>
+                <div class="card mt-3 card-primary">
+                    <div class="card-header clearfix">
+                        <h3 class="card-title">
+                            Detail Barang
+                        </h3>
+
+                        <div class="float-right d-flex align-items-center gap-2">
+                            <button type="button"
+                                    class="btn btn-success btn-lg action-btn"
+                                    data-toggle="tooltip"
+                                    title="Input Data"
+                                    id = "btnAddDetail">
+                                <i class="fa fa-plus"></i>
+                            </button>
+
+                            <button type="button"
+                                    id="btnUpdateDetail"
+                                    class="btn btn-warning btn-lg action-btn"
+                                    title="Update Data"
+                                    onclick="updatePmkBrgDtl()">
+                                <i class="fa fa-edit"></i>
+                            </button>
+
+                            <button type="button"
+                                    class="btn btn-danger btn-lg action-btn"
+                                    data-toggle="tooltip"
+                                    title="Hapus Data"
+                                    onclick="btnDeleteDetail()">
+                                <i class="fa fa-trash"></i>
+                            </button>
+
+
+                        </div>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="table-responsive">
+                            <table id="tmptabpmksdtl"
+                                   class="table table-hover align-middle custom-table">
+                                <thead>
+                                <tr>
+                                    <th class="text-center" width="40">
+                                        <input type="checkbox" id="checkAll">
+                                    </th>
+                                    <th>ID Barang</th>
+                                    <th>Nama Barang</th>
+                                    <th>Gudang</th>
+                                    <th>Spec</th>
+                                    <th>Satuan</th>
+                                    <th class="text-end">Qty</th>
+                                    <th>Keterangan</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-light">
+                        <a href="<?= base_url('persediaan/trans/pmk_brng') ?>"
+                           class="btn btn-default btn-lg">
+                            <i class="fa fa-arrow-left mr-2"></i>
+                            Kembali
+                        </a>
+                        <?php if ($typeform != 'DETAIL' && $dtldata != null): ?>
+                            <button type="submit"
+                                    onclick="return confirm('Simpan Data?')"
+                                    class="btn btn-success btn-lg float-right">
+                                <i class="fa fa-save"></i> Simpan Final Data
+                            </button>
+                        <?php endif; ?>
+                    </div>
+
                 </div>
-                
             </div>
-        </div>
     </form>
-        <!-- /.card -->
+    <!-- /.card -->
     <!--/.col (left) -->
     <!-- right column -->
     <div class="col-md-6">
@@ -401,7 +404,7 @@
 
 
 <!-- ================= MODAL TAX DETAIL ================= -->
-<div class="modal fade" id="modalDetailpnm" tabindex="-1" role="dialog" aria-labelledby="modalDetailPemakaianBarang" aria-hidden="true">
+<div class="modal fade" id="modalDetailPMK" tabindex="-1" role="dialog" aria-labelledby="modalDetailPemakaianBarang" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
 
@@ -414,7 +417,7 @@
             </div>
 
             <!-- FORM -->
-            <form id="formPenerimaanStockDtl">
+            <form id="formPemakaianStockDtl">
 
                 <div class="modal-body">
 
@@ -431,7 +434,7 @@
                         <div class="col-md-4">
                             <label class="form-label">ID Barang</label>
                             <select name="idbarang" id="idbarang"
-                                    class="form-select select2 "
+                                    class="form-select select2 getLastStock"
                                     style="width:100%"></select>
                         </div>
 
@@ -439,7 +442,7 @@
                             <label class="form-label">Batch / Spesifikasi</label>
 
                             <div class="input-group">
-                                <select name="batch" id="batch" class="form-select getsisastock"></select>
+                                <select name="batch" id="batch" class="form-select getLastStock"></select>
 
                                 <button type="button"
                                         id="btnNew"
@@ -461,13 +464,22 @@
                                    readonly>
                         </div>
 
+                        <div class="col-md-2" >
+                            <label class="form-label">QTY Stock</label>
+                            <input type="text"
+                                   name="qtystock"
+                                   id="qtystock"
+                                   class="form-control"
+                                   placeholder="Qty Stock"
+                                   readonly>
+                        </div>
 
                         <div class="col-md-2">
                             <label class="form-label">Qty</label>
                             <input type="text"
                                    name="qty"
                                    id="qty"
-                                   class="form-control jtsseparator text-end getsisastock"
+                                   class="form-control jtsseparator text-end"
                                    placeholder="0.00" required>
                         </div>
 
@@ -478,29 +490,13 @@
                                    class="form-control"
                                    readonly>
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Harga</label>
-                            <input type="text"
-                                   name="val"
-                                   id="val"
-                                   class="form-control jtsseparator text-end getsisastock"
-                                   placeholder="0.00" required>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Nilai</label>
-                            <input type="text"
-                                   name="valsum"
-                                   id="valsum"
-                                   class="form-control jtsseparator text-end"
-                                   placeholder="0.00" required>
-                        </div>
 
                     </div>
 
 
                     <!-- ROW 2 -->
                     <div class="row g-3 mt-1">
-<?php /*
+                        <?php /*
                         <div class="col-md-2">
                             <label class="form-label">Debit / Kredit</label>
                             <select name="dk" id="dk" class="form-select select2" required>
@@ -546,8 +542,8 @@
                 <div class="modal-footer">
 
                     <button type="button"
-                            class="btn btn-primary savepnmBrng"
-                            onclick="savePnmBrg()">
+                            class="btn btn-primary savePmkBrng"
+                            onclick="savePemakaianBrng()">
                         <i class="fa fa-save"></i> Simpan
                     </button>
 
@@ -566,7 +562,7 @@
 
 
 
-<script type="application/javascript" src="<?= base_url('assets/pagejs/persediaan/pnm_brng/pnm_brng.js') ?>"></script>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/persediaan/pmk_brng/pmk_brng_detail_trx.js') ?>"></script>
 <script type="text/javascript">
     $(function() {
         $("#example1").dataTable();

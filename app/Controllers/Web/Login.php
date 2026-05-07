@@ -14,7 +14,7 @@ class Login extends BaseController
         //wajib per fungsi
         $this->fiky_encryption->fill_mac();
         $myconfig = new MyConfig;
-        
+
         //echo 'KINTIL'.$_SERVER['RECAPTCHAV2_SITEKEY'];
         $data['request'] = $this->request;
         $data['session'] = $this->session;
@@ -59,7 +59,7 @@ order by msession);");
             if (trim($this->session->get('roleid'))==='ESS') {
                 return redirect()->to(base_url('trans/ess_dashboard'));
             } else {
-                return redirect()->to(base_url('/dashboard'));
+                return redirect()->to(base_url('/dashboard/menu'));
             }
 
         } else {
@@ -113,8 +113,7 @@ order by msession);");
                 'kddept' => trim($dtl['kddept']),
                 'roleid' => trim($dtl['roleid']),
                 'site_lang' => trim($dtl['lang']),
-                'logindate' => $logindate,
-                'bagian' => trim($dtl['kddept']),
+                'logindate' => $logindate
             ];
             $this->session->set($newdata);
             $blog = $this->db->table('sc_log.log_time');
@@ -168,7 +167,7 @@ where (EXTRACT(EPOCH FROM (to_char(tgl,'yyyy-mm-dd HH24:mi:ss')::timestamp - to_
             if (trim($dtl['roleid'])==='ESS') {
                 return redirect()->to(base_url('trans/ess_dashboard'));
             } else {
-                return redirect()->to(base_url('/dashboard'));
+                return redirect()->to(base_url('/dashboard/menu'));
             }
 
         } else {

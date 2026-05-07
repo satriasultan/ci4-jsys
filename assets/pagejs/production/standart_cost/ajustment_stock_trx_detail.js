@@ -12,14 +12,13 @@
 var save_method; //for save method string
 var table;
 var initTable;
-
 //"use strict";
 
 /* VIUW UTAMA*/
-function table_trx_pnm_brng_mst() {
+function table_trx_ajustment_stock_mst() {
     // var lg = languageDatatable;
     var initTable = function () {
-        var table = $('#tpnmBrg');
+        var table = $('#tTrxAjustmentStock');
         table.DataTable({
             "processing": true, //Feature control the processing indicator.
             "serverSide": true, //Feature control DataTables' server-side processing mode.
@@ -42,7 +41,7 @@ function table_trx_pnm_brng_mst() {
                 'pageLength', 'excel'
             ],
             "ajax": {
-                "url": HOST_URL + 'persediaan/trans/list_trx_pnm_brng_mst',
+                "url": HOST_URL + 'persediaan/trans/list_trx_ajustment_stock_mst',
                 "type": "POST",
                 "data": function (data) {
                     data.tglrange = $('#tglrange').val();
@@ -67,11 +66,6 @@ function table_trx_pnm_brng_mst() {
                     "orderable": false, //set not orderable
                 },
             ],
-            // Di dalam konfigurasi DataTable Anda:
-            "drawCallback": function(settings) {
-                // Panggil fungsi manual tadi
-                updateGrandTotal();
-            }
 
         });
 
@@ -81,56 +75,23 @@ function table_trx_pnm_brng_mst() {
     return initTable();
 }
 
-// Fungsi pembantu untuk format ribuan (agar kembali ke format 1.000)
-function formatNumber(n) {
-    return n.toLocaleString('id-ID');
-}
-
-function reloadpnmBrg() {
-    var table = $('#tpnmBrg');
+function reload_tablePPTrx() {
+    var table = $('#tTrxAjustmentStock');
     table.DataTable().ajax.reload(); //reload datatable ajax
     //console.log('HALO HALO BANDUNG');
-    // Panggil fungsi manual tadi
-    updateGrandTotal();
 }
 
 $('#btn-filter-tx').click(function () { //button filter event click
-    var table = $('#tpnmBrg');
+    var table = $('#tTrxAjustmentStock');
     table.DataTable().ajax.reload(); //reload datatable ajax
     $('#filter').modal('hide');
-    // Panggil fungsi manual tadi
-    updateGrandTotal();
 });
 $('#btn-reset-tx').click(function () { //button reset event click
     $('#form-filter')[0].reset();
-    var table = $('#tpnmBrg');
+    var table = $('#tTrxAjustmentStock');
     table.DataTable().ajax.reload(); //reload datatable ajax
     $('#filter').modal('hide');
-    // Panggil fungsi manual tadi
-    updateGrandTotal();
 });
-
-function updateGrandTotal() {
-    var docno = $('#docno').val(); // pastikan ada input/hidden field id docno
-
-    $.ajax({
-        url: HOST_URL + 'persediaan/trans/get_summary_pnm',
-        type: 'POST',
-        data: { docno: docno },
-        dataType: 'JSON',
-        success: function(response) {
-            // Update teks di header tabel
-            $('#totalQty').text(response.total_qty);
-            $('#totalNilai').text(response.total_nilai);
-        },
-        error: function() {
-            console.log("Gagal mengambil summary");
-        }
-    });
-}
-
-
-
 
 let skipRoleChange = false;
 
@@ -142,7 +103,7 @@ function documentReadable() {
 
     var docno = $('[name="docno"]').val();
 
-    $.getJSON(HOST_URL + 'persediaan/trans/showing_pnm_brng_mst_tmp', {docno: docno})
+    $.getJSON(HOST_URL + 'persediaan/trans/showing_ajustment_stock_mst', {docno: docno})
         .done(function (response) {
 
             if (!response.dataTables || !response.dataTables.items.length) {
@@ -175,16 +136,15 @@ function documentReadable() {
 
             const branch1 = $.getJSON(HOST_URL + 'api/globalmodule/list_branchjob', {var: item.cabang});
             const branch2 = $.getJSON(HOST_URL + 'api/globalmodule/list_branchjob', {var: item.cabang_sent});
-            // const locFrom = $.getJSON(HOST_URL + 'api/globalmodule/list_mlocation', {var: item.idlocation_dtl});
-            // const locTo = $.getJSON(HOST_URL + 'api/globalmodule/list_mlocation', {var: item.idlocation_to});
-            // const locTransit = $.getJSON(HOST_URL + 'api/globalmodule/list_mlocation', {var: item.idlocation_transit});
-            const locCostCenter = $.getJSON(HOST_URL + 'api/globalmodule/list_costcenter', {var: item.idcostcenter});
+            const locFrom = $.getJSON(HOST_URL + 'api/globalmodule/list_mlocation', {var: item.idlocation_dtl});
+            const locTo = $.getJSON(HOST_URL + 'api/globalmodule/list_mlocation', {var: item.idlocation_to});
+            const locTransit = $.getJSON(HOST_URL + 'api/globalmodule/list_mlocation', {var: item.idlocation_transit});
 
-            $.when(branch1, branch2, locCostCenter)
-                .done(function (b1, b2, l1) {
+            $.when(branch1, branch2, locFrom, locTo, locTransit)
+                .done(function (b1, b2, l1, l2, l3) {
 
                     setSelect2('[name="cabang"]', b1[0].items[0], 'nmbranch', 'idbranch');
-                    setSelect2('[name="idcostcenter"]', l1[0].items[0], 'nmcostcenter', 'idcostcenter');
+                    // setSelect2('[name="cabang_sent"]', b2[0].items[0], 'nmbranch', 'idbranch');
                     // setSelect2('[name="idlocation_dtl"]', l1[0].items[0], 'nmlocation', 'idlocation');
                     // setSelect2('[name="idlocation_to"]', l2[0].items[0], 'nmlocation', 'idlocation');
                     // setSelect2('[name="idlocation_transit"]', l3[0].items[0], 'nmlocation', 'idlocation');
@@ -309,18 +269,14 @@ $("#idbarang").select2({
 });
 
 
-
 let isLoadingUpdate = false;
-$(document).on('change blur', '.getsisastock', function () {
+$(document).on("change blur", ".getLastStock", function () {
     if (isLoadingUpdate) return;
-  getSisaStock();
+    getSisaStock();
 });
-
 //class getLastStock setiap ada pergerakan dari getLastStock class , input on blur on select selalu menjalankan fungsi getSisaStock(), dan fix ajax saya
 function getSisaStock() {
-    let row = $(this).closest('tr'); // kalau di table
 
-    let idlocation = $('#idlocation').val(); // gudang
     let idbarang       = $('[name="idbarang"]').val();
     let batch          = $('[name="batch"]').val();
     let idlocation_dtl = $('[name="idlocation_dtl"]').val();
@@ -330,7 +286,7 @@ function getSisaStock() {
     }
 
     $.ajax({
-        url: HOST_URL + 'api/globalmodule/list_avg_stock',
+        url: HOST_URL + 'api/globalmodule/list_batch_item',
         type: 'POST',
         dataType: 'json',
 
@@ -344,7 +300,7 @@ function getSisaStock() {
 
             if (!response || !response.items || response.items.length === 0) {
 
-               // $('[name="qtystock"]').val(0).prop("readonly", true);
+                $('[name="qtystock"]').val(0).prop("readonly", true);
                 return;
             }
 
@@ -352,9 +308,6 @@ function getSisaStock() {
 
             $('[name="nmbarang"]').val((data.nmbarang || '').trim()).prop("readonly", true);
 
-            $('[name="qtystock"]').val((data.qty || '').trim()).prop("readonly", false);
-            $('[name="val"]').val((data.avg_cost || '').trim()).prop("readonly", false);
-            $('[name="valsum"]').val((data.avg_cost || '').trim()).prop("readonly", true);
             $('[name="unit"]').val((data.unit || '').trim()).prop("readonly", true);
             $('[name="currency"]').val((data.defaultcurrency || '').trim()).prop("readonly", true);
 
@@ -362,7 +315,7 @@ function getSisaStock() {
                 $('#batch').val(data.batch).trigger('change');
             }*/
 
-            let qty = (data.qty && data.qty !== '') ? data.qty : 0;
+            let qty = (data.sisaonhand && data.sisaonhand !== '') ? data.sisaonhand : 0;
 
             $('[name="qtystock"]').val(qty).prop("readonly", true);
 
@@ -391,7 +344,6 @@ function formatItem(repo) {
 function formatItemSelection(repo) {
     return repo.nmbarang || repo.text;
 }
-
 
 
 $("#batch").select2({
@@ -556,7 +508,7 @@ function editsearchitem(e) {
 function tabletmpSPKDetail() {
     /* Tabel PP Detail */
     var initTable = function () {
-        var table = $('#tmptabpnmsdtl');
+        var table = $('#tmptabspktransfersdtl');
         table.DataTable({
             "processing": true, //Feature control the processing indicator.
             "serverSide": true, //Feature control DataTables' server-side processing mode.
@@ -571,7 +523,7 @@ function tabletmpSPKDetail() {
             "bFilter": true,
             "iDisplayLength": -1,
             "ajax": {
-                "url": HOST_URL + 'persediaan/trans/list_tmp_pnm_brng_dtl',
+                "url": HOST_URL + 'persediaan/trans/list_trx_ajustment_stock_dtl',
                 "type": "POST",
                 "data": function (data) {
                     //data.searchfilter = $('#searchitem').val()+'';
@@ -603,12 +555,7 @@ function tabletmpSPKDetail() {
                     "targets": [-1],
                     "orderable": false
                 }
-            ],
-            // Di dalam konfigurasi DataTable Anda:
-            "drawCallback": function(settings) {
-                // Panggil fungsi manual tadi
-                updateGrandTotal();
-            }
+            ]
         });
     }
 
@@ -617,33 +564,33 @@ function tabletmpSPKDetail() {
 }
 
 
-function reload_pemakaian_dtl() {
-    var table = $('#tmptabpnmsdtl');
+function reload_table_transfer_dtl() {
+    var table = $('#tmptabspktransfersdtl');
     table.DataTable().ajax.reload(); //reload datatable ajax
 }
 
 
 // CHECK ALL
-$('#tmptabpnmsdtl thead').on('change', '#checkAll', function () {
+$('#tmptabspktransfersdtl thead').on('change', '#checkAll', function () {
     const checked = this.checked;
 
-    $('#tmptabpnmsdtl tbody .row-check').prop('checked', checked);
+    $('#tmptabspktransfersdtl tbody .row-check').prop('checked', checked);
 });
 
 // JIKA SALAH SATU ROW UNCHECK → CHECKALL MATI
-$('#tmptabpnmsdtl tbody').on('change', '.row-check', function () {
-    const total = $('#tmptabpnmsdtl tbody .row-check').length;
-    const checked = $('#tmptabpnmsdtl tbody .row-check:checked').length;
+$('#tmptabspktransfersdtl tbody').on('change', '.row-check', function () {
+    const total = $('#tmptabspktransfersdtl tbody .row-check').length;
+    const checked = $('#tmptabspktransfersdtl tbody .row-check:checked').length;
 
     $('#checkAll').prop('checked', total === checked);
 });
 
-$('#tmptabpnmsdtl').on('draw.dt', function () {
+$('#tmptabspktransfersdtl').on('draw.dt', function () {
     $('#checkAll').prop('checked', false);
 });
 
 function getSelectedPPDetail() {
-    return $('#tmptabpnmsdtl tbody .row-check:checked')
+    return $('#tmptabspktransfersdtl tbody .row-check:checked')
         .map(function () {
             return $(this).val();
         }).get();
@@ -666,7 +613,7 @@ function setSelect2Ajax(selector, value, text) {
 }
 
 
-function updatepnmBrgDtl() {
+function updateAjustmentStockDetail() {
     isLoadingUpdate = true;
     const ids = getCheckedDetailIds();
 
@@ -689,7 +636,7 @@ function updatepnmBrgDtl() {
     }
 
     $.ajax({
-        url: HOST_URL + 'persediaan/trans/get_tmp_pnm_brng_dtl',
+        url: HOST_URL + 'persediaan/trans/get_tmp_ajustment_stock_dtl',
         type: 'GET',
         data: { id: ids[0] },
         dataType: 'json',
@@ -716,8 +663,6 @@ function updatepnmBrgDtl() {
             data.docno      = (data.docno || '').trim();
             data.nmbarang   = (data.nmbarang || '').trim();
             data.unit       = (data.unit || '').trim();
-            data.val       = (data.val || '').trim();
-            data.valsum       = (data.valsum || '').trim();
 
             /*
             =========================
@@ -735,21 +680,7 @@ function updatepnmBrgDtl() {
 
             $('#nmbarang').val(data.nmbarang);
             $('#unit').val(data.unit);
-// Contoh implementasi saat data diterima dari AJAX
-
-            // $('#qty').val(data.qty);
-            // $('#val').val(data.val);
-            // $('#valsum').val(data.valsum);
-
-            // Mengisi field secara otomatis dengan separator dari separator
-            setJtsValue('#qty', data.qty);
-            setJtsValue('#val', data.val);
-            setJtsValue('#valsum', data.valsum);
-
-
-//             $('#qty').val(_jtsseparator(data.qty));
-//             $('#val').val(_jtsseparator(data.val));
-//             $('#valsum').val(_jtsseparator(data.valsum));
+            $('#qty').val(data.qty);
             $('#currency').val(data.currency);
 
             /*
@@ -825,21 +756,12 @@ function updatepnmBrgDtl() {
                 =========================
                 */
 
-                // 🔥 VALIDASI AWAL (INI KUNCI)
-                let batchParam = (data.batch || '').trim();
-
-                if (!batchParam) {
-                    // batch kosong → stop di sini, tidak lanjut ke AJAX batch
-                    $('#batch').val(null);
-                    return;
-                }
-
                 return $.ajax({
-                    type: 'POST',
+                    type: 'GET',
                     url: HOST_URL + 'api/globalmodule/list_batch_item',
                     data: {
                         _parameterx_: data.idbarang,
-                        _var_: batchParam,
+                        _var_: data.batch,
                         loccode: $('[name="idlocation_dtl"]').val()
                     },
                     dataType: 'json'
@@ -847,27 +769,22 @@ function updatepnmBrgDtl() {
 
             }).then(function (resBatch) {
 
-                let $batch = $('#batch');
-                $batch.empty();
-
-                if (!resBatch || !resBatch.items || resBatch.items.length === 0) {
-                    $batch.val(null);
-                    return;
-                }
+                if (!resBatch || !resBatch.items || resBatch.items.length === 0) return;
 
                 let batch = resBatch.items[0];
-                let batchVal = (batch.batch || '').trim();
 
-                // 🔥 double safety (opsional tapi bagus)
-                if (!batchVal) {
-                    $batch.val(null);
-                    return;
-                }
+                batch.batch = (batch.batch || '').trim();
 
-                let optionBatch = new Option(batchVal, batchVal, true, true);
+                let optionBatch = new Option(batch.batch, batch.batch, true, true);
 
-                $batch.append(optionBatch);
-                $batch.val(batchVal).trigger('change');
+                $('#batch')
+                    .append(optionBatch)
+                    .trigger('change');
+
+                $('#batch').trigger({
+                    type: 'select2:select',
+                    params: { data: batch }
+                });
 
             });
 
@@ -877,8 +794,8 @@ function updatepnmBrgDtl() {
             =========================
             */
             isLoadingUpdate = false;
-            $('#modalDetailPemakaianBarang').text('Update Detail');
-            $('#modalDetailpnm').modal('show');
+            $('#modalDetailPPLabel').text('Update Detail');
+            $('#modalDetailSPK').modal('show');
 
 
 
@@ -988,7 +905,7 @@ function formatItemSelectionFilter(repo) {
 }
 
 
-function savePnmBrg() {
+function saveAjustment() {
 
     Swal.fire({
         title: 'Konfirmasi',
@@ -1009,21 +926,17 @@ function savePnmBrg() {
         let stockInput = $('#qtystock').val();
         let valueQty = $('#valqty').val();
         let vardk = $('#dk').val();
-        let varval = $('#val').val();
-        let varvalsum = $('#valsum').val();
 
         let qty = parseFloat(convertToDbNumber(qtyInput)) || 0;
         let qtystock = parseFloat(convertToDbNumber(stockInput)) || 0;
         let valQty = parseFloat(convertToDbNumber(valueQty)) || 0;
-        let valVal = parseFloat(convertToDbNumber(varval)) || 0;
-        let valValsum = parseFloat(convertToDbNumber(varvalsum)) || 0;
 
 
         // ===============================
         // Siapkan FormData
         // ===============================
 
-        let formData = new FormData(document.getElementById('formPenerimaanStockDtl'));
+        let formData = new FormData(document.getElementById('formAjustmentStockDtl'));
 
         formData.append('cabang', $('#cabang').val());
         formData.append('pemohon', $('#pemohon').val());
@@ -1034,7 +947,6 @@ function savePnmBrg() {
         formData.append('description', $('#description').val());
         formData.append('docdate', $('#docdate').val());
         formData.append('docref', $('#docref').val());
-        formData.append('idcostcenter', $('#idcostcenter').val());
 
         // Gabungkan docno
         formData.set(
@@ -1048,15 +960,13 @@ function savePnmBrg() {
         formData.set('qty', qty);
         formData.set('qtystock', qtystock);
         formData.set('valqty', valQty);
-        formData.set('val', valVal);
-        formData.set('valsum', valValsum);
 
         // ===============================
         // AJAX SAVE
         // ===============================
 
         $.ajax({
-            url: HOST_URL + 'persediaan/trans/save_pnm_brng_detail',
+            url: HOST_URL + 'persediaan/trans/save_ajustment_stock_detail',
             type: 'POST',
             data: formData,
             dataType: 'json',
@@ -1080,9 +990,9 @@ function savePnmBrg() {
                         return;
                     }
 
-                    $('#modalDetailpnm').modal('hide');
-                    reload_pemakaian_dtl();
-                    $('#formPenerimaanStockDtl')[0].reset();
+                    $('#modalDetailSPK').modal('hide');
+                    reload_table_transfer_dtl();
+                    $('#formAjustmentStockDtl')[0].reset();
 
                 } else {
 
@@ -1147,14 +1057,14 @@ function btnInputDetail() {
     console.log(" INI KENAPA DI SISI ");
 
 
-    $('#formPenerimaanStockDtl')[0].reset();
+    $('#formAjustmentStockDtl')[0].reset();
     // Clear select2
     $('#idlocation_dtl').val(null).trigger('change');
     $('#batch').val(null).trigger('change');
     $('#idbarang').val(null).trigger('change');
     $('#idurut').val('');
-    $('#modalDetailPemakaianBarang').text('Tambah Item Detail');
-    $('#modalDetailpnm').modal('show');
+    $('#modalDetailPPLabel').text('Tambah Item Detail');
+    $('#modalDetailSPK').modal('show');
 }
 
 
@@ -1190,7 +1100,7 @@ $('#cabang').on('change', function () {
             $('#infix').val(res.infix);
 
             // SET PREFIX + TRIGGER CHANGE
-            $('#prefix').val('TBR').trigger('change');
+            $('#prefix').val('JBR').trigger('change');
 
             $('#sufix').val(currentKodeSuffix + '0001');
 
@@ -1689,20 +1599,10 @@ $("#idcostcenter").select2({
 
 //ID LOCATION PEMILIHAN GUDANG ASAL
 var defaultInitialLocationFrom = '';
-// =========================
-// GLOBAL FLAG (WAJIB ADA)
-// =========================
-let isAutoSet = false;
-
-
-// =========================
-// SELECT2 LOCATION
-// =========================
-var defaultInitialLocationFrom = '';
-
 $("#idlocation_dtl").select2({
     placeholder: " -- Pilih Gudang Asal -- ",
     allowClear: true,
+    // minimumInputLength: 2, // only start searching when the user has input 3 or more characters
     maximumSelectionLength: 1,
     multiple: false,
     ajax: {
@@ -1712,7 +1612,7 @@ $("#idlocation_dtl").select2({
         delay: 250,
         data: function (params) {
             return {
-                _search_: params.term,
+                _search_: params.term, // search term
                 _page_: params.page,
                 _draw_: true,
                 _start_: 1,
@@ -1724,26 +1624,18 @@ $("#idlocation_dtl").select2({
         },
         processResults: function (data, params) {
 
-            let searchTerm = $("#idlocation_dtl")
-                .data("select2").$dropdown.find("input").val();
-
+            var searchTerm = $("#idlocation_dtl").data("select2").$dropdown.find("input").val();
             if (data.items.length === 1 && data.items[0].text === searchTerm) {
-
-                let item = data.items[0];
-                let option = new Option(item.nmlocation, item.idlocation, true, true);
-
-                // ⛔ tandai auto
-                isAutoSet = true;
-
-                $('#idlocation_dtl')
-                    .append(option)
-                    .val(item.idlocation)
-                    .trigger('change')
-                    .select2("close");
-
-                isAutoSet = false;
+                var option = new Option(data.items[0].nmlocation, data.items[0].idlocation, true, true);
+                $('#idlocation_dtl').append(option).trigger('change').select2("close");
+                // manually trigger the `select2:select` event
+                $('#idlocation_dtl').trigger({
+                    type: 'select2:select',
+                    params: {
+                        data: data
+                    }
+                });
             }
-
             params.page = params.page || 1;
 
             return {
@@ -1757,31 +1649,26 @@ $("#idlocation_dtl").select2({
     },
     escapeMarkup: function (markup) {
         return markup;
-    },
-    templateResult: formatLocation,
-    templateSelection: formatLocationSelection
-})
+    }, // let our custom formatter work
+    // minimumInputLength: 1,
+    templateResult: formatLocation, // omitted for brevity, see the source of this page
+    templateSelection: formatLocationSelection // omitted for brevity, see the source of this page
+}).on("change", function () {
+    /*Sementara TUtup Location */
+    if ($(this).val()) {
+        $('#saveAjusment').prop('disabled', false);
+    } else {
+        $('#saveAjusment').prop('disabled', true);
+    }
 
-    .on("change", function () {
+    $('#idbarang').val(null).trigger('change');
+    $('#batch').val(null).trigger('change');
 
-        // 🔥 STOP kalau dari auto load
-        if (isAutoSet) return;
+    $('[name="nmbarang"]').val('');
+    $('[name="unit"]').val('');
+    $('[name="qtystock"]').val(0);
 
-        let val = $(this).val();
-
-        $('#savepnmBrng').prop('disabled', !val);
-
-        // =========================
-        // RESET TANPA TRIGGER (ANTI DOMINO)
-        // =========================
-        $('#idbarang').val(null);
-        $('#batch').val(null);
-
-        $('[name="nmbarang"]').val('');
-        $('[name="unit"]').val('');
-        $('[name="qtystock"]').val(0);
-
-    });
+});
 
 /* Format Group */
 function formatLocation(repo) {
@@ -1951,7 +1838,7 @@ function btnDeleteDetail() {
         // AJAX DELETE
         // ===============================
         $.ajax({
-            url: HOST_URL + 'persediaan/trans/delete_pnm_brng',
+            url: HOST_URL + 'persediaan/trans/deleteAjustmentStockDetail',
             type: 'POST',
             data: {
                 ids: ids   // kirim array id
@@ -1970,7 +1857,7 @@ function btnDeleteDetail() {
                         showConfirmButton: false
                     });
 
-                    reload_pemakaian_dtl();
+                    reload_table_transfer_dtl();
 
                 } else {
 
@@ -1996,79 +1883,6 @@ function btnDeleteDetail() {
     });
 }
 
-/*        ---------------------              ID COSTCENTER ----------------------------------------------*/
-
-//ID LOCATION PEMILIHAN GUDANG TUJUAN
-var defaultInitialCostcenter = '';
-$("#idcostcenter").select2({
-    placeholder: " -- Pilih Bagian/Costcenter -- ",
-    allowClear: true,
-    // minimumInputLength: 2, // only start searching when the user has input 3 or more characters
-    maximumSelectionLength: 1,
-    multiple: false,
-    ajax: {
-        url: HOST_URL + 'api/globalmodule/list_costcenter',
-        type: 'POST',
-        dataType: 'json',
-        delay: 250,
-        data: function (params) {
-            return {
-                _search_: params.term, // search term
-                _page_: params.page,
-                _draw_: true,
-                _start_: 1,
-                _perpage_: 2,
-                _paramglobal_: defaultInitialCostcenter,
-                _parameterx_: defaultInitialCostcenter,
-                term: params.term,
-            };
-        },
-        processResults: function (data, params) {
-
-            var searchTerm = $("#idcostcenter").data("select2").$dropdown.find("input").val();
-            if (data.items.length === 1 && data.items[0].text === searchTerm) {
-                var option = new Option(data.items[0].nmcostcenter, data.items[0].idcostcenter, true, true);
-                $('#idcostcenter').append(option).trigger('change').select2("close");
-                // manually trigger the `select2:select` event
-                $('#idcostcenter').trigger({
-                    type: 'select2:select',
-                    params: {
-                        data: data
-                    }
-                });
-            }
-            params.page = params.page || 1;
-
-            return {
-                results: data.items,
-                pagination: {
-                    more: (params.page * 30) < data.total_count
-                }
-            };
-        },
-        cache: true
-    },
-    escapeMarkup: function (markup) {
-        return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatCostcenter, // omitted for brevity, see the source of this page
-    templateSelection: formatCostcenterSelection // omitted for brevity, see the source of this page
-}).on("change", function () {
-    /*Sementara TUtup Location */
-});
-
-function formatCostcenter(repo) {
-    if (repo.loading) return repo.text;
-    var markup = "<div class='select2-result-repository__description'>" + repo.idcostcenter + "   <i class='fa fa-circle-o'></i>   " + repo.nmcostcenter + "</div>";
-    return markup;
-}
-
-function formatCostcenterSelection(repo) {
-    return repo.nmcostcenter || repo.text;
-}
-
-
 $(document).ready(function () {
     // Handle form submission event
     // Fix SweetAlert input tidak bisa diketik di atas Bootstrap modal
@@ -2081,7 +1895,7 @@ $(document).ready(function () {
     // Fix SweetAlert input tidak bisa diketik di atas Bootstrap modal
 
 
-    table_trx_pnm_brng_mst();
+    table_trx_ajustment_stock_mst();
     tabletmpSPKDetail();
     // tableItem();
     //read_qrcode();

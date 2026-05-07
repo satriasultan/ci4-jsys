@@ -7755,6 +7755,8 @@ class Purchase extends BaseController
                     'qty' => $sisaQty,
                     'harga' => $row->harga,
                     'nilai' => $row->nilai,
+                    'descriptionpo' => $row->descriptionpo,
+                    'descriptionpp' => $row->descriptionpp,
                     'inputby' => $nama,
                     'inputdate' => date('Y-m-d H:i:s')
                 ]);

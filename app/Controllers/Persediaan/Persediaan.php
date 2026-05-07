@@ -2941,6 +2941,7 @@ class Persediaan extends BaseController
             ->where('idbarang', $idbarang)
             ->where('nmbarang', $nmbarang)
             ->where('unit', $unit)
+            ->where('qtystock', $qty)
             ->where('qty', $qty)
             ->where('description', $description);
 
@@ -2967,11 +2968,14 @@ class Persediaan extends BaseController
             $updateDetail = $builderDetail
                 ->where('idurut', $idurut)
                 ->update([
+                    'doctype'    => 'PMKBRG',
                     'idbarang'    => $idbarang,
                     'nmbarang'    => $nmbarang,
                     'idlocation'    => $idlocation,
+                    'idcostcenter'    => strtoupper(trim($this->request->getPost('idcostcenter'))),
                     'unit'        => $unit,
                     'batch'         => $batch,
+                    'qtystock'         => $qtystock,
                     'qty'         => $qty,
                     'description' => $description,
                     'updateby'    => $nama,
@@ -2996,11 +3000,15 @@ class Persediaan extends BaseController
             $uniqueid  = hash('sha256', $rawUnique);
 
             $insertDetail = $builderDetail->insert([
+                'doctype'    => 'PMKBRG',
                 'docno'       => $docno,
+                'idlocation'    => $idlocation,
+                'idcostcenter'    => strtoupper(trim($this->request->getPost('idcostcenter'))),
                 'idbarang'    => $idbarang,
                 'nmbarang'    => $nmbarang,
                 'batch'         => $batch,
                 'unit'        => $unit,
+                'qtystock'         => $qtystock,
                 'qty'         => $qty,
                 'description' => $description,
                 'inputby'     => $nama,
@@ -3096,87 +3104,90 @@ class Persediaan extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-    function final_pmk_barang(){
+    public function final_pmk_barang()
+    {
+        $db = \Config\Database::connect();
         $nama = trim($this->session->get('nama'));
-        // $loccode = trim($this->session->get('loccode'));
-        $param = " and coalesce(inputby,'')='$nama'";
-        $paramdtl = " AND COALESCE(inputby, '') = '$nama'";
-        $paramdtl2 = " and coalesce(inputby,'')='$nama'";
 
-        $header = $this->m_persediaan->q_tmp_pmk_brng_mst($param);
-        $status = trim($header->getRowArray()['status']);
-        $cek = $this->m_persediaan->q_tmp_pmk_brng_mst($paramdtl);
-        $cek2 = $this->m_persediaan->q_tmp_pmk_brng_mst($paramdtl2);
+        // 🔥 WAJIB: ambil docno spesifik (bukan semua inputby)
+        $docno = trim($this->request->getPost('docno'));
 
-
-        $builder = $this->db->table(' sc_tmp.pmk_brng_mst');
-
-        //INSERT TRX ERROR
-        $builder_trxerror = $this->db->table('sc_mst.trxerror');
-        $builder_trxerror->where('userid', $nama);
-        $builder_trxerror->where('modul', 'I.Q.A.5');
-        $builder_trxerror->delete();
-
-
-        if ($status==='E' and $cek->getNumRows() <= 0)
-        {
-            $infotrxerror = array(
-                'userid' => $nama,
-                'errorcode' => 3,
-                'nomorakhir1' => $cek->getNumRows(),
-                'nomorakhir2' => $cek2->getNumRows(),
-                'modul' => 'I.Q.A.5',
-            );
-            $builder_trxerror->insert($infotrxerror);
-
-            return redirect()->to(base_url('/persediaan/trans/add_pmk_brg_mst'));
-        } else {
-            // Ambil dari request POST
-            //$pemohon = strtoupper(trim($this->request->getPost('pemohon')));
-            $keterangan = strtoupper(trim($this->request->getPost('keterangan')));
-//
-
-            // Update data header dulu sebelum set status F
-            $updateHeader = [
-//                'docdate'      => $docdateph,
-//                'pemohon'       => $pemohon,
-                'description'        => $keterangan,
-//                'estpakai' => $estpakaiph,
-            ];
-
-            $builder->where('inputby', $nama);
-            $builder->update($updateHeader);
-
-            $info = array(
-                'status' => 'F',
-                'updatedate' => date('Y-m-d H:i:s'),
-                'updateby' => $nama
-            );
-            $builder->where('inputby',$nama);
-            if ($builder->update($info)) {
-                $paramerror=" and userid='$nama' and modul='I.Q.A.5'";
-                $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
-                $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
-
-                // $docno = trim(bin2hex(trim($dtlerror['nomorakhir1'])));
-
-                return redirect()->to(base_url('/persediaan/trans/pmk_brng'));
-            } else {
-                $infotrxerror = array(
-                    'userid' => $nama,
-                    'errorcode' => 3,
-                    'nomorakhir1' => $cek->getNumRows(),
-                    'nomorakhir2' => $cek2->getNumRows(),
-                    'modul' => 'I.Q.A.5',
-                );
-                $builder_trxerror->insert($infotrxerror);
-                return redirect()->to(base_url('/persediaan/trans/add_pmk_brg_mst'));
-            }
-
-
-
+        if (!$docno) {
+            return redirect()->back()->with('error', 'Docno tidak ditemukan');
         }
 
+        try {
+
+            $db->transStart();
+
+            // =========================
+            // 🔒 LOCK HEADER (ANTI DOUBLE FINAL)
+            // =========================
+            $header = $db->query("
+            SELECT * 
+            FROM sc_tmp.pmk_brng_mst
+            WHERE TRIM(docno) = ?
+              AND TRIM(inputby) = ?
+            FOR UPDATE
+        ", [$docno, $nama])->getRowArray();
+
+            if (!$header) {
+                throw new \Exception('Data tidak ditemukan');
+            }
+
+            if (trim($header['status']) !== 'E') {
+                throw new \Exception('Status bukan E (tidak bisa FINAL)');
+            }
+
+            // =========================
+            // 🔥 UPDATE HEADER (KETERANGAN)
+            // =========================
+            $keterangan = strtoupper(trim($this->request->getPost('keterangan')));
+
+            $db->table('sc_tmp.pmk_brng_mst')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->update([
+                    'description' => $keterangan
+                ]);
+
+            // =========================
+            // 🔥 FINAL (INI YANG MEMICU TRIGGER)
+            // =========================
+            $db->table('sc_tmp.pmk_brng_mst')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->update([
+                    'status' => 'F',
+                    'updatedate' => date('Y-m-d H:i:s'),
+                    'updateby' => $nama
+                ]);
+
+            // =========================
+            // 🔥 COMMIT
+            // =========================
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                throw new \Exception('Gagal final');
+            }
+
+            return redirect()->to(base_url('/persediaan/trans/pmk_brng'))
+                ->with('success', 'Data berhasil di FINAL');
+
+        } catch (\Throwable $e) {
+
+            $db->transRollback();
+
+            // simpan ke trxerror (optional)
+            $db->table('sc_mst.trxerror')->insert([
+                'userid' => $nama,
+                'errorcode' => 3,
+                'modul' => 'I.Q.A.5'
+            ]);
+
+            return redirect()->back()->with('error', $e->getMessage());
+        }
     }
 
     function list_tmp_pmk_brng_dtl(){

@@ -16,10 +16,10 @@ var initTable;
 //"use strict";
 
 /* VIUW UTAMA*/
-function table_trx_pnm_brng_mst() {
+function table_trx_pmk_brng_mst() {
     // var lg = languageDatatable;
     var initTable = function () {
-        var table = $('#tpnmBrg');
+        var table = $('#tPmkBrg');
         table.DataTable({
             "processing": true, //Feature control the processing indicator.
             "serverSide": true, //Feature control DataTables' server-side processing mode.
@@ -42,7 +42,7 @@ function table_trx_pnm_brng_mst() {
                 'pageLength', 'excel'
             ],
             "ajax": {
-                "url": HOST_URL + 'persediaan/trans/list_trx_pnm_brng_mst',
+                "url": HOST_URL + 'persediaan/trans/list_trx_pmk_brng_mst',
                 "type": "POST",
                 "data": function (data) {
                     data.tglrange = $('#tglrange').val();
@@ -67,11 +67,6 @@ function table_trx_pnm_brng_mst() {
                     "orderable": false, //set not orderable
                 },
             ],
-            // Di dalam konfigurasi DataTable Anda:
-            "drawCallback": function(settings) {
-                // Panggil fungsi manual tadi
-                updateGrandTotal();
-            }
 
         });
 
@@ -81,56 +76,23 @@ function table_trx_pnm_brng_mst() {
     return initTable();
 }
 
-// Fungsi pembantu untuk format ribuan (agar kembali ke format 1.000)
-function formatNumber(n) {
-    return n.toLocaleString('id-ID');
-}
-
-function reloadpnmBrg() {
-    var table = $('#tpnmBrg');
+function reloadPmkBrg() {
+    var table = $('#tPmkBrg');
     table.DataTable().ajax.reload(); //reload datatable ajax
     //console.log('HALO HALO BANDUNG');
-    // Panggil fungsi manual tadi
-    updateGrandTotal();
 }
 
 $('#btn-filter-tx').click(function () { //button filter event click
-    var table = $('#tpnmBrg');
+    var table = $('#tPmkBrg');
     table.DataTable().ajax.reload(); //reload datatable ajax
     $('#filter').modal('hide');
-    // Panggil fungsi manual tadi
-    updateGrandTotal();
 });
 $('#btn-reset-tx').click(function () { //button reset event click
     $('#form-filter')[0].reset();
-    var table = $('#tpnmBrg');
+    var table = $('#tPmkBrg');
     table.DataTable().ajax.reload(); //reload datatable ajax
     $('#filter').modal('hide');
-    // Panggil fungsi manual tadi
-    updateGrandTotal();
 });
-
-function updateGrandTotal() {
-    var docno = $('#docno').val(); // pastikan ada input/hidden field id docno
-
-    $.ajax({
-        url: HOST_URL + 'persediaan/trans/get_summary_pnm',
-        type: 'POST',
-        data: { docno: docno },
-        dataType: 'JSON',
-        success: function(response) {
-            // Update teks di header tabel
-            $('#totalQty').text(response.total_qty);
-            $('#totalNilai').text(response.total_nilai);
-        },
-        error: function() {
-            console.log("Gagal mengambil summary");
-        }
-    });
-}
-
-
-
 
 let skipRoleChange = false;
 
@@ -142,7 +104,7 @@ function documentReadable() {
 
     var docno = $('[name="docno"]').val();
 
-    $.getJSON(HOST_URL + 'persediaan/trans/showing_pnm_brng_mst_tmp', {docno: docno})
+    $.getJSON(HOST_URL + 'persediaan/trans/showing_pmk_brng_mst_tmp', {docno: docno})
         .done(function (response) {
 
             if (!response.dataTables || !response.dataTables.items.length) {
@@ -309,18 +271,14 @@ $("#idbarang").select2({
 });
 
 
-
 let isLoadingUpdate = false;
-$(document).on('change blur', '.getsisastock', function () {
+$(document).on("change blur", ".getLastStock", function () {
     if (isLoadingUpdate) return;
-  getSisaStock();
+    getSisaStock();
 });
-
 //class getLastStock setiap ada pergerakan dari getLastStock class , input on blur on select selalu menjalankan fungsi getSisaStock(), dan fix ajax saya
 function getSisaStock() {
-    let row = $(this).closest('tr'); // kalau di table
 
-    let idlocation = $('#idlocation').val(); // gudang
     let idbarang       = $('[name="idbarang"]').val();
     let batch          = $('[name="batch"]').val();
     let idlocation_dtl = $('[name="idlocation_dtl"]').val();
@@ -330,7 +288,7 @@ function getSisaStock() {
     }
 
     $.ajax({
-        url: HOST_URL + 'api/globalmodule/list_avg_stock',
+        url: HOST_URL + 'api/globalmodule/list_batch_item',
         type: 'POST',
         dataType: 'json',
 
@@ -344,7 +302,7 @@ function getSisaStock() {
 
             if (!response || !response.items || response.items.length === 0) {
 
-               // $('[name="qtystock"]').val(0).prop("readonly", true);
+                $('[name="qtystock"]').val(0).prop("readonly", true);
                 return;
             }
 
@@ -352,9 +310,6 @@ function getSisaStock() {
 
             $('[name="nmbarang"]').val((data.nmbarang || '').trim()).prop("readonly", true);
 
-            $('[name="qtystock"]').val((data.qty || '').trim()).prop("readonly", false);
-            $('[name="val"]').val((data.avg_cost || '').trim()).prop("readonly", false);
-            $('[name="valsum"]').val((data.avg_cost || '').trim()).prop("readonly", true);
             $('[name="unit"]').val((data.unit || '').trim()).prop("readonly", true);
             $('[name="currency"]').val((data.defaultcurrency || '').trim()).prop("readonly", true);
 
@@ -362,7 +317,7 @@ function getSisaStock() {
                 $('#batch').val(data.batch).trigger('change');
             }*/
 
-            let qty = (data.qty && data.qty !== '') ? data.qty : 0;
+            let qty = (data.sisaonhand && data.sisaonhand !== '') ? data.sisaonhand : 0;
 
             $('[name="qtystock"]').val(qty).prop("readonly", true);
 
@@ -391,7 +346,6 @@ function formatItem(repo) {
 function formatItemSelection(repo) {
     return repo.nmbarang || repo.text;
 }
-
 
 
 $("#batch").select2({
@@ -556,7 +510,7 @@ function editsearchitem(e) {
 function tabletmpSPKDetail() {
     /* Tabel PP Detail */
     var initTable = function () {
-        var table = $('#tmptabpnmsdtl');
+        var table = $('#tmptabpmksdtl');
         table.DataTable({
             "processing": true, //Feature control the processing indicator.
             "serverSide": true, //Feature control DataTables' server-side processing mode.
@@ -571,7 +525,7 @@ function tabletmpSPKDetail() {
             "bFilter": true,
             "iDisplayLength": -1,
             "ajax": {
-                "url": HOST_URL + 'persediaan/trans/list_tmp_pnm_brng_dtl',
+                "url": HOST_URL + 'persediaan/trans/list_tmp_pmk_brng_dtl',
                 "type": "POST",
                 "data": function (data) {
                     //data.searchfilter = $('#searchitem').val()+'';
@@ -603,12 +557,7 @@ function tabletmpSPKDetail() {
                     "targets": [-1],
                     "orderable": false
                 }
-            ],
-            // Di dalam konfigurasi DataTable Anda:
-            "drawCallback": function(settings) {
-                // Panggil fungsi manual tadi
-                updateGrandTotal();
-            }
+            ]
         });
     }
 
@@ -618,32 +567,32 @@ function tabletmpSPKDetail() {
 
 
 function reload_pemakaian_dtl() {
-    var table = $('#tmptabpnmsdtl');
+    var table = $('#tmptabpmksdtl');
     table.DataTable().ajax.reload(); //reload datatable ajax
 }
 
 
 // CHECK ALL
-$('#tmptabpnmsdtl thead').on('change', '#checkAll', function () {
+$('#tmptabpmksdtl thead').on('change', '#checkAll', function () {
     const checked = this.checked;
 
-    $('#tmptabpnmsdtl tbody .row-check').prop('checked', checked);
+    $('#tmptabpmksdtl tbody .row-check').prop('checked', checked);
 });
 
 // JIKA SALAH SATU ROW UNCHECK → CHECKALL MATI
-$('#tmptabpnmsdtl tbody').on('change', '.row-check', function () {
-    const total = $('#tmptabpnmsdtl tbody .row-check').length;
-    const checked = $('#tmptabpnmsdtl tbody .row-check:checked').length;
+$('#tmptabpmksdtl tbody').on('change', '.row-check', function () {
+    const total = $('#tmptabpmksdtl tbody .row-check').length;
+    const checked = $('#tmptabpmksdtl tbody .row-check:checked').length;
 
     $('#checkAll').prop('checked', total === checked);
 });
 
-$('#tmptabpnmsdtl').on('draw.dt', function () {
+$('#tmptabpmksdtl').on('draw.dt', function () {
     $('#checkAll').prop('checked', false);
 });
 
 function getSelectedPPDetail() {
-    return $('#tmptabpnmsdtl tbody .row-check:checked')
+    return $('#tmptabpmksdtl tbody .row-check:checked')
         .map(function () {
             return $(this).val();
         }).get();
@@ -666,7 +615,7 @@ function setSelect2Ajax(selector, value, text) {
 }
 
 
-function updatepnmBrgDtl() {
+function updatePmkBrgDtl() {
     isLoadingUpdate = true;
     const ids = getCheckedDetailIds();
 
@@ -689,7 +638,7 @@ function updatepnmBrgDtl() {
     }
 
     $.ajax({
-        url: HOST_URL + 'persediaan/trans/get_tmp_pnm_brng_dtl',
+        url: HOST_URL + 'persediaan/trans/get_tmp_pmk_brng_dtl',
         type: 'GET',
         data: { id: ids[0] },
         dataType: 'json',
@@ -716,8 +665,6 @@ function updatepnmBrgDtl() {
             data.docno      = (data.docno || '').trim();
             data.nmbarang   = (data.nmbarang || '').trim();
             data.unit       = (data.unit || '').trim();
-            data.val       = (data.val || '').trim();
-            data.valsum       = (data.valsum || '').trim();
 
             /*
             =========================
@@ -735,21 +682,7 @@ function updatepnmBrgDtl() {
 
             $('#nmbarang').val(data.nmbarang);
             $('#unit').val(data.unit);
-// Contoh implementasi saat data diterima dari AJAX
-
-            // $('#qty').val(data.qty);
-            // $('#val').val(data.val);
-            // $('#valsum').val(data.valsum);
-
-            // Mengisi field secara otomatis dengan separator dari separator
-            setJtsValue('#qty', data.qty);
-            setJtsValue('#val', data.val);
-            setJtsValue('#valsum', data.valsum);
-
-
-//             $('#qty').val(_jtsseparator(data.qty));
-//             $('#val').val(_jtsseparator(data.val));
-//             $('#valsum').val(_jtsseparator(data.valsum));
+            $('#qty').val(data.qty);
             $('#currency').val(data.currency);
 
             /*
@@ -878,7 +811,7 @@ function updatepnmBrgDtl() {
             */
             isLoadingUpdate = false;
             $('#modalDetailPemakaianBarang').text('Update Detail');
-            $('#modalDetailpnm').modal('show');
+            $('#modalDetailPMK').modal('show');
 
 
 
@@ -988,7 +921,7 @@ function formatItemSelectionFilter(repo) {
 }
 
 
-function savePnmBrg() {
+function savePemakaianBrng() {
 
     Swal.fire({
         title: 'Konfirmasi',
@@ -1009,21 +942,17 @@ function savePnmBrg() {
         let stockInput = $('#qtystock').val();
         let valueQty = $('#valqty').val();
         let vardk = $('#dk').val();
-        let varval = $('#val').val();
-        let varvalsum = $('#valsum').val();
 
         let qty = parseFloat(convertToDbNumber(qtyInput)) || 0;
         let qtystock = parseFloat(convertToDbNumber(stockInput)) || 0;
         let valQty = parseFloat(convertToDbNumber(valueQty)) || 0;
-        let valVal = parseFloat(convertToDbNumber(varval)) || 0;
-        let valValsum = parseFloat(convertToDbNumber(varvalsum)) || 0;
 
 
         // ===============================
         // Siapkan FormData
         // ===============================
 
-        let formData = new FormData(document.getElementById('formPenerimaanStockDtl'));
+        let formData = new FormData(document.getElementById('formPemakaianStockDtl'));
 
         formData.append('cabang', $('#cabang').val());
         formData.append('pemohon', $('#pemohon').val());
@@ -1048,15 +977,13 @@ function savePnmBrg() {
         formData.set('qty', qty);
         formData.set('qtystock', qtystock);
         formData.set('valqty', valQty);
-        formData.set('val', valVal);
-        formData.set('valsum', valValsum);
 
         // ===============================
         // AJAX SAVE
         // ===============================
 
         $.ajax({
-            url: HOST_URL + 'persediaan/trans/save_pnm_brng_detail',
+            url: HOST_URL + 'persediaan/trans/save_pmk_brng_detail',
             type: 'POST',
             data: formData,
             dataType: 'json',
@@ -1080,9 +1007,9 @@ function savePnmBrg() {
                         return;
                     }
 
-                    $('#modalDetailpnm').modal('hide');
+                    $('#modalDetailPMK').modal('hide');
                     reload_pemakaian_dtl();
-                    $('#formPenerimaanStockDtl')[0].reset();
+                    $('#formPemakaianStockDtl')[0].reset();
 
                 } else {
 
@@ -1147,14 +1074,14 @@ function btnInputDetail() {
     console.log(" INI KENAPA DI SISI ");
 
 
-    $('#formPenerimaanStockDtl')[0].reset();
+    $('#formPemakaianStockDtl')[0].reset();
     // Clear select2
     $('#idlocation_dtl').val(null).trigger('change');
     $('#batch').val(null).trigger('change');
     $('#idbarang').val(null).trigger('change');
     $('#idurut').val('');
     $('#modalDetailPemakaianBarang').text('Tambah Item Detail');
-    $('#modalDetailpnm').modal('show');
+    $('#modalDetailPMK').modal('show');
 }
 
 
@@ -1190,7 +1117,7 @@ $('#cabang').on('change', function () {
             $('#infix').val(res.infix);
 
             // SET PREFIX + TRIGGER CHANGE
-            $('#prefix').val('TBR').trigger('change');
+            $('#prefix').val('PBL').trigger('change');
 
             $('#sufix').val(currentKodeSuffix + '0001');
 
@@ -1769,7 +1696,7 @@ $("#idlocation_dtl").select2({
 
         let val = $(this).val();
 
-        $('#savepnmBrng').prop('disabled', !val);
+        $('#savePmkBrng').prop('disabled', !val);
 
         // =========================
         // RESET TANPA TRIGGER (ANTI DOMINO)
@@ -1951,7 +1878,7 @@ function btnDeleteDetail() {
         // AJAX DELETE
         // ===============================
         $.ajax({
-            url: HOST_URL + 'persediaan/trans/delete_pnm_brng',
+            url: HOST_URL + 'persediaan/trans/delete_pmk_brng',
             type: 'POST',
             data: {
                 ids: ids   // kirim array id
@@ -2081,7 +2008,7 @@ $(document).ready(function () {
     // Fix SweetAlert input tidak bisa diketik di atas Bootstrap modal
 
 
-    table_trx_pnm_brng_mst();
+    table_trx_pmk_brng_mst();
     tabletmpSPKDetail();
     // tableItem();
     //read_qrcode();
