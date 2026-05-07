@@ -132,149 +132,185 @@ alter table sc_trx.pmk_brng_dtl add column idcostcenter character(10), add colum
 alter table sc_tmp.pmk_brng_dtl add column idlocation character(10), add column idcoa character(20);
 alter table sc_trx.pmk_brng_dtl add column idlocation character(10), add column idcoa character(20);
 
-
--- FUNCTION: sc_tmp.tr_tmp_pmk_brng_mst()
-
--- DROP FUNCTION IF EXISTS sc_tmp.tr_tmp_pmk_brng_mst();
 CREATE OR REPLACE FUNCTION sc_tmp.tr_tmp_pmk_brng_mst()
 RETURNS trigger
 LANGUAGE plpgsql
-AS $BODY$
+AS $$
 DECLARE
-    v_docno     TEXT;
-    v_inputby   TEXT;
-    v_idurut    INTEGER;
-    v_prefix    TEXT;
-    v_num       TEXT;
-    v_num_int   INTEGER;
-    v_lock_key  BIGINT;
+    v_docno TEXT;
+    v_inputby TEXT;
+    v_inputdate TIMESTAMP;
     v_base_docno TEXT;
-    v_new_docno  TEXT;
-	v_inputdate timestamp without time zone;
+    v_new_docno TEXT;
+    v_num TEXT;
+    v_num_int INTEGER;
+    v_row RECORD;
+    v_doctype TEXT;
 BEGIN
-    IF OLD.status = 'E' AND NEW.status = 'F' AND COALESCE(NEW.docnotmp, '') = '' THEN
 
-        -- ===============================
-        -- NORMALISASI
-        v_docno := rtrim(NEW.docno);
-        v_inputby := NEW.inputby;
-        v_inputdate  := NEW.inputdate;
-        --v_idurut  := NEW.idurut;
-        -- ambil base docno (tanpa angka belakang)
-        -- contoh:
-        -- 05M/2601/PA0001 -> 05M/2601/PA
-        -- PPB/2601/PT0025 -> PPB/2601/PT
-        v_base_docno := regexp_replace(v_docno, '[0-9]+$', '');
+-- =========================================
+-- NORMALISASI
+-- =========================================
+v_doctype := UPPER(TRIM(COALESCE(NEW.doctype,'PMKBRG')));
 
-        -- ===============================
-        -- ADVISORY LOCK (ANTI RACE CONDITION)
-        -- ===============================
-        PERFORM pg_advisory_xact_lock(hashtext(v_base_docno));
+-- =====================================================
+-- 🔥 NORMAL FINAL
+-- =====================================================
+IF OLD.status = 'E' AND NEW.status = 'F' AND COALESCE(NEW.docnotmp, '') = '' THEN
 
-        -- ===============================
-        -- AUTO INCREMENT JIKA SUDAH ADA
-        -- ===============================
-        v_new_docno := v_docno;
+    v_docno := TRIM(NEW.docno);
+    v_inputby := NEW.inputby;
+    v_inputdate := NEW.inputdate;
 
-        LOOP
-            EXIT WHEN NOT EXISTS (
-                SELECT 1
-                FROM sc_trx.pmk_brng_mst
-                WHERE rtrim(docno) = v_new_docno
-            );
+    v_base_docno := regexp_replace(v_docno, '[0-9]+$', '');
 
-            -- ambil angka terakhir (dinamis)
-            v_num := regexp_replace(v_new_docno, '.*?([0-9]+)$', '\1');
-            v_num_int := v_num::INTEGER + 1;
+    PERFORM pg_advisory_xact_lock(hashtext(v_base_docno));
 
-            -- padding mengikuti panjang awal
-            v_new_docno := v_base_docno
-                        || lpad(v_num_int::TEXT, length(v_num), '0');
-        END LOOP;
+    v_new_docno := v_docno;
 
-        -- gunakan docno final
-        v_docno := v_new_docno;
+    LOOP
+        EXIT WHEN NOT EXISTS (
+            SELECT 1 FROM sc_trx.pmk_brng_mst
+            WHERE TRIM(docno) = v_new_docno
+        );
 
+        v_num := regexp_replace(v_new_docno, '.*?([0-9]+)$', '\1');
+        v_num_int := v_num::INTEGER + 1;
 
-        -- ===============================
-        -- INSERT HEADER
-		
+        v_new_docno := v_base_docno || lpad(v_num_int::TEXT, length(v_num), '0');
+    END LOOP;
 
-        -- ===============================
-        INSERT INTO sc_trx.pmk_brng_mst (
-            docno,doctype,docdate,docref,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,status,description,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp
-        )
-        (SELECT v_docno,doctype,docdate,docref,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,'F',description,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp FROM sc_tmp.pmk_brng_mst
-        WHERE rtrim(docno) = rtrim(OLD.docno)
-          AND inputby = v_inputby
-          AND inputdate = v_inputdate);
-
-        -- ===============================
-        -- INSERT DETAIL
-        -- ===============================
-        INSERT INTO sc_trx.pmk_brng_dtl 
-		(docno,docref,doctype,idbarang,nmbarang,unit,qtystock,qty,description,status,val,valsum,inputby,inputdate,updateby,updatedate,iduniq,docnotmp,idurut,idcostcenter,batch,idlocation,idcoa)
-        (SELECT v_docno,docref,doctype,idbarang,nmbarang,unit,qtystock,qty,description,'F' AS status,val,valsum,inputby,inputdate,updateby,updatedate,iduniq,docnotmp,idurut,idcostcenter,batch,idlocation,idcoa
-		FROM sc_tmp.pmk_brng_dtl WHERE rtrim(docno) = rtrim(OLD.docno) AND inputby = v_inputby);
-
-        -- ===============================
-        -- CLEANUP TMP
-        -- ===============================
-        DELETE FROM sc_tmp.pmk_brng_mst
-        WHERE rtrim(docno) = rtrim(OLD.docno)
-          AND inputby = v_inputby
-          AND inputdate = v_inputdate;
-
-        DELETE FROM sc_tmp.pmk_brng_dtl
-        WHERE rtrim(docno) = rtrim(OLD.docno)
-          AND inputby = v_inputby;
+    v_docno := v_new_docno;
 
     -- ===============================
-    -- DOCNOTMP FLOW (TETAP)
+    -- VALIDASI STOCK
     -- ===============================
-    ELSIF OLD.status = 'E' AND NEW.status = 'F' AND COALESCE(NEW.docnotmp, '') <> '' THEN
-
-        DELETE FROM sc_trx.pmk_brng_mst WHERE docno = NEW.docnotmp;
-        DELETE FROM sc_trx.pmk_brng_dtl WHERE docno = NEW.docnotmp;
-
-
-        -- ===============================
-        -- INSERT DETAIL
-        -- ===============================
-        INSERT INTO sc_trx.pmk_brng_dtl 
-		(docno,docref,doctype,idbarang,nmbarang,unit,qtystock,qty,description,status,val,valsum,inputby,inputdate,updateby,updatedate,iduniq,docnotmp,idurut,idcostcenter,batch,idlocation,idcoa)
-        (SELECT NEW.docnotmp,docref,doctype,idbarang,nmbarang,unit,qtystock,qty,description,'F' AS status,val,valsum,inputby,inputdate,updateby,updatedate,iduniq,docnotmp,idurut,idcostcenter,batch,idlocation,idcoa
-		FROM sc_tmp.pmk_brng_dtl WHERE rtrim(docno) = trim(NEW.docno));
-		
-        -- ===============================
-        INSERT INTO sc_trx.pmk_brng_mst (
-            docno,doctype,docdate,docref,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,status,description,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp
-        )
-        (SELECT new.docnotmp,doctype,docdate,docref,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,'F',description,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp FROM sc_tmp.pmk_brng_mst
-        WHERE trim(docno) = trim(NEW.docno));
-
-		
-
-        DELETE FROM sc_tmp.pmk_brng_mst WHERE rtrim(docno) = rtrim(NEW.docno);
-        DELETE FROM sc_tmp.pmk_brng_dtl WHERE rtrim(docno) = rtrim(NEW.docno);
-
-
-    ELSEIF (OLD.STATUS = 'E' AND NEW.STATUS = 'C') THEN
-        IF NEW.printby IS NOT NULL AND NEW.printby <> '' AND NEW.printdate IS NOT NULL THEN
-            UPDATE sc_trx.pmk_brng_mst SET status = 'P' WHERE docno = NEW.docnotmp;
-        ELSE
-            UPDATE sc_trx.pmk_brng_mst SET status = 'F' WHERE docno = NEW.docnotmp;
+    FOR v_row IN
+        SELECT d.idbarang, d.idlocation, COALESCE(d.batch,'') batch,
+               d.qty, COALESCE(a.qty,0) stock
+        FROM sc_tmp.pmk_brng_dtl d
+        LEFT JOIN sc_trx.stkblc_avgcost a
+          ON TRIM(a.idbarang)=TRIM(d.idbarang)
+         AND TRIM(a.idlocation)=TRIM(d.idlocation)
+         AND TRIM(a.batch)=TRIM(COALESCE(d.batch,''))
+        WHERE TRIM(d.docno)=TRIM(OLD.docno)
+    LOOP
+        IF v_row.qty > v_row.stock THEN
+            RAISE EXCEPTION 'Stock tidak cukup: %', v_row.idbarang;
         END IF;
+    END LOOP;
 
-            
-        DELETE FROM sc_tmp.pmk_brng_mst WHERE docno = NEW.docno;
-        DELETE FROM sc_tmp.pmk_brng_dtl WHERE docno = NEW.docno;
-    
-    END IF;
+    -- ===============================
+    -- INSERT HEADER
+    -- ===============================
+    INSERT INTO sc_trx.pmk_brng_mst
+    SELECT 
+        v_docno, v_doctype, docdate, docref, cabang, cabang_sent, pemohon, estpakai,
+        idlocation_from, idlocation_to, idlocation_transit, 'F',
+        description, inputby, inputdate, updateby, updatedate, printby, printdate, docnotmp
+    FROM sc_tmp.pmk_brng_mst
+    WHERE TRIM(docno)=TRIM(OLD.docno);
 
-    RETURN NEW;
+    -- ===============================
+    -- INSERT DETAIL
+    -- ===============================
+    INSERT INTO sc_trx.pmk_brng_dtl
+    SELECT 
+        v_docno, docref, v_doctype, idbarang, nmbarang, unit, qtystock, qty,
+        description, 'F', val, valsum, inputby, inputdate, updateby, updatedate,
+        iduniq, docnotmp, idurut, idcostcenter, batch, idlocation, idcoa
+    FROM sc_tmp.pmk_brng_dtl
+    WHERE TRIM(docno)=TRIM(OLD.docno);
+
+    -- ===============================
+    -- 🔥 REPOST UNIVERSAL
+    -- ===============================
+    PERFORM sc_trx.sp_repost_universal(
+        v_docno,
+        v_doctype,
+        v_inputby
+    );
+
+    -- ===============================
+    -- CLEANUP TMP
+    -- ===============================
+    DELETE FROM sc_tmp.pmk_brng_mst WHERE TRIM(docno)=TRIM(OLD.docno);
+    DELETE FROM sc_tmp.pmk_brng_dtl WHERE TRIM(docno)=TRIM(OLD.docno);
+
+-- =====================================================
+-- 🔥 REVISI FLOW
+-- =====================================================
+ELSIF OLD.status='E' AND NEW.status='F' AND COALESCE(NEW.docnotmp,'')<>'' THEN
+
+    v_inputby := NEW.inputby;
+
+    -- ===============================
+    -- VALIDASI STOCK (REVISI)
+    -- ===============================
+    FOR v_row IN
+        SELECT d.idbarang, d.idlocation, COALESCE(d.batch,'') batch,
+               d.qty,
+               COALESCE(a.qty,0) + COALESCE(old.qty,0) stock
+        FROM sc_tmp.pmk_brng_dtl d
+        LEFT JOIN sc_trx.stkblc_avgcost a
+          ON TRIM(a.idbarang)=TRIM(d.idbarang)
+         AND TRIM(a.idlocation)=TRIM(d.idlocation)
+         AND TRIM(a.batch)=TRIM(COALESCE(d.batch,''))
+
+        LEFT JOIN sc_trx.pmk_brng_dtl old
+          ON TRIM(old.docno)=TRIM(NEW.docnotmp)
+         AND TRIM(old.idbarang)=TRIM(d.idbarang)
+
+        WHERE TRIM(d.docno)=TRIM(NEW.docno)
+    LOOP
+        IF v_row.qty > v_row.stock THEN
+            RAISE EXCEPTION 'Stock tidak cukup (revisi): %', v_row.idbarang;
+        END IF;
+    END LOOP;
+
+    -- ===============================
+    -- INSERT DETAIL
+    -- ===============================
+    INSERT INTO sc_trx.pmk_brng_dtl
+    SELECT 
+        NEW.docnotmp, docref, v_doctype, idbarang, nmbarang, unit, qtystock, qty,
+        description, 'F', val, valsum, inputby, inputdate, updateby, updatedate,
+        iduniq, docnotmp, idurut, idcostcenter, batch, idlocation, idcoa
+    FROM sc_tmp.pmk_brng_dtl
+    WHERE TRIM(docno)=TRIM(NEW.docno);
+
+    -- ===============================
+    -- INSERT HEADER
+    -- ===============================
+    INSERT INTO sc_trx.pmk_brng_mst
+    SELECT 
+        NEW.docnotmp, v_doctype, docdate, docref, cabang, cabang_sent, pemohon,
+        estpakai, idlocation_from, idlocation_to, idlocation_transit, 'F',
+        description, inputby, inputdate, updateby, updatedate, printby,
+        printdate, docnotmp
+    FROM sc_tmp.pmk_brng_mst
+    WHERE TRIM(docno)=TRIM(NEW.docno);
+
+    -- ===============================
+    -- 🔥 REPOST UNIVERSAL
+    -- ===============================
+    PERFORM sc_trx.sp_repost_universal(
+        NEW.docnotmp,
+        v_doctype,
+        v_inputby
+    );
+
+    -- ===============================
+    -- CLEANUP TMP
+    -- ===============================
+    DELETE FROM sc_tmp.pmk_brng_mst WHERE TRIM(docno)=TRIM(NEW.docno);
+    DELETE FROM sc_tmp.pmk_brng_dtl WHERE TRIM(docno)=TRIM(NEW.docno);
+
+END IF;
+
+RETURN NEW;
 END;
-$BODY$;
+$$;
 
 -- FUNCTION: sc_tmp.tr_tmp_pmk_brng_mst()
 -- Trigger: tr_tmp_pmk_brng_mst
@@ -350,3 +386,153 @@ CREATE OR REPLACE TRIGGER tr_trx_pmk_brng_mst
 
 
     
+CREATE OR REPLACE FUNCTION sc_trx.sp_rebuild_pmk(
+    p_docno VARCHAR
+)
+RETURNS VOID
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    -- ===============================
+    -- 🔥 UNPOST DULU
+    -- ===============================
+    PERFORM sc_trx.sp_unpost_stk_pmk(p_docno);
+
+    -- ===============================
+    -- 🔥 INSERT KE STKBLC (OUT)
+    -- ===============================
+    INSERT INTO sc_trx.stkblc (
+        idlocation,
+        idarea,
+        batch,
+        idbarang,
+        trxdate,
+        doctype,
+        docno,
+        docref,
+
+        qty_in,
+        qty_out,
+
+        hist,
+        ctype,
+
+        pricelst_in,
+        pricelst_out,
+
+        currcode,
+        currvalue,
+
+        tax,
+        disc,
+        biaya,
+
+        created_at,
+        created_by,
+
+        idgroup,
+        grouptype,
+        is_posted
+    )
+    SELECT
+        d.idlocation,
+        h.cabang,
+        COALESCE(d.batch,''),
+        d.idbarang,
+
+        h.docdate::date + CURRENT_TIME,
+
+        'PMKBRG',
+        h.docno,
+        h.docno,
+
+        -- =====================
+        -- QTY
+        -- =====================
+        0 AS qty_in,
+
+        CASE 
+            WHEN COALESCE(TRIM(b.grouptype),'STOCK') = 'NON STOCK' THEN 0
+            ELSE COALESCE(d.qty,0)
+        END AS qty_out,
+
+        -- =====================
+        -- HIST
+        -- =====================
+        'PEMAKAIAN',
+
+        CASE 
+            WHEN COALESCE(TRIM(b.grouptype),'STOCK') = 'NON STOCK' THEN 'NON'
+            ELSE 'OUT'
+        END,
+
+        -- =====================
+        -- PRICE
+        -- =====================
+        0,
+        COALESCE(d.val,0),
+
+        -- =====================
+        -- CURRENCY
+        -- =====================
+        'IDR',
+        1,
+
+        -- =====================
+        -- BIAYA
+        -- =====================
+        0,0,0,
+
+        NOW(),
+        h.inputby,
+
+        b.idgroup,
+        COALESCE(TRIM(b.grouptype),'STOCK'),
+
+        FALSE
+
+    FROM sc_trx.pmk_brng_dtl d
+    JOIN sc_trx.pmk_brng_mst h 
+      ON TRIM(h.docno) = TRIM(d.docno)
+
+    LEFT JOIN sc_mst.mbarang b
+      ON TRIM(b.idbarang) = TRIM(d.idbarang)
+
+    WHERE TRIM(d.docno) = TRIM(p_docno);
+
+    -- ===============================
+    -- 🔥 POST GL
+    -- ===============================
+    PERFORM sc_trx.sp_post_gl('SYSTEM');
+
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION sc_trx.sp_unpost_stk_pmk(
+    p_docno VARCHAR
+)
+RETURNS VOID
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    DELETE FROM sc_trx.jurnal_dt
+    WHERE jurnal_id IN (
+        SELECT id 
+        FROM sc_trx.jurnal_hd
+        WHERE TRIM(docno) = TRIM(p_docno)
+          AND doctype = 'PMKBRG'
+    );
+
+    DELETE FROM sc_trx.jurnal_hd
+    WHERE TRIM(docno) = TRIM(p_docno)
+      AND doctype = 'PMKBRG';
+
+    DELETE FROM sc_trx.stkblc
+    WHERE TRIM(docno) = TRIM(p_docno)
+      AND doctype = 'PMKBRG';
+
+END;
+$$;

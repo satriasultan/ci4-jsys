@@ -15,88 +15,29 @@ status stk jadi posted
 
 
 
+/* MANUAL INSERT */
+
+select * from sc_trx.stkblc;
+select * from sc_trx.stkblc_avgcost; --persedian dan stock
+select * from sc_trx.stkblc_snapshot; --jurnal posting saldo akhir per bulan
+select * from sc_mst.stkgdw; --stock perarea
+
+/*posting perkiraan jurnal */
+select * from sc_trx.jurnal_hd;
+select * from sc_trx.jurnal_dt;
+
+
+--delete from sc_trx.stkblc where docno='LPB/2604/PA0002' and doctype='GR';
+
+INSERT INTO sc_trx.stkblc (idlocation, idarea, batch, idbarang, trxdate, doctype, docno, docref, qty_in, qty_out, qty_sld, hist, ctype, pricelst_in, pricelst_out, pricelst_sld, currcode, currvalue, is_posted, posted_at, picby, unit, subunit, description, idsort, created_at, created_by, idgroup, grouptype, tax, disc, biaya) VALUES ('16401', '16401.0000', '', '010403A0000157', '2026-04-17 12:42:46.232572', 'GR', 'LPB/2604/PA0002', '05M/2604/PA0003', 3.00, 0.00, 0.00, 'LPB', 'IN', 3000000.00, 0.00, 0.00, 'IDR', 1.0000, true, '2026-04-17 12:42:46.232572', null, null, null, null, 44, null, null, 'BRG   ', 'STOCK     ', 0.00, 0.00, 0.00);
+INSERT INTO sc_trx.stkblc (idlocation, idarea, batch, idbarang, trxdate, doctype, docno, docref, qty_in, qty_out, qty_sld, hist, ctype, pricelst_in, pricelst_out, pricelst_sld, currcode, currvalue, is_posted, posted_at, picby, unit, subunit, description, idsort, created_at, created_by, idgroup, grouptype, tax, disc, biaya) VALUES ('16401', '16401.0000', '', '010104A0000027', '2026-04-17 12:42:46.232572', 'GR', 'LPB/2604/PA0002', '05M/2604/PA0003', 5.00, 0.00, 0.00, 'LPB', 'IN', 150000.00, 0.00, 0.00, 'IDR', 1.0000, true, '2026-04-17 12:42:46.232572', null, null, null, null, 45, null, null, 'BRG   ', 'STOCK     ', 0.00, 0.00, 0.00);
+INSERT INTO sc_trx.stkblc (idlocation, idarea, batch, idbarang, trxdate, doctype, docno, docref, qty_in, qty_out, qty_sld, hist, ctype, pricelst_in, pricelst_out, pricelst_sld, currcode, currvalue, is_posted, posted_at, picby, unit, subunit, description, idsort, created_at, created_by, idgroup, grouptype, tax, disc, biaya) VALUES ('16401', '16401.0000', '', '01050A00000104', '2026-04-17 12:42:46.232572', 'GR', 'LPB/2604/PA0002', '05M/2604/PA0003', 5.00, 0.00, 0.00, 'LPB', 'IN', 700000.00, 0.00, 0.00, 'IDR', 1.0000, true, '2026-04-17 12:42:46.232572', null, null, null, null, 46, null, null, 'BRG   ', 'STOCK     ', 0.00, 0.00, 0.00);
+INSERT INTO sc_trx.stkblc (idlocation, idarea, batch, idbarang, trxdate, doctype, docno, docref, qty_in, qty_out, qty_sld, hist, ctype, pricelst_in, pricelst_out, pricelst_sld, currcode, currvalue, is_posted, posted_at, picby, unit, subunit, description, idsort, created_at, created_by, idgroup, grouptype, tax, disc, biaya) VALUES ('16401', '16401.0000', '', '01050A00000155', '2026-04-17 12:42:46.232572', 'GR', 'LPB/2604/PA0002', '05M/2604/PA0003', 5.00, 0.00, 0.00, 'LPB', 'IN', 1500000.00, 0.00, 0.00, 'IDR', 1.0000, true, '2026-04-17 12:42:46.232572', null, null, null, null, 47, null, null, 'BRG   ', 'STOCK     ', 0.00, 0.00, 0.00);
 
 
 
-INSERT INTO sc_trx.stkblc (
-    idlocation, idarea, batch, idbarang,
-    trxdate, doctype, docno, docref,
-    qty_in, pricelst_in,
-    hist, ctype,
-    currcode, currvalue
-)
-VALUES
-
--- =====================================
--- GR001 (IDR)
--- =====================================
-('GDG01','AREA01','BATCH01','BRG001',NOW(),'GR','GR001','PO001',10,100000,'PEMBELIAN','IN','IDR',1),
-('GDG01','AREA01','BATCH01','BRG002',NOW(),'GR','GR001','PO001',5,200000,'PEMBELIAN','IN','IDR',1),
-
--- =====================================
--- GR002 (USD)
--- =====================================
-('GDG01','AREA01','BATCH02','BRG003',NOW(),'GR','GR002','PO002',10,10,'PEMBELIAN','IN','USD',15000),
-
--- =====================================
--- GR003 (IDR)
--- =====================================
-('GDG01','AREA01','BATCH03','BRG004',NOW(),'GR','GR003','PO003',8,150000,'PEMBELIAN','IN','IDR',1),
-
--- =====================================
--- GR004 (USD)
--- =====================================
-('GDG01','AREA01','BATCH04','BRG005',NOW(),'GR','GR004','PO004',20,5,'PEMBELIAN','IN','USD',15500);
 
 
-SELECT 
-    idbarang,
-    SUM(qty_in - qty_out) AS qty,
-    SUM(
-        CASE 
-            WHEN qty_in > 0 THEN qty_in * pricelst_in
-            ELSE 0
-        END
-    ) AS total_in
-FROM sc_trx.stkblc
-GROUP BY idbarang;
-
-SELECT 
-    idbarang,
-    idlocation,
-    batch,
-    qty,
-    total_value,
-    avg_cost
-FROM sc_trx.stkblc_avgcost
-ORDER BY idbarang;
-
-SELECT 
-    idcoa,
-    SUM(debet - kredit) AS saldo
-FROM sc_trx.jurnal_dt
-WHERE idcoa = '1.2.1' -- Persediaan
-GROUP BY idcoa;
-
-SELECT 
-    a.idbarang,
-    a.qty,
-    a.avg_cost,
-    (a.qty * a.avg_cost) AS nilai_avg,
-
-    b.nilai_jurnal,
-
-    (a.qty * a.avg_cost) - b.nilai_jurnal AS selisih
-
-FROM sc_trx.stkblc_avgcost a
-LEFT JOIN (
-    SELECT SUM(debet - kredit) AS nilai_jurnal
-    FROM sc_trx.jurnal_dt
-    WHERE idcoa = '1.2.1'
-) b ON TRUE;
-
-
--- =========================================
 -- 7. TEST RUN
 -- =========================================
 -- SELECT sc_trx.sp_post_gl('SYSTEM');
@@ -106,47 +47,217 @@ LEFT JOIN (
 
 
 
-
-/*
-REPOST REVISI
-
-DELETE stkblc lama
-↓
-UNPOST jurnal lama 🔥
-↓
-INSERT stkblc baru
-↓
-POST ulang GL 🔥
-*/
-
-CREATE OR REPLACE FUNCTION sc_trx.sp_unpost_by_doc(
-    p_docno VARCHAR,
-    p_doctype VARCHAR
+CREATE OR REPLACE FUNCTION sc_trx.sp_repost_universal(
+    p_docno   VARCHAR,
+    p_doctype VARCHAR,
+    p_user    VARCHAR
 )
 RETURNS VOID
 LANGUAGE plpgsql
 AS $$
+DECLARE
+    v_doctype VARCHAR;
 BEGIN
 
-    -- DELETE DETAIL
+    -- =========================================
+    -- NORMALISASI
+    -- =========================================
+    v_doctype := TRIM(COALESCE(p_doctype,'GR'));
+    p_docno   := TRIM(p_docno);
+
+    RAISE NOTICE 'REPOST START: % - %', p_docno, v_doctype;
+
+    -- =========================================
+    -- 🔥 1. HARD DELETE (ANTI DUPLICATE)
+    -- =========================================
+    DELETE FROM sc_trx.stkblc
+    WHERE docno = p_docno
+      AND doctype = v_doctype;
+
+    -- =========================================
+    -- 🔥 2. INSERT ULANG PER DOCTYPE
+    -- =========================================
+
+    ----------------------------------------------------------------
+    -- 🟢 GR (LPB)
+    ----------------------------------------------------------------
+    IF v_doctype = 'GR' THEN
+
+        INSERT INTO sc_trx.stkblc (
+            idlocation,idarea,batch,idbarang,
+            trxdate,doctype,docno,docref,
+            qty_in,pricelst_in,
+            currcode,currvalue,
+            hist,ctype,
+            idgroup,grouptype,
+            uniqueid,status,is_posted,
+            created_at,created_by
+        )
+        SELECT DISTINCT
+            d.idgudang,
+            d.idgudang||'.0000',
+            COALESCE(d.idspec,''),
+            d.idbarang,
+
+            h.docdate::date + CURRENT_TIME,
+            v_doctype,
+            p_docno,
+            d.docnopo,
+
+            CASE 
+                WHEN COALESCE(mb.grouptype,'STOCK')='NON STOCK' THEN 0
+                ELSE COALESCE(d.qty,0)+COALESCE(d.qtybonus,0)
+            END,
+
+            COALESCE(d.harga,0),
+
+            h.currcode,
+            COALESCE(h.kurs,1),
+
+            'LPB',
+            CASE 
+                WHEN COALESCE(mb.grouptype,'STOCK')='NON STOCK' THEN 'NON'
+                ELSE 'IN'
+            END,
+
+            mb.idgroup,
+            COALESCE(mb.grouptype,'STOCK'),
+
+            d.uniqueid,
+            'A', FALSE,
+            NOW(), p_user
+
+        FROM sc_tmp.lpb h
+        JOIN sc_tmp.lpb_dtl d ON TRIM(d.docno) = TRIM(h.docno)
+        LEFT JOIN sc_mst.mbarang mb ON mb.idbarang = d.idbarang
+        WHERE TRIM(h.docno) = p_docno;
+
+    ----------------------------------------------------------------
+    -- 🔵 PEMAKAIAN BARANG
+    ----------------------------------------------------------------
+    ELSIF v_doctype = 'PMKBRG' THEN
+
+        INSERT INTO sc_trx.stkblc (
+            idlocation,idarea,batch,idbarang,
+            trxdate,doctype,docno,docref,
+            qty_out,pricelst_out,
+            hist,ctype,
+            currcode,currvalue,
+            idgroup,grouptype,
+            uniqueid,status,is_posted,
+            created_at,created_by
+        )
+        SELECT DISTINCT
+            d.idlocation,
+            h.cabang,
+            COALESCE(d.batch,''),
+            d.idbarang,
+
+            h.docdate::date + CURRENT_TIME,
+            v_doctype,
+            p_docno,
+            p_docno,
+
+            CASE 
+                WHEN COALESCE(mb.grouptype,'STOCK')='NON STOCK' THEN 0
+                ELSE COALESCE(d.qty,0)
+            END,
+
+            COALESCE(d.val,0),
+
+            'PEMAKAIAN',
+            CASE 
+                WHEN COALESCE(mb.grouptype,'STOCK')='NON STOCK' THEN 'NON'
+                ELSE 'OUT'
+            END,
+
+            'IDR',1,
+
+            mb.idgroup,
+            COALESCE(mb.grouptype,'STOCK'),
+
+            d.uniqueid,
+            'A', FALSE,
+            NOW(), p_user
+
+        FROM sc_tmp.pmk_brng_mst h
+        JOIN sc_tmp.pmk_brng_dtl d ON TRIM(d.docno) = TRIM(h.docno)
+        LEFT JOIN sc_mst.mbarang mb ON mb.idbarang = d.idbarang
+        WHERE TRIM(h.docno) = p_docno;
+
+    ----------------------------------------------------------------
+    -- 🔴 SALES
+    ----------------------------------------------------------------
+    ELSIF v_doctype = 'SALES' THEN
+
+        INSERT INTO sc_trx.stkblc (
+            idlocation,idarea,batch,idbarang,
+            trxdate,doctype,docno,docref,
+            qty_out,pricelst_out,
+            hist,ctype,
+            currcode,currvalue,
+            idgroup,grouptype,
+            uniqueid,status,is_posted,
+            created_at,created_by
+        )
+        SELECT DISTINCT
+            d.idlocation,
+            h.cabang,
+            COALESCE(d.batch,''),
+            d.idbarang,
+
+            h.docdate::date + CURRENT_TIME,
+            v_doctype,
+            p_docno,
+            p_docno,
+
+            COALESCE(d.qty,0),
+            COALESCE(d.harga,0),
+
+            'PENJUALAN','OUT',
+
+            h.currcode,
+            COALESCE(h.kurs,1),
+
+            mb.idgroup,
+            COALESCE(mb.grouptype,'STOCK'),
+
+            d.uniqueid,
+            'A', FALSE,
+            NOW(), p_user
+
+        FROM sc_tmp.sales_mst h
+        JOIN sc_tmp.sales_dtl d ON TRIM(d.docno) = TRIM(h.docno)
+        LEFT JOIN sc_mst.mbarang mb ON mb.idbarang = d.idbarang
+        WHERE TRIM(h.docno) = p_docno;
+
+    END IF;
+
+    -- =========================================
+    -- 🔥 3. REBUILD AVG COST
+    -- =========================================
+    PERFORM sc_trx.sp_rebuild_avgcost_item_all(p_docno);
+
+    -- =========================================
+    -- 🔥 4. DELETE GL (BY DOCTYPE)
+    -- =========================================
     DELETE FROM sc_trx.jurnal_dt
     WHERE jurnal_id IN (
         SELECT id FROM sc_trx.jurnal_hd
-        WHERE TRIM(docno)=TRIM(p_docno)
-          AND TRIM(doctype)=TRIM(p_doctype)
+        WHERE docno = p_docno
+          AND doctype = v_doctype
     );
 
-    -- DELETE HEADER
     DELETE FROM sc_trx.jurnal_hd
-    WHERE TRIM(docno)=TRIM(p_docno)
-      AND TRIM(doctype)=TRIM(p_doctype);
+    WHERE docno = p_docno
+      AND doctype = v_doctype;
 
-    -- RESET STKBLC
-    UPDATE sc_trx.stkblc
-    SET is_posted = FALSE,
-        posted_at = NULL
-    WHERE TRIM(docno)=TRIM(p_docno)
-      AND TRIM(doctype)=TRIM(p_doctype);
+    -- =========================================
+    -- 🔥 5. POST ULANG GL
+    -- =========================================
+    PERFORM sc_trx.sp_post_gl(p_user);
+
+    RAISE NOTICE 'REPOST DONE: % - %', p_docno, v_doctype;
 
 END;
 $$;

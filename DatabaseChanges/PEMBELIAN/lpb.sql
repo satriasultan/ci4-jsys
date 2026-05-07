@@ -176,6 +176,10 @@ ALTER TABLE IF EXISTS sc_trx.lpb_dtl
     OWNER TO postgres;
 
 
+alter table sc_trx.lpb add column doctype character(10) default 'GR';
+alter table sc_tmp.lpb add column doctype character(10) default 'GR';
+alter table sc_tmp.lpb_dtl add column doctype character(10) default 'GR';
+alter table sc_trx.lpb_dtl add column doctype character(10) default 'GR';
 
 
 
@@ -316,36 +320,30 @@ BEGIN
 -- UPSERT STKBLC (SOURCE: sc_tmp)
 -- =========================================
 PERFORM sc_trx.sp_unpost_by_doc(v_docno,'GR');
-DELETE FROM sc_trx.stkblc WHERE docno = v_docno;
+DELETE FROM sc_trx.stkblc WHERE docno = v_docno and doctype='GR';
 INSERT INTO sc_trx.stkblc (
     idlocation,
     idarea,
     batch,
     idbarang,
-
     trxdate,
     doctype,
     docno,
     docref,
-
     qty_in,
     pricelst_in,
-
     currcode,
     currvalue,
-
     hist,
     ctype,
-
     idgroup,
     grouptype,
-
     is_posted,
     posted_at
 )
 SELECT
     d.idgudang,
-    trim(d.idgudang)||'00',
+    trim(d.idgudang)||'.0000',
     COALESCE(d.idspec,''),
     d.idbarang,
 
@@ -354,11 +352,11 @@ SELECT
     v_docno,
     d.docnopo,
 
-    -- 🔥 KEY LOGIC DI SINI
+    -- 🔥 FIX NON STOCK
     CASE 
-        WHEN d.grouptype = 'NON STOCK' THEN 0
+        WHEN COALESCE(mb.grouptype,'STOCK') = 'NON STOCK' THEN 0
         ELSE (COALESCE(d.qty,0) + COALESCE(d.qtybonus,0))
-    END AS qty_in,
+    END,
 
     COALESCE(d.harga,0),
 
@@ -367,14 +365,15 @@ SELECT
 
     'LPB',
 
-    -- 🔥 CTYPE
+    -- 🔥 FIX CTYPE
     CASE 
-        WHEN d.grouptype = 'NON STOCK' THEN 'NON'
+        WHEN COALESCE(mb.grouptype,'STOCK') = 'NON STOCK' THEN 'NON'
         ELSE 'IN'
-    END AS ctype,
+    END,
 
-    d.idgroup,
-    d.grouptype,
+    -- 🔥 FIX SOURCE MASTER
+    mb.idgroup,
+    COALESCE(mb.grouptype,'STOCK'),
 
     FALSE,
     NULL
@@ -383,8 +382,11 @@ FROM sc_tmp.lpb h
 JOIN sc_tmp.lpb_dtl d
     ON rtrim(d.docno) = rtrim(h.docno)
 
-WHERE rtrim(h.docno) = rtrim(OLD.docno)
-  AND h.inputby = v_inputby
+LEFT JOIN sc_mst.mbarang mb
+    ON mb.idbarang = d.idbarang
+
+--WHERE rtrim(h.docno) = rtrim(OLD.docno)
+  --AND h.inputby = v_inputby
 
 ON CONFLICT (docno, idbarang, idlocation, batch)
 DO UPDATE SET
@@ -498,49 +500,42 @@ PERFORM sc_trx.sp_post_gl(v_inputby);
 -- UPSERT STKBLC (DOCNOTMP - sc_tmp)
 -- =========================================
 PERFORM sc_trx.sp_unpost_by_doc(NEW.docnotmp,'GR');
-DELETE FROM sc_trx.stkblc WHERE docno = NEW.docnotmp;
+DELETE FROM sc_trx.stkblc WHERE docno = trim(NEW.docnotmp) and doctype='GR' ;
 INSERT INTO sc_trx.stkblc (
     idlocation,
     idarea,
     batch,
     idbarang,
-
     trxdate,
     doctype,
     docno,
     docref,
-
     qty_in,
     pricelst_in,
-
     currcode,
     currvalue,
-
     hist,
     ctype,
-
     idgroup,
     grouptype,
-
     is_posted,
     posted_at
 )
 SELECT
     d.idgudang,
-    trim(d.idgudang)||'00',
+    trim(d.idgudang)||'.0000',
     COALESCE(d.idspec,''),
     d.idbarang,
 
     CAST(h.docdate AS DATE) + (NOW()::time),
     'GR',
-    new.docnotmp,
+    d.docnotmp,
     d.docnopo,
 
-    -- 🔥 KEY LOGIC DI SINI
     CASE 
-        WHEN d.grouptype = 'NON STOCK' THEN 0
+        WHEN COALESCE(mb.grouptype,'STOCK') = 'NON STOCK' THEN 0
         ELSE (COALESCE(d.qty,0) + COALESCE(d.qtybonus,0))
-    END AS qty_in,
+    END,
 
     COALESCE(d.harga,0),
 
@@ -549,14 +544,13 @@ SELECT
 
     'LPB',
 
-    -- 🔥 CTYPE
     CASE 
-        WHEN d.grouptype = 'NON STOCK' THEN 'NON'
+        WHEN COALESCE(mb.grouptype,'STOCK') = 'NON STOCK' THEN 'NON'
         ELSE 'IN'
-    END AS ctype,
+    END,
 
-    d.idgroup,
-    d.grouptype,
+    mb.idgroup,
+    COALESCE(mb.grouptype,'STOCK'),
 
     FALSE,
     NULL
@@ -565,8 +559,11 @@ FROM sc_tmp.lpb h
 JOIN sc_tmp.lpb_dtl d
     ON rtrim(d.docno) = rtrim(h.docno)
 
-WHERE rtrim(h.docno) = rtrim(OLD.docno)
-  AND h.inputby = v_inputby
+LEFT JOIN sc_mst.mbarang mb
+    ON mb.idbarang = d.idbarang
+
+WHERE trim(h.docno) = trim(new.docno)
+  AND trim(h.inputby) = trim(v_inputby)
 
 ON CONFLICT (docno, idbarang, idlocation, batch)
 DO UPDATE SET

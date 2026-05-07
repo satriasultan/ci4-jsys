@@ -110,3 +110,53 @@ INSERT INTO sc_mst.menuprg (
 -- ('JTS', 5, 'I.S.B.5', 'DELIVERY SPEC', 'I.S', 'I.S.B', 'P', 'false', 'fa-list', 'sales/postsales/deliveryspec', 'LEFT', 'NO'),
 -- ('JTS', 6, 'I.S.B.6', 'DELIVERY ORDER', 'I.S', 'I.S.B', 'P', 'false', 'fa-truck', 'sales/postsales/deliveryorder', 'LEFT', 'NO')
 ;
+
+
+
+
+--PRODUKSI I.R
+
+
+
+--PRODUKSI I.R
+DELETE FROM sc_mst.menuprg
+WHERE kodemenu IN (
+    'I.R',
+    'I.R.A',
+    'I.R.A.1',
+    'I.R.A.2',
+    'I.R.A.3',
+    'I.R.A.4',
+    'I.R.A.5',
+    'I.R.A.6',
+    'I.R.A.7',
+    'I.R.A.8',
+    'I.R.A.9',
+    'I.R.A.10'
+);
+INSERT INTO sc_mst.menuprg (
+    branch, 
+    urut, 
+    kodemenu, 
+    namamenu, 
+    parentmenu, 
+    parentsub, 
+    child, 
+    holdmenu, 
+    iconmenu, 
+    linkmenu, 
+    menuposition, 
+    chold
+) VALUES 
+('JTS', 7, 'I.R', 'PRODUCTION', '0', '0', 'U', false, 'fa-cart-plus', '', 'LEFT', 'NO'),
+('JTS', 1, 'I.R.A', 'TRANSAKSI', 'I.R', '0', 'S', false, 'fa-right-left', '', 'LEFT', 'NO'),
+('JTS', 1, 'I.R.A.1', 'STANDART COST', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/standart_cost', 'LEFT', 'NO'),
+('JTS', 2, 'I.R.A.2', 'BIAYA STANDART COST', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/biaya_standart', 'LEFT', 'NO'),
+('JTS', 3, 'I.R.A.3', 'BILL OF MATERIAL (BOM)', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/bom', 'LEFT', 'NO'),
+('JTS', 4, 'I.R.A.4', 'WORK ORDER', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/wo', 'LEFT', 'NO'),
+('JTS', 5, 'I.R.A.5', 'WORK ORDER EXECUTION', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/woe', 'LEFT', 'NO'),
+('JTS', 6, 'I.R.A.6', 'SETOR ANTAR BAGIAN', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/setorbagian', 'LEFT', 'NO'),
+('JTS', 7, 'I.R.A.7', 'TERIMA ANTAR BAGIAN', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/terimabagian', 'LEFT', 'NO'),
+('JTS', 8, 'I.R.A.8', 'MATERIAL RELEASE', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/mr', 'LEFT', 'NO'),
+('JTS', 9, 'I.R.A.9', 'PENERIMAAN BRG PRODUKSI', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/pnm_produksi', 'LEFT', 'NO'),
+('JTS', 10, 'I.R.A.10', 'BIAYA PROD NON MATERIAL', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/biaya_produksi_non_material', 'LEFT', 'NO');

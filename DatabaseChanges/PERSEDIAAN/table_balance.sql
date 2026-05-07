@@ -66,15 +66,27 @@ ADD COLUMN created_at timestamp without time ZONE,
 ADD COLUMN created_by character(20);
 
 ALTER TABLE sc_trx.stkblc
-ADD COLUMN idgroup character(6);
+ADD COLUMN idgroup VARCHAR(6);
+
 ALTER TABLE sc_trx.stkblc
-ADD COLUMN grouptype character(10) 'STOCK & NON STOCK';
+ADD COLUMN grouptype VARCHAR(20) DEFAULT 'STOCK';
+
+ALTER TABLE sc_trx.stkblc
+ADD COLUMN tax NUMERIC(18,2) DEFAULT 0,
+ADD COLUMN disc NUMERIC(18,2) DEFAULT 0,
+ADD COLUMN biaya NUMERIC(18,2) DEFAULT 0;
+
+alter table sc_trx.stkblc add column status character(4) default 'F' ;
+alter table sc_trx.stkblc add column uniqueid text default '' ;
+
 
 -- INDEX (PERFORMANCE)
 CREATE INDEX idx_stk_doc ON sc_trx.stkblc(docno, doctype);
 CREATE INDEX idx_stk_posted ON sc_trx.stkblc(is_posted);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_stkblc_unique
 ON sc_trx.stkblc (docno,idbarang,idlocation,batch);
+
+
 -- =========================================
 -- AVG COST TABLE
 -- =========================================
@@ -239,89 +251,6 @@ EXECUTE FUNCTION sc_mst.tr_mst_stkgdw();
 
 
 
-CREATE OR REPLACE FUNCTION sc_trx.sp_repost_lpb_to_stk(
-    p_docno VARCHAR
-)
-RETURNS VOID
-LANGUAGE plpgsql
-AS $$
-BEGIN
-
-    -- =========================
-	--usage SELECT sc_trx.sp_repost_lpb_to_stk('LPB/2604/PA0001');
-    -- 1. DELETE EXISTING STK (REPOST MODE)
-    -- =========================
-    DELETE FROM sc_trx.stkblc
-    WHERE TRIM(docno) = TRIM(p_docno)
-      AND doctype = 'GR';
-
-    -- =========================
-    -- 2. INSERT ULANG DARI LPB
-    -- =========================
-    INSERT INTO sc_trx.stkblc (
-    idlocation,
-    idarea,
-    batch,
-    idbarang,
-    trxdate,
-    doctype,
-    docno,
-    docref,
-    qty_in,
-    pricelst_in,
-    hist,
-    ctype,
-    currcode,
-    currvalue,
-    created_at,
-    created_by,
-    idgroup,
-    grouptype
-)
-SELECT
-    d.idgudang,
-    h.cabang,
-    COALESCE(NULLIF(TRIM(d.idspec),''),''),
-    d.idbarang,
-
-    trim(h.docdate)::date + CURRENT_TIME,
-
-    'GR',
-    h.docno,
-    h.docno,
-
-    -- 🔥 CORE FIX
-    CASE 
-        WHEN d.grouptype = 'NON STOCK' THEN 0
-        ELSE d.qty
-    END,
-
-    d.harga,
-
-    'PEMBELIAN',
-
-    CASE 
-        WHEN d.grouptype = 'NON STOCK' THEN 'NON'
-        ELSE 'IN'
-    END,
-
-    h.currcode,
-    h.kurs,
-
-    NOW(),
-    'SYSTEM',
-
-    d.idgroup,
-    d.grouptype
-
-FROM sc_trx.lpb_dtl d
-JOIN sc_trx.lpb h ON h.docno = d.docno
-WHERE TRIM(d.docno) = TRIM(p_docno);
-
-END;
-$$;
-
-
 /* KARTU STOCK 
 SELECT * FROM sc_trx.v_kartu_stock
 WHERE idbarang = 'BRG001'; USAGE
@@ -378,3 +307,62 @@ LEFT JOIN sc_trx.stkblc_avgcost ac
    AND ac.idlocation = s.idlocation
    AND ac.batch = s.batch
    WHERE s.grouptype = 'STOCK';
+   
+   
+   
+   CREATE OR REPLACE FUNCTION sc_trx.sp_rebuild_avgcost(
+    p_idbarang VARCHAR,
+    p_idlocation VARCHAR,
+    p_batch VARCHAR
+)
+RETURNS VOID
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_qty NUMERIC := 0;
+    v_total NUMERIC := 0;
+    v_avg NUMERIC := 0;
+BEGIN
+
+    -- RESET
+    DELETE FROM sc_trx.stkblc_avgcost
+    WHERE idbarang = p_idbarang
+      AND idlocation = p_idlocation
+      AND batch = p_batch;
+
+    -- HITUNG ULANG DARI STKBLC
+    SELECT
+        SUM(qty_in - qty_out),
+        SUM(qty_in * pricelst_in)
+    INTO v_qty, v_total
+    FROM sc_trx.stkblc
+    WHERE idbarang = p_idbarang
+      AND idlocation = p_idlocation
+      AND batch = p_batch;
+
+    IF v_qty <> 0 THEN
+        v_avg := v_total / v_qty;
+    END IF;
+
+    -- INSERT ULANG
+    INSERT INTO sc_trx.stkblc_avgcost (
+        idbarang,
+        idlocation,
+        batch,
+        qty,
+        total_value,
+        avg_cost,
+        updated_at
+    )
+    VALUES (
+        p_idbarang,
+        p_idlocation,
+        p_batch,
+        COALESCE(v_qty,0),
+        COALESCE(v_total,0),
+        COALESCE(v_avg,0),
+        NOW()
+    );
+
+END;
+$$;
