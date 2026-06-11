@@ -179,7 +179,7 @@
 
             <!-- LEFT -->
             <div class="col-sm-6">
-                <h1 class="m-0">Standart Cost Produksi</h1>
+                <h1 class="m-0">Biaya Standart Produksi</h1>
             </div>
 
             <!-- RIGHT -->
@@ -225,12 +225,12 @@
 ?>
 <div class="row">
     <!-- left column -->
-    <form action="<?= base_url('production/trans/final_input_standart_cost') ?>" method="post" id="formStandarCostMst">
+    <form action="<?= base_url('production/trans/final_input_biaya_standart') ?>" method="post" id="formStandarCostMst">
         <div class="col-md-12">
             <!-- jquery validation -->
             <div class="card card-primary">
                 <div class="card-header">
-                    <h3 class="card-title"><?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> Standart Cost</h3>
+                    <h3 class="card-title"><?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> Biaya Standart</h3>
                 </div>
                 <!-- /.card-header -->
                 <!-- form start -->
@@ -369,8 +369,8 @@
                         <button type="button"
                                 class="btn btn-success btn-lg action-btn"
                                 data-toggle="tooltip"
-                                title="Input Data"
-                                id = "btnAddDetail">
+                                title="Input Data (Ctrl + Q)"
+                                id="btnAddDetail">
                             <i class="fa fa-plus"></i>
                         </button>
 
@@ -417,7 +417,7 @@
                 </div>
 
                 <div class="card-footer bg-light">
-                    <a href="<?= base_url('production/trans/clearStandartCostTmp') ?>"
+                    <a href="<?= base_url('production/trans/clearBiayaStandartTmp') ?>"
                         class="btn btn-default btn-lg">
                         <i class="fa fa-arrow-left mr-2"></i>
                         Kembali
@@ -570,8 +570,8 @@
                 <div class="modal-footer">
 
                     <button type="button"
-                            class="btn btn-primary save_standart_cost"
-                            onclick="save_standart_cost()">
+                            class="btn btn-primary save_biaya_standart"
+                            onclick="save_biaya_standart()">
                         <i class="fa fa-save"></i> Simpan
                     </button>
 
@@ -590,7 +590,7 @@
 
 
 
-<script type="application/javascript" src="<?= base_url('assets/pagejs/production/standart_cost/standart_cost.js') ?>"></script>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/production/biaya_standart/biaya_standart.js') ?>"></script>
 <script type="text/javascript">
     $(function() {
         $("#example1").dataTable();

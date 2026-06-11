@@ -365,33 +365,6 @@
                         Detail Barang
                     </h3>
 
-                    <div class="float-right d-flex align-items-center gap-2">
-                        <button type="button"
-                                class="btn btn-success btn-lg action-btn"
-                                data-toggle="tooltip"
-                                title="Input Data"
-                                id = "btnAddDetail">
-                            <i class="fa fa-plus"></i>
-                        </button>
-
-                        <button type="button"
-                                id="btnUpdateDetail"
-                                class="btn btn-warning btn-lg action-btn"
-                                title="Update Data"
-                                onclick="updateStandartCost()">
-                            <i class="fa fa-edit"></i>
-                        </button>
-
-                        <button type="button"
-                                class="btn btn-danger btn-lg action-btn"
-                                data-toggle="tooltip"
-                                title="Hapus Data"
-                                onclick="btnDeleteDetail()">
-                            <i class="fa fa-trash"></i>
-                        </button>
-
-
-                    </div>
                 </div>
                 <div class="card-body p-3">
                     <div class="table-responsive">
@@ -417,18 +390,11 @@
                 </div>
 
                 <div class="card-footer bg-light">
-                    <a href="<?= base_url('production/trans/clearStandartCostTmp') ?>"
+                    <a href="<?= base_url('production/trans/standart_cost') ?>"
                         class="btn btn-default btn-lg">
                         <i class="fa fa-arrow-left mr-2"></i>
                         Kembali
                     </a>
-                    <?php if ($typeform != 'DETAIL' && $dtldata != null): ?>
-                        <button type="submit"
-                                onclick="return confirm('Simpan Data?')"
-                                class="btn btn-success btn-lg float-right">
-                            <i class="fa fa-save"></i> Simpan Final Data
-                        </button>
-                    <?php endif; ?>
                 </div>
                 
             </div>
@@ -590,7 +556,7 @@
 
 
 
-<script type="application/javascript" src="<?= base_url('assets/pagejs/production/standart_cost/standart_cost.js') ?>"></script>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/production/standart_cost/standart_cost_master.js') ?>"></script>
 <script type="text/javascript">
     $(function() {
         $("#example1").dataTable();

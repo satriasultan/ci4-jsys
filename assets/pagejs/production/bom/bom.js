@@ -16,10 +16,10 @@ let skipRoleChange = false;
 //"use strict";
 
 /* VIUW UTAMA*/
-function table_mst_standart_cost() {
+function table_bom() {
     // var lg = languageDatatable;
     var initTable = function () {
-        var table = $('#tstandart_cost');
+        var table = $('#tbom');
         table.DataTable({
             "processing": true, //Feature control the processing indicator.
             "serverSide": true, //Feature control DataTables' server-side processing mode.
@@ -42,7 +42,7 @@ function table_mst_standart_cost() {
                 'pageLength', 'excel'
             ],
             "ajax": {
-                "url": HOST_URL + 'production/trans/list_standart_cost_mst',
+                "url": HOST_URL + 'production/trans/list_bom_mst',
                 "type": "POST",
                 "data": function (data) {
                     data.tglrange = $('#tglrange').val();
@@ -76,20 +76,20 @@ function table_mst_standart_cost() {
     return initTable();
 }
 
-function reload_standart_cost() {
-    var table = $('#tstandart_cost');
+function reload_bom() {
+    var table = $('#tbom');
     table.DataTable().ajax.reload(); //reload datatable ajax
     //console.log('HALO HALO BANDUNG');
 }
 
 $('#btn-filter-tx').click(function () { //button filter event click
-    var table = $('#tstandart_cost');
+    var table = $('#tbom');
     table.DataTable().ajax.reload(); //reload datatable ajax
     $('#filter').modal('hide');
 });
 $('#btn-reset-tx').click(function () { //button reset event click
     $('#form-filter')[0].reset();
-    var table = $('#tstandart_cost');
+    var table = $('#tbom');
     table.DataTable().ajax.reload(); //reload datatable ajax
     $('#filter').modal('hide');
 });
@@ -129,7 +129,7 @@ $('#cabang').on('change', function () {
             $('#infix').val(res.infix);
 
             // SET PREFIX + TRIGGER CHANGE
-            $('#prefix').val('HSC').trigger('change');
+            $('#prefix').val('BOM').trigger('change');
 
             $('#sufix').val(currentKodeSuffix + '0001');
 
@@ -202,7 +202,7 @@ $('#prefix').on('change', function () {
     if (!prefix || !infix || !currentKodeSuffix) return;
 
     $.ajax({
-        url: HOST_URL + '/production/trans/getNextSuffix_standart_cost_mst',
+        url: HOST_URL + '/production/trans/getNextSuffix_bom_mst',
         method: 'GET',
         data: {
             prefix: prefix,
@@ -309,7 +309,7 @@ function documentReadable() {
 
     var docno = $('[name="docno"]').val();
 
-    $.getJSON(HOST_URL + 'production/trans/showing_tmp_standart_cost_mst', {docno: docno})
+    $.getJSON(HOST_URL + 'production/trans/showing_tmp_bom_mst', {docno: docno})
         .done(function (response) {
 
             if (!response.dataTables || !response.dataTables.items.length) {
@@ -393,12 +393,10 @@ function documentReadable() {
 }
 
 
-$('#btnAddDetail').on('click', function (e) {
-    btnInputDetail();
+$('#btnAddDetailMaterial').on('click', function (e) {
+    btnInputDetailMaterial();
 });
-function btnInputDetail() {
-
-    console.log("INI KENAPA DI SISI");
+function btnInputDetailMaterial() {
 
     // reset form
     $('#formStandartCostDtl')[0].reset();
@@ -414,7 +412,7 @@ function btnInputDetail() {
     $('#idurut').val('');
 
     // title modal
-    $('#modalDtlStandartCostTitle').text('Tambah Item Detail');
+    $('#modalDtlBomMaterialTitle').text('Tambah Detail Material');
 
 /*    // destroy jika sudah pernah init
     if ($('#idbarang').hasClass("select2-hidden-accessible")) {
@@ -424,15 +422,15 @@ function btnInputDetail() {
 
 
     // show modal
-    $('#modalDtlStandartCost').modal('show');
+    $('#modalDtlBomMaterial').modal('show');
 }
 
 var defaultInitialGroupBrng = '';
-$("#idbarang").select2({
+$("#idbarangMaterial").select2({
     placeholder: "Choose Your Item List",
     allowClear: true,
     width: '100%',
-    dropdownParent: $('#modalDtlStandartCost'),
+    dropdownParent: $('#modalDtlBomMaterial'),
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_item',
         type: 'POST',
@@ -447,7 +445,8 @@ $("#idbarang").select2({
                 _perpage_: 2,
                 _paramglobal_: defaultInitialGroupBrng,
                 _parameterx_: defaultInitialGroupBrng,
-                loccode: $('[name="idlocation_dtl"]').val(),
+                loccode: '',
+                //loccode: $('[name="idlocation_dtl"]').val(),
                 term: params.term,
             };
         },
@@ -492,6 +491,129 @@ $("#idbarang").select2({
 
 });
 
+
+
+
+var defaultIdbarangJadi = '';
+$("#idbarang_jadi").select2({
+    placeholder: "Choose Your Item List",
+    allowClear: true,
+    width: '100%',
+    ajax: {
+        url: HOST_URL + 'api/globalmodule/list_item',
+        type: 'POST',
+        dataType: 'json',
+        delay: 250,
+        data: function (params) {
+            return {
+                _search_: params.term, // search term
+                _page_: params.page,
+                _draw_: true,
+                _start_: 1,
+                _perpage_: 2,
+                _paramglobal_: defaultIdbarangJadi,
+                _parameterx_: defaultIdbarangJadi,
+                loccode: '',
+                term: params.term,
+            };
+        },
+        processResults: function (data, params) {
+            // var searchTerm = $("#idbarang").data("select2").$dropdown.find("input").val();
+            // if (data.items.length === 1 && data.items[0].text === searchTerm) {
+            //     var option = new Option(data.items[0].nmbarang, data.items[0].idbarang, true, true);
+            //     $('#idbarang').append(option).trigger('change').select2("close");
+            //     // manually trigger the `select2:select` event
+            //     $('#idbarang').trigger({
+            //         type: 'select2:select',
+            //         params: {
+            //             data: data
+            //         }
+            //     });
+            // }
+            params.page = params.page || 1;
+            return {
+                results: data.items,
+                pagination: {
+                    more: (params.page * 30) < data.total_count
+                }
+            };
+        },
+
+        cache: false
+    },
+    escapeMarkup: function (markup) {
+        return markup;
+    }, // let our custom formatter work
+    // minimumInputLength: 1,
+    templateResult: formatItem, // omitted for brevity, see the source of this page
+    templateSelection: formatItemSelection // omitted for brevity, see the source of this page
+}).on("select2:select", function (e) {
+
+});
+
+
+
+
+var defaultInitialUnit = 'UNIT';
+$("#buildunit").select2({
+    placeholder: "Type/Chose Your Unit",
+    allowClear: true,
+    ajax: {
+        url: HOST_URL + 'api/globalmodule/list_unit',
+        type: 'POST',
+        dataType: 'json',
+        delay: 250,
+        data: function(params) {
+            return {
+                _search_: params.term, // search term
+                _page_: params.page,
+                _draw_: true,
+                _start_: 1,
+                _perpage_: 2,
+                _paramglobal_: defaultInitialUnit,
+                _parameterx_: defaultInitialUnit,
+            };
+        },
+        processResults: function(data, params) {
+            // parse the results into the format expected by Select2
+            // since we are using custom formatting functions we do not need to
+            // alter the remote JSON data, except to indicate that infinite
+            // scrolling can be used
+            params.page = params.page || 1;
+
+            return {
+                results: data.items,
+                pagination: {
+                    more: (params.page * 30) < data.total_count
+                }
+            };
+        },
+        cache: false
+    },
+    escapeMarkup: function(markup) {
+        return markup;
+    }, // let our custom formatter work
+    // minimumInputLength: 1,
+    templateResult: formatUnit, // omitted for brevity, see the source of this page
+    templateSelection: formatUnitSelection // omitted for brevity, see the source of this page
+}).on("select2:selecting", function () {
+
+});
+
+
+
+/* Format formatUnit */
+function formatUnit(repo) {
+    if (repo.loading) return repo.text;
+    var markup ="<div class='select2-result-repository__description'>" + repo.idunit +"</div>";
+    return markup;
+}
+
+function formatUnitSelection(repo) {
+    return repo.idunit || repo.text;
+}
+
+
 function setJtsValue(selector, value) {
     $(selector).val(value);
     _jtsseparator($(selector)[0]);
@@ -515,7 +637,7 @@ function formatItemSelection(repo) {
 
 
 
-function save_standart_cost() {
+function save_bom() {
 
 
         // ===============================
@@ -583,7 +705,7 @@ function save_standart_cost() {
         // ===============================
 
         $.ajax({
-            url: HOST_URL + 'production/trans/save_standart_cost_mst',
+            url: HOST_URL + 'production/trans/save_bom_mst',
             type: 'POST',
             data: formData,
             dataType: 'json',
@@ -607,8 +729,8 @@ function save_standart_cost() {
                         return;
                     }
 
-                    $('#modalDtlStandartCost').modal('hide');
-                    reload_standart_cost_dtl();
+                    $('#modalDtlBomMaterial').modal('hide');
+                    reload_bom_dtl();
                     $('#formStandartCostDtl')[0].reset();
 
                 } else {
@@ -657,7 +779,7 @@ function tabletmpStandartCost() {
             "bFilter": true,
             "iDisplayLength": -1,
             "ajax": {
-                "url": HOST_URL + 'production/trans/list_tmp_standart_cost_dtl',
+                "url": HOST_URL + 'production/trans/list_tmp_bom_dtl',
                 "type": "POST",
                 "data": function (data) {
                     //data.searchfilter = $('#searchitem').val()+'';
@@ -703,7 +825,7 @@ function tabletmpStandartCost() {
 }
 
 
-function reload_standart_cost_dtl() {
+function reload_bom_dtl() {
     var table = $('#tmp_stdcost');
     table.DataTable().ajax.reload(); //reload datatable ajax
 }
@@ -754,7 +876,7 @@ function updateStandartCost() {
     }
 
     $.ajax({
-        url: HOST_URL + 'production/trans/get_standart_cost_dtl',
+        url: HOST_URL + 'production/trans/get_bom_dtl',
         type: 'GET',
         data: { id: ids[0] },
         dataType: 'json',
@@ -941,8 +1063,8 @@ function updateStandartCost() {
             =========================
             */
             isLoadingUpdate = false;
-            $('#modalDtlStandartCostTitle').text('Update Detail');
-            $('#modalDtlStandartCost').modal('show');
+            $('#modalDtlBomMaterialTitle').text('Update Detail');
+            $('#modalDtlBomMaterial').modal('show');
 
 
 
@@ -973,9 +1095,21 @@ function getCheckedDetailIds() {
 }
 
 
+document.addEventListener('keydown', function(e) {
+
+// CTRL + Q
+if (e.ctrlKey && e.key.toLowerCase() === 'q') {
+
+e.preventDefault();
+
+document.getElementById('btnAddDetail').click();
+}
+
+});
+
 $(document).ready(function () {
 
-    table_mst_standart_cost();
+    table_bom();
     documentReadable();
     tabletmpStandartCost();
 

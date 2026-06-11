@@ -309,7 +309,7 @@ function documentReadable() {
 
     var docno = $('[name="docno"]').val();
 
-    $.getJSON(HOST_URL + 'production/trans/showing_tmp_standart_cost_mst', {docno: docno})
+    $.getJSON(HOST_URL + 'production/trans/showing_mst_standart_cost_mst', {docno: docno})
         .done(function (response) {
 
             if (!response.dataTables || !response.dataTables.items.length) {
@@ -657,7 +657,7 @@ function tabletmpStandartCost() {
             "bFilter": true,
             "iDisplayLength": -1,
             "ajax": {
-                "url": HOST_URL + 'production/trans/list_tmp_standart_cost_dtl',
+                "url": HOST_URL + 'production/trans/list_mst_standart_cost_dtl',
                 "type": "POST",
                 "data": function (data) {
                     //data.searchfilter = $('#searchitem').val()+'';

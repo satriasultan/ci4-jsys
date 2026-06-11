@@ -4,7 +4,7 @@
 
             <!-- LEFT -->
             <div class="col-sm-6">
-                <h1 class="m-0">Standart Cost Produksi</h1>
+                <h1 class="m-0">Build Of Material</h1>
             </div>
 
             <!-- RIGHT -->
@@ -187,15 +187,15 @@
                     </button>
                     <div class="dropdown-menu">
                         <?php if (isset($dtl_akses['a_input']) && trim($dtl_akses['a_input']) === 't'): ?>
-                            <a class="dropdown-item" href="<?= base_url('production/trans/add_standart_cost') ?>"><i class="fa fa-plus"></i><?php echo '   Input'; ?> </a>
+                            <a class="dropdown-item" href="<?= base_url('production/trans/add_bom') ?>"><i class="fa fa-plus"></i><?php echo '   Input'; ?> </a>
                         <?php endif; ?>
                         <!-- <a class="dropdown-item disabled" data-bs-toggle="modal" data-bs-target="#filter"  href="#"><i class="fa fa-filter"></i><?php echo '   Filter'; ?></a> -->
-                        <a class="dropdown-item" href="#"  onclick="reload_standart_cost()"><i class="fa fa-refresh"></i><?php echo '    Reload'; ?> </a>
+                        <a class="dropdown-item" href="#"  onclick="reload_bom()"><i class="fa fa-refresh"></i><?php echo '    Reload'; ?> </a>
                     </div>
                 </div>
             </div><!-- /.card-header -->
             <div class="card-body table-responsive" style='overflow-x:scroll;'>
-                <table id="tstandart_cost" class="table table-bordered table-striped" >
+                <table id="tbom" class="table table-bordered table-striped" >
                     <thead>
                     <tr>
                         <th width="1%">No.</th>
@@ -286,7 +286,7 @@
 
 
 
-<script type="application/javascript" src="<?= base_url('assets/pagejs/production/standart_cost/standart_cost.js') ?>"></script>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/production/bom/bom.js') ?>"></script>
 <script type="text/javascript">
     $(function() {
         $("#example1").dataTable();

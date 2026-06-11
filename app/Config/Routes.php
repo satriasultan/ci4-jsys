@@ -44,6 +44,7 @@ $routes->post('/profile/saveprofile', 'Web\Profile::saveprofile');
 /* DASHBOARD GROUP ROUTE */
 $routes->group('dashboard',["namespace" => "App\Controllers\Dashboard"], function ($routes) {
     $routes->add('/', 'Dashboard::index');
+    $routes->add('menu', 'Dashboard::menu');
     $routes->add('api_summary_pembelian', 'Dashboard::api_summary_pembelian');
     $routes->add('api_transaction_tahunan', 'Dashboard::api_transaction_tahunan');
 
@@ -626,7 +627,38 @@ $routes->group('/master/data', ["namespace" => "App\Controllers\Master"], functi
     $routes->add('saveCOA', 'Coa::saveCOA');
     $routes->add('delete_coa', 'Coa::delete_coa');
 
+    $routes->add('job', 'Job::job');
+    $routes->add('js_vtree_job_query', 'Job::js_vtree_job_query');
+    $routes->add('get_job_detail', 'Job::get_job_detail');
+    $routes->add('saveJob', 'Job::saveJob');
+    $routes->add('delete_job', 'Job::delete_job');
 
+
+    $routes->add('location', 'Location::index');
+    $routes->add('list_mlocation', 'Location::list_mlocation');
+    $routes->post("saveEntry", "Location::saveEntry");
+
+    $routes->get("showing_data/(:any)", "Location::showing_data/$1");
+
+    $routes->add('area', 'Location::area');
+    $routes->add('list_marea', 'Location::list_marea');
+    $routes->post("saveEntryArea", "Location::saveEntryArea");
+    $routes->get("showing_data_area/(:any)", "Location::showing_data_area/$1");
+    $routes->add('import_area', 'Location::import_area');
+    $routes->post("proses_upload", "Location::proses_upload");
+    $routes->add("clear_tmp", "Location::clear_tmp");
+    $routes->add("final_data", "Location::final_data");
+    $routes->add("showlabels", "Location::showlabels");
+    $routes->add("api_show_showlabels_area(:any)", "Location::api_show_showlabels_area$1");
+    $routes->add("show_showlabels_area", "Location::show_showlabels_area");
+
+
+    $routes->add("cc", "Location::cc");
+    $routes->add("list_costcenter", "Location::list_costcenter");
+    $routes->post("saveCostCenter", "Location::saveCostCenter");
+    $routes->get("showing_data_costcenter(:any)", "Location::showing_data_costcenter$1");
+    $routes->post("show_showlabels_area_partial", "Location::show_showlabels_area_partial");
+    $routes->get("api_show_showlabels_area_partial(:any)", "Location::api_show_showlabels_area_partial$1");
 
 
 
@@ -802,8 +834,8 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
     $routes->add('globalmodule/list_branchjob', 'Globalmodule::list_branchjob');
 
     $routes->add('globalmodule/list_branchjob', 'Globalmodule::list_branchjob');
-
     $routes->add('globalmodule/updatePrintStatus', 'Globalmodule::updatePrintStatus');
+    $routes->add('globalmodule/list_avg_stock', 'Globalmodule::list_avg_stock');
 
 
     //validator & request keluar
@@ -902,24 +934,119 @@ $routes->add('getBranchInfoStockTransfers', 'Persediaan::getBranchInfoStockTrans
 
     /* Pemakaian Barang */
     $routes->add('pmk_brng', 'Persediaan::pmk_brng');
-    $routes->add('add_pmk_brng', 'Persediaan::add_ajustment_pmk_brng');
-    $routes->add('list_tmp_pmk_brng_dtl', 'Persediaan::list_tmp_pmk_brng_dtl');
+    $routes->add('add_pmk_brng_mst', 'Persediaan::add_pmk_brng_mst');
+    $routes->add('list_trx_pmk_brng_mst', 'Persediaan::list_trx_pmk_brng_mst');
     $routes->add('save_pmk_brng_detail', 'Persediaan::save_pmk_brng_detail');
     $routes->add('showing_pmk_brng_mst_tmp', 'Persediaan::showing_pmk_brng_mst_tmp');
     $routes->add('clear_pmk_brng', 'Persediaan::clear_pmk_brng');
     $routes->add('list_tmp_pmk_brng_dtl', 'Persediaan::list_tmp_pmk_brng_dtl');
     $routes->add('get_tmp_pmk_brng_dtl(:any)', 'Persediaan::get_tmp_pmk_brng_dtl$1');
     $routes->add('delete_pmk_brng', 'Persediaan::delete_pmk_brng');
-    $routes->add('final_pmk_brng_mst', 'Persediaan::final_pmk_brng_mst');
+    $routes->add('final_pmk_barang', 'Persediaan::final_pmk_barang');
 
-    $routes->add('update_pmk_brng', 'Persediaan::update_pmk_brng');
-    $routes->add('detail_pmk_brng(:any)', 'Persediaan::detail_pmk_brng$1');
+    $routes->add('updatePmkBrg', 'Persediaan::updatePmkBrg');
+    $routes->add('detail_pmk_brng_mst(:any)', 'Persediaan::detail_pmk_brng_mst$1');
 //TRX
     $routes->add('get_trx_pmk_brng_mst_dtl(:any)', 'Persediaan::get_trx_pmk_brng_mst_dtl$1');
     $routes->add('showing_pmk_brng_mst', 'Persediaan::showing_pmk_brng_mst');
     $routes->add('list_pmk_brng', 'Persediaan::list_trx_pmk_brng');
     $routes->add('getBranch_pmk_brng', 'Persediaan::getBranch_pmk_brng');
     $routes->add('getNextSuffix_pmk_brng', 'Persediaan::getNextSuffix_pmk_brng');
+
+
+
+    /* Penerimaan Barang */
+    $routes->add('pnm_barang', 'Persediaan::pnm_barang');
+    $routes->add('add_pnm_brng_mst', 'Persediaan::add_pnm_brng_mst');
+    $routes->add('list_trx_pnm_brng_mst', 'Persediaan::list_trx_pnm_brng_mst');
+    $routes->add('save_pnm_brng_detail', 'Persediaan::save_pnm_brng_detail');
+    $routes->add('showing_pnm_brng_mst_tmp', 'Persediaan::showing_pnm_brng_mst_tmp');
+    $routes->add('clear_pnm_brng', 'Persediaan::clear_pnm_brng');
+    $routes->add('list_tmp_pnm_brng_dtl', 'Persediaan::list_tmp_pnm_brng_dtl');
+    $routes->add('get_tmp_pnm_brng_dtl(:any)', 'Persediaan::get_tmp_pnm_brng_dtl$1');
+    $routes->add('delete_pnm_brng', 'Persediaan::delete_pnm_brng');
+    $routes->add('final_pnm_barang', 'Persediaan::final_pnm_barang');
+    $routes->add('get_summary_pnm', 'Persediaan::get_summary_pnm');
+
+    $routes->add('updatepnmBrg', 'Persediaan::updatepnmBrg');
+    $routes->add('detail_pnm_brng_mst(:any)', 'Persediaan::detail_pnm_brng_mst$1');
+//TRX
+    $routes->add('get_trx_pnm_brng_mst_dtl(:any)', 'Persediaan::get_trx_pnm_brng_mst_dtl$1');
+    $routes->add('showing_pnm_brng_mst', 'Persediaan::showing_pnm_brng_mst');
+    $routes->add('list_pnm_brng', 'Persediaan::list_trx_pnm_brng');
+    $routes->add('getBranch_pnm_brng', 'Persediaan::getBranch_pnm_brng');
+    $routes->add('getNextSuffix_pnm_brng', 'Persediaan::getNextSuffix_pnm_brng');
+});
+
+
+
+
+$routes->group('/production/trans', ["namespace" => "App\Controllers\Production"], function ($routes) {
+
+
+    $routes->add('/', 'Production::index');
+    $routes->add('standart_cost', 'Production::standart_cost');
+    $routes->add('list_standart_cost_mst', 'Production::list_standart_cost_mst');
+    $routes->add('add_standart_cost', 'Production::add_standart_cost');
+    $routes->get('showing_tmp_standart_cost_mst(:any)', 'Production::showing_tmp_standart_cost_mst$1');
+    $routes->get('showing_mst_standart_cost_mst(:any)', 'Production::showing_mst_standart_cost_mst$1');
+    $routes->add('getNextSuffix_standart_cost_mst', 'Production::getNextSuffix_standart_cost_mst');
+    $routes->add('save_standart_cost_dtl', 'Production::save_standart_cost_dtl');
+    $routes->add('save_standart_cost_mst', 'Production::save_standart_cost_mst');
+    $routes->add('clearStandartCostTmp', 'Production::clearStandartCostTmp');
+    $routes->add('list_tmp_standart_cost_dtl', 'Production::list_tmp_standart_cost_dtl');
+    $routes->add('list_mst_standart_cost_dtl', 'Production::list_mst_standart_cost_dtl');
+    $routes->add('get_standart_cost_dtl(:any)', 'Production::get_standart_cost_dtl$1');
+    $routes->add('final_input_standart_cost', 'Production::final_input_standart_cost');
+
+    /*UPDATE STANDART COST*/
+    $routes->add('updateStandartCost(:any)', 'Production::updateStandartCost$1');
+    $routes->add('detailStandartCost(:any)','Production::detailStandartCost$1');
+    $routes->add('cancelStandartCost(:any)','Production::cancelStandartCost$1');
+
+
+    /* BIAYA STANDART */
+
+    $routes->add('biaya_standart', 'Production::biaya_standart');
+    $routes->add('list_biaya_standart_mst', 'Production::list_biaya_standart_mst');
+    $routes->add('add_biaya_standart', 'Production::add_biaya_standart');
+    $routes->get('showing_tmp_biaya_standart_mst(:any)', 'Production::showing_tmp_biaya_standart_mst$1');
+    $routes->get('showing_mst_biaya_standart_mst(:any)', 'Production::showing_mst_biaya_standart_mst$1');
+    $routes->add('getNextSuffix_biaya_standart_mst', 'Production::getNextSuffix_biaya_standart_mst');
+    $routes->add('save_biaya_standart_dtl', 'Production::save_biaya_standart_dtl');
+    $routes->add('save_biaya_standart_mst', 'Production::save_biaya_standart_mst');
+    $routes->add('clearBiayaStandartTmp', 'Production::clearBiayaStandartTmp');
+    $routes->add('list_tmp_biaya_standart_dtl', 'Production::list_tmp_biaya_standart_dtl');
+    $routes->add('list_mst_biaya_standart_dtl', 'Production::list_mst_biaya_standart_dtl');
+    $routes->add('get_biaya_standart_dtl(:any)', 'Production::get_biaya_standart_dtl$1');
+    $routes->add('final_input_biaya_standart', 'Production::final_input_biaya_standart');
+
+    /*UPDATE STANDART COST*/
+    $routes->add('updateBiayaStandart(:any)', 'Production::updateBiayaStandart$1');
+    $routes->add('detailBiayaStandart(:any)','Production::detailBiayaStandart$1');
+    $routes->add('cancelBiayaStandart(:any)','Production::cancelBiayaStandart$1');
+
+
+    /* BOM */
+
+    $routes->add('bom', 'Production::bom');
+    $routes->add('list_bom_mst', 'Production::list_bom_mst');
+    $routes->add('add_bom', 'Production::add_bom');
+    $routes->get('showing_tmp_bom_mst(:any)', 'Production::showing_tmp_bom_mst$1');
+    $routes->get('showing_mst_bom_mst(:any)', 'Production::showing_mst_bom_mst$1');
+    $routes->add('getNextSuffix_bom_mst', 'Production::getNextSuffix_bom_mst');
+    $routes->add('save_bom_dtl', 'Production::save_bom_dtl');
+    $routes->add('save_bom_mst', 'Production::save_bom_mst');
+    $routes->add('clear_bom_Tmp', 'Production::clear_bom_Tmp');
+    $routes->add('list_tmp_bom_dtl', 'Production::list_tmp_bom_dtl');
+    $routes->add('list_mst_bom_dtl', 'Production::list_mst_bom_dtl');
+    $routes->add('get_bom_dtl(:any)', 'Production::get_bom_dtl$1');
+    $routes->add('final_input_bom', 'Production::final_input_bom');
+
+    /* BUILD OF MATERIAL */
+    $routes->add('update_bom_(:any)', 'Production::update_bom_$1');
+    $routes->add('detail_bom_(:any)','Production::detail_bom_$1');
+    $routes->add('cancel_bom_(:any)','Production::cancel_bom_$1');
 });
 
 

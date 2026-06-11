@@ -16,10 +16,10 @@ let skipRoleChange = false;
 //"use strict";
 
 /* VIUW UTAMA*/
-function table_mst_standart_cost() {
+function table_mst_biaya_standart() {
     // var lg = languageDatatable;
     var initTable = function () {
-        var table = $('#tstandart_cost');
+        var table = $('#tbiaya_standart');
         table.DataTable({
             "processing": true, //Feature control the processing indicator.
             "serverSide": true, //Feature control DataTables' server-side processing mode.
@@ -42,7 +42,7 @@ function table_mst_standart_cost() {
                 'pageLength', 'excel'
             ],
             "ajax": {
-                "url": HOST_URL + 'production/trans/list_standart_cost_mst',
+                "url": HOST_URL + 'production/trans/list_biaya_standart_mst',
                 "type": "POST",
                 "data": function (data) {
                     data.tglrange = $('#tglrange').val();
@@ -76,20 +76,20 @@ function table_mst_standart_cost() {
     return initTable();
 }
 
-function reload_standart_cost() {
-    var table = $('#tstandart_cost');
+function reload_biaya_standart() {
+    var table = $('#tbiaya_standart');
     table.DataTable().ajax.reload(); //reload datatable ajax
     //console.log('HALO HALO BANDUNG');
 }
 
 $('#btn-filter-tx').click(function () { //button filter event click
-    var table = $('#tstandart_cost');
+    var table = $('#tbiaya_standart');
     table.DataTable().ajax.reload(); //reload datatable ajax
     $('#filter').modal('hide');
 });
 $('#btn-reset-tx').click(function () { //button reset event click
     $('#form-filter')[0].reset();
-    var table = $('#tstandart_cost');
+    var table = $('#tbiaya_standart');
     table.DataTable().ajax.reload(); //reload datatable ajax
     $('#filter').modal('hide');
 });
@@ -129,7 +129,7 @@ $('#cabang').on('change', function () {
             $('#infix').val(res.infix);
 
             // SET PREFIX + TRIGGER CHANGE
-            $('#prefix').val('HSC').trigger('change');
+            $('#prefix').val('BSC').trigger('change');
 
             $('#sufix').val(currentKodeSuffix + '0001');
 
@@ -202,7 +202,7 @@ $('#prefix').on('change', function () {
     if (!prefix || !infix || !currentKodeSuffix) return;
 
     $.ajax({
-        url: HOST_URL + '/production/trans/getNextSuffix_standart_cost_mst',
+        url: HOST_URL + '/production/trans/getNextSuffix_biaya_standart_mst',
         method: 'GET',
         data: {
             prefix: prefix,
@@ -309,7 +309,7 @@ function documentReadable() {
 
     var docno = $('[name="docno"]').val();
 
-    $.getJSON(HOST_URL + 'production/trans/showing_tmp_standart_cost_mst', {docno: docno})
+    $.getJSON(HOST_URL + 'production/trans/showing_tmp_biaya_standart_mst', {docno: docno})
         .done(function (response) {
 
             if (!response.dataTables || !response.dataTables.items.length) {
@@ -515,7 +515,7 @@ function formatItemSelection(repo) {
 
 
 
-function save_standart_cost() {
+function save_biaya_standart() {
 
 
         // ===============================
@@ -583,7 +583,7 @@ function save_standart_cost() {
         // ===============================
 
         $.ajax({
-            url: HOST_URL + 'production/trans/save_standart_cost_mst',
+            url: HOST_URL + 'production/trans/save_biaya_standart_mst',
             type: 'POST',
             data: formData,
             dataType: 'json',
@@ -608,7 +608,7 @@ function save_standart_cost() {
                     }
 
                     $('#modalDtlStandartCost').modal('hide');
-                    reload_standart_cost_dtl();
+                    reload_biaya_standart_dtl();
                     $('#formStandartCostDtl')[0].reset();
 
                 } else {
@@ -657,7 +657,7 @@ function tabletmpStandartCost() {
             "bFilter": true,
             "iDisplayLength": -1,
             "ajax": {
-                "url": HOST_URL + 'production/trans/list_tmp_standart_cost_dtl',
+                "url": HOST_URL + 'production/trans/list_tmp_biaya_standart_dtl',
                 "type": "POST",
                 "data": function (data) {
                     //data.searchfilter = $('#searchitem').val()+'';
@@ -703,7 +703,7 @@ function tabletmpStandartCost() {
 }
 
 
-function reload_standart_cost_dtl() {
+function reload_biaya_standart_dtl() {
     var table = $('#tmp_stdcost');
     table.DataTable().ajax.reload(); //reload datatable ajax
 }
@@ -754,7 +754,7 @@ function updateStandartCost() {
     }
 
     $.ajax({
-        url: HOST_URL + 'production/trans/get_standart_cost_dtl',
+        url: HOST_URL + 'production/trans/get_biaya_standart_dtl',
         type: 'GET',
         data: { id: ids[0] },
         dataType: 'json',
@@ -973,9 +973,21 @@ function getCheckedDetailIds() {
 }
 
 
+document.addEventListener('keydown', function(e) {
+
+// CTRL + Q
+if (e.ctrlKey && e.key.toLowerCase() === 'q') {
+
+e.preventDefault();
+
+document.getElementById('btnAddDetail').click();
+}
+
+});
+
 $(document).ready(function () {
 
-    table_mst_standart_cost();
+    table_mst_biaya_standart();
     documentReadable();
     tabletmpStandartCost();
 

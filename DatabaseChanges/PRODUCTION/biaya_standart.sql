@@ -1,27 +1,27 @@
---I.R.A.1
---DELETE FROM sc_mst.trxtype WHERE jenistrx='I.Q.A.3';
+--I.R.A.2
+--DELETE FROM sc_mst.trxtype WHERE jenistrx='I.R.A.2';
 insert into sc_mst.trxtype
 (kdtrx,jenistrx,uraian)
 VALUES
-('I','I.R.A.1','DRAFT'),
-('E','I.R.A.1','REVISI/EDIT'),
-('F','I.R.A.1','FINAL USER'),
-('A','I.R.A.1','APPROVE'),
-('A2','I.R.A.1','APPROVE 2'),
-('A3','I.R.A.1','APPROVE 3'),
-('P','I.R.A.1','CETAK/PRINT'),
-('O','I.R.A.1','OBSOLATE'),
-('C','I.R.A.1','CANCEL'),
-('D','I.R.A.1','DELETE');
+('I','I.R.A.2','DRAFT'),
+('E','I.R.A.2','REVISI/EDIT'),
+('F','I.R.A.2','FINAL USER'),
+('A','I.R.A.2','APPROVE'),
+('A2','I.R.A.2','APPROVE 2'),
+('A3','I.R.A.2','APPROVE 3'),
+('P','I.R.A.2','CETAK/PRINT'),
+('O','I.R.A.2','OBSOLATE'),
+('C','I.R.A.2','CANCEL'),
+('D','I.R.A.2','DELETE');
 
 
 
 
---drop table sc_tmp.standart_cost_mst;
-CREATE TABLE IF NOT EXISTS sc_tmp.standart_cost_mst
+--drop table sc_tmp.biaya_standart_mst;
+CREATE TABLE IF NOT EXISTS sc_tmp.biaya_standart_mst
 (
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
-    doctype character(20) default 'STD_COST' ,
+    doctype character(20) default 'BIAYA_COST' ,
 	cabang character (30 ) COLLATE pg_catalog."default",    
     pemohon character(100) COLLATE pg_catalog."default",
     docdate date,
@@ -38,17 +38,17 @@ CREATE TABLE IF NOT EXISTS sc_tmp.standart_cost_mst
     updateby character varying(50) COLLATE pg_catalog."default",
     updatedate timestamp without time zone,
     docnotmp character(30) COLLATE pg_catalog."default",
-    CONSTRAINT pk_tmp_standart_cost_mst PRIMARY KEY (docno)
+    CONSTRAINT pk_tmp_biaya_standart_mst PRIMARY KEY (docno)
 )
 
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS sc_tmp.standart_cost_mst
+ALTER TABLE IF EXISTS sc_tmp.biaya_standart_mst
     OWNER to postgres;
 
 
---drop table sc_tmp.standart_cost_dtl;
-CREATE TABLE IF NOT EXISTS sc_tmp.standart_cost_dtl
+--drop table sc_tmp.biaya_standart_dtl;
+CREATE TABLE IF NOT EXISTS sc_tmp.biaya_standart_dtl
 (
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
     doctype character(20) default 'STD_COST' ,
@@ -72,19 +72,19 @@ CREATE TABLE IF NOT EXISTS sc_tmp.standart_cost_dtl
     docnotmp character(30) COLLATE pg_catalog."default",
 	idurut bigserial,
 	uniqueid text,
-    CONSTRAINT pk_tmp_standart_cost_dtl PRIMARY KEY (docno,uniqueid,idurut)
+    CONSTRAINT pk_tmp_biaya_standart_dtl PRIMARY KEY (docno,uniqueid,idurut)
 )
 
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS sc_tmp.standart_cost_dtl
+ALTER TABLE IF EXISTS sc_tmp.biaya_standart_dtl
     OWNER to postgres;
 
 
 /* MST ATAU TRANSAKSI */
 
---drop table sc_mst.standart_cost_mst;
-CREATE TABLE IF NOT EXISTS sc_mst.standart_cost_mst
+--drop table sc_mst.biaya_standart_mst;
+CREATE TABLE IF NOT EXISTS sc_mst.biaya_standart_mst
 (
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
     doctype character(20) default 'STD_COST' ,
@@ -104,17 +104,17 @@ CREATE TABLE IF NOT EXISTS sc_mst.standart_cost_mst
     updateby character varying(50) COLLATE pg_catalog."default",
     updatedate timestamp without time zone,
     docnotmp character(30) COLLATE pg_catalog."default",
-    CONSTRAINT pk_tmp_standart_cost_mst PRIMARY KEY (docno)
+    CONSTRAINT pk_tmp_biaya_standart_mst PRIMARY KEY (docno)
 )
 
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS sc_mst.standart_cost_mst
+ALTER TABLE IF EXISTS sc_mst.biaya_standart_mst
     OWNER to postgres;
 
 
---drop table sc_mst.standart_cost_dtl;
-CREATE TABLE IF NOT EXISTS sc_mst.standart_cost_dtl
+--drop table sc_mst.biaya_standart_dtl;
+CREATE TABLE IF NOT EXISTS sc_mst.biaya_standart_dtl
 (
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
     doctype character(20) default 'STD_COST' ,
@@ -138,12 +138,12 @@ CREATE TABLE IF NOT EXISTS sc_mst.standart_cost_dtl
     docnotmp character(30) COLLATE pg_catalog."default",
 	idurut INTEGER,
 	uniqueid text,
-    CONSTRAINT pk_tmp_standart_cost_dtl PRIMARY KEY (docno,uniqueid,idurut)
+    CONSTRAINT pk_tmp_biaya_standart_dtl PRIMARY KEY (docno,uniqueid,idurut)
 )
 
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS sc_mst.standart_cost_dtl
+ALTER TABLE IF EXISTS sc_mst.biaya_standart_dtl
     OWNER to postgres;
 
 
@@ -155,15 +155,15 @@ ADD COLUMN IF NOT EXISTS lastcost NUMERIC(18,2) DEFAULT 0;
 -- =========================================
 -- DROP TRIGGER & FUNCTION
 -- =========================================
-DROP TRIGGER IF EXISTS tr_tmp_standart_cost_mst
-ON sc_tmp.standart_cost_mst;
+DROP TRIGGER IF EXISTS tr_tmp_biaya_standart_mst
+ON sc_tmp.biaya_standart_mst;
 
-DROP FUNCTION IF EXISTS sc_tmp.tr_tmp_standart_cost_mst();
+DROP FUNCTION IF EXISTS sc_tmp.tr_tmp_biaya_standart_mst();
 
 -- =========================================
 -- FUNCTION
 -- =========================================
-CREATE OR REPLACE FUNCTION sc_tmp.tr_tmp_standart_cost_mst()
+CREATE OR REPLACE FUNCTION sc_tmp.tr_tmp_biaya_standart_mst()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $BODY$
@@ -212,7 +212,7 @@ BEGIN
 
             EXIT WHEN NOT EXISTS (
                 SELECT 1
-                FROM sc_mst.standart_cost_mst
+                FROM sc_mst.biaya_standart_mst
                 WHERE TRIM(docno)=TRIM(v_new_docno)
             );
 
@@ -235,7 +235,7 @@ BEGIN
         -- =====================================
         -- INSERT HEADER
         -- =====================================
-        INSERT INTO sc_mst.standart_cost_mst (
+        INSERT INTO sc_mst.biaya_standart_mst (
 
             docno,
             doctype,
@@ -278,7 +278,7 @@ BEGIN
             updatedate,
             docnotmp
 
-        FROM sc_tmp.standart_cost_mst
+        FROM sc_tmp.biaya_standart_mst
 
         WHERE TRIM(docno)=TRIM(OLD.docno)
           AND inputby=v_inputby;
@@ -286,7 +286,7 @@ BEGIN
         -- =====================================
         -- INSERT DETAIL
         -- =====================================
-        INSERT INTO sc_mst.standart_cost_dtl (
+        INSERT INTO sc_mst.biaya_standart_dtl (
 
             docno,
             doctype,
@@ -341,7 +341,7 @@ BEGIN
             idurut,
             uniqueid
 
-        FROM sc_tmp.standart_cost_dtl
+        FROM sc_tmp.biaya_standart_dtl
 
         WHERE TRIM(docno)=TRIM(OLD.docno)
           AND inputby=v_inputby;
@@ -353,17 +353,17 @@ BEGIN
         SET
             actualcost = d.newcost,
             lastcost   = d.lastcost
-        FROM sc_mst.standart_cost_dtl d
+        FROM sc_mst.biaya_standart_dtl d
         WHERE d.docno=v_docno
           AND d.idbarang=mb.idbarang;
 
         -- =====================================
         -- CLEAN TMP
         -- =====================================
-        DELETE FROM sc_tmp.standart_cost_mst
+        DELETE FROM sc_tmp.biaya_standart_mst
         WHERE TRIM(docno)=TRIM(OLD.docno);
 
-        DELETE FROM sc_tmp.standart_cost_dtl
+        DELETE FROM sc_tmp.biaya_standart_dtl
         WHERE TRIM(docno)=TRIM(OLD.docno);
 
     -- =====================================
@@ -376,16 +376,16 @@ BEGIN
         -- =====================================
         -- DELETE OLD
         -- =====================================
-        DELETE FROM sc_mst.standart_cost_mst
+        DELETE FROM sc_mst.biaya_standart_mst
         WHERE TRIM(docno)=TRIM(NEW.docnotmp);
 
-        DELETE FROM sc_mst.standart_cost_dtl
+        DELETE FROM sc_mst.biaya_standart_dtl
         WHERE TRIM(docno)=TRIM(NEW.docnotmp);
 
         -- =====================================
         -- INSERT HEADER
         -- =====================================
-        INSERT INTO sc_mst.standart_cost_mst (
+        INSERT INTO sc_mst.biaya_standart_mst (
 
             docno,
             doctype,
@@ -428,14 +428,14 @@ BEGIN
             updatedate,
             docnotmp
 
-        FROM sc_tmp.standart_cost_mst
+        FROM sc_tmp.biaya_standart_mst
 
         WHERE TRIM(docno)=TRIM(NEW.docno);
 
         -- =====================================
         -- INSERT DETAIL
         -- =====================================
-        INSERT INTO sc_mst.standart_cost_dtl (
+        INSERT INTO sc_mst.biaya_standart_dtl (
 
             docno,
             doctype,
@@ -490,7 +490,7 @@ BEGIN
             idurut,
             uniqueid
 
-        FROM sc_tmp.standart_cost_dtl
+        FROM sc_tmp.biaya_standart_dtl
 
         WHERE TRIM(docno)=TRIM(NEW.docno);
 
@@ -501,17 +501,17 @@ BEGIN
         SET
             actualcost = d.newcost,
             lastcost   = d.lastcost
-        FROM sc_mst.standart_cost_dtl d
+        FROM sc_mst.biaya_standart_dtl d
         WHERE d.docno=NEW.docnotmp
           AND d.idbarang=mb.idbarang;
 
         -- =====================================
         -- CLEAN TMP
         -- =====================================
-        DELETE FROM sc_tmp.standart_cost_mst
+        DELETE FROM sc_tmp.biaya_standart_mst
         WHERE TRIM(docno)=TRIM(NEW.docno);
 
-        DELETE FROM sc_tmp.standart_cost_dtl
+        DELETE FROM sc_tmp.biaya_standart_dtl
         WHERE TRIM(docno)=TRIM(NEW.docno);
 
     -- =====================================
@@ -520,14 +520,14 @@ BEGIN
     ELSIF UPPER(TRIM(OLD.status))='E'
        AND UPPER(TRIM(NEW.status))='C' THEN
 
-        UPDATE sc_mst.standart_cost_mst
+        UPDATE sc_mst.biaya_standart_mst
         SET status='F'
         WHERE TRIM(docno)=TRIM(NEW.docnotmp);
 
-        DELETE FROM sc_tmp.standart_cost_mst
+        DELETE FROM sc_tmp.biaya_standart_mst
         WHERE TRIM(docno)=TRIM(NEW.docno);
 
-        DELETE FROM sc_tmp.standart_cost_dtl
+        DELETE FROM sc_tmp.biaya_standart_dtl
         WHERE TRIM(docno)=TRIM(NEW.docno);
 
     END IF;
@@ -540,11 +540,11 @@ $BODY$;
 -- =========================================
 -- TRIGGER
 -- =========================================
-CREATE TRIGGER tr_tmp_standart_cost_mst
+CREATE TRIGGER tr_tmp_biaya_standart_mst
 AFTER UPDATE
-ON sc_tmp.standart_cost_mst
+ON sc_tmp.biaya_standart_mst
 FOR EACH ROW
-EXECUTE FUNCTION sc_tmp.tr_tmp_standart_cost_mst();
+EXECUTE FUNCTION sc_tmp.tr_tmp_biaya_standart_mst();
 
 
 
@@ -553,15 +553,15 @@ EXECUTE FUNCTION sc_tmp.tr_tmp_standart_cost_mst();
 -- =========================================
 -- DROP TRIGGER & FUNCTION
 -- =========================================
-DROP TRIGGER IF EXISTS tr_mst_standart_cost_mst
-ON sc_mst.standart_cost_mst;
+DROP TRIGGER IF EXISTS tr_mst_biaya_standart_mst
+ON sc_mst.biaya_standart_mst;
 
-DROP FUNCTION IF EXISTS sc_mst.tr_mst_standart_cost_mst();
+DROP FUNCTION IF EXISTS sc_mst.tr_mst_biaya_standart_mst();
 
 -- =========================================
 -- FUNCTION
 -- =========================================
-CREATE OR REPLACE FUNCTION sc_mst.tr_mst_standart_cost_mst()
+CREATE OR REPLACE FUNCTION sc_mst.tr_mst_biaya_standart_mst()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $BODY$
@@ -586,7 +586,7 @@ BEGIN
         -- =====================================
         -- INSERT HEADER TMP
         -- =====================================
-        INSERT INTO sc_tmp.standart_cost_mst (
+        INSERT INTO sc_tmp.biaya_standart_mst (
 
             docno,
             doctype,
@@ -632,14 +632,14 @@ BEGIN
 
             docno AS docnotmp
 
-        FROM sc_mst.standart_cost_mst
+        FROM sc_mst.biaya_standart_mst
 
         WHERE TRIM(docno)=TRIM(NEW.docno);
 
         -- =====================================
         -- INSERT DETAIL TMP
         -- =====================================
-        INSERT INTO sc_tmp.standart_cost_dtl (
+        INSERT INTO sc_tmp.biaya_standart_dtl (
 
             docno,
             doctype,
@@ -696,7 +696,7 @@ BEGIN
             idurut,
             uniqueid
 
-        FROM sc_mst.standart_cost_dtl
+        FROM sc_mst.biaya_standart_dtl
 
         WHERE TRIM(docno)=TRIM(NEW.docno);
 
@@ -710,8 +710,8 @@ $BODY$;
 -- =========================================
 -- TRIGGER
 -- =========================================
-CREATE TRIGGER tr_mst_standart_cost_mst
+CREATE TRIGGER tr_mst_biaya_standart_mst
 AFTER UPDATE
-ON sc_mst.standart_cost_mst
+ON sc_mst.biaya_standart_mst
 FOR EACH ROW
-EXECUTE FUNCTION sc_mst.tr_mst_standart_cost_mst();
+EXECUTE FUNCTION sc_mst.tr_mst_biaya_standart_mst();
