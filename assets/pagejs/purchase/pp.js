@@ -368,6 +368,7 @@ $("#idbarang").select2({
     placeholder: "Choose Your Item List",
     allowClear: true,
     width:'100%',
+    minimumInputLength: 2,
     dropdownParent: $('#modalDetailPP'),
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_item',

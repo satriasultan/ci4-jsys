@@ -264,28 +264,36 @@ BEGIN
         INSERT INTO sc_trx.penjualan_dtl (
             idurut, docno, docnoso, docnosj, idbarang, uniqueid,  nmbarang,
             idprincipal, idgudang, idspec, unit, qty, 
-            harga, nilai, bomdesc, multidisc,
+            harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
+            bomdesc, multidisc,
             inputby, inputdate, status, updateby, updatedate
         )
         SELECT
             idurut, v_docno, docnoso, docnosj, idbarang, uniqueid,  nmbarang,
             idprincipal, idgudang, idspec, unit, qty, 
-            harga, nilai, bomdesc, multidisc,
+            harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
+            bomdesc, multidisc,
             inputby, inputdate, status, updateby, updatedate
         FROM sc_tmp.penjualan_dtl
         WHERE rtrim(docno) = rtrim(OLD.docno)
             AND inputby = v_inputby;
 
-        -- UPDATE sc_trx.pp p
-        --     SET status = 'PO'
-        --     WHERE p.docno IN (
-        --         SELECT DISTINCT docnopp
-        --         FROM sc_tmp.penjualan_dtl
-        --         WHERE rtrim(docno) = rtrim(OLD.docno)
-        --         AND inputby = v_inputby
-        --         AND docnopp IS NOT NULL
-        --         AND docnopp <> ''
-        -- );
+        UPDATE sc_trx.salesorder_dtl ppd
+        SET qtypenjualan = COALESCE(ppd.qtypenjualan, 0) + pod.qty_used
+            -- updateby = v_inputby,
+            -- updatedate = CURRENT_TIMESTAMP
+        FROM (
+            SELECT 
+                uniqueid,
+                SUM(qty) as qty_used
+            FROM sc_tmp.penjualan_dtl
+            WHERE rtrim(docno) = rtrim(OLD.docno)
+                AND inputby = v_inputby
+                AND uniqueid IS NOT NULL
+                AND uniqueid <> ''
+            GROUP BY uniqueid
+        ) pod
+        WHERE ppd.uniqueid = pod.uniqueid;
 
         -- -- ===============================
         -- -- CLEANUP TMP
@@ -311,28 +319,35 @@ BEGIN
         INSERT INTO sc_trx.penjualan_dtl
         (idurut, docno, docnoso, docnosj, idbarang, uniqueid,  nmbarang,
         idprincipal, idgudang, idspec, unit, qty, 
-        harga, nilai, bomdesc, multidisc,
+        harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
+        bomdesc, multidisc,
         inputby, inputdate, status, updateby, updatedate, docnotmp)
         SELECT
             idurut, NEW.docnotmp, docnoso, docnosj, idbarang, uniqueid,  nmbarang,
             idprincipal, idgudang, idspec, unit, qty, 
-            harga, nilai, bomdesc, multidisc,
+            harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
+            bomdesc, multidisc,
             inputby, inputdate, status, updateby, updatedate, docnotmp
         FROM sc_tmp.penjualan_dtl
         WHERE rtrim(docno) = rtrim(NEW.docno);
 
-                -- ===============================
-        -- UPDATE STATUS PP MENJADI 'PO'
-        -- ===============================
-        -- UPDATE sc_trx.pp p
-        -- SET status = 'PO'
-        -- WHERE p.docno IN (
-        --     SELECT DISTINCT docnopp
-        --     FROM sc_tmp.penjualan_dtl
-        --     WHERE rtrim(docno) = rtrim(NEW.docno)
-        --         AND docnopp IS NOT NULL
-        --         AND docnopp <> ''
-        -- );
+
+        UPDATE sc_trx.salesorder_dtl ppd
+        SET qtypenjualan = COALESCE(ppd.qtypenjualan, 0) + pod.qty_used
+            -- updateby = v_inputby,
+            -- updatedate = CURRENT_TIMESTAMP
+        FROM (
+            SELECT 
+                uniqueid,
+                SUM(qty) as qty_used
+            FROM sc_tmp.penjualan_dtl
+            WHERE rtrim(docno) = rtrim(OLD.docno)
+                AND inputby = v_inputby
+                AND uniqueid IS NOT NULL
+                AND uniqueid <> ''
+            GROUP BY uniqueid
+        ) pod
+        WHERE ppd.uniqueid = pod.uniqueid;
 
 
         INSERT INTO sc_trx.penjualan
@@ -411,11 +426,13 @@ BEGIN
 			INSERT INTO sc_tmp.penjualan_dtl
 			( idurut, docno, docnoso, docnosj, idbarang, uniqueid, nmbarang,
             idprincipal, idgudang, idspec, unit, qty, 
-            harga, nilai, bomdesc, multidisc,
+            harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
+            bomdesc, multidisc,
             inputby, inputdate, status, updateby, updatedate, docnotmp)
 			SELECT idurut, NEW.docno, docnoso, docnosj, idbarang, uniqueid, nmbarang,
             idprincipal, idgudang, idspec, unit, qty, 
-            harga, nilai, bomdesc, multidisc,
+            harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
+            bomdesc, multidisc,
             inputby, inputdate, status, updateby, updatedate, NEW.docno
 			FROM sc_trx.penjualan_dtl 
 			WHERE docno = NEW.docno;
@@ -478,3 +495,22 @@ CREATE OR REPLACE TRIGGER tr_penjualan
 -- ALTER TABLE sc_trx.penjualan_dtl
 -- ADD COLUMN uniqueid VARCHAR(64)
 
+
+
+-- Tambahkan kolom di sc_trx.penjualan_dtl
+ALTER TABLE sc_trx.penjualan_dtl 
+ADD COLUMN idtax character(20),
+ADD COLUMN currcode character(3),
+ADD COLUMN kurs numeric(18,2),
+ADD COLUMN nilaikonversi numeric(18,2),
+ADD COLUMN nilaipajak numeric(18,2),
+ADD COLUMN IF NOT EXISTS qtyretur numeric(18,2) DEFAULT 0;
+
+-- Tambahkan kolom di sc_tmp.penjualan_dtl
+ALTER TABLE sc_tmp.penjualan_dtl 
+ADD COLUMN idtax character(20),
+ADD COLUMN currcode character(3),
+ADD COLUMN kurs numeric(18,2),
+ADD COLUMN nilaikonversi numeric(18,2),
+ADD COLUMN nilaipajak numeric(18,2),
+ADD COLUMN IF NOT EXISTS qtyretur numeric(18,2) DEFAULT 0;

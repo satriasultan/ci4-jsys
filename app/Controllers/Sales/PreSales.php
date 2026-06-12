@@ -538,14 +538,26 @@ class PreSales extends BaseController
             $badgeClass = 'badge-secondary'; // Default
 
             switch (strtoupper($status)) {
-                case 'FINAL':
+                case 'DRAFT':
+                    $badgeClass = 'badge-secondary';
+                    break;
+                case 'REVISION/EDITING':
+                    $badgeClass = 'badge-warning';
+                    break;
+                case 'FINAL USER':
+                    $badgeClass = 'badge-info';
+                    break;
+                case 'DITARIK PO':
                     $badgeClass = 'badge-success';
                     break;
                 case 'CETAK/PRINT':
-                    $badgeClass = 'badge-info';
+                    $badgeClass = 'badge-cetak';
                     break;
-                case 'CANCEL':
-                    $badgeClass = 'badge-warning';
+                case 'CANCELED':
+                    $badgeClass = 'badge-danger ';
+                    break;
+                default:
+                    $badgeClass = 'badge-primary'; // Default (primary) jika status tidak dikenali
                     break;
             }
 
@@ -1345,6 +1357,8 @@ class PreSales extends BaseController
     }
 
     function show_offering(){
+        $module = 'Penawaran Harga';
+        $table = 'sc_trx.offering';
         $nama = trim($this->session->get('nama'));
         $docno = $this->request->getGet('docno');  // Mengambil 'docno' dari URL
         //$docdate = $this->request->getPost('docdate');
@@ -1356,13 +1370,13 @@ class PreSales extends BaseController
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.offering');
 
-       $builder = $builder
-            ->where('docno', $docno)
-            ->update([
-                'status'=> 'P',
-                'printby' => $nama,
-                'printdate' => date('Y-m-d H:i:s')
-            ]);
+    //    $builder = $builder
+    //         ->where('docno', $docno)
+    //         ->update([
+    //             'status'=> 'P',
+    //             'printby' => $nama,
+    //             'printdate' => date('Y-m-d H:i:s')
+    //         ]);
 
         
         $enc_docno = $this->fiky_encryption->sealed($docno);
@@ -1383,7 +1397,7 @@ class PreSales extends BaseController
         //     $datamrt =  base_url("assets/mrt/report_offering_non_header.mrt") ;
         // }
 
-        return $this->fiky_report->render($datajson,$datamrt,$title,$nama);
+        return $this->fiky_report->render($datajson,$datamrt,$title,$nama,$module,$table,$docno);
     }
 
     function api_offering(){
@@ -1771,14 +1785,26 @@ SECTION PROFORMA INVOICE
             $badgeClass = 'badge-secondary'; // Default
 
             switch (strtoupper($status)) {
-                case 'FINAL':
+                case 'DRAFT':
+                    $badgeClass = 'badge-secondary';
+                    break;
+                case 'REVISION/EDITING':
+                    $badgeClass = 'badge-warning';
+                    break;
+                case 'FINAL USER':
+                    $badgeClass = 'badge-info';
+                    break;
+                case 'DITARIK PO':
                     $badgeClass = 'badge-success';
                     break;
                 case 'CETAK/PRINT':
-                    $badgeClass = 'badge-info';
+                    $badgeClass = 'badge-cetak';
                     break;
-                case 'CANCEL':
-                    $badgeClass = 'badge-warning';
+                case 'CANCELED':
+                    $badgeClass = 'badge-danger ';
+                    break;
+                default:
+                    $badgeClass = 'badge-primary'; // Default (primary) jika status tidak dikenali
                     break;
             }
 
@@ -2295,7 +2321,7 @@ SECTION PROFORMA INVOICE
             </select>';
 
 
-            $row[] = '<input class="form-control ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;" type="text" id="qty_'.$lm->idurut.'" name="qty_'.$lm->idurut.'" value="'.number_format($lm->qty, 2, ',', '.').'" disabled  min="0">';
+            $row[] = '<input class="form-control ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;" type="text" id="qty_'.$lm->idurut.'" name="qty_'.$lm->idurut.'" value="'.number_format($lm->qty, 2, '.', ',').'" disabled  min="0">';
             $row[] = '<select disabled class="unit-dropdown" style="width: 100%; height: 20px!important; font-size: 12px; " data-id="' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '">
             <option value="" disabled>-- Choose --</option>
             <option value="' . htmlspecialchars($lm->unit, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($lm->unit, ENT_QUOTES, 'UTF-8') . '</option>
@@ -2312,7 +2338,7 @@ SECTION PROFORMA INVOICE
                     type="text"  
                     id="price_'.$lm->idurut.'" 
                     name="price_'.$lm->idurut.'" 
-                    value="'.number_format($lm->price, 2, ',', '.').'" 
+                    value="'.number_format($lm->price, 2, '.', ',').'" 
                     disabled min="0">
             </div>';
             
@@ -2324,7 +2350,7 @@ SECTION PROFORMA INVOICE
                     type="text"  
                     id="amount_'.$lm->idurut.'" 
                     name="amount_'.$lm->idurut.'" 
-                    value="'.number_format($lm->amount, 2, ',', '.').'" 
+                    value="'.number_format($lm->amount, 2, '.', ',').'" 
                     disabled  min="0">
             </div>';
             //usdmt
@@ -2378,7 +2404,7 @@ SECTION PROFORMA INVOICE
             </select>';
 
 
-            $row[] = '<input class="form-control ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;" type="text" id="qty_'.$lm->idurut.'" name="qty_'.$lm->idurut.'" value="'.number_format($lm->qty, 2, ',', '.').'" disabled  min="0">';
+            $row[] = '<input class="form-control ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;" type="text" id="qty_'.$lm->idurut.'" name="qty_'.$lm->idurut.'" value="'.number_format($lm->qty, 2, '.', ',').'" disabled  min="0">';
             $row[] = '<select disabled class="unit-dropdown" style="width: 100%; height: 20px!important; font-size: 12px; " data-id="' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '">
             <option value="" disabled>-- Choose --</option>
             <option value="' . htmlspecialchars($lm->unit, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($lm->unit, ENT_QUOTES, 'UTF-8') . '</option>
@@ -2395,7 +2421,7 @@ SECTION PROFORMA INVOICE
                     type="text"  
                     id="price_'.$lm->idurut.'" 
                     name="price_'.$lm->idurut.'" 
-                    value="'.number_format($lm->price, 2, ',', '.').'" 
+                    value="'.number_format($lm->price, 2, '.', ',').'" 
                     disabled min="0">
             </div>';
             
@@ -2407,7 +2433,7 @@ SECTION PROFORMA INVOICE
                     type="text"  
                     id="amount_'.$lm->idurut.'" 
                     name="amount_'.$lm->idurut.'" 
-                    value="'.number_format($lm->amount, 2, ',', '.').'" 
+                    value="'.number_format($lm->amount, 2, '.', ',').'" 
                     disabled  min="0">
             </div>';
             //usdmt
@@ -2652,6 +2678,8 @@ SECTION PROFORMA INVOICE
     }
 
     function show_proforma(){
+        $module = 'Invoice';
+        $table = 'sc_trx.proforma';
         $nama = trim($this->session->get('nama'));
         $docno = $this->request->getGet('docno');  // Mengambil 'docno' dari URL
         //$docdate = $this->request->getPost('docdate');
@@ -2663,13 +2691,13 @@ SECTION PROFORMA INVOICE
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.proforma');
 
-       $builder = $builder
-            ->where('docno', $docno)
-            ->update([
-                'status'=> 'P',
-                'printby' => $nama,
-                'printdate' => date('Y-m-d H:i:s')
-            ]);
+    //    $builder = $builder
+    //         ->where('docno', $docno)
+    //         ->update([
+    //             'status'=> 'P',
+    //             'printby' => $nama,
+    //             'printdate' => date('Y-m-d H:i:s')
+    //         ]);
 
         
         $enc_docno = $this->fiky_encryption->sealed($docno);
@@ -2690,7 +2718,7 @@ SECTION PROFORMA INVOICE
         //     $datamrt =  base_url("assets/mrt/report_proforma_non_header.mrt") ;
         // }
 
-        return $this->fiky_report->render($datajson,$datamrt,$title,$nama);
+        return $this->fiky_report->render($datajson,$datamrt,$title,$nama,$module,$table,$docno);
     }
 
     function api_proforma(){

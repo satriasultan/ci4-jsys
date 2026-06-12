@@ -424,7 +424,7 @@ class M_Purchase extends Model
     from sc_trx.pp a 
     left outer join sc_mst.branchjob b on a.cabang=b.idbranch
     left outer join sc_mst.trxtype z on a.status=z.kdtrx and z.jenistrx='I.P.A.1'
-    where z.uraian != 'APPROVED' and z.uraian != 'DITARIK PO') as x";
+    where z.uraian != 'APPROVED' and z.uraian != 'DITARIK PO' and z.uraian != 'CETAK/PRINT' and z.uraian != 'CANCELED') as x";
     var $t_front_pp_apprv_view_column = array('docno','docdate','pemohon','keterangan','nmbranch','status_desc');
     var $t_front_pp_apprv_view_order = array('inputdate' => 'desc'); // default order
     private function _get_query_front_pp_apprv()

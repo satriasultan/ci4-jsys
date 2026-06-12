@@ -143,8 +143,8 @@ function documentReadable(){
                 var option = new Option(supplierData.nmsupplier, supplierData.kdsupplier, true, true);
                 $(option).data('supplier-data', supplierData); // Simpan data lengkap
                 
-                $('[name="kdsupplier"]').append(option).trigger('change');
-                
+                $('[name="kdsupplier"]').append(option).trigger('change').prop('disabled',true);
+                defaultInitialSupPO = json.dataTables.items[0].kdsupplier
                 // Set alamat dan phone langsung
                 $("#alamatsupplier").val(json.dataTables.items[0].alamatsupplier).prop('readonly', true);
                 // $("#phone").val(data.phone).prop('readonly', true);
@@ -208,7 +208,7 @@ function documentReadable(){
                 
                 // Set alamat dan phone langsung
                 setJtsValue('[name="kurs"]', convertToDbNumber(json.dataTables.items[0].kurs));
-                $('[name="kurs"]').prop('readonly', false);
+                $('[name="kurs"]').prop('readonly', true);
                 // $("#phone").val(data.phone).prop('readonly', true);
             });
             skipRoleChange = true;
@@ -465,6 +465,7 @@ function setToDisapproved(docno) {
 
 
 var defaultInitialPO = '';
+var defaultInitialSupPO = '';
 $("#docnopo").select2({
     placeholder: "Choose Your PO",
     allowClear: true,
@@ -483,6 +484,7 @@ $("#docnopo").select2({
                 _start_: 1,
                 _perpage_: 2,
                 _paramglobal_: defaultInitialPO,
+                _paramglobalsup_: defaultInitialSupPO,
                 _parameterx_: defaultInitialPO,
                 term: params.term,
             };
@@ -840,6 +842,7 @@ function btnUpdateDetail(){
                 $('#descriptionpo').val(res.data.descriptionpo);
                 $('#docno').val(res.data.docno);
                 $('#docnopomodal').val(res.data.docnopo);
+                $('[name="docnopo"]').val(res.data.docnopo);
                 $('#idbarang').val(res.data.idbarang);
                 $('#nmbarang').val(res.data.nmbarang);
                 $('#idspec').val(res.data.idspec);
@@ -1089,6 +1092,9 @@ $('#formLPBdetail').bootstrapValidator({
 
 function saveLPBDetail() {
 
+    let ok =  $('#docnopo').val()
+    let ok2 = $('[name="docnopo"]').val();
+
     Swal.fire({
         title: 'Konfirmasi',
         text: 'Simpan data Penerimaan Pembelian?',
@@ -1144,7 +1150,15 @@ function saveLPBDetail() {
         formData.set('idprincipal', $('#idprincipal').val());
         formData.set('idgudang', $('#idgudang').val());
         formData.set('idspec', $('#idspec').val());
-        formData.set('docnopo', $('#docnopo').val());
+        // formData.set('docnopo', $('#docnopo').val());
+        let docnopo = $('#docnopo').val();
+
+        // fallback kalau di modal update
+        if (!docnopo) {
+            docnopo = $('#docnopomodal').val();
+        }
+
+        formData.set('docnopo', docnopo);
         
         // formData.set('descriptionpo', convertToDbNumber(qty));
 
@@ -1226,10 +1240,18 @@ function saveLPBDetail() {
 function btnInputDetail() {
 
     let cabang = $('#cabang').val();
+    let kdsupplier = $('#kdsupplier').val();
+
 
     if (!cabang || cabang.trim() === '') {
         alert('Cabang harus dipilih terlebih dahulu');
         $('#cabang').focus();
+        return; // stop proses
+    }
+
+     if (!kdsupplier || kdsupplier.trim() === '') {
+        alert('Supplier harus dipilih terlebih dahulu');
+        $('#kdsupplier').focus();
         return; // stop proses
     }
 
@@ -1309,6 +1331,8 @@ $("#kdsupplier").select2({
         var selectedData = e.params.data;
         
         $("#alamatsupplier").val(selectedData.alamat || '').prop('disabled', true);
+        defaultInitialSupPO = selectedData.kdsupplier
+        $("#jthtempo").val(selectedData.jthtempo || '')
         // $("#phone").val(selectedData.phone || '').prop('disabled', true);
     }
 });

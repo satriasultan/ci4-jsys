@@ -259,7 +259,7 @@
                                                     <label for="currcode" class="form-label">Mata Uang</label>
                                                     <select name="currcode"
                                                             id="currcode"
-                                                            class="form-select select2"
+                                                            class="form-select select2" disabled
                                                             required>
                                                     </select>
                                                 </div>
@@ -272,7 +272,7 @@
                                                         name="kurs"
                                                         id="kurs"
                                                         class="form-control ratakanan jtsseparator"
-                                                        placeholder="Nilai tukar akan muncul disini"
+                                                        placeholder="Nilai tukar akan muncul disini" readonly
                                                         >
                                                 </div>
                                             </div>
@@ -291,7 +291,7 @@
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label for="idtax">Pajak</label>
-                                                <select name="idtax" id="idtax" class="form-control select2" required></select>
+                                                <select name="idtax" id="idtax" disabled class="form-control select2" required></select>
                                             </div>
                                         </div>
                                         <div class="col-md-3" style="margin-top: 30px;">
@@ -300,6 +300,7 @@
                                                 <div class="form-check">
                                                     <input class="form-check-input" 
                                                         type="checkbox" 
+                                                        disabled
                                                         name="isinclusive" 
                                                         id="isinclusive"
                                                         <?= isset($data['isinclusive']) && $data['isinclusive'] === 'YES' ? 'checked' : '' ?>>
@@ -570,17 +571,18 @@
                 <!-- FOOTER -->
                 <div class="modal-footer bg-light">
                     <button type="button"
+                            class="btn btn-primary"
+                            onclick="saveLPBDetail()">
+                        <i class="fa fa-save"></i> Simpan
+                    </button>
+                    <button type="button"
                             class="btn btn-secondary"
                             data-bs-dismiss="modal"
                             onclick="$('#modalDetailLPB').modal('hide')">
                         <i class="fa fa-times"></i> Batal
                     </button>
 
-                    <button type="button"
-                            class="btn btn-primary"
-                            onclick="saveLPBDetail()">
-                        <i class="fa fa-save"></i> Simpan
-                    </button>
+                    
                 </div>
             </form>
         </div>
@@ -610,6 +612,8 @@
                     <input type="hidden" name="idurut" id="idurut">
                     <input type="hidden" name="uniqueid" id="uniqueid">
                     <input type="hidden" name="docno" id="docno">
+                    <input type="hidden" name="docnopo" id="docnopo">
+
                     <!-- <input type="hidden" name="status" id="status" value="P">
                     <input type="hidden" name="chold" id="chold" value="NO"> -->
 
@@ -794,17 +798,18 @@
                 <!-- FOOTER -->
                 <div class="modal-footer bg-light">
                     <button type="button"
+                            class="btn btn-primary"
+                            onclick="saveLPBDetail()">
+                        <i class="fa fa-save"></i> Simpan
+                    </button>
+                    <button type="button"
                             class="btn btn-secondary"
                             data-bs-dismiss="modal"
                             onclick="$('#modalUpdateLPB').modal('hide')">
                         <i class="fa fa-times"></i> Batal
                     </button>
 
-                    <button type="button"
-                            class="btn btn-primary"
-                            onclick="saveLPBDetail()">
-                        <i class="fa fa-save"></i> Simpan
-                    </button>
+                    
                 </div>
             </form>
         </div>

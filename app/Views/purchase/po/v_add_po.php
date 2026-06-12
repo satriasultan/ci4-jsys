@@ -535,17 +535,17 @@
                 <!-- FOOTER -->
                 <div class="modal-footer bg-light">
                     <button type="button"
+                            class="btn btn-primary"
+                            onclick="savePODetail()">
+                        <i class="fa fa-save"></i> Simpan
+                    </button>
+                    <button type="button"
                             class="btn btn-secondary"
                             data-bs-dismiss="modal"
                             onclick="$('#modalDetailPO').modal('hide')">
                         <i class="fa fa-times"></i> Batal
                     </button>
 
-                    <button type="button"
-                            class="btn btn-primary"
-                            onclick="savePODetail()">
-                        <i class="fa fa-save"></i> Simpan
-                    </button>
                 </div>
             </form>
         </div>
@@ -653,7 +653,7 @@
                                         placeholder="0.00">
                             </div>
                         </div>
-                        <div class="col-md-2">
+                        <!-- <div class="col-md-2">
                             <div class="form-group">
                                 <label>Multi Disc (%)</label>
                                 <input type="text"
@@ -662,7 +662,7 @@
                                         class="form-control jtsseparator ratakanan"
                                         placeholder="0.00">
                             </div>
-                        </div>
+                        </div> -->
                         <div class="col-md-2">
                             <div class="form-group">
                                 <label>Nilai</label>
@@ -702,17 +702,17 @@
                 <!-- FOOTER -->
                 <div class="modal-footer bg-light">
                     <button type="button"
+                            class="btn btn-primary"
+                            onclick="savePODetail()">
+                        <i class="fa fa-save"></i> Simpan
+                    </button>
+                    <button type="button"
                             class="btn btn-secondary"
                             data-bs-dismiss="modal"
                             onclick="$('#modalUpdatePO').modal('hide')">
                         <i class="fa fa-times"></i> Batal
                     </button>
 
-                    <button type="button"
-                            class="btn btn-primary"
-                            onclick="savePODetail()">
-                        <i class="fa fa-save"></i> Simpan
-                    </button>
                 </div>
             </form>
         </div>

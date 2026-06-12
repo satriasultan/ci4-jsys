@@ -348,7 +348,38 @@ group by docno order by docno asc");
     function q_supplier_new($param){
         return $this->db->query("select *, trim(kdsupplier) as id from sc_mst.mstsupplier where coalesce(trim(chold),'NO')!='YES' AND coalesce(trim(kdsupplier),'')!='' $param ");
     }
+    function q_cust_and_supplier($param)
+    {
+        return $this->db->query("
+            SELECT *
+            FROM (
+                SELECT
+                    TRIM(kdsupplier) AS kode,
+                    TRIM(kdsupplier) AS id,
+                    TRIM(nmsupplier) AS nama,
+                    TRIM(alamat) AS alamat,
+                    COALESCE(jthtempo, 0) AS jthtempo,
+                    'SUPPLIER' AS tipe
+                FROM sc_mst.mstsupplier
+                WHERE COALESCE(TRIM(chold),'NO') != 'YES'
+                    AND COALESCE(TRIM(kdsupplier),'') != ''
 
+                UNION ALL
+
+                SELECT
+                    TRIM(kdcustomer) AS kode,
+                    TRIM(kdcustomer) AS id,
+                    TRIM(nmcustomer) AS nama,
+                    TRIM(alamat_kantor) AS alamat,
+                    COALESCE(jthtempo, 0) AS jthtempo,
+                    'CUSTOMER' AS tipe
+                FROM sc_mst.customer
+                WHERE COALESCE(TRIM(kdcustomer),'') != ''
+            ) a
+            WHERE 1=1
+            $param
+        ");
+    }
     function q_pp($param){
         return $this->db->query("
             SELECT DISTINCT 
@@ -377,12 +408,37 @@ group by docno order by docno asc");
         ");
     }
 
+    function q_banks($param){
+        return $this->db->query("select * from sc_mst.banks where id is not null $param");
+    }
+
     function q_lpb($param){
-        return $this->db->query("select *, trim(docno) as id from sc_trx.lpb where coalesce(trim(docno),'')!='' $param ");
+        return $this->db->query("
+            SELECT DISTINCT 
+                lpb.*, 
+                trim(lpb.docno) as id 
+            FROM sc_trx.lpb 
+            INNER JOIN sc_trx.lpb_dtl ON lpb.docno = lpb_dtl.docno 
+            WHERE coalesce(trim(lpb.docno),'') != '' 
+                AND (lpb_dtl.qty - (coalesce(lpb_dtl.qtyretur, 0))) > 0
+                AND (trim(lpb.status) = 'P')
+                $param
+        ");
     }
 
     function q_so($param){
-        return $this->db->query("select *, trim(docno) as id from sc_trx.salesorder where trim(status)='A' and coalesce(trim(docno),'')!='' $param ");
+        // return $this->db->query("select *, trim(docno) as id from sc_trx.salesorder where trim(status)='A' and coalesce(trim(docno),'')!='' $param ");
+        return $this->db->query("
+            SELECT DISTINCT 
+                so.*, 
+                trim(so.docno) as id 
+            FROM sc_trx.salesorder so 
+            INNER JOIN sc_trx.salesorder_dtl so_dtl ON so.docno = so_dtl.docno 
+            WHERE coalesce(trim(so.docno),'') != '' 
+            AND (so_dtl.qty - coalesce(so_dtl.qtypenjualan, 0)) > 0                
+            AND (trim(so.status) = 'A')
+                $param
+        ");
     }
     function q_master_barang($param){
         return $this->db->query("select *, trim(idbarang) as id from sc_mst.mbarang where coalesce(trim(idbarang),'')!='' $param ");

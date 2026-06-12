@@ -253,7 +253,10 @@ class Purchase extends BaseController
             $row[] = $dropdownMenu;
 
             $row[] = $lm->docno;
-            $row[] = $lm->docdate;
+            $row[] = date(
+                'd/m/Y',
+                strtotime(trim($lm->docdate))
+            );
             $row[] = $lm->pemohon;
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
@@ -429,7 +432,10 @@ class Purchase extends BaseController
             $row[] = $dropdownMenu;
 
             $row[] = $lm->docno;
-            $row[] = $lm->docdate;
+            $row[] = date(
+                'd/m/Y',
+                strtotime(trim($lm->docdate))
+            );
             $row[] = $lm->pemohon;
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
@@ -450,7 +456,10 @@ class Purchase extends BaseController
                     $badgeClass = 'badge-success';
                     break;
                 case 'CETAK/PRINT':
-                    $badgeClass = 'badge-primary ';
+                    $badgeClass = 'badge-cetak ';
+                    break;
+                case 'CANCELED':
+                    $badgeClass = 'badge-danger ';
                     break;
                 default:
                     $badgeClass = 'badge-primary'; // Default (primary) jika status tidak dikenali
@@ -1493,7 +1502,10 @@ class Purchase extends BaseController
             $row[] = $dropdownMenu;
 
             $row[] = $lm->docno;
-            $row[] = $lm->docdate;
+            $row[] = date(
+                'd/m/Y',
+                strtotime(trim($lm->docdate))
+            );
             $row[] = $lm->pemohon;
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
@@ -3155,7 +3167,9 @@ class Purchase extends BaseController
                 }
                 
                 // Hitung nilaipajak = nilai + (nilai * totalPersentase / 100)
-                $nilaipajak = $nilai + ($nilai * $totalPersentase / 100);
+                // $nilaipajak = $nilai + ($nilai * $totalPersentase / 100);
+                $nilaipajak = $nilai * $totalPersentase / 100;
+
             } else {
                 // Jika NON pajak, nilaipajak sama dengan nilai
                 $nilaipajak = $nilai;
@@ -3169,6 +3183,9 @@ class Purchase extends BaseController
                 'nilai'        => $nilai,
                 'nilaikonversi' => $nilaikonversi,  // Tambahkan ini
                 'nilaipajak'   => $nilaipajak,      // Tambahkan ini
+                'kurs'          => strtoupper($this->request->getPost('kurs')),
+                'idtax'         => strtoupper($this->request->getPost('idtax')),
+                'currcode'      => strtoupper($this->request->getPost('currcode')),
                 'descriptionpo' => $descriptionpo,
                 'updateby'     => $nama,
                 'updatedate'   => date('Y-m-d H:i:s')
@@ -4080,6 +4097,22 @@ class Purchase extends BaseController
             $data['total'] = $nilai;
             $data['total_terbilang'] = strtoupper($this->terbilang($nilai));
             $detail->terbilang = $data['total_terbilang'];
+
+
+            $currcode = trim($detail->currcode);
+
+            $currency = $this->db->query("
+                SELECT currname 
+                FROM sc_mst.currency 
+                WHERE TRIM(currcode) = ?
+                LIMIT 1
+            ", [$currcode])->getRow();
+
+            $cleanedCurrname = $currency->currname ?? '';
+            $cleanedCurrname = str_replace('(LUAR NEGERI)', '', $cleanedCurrname);
+            $cleanedCurrname = trim($cleanedCurrname);
+
+            $detail->currname = $cleanedCurrname;
 
 
             
@@ -4999,7 +5032,8 @@ class Purchase extends BaseController
                 }
                 
                 // Hitung nilaipajak = nilai + (nilai * totalPersentase / 100)
-                $nilaipajak = $nilai + ($nilai * $totalPersentase / 100);
+                // $nilaipajak = $nilai + ($nilai * $totalPersentase / 100);
+                $nilaipajak = $nilai * $totalPersentase / 100;
             } else {
                 // Jika NON pajak, nilaipajak sama dengan nilai
                 $nilaipajak = $nilai;
@@ -7595,11 +7629,30 @@ class Purchase extends BaseController
         }
 
         $db = $this->db;
+        $db->transStart();
 
-        // ===============================
-        // CEK HEADER
-        // ===============================
-        $exists = $db->table('sc_tmp.lpb')
+        $builderPO = $db->table('sc_trx.po');
+        $poData = $builderPO
+            ->select('currcode, kurs, idtax, isinclusive')
+            ->where('docno', $docnopo)
+            ->get()
+            ->getRowArray();
+
+        // Jika data PO tidak ditemukan, beri response error
+        if (!$poData) {
+            $db->transRollback();
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => "Data PO dengan nomor {$docnopo} tidak ditemukan"
+            ]);
+        }
+
+        // =====================================================
+        // CEK / INSERT HEADER
+        // =====================================================
+        $builderHeader = $db->table('sc_tmp.lpb');
+
+        $exists = $builderHeader
             ->where('docno', $docno)
             ->where('inputby', $nama)
             ->countAllResults();
@@ -7607,28 +7660,33 @@ class Purchase extends BaseController
         $reload = false;
 
         if ($exists == 0) {
-
-            $isinclusive = strtoupper(trim($this->request->getPost('isinclusive') ?? 'NO'));
+            $currcode   = $poData['currcode'] ?? '';
+            $kurs       = $poData['kurs'] ?? 0;
+            $idtax      = $poData['idtax'] ?? '';
+            $isinclusive = strtoupper(trim($poData['isinclusive'] ?? 'NO'));
             $isinclusive = ($isinclusive === 'YES') ? 'YES' : 'NO';
 
             $db->table('sc_tmp.lpb')->insert([
                 'docno'     => $docno,
                 'cabang'    => $this->request->getPost('cabang'),
                 'docdate'   => date('Y-m-d', strtotime(trim($this->request->getPost('docdate')))),
-                'jthtempo'  => $this->request->getPost('jthtempo'),
-                'isinclusive' => $isinclusive,
-                'kdsupplier' => strtoupper($this->request->getPost('kdsupplier')),
-                'alamatsupplier' => strtoupper($this->request->getPost('alamatsupplier')),
-                'idtax' => strtoupper($this->request->getPost('idtax') ?? 'NON'),
+                // 'senddate'   => date('Y-m-d', strtotime(trim($this->request->getPost('senddate')))),
+                'jthtempo'     => $this->request->getPost('jthtempo'),
+                'isinclusive'   => $isinclusive,                              // ← Dari PO
+                
+                'kdsupplier'    => strtoupper($this->request->getPost('kdsupplier')),
+                'alamatsupplier'    => strtoupper($this->request->getPost('alamatsupplier')),
+                // 'alamatkirim'    => strtoupper($this->request->getPost('alamatkirim')),
+                'idtax'         => strtoupper($idtax),                        // ← Dari PO
                 'biayavol' => $this->request->getPost('biayavol') ?? 0,
                 'biayavol2' => $this->request->getPost('biayavol2') ?? 0,
-                'nosj' => strtoupper($this->request->getPost('nosj')),
-                'nofaktur' => strtoupper($this->request->getPost('nofaktur')),
-                'currcode' => strtoupper($this->request->getPost('currcode')),
-                'kurs' => $this->request->getPost('kurs') ?? 1,
-                'keterangan' => strtoupper($this->request->getPost('keterangan')),
-                'status' => 'E',
-                'inputby' => $nama,
+                'nosj'    => strtoupper($this->request->getPost('nosj')),
+                'nofaktur'    => strtoupper($this->request->getPost('nofaktur')),
+                'currcode'      => strtoupper($currcode),                     // ← Dari PO
+                'kurs'          => $kurs ?? 1,                                     // ← Dari PO
+                'keterangan'    => strtoupper($this->request->getPost('keterangan')),
+                'status'    => 'E',
+                'inputby'   => $nama,
                 'inputdate' => date('Y-m-d H:i:s')
             ]);
 
@@ -7671,9 +7729,9 @@ class Purchase extends BaseController
 
             $nilaikonversi = $nilai * $kurs;
 
-            $nilaipajak = $nilai;
+            $nilaipajak = 0;
 
-            if ($idtax !== 'NON' && $nilai > 0) {
+            if (!empty($idtax) && trim($idtax) !== 'NON' && $nilai > 0) {
                 $taxDetails = $db->table('sc_mst.tax_dtl')
                     ->select('percentation')
                     ->where('idtax', $idtax)
@@ -7681,7 +7739,8 @@ class Purchase extends BaseController
                     ->getResultArray();
 
                 $totalPersen = array_sum(array_column($taxDetails, 'percentation'));
-                $nilaipajak = $nilai + ($nilai * $totalPersen / 100);
+                // $nilaipajak = $nilai + ($nilai * $totalPersen / 100);
+                $nilaipajak = $nilai * $totalPersen / 100;
             }
             log_message('error', 'UNIQUEID: ' . $uniqueid);
             $db->table('sc_tmp.lpb_dtl')
@@ -7694,6 +7753,9 @@ class Purchase extends BaseController
                     'nilai' => $nilai,
                     'nilaikonversi' => $nilaikonversi,
                     'nilaipajak' => $nilaipajak,
+                    'idtax' => $idtax,
+                    'kurs' => $kurs,
+                    'currcode' => $poData['currcode'] ?? '',
                     'volitem' => $volitem,
                     'biaya' => $biaya,
                     'biaya2' => $biaya2,
@@ -7755,8 +7817,13 @@ class Purchase extends BaseController
                     'qty' => $sisaQty,
                     'harga' => $row->harga,
                     'nilai' => $row->nilai,
-                    'descriptionpo' => $row->descriptionpo,
+                    'nilaipajak' => $row->nilaipajak,
+                    'nilaikonversi' => $row->nilaikonversi,
+                    'currcode' => $row->currcode,
+                    'kurs' => $row->kurs,
+                    'idtax' => $row->idtax,
                     'descriptionpp' => $row->descriptionpp,
+                    'descriptionpo' => $row->descriptionpo,
                     'inputby' => $nama,
                     'inputdate' => date('Y-m-d H:i:s')
                 ]);
@@ -7764,27 +7831,56 @@ class Purchase extends BaseController
                 $insertCount++;
             }
 
-            $message = "$insertCount item ditambahkan";
+            $message = $insertCount > 0 
+                        ? "$insertCount item berhasil ditambahkan"
+                        : "Semua item sudah ada sebelumnya";
         }
 
         // ===============================
         // HITUNG TOTAL (AMAN)
         // ===============================
-        $builder = $db->table('sc_tmp.lpb_dtl');
-        $builder->select('COALESCE(SUM(nilai),0) as total');
-        $builder->where('TRIM(docno)', trim($docno));
-
-        $row = $builder->get()->getRowArray();
-        $dpp = (float)($row['total'] ?? 0);
-
-        $db->table('sc_tmp.lpb')
+        $lpbHeader = $builderHeader->select('idtax')->where('docno', $docno)->get()->getRowArray();
+        $idtax = $lpbHeader['idtax'] ?? '';
+        
+        // Hitung total DPP (sum nilai dari po_dtl)
+        $builderTotalDpp = $db->table('sc_tmp.lpb_dtl');
+        $totalDpp = $builderTotalDpp->select('COALESCE(SUM(nilai), 0) as total_dpp')
             ->where('docno', $docno)
-            ->update([
-                'dpp' => $dpp,
-                'total' => $dpp,
-                'updateby' => $nama,
-                'updatedate' => date('Y-m-d H:i:s')
-            ]);
+            ->get()
+            ->getRowArray();
+        
+        $dpp = $totalDpp['total_dpp'] ?? 0;
+        
+        // Hitung jumlah pajak berdasarkan idtax
+        $jumlahPajak = 0;
+        
+        if (!empty($idtax) && trim($idtax) !== 'NON'  && $dpp > 0) {
+            // Ambil detail tax dari sc_mst.tax_dtl
+            $builderTaxDtl = $db->table('sc_mst.tax_dtl');
+            $taxDetails = $builderTaxDtl->select('percentation')
+                ->where('idtax', $idtax)
+                ->get()
+                ->getResultArray();
+            
+            foreach ($taxDetails as $tax) {
+                $persentase = $tax['percentation'] ?? 0;
+                $jumlahPajak += $dpp * ($persentase / 100);
+            }
+        }
+        
+        // Hitung total (DPP + Jumlah Pajak)
+        $total = $dpp + $jumlahPajak;
+        
+        // Update header LPB
+        $builderHeader->where('docno', $docno)->update([
+            'dpp' => number_format($dpp, 2, '.', ''),
+            'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
+            'total' => number_format($total, 2, '.', ''),
+            'updateby' => $nama,
+            'updatedate' => date('Y-m-d H:i:s')
+        ]);
+
+        $db->transComplete();
 
         return $this->response->setJSON([
             'success' => true,
@@ -8164,30 +8260,30 @@ class Purchase extends BaseController
             // $pemohon = strtoupper(trim($this->request->getPost('pemohon')));
             $docdate   = trim($this->request->getPost('docdate'));
             // $senddate   = trim($this->request->getPost('senddate'));
-            $jthtempo   = trim($this->request->getPost('jthtempo'));
-            $kdsupplier   = trim($this->request->getPost('kdsupplier'));
-            $alamatsupplier   = trim($this->request->getPost('alamatsupplier'));
+            // $jthtempo   = trim($this->request->getPost('jthtempo'));
+            // $kdsupplier   = trim($this->request->getPost('kdsupplier'));
+            // $alamatsupplier   = trim($this->request->getPost('alamatsupplier'));
             // $alamatkirim   = trim($this->request->getPost('alamatkirim'));
             $keterangan   = trim($this->request->getPost('keterangan'));
-            $currcode   = trim($this->request->getPost('currcode'));
+            // $currcode   = trim($this->request->getPost('currcode'));
             $nosj   = trim($this->request->getPost('nosj'));
             $nofaktur   = trim($this->request->getPost('nofaktur'));
             // $kurs   = trim($this->request->getPost('kurs'));
             // $isinclusive   = trim($this->request->getPost('isinclusive'));
-            $idtax   = trim($this->request->getPost('idtax'));
+            // $idtax   = trim($this->request->getPost('idtax'));
             $keterangan   = trim($this->request->getPost('keterangan'));
-            $isinclusive = $this->request->getPost('isinclusive') ? 'YES' : 'NO';
+            // $isinclusive = $this->request->getPost('isinclusive') ? 'YES' : 'NO';
 
 
             
             // **BERSIHKAN FORMAT KURS**
-            $kurs = trim($this->request->getPost('kurs'));
-            $kurs_clean = 0;
-            if (!empty($kurs)) {
-                $kurs_clean = str_replace(',', '', $kurs);
-                // $kurs_clean = str_replace('.', '.', $kurs_clean);
-                // $kurs_clean = floatval($kurs_clean);
-            }
+            // $kurs = trim($this->request->getPost('kurs'));
+            // $kurs_clean = 0;
+            // if (!empty($kurs)) {
+            //     $kurs_clean = str_replace(',', '', $kurs);
+            //     // $kurs_clean = str_replace('.', '.', $kurs_clean);
+            //     // $kurs_clean = floatval($kurs_clean);
+            // }
 
              // Convert expdate ke format YYYY-MM-DD
             $docdateph = null;
@@ -8204,17 +8300,17 @@ class Purchase extends BaseController
             $updateHeader = [
                 'docdate'        => $docdateph,
                 // 'senddate'       => $senddateph,
-                'jthtempo'       => $jthtempo,
-                'kdsupplier'     => strtoupper($kdsupplier),
-                'alamatsupplier' => strtoupper($alamatsupplier),
+                // 'jthtempo'       => $jthtempo,
+                // 'kdsupplier'     => strtoupper($kdsupplier),
+                // 'alamatsupplier' => strtoupper($alamatsupplier),
                 // 'alamatkirim'    => strtoupper($alamatkirim),
                 'nofaktur'     => strtoupper($nofaktur),
                 'nosj'     => strtoupper($nosj),
                 'keterangan'     => strtoupper($keterangan),
-                'currcode'       => $currcode,
-                'kurs'           => $kurs_clean,
-                'isinclusive'    => strtoupper($isinclusive),
-                'idtax'          => strtoupper($idtax),
+                // 'currcode'       => $currcode,
+                // 'kurs'           => $kurs_clean,
+                // 'isinclusive'    => strtoupper($isinclusive),
+                // 'idtax'          => strtoupper($idtax),
                 'keterangan'         => strtoupper($keterangan)
                 // 'pemohon'       => $pemohon (jika masih diperlukan nanti bisa ditambahkan)
             ];
@@ -9150,6 +9246,23 @@ class Purchase extends BaseController
         $db = $this->db;
         $db->transStart();
 
+        $builderLPB = $db->table('sc_trx.lpb');
+        $lpbData = $builderLPB
+            ->select('currcode, kurs, idtax, isinclusive')
+            ->where('docno', $docnolpb)
+            ->get()
+            ->getRowArray();
+
+        // Jika data PO tidak ditemukan, beri response error
+        if (!$lpbData) {
+            $db->transRollback();
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => "Data PO dengan nomor {$docnopo} tidak ditemukan"
+            ]);
+        }
+
+
         // =====================================================
         // CEK / INSERT HEADER
         // =====================================================
@@ -9164,13 +9277,12 @@ class Purchase extends BaseController
         // Untuk pengambilan data dari POST
         
         if ($exists == 0) {
-            $isinclusive = strtoupper(trim(
-                $this->request->getPost('isinclusive') 
-                ?? $dataprocess->isinclusive 
-                ?? 'NO'
-            ));
-
+            $currcode   = trim($lpbData['currcode']) ?? '';
+            $kurs       = trim($lpbData['kurs']) ?? 0;
+            $idtax      = trim($lpbData['idtax']) ?? '';
+            $isinclusive = strtoupper(trim($poData['isinclusive'] ?? 'NO'));
             $isinclusive = ($isinclusive === 'YES') ? 'YES' : 'NO';
+
 
             $builderHeader->insert([
                 'docno'     => $docno,
@@ -9183,13 +9295,13 @@ class Purchase extends BaseController
                 'kdsupplier'    => strtoupper($this->request->getPost('kdsupplier')),
                 'alamatsupplier'    => strtoupper($this->request->getPost('alamatsupplier')),
                 // 'alamatkirim'    => strtoupper($this->request->getPost('alamatkirim')),
-                'idtax'    => strtoupper($this->request->getPost('idtax')),
+                'idtax'         => strtoupper($idtax),                        // ← Dari PO
                 // 'biayavol'    => ($this->request->getPost('biayavol')),
                 // 'biayavol2'    => ($this->request->getPost('biayavol2')),
                 // 'nosj'    => strtoupper($this->request->getPost('nosj')),
                 // 'nofaktur'    => strtoupper($this->request->getPost('nofaktur')),
-                'currcode'    => strtoupper($this->request->getPost('currcode')),
-                'kurs'    => ($this->request->getPost('kurs')),
+                'currcode'      => strtoupper($currcode),                     // ← Dari PO
+                'kurs'          => $kurs ?? 1,                                     // ← Dari PO
                 'keterangan'    => strtoupper($this->request->getPost('keterangan')),
                 'complain'    => strtoupper($this->request->getPost('complain')),
                 'status'    => 'E',

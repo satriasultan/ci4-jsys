@@ -388,17 +388,17 @@
 
                 <!-- FOOTER -->
                 <div class="modal-footer bg-light">
+                    
+                    <button type="button"
+                        class="btn btn-primary"
+                        onclick="savePPDetail()">
+                        <i class="fa fa-save"></i> Simpan
+                    </button>
                     <button type="button"
                             class="btn btn-secondary"
                             data-bs-dismiss="modal"
                             onclick="$('#modalDetailPP').modal('hide')">
                         <i class="fa fa-times"></i> Batal
-                    </button>
-
-                    <button type="button"
-                            class="btn btn-primary"
-                            onclick="savePPDetail()">
-                        <i class="fa fa-save"></i> Simpan
                     </button>
                 </div>
             </form>
@@ -425,20 +425,28 @@
         }
 
 
+        // DOC DATE = hari ini
+        let today = moment();
+
+        // EST PAKAI = +7 hari
+        let nextWeek = moment().add(7, 'days');
+
         $('#docdate').daterangepicker({
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
+            startDate: today,
             locale: { format: 'YYYY-MM-DD' },
             cancelLabel: 'Clear'
         });
 
-        // handler apply/cancel
+        // set default value ke input
+        $('#docdate').val(today.format('YYYY-MM-DD'));
+
         $('#docdate').on('apply.daterangepicker', function(ev, picker) {
             $(this).val(picker.startDate.format('YYYY-MM-DD'));
-            // jika butuh validasi bootstrapValidator:
-            // $('#formInputTransfers').bootstrapValidator('updateStatus', 'docdate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'docdate');
         });
+
         $('#docdate').on('cancel.daterangepicker', function(ev, picker) {
             $(this).val('');
         });
@@ -449,20 +457,21 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
+            startDate: nextWeek,
             locale: { format: 'YYYY-MM-DD' },
             cancelLabel: 'Clear'
         });
 
-        // handler apply/cancel
+        // set default value ke input
+        $('#estpakai').val(nextWeek.format('YYYY-MM-DD'));
+
         $('#estpakai').on('apply.daterangepicker', function(ev, picker) {
             $(this).val(picker.startDate.format('YYYY-MM-DD'));
-            // jika butuh validasi bootstrapValidator:
-            // $('#formInputTransfers').bootstrapValidator('updateStatus', 'estpakai', 'NOT_VALIDATED').bootstrapValidator('validateField', 'estpakai');
         });
+
         $('#estpakai').on('cancel.daterangepicker', function(ev, picker) {
             $(this).val('');
         });
-
 
         
         $('#periodemulai').daterangepicker({

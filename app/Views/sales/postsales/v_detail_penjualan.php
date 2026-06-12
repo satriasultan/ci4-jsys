@@ -347,7 +347,6 @@
                     <h3 class="card-title">
                         Detail Barang
                     </h3>
-                    </div>
                 </div>
                 <div class="card-body">
                     <div class="row">

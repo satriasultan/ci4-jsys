@@ -135,6 +135,27 @@ require_once $helper;
         var dataSet = new Stimulsoft.System.Data.DataSet("Demo");
         // Load JSON data file from specified URL to the DataSet object
         dataSet.readJsonFile("<?= $jsonfile ?>");
+
+        viewer.onPrintReport = function (args) {
+
+            fetch("<?= base_url('api/globalmodule/updatePrintStatus') ?>", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    docno: "<?= $docno ?>",
+                    table: "<?= $table ?>"
+                })
+            })
+                .then(res => res.json())
+                .then(res => {
+                    console.log("Update status:", res);
+                });
+
+            args.fileName = "Laporan_Custom";
+        };
+
         // Remove all connections from the report template
         report.dictionary.databases.clear();
         // Register DataSet object

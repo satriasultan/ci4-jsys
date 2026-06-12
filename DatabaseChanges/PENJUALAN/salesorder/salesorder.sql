@@ -254,13 +254,15 @@ BEGIN
         INSERT INTO sc_trx.salesorder_dtl (
             idurut, docno, idbarang, uniqueid,  nmbarang,
             idprincipal, idgudang, idspec, unit, qty, 
-            harga, nilai, bomdesc, multidisc,
+            harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
+            bomdesc, multidisc,
             inputby, inputdate, status, updateby, updatedate
         )
         SELECT
             idurut, v_docno, idbarang, uniqueid,  nmbarang,
             idprincipal, idgudang, idspec, unit, qty, 
-            harga, nilai, bomdesc, multidisc,
+            harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
+            bomdesc, multidisc,
             inputby, inputdate, status, updateby, updatedate
         FROM sc_tmp.salesorder_dtl
         WHERE rtrim(docno) = rtrim(OLD.docno)
@@ -301,12 +303,14 @@ BEGIN
         INSERT INTO sc_trx.salesorder_dtl
         (idurut, docno, idbarang, uniqueid,  nmbarang,
         idprincipal, idgudang, idspec, unit, qty, 
-        harga, nilai, bomdesc, multidisc,
+        harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
+        bomdesc, multidisc,
         inputby, inputdate, status, updateby, updatedate, docnotmp)
         SELECT
             idurut, NEW.docnotmp, idbarang, uniqueid,  nmbarang,
             idprincipal, idgudang, idspec, unit, qty, 
-            harga, nilai, bomdesc, multidisc,
+            harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
+            bomdesc, multidisc,
             inputby, inputdate, status, updateby, updatedate, docnotmp
         FROM sc_tmp.salesorder_dtl
         WHERE rtrim(docno) = rtrim(NEW.docno);
@@ -399,11 +403,13 @@ BEGIN
 			INSERT INTO sc_tmp.salesorder_dtl
 			( idurut, docno, idbarang, uniqueid, nmbarang,
             idprincipal, idgudang, idspec, unit, qty, 
-            harga, nilai, bomdesc, multidisc,
+            harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
+            bomdesc, multidisc,
             inputby, inputdate, status, updateby, updatedate, docnotmp)
 			SELECT idurut, NEW.docno, idbarang, uniqueid, nmbarang,
             idprincipal, idgudang, idspec, unit, qty, 
-            harga, nilai, bomdesc, multidisc,
+            harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
+            bomdesc, multidisc,
             inputby, inputdate, status, updateby, updatedate, NEW.docno
 			FROM sc_trx.salesorder_dtl 
 			WHERE docno = NEW.docno;
@@ -453,6 +459,30 @@ CREATE OR REPLACE TRIGGER tr_salesorder
     FOR EACH ROW
     EXECUTE FUNCTION sc_trx.tr_salesorder();
 
+
+
+
+
+
+-- Tambahkan kolom di sc_trx.salesorder_dtl
+ALTER TABLE sc_trx.salesorder_dtl 
+ADD COLUMN idtax character(20),
+ADD COLUMN currcode character(3),
+ADD COLUMN kurs numeric(18,2),
+ADD COLUMN nilaikonversi numeric(18,2),
+ADD COLUMN nilaipajak numeric(18,2),
+ADD COLUMN IF NOT EXISTS qtypenjualan numeric(18,2) DEFAULT 0,
+ADD COLUMN IF NOT EXISTS qtyretur numeric(18,2) DEFAULT 0;
+
+-- Tambahkan kolom di sc_tmp.salesorder_dtl
+ALTER TABLE sc_tmp.salesorder_dtl 
+ADD COLUMN idtax character(20),
+ADD COLUMN currcode character(3),
+ADD COLUMN kurs numeric(18,2),
+ADD COLUMN nilaikonversi numeric(18,2),
+ADD COLUMN nilaipajak numeric(18,2),
+ADD COLUMN IF NOT EXISTS qtypenjualan numeric(18,2) DEFAULT 0,
+ADD COLUMN IF NOT EXISTS qtyretur numeric(18,2) DEFAULT 0;
 
 
 

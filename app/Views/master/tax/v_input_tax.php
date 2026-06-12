@@ -148,7 +148,7 @@ $disabled = $isIT ? '' : 'disabled';
                 <div class="float-right d-flex align-items-center gap-2">
                     <button type="button"
                             class="btn btn-success btn-lg action-btn"
-                            data-toggle="tooltip"
+                            data-bs-toggle="tooltip"
                             title="Input Data"
                             onclick="btnInputDetail()">
                         <i class="fa fa-plus"></i>
@@ -156,7 +156,7 @@ $disabled = $isIT ? '' : 'disabled';
 
                     <button type="button"
                             class="btn btn-warning btn-lg action-btn"
-                            data-toggle="tooltip"
+                            data-bs-toggle="tooltip"
                             title="Update Data"
                             onclick="btnUpdateDetail()">
                         <i class="fa fa-edit"></i>
@@ -164,7 +164,7 @@ $disabled = $isIT ? '' : 'disabled';
 
                     <button type="button"
                             class="btn btn-danger btn-lg action-btn"
-                            data-toggle="tooltip"
+                            data-bs-toggle="tooltip"
                             title="Hapus Data"
                             onclick="btnDeleteDetail()">
                         <i class="fa fa-trash"></i>
@@ -224,7 +224,7 @@ $disabled = $isIT ? '' : 'disabled';
                 <h5 class="modal-title" id="modalTaxDetailLabel">
                     <i class="fa fa-plus"></i> Input Tax Detail
                 </h5>
-                <button type="button" class="close text-white" data-dismiss="modal">
+                <button type="button" class="close text-white" data-bs-dismiss="modal">
                     <span>&times;</span>
                 </button>
             </div>
@@ -381,7 +381,7 @@ $disabled = $isIT ? '' : 'disabled';
                 <div class="modal-footer bg-light">
                     <button type="button"
                             class="btn btn-secondary"
-                            data-dismiss="modal"
+                            data-bs-dismiss="modal"
                             onclick="$('#modalTaxDetail').modal('hide')">
                         <i class="fa fa-times"></i> Batal
                     </button>
@@ -420,7 +420,7 @@ $disabled = $isIT ? '' : 'disabled';
 </script>
 <script>
     $(function () {
-        $('[data-toggle="tooltip"]').tooltip();
+        $('[data-bs-toggle="tooltip"]').tooltip();
     });
 </script>
 

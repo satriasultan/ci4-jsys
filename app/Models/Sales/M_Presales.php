@@ -382,15 +382,15 @@ private function _get_query_t_Task($nama = null, $role = null, $bagian = null)
 
     /* UNTUK LIST DEPAN */
     // var $t_front_offering_view = "sc_trx.offering";
-    var $t_front_offering_view = "(select b.nama_customer as nmcust,
-                                b.docno as docnocust,
+    var $t_front_offering_view = "(select b.nmcustomer as nmcust,
+                                b.kdcustomer as docnocust,
                                 b.alamat_kantor,
                                 b.alamat_pengiriman,
                                 b.alamat_penagihan,
                                 b.email,
-                                b.kontak_pic,
-                                b.jabatanpic,
-                                b.telepon,
+                                b.cp,
+                                b.jabatan,
+                                b.phone,
                                 b.fax,
 
                                 a.inputby as offering_inputby,
@@ -398,7 +398,7 @@ private function _get_query_t_Task($nama = null, $role = null, $bagian = null)
                                 trim(a.status) as trimmed_status,
                                 a.* 
                         from sc_trx.offering a
-                        left outer join sc_mst.customer b on a.cust = b.docno
+                        left outer join sc_mst.customer b on a.cust = b.kdcustomer
                         ) as x";
 
     var $t_front_offering_view_column = array('docno','cust','description');
@@ -791,15 +791,15 @@ private function _get_query_t_Task($nama = null, $role = null, $bagian = null)
 
     /* UNTUK LIST DEPAN */
     // var $t_front_proforma_view = "sc_trx.proforma";
-    var $t_front_proforma_view = "(select b.nama_customer as nmcust,
-                                b.docno as docnocust,
+    var $t_front_proforma_view = "(select b.nmcustomer as nmcust,
+                                b.kdcustomer as docnocust,
                                 b.alamat_kantor,
                                 b.alamat_pengiriman,
                                 b.alamat_penagihan,
                                 b.email,
-                                b.kontak_pic,
-                                b.jabatanpic,
-                                b.telepon,
+                                b.cp,
+                                b.jabatan,
+                                b.phone,
                                 b.fax,
 
                                 a.inputby as proforma_inputby,
@@ -807,7 +807,7 @@ private function _get_query_t_Task($nama = null, $role = null, $bagian = null)
                                 trim(a.status) as trimmed_status,
                                 a.* 
                         from sc_trx.proforma a
-                        left outer join sc_mst.customer b on a.cust = b.docno
+                        left outer join sc_mst.customer b on a.cust = b.kdcustomer
                         ) as x";
 
     var $t_front_proforma_view_column = array('docno','cust','description');

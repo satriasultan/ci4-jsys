@@ -208,7 +208,7 @@ function documentReadable(){
                 
                 // Set alamat dan phone langsung
                 setJtsValue('[name="kurs"]', convertToDbNumber(json.dataTables.items[0].kurs));
-                $('[name="kurs"]').prop('readonly', false);
+                $('[name="kurs"]').prop('readonly', true);
                 // $("#phone").val(data.phone).prop('readonly', true);
             });
             skipRoleChange = true;
@@ -332,6 +332,7 @@ function setToDisapproved(docno) {
 
 
 var defaultInitialPO = '';
+var defaultInitialSupPO = '';
 $("#docnopo").select2({
     placeholder: "Choose Your PO",
     dropdownParent: $('#modalDetailVoidPO'),
@@ -350,6 +351,7 @@ $("#docnopo").select2({
                 _start_: 1,
                 _perpage_: 2,
                 _paramglobal_: defaultInitialPO,
+                _paramglobalsup_: defaultInitialSupPO,
                 _parameterx_: defaultInitialPO,
                 term: params.term,
             };
@@ -1022,10 +1024,19 @@ function saveVoidPODetail() {
 function btnInputDetail() {
 
     let cabang = $('#cabang').val();
+    let kdsupplier = $('#kdsupplier').val();
+
 
     if (!cabang || cabang.trim() === '') {
         alert('Cabang harus dipilih terlebih dahulu');
         $('#cabang').focus();
+        return; // stop proses
+    }
+
+    
+     if (!kdsupplier || kdsupplier.trim() === '') {
+        alert('Supplier harus dipilih terlebih dahulu');
+        $('#kdsupplier').focus();
         return; // stop proses
     }
 
@@ -1106,6 +1117,7 @@ $("#kdsupplier").select2({
         
         $("#alamatsupplier").val(selectedData.alamat || '').prop('disabled', true);
         $("#jthtempo").val(selectedData.jthtempo || '')
+        defaultInitialSupPO = selectedData.kdsupplier
         // $("#phone").val(selectedData.phone || '').prop('disabled', true);
     }
 });

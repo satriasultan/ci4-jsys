@@ -145,6 +145,265 @@ $routes->group('/master/role', ["namespace" => "App\Controllers\Master"], functi
 });
 
 
+$routes->group('/arap/report', ["namespace" => "App\Controllers\Arap"], function ($routes) {
+    $routes->add('lapndk', 'Arap::lapndk');
+    $routes->add('list_lapndk', 'Arap::list_lapndk');
+});
+
+$routes->group('/arap/transaksi', ["namespace" => "App\Controllers\Arap"], function ($routes) {
+    
+    $routes->add('ndk', 'Arap::ndk');
+    $routes->add('list_ndk', 'Arap::list_ndk');
+    $routes->add('list_ndk_apprv', 'Arap::list_ndk_apprv');
+
+    $routes->add('addNDK', 'Arap::addNDK');
+    $routes->add('detailNDK', 'Arap::detailNDK');
+    $routes->add('list_tmp_ndk_dtl', 'Arap::list_tmp_ndk_dtl');
+    // $routes->add('showing_sikbsp_mst', 'Arap::showing_sikbsp_mst');
+
+    $routes->add('clearEntryNDK', 'Arap::clearEntryNDK');
+    $routes->add('finalEntryNDK', 'Arap::finalEntryNDK');
+    $routes->add('showing_ndktemp', 'Arap::showing_ndktemp');
+    $routes->add('updateStatusNDK', 'Arap::updateStatusNDK');
+
+
+    $routes->add('save_ndk_detail', 'Arap::save_ndk_detail');
+    $routes->get('updateNDK(:any)', 'Arap::updateNDK$1');
+
+    $routes->add('deleteNDKDtl', 'Arap::deleteNDKDtl');
+    $routes->add('show_ndk', 'Arap::show_ndk');
+    $routes->add('api_ndk(:any)', 'Arap::api_ndk$1');
+    $routes->add('list_trx_ndk_dtl', 'Arap::list_trx_ndk_dtl');
+    $routes->add('showing_ndktrx', 'Arap::showing_ndktrx');
+    $routes->add('getBranchInfoNDK', 'Arap::getBranchInfoNDK');
+    $routes->add('getNextSuffixNDK', 'Arap::getNextSuffixNDK');
+    $routes->add('initNDKHeader', 'Arap::initNDKHeader');
+    $routes->add('saveNDKDetail', 'Arap::saveNDKDetail');
+    $routes->add("get_ndk_detail(:any)", "Arap::get_ndk_detail$1");
+    $routes->add("delete_ndk_detail", "Arap::delete_ndk_detail");
+
+});
+
+
+
+$routes->group('/ka/accounting', ["namespace" => "App\Controllers\Finance"], function ($routes) {
+
+    $routes->add('jup', 'Finance::jup');
+    $routes->add('list_jup', 'Finance::list_jup');
+    $routes->add('list_jup_apprv', 'Finance::list_jup_apprv');
+
+    $routes->add('addJUP', 'Finance::addJUP');
+    $routes->add('detailJUP', 'Finance::detailJUP');
+    $routes->add('list_tmp_jup_dtl', 'Finance::list_tmp_jup_dtl');
+    // $routes->add('showing_sikbsp_mst', 'Finance::showing_sikbsp_mst');
+
+    $routes->add('clearEntryJUP', 'Finance::clearEntryJUP');
+    $routes->add('finalEntryJUP', 'Finance::finalEntryJUP');
+    $routes->add('finalEntryJUP_DP', 'Finance::finalEntryJUP_DP');
+    $routes->add('showing_juptemp', 'Finance::showing_juptemp');
+    $routes->add('updateStatusJUP', 'Finance::updateStatusJUP');
+
+
+    $routes->add('save_jup_detail', 'Finance::save_jup_detail');
+    $routes->get('updateJUP(:any)', 'Finance::updateJUP$1');
+
+    $routes->add('deleteJUPDtl', 'Finance::deleteJUPDtl');
+    $routes->add('show_jup', 'Finance::show_jup');
+    $routes->add('api_jup(:any)', 'Finance::api_jup$1');
+    $routes->add('list_trx_jup_dtl', 'Finance::list_trx_jup_dtl');
+    $routes->add('showing_juptrx', 'Finance::showing_juptrx');
+    $routes->add('getBranchInfoJUP', 'Finance::getBranchInfoJUP');
+    $routes->add('getNextSuffixJUP', 'Finance::getNextSuffixJUP');
+    $routes->add('initJUPHeader', 'Finance::initJUPHeader');
+    $routes->add('saveJUPDetail', 'Finance::saveJUPDetail');
+    $routes->add("get_jup_detail(:any)", "Finance::get_jup_detail$1");
+    $routes->add("delete_jup_detail", "Finance::delete_jup_detail");
+
+});
+
+
+$routes->group('/ka/finance', ["namespace" => "App\Controllers\Finance"], function ($routes) {
+
+    $routes->add('umt', 'Finance::umt');
+    $routes->add('list_umt', 'Finance::list_umt');
+    $routes->add('list_umt_apprv', 'Finance::list_umt_apprv');
+
+    $routes->add('addUMT', 'Finance::addUMT');
+    $routes->add('detailUMT', 'Finance::detailUMT');
+    // $routes->add('showing_sikbsp_mst', 'Finance::showing_sikbsp_mst');
+
+    $routes->add('clearEntryUMT', 'Finance::clearEntryUMT');
+    $routes->add('finalEntryUMT', 'Finance::finalEntryUMT');
+    $routes->add('showing_umttemp', 'Finance::showing_umttemp');
+    $routes->add('updateStatusUMT', 'Finance::updateStatusUMT');
+
+
+    $routes->add('save_umt_detail', 'Finance::save_umt_detail');
+    $routes->get('updateUMT(:any)', 'Finance::updateUMT$1');
+
+    $routes->add('deleteUMTDtl', 'Finance::deleteUMTDtl');
+    $routes->add('show_umt', 'Finance::show_umt');
+    $routes->add('api_umt(:any)', 'Finance::api_umt$1');
+    $routes->add('showing_umttrx', 'Finance::showing_umttrx');
+    $routes->add('getBranchInfoUMT', 'Finance::getBranchInfoUMT');
+    $routes->add('getNextSuffixUMT', 'Finance::getNextSuffixUMT');
+    $routes->add('initUMTHeader', 'Finance::initUMTHeader');
+    $routes->add('saveUMTDetail', 'Finance::saveUMTDetail');
+
+
+
+
+
+    $routes->add('penerimaankb', 'Finance::penerimaankb');
+    $routes->add('list_penerimaankb', 'Finance::list_penerimaankb');
+    $routes->add('list_penerimaankb_apprv', 'Finance::list_penerimaankb_apprv');
+
+    $routes->add('getPenjualanCust', 'Finance::getPenjualanCust');
+    $routes->add('addPenerimaanKB', 'Finance::addPenerimaanKB');
+    $routes->add('detailPenerimaanKB', 'Finance::detailPenerimaanKB');
+    $routes->add('list_tmp_penerimaankb_dtl', 'Finance::list_tmp_penerimaankb_dtl');
+    // $routes->add('showing_sikbsp_mst', 'Finance::showing_sikbsp_mst');
+
+    $routes->add('clearEntryPenerimaanKB', 'Finance::clearEntryPenerimaanKB');
+    $routes->add('finalEntryPenerimaanKB', 'Finance::finalEntryPenerimaanKB');
+    $routes->add('showing_penerimaankbtemp', 'Finance::showing_penerimaankbtemp');
+    $routes->add('updateStatusPenerimaanKB', 'Finance::updateStatusPenerimaanKB');
+
+
+    $routes->add('save_penerimaankb_detail', 'Finance::save_penerimaankb_detail');
+    $routes->get('updatePenerimaanKB(:any)', 'Finance::updatePenerimaanKB$1');
+
+    $routes->add('update_status_penerimaankb_dtl', 'Finance::update_status_penerimaankb_dtl');
+    $routes->add('deletePenerimaanKBDtl', 'Finance::deletePenerimaanKBDtl');
+    $routes->add('show_penerimaankb', 'Finance::show_penerimaankb');
+    $routes->add('api_penerimaankb(:any)', 'Finance::api_penerimaankb$1');
+    $routes->add('list_trx_penerimaankb_dtl', 'Finance::list_trx_penerimaankb_dtl');
+    $routes->add('showing_penerimaankbtrx', 'Finance::showing_penerimaankbtrx');
+    $routes->add('getBranchInfoPenerimaanKB', 'Finance::getBranchInfoPenerimaanKB');
+    $routes->add('getNextSuffixPenerimaanKB', 'Finance::getNextSuffixPenerimaanKB');
+    $routes->add('initPenerimaanKBHeader', 'Finance::initPenerimaanKBHeader');
+    $routes->add('savePenerimaanKBDetail', 'Finance::savePenerimaanKBDetail');
+    $routes->add("get_penerimaankb_detail(:any)", "Finance::get_penerimaankb_detail$1");
+    $routes->add("delete_penerimaankb_detail", "Finance::delete_penerimaankb_detail");
+
+
+
+
+
+
+    
+
+
+    $routes->add('pengeluarankb', 'Finance::pengeluarankb');
+    $routes->add('list_pengeluarankb', 'Finance::list_pengeluarankb');
+    $routes->add('list_pengeluarankb_apprv', 'Finance::list_pengeluarankb_apprv');
+
+    $routes->add('getPembelianSup', 'Finance::getPembelianSup');
+    $routes->add('addPengeluaranKB', 'Finance::addPengeluaranKB');
+    $routes->add('detailPengeluaranKB', 'Finance::detailPengeluaranKB');
+    $routes->add('list_tmp_pengeluarankb_dtl', 'Finance::list_tmp_pengeluarankb_dtl');
+    // $routes->add('showing_sikbsp_mst', 'Finance::showing_sikbsp_mst');
+
+    $routes->add('clearEntryPengeluaranKB', 'Finance::clearEntryPengeluaranKB');
+    $routes->add('finalEntryPengeluaranKB', 'Finance::finalEntryPengeluaranKB');
+    $routes->add('showing_pengeluarankbtemp', 'Finance::showing_pengeluarankbtemp');
+    $routes->add('updateStatusPengeluaranKB', 'Finance::updateStatusPengeluaranKB');
+
+
+    $routes->add('save_pengeluarankb_detail', 'Finance::save_pengeluarankb_detail');
+    $routes->get('updatePengeluaranKB(:any)', 'Finance::updatePengeluaranKB$1');
+
+    $routes->add('update_status_pengeluarankb_dtl', 'Finance::update_status_pengeluarankb_dtl');
+    $routes->add('deletePengeluaranKBDtl', 'Finance::deletePengeluaranKBDtl');
+    $routes->add('show_pengeluarankb', 'Finance::show_pengeluarankb');
+    $routes->add('api_pengeluarankb(:any)', 'Finance::api_pengeluarankb$1');
+    $routes->add('list_trx_pengeluarankb_dtl', 'Finance::list_trx_pengeluarankb_dtl');
+    $routes->add('showing_pengeluarankbtrx', 'Finance::showing_pengeluarankbtrx');
+    $routes->add('getBranchInfoPengeluaranKB', 'Finance::getBranchInfoPengeluaranKB');
+    $routes->add('getNextSuffixPengeluaranKB', 'Finance::getNextSuffixPengeluaranKB');
+    $routes->add('initPengeluaranKBHeader', 'Finance::initPengeluaranKBHeader');
+    $routes->add('savePengeluaranKBDetail', 'Finance::savePengeluaranKBDetail');
+    $routes->add("get_pengeluarankb_detail(:any)", "Finance::get_pengeluarankb_detail$1");
+    $routes->add("delete_pengeluarankb_detail", "Finance::delete_pengeluarankb_detail");
+
+
+});
+
+
+$routes->group('/tools/settingawal', ["namespace" => "App\Controllers\Tools"], function ($routes) {
+    $routes->add('/', 'Tools::index');
+    $routes->add('processTglAwal', 'Tools::processTglAwal');
+
+
+    $routes->add('saldoawalhp', 'Tools::saldoawalhp');
+    $routes->add('list_saldoawalhp', 'Tools::list_saldoawalhp');
+    $routes->add('list_saldoawalhp_apprv', 'Tools::list_saldoawalhp_apprv');
+
+    $routes->add('addSAHP', 'Tools::addSAHP');
+    $routes->add('detailSAHP', 'Tools::detailSAHP');
+    $routes->add('list_tmp_saldoawalhp_dtl', 'Tools::list_tmp_saldoawalhp_dtl');
+    // $routes->add('showing_sikbsp_mst', 'Tools::showing_sikbsp_mst');
+
+    $routes->add('clearEntrySAHP', 'Tools::clearEntrySAHP');
+    $routes->add('finalEntrySAHP', 'Tools::finalEntrySAHP');
+    $routes->add('showing_saldoawalhptemp', 'Tools::showing_saldoawalhptemp');
+    $routes->add('updateStatusSAHP', 'Tools::updateStatusSAHP');
+
+
+    $routes->add('save_saldoawalhp_detail', 'Tools::save_saldoawalhp_detail');
+    $routes->get('updateSAHP(:any)', 'Tools::updateSAHP$1');
+
+    $routes->add('deleteSAHPDtl', 'Tools::deleteSAHPDtl');
+    $routes->add('show_saldoawalhp', 'Tools::show_saldoawalhp');
+    $routes->add('api_saldoawalhp(:any)', 'Tools::api_saldoawalhp$1');
+    $routes->add('list_trx_saldoawalhp_dtl', 'Tools::list_trx_saldoawalhp_dtl');
+    $routes->add('showing_saldoawalhptrx', 'Tools::showing_saldoawalhptrx');
+    $routes->add('getBranchInfoSAHP', 'Tools::getBranchInfoSAHP');
+    $routes->add('getNextSuffixSAHP', 'Tools::getNextSuffixSAHP');
+    $routes->add('initSAHPHeader', 'Tools::initSAHPHeader');
+    $routes->add('saveSAHPDetail', 'Tools::saveSAHPDetail');
+    $routes->add("get_saldoawalhp_detail(:any)", "Tools::get_saldoawalhp_detail$1");
+    $routes->add("delete_saldoawalhp_detail", "Tools::delete_saldoawalhp_detail");
+
+
+
+
+
+    $routes->add('prosessaldoawalhp', 'Tools::prosessaldoawalhp');
+    $routes->add('prosesSAHP', 'Tools::prosesSAHP');
+
+});
+
+
+
+$routes->group('/tools/konfigurasi', ["namespace" => "App\Controllers\Tools"], function ($routes) {
+    $routes->add('/', 'Tools::konfigurasi');
+    $routes->add('updateKonfigurasi', 'Tools::updateKonfigurasi');
+    $routes->add('showing_konfigurasimst', 'Tools::showing_konfigurasimst');
+
+    $routes->add('blockunblockperiod', 'Tools::blockunblockperiod');
+    $routes->add('processClosePeriod', 'Tools::processClosePeriod');
+
+});
+
+
+
+
+$routes->group('/tools/proses', ["namespace" => "App\Controllers\Tools"], function ($routes) {
+    $routes->add('tutupbulan', 'Tools::tutupbulan');
+    $routes->add('processTutupBulan', 'Tools::processTutupBulan');
+
+});
+
+
+
+
+$routes->group('/pajak/transaksi', ["namespace" => "App\Controllers\Pajak"], function ($routes) {
+    $routes->add('laporan', 'Pajak::laporan');
+    $routes->add('list_lappajak', 'Pajak::list_lappajak');
+
+});
+
 
 $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], function ($routes) {
 
@@ -633,13 +892,15 @@ $routes->group('/master/data', ["namespace" => "App\Controllers\Master"], functi
     $routes->add('saveJob', 'Job::saveJob');
     $routes->add('delete_job', 'Job::delete_job');
 
-
     $routes->add('location', 'Location::index');
     $routes->add('list_mlocation', 'Location::list_mlocation');
     $routes->post("saveEntry", "Location::saveEntry");
 
     $routes->get("showing_data/(:any)", "Location::showing_data/$1");
 
+
+
+    
     $routes->add('area', 'Location::area');
     $routes->add('list_marea', 'Location::list_marea');
     $routes->post("saveEntryArea", "Location::saveEntryArea");
@@ -659,8 +920,6 @@ $routes->group('/master/data', ["namespace" => "App\Controllers\Master"], functi
     $routes->get("showing_data_costcenter(:any)", "Location::showing_data_costcenter$1");
     $routes->post("show_showlabels_area_partial", "Location::show_showlabels_area_partial");
     $routes->get("api_show_showlabels_area_partial(:any)", "Location::api_show_showlabels_area_partial$1");
-
-
 
 
     /* Master Data Tax */
@@ -823,6 +1082,7 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
     $routes->add('globalmodule/list_kelompokbarang', 'Globalmodule::list_kelompokbarang');
     $routes->add('globalmodule/list_principal', 'Globalmodule::list_principal');
     $routes->add('globalmodule/list_supplier_new', 'Globalmodule::list_supplier_new');
+    $routes->add('globalmodule/list_cust_and_supplier', 'Globalmodule::list_cust_and_supplier');
 
     $routes->add('globalmodule/list_pp', 'Globalmodule::list_pp');
     $routes->add('globalmodule/list_po', 'Globalmodule::list_po');
@@ -833,7 +1093,8 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
 
     $routes->add('globalmodule/list_branchjob', 'Globalmodule::list_branchjob');
 
-    $routes->add('globalmodule/list_branchjob', 'Globalmodule::list_branchjob');
+    $routes->add('globalmodule/list_bank_sales', 'Globalmodule::list_bank_sales');
+
     $routes->add('globalmodule/updatePrintStatus', 'Globalmodule::updatePrintStatus');
     $routes->add('globalmodule/list_avg_stock', 'Globalmodule::list_avg_stock');
 

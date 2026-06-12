@@ -617,6 +617,7 @@ function setToDisapproved(docno) {
 var defaultInitialSO = '';
 $("#docnoso").select2({
     placeholder: "Choose Your SO",
+    dropdownParent: $('#modalDetailPenjualan'),
     allowClear: true,
     width:'100%',
     ajax: {

@@ -529,17 +529,17 @@
                 <!-- FOOTER -->
                 <div class="modal-footer bg-light">
                     <button type="button"
+                            class="btn btn-primary"
+                            onclick="saveVoidPODetail()">
+                        <i class="fa fa-save"></i> Simpan
+                    </button>
+                    <button type="button"
                             class="btn btn-secondary"
                             data-bs-dismiss="modal"
                             onclick="$('#modalDetailVoidPO').modal('hide')">
                         <i class="fa fa-times"></i> Batal
                     </button>
 
-                    <button type="button"
-                            class="btn btn-primary"
-                            onclick="saveVoidPODetail()">
-                        <i class="fa fa-save"></i> Simpan
-                    </button>
                 </div>
             </form>
         </div>
@@ -654,16 +654,15 @@
                 <!-- FOOTER -->
                 <div class="modal-footer bg-light">
                     <button type="button"
+                            class="btn btn-primary"
+                            onclick="saveVoidPODetail()">
+                        <i class="fa fa-save"></i> Simpan
+                    </button>
+                    <button type="button"
                             class="btn btn-secondary"
                             data-bs-dismiss="modal"
                             onclick="$('#modalUpdateVoidPO').modal('hide')">
                         <i class="fa fa-times"></i> Batal
-                    </button>
-
-                    <button type="button"
-                            class="btn btn-primary"
-                            onclick="saveVoidPODetail()">
-                        <i class="fa fa-save"></i> Simpan
                     </button>
                 </div>
             </form>

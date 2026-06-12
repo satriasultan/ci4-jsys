@@ -2233,8 +2233,6 @@ class PostSales extends BaseController
                 'idtax'    => strtoupper($this->request->getPost('idtax')),
                 'kdsalesman'    => ($this->request->getPost('kdsalesman')),
                 'gradecustomer'    => ($this->request->getPost('gradecustomer')),
-                'nodp'    => strtoupper($this->request->getPost('nodp')),
-                'pocust'    => strtoupper($this->request->getPost('pocust')),
                 'currcode'    => strtoupper($this->request->getPost('currcode')),
                 'kurs'    => ($this->request->getPost('kurs')),
                 'keterangan'    => strtoupper($this->request->getPost('keterangan')),
@@ -2271,12 +2269,51 @@ class PostSales extends BaseController
             $idgudang = strtoupper($this->request->getPost('idgudang'));
             $idspec = strtoupper($this->request->getPost('idspec'));
 
+
+            // Ambil kurs dari header SO
+            $soHeader = $builderHeader->select('kurs, idtax')->where('docno', $docno)->get()->getRowArray();
+            $kurs = $soHeader['kurs'] ?? 0;
+            $idtax = $soHeader['idtax'] ?? '';
+            
+            // Hitung nilaikonversi = nilai * kurs
+            $nilaikonversi = $nilai * $kurs;
+            
+            // Hitung nilaipajak berdasarkan idtax
+            $nilaipajak = 0;
+            if (!empty($idtax) && trim($idtax) !== 'NON' && $nilai > 0) {
+                // Ambil detail tax dari sc_mst.tax_dtl
+                $builderTaxDtl = $db->table('sc_mst.tax_dtl');
+                $taxDetails = $builderTaxDtl->select('percentation')
+                    ->where('idtax', $idtax)
+                    ->get()
+                    ->getResultArray();
+                
+                $totalPersentase = 0;
+                foreach ($taxDetails as $tax) {
+                    $persentase = $tax['percentation'] ?? 0;
+                    $totalPersentase += $persentase;
+                }
+                
+                // Hitung nilaipajak = nilai + (nilai * totalPersentase / 100)
+                // $nilaipajak = $nilai + ($nilai * $totalPersentase / 100);
+                $nilaipajak = $nilai * $totalPersentase / 100;
+
+            } else {
+                // Jika NON pajak, nilaipajak sama dengan nilai
+                $nilaipajak = $nilai;
+            }
+
             $builderDetail->where('uniqueid', $uniqueid)->update([
                 'qty'          => $qty,
                 // 'qtybonus'     => $qtybonus,
                 'harga'        => $harga,
                 'multidisc'    => $multidisc,
                 'nilai'        => $nilai,
+                'nilaikonversi' => $nilaikonversi,  // Tambahkan ini
+                'nilaipajak'   => $nilaipajak,      // Tambahkan ini
+                'kurs'          => strtoupper($this->request->getPost('kurs')),
+                'idtax'         => strtoupper($this->request->getPost('idtax')),
+                'currcode'      => strtoupper($this->request->getPost('currcode')),
                 // 'volitem'      => $volitem,
 
                 // 'biaya'      => $biaya,
@@ -2297,6 +2334,7 @@ class PostSales extends BaseController
             $message = 'Data berhasil diupdate';
             
         } else {
+
             // =====================================================
             // MODE ADD - INSERT DATA DARI PP
             // =====================================================
@@ -2311,6 +2349,41 @@ class PostSales extends BaseController
             $idprincipal = strtoupper($this->request->getPost('idprincipal'));
             $idgudang = strtoupper($this->request->getPost('idgudang'));
             $idspec = strtoupper($this->request->getPost('idspec'));
+            
+            
+            // Ambil kurs dari header SO
+            $soHeader = $builderHeader->select('kurs, idtax')->where('docno', $docno)->get()->getRowArray();
+            $kurs = $soHeader['kurs'] ?? 0;
+            $idtax = $soHeader['idtax'] ?? '';
+            
+            // Hitung nilaikonversi = nilai * kurs
+            $nilaikonversi = $nilai * $kurs;
+            
+            // Hitung nilaipajak berdasarkan idtax
+            $nilaipajak = 0;
+            if (!empty($idtax) && trim($idtax) !== 'NON' && $nilai > 0) {
+                // Ambil detail tax dari sc_mst.tax_dtl
+                $builderTaxDtl = $db->table('sc_mst.tax_dtl');
+                $taxDetails = $builderTaxDtl->select('percentation')
+                    ->where('idtax', $idtax)
+                    ->get()
+                    ->getResultArray();
+                
+                $totalPersentase = 0;
+                foreach ($taxDetails as $tax) {
+                    $persentase = $tax['percentation'] ?? 0;
+                    $totalPersentase += $persentase;
+                }
+                
+                // Hitung nilaipajak = nilai + (nilai * totalPersentase / 100)
+                // $nilaipajak = $nilai + ($nilai * $totalPersentase / 100);
+                $nilaipajak = $nilai * $totalPersentase / 100;
+
+            } else {
+                // Jika NON pajak, nilaipajak sama dengan nilai
+                $nilaipajak = $nilai;
+            }
+            
 
 
             $inputdate = date('Y-m-d H:i:s');
@@ -2331,7 +2404,15 @@ class PostSales extends BaseController
                 'qty'         => $qty,
                 'multidisc'         => $multidisc,
                 'harga'         => $harga,
+                'idprincipal'      => $idprincipal,
+                'idgudang'      => $idgudang,
+                'idspec'      => $idspec,
                 'nilai'         => $nilai,
+                'nilaipajak'         => $nilaipajak,
+                'nilaikonversi'         => $nilaikonversi,
+                'kurs'          => strtoupper($this->request->getPost('kurs')),
+                'idtax'         => strtoupper($this->request->getPost('idtax')),
+                'currcode'      => strtoupper($this->request->getPost('currcode')),
                 'bomdesc' => $bomdesc,
                 'status'      => 'F',
                 'inputby'     => $nama,
@@ -2767,6 +2848,7 @@ class PostSales extends BaseController
             // Ambil dari request POST
             // $pemohon = strtoupper(trim($this->request->getPost('pemohon')));
             $docdate   = trim($this->request->getPost('docdate'));
+            $delivdate   = trim($this->request->getPost('delivdate'));
             // $senddate   = trim($this->request->getPost('senddate'));
             $jthtempo   = trim($this->request->getPost('jthtempo'));
             $kdcustomer   = trim($this->request->getPost('kdcustomer'));
@@ -2775,11 +2857,11 @@ class PostSales extends BaseController
             // $alamatkirim   = trim($this->request->getPost('alamatkirim'));
             // $keterangan   = trim($this->request->getPost('keterangan'));
             $currcode   = trim($this->request->getPost('currcode'));
-            $salesman   = trim($this->request->getPost('salesman'));
+            $salesman   = trim($this->request->getPost('kdsalesman'));
             // $kurs   = trim($this->request->getPost('kurs'));
             // $isinclusive   = trim($this->request->getPost('isinclusive'));
             $idtax   = trim($this->request->getPost('idtax'));
-            $keterangan   = trim($this->request->getPost('keterangan'));
+            $keterangan   = strtoupper(trim($this->request->getPost('keterangan')));
             $nodp   = trim($this->request->getPost('nodp'));
             $pocust   = trim($this->request->getPost('pocust'));
             $isinclusive = $this->request->getPost('isinclusive') ? 'YES' : 'NO';
@@ -2816,14 +2898,14 @@ class PostSales extends BaseController
                 'alamatcustomer' => strtoupper($alamatcustomer),
                 'gradecustomer' => strtoupper($gradecustomer),
                 // 'alamatkirim'    => strtoupper($alamatkirim),
-                'keterangan'     => strtoupper($keterangan),
+                'keterangan'     => $keterangan,
                 'currcode'       => $currcode,
-                'salesman'       => $salesman,
+                'kdsalesman'       => $salesman,
                 'kurs'           => $kurs_clean,
                 'isinclusive'    => strtoupper($isinclusive),
                 'isopenprice'    => strtoupper($isopenprice),
                 'idtax'          => strtoupper($idtax),
-                'keterangan'         => strtoupper($keterangan),
+                // 'keterangan'         => strtoupper($keterangan),
                 'pocust'         => strtoupper($pocust),
                 'nodp'         => strtoupper($nodp),
                 // 'pemohon'       => $pemohon (jika masih diperlukan nanti bisa ditambahkan)
@@ -3741,6 +3823,23 @@ class PostSales extends BaseController
         $db = $this->db;
         $db->transStart();
 
+        $builderSO = $db->table('sc_trx.salesorder');
+        $soData = $builderSO
+            ->select('currcode, kurs, idtax, isinclusive')
+            ->where('docno', $docnoso)
+            ->get()
+            ->getRowArray();
+
+        // Jika data SO tidak ditemukan, beri response error
+        if (!$soData) {
+            $db->transRollback();
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => "Data SO dengan nomor {$docnoso} tidak ditemukan"
+            ]);
+        }
+
+
         // =====================================================
         // CEK / INSERT HEADER
         // =====================================================
@@ -3808,7 +3907,8 @@ class PostSales extends BaseController
         $message = '';
 
         // CEK MODE: ADD atau EDIT
-        if (!empty($idurut)) {
+        if (!empty($idurut)) {            
+
             $uniqueid = $this->request->getPost('uniqueid');
             // =====================================================
             // MODE EDIT - UPDATE DATA
@@ -3826,12 +3926,41 @@ class PostSales extends BaseController
             $idgudang = strtoupper($this->request->getPost('idgudang'));
             $idspec = strtoupper($this->request->getPost('idspec'));
 
+            $nilai = $qty * $harga;
+            $h = $db->table('sc_tmp.penjualan')
+                ->select('kurs,idtax')
+                ->where('docno', $docno)
+                ->get()
+                ->getRowArray();
+
+            $kurs = $h['kurs'] ?? 1;
+            $idtax = $h['idtax'] ?? 'NON';
+            $nilaikonversi = $nilai * $kurs;
+            $nilaipajak = 0;
+
+            if (!empty($idtax) && trim($idtax) !== 'NON' && $nilai > 0) {
+                $taxDetails = $db->table('sc_mst.tax_dtl')
+                    ->select('percentation')
+                    ->where('idtax', $idtax)
+                    ->get()
+                    ->getResultArray();
+
+                $totalPersen = array_sum(array_column($taxDetails, 'percentation'));
+                // $nilaipajak = $nilai + ($nilai * $totalPersen / 100);
+                $nilaipajak = $nilai * $totalPersen / 100;
+            }
+
             $builderDetail->where('uniqueid', $uniqueid)->update([
                 'qty'          => $qty,
                 // 'qtybonus'     => $qtybonus,
                 'harga'        => $harga,
                 'multidisc'    => $multidisc,
                 'nilai'        => $nilai,
+                'nilaikonversi' => $nilaikonversi,
+                'nilaipajak' => $nilaipajak,
+                'idtax' => $idtax,
+                'kurs' => $kurs,
+                'currcode' => $poData['currcode'] ?? '',
                 // 'volitem'      => $volitem,
 
                 // 'biaya'      => $biaya,
@@ -3863,8 +3992,17 @@ class PostSales extends BaseController
                     nmbarang,
                     unit,
                     qty,
+                    idprincipal,
+                    idgudang,
+                    idspec,
+                    nilaipajak,
+                    nilaikonversi,
                     multidisc,
+                    qtypenjualan,
                     harga,
+                    currcode,
+                    idtax,
+                    kurs,
                     nilai
                 FROM sc_trx.salesorder_dtl
                 WHERE TRIM(docno) = ?
@@ -3879,18 +4017,37 @@ class PostSales extends BaseController
             }
 
             foreach ($soDetails as $row) {
-                // CEK APAKAH ITEM SUDAH ADA DI TMP
-                // $duplicate = $builderDetail
-                //     ->where('docno', $docno)
-                //     ->where('docnopp', $docnopp)
-                //     ->where('idbarang', $row->idbarang)
-                //     ->where('inputby', $nama)
-                //     ->countAllResults();
+                $sisaQty = $row->qty - ($row->qtypenjualan);
+                if ($sisaQty <= 0) continue;
 
                 $duplicate = $builderDetail
                     ->where('docno', $docno)
                     ->where('uniqueid', $row->uniqueid)
                     ->countAllResults();
+
+                $nilaiRow = $row->qty * $row->harga;
+                $h = $db->table('sc_tmp.penjualan')
+                    ->select('kurs,idtax')
+                    ->where('docno', $docno)
+                    ->get()
+                    ->getRowArray();
+
+                $kurs = $h['kurs'] ?? 1;
+                $idtaxRow = $h['idtaxRow'] ?? 'NON';
+                $nilaikonversiRow = $nilaiRow * $kurs;
+                $nilaipajakRow = 0;
+
+                if (!empty($idtaxRow) && trim($idtaxRow) !== 'NON' && $nilaiRow > 0) {
+                    $taxDetails = $db->table('sc_mst.tax_dtl')
+                        ->select('percentation')
+                        ->where('idtax', $idtaxRow)
+                        ->get()
+                        ->getResultArray();
+
+                    $totalPersen = array_sum(array_column($taxDetails, 'percentation'));
+                    // $nilaipajakRow = $nilai + ($nilai * $totalPersen / 100);
+                    $nilaipajakRow = $nilaiRow * $totalPersen / 100;
+                }
 
                 if ($duplicate == 0) {
                     $builderDetail->insert([
@@ -3900,12 +4057,18 @@ class PostSales extends BaseController
                         'uniqueid'      => $row->uniqueid,
                         'nmbarang'      => $row->nmbarang,
                         'unit'          => $row->unit,
-                        'qty'           => $row->qty,
-                        
+                        'qty'           => $sisaQty,
+                        'idprincipal'   => $row->idprincipal,
+                        'idgudang'      => $row->idgudang,
+                        'idspec'        => $row->idspec,
                         'harga'         => $row->harga, // Default 0 untuk new insert
                         'multidisc'     =>  $row->multidisc, // Default 0 untuk new insert
-                        
-                        'nilai'         => $row->nilai, // Default 0 untuk new insert
+                        'nilaipajak'    => $nilaipajakRow,
+                        'nilaikonversi' => $nilaikonversiRow,
+                        'currcode'      => $row->currcode,
+                        'kurs'          => $row->kurs,
+                        'idtax'         => $row->idtax,
+                        'nilai'         => $sisaQty * $row->harga, // Default 0 untuk new insert
                         // 'description' => $row->description,
                         'inputby'       => $nama,
                         'inputdate'     => date('Y-m-d H:i:s')
@@ -4353,7 +4516,7 @@ class PostSales extends BaseController
             // $alamatkirim   = trim($this->request->getPost('alamatkirim'));
             // $keterangan   = trim($this->request->getPost('keterangan'));
             $currcode   = trim($this->request->getPost('currcode'));
-            $salesman   = trim($this->request->getPost('salesman'));
+            $salesman   = trim($this->request->getPost('kdsalesman'));
             // $kurs   = trim($this->request->getPost('kurs'));
             // $isinclusive   = trim($this->request->getPost('isinclusive'));
             $idtax   = trim($this->request->getPost('idtax'));
@@ -4398,12 +4561,11 @@ class PostSales extends BaseController
                 // 'alamatkirim'    => strtoupper($alamatkirim),
                 'keterangan'     => strtoupper($keterangan),
                 'currcode'       => $currcode,
-                'salesman'       => $salesman,
+                'kdsalesman'       => $salesman,
                 'kurs'           => $kurs_clean,
                 'isinclusive'    => strtoupper($isinclusive),
                 'isopenprice'    => strtoupper($isopenprice),
                 'idtax'          => strtoupper($idtax),
-                'keterangan'         => strtoupper($keterangan),
                 // 'pocust'         => strtoupper($pocust),
                 'carabayar'         => strtoupper($carabayar),
                 // 'pemohon'       => $pemohon (jika masih diperlukan nanti bisa ditambahkan)

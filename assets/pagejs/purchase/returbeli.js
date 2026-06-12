@@ -143,7 +143,8 @@ function documentReadable(){
                 $(option).data('supplier-data', supplierData); // Simpan data lengkap
                 
                 $('[name="kdsupplier"]').append(option).trigger('change');
-                
+                defaultInitialSupLPB = json.dataTables.items[0].kdsupplier
+
                 // Set alamat dan phone langsung
                 $("#alamatsupplier").val(json.dataTables.items[0].alamatsupplier).prop('readonly', true);
                 // $("#phone").val(data.phone).prop('readonly', true);
@@ -207,7 +208,7 @@ function documentReadable(){
                 
                 // Set alamat dan phone langsung
                 setJtsValue('[name="kurs"]', convertToDbNumber(json.dataTables.items[0].kurs));
-                $('[name="kurs"]').prop('readonly', false);
+                $('[name="kurs"]').prop('readonly', true);
                 // $("#phone").val(data.phone).prop('readonly', true);
             });
             skipRoleChange = true;
@@ -391,6 +392,7 @@ function setToDisapproved(docno) {
 
 
 var defaultInitialLPB = '';
+var defaultInitialSupLPB = '';
 $("#docnolpb").select2({
     placeholder: "Choose Your LPB",
     dropdownParent: $('#modalDetailReturBeli'),
@@ -409,6 +411,7 @@ $("#docnolpb").select2({
                 _start_: 1,
                 _perpage_: 2,
                 _paramglobal_: defaultInitialLPB,
+                _paramglobalsup_: defaultInitialSupLPB,
                 _parameterx_: defaultInitialLPB,
                 term: params.term,
             };
@@ -768,6 +771,24 @@ function btnUpdateDetail(){
                 // $('#harga').val(res.data.harga);
                 // $('#multidisc').val(res.data.multidisc);
                 setSelect2Ajax('#idprincipal', res.data.idprincipal, res.data.idprincipal);
+                $.ajax({
+                    type: 'GET',
+                    url: HOST_URL + 'api/globalmodule/list_mlocation' + '?var=' + res.data.idgudang,
+                    dataType: 'json',
+                    delay: 250,
+                }).then(function (datax) {
+                    // create the option and append to Select2
+                    var option = new Option(datax.items[0].nmlocation, datax.items[0].idlocation, true, true);
+                    $('[name="idgudang"]').append(option).trigger('change')
+
+                    // manually trigger the `select2:select` event
+                    $('[name="idgudang"]').trigger({
+                        type: 'select2:select',
+                        params: {
+                            data: datax
+                        }
+                    });
+                });
                 // setSelect2Ajax('#docnopp', res.data.docnopp, res.data.keterangan);
 
                 $('#modalUpdateReturBeliLabel').text('Update Retur Beli Detail');
@@ -782,6 +803,79 @@ function btnUpdateDetail(){
             }
         }
     });
+}
+
+
+
+var defaultInitialLocation = '';
+$("#idgudang").select2({
+    placeholder: " -- Pilih Gudang Asal -- ",
+    allowClear: true,
+    width: '100%',
+    dropdownParent: $('#modalUpdateReturBeli'),
+    // minimumInputLength: 2, // only start searching when the user has input 3 or more characters
+    maximumSelectionLength: 1,
+    multiple: false,
+    ajax: {
+        url: HOST_URL + 'api/globalmodule/list_mlocation',
+        type: 'POST',
+        dataType: 'json',
+        delay: 250,
+        data: function(params) {
+            return {
+                _search_: params.term, // search term
+                _page_: params.page,
+                _draw_: true,
+                _start_: 1,
+                _perpage_: 2,
+                _paramglobal_: defaultInitialLocation,
+                _parameterx_: defaultInitialLocation,
+                term: params.term,
+            };
+        },
+        processResults: function(data, params) {
+
+            // var searchTerm = $("#idgudang").data("select2").$dropdown.find("input").val();
+            // if (data.items.length === 1 && data.items[0].text === searchTerm) {
+            //     var option = new Option(data.items[0].nmlocation, data.items[0].idlocation, true, true);
+            //     $('#idgudang').append(option).trigger('change').select2("close");
+            //     // manually trigger the `select2:select` event
+            //     $('#idgudang').trigger({
+            //         type: 'select2:select',
+            //         params: {
+            //             data: data
+            //         }
+            //     });
+            // }
+            params.page = params.page || 1;
+
+            return {
+                results: data.items,
+                pagination: {
+                    more: (params.page * 30) < data.total_count
+                }
+            };
+        },
+        cache: true
+    },
+    escapeMarkup: function(markup) {
+        return markup;
+    }, // let our custom formatter work
+    // minimumInputLength: 1,
+    templateResult: formatLocation, // omitted for brevity, see the source of this page
+    templateSelection: formatLocationSelection // omitted for brevity, see the source of this page
+}).on("change", function () {
+   /*Sementara TUtup Location */
+});
+/* Format Group */
+function formatLocation(repo) {
+    if (repo.loading) return repo.text;
+    var markup ="<div class='select2-result-repository__description'>" + repo.idlocation +"   <i class='fa fa-circle-o'></i>   "+ repo.nmlocation +"</div>";
+    return markup;
+}
+
+function formatLocationSelection(repo) {
+    return repo.nmlocation || repo.text;
 }
 
 // Reset currentEditId ketika modal ditutup
@@ -1094,6 +1188,22 @@ function saveReturBeliDetail() {
 }
 
 function btnInputDetail() {
+    
+    let cabang = $('#cabang').val();
+    let kdsupplier = $('#kdsupplier').val();
+
+
+    if (!cabang || cabang.trim() === '') {
+        alert('Cabang harus dipilih terlebih dahulu');
+        $('#cabang').focus();
+        return; // stop proses
+    }
+
+    if (!kdsupplier || kdsupplier.trim() === '') {
+        alert('Supplier harus dipilih terlebih dahulu');
+        $('#kdsupplier').focus();
+        return; // stop proses
+    }
 
     $('#formReturBeliDetail')[0].reset();
 
@@ -1171,6 +1281,8 @@ $("#kdsupplier").select2({
         var selectedData = e.params.data;
         
         $("#alamatsupplier").val(selectedData.alamat || '').prop('disabled', true);
+        defaultInitialSupLPB = selectedData.kdsupplier
+        $("#jthtempo").val(selectedData.jthtempo || '')
         // $("#phone").val(selectedData.phone || '').prop('disabled', true);
     }
 });

@@ -874,7 +874,7 @@ function btnUpdateDetail(){
                 setJtsValue('[name="qty"]', convertToDbNumber(res.data.qty));
                 setJtsValue('[name="qtybonus"]', convertToDbNumber(res.data.qtybonus));
                 setJtsValue('[name="harga"]', convertToDbNumber(res.data.harga));
-                setJtsValue('[name="multidisc"]', convertToDbNumber(res.data.multidisc));
+                // setJtsValue('[name="multidisc"]', convertToDbNumber(res.data.multidisc));
                 setJtsValue('[name="nilai"]', convertToDbNumber(res.data.nilai));
 
 
@@ -911,16 +911,16 @@ $(document).on('input', '.form-control', function () {
         // Baca nilai qty, harga, dan multidisc
         let qty = parseFloat($('#qty').val().replace(/,/g, '')) || 0;
         let harga = parseFloat($('#harga').val().replace(/,/g, '')) || 0;
-        let multidisc = parseFloat($('#multidisc').val().replace(/,/g, '')) || 0;
+        // let multidisc = parseFloat($('#multidisc').val().replace(/,/g, '')) || 0;
         
         // Hitung nilai awal (qty * harga)
         let nilaiAwal = qty * harga;
         
         // Hitung diskon
-        let diskon = (nilaiAwal * multidisc) / 100;
+        // let diskon = (nilaiAwal * multidisc) / 100;
         
         // Hitung nilai akhir setelah diskon
-        let nilaiAkhir = nilaiAwal - diskon;
+        let nilaiAkhir = nilaiAwal;
         
         // Format ke en-US: separator ribuan = koma, desimal = titik
         $('#nilai').val(nilaiAkhir.toLocaleString('en-US', {
@@ -1122,12 +1122,12 @@ function savePODetail() {
         let qty = $('#qty').val();
         let qtybonus = $('#qtybonus').val();
         let harga = $('#harga').val();
-        let multidisc = $('#multidisc').val();
+        // let multidisc = $('#multidisc').val();
         let nilai = $('#nilai').val();
         formData.set('qty', convertToDbNumber(qty));
         formData.set('qtybonus', convertToDbNumber(qtybonus));
         formData.set('harga', convertToDbNumber(harga));
-        formData.set('multidisc', convertToDbNumber(multidisc));
+        // formData.set('multidisc', convertToDbNumber(multidisc));
         formData.set('nilai', convertToDbNumber(nilai));
         // formData.set('nilai', convertToDbNumber(nilai));
         formData.set('descriptionpo', $('#descriptionpo').val());

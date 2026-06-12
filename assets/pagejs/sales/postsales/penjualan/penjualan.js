@@ -212,7 +212,8 @@ function documentReadable(){
                 $(option).data('customer-data', customerData); // Simpan data lengkap
                 
                 $('[name="kdcustomer"]').append(option).trigger('change');
-                
+                defaultInitialCustSO = json.dataTables.items[0].kdcustomer
+
                 // Set alamat dan phone langsung
                 $("#alamatcustomer").val(json.dataTables.items[0].alamatcustomer).prop('readonly', true);
                 // $("#phone").val(data.phone).prop('readonly', true);
@@ -677,8 +678,10 @@ function setToDisapproved(docno) {
 
 
 var defaultInitialSO = '';
+var defaultInitialCustSO = '';
 $("#docnoso").select2({
     placeholder: "Choose Your SO",
+    dropdownParent: $('#modalDetailPenjualan'),
     allowClear: true,
     width:'100%',
     ajax: {
@@ -694,6 +697,7 @@ $("#docnoso").select2({
                 _start_: 1,
                 _perpage_: 2,
                 _paramglobal_: defaultInitialSO,
+                _paramglobalcust_: defaultInitialCustSO,
                 _parameterx_: defaultInitialSO,
                 term: params.term,
             };
@@ -1034,6 +1038,7 @@ function btnUpdateDetail(){
                 // $('#descriptionpo').val(res.data.descriptionpo);
                 $('#docno').val(res.data.docno);
                 $('#docnosomodal').val(res.data.docnoso);
+                $('[name="docnoso"]').val(res.data.docnoso);
                 $('#docnosjmodal').val(res.data.docnosj);
                 $('#idbarang').val(res.data.idbarang);
                 $('#nmbarang').val(res.data.nmbarang);
@@ -1053,7 +1058,43 @@ function btnUpdateDetail(){
                 // $('#qtybonus').val(res.data.qtybonus);
                 // $('#harga').val(res.data.harga);
                 // $('#multidisc').val(res.data.multidisc);
-                setSelect2Ajax('#idprincipal', res.data.idprincipal, res.data.idprincipal);
+                $.ajax({
+                    type: 'GET',
+                    url: HOST_URL + 'api/globalmodule/list_principal' + '?var=' + res.data.idprincipal,
+                    dataType: 'json',
+                    delay: 250,
+                }).then(function (datax) {
+                    // create the option and append to Select2
+                    var option = new Option(datax.items[0].nmprincipal, datax.items[0].idprincipal, true, true);
+                    $('[name="idprincipal"]').append(option).trigger('change')
+
+                    // manually trigger the `select2:select` event
+                    $('[name="idprincipal"]').trigger({
+                        type: 'select2:select',
+                        params: {
+                            data: datax
+                        }
+                    });
+                });
+
+                $.ajax({
+                    type: 'GET',
+                    url: HOST_URL + 'api/globalmodule/list_mlocation' + '?var=' + res.data.idgudang,
+                    dataType: 'json',
+                    delay: 250,
+                }).then(function (datax) {
+                    // create the option and append to Select2
+                    var option = new Option(datax.items[0].nmlocation, datax.items[0].idlocation, true, true);
+                    $('[name="idgudang"]').append(option).trigger('change')
+
+                    // manually trigger the `select2:select` event
+                    $('[name="idgudang"]').trigger({
+                        type: 'select2:select',
+                        params: {
+                            data: datax
+                        }
+                    });
+                });
                 // setSelect2Ajax('#idbarang', res.data.idbarang, res.data.idbarang);
 
                 $('#modalUpdatePenjualanLabel').text('Update Penjualan Detail');
@@ -1068,6 +1109,78 @@ function btnUpdateDetail(){
             }
         }
     });
+}
+
+
+var defaultInitialLocation = '';
+$("#idgudang").select2({
+    placeholder: " -- Pilih Gudang Asal -- ",
+    allowClear: true,
+    width: '100%',
+    dropdownParent: $('#modalUpdatePenjualan'),
+    // minimumInputLength: 2, // only start searching when the user has input 3 or more characters
+    maximumSelectionLength: 1,
+    multiple: false,
+    ajax: {
+        url: HOST_URL + 'api/globalmodule/list_mlocation',
+        type: 'POST',
+        dataType: 'json',
+        delay: 250,
+        data: function(params) {
+            return {
+                _search_: params.term, // search term
+                _page_: params.page,
+                _draw_: true,
+                _start_: 1,
+                _perpage_: 2,
+                _paramglobal_: defaultInitialLocation,
+                _parameterx_: defaultInitialLocation,
+                term: params.term,
+            };
+        },
+        processResults: function(data, params) {
+
+            // var searchTerm = $("#idgudang").data("select2").$dropdown.find("input").val();
+            // if (data.items.length === 1 && data.items[0].text === searchTerm) {
+            //     var option = new Option(data.items[0].nmlocation, data.items[0].idlocation, true, true);
+            //     $('#idgudang').append(option).trigger('change').select2("close");
+            //     // manually trigger the `select2:select` event
+            //     $('#idgudang').trigger({
+            //         type: 'select2:select',
+            //         params: {
+            //             data: data
+            //         }
+            //     });
+            // }
+            params.page = params.page || 1;
+
+            return {
+                results: data.items,
+                pagination: {
+                    more: (params.page * 30) < data.total_count
+                }
+            };
+        },
+        cache: true
+    },
+    escapeMarkup: function(markup) {
+        return markup;
+    }, // let our custom formatter work
+    // minimumInputLength: 1,
+    templateResult: formatLocation, // omitted for brevity, see the source of this page
+    templateSelection: formatLocationSelection // omitted for brevity, see the source of this page
+}).on("change", function () {
+   /*Sementara TUtup Location */
+});
+/* Format Group */
+function formatLocation(repo) {
+    if (repo.loading) return repo.text;
+    var markup ="<div class='select2-result-repository__description'>" + repo.idlocation +"   <i class='fa fa-circle-o'></i>   "+ repo.nmlocation +"</div>";
+    return markup;
+}
+
+function formatLocationSelection(repo) {
+    return repo.nmlocation || repo.text;
 }
 
 // Reset currentEditId ketika modal ditutup
@@ -1305,8 +1418,17 @@ function savePenjualanDetail() {
         formData.set('idprincipal', $('#idprincipal').val());
         formData.set('idgudang', $('#idgudang').val());
         formData.set('idspec', $('#idspec').val());
-        formData.set('docnoso', $('#docnoso').val());
         formData.set('docnosj', $('#docnosj').val());
+        // formData.set('docnoso', $('#docnoso').val());
+        // formData.set('docnopo', $('#docnopo').val());
+        let docnoso = $('#docnoso').val();
+
+        // fallback kalau di modal update
+        if (!docnoso) {
+            docnoso = $('#docnosomodal').val();
+        }
+
+        formData.set('docnoso', docnoso);
         
         // formData.set('descriptionpo', convertToDbNumber(qty));
 
@@ -1525,8 +1647,10 @@ $("#kdcustomer").select2({
     if (e.params && e.params.data) {
         var selectedData = e.params.data;
         
-        $("#alamatcustomer").val(selectedData.alamat_kantor || '').prop('disabled', true);
-        $("#gradecustomer").val(selectedData.grade || '').prop('disabled', true);
+        $("#alamatcustomer").val(selectedData.alamat_kantor || '').prop('readonly', true);
+        defaultInitialCustSO = selectedData.kdcustomer
+        $("#gradecustomer").val(selectedData.grade || '').prop('readonly', true);
+        $("#jthtempo").val(selectedData.jthtempo || '').prop('readonly', true);
         // $("#phone").val(selectedData.phone || '').prop('disabled', true);
     }
 });

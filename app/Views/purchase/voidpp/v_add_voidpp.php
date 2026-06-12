@@ -398,16 +398,15 @@
                 <!-- FOOTER -->
                 <div class="modal-footer bg-light">
                     <button type="button"
+                            class="btn btn-primary"
+                            onclick="saveVoidPPDetail()">
+                        <i class="fa fa-save"></i> Simpan
+                    </button>
+                    <button type="button"
                             class="btn btn-secondary"
                             data-bs-dismiss="modal"
                             onclick="$('#modalDetailVoidPP').modal('hide')">
                         <i class="fa fa-times"></i> Batal
-                    </button>
-
-                    <button type="button"
-                            class="btn btn-primary"
-                            onclick="saveVoidPPDetail()">
-                        <i class="fa fa-save"></i> Simpan
                     </button>
                 </div>
             </form>

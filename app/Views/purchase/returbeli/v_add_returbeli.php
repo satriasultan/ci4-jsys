@@ -260,6 +260,7 @@
                                                     <select name="currcode"
                                                             id="currcode"
                                                             class="form-select select2"
+                                                            disabled
                                                             required>
                                                     </select>
                                                 </div>
@@ -271,6 +272,7 @@
                                                     <input type="text"
                                                         name="kurs"
                                                         id="kurs"
+                                                        readonly
                                                         class="form-control ratakanan jtsseparator"
                                                         placeholder="Nilai tukar akan muncul disini"
                                                         >
@@ -291,7 +293,7 @@
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label for="idtax">Pajak</label>
-                                                <select name="idtax" id="idtax" class="form-control select2" required></select>
+                                                <select name="idtax" id="idtax" disabled class="form-control select2" required></select>
                                             </div>
                                         </div>
                                         <div class="col-md-3" style="margin-top: 30px;">
@@ -302,6 +304,7 @@
                                                         type="checkbox" 
                                                         name="isinclusive" 
                                                         id="isinclusive"
+                                                        disabled
                                                         <?= isset($data['isinclusive']) && $data['isinclusive'] === 'YES' ? 'checked' : '' ?>>
                                                     <label class="form-check-label" for="isinclusive">
                                                         Inclusive
@@ -580,17 +583,18 @@
                 <!-- FOOTER -->
                 <div class="modal-footer bg-light">
                     <button type="button"
+                            class="btn btn-primary"
+                            onclick="saveReturBeliDetail()">
+                        <i class="fa fa-save"></i> Simpan
+                    </button>
+                    <button type="button"
                             class="btn btn-secondary"
                             data-bs-dismiss="modal"
                             onclick="$('#modalDetailReturBeli').modal('hide')">
                         <i class="fa fa-times"></i> Batal
                     </button>
 
-                    <button type="button"
-                            class="btn btn-primary"
-                            onclick="saveReturBeliDetail()">
-                        <i class="fa fa-save"></i> Simpan
-                    </button>
+                    
                 </div>
             </form>
         </div>
@@ -666,9 +670,9 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label>Gudang</label>
-                                <input name="idgudang" id="idgudang"
-                                        class="form-control"
-                                        style="width:100%">
+                                <select name="idgudang" id="idgudang"
+                                        class="form-control select2"
+                                        style="width:100%"></select>
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -676,7 +680,7 @@
                                 <label>Spec</label>
                                 <input name="idspec" id="idspec"
                                         class="form-control"
-                                        style="width:100%">
+                                        style="width:100%;text-transform: uppercase;">
                             </div>
                         </div>
                         <div class="col-md-2">
@@ -794,17 +798,18 @@
                 <!-- FOOTER -->
                 <div class="modal-footer bg-light">
                     <button type="button"
+                            class="btn btn-primary"
+                            onclick="saveReturBeliDetail()">
+                        <i class="fa fa-save"></i> Simpan
+                    </button>
+                    <button type="button"
                             class="btn btn-secondary"
                             data-bs-dismiss="modal"
                             onclick="$('#modalUpdateReturBeli').modal('hide')">
                         <i class="fa fa-times"></i> Batal
                     </button>
 
-                    <button type="button"
-                            class="btn btn-primary"
-                            onclick="saveReturBeliDetail()">
-                        <i class="fa fa-save"></i> Simpan
-                    </button>
+                    
                 </div>
             </form>
         </div>

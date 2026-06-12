@@ -354,6 +354,8 @@ var defaultInitialGroupBrng = '';
 $("#idbarang").select2({
     placeholder: "Choose Your Item List",
     allowClear: true,
+    minimumInputLength: 2,
+    dropdownParent: $('#modalDetailSalesOrder'),
     width:'100%',
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_item',
@@ -964,6 +966,19 @@ function getCheckedDetailIds(){
 
 
 
+
+function resetSelect2Fields() {
+    // Reset idprincipal
+    $('[name="idprincipal"]').val(null).trigger('change');
+    $('[name="idprincipal"]').empty();
+    
+    // Reset idgudang
+    $('[name="idgudang"]').val(null).trigger('change');
+    $('[name="idgudang"]').empty();
+}
+
+
+
 function setSelect2Ajax(selector, value, text) {
     if (!value) return;
 
@@ -995,6 +1010,7 @@ function btnUpdateDetail(){
     }
 
     const id = ids[0];
+    resetSelect2Fields();
 
     $.ajax({
         url: HOST_URL + 'sales/postsales/get_salesorder_detail',
@@ -1358,6 +1374,81 @@ function saveSalesOrderDetail() {
 
 
 
+
+
+
+var defaultInitialLocation = '';
+$("#idgudang").select2({
+    placeholder: " -- Pilih Gudang Asal -- ",
+    allowClear: true,
+    width: '100%',
+    dropdownParent: $('#modalDetailSalesOrder'),
+    // minimumInputLength: 2, // only start searching when the user has input 3 or more characters
+    maximumSelectionLength: 1,
+    multiple: false,
+    ajax: {
+        url: HOST_URL + 'api/globalmodule/list_mlocation',
+        type: 'POST',
+        dataType: 'json',
+        delay: 250,
+        data: function(params) {
+            return {
+                _search_: params.term, // search term
+                _page_: params.page,
+                _draw_: true,
+                _start_: 1,
+                _perpage_: 2,
+                _paramglobal_: defaultInitialLocation,
+                _parameterx_: defaultInitialLocation,
+                term: params.term,
+            };
+        },
+        processResults: function(data, params) {
+
+            // var searchTerm = $("#idgudang").data("select2").$dropdown.find("input").val();
+            // if (data.items.length === 1 && data.items[0].text === searchTerm) {
+            //     var option = new Option(data.items[0].nmlocation, data.items[0].idlocation, true, true);
+            //     $('#idgudang').append(option).trigger('change').select2("close");
+            //     // manually trigger the `select2:select` event
+            //     $('#idgudang').trigger({
+            //         type: 'select2:select',
+            //         params: {
+            //             data: data
+            //         }
+            //     });
+            // }
+            params.page = params.page || 1;
+
+            return {
+                results: data.items,
+                pagination: {
+                    more: (params.page * 30) < data.total_count
+                }
+            };
+        },
+        cache: true
+    },
+    escapeMarkup: function(markup) {
+        return markup;
+    }, // let our custom formatter work
+    // minimumInputLength: 1,
+    templateResult: formatLocation, // omitted for brevity, see the source of this page
+    templateSelection: formatLocationSelection // omitted for brevity, see the source of this page
+}).on("change", function () {
+   /*Sementara TUtup Location */
+});
+/* Format Group */
+function formatLocation(repo) {
+    if (repo.loading) return repo.text;
+    var markup ="<div class='select2-result-repository__description'>" + repo.idlocation +"   <i class='fa fa-circle-o'></i>   "+ repo.nmlocation +"</div>";
+    return markup;
+}
+
+function formatLocationSelection(repo) {
+    return repo.nmlocation || repo.text;
+}
+
+
 function formatPrincipal(repo) {
 if (repo.loading) return repo.text;
     var markup ="<div class='select2-result-repository__description'>" + repo.idprincipal +"   <i class='fa fa-circle'></i>   "+ repo.nmprincipal +"  </div>";
@@ -1373,7 +1464,7 @@ function formatPrincipalSelection(repo) {
 $("#idprincipal").select2({
     placeholder: "Ketik/Pilih Principal",
     allowClear: true,
-    // dropdownParent: $('#modalUpdateLPB'),
+    dropdownParent: $('#modalDetailSalesOrder'),
     width: '100%',
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_principal',
@@ -1497,6 +1588,7 @@ $("#kdcustomer").select2({
         
         $("#alamatcustomer").val(selectedData.alamat_kantor || '').prop('disabled', true);
         $("#gradecustomer").val(selectedData.grade || '').prop('disabled', true);
+        $("#jthtempo").val(selectedData.jthtempo || '')
         // $("#phone").val(selectedData.phone || '').prop('disabled', true);
     }
 });

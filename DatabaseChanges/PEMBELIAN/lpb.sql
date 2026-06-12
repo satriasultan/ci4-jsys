@@ -347,10 +347,10 @@ SELECT
     COALESCE(d.idspec,''),
     d.idbarang,
 
-    CAST(h.docdate AS DATE) + (NOW()::time),
-    'GR',
-    v_docno,
-    d.docnopo,
+            CAST(h.docdate AS DATE) + (NOW()::time),
+            'GR',
+            v_docno,
+            d.docnopo,
 
     -- 🔥 FIX NON STOCK
     CASE 
@@ -358,12 +358,12 @@ SELECT
         ELSE (COALESCE(d.qty,0) + COALESCE(d.qtybonus,0))
     END,
 
-    COALESCE(d.harga,0),
+            COALESCE(d.harga,0),
 
-    h.currcode,
-    COALESCE(h.kurs,1),
+            h.currcode,
+            COALESCE(h.kurs,1),
 
-    'LPB',
+            'LPB',
 
     -- 🔥 FIX CTYPE
     CASE 
@@ -375,12 +375,12 @@ SELECT
     mb.idgroup,
     COALESCE(mb.grouptype,'STOCK'),
 
-    FALSE,
-    NULL
+            FALSE,
+            NULL
 
-FROM sc_tmp.lpb h
-JOIN sc_tmp.lpb_dtl d
-    ON rtrim(d.docno) = rtrim(h.docno)
+        FROM sc_tmp.lpb h
+        JOIN sc_tmp.lpb_dtl d
+            ON rtrim(d.docno) = rtrim(h.docno)
 
 LEFT JOIN sc_mst.mbarang mb
     ON mb.idbarang = d.idbarang
@@ -388,20 +388,20 @@ LEFT JOIN sc_mst.mbarang mb
 --WHERE rtrim(h.docno) = rtrim(OLD.docno)
   --AND h.inputby = v_inputby
 
-ON CONFLICT (docno, idbarang, idlocation, batch)
-DO UPDATE SET
-    qty_in = EXCLUDED.qty_in,
-    pricelst_in = EXCLUDED.pricelst_in,
-    currcode = EXCLUDED.currcode,
-    currvalue = EXCLUDED.currvalue,
-    idgroup = EXCLUDED.idgroup,
-    grouptype = EXCLUDED.grouptype,
-    is_posted = FALSE,
-    posted_at = NULL;
-	
-	
-/* END NILAI PERSEDIAAN DAN NILAI COA */	
-PERFORM sc_trx.sp_post_gl(v_inputby);	
+        ON CONFLICT (docno, idbarang, idlocation, batch)
+        DO UPDATE SET
+            qty_in = EXCLUDED.qty_in,
+            pricelst_in = EXCLUDED.pricelst_in,
+            currcode = EXCLUDED.currcode,
+            currvalue = EXCLUDED.currvalue,
+            idgroup = EXCLUDED.idgroup,
+            grouptype = EXCLUDED.grouptype,
+            is_posted = FALSE,
+            posted_at = NULL;
+            
+            
+        /* END NILAI PERSEDIAAN DAN NILAI COA */	
+        PERFORM sc_trx.sp_post_gl(v_inputby);	
 
 
 

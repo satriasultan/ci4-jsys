@@ -44,6 +44,10 @@ use App\Models\Persediaan\M_Persediaan;
 use App\Models\Production\M_Production;
 use App\Models\Purchase\M_Purchase;
 use App\Models\Purchase\M_Purchaseorder;
+use App\Models\Tools\M_Tools;
+use App\Models\Arap\M_Arap;
+use App\Models\Pajak\M_Pajak;
+use App\Models\Finance\M_Finance;
 use App\Models\Sales\M_Sales;
 use App\Models\Sales\M_Presales;
 use App\Models\Sales\M_Postsales;
@@ -168,6 +172,10 @@ class BaseController extends Controller
         $this->m_presales = new M_Presales();
         $this->m_postsales = new M_Postsales();
         $this->m_persediaan = new M_Persediaan();
+        $this->m_tools = new M_Tools();
+        $this->m_arap = new M_Arap();
+        $this->m_pajak = new M_Pajak();
+        $this->m_finance = new M_Finance();
         $this->m_production = new M_Production();
     }
 }

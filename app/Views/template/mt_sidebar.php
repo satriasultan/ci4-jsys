@@ -13,7 +13,7 @@
                         <i class="icon-speedometer"></i>
                         <span class="hide-menu">
                             Dashboard
-                            <span class="badge rounded-pill bg-cyan ms-auto">4</span>
+                            <!-- <span class="badge rounded-pill bg-cyan ms-auto">4</span> -->
                         </span>
                     </a>
                     <ul aria-expanded="false" class="collapse">
@@ -36,7 +36,7 @@
                             <i class="fa <?= trim($lm->iconmenu); ?>"></i>
                             <span class="hide-menu">
                             <?= ucwords(strtolower(trim($lm->namamenu))); ?>
-                            <span class="badge rounded-pill bg-info">25</span>
+                            <!-- <span class="badge rounded-pill bg-info">25</span> -->
                         </span>
                         </a>
 
@@ -59,7 +59,7 @@
                                                     ? trim($lms->iconmenu)
                                                     : 'fa-angle-double-right'; ?>"></i>
                                             <?= ucwords(strtolower(trim($lms->namamenu))); ?>
-                                            <span class="badge rounded-pill bg-success pull-right">6</span>
+                                            <!-- <span class="badge rounded-pill bg-success pull-right">6</span> -->
                                         </a>
 
                                         <ul aria-expanded="false" class="collapse">

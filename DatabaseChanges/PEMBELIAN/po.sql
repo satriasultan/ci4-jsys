@@ -239,12 +239,14 @@ BEGIN
         -- ===============================
         INSERT INTO sc_trx.po_dtl (
             idurut, docno, docnopp, idbarang, uniqueid,  nmbarang, unit, qty, qtybonus, 
-            harga, multidisc, nilai, descriptionpo, descriptionpp,
+            harga, multidisc, nilai, nilaipajak, nilaikonversi, currcode, idtax, kurs,
+            descriptionpo, descriptionpp,
             inputby, inputdate, status, updateby, updatedate
         )
         SELECT
             idurut, v_docno, docnopp, idbarang, uniqueid,  nmbarang, unit, qty, qtybonus, 
-            harga, multidisc, nilai, descriptionpo, descriptionpp,
+            harga, multidisc, nilai, nilaipajak, nilaikonversi, currcode, idtax, kurs,
+            descriptionpo, descriptionpp,
             inputby, inputdate, status, updateby, updatedate
         FROM sc_tmp.po_dtl
         WHERE rtrim(docno) = rtrim(OLD.docno)
@@ -300,11 +302,13 @@ BEGIN
 
         INSERT INTO sc_trx.po_dtl
         (idurut, docno, docnopp, idbarang, uniqueid,  nmbarang, unit, qty, qtybonus, 
-        harga, multidisc, nilai, descriptionpo, descriptionpp,
+        harga, multidisc, nilai, nilaipajak, nilaikonversi, currcode, idtax, kurs,
+        descriptionpo, descriptionpp,
         inputby, inputdate, status, updateby, updatedate, docnotmp)
         SELECT
             idurut, NEW.docnotmp, docnopp, idbarang, uniqueid,  nmbarang, unit, qty, qtybonus, 
-            harga, multidisc, nilai, descriptionpo, descriptionpp,
+            harga, multidisc, nilai, nilaipajak, nilaikonversi, currcode, idtax, kurs,
+            descriptionpo, descriptionpp,
             inputby, inputdate, status, updateby, updatedate, docnotmp
         FROM sc_tmp.po_dtl
         WHERE rtrim(docno) = rtrim(NEW.docno);
@@ -412,10 +416,12 @@ BEGIN
 			-- Insert into pp_dtl with new columns
 			INSERT INTO sc_tmp.po_dtl
 			( idurut, docno, docnopp, idbarang, uniqueid, nmbarang, unit, qty, qtybonus, 
-            harga, multidisc, nilai, descriptionpo, descriptionpp,
+            harga, multidisc, nilai, nilaipajak, nilaikonversi, currcode, idtax, kurs,
+            descriptionpo, descriptionpp,
             inputby, inputdate, status, updateby, updatedate, docnotmp)
 			SELECT idurut, NEW.docno, docnopp, idbarang, uniqueid, nmbarang, unit, qty, qtybonus, 
-            harga, multidisc, nilai, descriptionpo, descriptionpp,
+            harga, multidisc, nilai, nilaipajak, nilaikonversi, currcode, idtax, kurs,
+            descriptionpo, descriptionpp,
             inputby, inputdate, status, updateby, updatedate, NEW.docno
 			FROM sc_trx.po_dtl 
 			WHERE docno = NEW.docno;

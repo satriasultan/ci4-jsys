@@ -100,16 +100,104 @@ INSERT INTO sc_mst.menuprg (
 ('JTS', 6, 'I.S', 'PENJUALAN', '', '', 'U', 'false', 'fa-area-chart', '#', 'LEFT', 'NO'),
 ('JTS', 1, 'I.S.A', 'PRE PENJUALAN', 'I.S', '', 'S', 'false', 'fa-list-alt', '#', 'LEFT', 'NO'),
 -- ('JTS', 1, 'I.S.A.1', 'TASK MANAGEMENT', 'I.S', 'I.S.A', 'P', 'false', 'fa-tasks', 'sales/presales', 'LEFT', 'NO'),
--- ('JTS', 2, 'I.S.A.2', 'PRICE PROPOSAL', 'I.S', 'I.S.A', 'P', 'false', 'fa-handshake-o', 'sales/presales/priceproposal', 'LEFT', 'NO'),
--- ('JTS', 3, 'I.S.A.3', 'PROFORMA INVOICE', 'I.S', 'I.S.A', 'P', 'false', 'fa-money', 'sales/presales/performainvoice', 'LEFT', 'NO'),
+('JTS', 2, 'I.S.A.2', 'PRICE PROPOSAL', 'I.S', 'I.S.A', 'P', 'false', 'fa-handshake-o', 'sales/presales/priceproposal', 'LEFT', 'NO'),
+('JTS', 3, 'I.S.A.3', 'PROFORMA INVOICE', 'I.S', 'I.S.A', 'P', 'false', 'fa-money', 'sales/presales/performainvoice', 'LEFT', 'NO'),
 ('JTS', 2, 'I.S.B', 'POST PENJUALAN', 'I.S', '', 'S', 'false', 'fa-handshake-o', '#', 'LEFT', 'NO'),
 ('JTS', 1, 'I.S.B.1', 'SALES ORDER', 'I.S', 'I.S.B', 'P', 'false', 'fa-file-text', 'sales/postsales/salesorder', 'LEFT', 'NO'),
-('JTS', 2, 'I.S.B.2', 'PENJUALAN', 'I.S', 'I.S.B', 'P', 'false', 'fa-file-text', 'sales/postsales/penjualan', 'LEFT', 'NO')
--- ('JTS', 3, 'I.S.B.3', 'SALES ORDER EXTERNAL', 'I.S', 'I.S.B', 'P', 'false', 'fa-file-text', 'sales/postsales/salesorderexternal', 'LEFT', 'NO'),
--- ('JTS', 4, 'I.S.B.4', 'SOI', 'I.S', 'I.S.B', 'P', 'false', 'fa-file-text-o', 'sales/postsales/soi', 'LEFT', 'NO'),
+('JTS', 2, 'I.S.B.2', 'PENJUALAN', 'I.S', 'I.S.B', 'P', 'false', 'fa-file-text', 'sales/postsales/penjualan', 'LEFT', 'NO'),
+('JTS', 3, 'I.S.B.3', 'SOI', 'I.S', 'I.S.B', 'P', 'false', 'fa-file-text-o', 'sales/postsales/soi', 'LEFT', 'NO'),
+('JTS', 4, 'I.S.B.4', 'SALES ORDER EXTERNAL', 'I.S', 'I.S.B', 'P', 'false', 'fa-file-text', 'sales/postsales/salesorderexternal', 'LEFT', 'NO'),
 -- ('JTS', 5, 'I.S.B.5', 'DELIVERY SPEC', 'I.S', 'I.S.B', 'P', 'false', 'fa-list', 'sales/postsales/deliveryspec', 'LEFT', 'NO'),
 -- ('JTS', 6, 'I.S.B.6', 'DELIVERY ORDER', 'I.S', 'I.S.B', 'P', 'false', 'fa-truck', 'sales/postsales/deliveryorder', 'LEFT', 'NO')
 ;
+
+
+
+
+
+-- TOOLS
+
+--DELETE TERLEBIH DAHULU
+DELETE FROM sc_mst.menuprg where kodemenu like '%I.T%'
+--TOOLS
+INSERT INTO sc_mst.menuprg (
+    branch, urut, kodemenu, namamenu, parentmenu, parentsub, child, holdmenu, iconmenu, linkmenu, menuposition, chold
+) VALUES
+('JTS', 6, 'I.T', 'TOOLS', '', '', 'U', 'false', 'fa-wrench', '#', 'LEFT', 'NO'),
+('JTS', 1, 'I.T.A', 'SETTING AWAL', 'I.T', '', 'S', 'false', 'fa-list-alt', '#', 'LEFT', 'NO'),
+('JTS', 1, 'I.T.A.1', 'SETTING TANGGAL AWAL', 'I.T', 'I.T.A', 'P', 'false', 'fa-tasks', 'tools/settingawal', 'LEFT', 'NO'),
+('JTS', 2, 'I.T.A.2', 'SALDO AWAL HUTANG/PIUTANG', 'I.T', 'I.T.A', 'P', 'false', 'fa-handshake-o', 'tools/settingawal/saldoawalhp', 'LEFT', 'NO'),
+('JTS', 3, 'I.T.A.3', 'PROSES SALDO AWAL H/P', 'I.T', 'I.T.A', 'P', 'false', 'fa-money', 'tools/settingawal/prosessaldoawalhp', 'LEFT', 'NO'),
+('JTS', 2, 'I.T.B', 'KONFIGURASI', 'I.T', '', 'S', 'false', 'fa-cogs', '#', 'LEFT', 'NO'),
+('JTS', 1, 'I.T.B.1', 'KONFIGURASI', 'I.T', 'I.T.B', 'P', 'false', 'fa-file-text', 'tools/konfigurasi', 'LEFT', 'NO'),
+('JTS', 2, 'I.T.B.2', 'SETTING', 'I.T', 'I.T.B', 'P', 'false', 'fa-file-text', 'tools/konfigurasi/setting', 'LEFT', 'NO'),
+('JTS', 3, 'I.T.B.3', 'BLOCK/UNBLOCK PERIOD', 'I.T', 'I.T.B', 'P', 'false', 'fa-file-text', 'tools/konfigurasi/blockunblockperiod', 'LEFT', 'NO'),
+('JTS', 3, 'I.T.C', 'PROSES', 'I.T', '', 'S', 'false', 'fa-refresh', '#', 'LEFT', 'NO'),
+('JTS', 1, 'I.T.C.1', 'PROSES TUTUP BULAN', 'I.T', 'I.T.C', 'P', 'false', 'fa-file-text', 'tools/proses/tutupbulan', 'LEFT', 'NO'),
+
+-- ('JTS', 3, 'I.T.B.3', 'SALES ORDER EXTERNAL', 'I.T', 'I.T.B', 'P', 'false', 'fa-file-text', 'sales/postsales/salesorderexternal', 'LEFT', 'NO'),
+-- ('JTS', 4, 'I.T.B.4', 'SOI', 'I.T', 'I.T.B', 'P', 'false', 'fa-file-text-o', 'sales/postsales/soi', 'LEFT', 'NO'),
+-- ('JTS', 5, 'I.T.B.5', 'DELIVERY SPEC', 'I.T', 'I.T.B', 'P', 'false', 'fa-list', 'sales/postsales/deliveryspec', 'LEFT', 'NO'),
+-- ('JTS', 6, 'I.T.B.6', 'DELIVERY ORDER', 'I.T', 'I.T.B', 'P', 'false', 'fa-truck', 'sales/postsales/deliveryorder', 'LEFT', 'NO')
+;
+
+
+
+-- AR/AP
+
+DELETE FROM sc_mst.menuprg where kodemenu like '%I.L%'
+--AR/AP
+INSERT INTO sc_mst.menuprg (
+    branch, urut, kodemenu, namamenu, parentmenu, parentsub, child, holdmenu, iconmenu, linkmenu, menuposition, chold
+) VALUES
+('JTS', 6, 'I.L', 'AR/AP', '', '', 'U', 'false', 'fa-book', '#', 'LEFT', 'NO'),
+('JTS', 1, 'I.L.A', 'TRANSAKSI', 'I.L', '', 'S', 'false', 'fa-list', '#', 'LEFT', 'NO'),
+('JTS', 1, 'I.L.A.1', 'NOTA DEBIT / KREDIT', 'I.L', 'I.L.A', 'P', 'false', 'fa-tasks', 'arap/transaksi/ndk', 'LEFT', 'NO'),
+('JTS', 2, 'I.L.B', 'LAPORAN', 'I.L', '', 'S', 'false', 'fa-file-text', '#', 'LEFT', 'NO'),
+('JTS', 1, 'I.L.B.1', 'LAP. NOTA DEBIT & KREDIT', 'I.L', 'I.L.B', 'P', 'false', 'fa-tasks', 'arap/report/lapndk', 'LEFT', 'NO'),
+-- ('JTS', 2, 'I.L.A.2', 'SALDO AWAL HUTANG/PIUTANG', 'I.L', 'I.L.A', 'P', 'false', 'fa-handshake-o', 'arap/settingawal/saldoawalhp', 'LEFT', 'NO'),
+-- ('JTS', 3, 'I.L.A.3', 'PROSES SALDO AWAL H/P', 'I.L', 'I.L.A', 'P', 'false', 'fa-money', 'arap/settingawal/prosessaldoawalhp', 'LEFT', 'NO'),
+-- ('JTS', 2, 'I.L.B', 'KONFIGURASI', 'I.L', '', 'S', 'false', 'fa-cogs', '#', 'LEFT', 'NO'),
+-- ('JTS', 1, 'I.L.B.1', 'KONFIGURASI', 'I.L', 'I.L.B', 'P', 'false', 'fa-file-text', 'arap/konfigurasi', 'LEFT', 'NO'),
+-- ('JTS', 2, 'I.L.B.2', 'SETTING', 'I.L', 'I.L.B', 'P', 'false', 'fa-file-text', 'arap/konfigurasi/setting', 'LEFT', 'NO'),
+-- ('JTS', 3, 'I.L.B.3', 'BLOCK/UNBLOCK PERIOD', 'I.L', 'I.L.B', 'P', 'false', 'fa-file-text', 'arap/konfigurasi/blockunblockperiod', 'LEFT', 'NO');
+
+
+
+-- PAJAK
+
+DELETE FROM sc_mst.menuprg where kodemenu like '%I.J%'
+-- PAJAK
+INSERT INTO sc_mst.menuprg (
+    branch, urut, kodemenu, namamenu, parentmenu, parentsub, child, holdmenu, iconmenu, linkmenu, menuposition, chold
+) VALUES
+('JTS', 6, 'I.J', 'PAJAK', '', '', 'U', 'false', 'fa-percent', '#', 'LEFT', 'NO'),
+('JTS', 1, 'I.J.A', 'LAPORAN', 'I.J', '', 'S', 'false', 'fa-list', '#', 'LEFT', 'NO'),
+('JTS', 1, 'I.J.A.1', 'LAPORAN PAJAK', 'I.J', 'I.J.A', 'P', 'false', 'fa-tasks', 'pajak/transaksi/laporan', 'LEFT', 'NO')
+
+
+
+-- KEUANGAN & ACCOUNTING
+
+DELETE FROM sc_mst.menuprg where kodemenu like '%I.K%'
+--KEUANGAN & ACCOUNTING
+INSERT INTO sc_mst.menuprg (
+    branch, urut, kodemenu, namamenu, parentmenu, parentsub, child, holdmenu, iconmenu, linkmenu, menuposition, chold
+) VALUES
+('JTS', 6, 'I.K', 'KEUANGAN & ACCOUNTING', '', '', 'U', 'false', 'fa-dollar', '#', 'LEFT', 'NO'),
+('JTS', 1, 'I.K.A', 'ACCOUNTING', 'I.K', '', 'S', 'false', 'fa-book', '#', 'LEFT', 'NO'),
+('JTS', 1, 'I.K.A.1', 'JURNAL UMUM PERKIRAAN', 'I.K', 'I.K.A', 'P', 'false', 'fa-tasks', 'ka/accounting/jup', 'LEFT', 'NO'),
+('JTS', 2, 'I.K.B', 'FINANCE', 'I.K', '', 'S', 'false', 'fa-money', '#', 'LEFT', 'NO'),
+('JTS', 1, 'I.K.B.1', 'UANG MUKA TITIPAN', 'I.K', 'I.K.B', 'P', 'false', 'fa-tasks', 'ka/finance/umt', 'LEFT', 'NO'),
+('JTS', 1, 'I.K.B.2', 'PENERIMAAN KAS/BANK', 'I.K', 'I.K.B', 'P', 'false', 'fa-tasks', 'ka/finance/penerimaankb', 'LEFT', 'NO'),
+('JTS', 1, 'I.K.B.3', 'PENGELUARAN KAS/BANK', 'I.K', 'I.K.B', 'P', 'false', 'fa-tasks', 'ka/finance/pengeluarankb', 'LEFT', 'NO'),
+-- ('JTS', 2, 'I.K.A.2', 'SALDO AWAL HUTANG/PIUTANG', 'I.K', 'I.K.A', 'P', 'false', 'fa-handshake-o', 'arap/settingawal/saldoawalhp', 'LEFT', 'NO'),
+-- ('JTS', 3, 'I.K.A.3', 'PROSES SALDO AWAL H/P', 'I.K', 'I.K.A', 'P', 'false', 'fa-money', 'arap/settingawal/prosessaldoawalhp', 'LEFT', 'NO'),
+-- ('JTS', 2, 'I.K.B', 'KONFIGURASI', 'I.K', '', 'S', 'false', 'fa-cogs', '#', 'LEFT', 'NO'),
+-- ('JTS', 1, 'I.K.B.1', 'KONFIGURASI', 'I.K', 'I.K.B', 'P', 'false', 'fa-file-text', 'arap/konfigurasi', 'LEFT', 'NO'),
+-- ('JTS', 2, 'I.K.B.2', 'SETTING', 'I.K', 'I.K.B', 'P', 'false', 'fa-file-text', 'arap/konfigurasi/setting', 'LEFT', 'NO'),
+-- ('JTS', 3, 'I.K.B.3', 'BLOCK/UNBLOCK PERIOD', 'I.K', 'I.K.B', 'P', 'false', 'fa-file-text', 'arap/konfigurasi/blockunblockperiod', 'LEFT', 'NO');
+
 
 
 

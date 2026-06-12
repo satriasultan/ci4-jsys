@@ -591,17 +591,18 @@
                 <!-- FOOTER -->
                 <div class="modal-footer bg-light">
                     <button type="button"
+                            class="btn btn-primary"
+                            onclick="savePenjualanDetail()">
+                        <i class="fa fa-save"></i> Simpan
+                    </button>
+                    <button type="button"
                             class="btn btn-secondary"
                             data-bs-dismiss="modal"
                             onclick="$('#modalDetailPenjualan').modal('hide')">
                         <i class="fa fa-times"></i> Batal
                     </button>
 
-                    <button type="button"
-                            class="btn btn-primary"
-                            onclick="savePenjualanDetail()">
-                        <i class="fa fa-save"></i> Simpan
-                    </button>
+                    
                 </div>
             </form>
         </div>
@@ -632,6 +633,7 @@
                     <input type="hidden" name="idurut" id="idurut">
                     <input type="hidden" name="uniqueid" id="uniqueid">
                     <input type="hidden" name="docno" id="docno">
+                    <input type="hidden" name="docnoso" id="docnoso">
                     <!-- <input type="hidden" name="status" id="status" value="P">-->
 
                     <!-- ROW 1 -->
@@ -770,16 +772,15 @@
                 <!-- FOOTER -->
                 <div class="modal-footer bg-light">
                     <button type="button"
+                            class="btn btn-primary"
+                            onclick="savePenjualanDetail()">
+                        <i class="fa fa-save"></i> Simpan
+                    </button>
+                    <button type="button"
                             class="btn btn-secondary"
                             data-bs-dismiss="modal"
                             onclick="$('#modalUpdatePenjualan').modal('hide')">
                         <i class="fa fa-times"></i> Batal
-                    </button>
-
-                    <button type="button"
-                            class="btn btn-primary"
-                            onclick="savePenjualanDetail()">
-                        <i class="fa fa-save"></i> Simpan
                     </button>
                 </div>
             </form>

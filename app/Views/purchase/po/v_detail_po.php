@@ -158,7 +158,7 @@
                                             </div>
                                             <input type="hidden" name="docno" class="form-control col-sm-12" id="docno" maxlength="20"     value="<?= isset($dtldata['docno']) ? esc(trim($dtldata['docno'])) : '' ?>" style="text-transform: uppercase;" readonly>
                                             <div style="position:relative;">
-                                                <?php if(trim($dtldata['status']) == 'A') { ?>
+                                                <?php if(trim($dtldata['status']) == 'A' || trim($dtldata['status']) == 'P') { ?>
                                                     <img src="<?= base_url('assets/img/svg/approved-sticker.svg') ?>" 
                                                         alt="Approved"
                                                         class="float-end"

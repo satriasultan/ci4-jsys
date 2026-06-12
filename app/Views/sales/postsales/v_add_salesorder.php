@@ -396,7 +396,7 @@
                                             <th>Biaya 1</th>
                                             <th>Biaya 2</th> -->
                                             <th>Nilai</th>
-                                            <th>BOM Description</th>
+                                            <th style="max-width: 200px;">BOM Description</th>
                                             <!-- <th>Keterangan PP</th> -->
                                         </tr>
                                     </thead>
@@ -621,7 +621,7 @@
                                 <label>Spec</label>
                                 <input name="idspec" id="idspec"
                                         class="form-control"
-                                        style="width:100%">
+                                        style="width:100%;text-transform:uppercase">
                             </div>
                         </div>
                     </div>
@@ -693,6 +693,12 @@
 
                 <!-- FOOTER -->
                 <div class="modal-footer bg-light">
+                    
+                    <button type="button"
+                            class="btn btn-primary"
+                            onclick="saveSalesOrderDetail()">
+                        <i class="fa fa-save"></i> Simpan
+                    </button>
                     <button type="button"
                             class="btn btn-secondary"
                             data-bs-dismiss="modal"
@@ -700,11 +706,6 @@
                         <i class="fa fa-times"></i> Batal
                     </button>
 
-                    <button type="button"
-                            class="btn btn-primary"
-                            onclick="saveSalesOrderDetail()">
-                        <i class="fa fa-save"></i> Simpan
-                    </button>
                 </div>
             </form>
         </div>
