@@ -4,7 +4,7 @@
 
             <!-- LEFT -->
             <div class="col-sm-6">
-                <h1 class="m-0">Bill Of Material</h1>
+                <h1 class="m-0">Working Order</h1>
             </div>
 
             <!-- RIGHT -->
@@ -187,15 +187,15 @@
                     </button>
                     <div class="dropdown-menu">
                         <?php if (isset($dtl_akses['a_input']) && trim($dtl_akses['a_input']) === 't'): ?>
-                            <a class="dropdown-item" href="<?= base_url('production/trans/add_bom') ?>"><i class="fa fa-plus"></i><?php echo '   Input'; ?> </a>
+                            <a class="dropdown-item" href="<?= base_url('production/trans/add_workingorder') ?>"><i class="fa fa-plus"></i><?php echo '   Input'; ?> </a>
                         <?php endif; ?>
                         <!-- <a class="dropdown-item disabled" data-bs-toggle="modal" data-bs-target="#filter"  href="#"><i class="fa fa-filter"></i><?php echo '   Filter'; ?></a> -->
-                        <a class="dropdown-item" href="#"  onclick="reload_bom()"><i class="fa fa-refresh"></i><?php echo '    Reload'; ?> </a>
+                        <a class="dropdown-item" href="#"  onclick="reload_workingorder()"><i class="fa fa-refresh"></i><?php echo '    Reload'; ?> </a>
                     </div>
                 </div>
             </div><!-- /.card-header -->
             <div class="card-body table-responsive" style='overflow-x:scroll;'>
-                <table id="tbom" class="table table-bordered table-striped" >
+                <table id="tworkingorder" class="table table-bordered table-striped" >
                     <thead>
                     <tr>
                         <th width="1%">No.</th>
@@ -203,18 +203,19 @@
 
                         <th>Document</th>
                         <th>Tanggal</th>
-                        <th>Kode Barang</th>
+                        <!-- <th>Kode</th> -->
 
-                        <th>Nama Barang</th>
-                        <th>Build For</th>
-
-                        <th>Unit</th>
+                        <th>Nama</th>
+                        <th>Alamat</th>
+                        <th>Kota</th>
+                        <th>No. SO</th>
+                        <th>Tanggal Finish</th>
 
                         
                         
                         <th>Status</th>
-                        <th>Description</th>
-                        <th>Cost Center</th>
+                        <th>Remark</th>
+                        <th>Job</th>
 
                         <!-- <th>Input By</th>
                         <th>Input Date</th>
@@ -286,7 +287,7 @@
 
 
 
-<script type="application/javascript" src="<?= base_url('assets/pagejs/production/bom/bom.js') ?>"></script>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/production/workingorder/workingorder.js') ?>"></script>
 <script type="text/javascript">
     $(function() {
         $("#example1").dataTable();

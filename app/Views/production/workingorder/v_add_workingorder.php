@@ -179,7 +179,7 @@
 
             <!-- LEFT -->
             <div class="col-sm-6">
-                <h1 class="m-0">Bill Of Material</h1>
+                <h1 class="m-0">Working Order</h1>
             </div>
 
             <!-- RIGHT -->
@@ -225,12 +225,12 @@
 ?>
 <div class="row">
     <!-- left column -->
-    <form action="<?= base_url('production/trans/final_input_bom') ?>" method="post" id="formStandarCostMst">
+    <form action="<?= base_url('production/trans/final_input_workingorder') ?>" method="post" id="formStandarCostMst">
         <div class="col-md-12">
             <!-- jquery validation -->
             <div class="card card-primary">
                 <div class="card-header">
-                    <h3 class="card-title"><?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> BOM</h3>
+                    <h3 class="card-title"><?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> Working Order</h3>
                 </div>
                 <!-- /.card-header -->
                 <!-- form start -->
@@ -242,7 +242,7 @@
                         <div class="row">
 
                             <!-- LEFT COLUMN -->
-                            <div class="col-md-6" >
+                            <div class="col-md-4" >
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group">
@@ -268,9 +268,9 @@
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <div class="col-md-6">
+                                    <div class="col-md-8">
                                         <div class="form-group">
-                                            <label>No. BOM</label>
+                                            <label>No. WO</label>
                                             <div class="d-flex">
                                                 <input type="text"
                                                     name="prefix"
@@ -295,42 +295,58 @@
                                                     id="sufix"
                                                     class="form-control ms-1"
                                                     readonly>
-                                                </div>
                                             </div>
                                         </div>
                                         <input type="hidden" name="docno" class="form-control col-sm-12" id="docno" maxlength="20"     value="<?= isset($dtldata['docno']) ? esc(trim($dtldata['docno'])) : '' ?>" style="text-transform: uppercase;" readonly>
-
-                                        <div class="col-md-6">
-                                            <label class="form-label">Barang Jadi</label>
-                                            <select name="idbarang_jadi" id="idbarang_jadi" class="form-select select2 " style="width:100%">
-                                            </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="docdatefinish">Tanggal Selesai</label>
+                                            <input type="text"
+                                                    name="docdatefinish"
+                                                    id="docdatefinish"
+                                                    class="form-control"
+                                                    placeholder="Tanggal Selesai">
                                         </div>
-                                        <div class="col-md-3">
-                                            <label class="form-label">Build For</label>
-                                                <div class="form-group">
-                                                    <input type="text" name="buildfor" id="buildfor" class="form-control ratakanan jtsseparator" placeholder="Build Qty For" required>
-                                                </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label for="from">Unit</label>
-                                            <select name="buildunit" id="buildunit" class="form-control">
-                                                <option value="">-- Pilih --</option>
-                                                <option value="Actual Cost">Actual Cost</option>
-                                                <option value="Last Cost">Last Cost</option>
-                                                <option value="New Cost">New Cost</option>
-
-                                            </select>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label class="form-label">Minimum QTY</label>
-                                            <div class="form-group">
-                                                <input type="text" name="minimumqty" id="minimumqty" class="form-control ratakanan jtsseparator" placeholder="Build Qty For" >
-                                            </div>
-                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-md-6" >
+                            
+                            <div class="col-md-4" >
                                 <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="kdcustomer">Customer</label>
+                                            <select name="kdcustomer" id="kdcustomer" class="form-control select2" required></select>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" name="nmcustomer" class="form-control col-sm-12" id="nmcustomer" maxlength="250" style="text-transform: uppercase;" readonly>
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="alamatcustomer">Alamat Customer</label>
+                                            <textarea name="alamatcustomer"
+                                                id="alamatcustomer"
+                                                class="form-control"
+                                                rows="2"
+                                                placeholder="Alamat Customer"
+                                                
+                                                style="text-transform:uppercase;"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="noso">No. SO</label>
+                                            <input type="text"
+                                                    name="noso"
+                                                    id="noso"
+                                                    class="form-control"
+                                                    placeholder="No. SO">
+                                        </div>
+                                    </div>
                                     <div class="col-md-12">
                                         <div class="form-group">
                                             <label for="keterangan">Keterangan</label>
@@ -343,7 +359,49 @@
                     </div>
                 </div>
             </div>
+            <div class="card mt-3 card-primary">
+                <!-- BOM MASTER -->
+                <div class="card-header clearfix">
+                    <h3 class="card-title">
+                        Bill Of Material
+                    </h3>
+                    <div class="float-right d-flex align-items-center gap-2">
+                        <button type="button"
+                                class="btn btn-success btn-lg action-btn wo-global-action"
+                                data-bs-toggle="tooltip"
+                                title="Input Data"
+                                onclick="btnInputDetailBOM()">
+                            <i class="fa fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- TAB MATERIAL -->
+                <div class="card-body p-4">
+                    <div class="table-responsive">
+                        <table id="tmp_workingorderbommst"
+                                class="table table-hover align-middle custom-table">
 
+                            <thead>
+                            <tr>
+                                <th>Act</th>
+                                <th>No. BOM</th>
+                                <th>Keterangan BOM</th>
+                                <th>Kode Barang</th>
+                                <th>Nama Barang</th>
+                                <th>Qty</th>
+                                <th>Satuan</th>
+                                <th class="text-end">Total Cost</th>
+                                <!-- <th class="text-end">Standart Cost</th> -->
+                            </tr>
+                            </thead>
+
+                            <tbody>
+                            </tbody>
+
+                        </table>
+                    </div>
+                </div>
+            </div>
             <div class="card mt-3 card-primary">
 
                 <!-- NAVIGATION TAB -->
@@ -409,9 +467,9 @@
                                     Detail Barang - Material
                                 </h3>
     
-                                <div class="float-right d-flex align-items-center gap-2">
+                                <!-- <div class="float-right d-flex align-items-center gap-2">
     
-                                    <!-- <button type="button"
+                                    <button type="button"
                                             class="btn btn-success btn-lg action-btn"
                                             title="Input Data (Ctrl + Q)"
                                             id="btnAddDetailMaterial">
@@ -437,9 +495,9 @@
     
                                         <i class="fa fa-trash"></i>
     
-                                    </button> -->
+                                    </button>
     
-                                </div>
+                                </div> -->
     
                             </div>
     
@@ -447,14 +505,16 @@
     
                                 <div class="table-responsive">
     
-                                    <table id="trx_bommaterialdtl"
+                                    <table id="tmp_workingordermaterialdtl"
                                             class="table table-hover align-middle custom-table">
     
                                         <thead>
                                         <tr>
-                                            <th class="text-center" width="40">
+                                            <!-- <th class="text-center" width="40">
                                                 <input type="checkbox" id="checkAll">
-                                            </th>
+                                            </th> -->
+                                            <th>Doc No. WO</th>
+                                            <th>Doc No. BOM</th>
                                             <th>ID Barang</th>
                                             <th>Nama Barang</th>
                                             <th>Qty</th>
@@ -467,16 +527,7 @@
     
                                         <tbody>
                                         </tbody>
-                                        <tfoot>
-                                            <tr>
-                                                <th colspan="6" style="background-color: #d5d5d5;text-align: right!important;">
-                                                    TOTAL NILAI MATERIAL
-                                                </th>
-                                                <th id="ttlmaterial" class="text-right" style="font-weight: bold;">
-                                                    0
-                                                </th>
-                                            </tr>
-                                        </tfoot>
+    
                                     </table>
     
                                 </div>
@@ -498,37 +549,37 @@
                                         Detail - COST
                                     </h3>
     
-                                    <div class="float-right d-flex align-items-center gap-2">
+                                    <!-- <div class="float-right d-flex align-items-center gap-2">
     
-                                        <!-- <button type="button"
+                                        <button type="button"
                                                 class="btn btn-success btn-lg action-btn"
                                                 title="Input Data (Ctrl + Q)"
-                                                id="btnAddDetail">
+                                                id="btnAddDetailCost">
     
                                             <i class="fa fa-plus"></i>
     
                                         </button>
     
                                         <button type="button"
-                                                id="btnUpdateDetail"
-                                                class="btn btn-warning btn-lg action-btn"
-                                                title="Update Data"
-                                                onclick="updateStandartCost()">
+                                            id="btnUpdateDetailCost"
+                                            class="btn btn-warning btn-lg action-btn"
+                                            title="Update Data"
+                                            onclick="updateDetailBomCost()">
     
                                             <i class="fa fa-edit"></i>
-    
+        
                                         </button>
-    
+        
                                         <button type="button"
                                                 class="btn btn-danger btn-lg action-btn"
                                                 title="Hapus Data"
-                                                onclick="btnDeleteDetail()">
-    
+                                                onclick="btnDeleteDetailCost()">
+        
                                             <i class="fa fa-trash"></i>
+        
+                                        </button>
     
-                                        </button> -->
-    
-                                    </div>
+                                    </div> -->
     
                                 </div>
     
@@ -536,36 +587,28 @@
     
                                     <div class="table-responsive">
     
-                                        <table id="trx_bomcostdtl"
+                                        <table id="tmp_workingordercostdtl"
                                                 class="table table-hover align-middle custom-table">
     
                                             <thead>
-                                            <tr>
-                                                <th class="text-center" width="40">
-                                                    <input type="checkbox" id="checkAllCost">
-                                                </th>
-                                                <th>ID Barang</th>
-                                                <th>Nama Barang</th>
-                                                <th>Qty</th>
-                                                <th>Satuan</th>
-                                                <th class="text-end">Standart Cost</th>
-                                                <th class="text-end">Total Cost</th>
-                                                <th>Keterangan</th>
-                                            </tr>
+                                                <tr>
+                                                    <!-- <th class="text-center" width="40">
+                                                        <input type="checkbox" id="checkAllCost">
+                                                    </th> -->
+                                                    <th>Doc No. WO</th>
+                                                    <th>Doc No. BOM</th>
+                                                    <th>ID Barang</th>
+                                                    <th>Nama Barang</th>
+                                                    <th>Qty</th>
+                                                    <th>Satuan</th>
+                                                    <th class="text-end">Standart Cost</th>
+                                                    <th class="text-end">Total Cost</th>
+                                                    <th>Keterangan</th>
+                                                </tr>
                                             </thead>
     
                                             <tbody>
                                             </tbody>
-                                            <tfoot>
-                                                <tr>
-                                                    <th colspan="6" style="background-color: #d5d5d5; text-align: right!important;" >
-                                                        TOTAL NILAI COST
-                                                    </th>
-                                                    <th id="ttlcost" class="text-right" style="font-weight: bold;">
-                                                        0
-                                                    </th>
-                                                </tr>
-                                            </tfoot>
                                         </table>
     
                                     </div>
@@ -589,37 +632,37 @@
                                         Detail - Barang WIP
                                     </h3>
     
-                                    <div class="float-right d-flex align-items-center gap-2">
+                                    <!-- <div class="float-right d-flex align-items-center gap-2">
     
-                                        <!-- <button type="button"
+                                        <button type="button"
                                                 class="btn btn-success btn-lg action-btn"
                                                 title="Input Data (Ctrl + Q)"
-                                                id="btnAddDetail">
+                                                id="btnAddDetailWip">
     
                                             <i class="fa fa-plus"></i>
     
                                         </button>
     
                                         <button type="button"
-                                                id="btnUpdateDetail"
-                                                class="btn btn-warning btn-lg action-btn"
-                                                title="Update Data"
-                                                onclick="updateStandartCost()">
+                                            id="btnUpdateDetailWip"
+                                            class="btn btn-warning btn-lg action-btn"
+                                            title="Update Data"
+                                            onclick="updateDetailBomWip()">
     
                                             <i class="fa fa-edit"></i>
-    
+        
                                         </button>
-    
+        
                                         <button type="button"
                                                 class="btn btn-danger btn-lg action-btn"
                                                 title="Hapus Data"
-                                                onclick="btnDeleteDetail()">
-    
+                                                onclick="btnDeleteDetailWip()">
+        
                                             <i class="fa fa-trash"></i>
+        
+                                        </button>
     
-                                        </button> -->
-    
-                                    </div>
+                                    </div> -->
     
                                 </div>
     
@@ -627,14 +670,16 @@
     
                                     <div class="table-responsive">
     
-                                        <table id="trx_bomwipdtl"
+                                        <table id="tmp_workingorderwipdtl"
                                                 class="table table-hover align-middle custom-table">
     
                                             <thead>
                                                 <tr>
-                                                    <th class="text-center" width="40">
+                                                    <!-- <th class="text-center" width="40">
                                                         <input type="checkbox" id="checkAllWip">
-                                                    </th>
+                                                    </th> -->
+                                                    <th>Doc No. WO</th>
+                                                    <th>Doc No. BOM</th>
                                                     <th>ID Barang</th>
                                                     <th>Nama Barang</th>
                                                     <th>Qty</th>
@@ -647,17 +692,6 @@
     
                                             <tbody>
                                             </tbody>
-                                            <tfoot>
-                                                <tr>
-                                                    <th colspan="6" style="background-color: #d5d5d5; text-align: right!important;" >
-                                                        TOTAL NILAI WIP
-                                                    </th>
-                                                    <th id="ttlwip" class="text-right" style="font-weight: bold;">
-                                                        0
-                                                    </th>
-                                                </tr>
-                                            </tfoot>
-    
                                         </table>
     
                                     </div>
@@ -667,25 +701,32 @@
                             </div>
     
                         </div>
-
-                        <div class="alert alert-info text-right text-bold">
-                            <strong>TOTAL BOM :</strong>
-                            <span id="ttlprice">0</span>
-                        </div>
-    
                     </div>
                 </div>
 
                 <!-- FOOTER -->
                 <div class="card-footer bg-light">
 
-                    <a href="<?= base_url('production/trans/bom') ?>"
+                    <a href="<?= base_url('production/trans/clear_workingorder_Tmp') ?>"
                         class="btn btn-default btn-lg">
 
                         <i class="fa fa-arrow-left mr-2"></i>
                         Kembali
 
                     </a>
+
+                    <?php if ($typeform != 'DETAIL' && $dtldata != null): ?>
+
+                        <button type="submit"
+                                onclick="return confirm('Simpan Data?')"
+                                class="btn btn-success btn-lg float-right wo-global-action">
+
+                            <i class="fa fa-save"></i>
+                            Simpan Final Data
+
+                        </button>
+
+                    <?php endif; ?>
 
                 </div>
 
@@ -703,124 +744,59 @@
 
 
 
-
-<!-- =================MODAL BOM MATERIAL  ================= -->
-<div class="modal fade" id="modalDtlBomMaterial" tabindex="-1" role="dialog" aria-labelledby="modalDtlBomMaterial" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document">
+<div class="modal fade" id="modalDetailBOM" tabindex="-1" role="dialog" aria-labelledby="modalDetailBOMLabel" aria-hidden="true">
+    <div class="modal-dialog modal-md" role="document">
         <div class="modal-content">
 
             <!-- HEADER -->
             <div class="modal-header bg-primary">
-                <h5 class="modal-title" id="modalDtlBomMaterialTitle">
-                    Input Bom Material
+                <h5 class="modal-title" id="modalDetailBOMLabel">
+                    </i> Input Item Detail
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="close text-white" data-bs-dismiss="modal">
+                    <span>&times;</span>
+                </button>
             </div>
 
             <!-- FORM -->
-            <form id="formStandartCostDtl">
-
+            <form id="formBOMDetail">
                 <div class="modal-body">
 
-                    <input type="hidden" name="idurut" id="idurut">
+                    <!-- hidden -->
+                    <!-- <input type="hidden" name="idurut" id="idurut"> -->
+                    <!-- <input type="hidden" name="docno" id="docno"> -->
+                    <!-- <input type="hidden" name="status" id="status" value="P">
+                    <input type="hidden" name="chold" id="chold" value="NO"> -->
 
                     <!-- ROW 1 -->
-                    <div class="row g-3">
-                        <div class="col-md-5">
-                            <label class="form-label">Item ID</label>
-                            <select name="idbarangMaterial" id="idbarangMaterial"
-                                    class="form-select select2 "
-                                    style="width:100%"></select>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label>No. Bill Of Material</label>
+                                <select name="docnobom" id="docnobom"
+                                        class="form-control select2"
+                                        style="width:100%"></select>
+                            </div>
                         </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label">Item Name</label>
-                            <input type="text"
-                                   name="nmbarangmaterial"
-                                   id="nmbarangmaterial"
-                                   class="form-control"
-                                   placeholder="Nama Barang"
-                                   style="text-transform:uppercase"
-                                   readonly>
-                        </div>
-
-                        <div class="col-md-2">
-                            <label class="form-label">QTY</label>
-                            <input type="text"
-                                    name="qtymaterial"
-                                    id="qtymaterial"
-                                    class="form-control jtsseparator ratakanan"
-                                    placeholder="Qty Barang"
-                                    onchange="hitungTotalCostMaterial()"
-                                    onkeyup="hitungTotalCostMaterial()"
-                                    style="text-transform:uppercase">
-                        </div>
-                        <div class="col-md-1">
-                            <label class="form-label">Unit</label>
-                            <input name="unitMaterial"
-                                   id="unitMaterial"
-                                   class="form-control"
-                                   readonly>
-                        </div>
-
-                        <div class="col-md-2">
-                            <label class="form-label">Standart Cost</label>
-                            <input type="text"
-                                   name="standartcostmaterial"
-                                   id="standartcostmaterial"
-                                   onchange="hitungTotalCostMaterial()"
-                                   onkeyup="hitungTotalCostMaterial()"
-                                   class="form-control jtsseparator ratakanan"
-                                   placeholder="Standart Cost"
-                                   style="text-transform:uppercase">
-                        </div>
-
-                        <div class="col-md-2">
-                            <label class="form-label">Total Cost</label>
-                            <input type="text"
-                                   name="totalcostmaterial"
-                                   id="totalcostmaterial"
-                                   class="form-control jtsseparator ratakanan"
-                                   placeholder="Total cost material"
-                                   style="text-transform:uppercase" readonly>
-                        </div>
-
-
-
                     </div>
-                    <!-- ROW 2 -->
-                    <div class="row g-3 mt-1">
-                        <div class="col-md-6">
-                            <label class="form-label">Description Detail</label>
-                            <textarea name="description_detail_material"
-                                      id="description_detail_material"
-                                      rows="3"
-                                      class="form-control"
-                                      style="text-transform:uppercase"></textarea>
-                        </div>
-
-                    </div>
-
                 </div>
 
-
                 <!-- FOOTER -->
-                <div class="modal-footer">
-
+                <div class="modal-footer bg-light">
                     <button type="button"
-                            class="btn btn-primary saveBomMaterial"
-                            onclick="saveBomMaterial()">
+                            class="btn btn-primary"
+                            onclick="saveBOMDetail('formBOMDetail')">
                         <i class="fa fa-save"></i> Simpan
                     </button>
-
                     <button type="button"
                             class="btn btn-secondary"
-                            data-bs-dismiss="modal">
+                            data-bs-dismiss="modal"
+                            onclick="$('#modalDetailBOM').modal('hide')">
                         <i class="fa fa-times"></i> Batal
                     </button>
 
+                    
                 </div>
-
             </form>
         </div>
     </div>
@@ -828,131 +804,7 @@
 
 
 
-
-
-<!-- =================MODAL BOM COST  ================= -->
-<div class="modal fade" id="modalDtlBomCost" tabindex="-1" role="dialog" aria-labelledby="modalDtlBomCost" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document">
-        <div class="modal-content">
-
-            <!-- HEADER -->
-            <div class="modal-header bg-primary">
-                <h5 class="modal-title" id="modalDtlBomCostTitle">
-                    Input Bom Cost
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-
-            <!-- FORM -->
-            <form id="formStandartCostDtl">
-
-                <div class="modal-body">
-
-                    <input type="hidden" name="idurut" id="idurut">
-
-                    <!-- ROW 1 -->
-                    <div class="row g-3">
-                        <div class="col-md-5">
-                            <label class="form-label">Item ID</label>
-                            <select name="idbarangCost" id="idbarangCost"
-                                    class="form-select select2 "
-                                    style="width:100%"></select>
-                        </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label">Item Name</label>
-                            <input type="text"
-                                    name="nmbarangmaterial"
-                                    id="nmbarang"
-                                    class="form-control"
-                                    placeholder="Nama Barang"
-                                    style="text-transform:uppercase"
-                                    readonly>
-                        </div>
-
-                        <div class="col-md-2">
-                            <label class="form-label">QTY</label>
-                            <input type="text"
-                                    name="qtymaterial"
-                                    id="qtymaterial"
-                                    class="form-control jtsseparator ratakanan"
-                                    placeholder="Qty Barang"
-                                    onchange="hitungTotalCostCost()"
-                                    onkeyup="hitungTotalCostCost()"
-                                    style="text-transform:uppercase">
-                        </div>
-                        <div class="col-md-1">
-                            <label class="form-label">Unit</label>
-                            <input name="unitCost"
-                                   id="unitCost"
-                                   class="form-control"
-                                   readonly>
-                        </div>
-
-                        <div class="col-md-2">
-                            <label class="form-label">Standart Cost</label>
-                            <input type="text"
-                                   name="standartcostmaterial"
-                                   id="standartcostmaterial"
-                                   class="form-control jtsseparator ratakanan"
-                                   placeholder="Standart Cost"
-                                   style="text-transform:uppercase" readonly>
-                        </div>
-
-                        <div class="col-md-2">
-                            <label class="form-label">Total Cost</label>
-                            <input type="text"
-                                   name="totalcostmaterial"
-                                   id="totalcostmaterial"
-                                   class="form-control jtsseparator ratakanan"
-                                   placeholder="Total cost material"
-                                   style="text-transform:uppercase" readonly>
-                        </div>
-
-
-
-                    </div>
-                    <!-- ROW 2 -->
-                    <div class="row g-3 mt-1">
-                        <div class="col-md-6">
-                            <label class="form-label">Description Detail</label>
-                            <textarea name="description_detail_material"
-                                      id="description_detail_material"
-                                      rows="3"
-                                      class="form-control"
-                                      style="text-transform:uppercase"></textarea>
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <!-- FOOTER -->
-                <div class="modal-footer">
-
-                    <button type="button"
-                            class="btn btn-primary saveBomMaterial"
-                            onclick="saveBomMaterial()">
-                        <i class="fa fa-save"></i> Simpan
-                    </button>
-
-                    <button type="button"
-                            class="btn btn-secondary"
-                            data-bs-dismiss="modal">
-                        <i class="fa fa-times"></i> Batal
-                    </button>
-
-                </div>
-
-            </form>
-        </div>
-    </div>
-</div>
-
-
-
-<script type="application/javascript" src="<?= base_url('assets/pagejs/production/bom/bom_trx.js') ?>"></script>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/production/workingorder/workingorder.js') ?>"></script>
 <script type="text/javascript">
     $(function() {
         $("#example1").dataTable();
@@ -984,6 +836,25 @@
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'docdate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'docdate');
         });
         $('#docdate').on('cancel.daterangepicker', function(ev, picker) {
+            $(this).val('');
+        });
+
+
+        $('#docdatefinish').daterangepicker({
+            autoUpdateInput: false,
+            singleDatePicker: true,
+            showDropdowns: true,
+            locale: { format: 'YYYY-MM-DD' },
+            cancelLabel: 'Clear'
+        });
+
+        // handler apply/cancel
+        $('#docdatefinish').on('apply.daterangepicker', function(ev, picker) {
+            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            // jika butuh validasi bootstrapValidator:
+            // $('#formInputTransfers').bootstrapValidator('updateStatus', 'docdatefinish', 'NOT_VALIDATED').bootstrapValidator('validateField', 'docdatefinish');
+        });
+        $('#docdatefinish').on('cancel.daterangepicker', function(ev, picker) {
             $(this).val('');
         });
         // $('#activedate').daterangepicker({

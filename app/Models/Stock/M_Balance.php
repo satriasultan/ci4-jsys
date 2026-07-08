@@ -259,6 +259,138 @@ group by idunit);");
     }
 
 
+    function q_item_std_cost_param($param, $docdate){
+    // Query untuk mengambil data dari mbarang yang join dengan standart_cost_dtl
+    $query = "
+        SELECT 
+            trim(a.idbarang) as id,
+            a.idbarang,
+            a.nmbarang,
+            a.idgroup,
+            a.idsubgroup,
+            a.idtype,
+            a.grade,
+            a.lsize,
+            a.deflocation,
+            a.defarea,
+            a.description,
+            a.unit,
+            a.subunit,
+            a.subunitenable,
+            a.lastprice,
+            a.onhand,
+            a.allocated,
+            a.uninvoiced,
+            a.tmpalloca,
+            a.lastrxdate,
+            a.lastrxdoc,
+            a.idbarcode,
+            a.sku,
+            a.expdate,
+            a.batch,
+            a.mfgdate,
+            a.maks_daystock,
+            a.chold,
+            a.inputby,
+            a.inputdate,
+            a.status,
+            to_char(a.inputdate,'dd-mm-yyyy hh24:mi:ss') as inputdate1,
+            to_char(a.expdate,'dd-mm-yyyy hh24:mi:ss') as expdate1,
+            c.nmlocation,
+            d.nmarea,
+            b.nmgroup,
+            to_char(a.mfgdate,'dd-mm-yyyy hh24:mi:ss') as mfgdate1,
+            
+            -- Ambil data dari standart_cost_dtl
+            COALESCE(s.docno, '') as docno,
+            COALESCE(s.doctype, '') as doctype,
+            COALESCE(s.cabang, '') as cabang,
+            COALESCE(s.pemohon, '') as pemohon,
+            COALESCE(to_char(s.docdate, 'yyyy-mm-dd'), '') as docdate_std,
+            COALESCE(to_char(s.activedate, 'yyyy-mm-dd'), '') as activedate,
+            COALESCE(s.actualcost, a.actualcost) as actualcost,
+            COALESCE(s.lastcost, a.lastcost) as lastcost,
+            COALESCE(s.newcost, 0) as newcost,
+            COALESCE(s.currcode, '') as currcode,
+            COALESCE(s.status, '') as status_std,
+            COALESCE(s.inputby, '') as inputby_std,
+            COALESCE(to_char(s.inputdate, 'yyyy-mm-dd hh24:mi:ss'), '') as inputdate_std,
+            COALESCE(s.updateby, '') as updateby_std,
+            COALESCE(to_char(s.updatedate, 'yyyy-mm-dd hh24:mi:ss'), '') as updatedate_std,
+            COALESCE(s.docnotmp, '') as docnotmp,
+            COALESCE(s.idurut, 0) as idurut,
+            COALESCE(s.uniqueid, '') as uniqueid
+            
+        FROM sc_mst.mbarang a 
+        LEFT OUTER JOIN sc_mst.mgroup b ON a.idgroup = b.idgroup
+        LEFT OUTER JOIN sc_mst.mlocation c ON a.deflocation = c.idlocation
+        LEFT OUTER JOIN sc_mst.marea d ON a.defarea = d.idarea
+        
+        -- LEFT JOIN dengan standart_cost_dtl dengan kondisi activedate <= docdate
+        LEFT JOIN (
+            SELECT 
+                s.*,
+                ROW_NUMBER() OVER (
+                    PARTITION BY s.idbarang 
+                    ORDER BY s.activedate DESC
+                ) as rn
+            FROM sc_mst.standart_cost_dtl s
+            WHERE s.activedate <= TO_DATE('$docdate', 'YYYY-MM-DD')
+                AND s.status = 'F' -- hanya ambil yang approved/final
+        ) s ON a.idbarang = s.idbarang AND s.rn = 1
+        
+        WHERE a.id IS NOT NULL 
+            AND a.status = 'F' -- hanya barang aktif
+            $param
+    ";
+    
+    return $this->db->query($query);
+}
+
+    public function q_item_bom_param($param,$docdate,$wono)
+    {
+        $query="
+        SELECT
+            trim(a.idbarang) as id,
+            a.idbarang,
+            a.nmbarang,
+            a.unit,
+            a.idgroup,
+            a.idsubgroup,
+            a.idtype,
+            a.grade,
+            a.lsize,
+            a.description,
+            COALESCE(s.newcost,0) as newcost,
+            b.qty
+        FROM sc_mst.mbarang a
+        INNER JOIN sc_trx.workingorder_bom_dtl b
+        ON trim(a.idbarang)=trim(b.idbarang)
+        LEFT JOIN (
+
+            SELECT
+                x.*,
+                ROW_NUMBER() OVER(
+                    PARTITION BY x.idbarang
+                    ORDER BY x.activedate DESC
+                ) rn
+            FROM sc_mst.standart_cost_dtl x
+            WHERE x.status='F'
+            AND x.activedate<=TO_DATE('$docdate','YYYY-MM-DD')
+
+        )s
+        ON a.idbarang=s.idbarang
+        AND s.rn=1
+        WHERE
+        trim(b.docref)=trim('$wono')
+        AND a.status='F'
+        $param
+        ORDER BY a.nmbarang
+
+        ";
+        return $this->db->query($query);
+    }
+
     var $t_balance_moving_view = "(select a.*,round(coalesce(a.onhand,0)-(coalesce(a.allocated,0)+coalesce(a.tmpalloca,0)),2) as sisa,b.nmbarang,
 c.nmlocation,d.nmarea,e.nmgroup,trim(a.idbarang)||trim(a.batch) as idspec from sc_mst.stkgdw a
 left outer join sc_mst.mbarang b on a.idbarang=b.idbarang

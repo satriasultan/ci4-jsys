@@ -7,7 +7,7 @@
  *  Copyright© 2020 .All rights reserved.
  *
  */
-
+var lastWOENO = '';
 
 var save_method; //for save method string
 var table;
@@ -16,10 +16,10 @@ let skipRoleChange = false;
 //"use strict";
 
 /* VIUW UTAMA*/
-function table_bom() {
+function table_materialrelease() {
     // var lg = languageDatatable;
     var initTable = function () {
-        var table = $('#tbom');
+        var table = $('#tmaterialrelease');
         table.DataTable({
             "processing": true, //Feature control the processing indicator.
             "serverSide": true, //Feature control DataTables' server-side processing mode.
@@ -42,7 +42,7 @@ function table_bom() {
                 'pageLength', 'excel'
             ],
             "ajax": {
-                "url": HOST_URL + 'production/trans/list_bom_mst',
+                "url": HOST_URL + 'production/trans/list_materialrelease_mst',
                 "type": "POST",
                 "data": function (data) {
                     data.tglrange = $('#tglrange').val();
@@ -76,20 +76,20 @@ function table_bom() {
     return initTable();
 }
 
-function reload_bom() {
-    var table = $('#tbom');
+function reload_materialrelease() {
+    var table = $('#tmaterialrelease');
     table.DataTable().ajax.reload(); //reload datatable ajax
     //console.log('HALO HALO BANDUNG');
 }
 
 $('#btn-filter-tx').click(function () { //button filter event click
-    var table = $('#tbom');
+    var table = $('#tmaterialrelease');
     table.DataTable().ajax.reload(); //reload datatable ajax
     $('#filter').modal('hide');
 });
 $('#btn-reset-tx').click(function () { //button reset event click
     $('#form-filter')[0].reset();
-    var table = $('#tbom');
+    var table = $('#tmaterialrelease');
     table.DataTable().ajax.reload(); //reload datatable ajax
     $('#filter').modal('hide');
 });
@@ -129,7 +129,7 @@ $('#cabang').on('change', function () {
             $('#infix').val(res.infix);
 
             // SET PREFIX + TRIGGER CHANGE
-            $('#prefix').val('BOM').trigger('change');
+            $('#prefix').val('PMR').trigger('change');
 
             $('#sufix').val(currentKodeSuffix + '0001');
 
@@ -184,7 +184,7 @@ $('#cabang').on('change', function () {
                 $el.val(today.format('YYYY-MM-DD'));
             }
 
-            generateDocNumber('JBR', res.infix, currentKodeSuffix + '0001');
+            generateDocNumber('PMR', res.infix, currentKodeSuffix + '0001');
 
         }
     });
@@ -202,7 +202,7 @@ $('#prefix').on('change', function () {
     if (!prefix || !infix || !currentKodeSuffix) return;
 
     $.ajax({
-        url: HOST_URL + '/production/trans/getNextSuffix_bom_mst',
+        url: HOST_URL + '/production/trans/getNextSuffix_materialrelease_mst',
         method: 'GET',
         data: {
             prefix: prefix,
@@ -309,7 +309,7 @@ function documentReadable() {
 
     var docno = $('[name="docno"]').val();
 
-    $.getJSON(HOST_URL + 'production/trans/showing_tmp_bom_mst', {docno: docno})
+    $.getJSON(HOST_URL + 'production/trans/showing_trx_materialrelease_mst', {docno: docno})
         .done(function (response) {
 
             if (!response.dataTables || !response.dataTables.items.length) {
@@ -330,39 +330,43 @@ function documentReadable() {
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
             $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
             setJtsValue('[name="buildfor"]', convertToDbNumber(item.buildfor));
-            setJtsValue('[name="minimumqty"]', convertToDbNumber(item.minimumqty));
+            // setJtsValue('[name="minimumqty"]', convertToDbNumber(item.minimumqty));
             $('[name="docdate"]').val(item.docdate).prop('disabled', true);
+            $('[name="pemohon"]').val(item.pemohon).prop('disabled', true);
+            $('[name="batchno"]').val(item.batchno).prop('readonly',true);
+            $('[name="buildfor"]').prop('disabled', true).prop('readonly',true);
             // $('[name="activedate"]').val(item.activedate).prop('disabled', true);
             // $('[name="docref"]').val(item.docref).prop('disabled', false);
-            $('[name="keterangan"]').val(item.keterangan);
-            $('#ttlprice').text(
-                convertToDbNumber(item.ttlprice || 0)
-                    .toLocaleString('en-US', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                    })
-            );
-            $('#ttlmaterial').text(
-                convertToDbNumber(item.ttlmaterial || 0)
-                    .toLocaleString('en-US', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                    })
-            );
-            $('#ttlcost').text(
-                convertToDbNumber(item.ttlcost || 0)
-                    .toLocaleString('en-US', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                    })
-            );
-            $('#ttlwip').text(
-                convertToDbNumber(item.ttlwip || 0)
-                    .toLocaleString('en-US', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                    })
-            );
+            $('[name="keterangan"]').val(item.keterangan).prop('readonly',true);
+            $('[name="tabno"]').val(item.tabno).prop('readonly',true);
+            // $('#ttlprice').text(
+            //     convertToDbNumber(item.ttlprice || 0)
+            //         .toLocaleString('en-US', {
+            //             minimumFractionDigits: 2,
+            //             maximumFractionDigits: 2
+            //         })
+            // );
+            // $('#ttlmaterial').text(
+            //     convertToDbNumber(item.ttlmaterial || 0)
+            //         .toLocaleString('en-US', {
+            //             minimumFractionDigits: 2,
+            //             maximumFractionDigits: 2
+            //         })
+            // );
+            // $('#ttlcost').text(
+            //     convertToDbNumber(item.ttlcost || 0)
+            //         .toLocaleString('en-US', {
+            //             minimumFractionDigits: 2,
+            //             maximumFractionDigits: 2
+            //         })
+            // );
+            // $('#ttlwip').text(
+            //     convertToDbNumber(item.ttlwip || 0)
+            //         .toLocaleString('en-US', {
+            //             minimumFractionDigits: 2,
+            //             maximumFractionDigits: 2
+            //         })
+            // );
             $.ajax({
                 type: 'GET',
                 url: HOST_URL + 'api/globalmodule/list_item' + '?var=' + item.idbarang_jadi,
@@ -421,51 +425,24 @@ function documentReadable() {
                 });
             });
 
+            setSelect2Ajax('#woeno', item.woeno, item.woeno);
+            setSelect2Ajax('#wono', item.wono, item.wono);
+            setSelect2Ajax('#bomno', item.bomno, item.bomno);
+            setSelect2Ajax('#idbarang_jadi', item.idbarang_jadi, item.idbarang_jadi);
+            setSelect2Ajax('#buildunit', item.buildunit, item.buildunit);
+            setSelect2Ajax('#bagian', item.bagian, item.bagian);
+            setSelect2Ajax('#idlocation', item.idlocation, item.idlocation);
+            $('[name="idlocation"]').prop("disabled", true);
+            $('[name="woeno"]').prop("disabled", true);
+            $('[name="wono"]').prop("disabled", true);
+            $('[name="bomno"]').prop("disabled", true);
+            $('[name="tabno"]').prop("disabled", true);
+            $('[name="bagian"]').prop("disabled", true);
+            $('[name="idbarang_jadi"]').prop("disabled", true);
+            $('[name="buildunit"]').prop("disabled", true);
+            // $('[name="wono"]').prop("disabled", true);
+
             skipRoleChange = true;
-
-            // ===============================
-            // LOAD SEMUA MASTER DATA PARALEL
-            // ===============================
-
-
-//             const branch1 = $.getJSON(
-//                 HOST_URL + 'api/globalmodule/list_branchjob',
-//                 { var: item.cabang }
-//             );
-
-//             branch1.done(function (res) {
-
-//                 if (res.items && res.items.length > 0) {
-
-//                     let data = res.items[0];
-
-//                     // set option ke select2
-
-//                     let el = $('[name="cabang"]');
-
-// // set value
-//                     let option = new Option(data.nmbranch, data.idbranch, true, true);
-//                     el.empty().append(option).trigger('change');
-
-// // 1. cegah dropdown kebuka
-//                     el.on('select2:opening select2:unselecting select2:clearing', function (e) {
-//                         e.preventDefault();
-//                     });
-
-// // 2. disable tombol clear (kalau ada)
-//                     el.data('select2').$container.find('.select2-selection__clear').remove();
-
-// // 3. matikan interaksi UI (super lock)
-//                     el.next('.select2-container').css({
-//                         'pointer-events': 'none',
-//                         'background': '#e9ecef'
-//                     });
-
-//                 }
-
-//             }).always(function () {
-//                 hideLoader();
-//             });
         })
         .fail(function () {
             console.log("Failed To Loading Data");
@@ -485,20 +462,21 @@ $('#btnAddDetailMaterial').on('click', function (e) {
 function btnInputDetailMaterial() {
 
     // reset form
-    $('#formBOMMaterialDtl')[0].reset();
+    $('#formMaterialReleaseMaterialDtl')[0].reset();
 
     // readonly
     // $('[name="actualcost"]').prop("readonly", true);
     // $('[name="lastcost"]').prop("readonly", true);
 
     // reset select2
-    $('#idbarangMaterial').val(null).trigger('change');
+    $('#idbarang').val(null).trigger('change');
 
     // reset idurut
     $('#idurut').val('');
 
     // title modal
-    $('#modalDtlBomMaterialTitle').text('Tambah Detail Material');
+    $('#modalDtlMaterialReleaseTitle').text('Tambah Detail Material');
+    resetMaterialReleaseModal();
 
 /*    // destroy jika sudah pernah init
     if ($('#idbarang').hasClass("select2-hidden-accessible")) {
@@ -508,80 +486,26 @@ function btnInputDetailMaterial() {
 
 
     // show modal
-    $('#modalDtlBomMaterial').modal('show');
+    $('#modalDtlMaterialRelease').modal('show');
+}
+
+function resetMaterialReleaseModal(){
+
+    $('#issub').prop('checked', false);
+
+    $('#divItemBom').show();
+    $('#divItemSub').hide();
+
+    $('#idbarang').val(null).trigger('change');
+    $('#idbarang_bom').val(null).trigger('change');
+
+    $('#nmbarang').val('');
+    $('#unit').val('');
+    $('#qty').val('');
+
 }
 
 
-
-
-$('#btnAddDetailCost').on('click', function (e) {
-    btnInputDetailCost();
-});
-
-function btnInputDetailCost() {
-
-    // reset form
-    $('#formBOMCostDtl')[0].reset();
-
-    // readonly
-    // $('[name="actualcost"]').prop("readonly", true);
-    // $('[name="lastcost"]').prop("readonly", true);
-
-    // reset select2
-    $('#idbarangCost').val(null).trigger('change');
-
-    // reset idurut
-    $('#idurut').val('');
-
-    // title modal
-    $('#modalDtlBomCostTitle').text('Tambah Detail Cost');
-
-/*    // destroy jika sudah pernah init
-    if ($('#idbarang').hasClass("select2-hidden-accessible")) {
-        $('#idbarang').select2('destroy');
-    }*/
-
-
-
-    // show modal
-    $('#modalDtlBomCost').modal('show');
-}
-
-
-
-
-$('#btnAddDetailWip').on('click', function (e) {
-    btnInputDetailWip();
-});
-
-function btnInputDetailWip() {
-
-    // reset form
-    $('#formBOMWipDtl')[0].reset();
-
-    // readonly
-    // $('[name="actualcost"]').prop("readonly", true);
-    // $('[name="lastcost"]').prop("readonly", true);
-
-    // reset select2
-    $('#idbarangWip').val(null).trigger('change');
-
-    // reset idurut
-    $('#idurut').val('');
-
-    // title modal
-    $('#modalDtlBomWipTitle').text('Tambah Detail Wip');
-
-/*    // destroy jika sudah pernah init
-    if ($('#idbarang').hasClass("select2-hidden-accessible")) {
-        $('#idbarang').select2('destroy');
-    }*/
-
-
-
-    // show modal
-    $('#modalDtlBomWip').modal('show');
-}
 
 
 function setSelect2Ajax(selector, value, text) {
@@ -592,7 +516,7 @@ function setSelect2Ajax(selector, value, text) {
 }
 
 
-function updateDetailBomMaterial(){
+function updateDetailMaterialRelease(){
     const ids = getCheckedDetailIds();
     console.log('IDS:', ids);
 
@@ -617,26 +541,27 @@ function updateDetailBomMaterial(){
     const id = ids[0];
 
     $.ajax({
-        url: HOST_URL + 'production/trans/get_bom_dtl',
+        url: HOST_URL + 'production/trans/get_materialrelease_dtl',
         type: 'GET',
         data: { id: id },
         dataType: 'json',
         success: function(res){
             if(res.status){
 
-                $('#idurutMaterial').val(res.items[0].idurut);
-                $('#description_detail_material').val(res.items[0].description);
+                $('#idurut').val(res.items[0].idurut);
+                $('#description').val(res.items[0].description);
                 $('#docno').val(res.items[0].docno);
-                $('#idbarangMaterial').val(res.items[0].idbarang);
-                $('#nmbarangmaterial').val(res.items[0].nmbarang);
-                $('#unitMaterial').val(res.items[0].unit);
+                $('#idbarang').val(res.items[0].idbarang);
+                $('#nmbarang').val(res.items[0].nmbarang);
+                $('#unit').val(res.items[0].unit);
+                $('#issub').prop('checked',res.items[0].issub == 'T');
                 // $('#qtymaterial').val(res.items[0].qty);
-                setJtsValue('[name="qtymaterial"]', convertToDbNumber(res.items[0].qty));
-                setJtsValue('[name="standartcostmaterial"]', convertToDbNumber(res.items[0].standartcost));
-                setJtsValue('[name="totalcostmaterial"]', convertToDbNumber(res.items[0].totalcost));
+                setJtsValue('[name="qty"]', convertToDbNumber(res.items[0].qty));
+                // setJtsValue('[name="standartcostmaterial"]', convertToDbNumber(res.items[0].standartcost));
+                // setJtsValue('[name="totalcostmaterial"]', convertToDbNumber(res.items[0].totalcost));
                 // $('#standartcostmaterial').val(res.items[0].standartcost);
                 // $('#totalcostmaterial').val(res.items[0].totalcost);
-                // setSelect2Ajax('#idbarangMaterial', res.items[0].idbarang, res.items[0].idbarang);
+                // setSelect2Ajax('#idbarang', res.items[0].idbarang, res.items[0].idbarang);
 
                 $.ajax({
                     type: 'GET',
@@ -646,18 +571,18 @@ function updateDetailBomMaterial(){
                 }).then(function (datax) {
                     // create the option and append to Select2
                     var option = new Option(datax.items[0].nmbarang, datax.items[0].idbarang, true, true);
-                    $('[name="idbarangMaterial"]').append(option).trigger('change')
+                    $('[name="idbarang"]').append(option).trigger('change')
 
                     // manually trigger the `select2:select` event
-                    $('[name="idbarangMaterial"]').trigger({
+                    $('[name="idbarang"]').trigger({
                         type: 'select2:select',
                         params: {
                             data: datax
                         }
                     });
                 });
-                $('#modalDtlBomMaterialTitle').text('Update Detail Material');
-                $('#modalDtlBomMaterial').modal('show');
+                $('#modalDtlMaterialReleaseTitle').text('Update Detail Material');
+                $('#modalDtlMaterialRelease').modal('show');
 
             }else{
                 Swal.fire({
@@ -670,170 +595,37 @@ function updateDetailBomMaterial(){
     });
 }
 
+$('#issub').on('change', function () {
 
+    if ($(this).is(':checked')) {
 
+        // tampilkan substitute
+        $('#divItemBom').hide();
+        $('#divItemSub').show();
 
-function updateDetailBomCost(){
-    const ids = getCheckedDetailIdsCost();
-    console.log('IDS:', ids);
+        // kosongkan item BOM
+        $('#idbarang_bom').val(null).trigger('change');
 
-    if(ids.length === 0){
-        Swal.fire({
-            icon: 'warning',
-            title: 'Peringatan',
-            text: 'Pilih satu data yang akan diupdate'
-        });
-        return;
+    } else {
+
+        // tampilkan BOM
+        $('#divItemSub').hide();
+        $('#divItemBom').show();
+
+        // kosongkan substitute
+        $('#idbarang').val(null).trigger('change');
+
     }
 
-    if(ids.length > 1){
-        Swal.fire({
-            icon: 'warning',
-            title: 'Peringatan',
-            text: 'Update hanya boleh satu data'
-        });
-        return;
-    }
+    $('#nmbarang').val('');
+    $('#unit').val('');
+    $('#qty').val('');
 
-    const id = ids[0];
-
-    $.ajax({
-        url: HOST_URL + 'production/trans/get_bom_dtl',
-        type: 'GET',
-        data: { id: id },
-        dataType: 'json',
-        success: function(res){
-            if(res.status){
-
-                $('#idurutCost').val(res.items[0].idurut);
-                $('#description_detail_cost').val(res.items[0].description);
-                $('#docno').val(res.items[0].docno);
-                $('#idbarangCost').val(res.items[0].idbarang);
-                $('#nmbarangcost').val(res.items[0].nmbarang);
-                $('#unitCost').val(res.items[0].unit);
-                // $('#qtycost').val(res.items[0].qty);
-                setJtsValue('[name="qtycost"]', convertToDbNumber(res.items[0].qty));
-                setJtsValue('[name="standartcostcost"]', convertToDbNumber(res.items[0].standartcost));
-                setJtsValue('[name="totalcostcost"]', convertToDbNumber(res.items[0].totalcost));
-                // $('#standartcostcost').val(res.items[0].standartcost);
-                // $('#totalcostcost').val(res.items[0].totalcost);
-                // setSelect2Ajax('#idbarangCost', res.items[0].idbarang, res.items[0].idbarang);
-
-                $.ajax({
-                    type: 'GET',
-                    url: HOST_URL + 'api/globalmodule/list_item_std_cost' + '?var=' + res.items[0].idbarang.trim(),
-                    dataType: 'json',
-                    delay: 250,
-                }).then(function (datax) {
-                    // create the option and append to Select2
-                    var option = new Option(datax.items[0].nmbarang, datax.items[0].idbarang, true, true);
-                    $('[name="idbarangCost"]').append(option).trigger('change')
-
-                    // manually trigger the `select2:select` event
-                    $('[name="idbarangCost"]').trigger({
-                        type: 'select2:select',
-                        params: {
-                            data: datax
-                        }
-                    });
-                });
-                $('#modalDtlBomCostTitle').text('Update Detail Cost');
-                $('#modalDtlBomCost').modal('show');
-
-            }else{
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: res.message || 'Data tidak ditemukan'
-                });
-            }
-        }
-    });
-}
+});
 
 
 
-
-function updateDetailBomWip(){
-    const ids = getCheckedDetailIdsWip();
-    console.log('IDS:', ids);
-
-    if(ids.length === 0){
-        Swal.fire({
-            icon: 'warning',
-            title: 'Peringatan',
-            text: 'Pilih satu data yang akan diupdate'
-        });
-        return;
-    }
-
-    if(ids.length > 1){
-        Swal.fire({
-            icon: 'warning',
-            title: 'Peringatan',
-            text: 'Update hanya boleh satu data'
-        });
-        return;
-    }
-
-    const id = ids[0];
-
-    $.ajax({
-        url: HOST_URL + 'production/trans/get_bom_dtl',
-        type: 'GET',
-        data: { id: id },
-        dataType: 'json',
-        success: function(res){
-            if(res.status){
-
-                $('#idurutWip').val(res.items[0].idurut);
-                $('#description_detail_wip').val(res.items[0].description);
-                $('#docno').val(res.items[0].docno);
-                $('#idbarangWip').val(res.items[0].idbarang);
-                $('#nmbarangwip').val(res.items[0].nmbarang);
-                $('#unitWip').val(res.items[0].unit);
-                // $('#qtywip').val(res.items[0].qty);
-                setJtsValue('[name="qtywip"]', convertToDbNumber(res.items[0].qty));
-                setJtsValue('[name="standartcostwip"]', convertToDbNumber(res.items[0].standartcost));
-                setJtsValue('[name="totalcostwip"]', convertToDbNumber(res.items[0].totalcost));
-                // $('#standartcostwip').val(res.items[0].standartcost);
-                // $('#totalcostwip').val(res.items[0].totalcost);
-                // setSelect2Ajax('#idbarangWip', res.items[0].idbarang, res.items[0].idbarang);
-
-                $.ajax({
-                    type: 'GET',
-                    url: HOST_URL + 'api/globalmodule/list_item_std_cost' + '?var=' + res.items[0].idbarang.trim(),
-                    dataType: 'json',
-                    delay: 250,
-                }).then(function (datax) {
-                    // create the option and append to Select2
-                    var option = new Option(datax.items[0].nmbarang, datax.items[0].idbarang, true, true);
-                    $('[name="idbarangWip"]').append(option).trigger('change')
-
-                    // manually trigger the `select2:select` event
-                    $('[name="idbarangWip"]').trigger({
-                        type: 'select2:select',
-                        params: {
-                            data: datax
-                        }
-                    });
-                });
-                $('#modalDtlBomWipTitle').text('Update Detail Wip');
-                $('#modalDtlBomWip').modal('show');
-
-            }else{
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: res.message || 'Data tidak ditemukan'
-                });
-            }
-        }
-    });
-}
-
-
-function btnDeleteDetailMaterial(){
+function btnDeleteDetailMaterialRelease(){
     const ids = getCheckedDetailIds();
 
     if(ids.length === 0){
@@ -858,7 +650,7 @@ function btnDeleteDetailMaterial(){
         if(!result.isConfirmed) return;
 
         $.ajax({
-            url: HOST_URL + 'production/trans/delete_bom_detail',
+            url: HOST_URL + 'production/trans/delete_materialrelease_detail',
             type: 'POST',
             data: { ids: ids },
             dataType: 'json',
@@ -873,7 +665,7 @@ function btnDeleteDetailMaterial(){
                         showConfirmButton: false
                     });
                     documentReadable()
-                    $('#tmp_bommaterialdtl').DataTable().ajax.reload(null,false);
+                    reload_materialrelease_dtl();
 
                 }else{
                     Swal.fire({
@@ -888,129 +680,14 @@ function btnDeleteDetailMaterial(){
     });
 }
 
-
-
-function btnDeleteDetailCost(){
-    const ids = getCheckedDetailIdsCost();
-
-    if(ids.length === 0){
-        Swal.fire({
-            icon: 'warning',
-            title: 'Peringatan',
-            text: 'Pilih data yang akan dihapus'
-        });
-        return;
-    }
-
-    Swal.fire({
-        title: 'Konfirmasi',
-        text: 'Yakin hapus ' + ids.length + ' data terpilih?',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Ya, Hapus',
-        cancelButtonText: 'Batal',
-        reverseButtons: true
-    }).then((result) => {
-
-        if(!result.isConfirmed) return;
-
-        $.ajax({
-            url: HOST_URL + 'production/trans/delete_bom_detail',
-            type: 'POST',
-            data: { ids: ids },
-            dataType: 'json',
-            success: function(res){
-                if(res.status){
-
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil',
-                        text: 'Data berhasil dihapus',
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
-                    documentReadable()
-                    $('#tmp_bomcostdtl').DataTable().ajax.reload(null,false);
-
-                }else{
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal',
-                        text: res.message || 'Gagal hapus data'
-                    });
-                }
-            }
-        });
-
-    });
-}
-
-
-
-
-
-function btnDeleteDetailWip(){
-    const ids = getCheckedDetailIdsWip();
-
-    if(ids.length === 0){
-        Swal.fire({
-            icon: 'warning',
-            title: 'Peringatan',
-            text: 'Pilih data yang akan dihapus'
-        });
-        return;
-    }
-
-    Swal.fire({
-        title: 'Konfirmasi',
-        text: 'Yakin hapus ' + ids.length + ' data terpilih?',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Ya, Hapus',
-        cancelButtonText: 'Batal',
-        reverseButtons: true
-    }).then((result) => {
-
-        if(!result.isConfirmed) return;
-
-        $.ajax({
-            url: HOST_URL + 'production/trans/delete_bom_detail',
-            type: 'POST',
-            data: { ids: ids },
-            dataType: 'json',
-            success: function(res){
-                if(res.status){
-
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil',
-                        text: 'Data berhasil dihapus',
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
-                    documentReadable()
-                    $('#tmp_bomwipdtl').DataTable().ajax.reload(null,false);
-
-                }else{
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal',
-                        text: res.message || 'Gagal hapus data'
-                    });
-                }
-            }
-        });
-
-    });
-}
 
 var defaultInitialGroupBrng = '';
-$("#idbarangMaterial").select2({
+$("#idbarang").select2({
     placeholder: "Choose Your Item List",
     allowClear: true,
     width: '100%',
     minimumInputLength: 2,
-    dropdownParent: $('#modalDtlBomMaterial'),
+    dropdownParent: $('#modalDtlMaterialRelease'),
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_item_std_cost',
         type: 'POST',
@@ -1027,9 +704,9 @@ $("#idbarangMaterial").select2({
                 _paramglobal_: defaultInitialGroupBrng,
                 _parameterx_: defaultInitialGroupBrng,
                 loccode: '',
-                docdate:  docdate,
+                // docdate:  docdate,
                 //loccode: $('[name="idlocation_dtl"]').val(),
-                term: params.term,
+                term: params.term,  
             };
         },
         processResults: function (data, params) {
@@ -1066,40 +743,88 @@ $("#idbarangMaterial").select2({
 
     var data = e.params.data;
 
-    $('[name="nmbarangmaterial"]').val(data.nmbarang.trim()).prop("readonly", true);
-    $('[name="unitMaterial"]').val(data.unit.trim()).prop("readonly", true);
-    setJtsValue('[name="standartcostmaterial"]', convertToDbNumber(data.newcost));
-    $('[name="totalcostmaterial"]').val().prop("readonly", true);
+    $('[name="nmbarang"]').val(data.nmbarang.trim()).prop("readonly", true);
+    $('[name="unit"]').val(data.unit.trim()).prop("readonly", true);
+    // setJtsValue('[name="standartcost"]', convertToDbNumber(data.newcost));
+    // $('[name="totalcost"]').val().prop("readonly", true);
 
 });
 
 
+var defaultInitialBomItem = '';
 
-var defaultInitialGroupBrng = '';
-$("#idbarangCost").select2({
-    placeholder: "Choose Your Item List",
+$("#idbarang_bom").select2({
+    placeholder: "Choose BOM Item",
     allowClear: true,
     width: '100%',
-    minimumInputLength: 2,
-    dropdownParent: $('#modalDtlBomCost'),
+    minimumInputLength: 0,
+    dropdownParent: $('#modalDtlMaterialRelease'),
     ajax: {
-        url: HOST_URL + 'api/globalmodule/list_item_std_cost',
+        url: HOST_URL + 'api/globalmodule/list_item_bom',
         type: 'POST',
         dataType: 'json',
         delay: 250,
         data: function (params) {
-            var docdate = $('#docdate').val();
+            return {
+                _search_: params.term,
+                _page_: params.page,
+                _draw_: true,
+                _start_: 1,
+                _perpage_: 20,
+                wono: $('#wono').val(),
+                term: params.term
+            };
+        },
+        processResults: function (data, params) {
+            params.page = params.page || 1;
+            return {
+                results: data.items,
+                pagination: {
+                    more: (params.page * 20) < data.total_count
+                }
+            };
+        },
+        cache: false
+    },
+    escapeMarkup: function (markup) {
+        return markup;
+    },
+    templateResult: formatItem,
+    templateSelection: formatItemSelection
+
+}).on("select2:select", function (e) {
+
+    var data = e.params.data;
+
+    $('[name="nmbarang"]').val(data.nmbarang.trim()).prop("readonly", true);
+    $('[name="unit"]').val(data.unit.trim()).prop("readonly", true);
+    // $('[name="qty"]').val(data.qty.trim())
+    setJtsValue('[name="qty"]', convertToDbNumber(data.qty));
+    // setJtsValue('[name="standartcost"]', convertToDbNumber(data.newcost));
+    // $('[name="totalcost"]').val().prop("readonly", true);
+
+});
+
+var defaultInitialWOE = '';
+$("#woeno").select2({
+    placeholder: "Choose Your WOE",
+    // dropdownParent: $('#modalDetailWO'),
+    allowClear: true,
+    width:'100%',
+    ajax: {
+        url: HOST_URL + 'api/globalmodule/list_woe',
+        type: 'POST',
+        dataType: 'json',
+        delay: 250,
+        data: function(params) {
             return {
                 _search_: params.term, // search term
                 _page_: params.page,
                 _draw_: true,
                 _start_: 1,
                 _perpage_: 2,
-                _paramglobal_: defaultInitialGroupBrng,
-                _parameterx_: defaultInitialGroupBrng,
-                loccode: '',
-                docdate:  docdate,
-                //loccode: $('[name="idlocation_dtl"]').val(),
+                _paramglobal_: defaultInitialWOE,
+                _parameterx_: defaultInitialWOE,
                 term: params.term,
             };
         },
@@ -1127,52 +852,79 @@ $("#idbarangCost").select2({
 
         cache: false
     },
-    escapeMarkup: function (markup) {
+    escapeMarkup: function(markup) {
         return markup;
     }, // let our custom formatter work
     // minimumInputLength: 1,
-    templateResult: formatItem, // omitted for brevity, see the source of this page
-    templateSelection: formatItemSelection // omitted for brevity, see the source of this page
+    templateResult: formatWOE, // omitted for brevity, see the source of this page
+    templateSelection: formatWOESelection // omitted for brevity, see the source of this page
 }).on("select2:select", function (e) {
-
+    resetWO()
+    resetBOM();
+    enableBOM();
     var data = e.params.data;
+    // $('[name="nmbarang"]').val(data.nmbarang.trim()).prop("readonly", true);
+    // $('[name="unit"]').val(data.unit.trim()).prop("readonly", true);
+    // $("#batch").val(null).trigger('change');
+    // simpan woe sebelumnya
+    lastWOENO = $('#woeno').val();
+    defaultInitialWO = data.wono
+    defaultInitialBOM = data.bomno
+    defaultIdbarangJadi = data.idbarang_jadi
+    $("#wono").val(data.wono.trim()).trigger('change').prop('disabled',true)
+    $("#bomno").val(data.bomno.trim()).trigger('change').prop('disabled',true)
+    $("#buildfor").val(data.buildfor.trim()).prop('readonly',true)
+    $("#buildunit").val('KG').trigger('change').prop('disabled',true)
+    $("#idbarang_jadi").val(data.idbarang_jadi.trim()).trigger('change').prop('disabled',true)
+    setSelect2Ajax('#wono', data.wono, data.wono);
+    setSelect2Ajax('#bomno', data.bomno, data.bomno);
+    setSelect2Ajax('#idbarang_jadi', data.idbarang_jadi, data.idbarang_jadi);
+    setSelect2Ajax('#buildunit', 'KG', 'KG');
 
-    $('[name="nmbarangcost"]').val(data.nmbarang.trim()).prop("readonly", true);
-    $('[name="unitCost"]').val(data.unit.trim()).prop("readonly", true);
-    setJtsValue('[name="standartcostcost"]', convertToDbNumber(data.newcost));
-    $('[name="totalcostcost"]').val().prop("readonly", true);
-
+    saveMaterialReleaseFromWO(lastWOENO);
 });
 
 
 
+function setSelect2Ajax(selector, value, text) {
+    if (!value) return;
+
+    let option = new Option(text || value, value, true, true);
+    $(selector).append(option).trigger('change');
+}
+
+/* Format Group */
+function formatWOE(repo) {
+    if (repo.loading) return repo.text;
+    var markup ="<div class='select2-result-repository__description'>" + repo.docno +"   <i class='fa fa-circle-o'></i>   "+ repo.keterangan +"</div>";
+    return markup;
+}
+function formatWOESelection(repo) {
+    return repo.keterangan || repo.text;
+}
 
 
-var defaultInitialGroupBrng = '';
-$("#idbarangWip").select2({
-    placeholder: "Choose Your Item List",
+var defaultInitialWO = '';
+$("#wono").select2({
+    placeholder: "Choose Your WO",
+    // dropdownParent: $('#modalDetailWO'),
     allowClear: true,
-    width: '100%',
-    minimumInputLength: 2,
-    dropdownParent: $('#modalDtlBomWip'),
+    width:'100%',
     ajax: {
-        url: HOST_URL + 'api/globalmodule/list_item_std_cost',
+        url: HOST_URL + 'api/globalmodule/list_wo',
         type: 'POST',
         dataType: 'json',
         delay: 250,
-        data: function (params) {
-            var docdate = $('#docdate').val();
+        data: function(params) {
             return {
                 _search_: params.term, // search term
                 _page_: params.page,
                 _draw_: true,
                 _start_: 1,
                 _perpage_: 2,
-                _paramglobal_: defaultInitialGroupBrng,
-                _parameterx_: defaultInitialGroupBrng,
-                loccode: '',
-                docdate:  docdate,
-                //loccode: $('[name="idlocation_dtl"]').val(),
+                _paramglobal_: defaultInitialWO,
+                _parameterx_: defaultInitialWO,
+                docref: $("#wono").val(),   // WO yang dipilih
                 term: params.term,
             };
         },
@@ -1200,23 +952,121 @@ $("#idbarangWip").select2({
 
         cache: false
     },
-    escapeMarkup: function (markup) {
+    escapeMarkup: function(markup) {
         return markup;
     }, // let our custom formatter work
     // minimumInputLength: 1,
-    templateResult: formatItem, // omitted for brevity, see the source of this page
-    templateSelection: formatItemSelection // omitted for brevity, see the source of this page
+    templateResult: formatWO, // omitted for brevity, see the source of this page
+    templateSelection: formatWOSelection // omitted for brevity, see the source of this page
 }).on("select2:select", function (e) {
-
+    resetBOM();
+    enableBOM();
     var data = e.params.data;
-
-    $('[name="nmbarangwip"]').val(data.nmbarang.trim()).prop("readonly", true);
-    $('[name="unitWip"]').val(data.unit.trim()).prop("readonly", true);
-    setJtsValue('[name="standartcostwip"]', convertToDbNumber(data.newcost));
-    $('[name="totalcostwip"]').val().prop("readonly", true);
-
+    // $('[name="nmbarang"]').val(data.nmbarang.trim()).prop("readonly", true);
+    // $('[name="unit"]').val(data.unit.trim()).prop("readonly", true);
+    // $("#batch").val(null).trigger('change');
 });
 
+
+$('#woeno').on('select2:clear', function () {
+    resetWO();
+});
+
+$('#wono').on('select2:clear', function () {
+    resetBOM();
+});
+
+$('#bomno').on('select2:clear', function () {
+    // $('[name="desc_bom"]').val('');
+    $('[name="buildfor"]').val('');
+    resetItem();
+});
+
+/* Format Group */
+function formatWO(repo) {
+    if (repo.loading) return repo.text;
+    var markup ="<div class='select2-result-repository__description'>" + repo.docno +"   <i class='fa fa-circle-o'></i>   "+ repo.keterangan +"</div>";
+    return markup;
+}
+function formatWOSelection(repo) {
+    return repo.keterangan || repo.text;
+}
+
+
+var defaultInitialBOM = '';
+$("#bomno").select2({
+    placeholder: "Choose Your BOM",
+    // dropdownParent: $('#modalDetailBOM'),
+    allowClear: true,
+    width:'100%',
+    ajax: {
+        url: HOST_URL + 'api/globalmodule/list_workingorder_bom',
+        type: 'POST',
+        dataType: 'json',
+        delay: 250,
+        data: function(params) {
+            return {
+                _search_: params.term, // search term
+                _page_: params.page,
+                _draw_: true,
+                _start_: 1,
+                _perpage_: 2,
+                _paramglobal_: defaultInitialBOM,
+                _parameterx_: defaultInitialBOM,
+                docref: $("#wono").val(),   // WO yang dipilih
+                term: params.term,
+            };
+        },
+        processResults: function (data, params) {
+            // var searchTerm = $("#idbarang").data("select2").$dropdown.find("input").val();
+            // if (data.items.length === 1 && data.items[0].text === searchTerm) {
+            //     var option = new Option(data.items[0].nmbarang, data.items[0].idbarang, true, true);
+            //     $('#idbarang').append(option).trigger('change').select2("close");
+            //     // manually trigger the `select2:select` event
+            //     $('#idbarang').trigger({
+            //         type: 'select2:select',
+            //         params: {
+            //             data: data
+            //         }
+            //     });
+            // }
+            params.page = params.page || 1;
+            return {
+                results: data.items,
+                pagination: {
+                    more: (params.page * 30) < data.total_count
+                }
+            };
+        },
+
+        cache: false
+    },
+    escapeMarkup: function(markup) {
+        return markup;
+    }, // let our custom formatter work
+    // minimumInputLength: 1,
+    templateResult: formatBOM, // omitted for brevity, see the source of this page
+    templateSelection: formatBOMSelection // omitted for brevity, see the source of this page
+}).on("select2:select", function (e) {
+    resetItem();
+    enableItem();
+    var data = e.params.data;
+    // $('[name="desc_bom"]').val(data.desc_bom.trim()).prop("readonly", true);
+    $('[name="buildfor"]').val(data.buildfor.trim()).prop("readonly", true);
+    $('[name="buildunit"]').val(data.buildunit.trim()).prop("readonly", true);
+    // $('[name="unit"]').val(data.unit.trim()).prop("readonly", true);
+    // $("#batch").val(null).trigger('change');
+});
+
+/* Format Group */
+function formatBOM(repo) {
+    if (repo.loading) return repo.text;
+    var markup ="<div class='select2-result-repository__description'>" + repo.docno +"   <i class='fa fa-circle-o'></i>   "+ repo.desc_bom +"</div>";
+    return markup;
+}
+function formatBOMSelection(repo) {
+    return repo.desc_bom || repo.text;
+}
 
 
 
@@ -1225,9 +1075,9 @@ $("#idbarang_jadi").select2({
     placeholder: "Choose Your Item List",
     allowClear: true,
     width: '100%',
-    minimumInputLength: 2,
+    // minimumInputLength: 2,
     ajax: {
-        url: HOST_URL + 'api/globalmodule/list_item',
+        url: HOST_URL + 'api/globalmodule/list_workingorder_item',
         type: 'POST',
         dataType: 'json',
         delay: 250,
@@ -1241,6 +1091,8 @@ $("#idbarang_jadi").select2({
                 _paramglobal_: defaultIdbarangJadi,
                 _parameterx_: defaultIdbarangJadi,
                 loccode: '',
+                docref: $("#wono").val(),   // WO yang dipilih
+                docnobom: $("#bomno").val(),
                 term: params.term,
             };
         },
@@ -1282,11 +1134,132 @@ $("#idbarang_jadi").select2({
 
 
 
+var defaultInitialLocation = '';
+$("#idlocation").select2({
+    placeholder: "Type/Chose Location",
+    allowClear: true,
+    width: '100%',
+    ajax: {
+        url: HOST_URL + 'api/globalmodule/list_mlocation',
+        type: 'POST',
+        dataType: 'json',
+        delay: 250,
+        data: function(params) {
+            return {
+                _search_: params.term, // search term
+                _page_: params.page,
+                _draw_: true,
+                _start_: 1,
+                _perpage_: 2,
+                _paramglobal_: defaultInitialLocation,
+            };
+        },
+        processResults: function(data, params) {
+            // parse the results into the format expected by Select2
+            // since we are using custom formatting functions we do not need to
+            // alter the remote JSON data, except to indicate that infinite
+            // scrolling can be used
+            params.page = params.page || 1;
+
+            return {
+                results: data.items,
+                pagination: {
+                    more: (params.page * 30) < data.total_count
+                }
+            };
+        },
+        cache: false
+    },
+    escapeMarkup: function(markup) {
+        return markup;
+    }, // let our custom formatter work
+    // minimumInputLength: 1,
+    templateResult: formatLocation, // omitted for brevity, see the source of this page
+    templateSelection: formatLocationSelection // omitted for brevity, see the source of this page
+}).on("select2:select", function (e) {
+
+    var data = e.params.data;
+    $('[name="nmlocation"]').val(data.nmlocation.trim())
+
+    // $("#defarea option[value]").remove();
+    // var newOptions = []; // the result of your JSON request
+    // $("#defarea").val(null).trigger('change');
+    //console.log($("#newdept").val());
+});
+
+/*Location*/
+function formatLocation(repo) {
+    if (repo.loading) return repo.text;
+    var markup ="<div class='select2-result-repository__description'>" + repo.idlocation +"   <i class='fa fa-circle-o'></i>   "+ repo.nmlocation +"</div>";
+    return markup;
+}
+
+function formatLocationSelection(repo) {
+    return repo.nmlocation || repo.text;
+}
+
+
+
+
+var defaultInitialBagian = '';
+$("#bagian").select2({
+    placeholder: "Type/Chose Location",
+    allowClear: true,
+    width: '100%',
+    ajax: {
+        url: HOST_URL + 'api/globalmodule/list_mlocation',
+        type: 'POST',
+        dataType: 'json',
+        delay: 250,
+        data: function(params) {
+            return {
+                _search_: params.term, // search term
+                _page_: params.page,
+                _draw_: true,
+                _start_: 1,
+                _perpage_: 2,
+                _paramglobal_: defaultInitialBagian,
+            };
+        },
+        processResults: function(data, params) {
+            // parse the results into the format expected by Select2
+            // since we are using custom formatting functions we do not need to
+            // alter the remote JSON data, except to indicate that infinite
+            // scrolling can be used
+            params.page = params.page || 1;
+
+            return {
+                results: data.items,
+                pagination: {
+                    more: (params.page * 30) < data.total_count
+                }
+            };
+        },
+        cache: false
+    },
+    escapeMarkup: function(markup) {
+        return markup;
+    }, // let our custom formatter work
+    // minimumInputLength: 1,
+    templateResult: formatLocation, // omitted for brevity, see the source of this page
+    templateSelection: formatLocationSelection // omitted for brevity, see the source of this page
+}).on("select2:select", function (e) {
+
+    var data = e.params.data;
+    // $('[name="nmlocation"]').val(data.nmlocation.trim())
+
+    // $("#defarea option[value]").remove();
+    // var newOptions = []; // the result of your JSON request
+    // $("#defarea").val(null).trigger('change');
+    //console.log($("#newdept").val());
+});
+
 
 var defaultInitialUnit = 'UNIT';
 $("#buildunit").select2({
     placeholder: "Type/Chose Your Unit",
     allowClear: true,
+    width:'100%',
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_unit',
         type: 'POST',
@@ -1329,65 +1302,73 @@ $("#buildunit").select2({
 
 });
 
+function resetWO() {
 
-function hitungTotalCostMaterial() {
+    $('#wono')
+        .val(null)
+        .trigger('change')
+        .prop('disabled', true);
 
-    let qty = $('#qtymaterial').val().replace(/,/g, '');
-    let cost = $('#standartcostmaterial').val().replace(/,/g, '');
+    // $('[name="desc_wo"]').val('');
+    // $('[name="buildfor"]').val('');
+    resetBOM()
+    resetItem();
+}
+
+function enableWO() {
+    $('#bomno').prop('disabled', false);
+}
+
+
+function resetBOM() {
+
+    $('#bomno')
+        .val(null)
+        .trigger('change')
+        .prop('disabled', true);
+
+    $('[name="desc_bom"]').val('');
+    $('[name="buildfor"]').val('');
+
+    resetItem();
+}
+
+function enableBOM() {
+    $('#bomno').prop('disabled', false);
+}
+
+function resetItem() {
+
+    $('#idbarang_jadi')
+        .val(null)
+        .trigger('change')
+        .prop('disabled', true);
+
+    $('[name="nmbarang_jadi"]').val('');
+}
+
+function enableItem() {
+    $('#idbarang_jadi').prop('disabled', false);
+}
+
+
+function hitungTotalCost() {
+
+    let qty = $('#qty').val().replace(/,/g, '');
+    let cost = $('#standartcost').val().replace(/,/g, '');
 
     qty = parseFloat(qty) || 0;
     cost = parseFloat(cost) || 0;
 
     let total = qty * cost;
 
-    $('#totalcostmaterial').val(
+    $('#totalcost').val(
         total.toLocaleString('en-US', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         })
     );
 }
-
-
-function hitungTotalCostCost() {
-
-    let qty = $('#qtycost').val().replace(/,/g, '');
-    let cost = $('#standartcostcost').val().replace(/,/g, '');
-
-    qty = parseFloat(qty) || 0;
-    cost = parseFloat(cost) || 0;
-
-    let total = qty * cost;
-
-    $('#totalcostcost').val(
-        total.toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        })
-    );
-}
-
-
-
-
-function hitungTotalCostWip() {
-
-    let qty = $('#qtywip').val().replace(/,/g, '');
-    let cost = $('#standartcostwip').val().replace(/,/g, '');
-
-    qty = parseFloat(qty) || 0;
-    cost = parseFloat(cost) || 0;
-
-    let total = qty * cost;
-
-    $('#totalcostwip').val(
-        total.toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        })
-    );
-}
-
 
 /* Format formatUnit */
 function formatUnit(repo) {
@@ -1423,15 +1404,83 @@ function formatItemSelection(repo) {
 }
 
 
+function saveMaterialReleaseFromWO(oldWoeno)
+{
+    let formData = new FormData();
 
-function saveBomDetail(formId, detailType) {
+
+    formData.append('old_woeno', oldWoeno);
+    formData.append('docref', $('#docref').val());
+    formData.append('cabang', $('#cabang').val());
+    formData.append('pemohon', $('#pemohon').val());
+
+    formData.append(
+        'docno',
+        $('#prefix').val() + '/' +
+        $('#infix').val() + '/' +
+        $('#sufix').val()
+    );
+
+    formData.append('docdate', $('#docdate').val());
+    formData.append('woeno', $('#woeno').val());
+    formData.append('wono', $('#wono').val());
+    formData.append('bomno', $('#bomno').val());
+
+    formData.append('idbarang_jadi', $('#idbarang_jadi').val());
+    formData.append('nmbarang_jadi', $('#nmbarang_jadi').val());
+
+    formData.append('buildfor', convertToDbNumber($('#buildfor').val()));
+    formData.append('buildunit', $('#buildunit').val());
+
+    formData.append('batchno', $('#batchno').val());
+
+    formData.append('idlocation', $('#idlocation').val());
+    formData.append('nmlocation', $('#nmlocation').val());
+
+    formData.append('bagian', $('#bagian').val());
+
+    formData.append('keterangan', $('#keterangan').val());
+
+    $.ajax({
+        url: HOST_URL + 'production/trans/save_materialrelease_from_wo',
+        type: 'POST',
+        processData:false,
+        contentType:false,
+        dataType:'json',
+        data:formData,
+
+        success:function(res){
+
+            if(res.success){
+
+                reload_materialrelease_dtl();
+                documentReadable();
+
+            }else{
+
+                Swal.fire({
+                    icon:'warning',
+                    title:'Warning',
+                    text:res.message
+                });
+
+            }
+
+        }
+    });
+
+}
+
+
+
+function saveMaterialReleaseDetail(formId) {
 
 
         // ===============================
         // Ambil dan validasi qty
         // ===============================
         let buildfor = $('#buildfor').val();
-        let minimumqty = $('#minimumqty').val();
+        // let minimumqty = $('#minimumqty').val();
 
         // ===============================
         // Siapkan FormData
@@ -1446,46 +1495,60 @@ function saveBomDetail(formId, detailType) {
         formData.append('docno', $('#docno').val());
         formData.append('docdate', $('#docdate').val());
         formData.append('idbarang_jadi', $('#idbarang_jadi').val());
+        formData.append('nmbarang_jadi', $('#nmbarang_jadi').val());
+        formData.append('woeno', $('#woeno').val());
+        formData.append('wono', $('#wono').val());
+        formData.append('bomno', $('#bomno').val());
+        formData.append('bagian', $('#bagian').val());
+        formData.append('idlocation', $('#idlocation').val());
+        formData.append('nmlocation', $('#nmlocation').val());
+        formData.append('tabno', $('#tabno').val());
+        formData.append('batchno', $('#batchno').val());
+
         formData.append('docdate', $('#docdate').val());
         formData.append('keterangan', $('#keterangan').val());
-        formData.append('minimumqty', convertToDbNumber(minimumqty));
+        // formData.append('minimumqty', convertToDbNumber(minimumqty));
         formData.append('buildunit', $('#buildunit').val());
         formData.append('buildfor', convertToDbNumber(buildfor));
+        formData.append(
+            'issub',
+            $('#issub').is(':checked') ? 'T' : 'F'
+        );
         // formData.append('minimumqty', $('#minimumqty').val());
         formData.append('keterangan', $('#keterangan').val());
         //DETAIL
-        // formData.append('idbarangMaterial', $('#idbarangMaterial').val());
+        // formData.append('idbarang', $('#idbarang').val());
         // formData.append('nmbarangmaterial', $('#nmbarangmaterial').val());
         // formData.append('unitMaterial', $('#unitMaterial').val());
-        // formData.set('qtymaterial', convertToDbNumber(qtymaterial));
+        // formData.set('qty', convertToDbNumber(qty));
         // formData.set('standartcostmaterial', convertToDbNumber(standartcostmaterial));
         // formData.set('totalcostmaterial', convertToDbNumber(totalcostmaterial));
         // formData.append('description_detail_material', $('#description_detail_material').val());
 
-        if(detailType === 'MATERIAL'){
-            let qtymaterial = $('#qtymaterial').val();
-            let standartcostmaterial = $('#standartcostmaterial').val();
-            let totalcostmaterial = $('#totalcostmaterial').val();
-            formData.set('qtymaterial',convertToDbNumber($('#qtymaterial').val()));
-            formData.set('standartcostmaterial',convertToDbNumber($('#standartcostmaterial').val()));
-            formData.set('totalcostmaterial',convertToDbNumber($('#totalcostmaterial').val()));
+        // if(detailType === 'MATERIAL'){
+        let qty = $('#qty').val();
+        // let standartcostmaterial = $('#standartcostmaterial').val();
+        // let totalcostmaterial = $('#totalcostmaterial').val();
+        formData.set('qty',convertToDbNumber($('#qty').val()));
+        // formData.set('standartcostmaterial',convertToDbNumber($('#standartcostmaterial').val()));
+        // formData.set('totalcostmaterial',convertToDbNumber($('#totalcostmaterial').val()));
 
-        }else if(detailType === 'COST'){
-            let qtycost = $('#qtycost').val();
-            let standartcostcost = $('#standartcostcost').val();
-            let totalcostcost = $('#totalcostcost').val();
-            formData.set('qtycost',convertToDbNumber($('#qtycost').val()));
-            formData.set('standartcostcost',convertToDbNumber($('#standartcostcost').val()));
-            formData.set('totalcostcost',convertToDbNumber($('#totalcostcost').val()));
-        }else if(detailType === 'WIP'){
-            let qtywip = $('#qtywip').val();
-            let standartcostwip = $('#standartcostwip').val();
-            let totalcostwip = $('#totalcostwip').val();
-            formData.set('qtywip',convertToDbNumber($('#qtywip').val()));
-            formData.set('standartcostwip',convertToDbNumber($('#standartcostwip').val()));
-            formData.set('totalcostwip',convertToDbNumber($('#totalcostwip').val()));
-        }
-        formData.append('doctype_detail', detailType);
+        // }else if(detailType === 'COST'){
+        //     let qtycost = $('#qtycost').val();
+        //     let standartcostcost = $('#standartcostcost').val();
+        //     let totalcostcost = $('#totalcostcost').val();
+        //     formData.set('qtycost',convertToDbNumber($('#qtycost').val()));
+        //     formData.set('standartcostcost',convertToDbNumber($('#standartcostcost').val()));
+        //     formData.set('totalcostcost',convertToDbNumber($('#totalcostcost').val()));
+        // }else if(detailType === 'WIP'){
+        //     let qtywip = $('#qtywip').val();
+        //     let standartcostwip = $('#standartcostwip').val();
+        //     let totalcostwip = $('#totalcostwip').val();
+        //     formData.set('qtywip',convertToDbNumber($('#qtywip').val()));
+        //     formData.set('standartcostwip',convertToDbNumber($('#standartcostwip').val()));
+        //     formData.set('totalcostwip',convertToDbNumber($('#totalcostwip').val()));
+        // }
+        // formData.append('doctype_detail', detailType);
         // Gabungkan docno
         formData.set(
             'docno',
@@ -1499,7 +1562,7 @@ function saveBomDetail(formId, detailType) {
         // ===============================
 
         $.ajax({
-            url: HOST_URL + 'production/trans/save_bom_mst',
+            url: HOST_URL + 'production/trans/save_materialrelease_mst',
             type: 'POST',
             data: formData,
             dataType: 'json',
@@ -1523,19 +1586,19 @@ function saveBomDetail(formId, detailType) {
                         return;
                     }
 
-                    if(detailType === 'MATERIAL'){
-                        $('#modalDtlBomMaterial').modal('hide');
-                        reload_bom_material_dtl();
-                        $('#formBOMMaterialDtl')[0].reset();
-                    } else if(detailType === 'COST'){
-                        $('#modalDtlBomCost').modal('hide');
-                        reload_bom_cost_dtl();
-                        $('#formBOMCostDtl')[0].reset();
-                    } else if(detailType === 'WIP'){
-                        $('#modalDtlBomWip').modal('hide');
-                        reload_bom_wip_dtl();
-                        $('#formBOMWipDtl')[0].reset();
-                    }
+                    // if(detailType === 'MATERIAL'){
+                    $('#modalDtlMaterialRelease').modal('hide');
+                    reload_materialrelease_dtl();
+                    $('#formMaterialReleaseMaterialDtl')[0].reset();
+                    // } else if(detailType === 'COST'){
+                    //     $('#modalDtlBomCost').modal('hide');
+                    //     reload_materialrelease_cost_dtl();
+                    //     $('#formMaterialReleaseCostDtl')[0].reset();
+                    // } else if(detailType === 'WIP'){
+                    //     $('#modalDtlBomWip').modal('hide');
+                    //     reload_materialrelease_wip_dtl();
+                    //     $('#formMaterialReleaseWipDtl')[0].reset();
+                    // }
                     documentReadable()
 
                 } else {
@@ -1564,10 +1627,10 @@ function saveBomDetail(formId, detailType) {
 
 
 /* TABLE PP DETAIL */
-function tabletmpBOMMaterial() {
+function tabletrxMaterialRelease() {
     /* Tabel PP Detail */
     var initTable = function () {
-        var table = $('#tmp_bommaterialdtl');
+        var table = $('#trx_materialreleasedtl');
         table.DataTable({
             "processing": true, //Feature control the processing indicator.
             "serverSide": true, //Feature control DataTables' server-side processing mode.
@@ -1582,9 +1645,10 @@ function tabletmpBOMMaterial() {
             "bFilter": true,
             "iDisplayLength": -1,
             "ajax": {
-                "url": HOST_URL + 'production/trans/list_tmp_bom_material_dtl',
+                "url": HOST_URL + 'production/trans/list_trx_materialrelease_dtl',
                 "type": "POST",
                 "data": function (data) {
+                    data.docno = $('#docno').val();
                     //data.searchfilter = $('#searchitem').val()+'';
                     //data.idbarang = $('#idbarang').val()+'';
                     //data.idposition = $('#idposition').val()+'';
@@ -1628,28 +1692,28 @@ function tabletmpBOMMaterial() {
 }
 
 
-function reload_bom_material_dtl() {
-    var table = $('#tmp_bommaterialdtl');
+function reload_materialrelease_dtl() {
+    var table = $('#trx_materialreleasedtl');
     table.DataTable().ajax.reload(); //reload datatable ajax
 }
 
 
 // CHECK ALL
-$('#tmp_bommaterialdtl thead').on('change', '#checkAll', function () {
+$('#trx_materialreleasedtl thead').on('change', '#checkAll', function () {
     const checked = this.checked;
 
-    $('#tmp_bommaterialdtl tbody .row-check').prop('checked', checked);
+    $('#trx_materialreleasedtl tbody .row-check').prop('checked', checked);
 });
 
 // JIKA SALAH SATU ROW UNCHECK → CHECKALL MATI
-$('#tmp_bommaterialdtl tbody').on('change', '.row-check', function () {
-    const total = $('#tmp_bommaterialdtl tbody .row-check').length;
-    const checked = $('#tmp_bommaterialdtl tbody .row-check:checked').length;
+$('#trx_materialreleasedtl tbody').on('change', '.row-check', function () {
+    const total = $('#trx_materialreleasedtl tbody .row-check').length;
+    const checked = $('#trx_materialreleasedtl tbody .row-check:checked').length;
 
     $('#checkAll').prop('checked', total === checked);
 });
 
-$('#tmp_bommaterialdtl').on('draw.dt', function () {
+$('#trx_materialreleasedtl').on('draw.dt', function () {
     $('#checkAll').prop('checked', false);
 });
 
@@ -1667,221 +1731,6 @@ $(document).on('change', '.row-check', function () {
 });
 
 
-
-/* TABLE PP DETAIL */
-function tabletmpBOMCost() {
-    /* Tabel PP Detail */
-    var initTable = function () {
-        var table = $('#tmp_bomcostdtl');
-        table.DataTable({
-            "processing": true, //Feature control the processing indicator.
-            "serverSide": true, //Feature control DataTables' server-side processing mode.
-            "language": languageDatatable(),
-            "paging": false,
-            "lengthChange": true,
-            "searching": true,
-            "ordering": true,
-            "info": true,
-            "autoWidth": false,
-            "responsive": false,
-            "bFilter": true,
-            "iDisplayLength": -1,
-            "ajax": {
-                "url": HOST_URL + 'production/trans/list_tmp_bom_cost_dtl',
-                "type": "POST",
-                "data": function (data) {
-                    //data.searchfilter = $('#searchitem').val()+'';
-                    //data.idbarang = $('#idbarang').val()+'';
-                    //data.idposition = $('#idposition').val()+'';
-                },
-                "dataFilter": function (data) {
-                    var json = jQuery.parseJSON(data);
-                    json.draw = json.dataTables.draw;
-                    json.recordsTotal = json.dataTables.recordsTotal;
-                    json.recordsFiltered = json.dataTables.recordsFiltered;
-                    json.data = json.dataTables.data;
-                    return JSON.stringify(json); // return JSON string
-                }
-            },
-            //Set column definition initialisation properties.
-            "columnDefs": [
-                {
-                    "targets": 0,
-                    "orderable": false,
-                    "searchable": false,
-                    "className": "text-center",
-                    "render": function (data, type, row) {
-                        // row[1] = kolom ID (ID Tax)
-                        return '<input type="checkbox" class="row-check-cost" value="' + row[0] + '">';
-                    }
-                },
-                {
-                    "targets": [-1],
-                    "orderable": false
-                }
-            ],
-            // Di dalam konfigurasi DataTable Anda:
-            "drawCallback": function(settings) {
-                // Panggil fungsi manual tadi
-                // updateGrandTotal();
-            }
-        });
-    }
-
-    return initTable();
-
-}
-
-
-function reload_bom_cost_dtl() {
-    var table = $('#tmp_bomcostdtl');
-    table.DataTable().ajax.reload(); //reload datatable ajax
-}
-
-
-// CHECK ALL
-$('#tmp_bomcostdtl thead').on('change', '#checkAllCost', function () {
-    const checked = this.checked;
-
-    $('#tmp_bomcostdtl tbody .row-check-cost').prop('checked', checked);
-});
-
-// JIKA SALAH SATU ROW UNCHECK → CHECKALL MATI
-$('#tmp_bomcostdtl tbody').on('change', '.row-check-cost', function () {
-    const total = $('#tmp_bomcostdtl tbody .row-check-cost').length;
-    const checked = $('#tmp_bomcostdtl tbody .row-check-cost:checked').length;
-
-    $('#checkAllCost').prop('checked', total === checked);
-});
-
-$('#tmp_bomcostdtl').on('draw.dt', function () {
-    $('#checkAllCost').prop('checked', false);
-});
-
-
-
-
-$('#checkAllCost').on('change', function () {
-    $('.row-check-cost').prop('checked', this.checked);
-});
-
-// auto uncheck checkAll jika salah satu dilepas
-$(document).on('change', '.row-check-cost', function () {
-    if (!this.checked) {
-        $('#checkAllCost').prop('checked', false);
-    }
-});
-
-
-
-
-
-
-/* TABLE PP DETAIL */
-function tabletmpBOMWip() {
-    /* Tabel PP Detail */
-    var initTable = function () {
-        var table = $('#tmp_bomwipdtl');
-        table.DataTable({
-            "processing": true, //Feature control the processing indicator.
-            "serverSide": true, //Feature control DataTables' server-side processing mode.
-            "language": languageDatatable(),
-            "paging": false,
-            "lengthChange": true,
-            "searching": true,
-            "ordering": true,
-            "info": true,
-            "autoWidth": false,
-            "responsive": false,
-            "bFilter": true,
-            "iDisplayLength": -1,
-            "ajax": {
-                "url": HOST_URL + 'production/trans/list_tmp_bom_wip_dtl',
-                "type": "POST",
-                "data": function (data) {
-                    //data.searchfilter = $('#searchitem').val()+'';
-                    //data.idbarang = $('#idbarang').val()+'';
-                    //data.idposition = $('#idposition').val()+'';
-                },
-                "dataFilter": function (data) {
-                    var json = jQuery.parseJSON(data);
-                    json.draw = json.dataTables.draw;
-                    json.recordsTotal = json.dataTables.recordsTotal;
-                    json.recordsFiltered = json.dataTables.recordsFiltered;
-                    json.data = json.dataTables.data;
-                    return JSON.stringify(json); // return JSON string
-                }
-            },
-            //Set column definition initialisation properties.
-            "columnDefs": [
-                {
-                    "targets": 0,
-                    "orderable": false,
-                    "searchable": false,
-                    "className": "text-center",
-                    "render": function (data, type, row) {
-                        // row[1] = kolom ID (ID Tax)
-                        return '<input type="checkbox" class="row-check-wip" value="' + row[0] + '">';
-                    }
-                },
-                {
-                    "targets": [-1],
-                    "orderable": false
-                }
-            ],
-            // Di dalam konfigurasi DataTable Anda:
-            "drawCallback": function(settings) {
-                // Panggil fungsi manual tadi
-                // updateGrandTotal();
-            }
-        });
-    }
-
-    return initTable();
-
-}
-
-
-function reload_bom_wip_dtl() {
-    var table = $('#tmp_bomwipdtl');
-    table.DataTable().ajax.reload(); //reload datatable ajax
-}
-
-
-// CHECK ALL
-$('#tmp_bomwipdtl thead').on('change', '#checkAllWip', function () {
-    const checked = this.checked;
-
-    $('#tmp_bomwipdtl tbody .row-check-wip').prop('checked', checked);
-});
-
-// JIKA SALAH SATU ROW UNCHECK → CHECKALL MATI
-$('#tmp_bomwipdtl tbody').on('change', '.row-check-wip', function () {
-    const total = $('#tmp_bomwipdtl tbody .row-check-wip').length;
-    const checked = $('#tmp_bomwipdtl tbody .row-check-wip:checked').length;
-
-    $('#checkAllWip').prop('checked', total === checked);
-});
-
-$('#tmp_bomwipdtl').on('draw.dt', function () {
-    $('#checkAllWip').prop('checked', false);
-});
-
-
-
-
-$('#checkAllWip').on('change', function () {
-    $('.row-check-wip').prop('checked', this.checked);
-});
-
-// auto uncheck checkAll jika salah satu dilepas
-$(document).on('change', '.row-check-wip', function () {
-    if (!this.checked) {
-        $('#checkAllWip').prop('checked', false);
-    }
-});
-
-
 function getCheckedDetailIds() {
     let ids = [];
     $('.row-check:checked').each(function () {
@@ -1891,24 +1740,6 @@ function getCheckedDetailIds() {
 }
 
 
-
-function getCheckedDetailIdsCost() {
-    let ids = [];
-    $('.row-check-cost:checked').each(function () {
-        ids.push($(this).val());
-    });
-    return ids;
-}
-
-
-
-function getCheckedDetailIdsWip() {
-    let ids = [];
-    $('.row-check-wip:checked').each(function () {
-        ids.push($(this).val());
-    });
-    return ids;
-}
 
 
 document.addEventListener('keydown', function(e) {
@@ -1925,10 +1756,10 @@ document.getElementById('btnAddDetailMaterial').click();
 
 $(document).ready(function () {
 
-    table_bom();
+    table_materialrelease();
     documentReadable();
-    tabletmpBOMMaterial();
-    tabletmpBOMCost();
-    tabletmpBOMWip();
+    tabletrxMaterialRelease();
+    // tabletrxMaterialReleaseCost();
+    // tabletrxMaterialReleaseWip();
 
 });

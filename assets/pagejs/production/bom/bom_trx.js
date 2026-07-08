@@ -16,10 +16,10 @@ let skipRoleChange = false;
 //"use strict";
 
 /* VIUW UTAMA*/
-function table_mst_standart_cost() {
+function table_trx_bom() {
     // var lg = languageDatatable;
     var initTable = function () {
-        var table = $('#tstandart_cost');
+        var table = $('#tbom');
         table.DataTable({
             "processing": true, //Feature control the processing indicator.
             "serverSide": true, //Feature control DataTables' server-side processing mode.
@@ -42,7 +42,7 @@ function table_mst_standart_cost() {
                 'pageLength', 'excel'
             ],
             "ajax": {
-                "url": HOST_URL + 'production/trans/list_standart_cost_mst',
+                "url": HOST_URL + 'production/trans/list_bom_mst',
                 "type": "POST",
                 "data": function (data) {
                     data.tglrange = $('#tglrange').val();
@@ -76,20 +76,20 @@ function table_mst_standart_cost() {
     return initTable();
 }
 
-function reload_standart_cost() {
-    var table = $('#tstandart_cost');
+function reload_bom() {
+    var table = $('#tbom');
     table.DataTable().ajax.reload(); //reload datatable ajax
     //console.log('HALO HALO BANDUNG');
 }
 
 $('#btn-filter-tx').click(function () { //button filter event click
-    var table = $('#tstandart_cost');
+    var table = $('#tbom');
     table.DataTable().ajax.reload(); //reload datatable ajax
     $('#filter').modal('hide');
 });
 $('#btn-reset-tx').click(function () { //button reset event click
     $('#form-filter')[0].reset();
-    var table = $('#tstandart_cost');
+    var table = $('#tbom');
     table.DataTable().ajax.reload(); //reload datatable ajax
     $('#filter').modal('hide');
 });
@@ -202,7 +202,7 @@ $('#prefix').on('change', function () {
     if (!prefix || !infix || !currentKodeSuffix) return;
 
     $.ajax({
-        url: HOST_URL + '/production/trans/getNextSuffix_standart_cost_mst',
+        url: HOST_URL + '/production/trans/getNextSuffix_bom_mst',
         method: 'GET',
         data: {
             prefix: prefix,
@@ -309,7 +309,7 @@ function documentReadable() {
 
     var docno = $('[name="docno"]').val();
 
-    $.getJSON(HOST_URL + 'production/trans/showing_mst_standart_cost_mst', {docno: docno})
+    $.getJSON(HOST_URL + 'production/trans/showing_mst_bom_mst', {docno: docno})
         .done(function (response) {
 
             if (!response.dataTables || !response.dataTables.items.length) {
@@ -331,55 +331,141 @@ function documentReadable() {
             $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
 
             $('[name="docdate"]').val(item.docdate).prop('disabled', true);
-            $('[name="activedate"]').val(item.activedate).prop('disabled', true);
-            $('[name="docref"]').val(item.docref).prop('disabled', false);
-            $('[name="keterangan"]').val(item.description);
-
+            setJtsValue('[name="buildfor"]', convertToDbNumber(item.buildfor));
+            setJtsValue('[name="minimumqty"]', convertToDbNumber(item.minimumqty));
+            $('[name="keterangan"]').val(item.keterangan).prop('readonly', true);
+            $('[name="buildfor"]').prop('readonly',true);
+            $('[name="minimumqty"]').prop('readonly',true);
             skipRoleChange = true;
+            $('#ttlprice').text(
+                convertToDbNumber(item.ttlprice || 0)
+                    .toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    })
+            );
+            $('#ttlmaterial').text(
+                convertToDbNumber(item.ttlmaterial || 0)
+                    .toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    })
+            );
+            $('#ttlcost').text(
+                convertToDbNumber(item.ttlcost || 0)
+                    .toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    })
+            );
+            $('#ttlwip').text(
+                convertToDbNumber(item.ttlwip || 0)
+                    .toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    })
+            );
+            $.ajax({
+                type: 'GET',
+                url: HOST_URL + 'api/globalmodule/list_item' + '?var=' + item.idbarang_jadi,
+                dataType: 'json',
+                delay: 250,
+            }).then(function (datax) {
+                // create the option and append to Select2
+                var option = new Option(datax.items[0].nmbarang, datax.items[0].idbarang, true, true);
+                $('[name="idbarang_jadi"]').append(option).trigger('change').prop('disabled',true);
+
+                // manually trigger the `select2:select` event
+                $('[name="idbarang_jadi"]').trigger({
+                    type: 'select2:select',
+                    params: {
+                        data: datax
+                    }
+                });
+            });
+
+
+            $.ajax({
+                type: 'GET',
+                url: HOST_URL + 'api/globalmodule/list_unit' + '?var=' + item.buildunit,
+                dataType: 'json',
+                delay: 250,
+            }).then(function (datax) {
+                // create the option and append to Select2
+                var option = new Option(datax.items[0].idunit, datax.items[0].idunit, true, true);
+                $('[name="buildunit"]').append(option).trigger('change').prop('disabled',true);
+
+                // manually trigger the `select2:select` event
+                $('[name="buildunit"]').trigger({
+                    type: 'select2:select',
+                    params: {
+                        data: datax
+                    }
+                });
+            });
+
+            $.ajax({
+                type: 'GET',
+                url: HOST_URL + 'api/globalmodule/list_branchjob' + '?var=' + item.cabang,
+                dataType: 'json',
+                delay: 250,
+            }).then(function (datax) {
+                // create the option and append to Select2
+                var option = new Option(datax.items[0].nmbranch, datax.items[0].idbranch, true, true);
+                $('[name="cabang"]').append(option).trigger('change').prop('disabled',true);
+
+                // manually trigger the `select2:select` event
+                $('[name="cabang"]').trigger({
+                    type: 'select2:select',
+                    params: {
+                        data: datax
+                    }
+                });
+            });
 
             // ===============================
             // LOAD SEMUA MASTER DATA PARALEL
             // ===============================
 
 
-            const branch1 = $.getJSON(
-                HOST_URL + 'api/globalmodule/list_branchjob',
-                { var: item.cabang }
-            );
+//             const branch1 = $.getJSON(
+//                 HOST_URL + 'api/globalmodule/list_branchjob',
+//                 { var: item.cabang }
+//             );
 
-            branch1.done(function (res) {
+//             branch1.done(function (res) {
 
-                if (res.items && res.items.length > 0) {
+//                 if (res.items && res.items.length > 0) {
 
-                    let data = res.items[0];
+//                     let data = res.items[0];
 
-                    // set option ke select2
+//                     // set option ke select2
 
-                    let el = $('[name="cabang"]');
+//                     let el = $('[name="cabang"]');
 
-// set value
-                    let option = new Option(data.nmbranch, data.idbranch, true, true);
-                    el.empty().append(option).trigger('change');
+// // set value
+//                     let option = new Option(data.nmbranch, data.idbranch, true, true);
+//                     el.empty().append(option).trigger('change');
 
-// 1. cegah dropdown kebuka
-                    el.on('select2:opening select2:unselecting select2:clearing', function (e) {
-                        e.preventDefault();
-                    });
+// // 1. cegah dropdown kebuka
+//                     el.on('select2:opening select2:unselecting select2:clearing', function (e) {
+//                         e.preventDefault();
+//                     });
 
-// 2. disable tombol clear (kalau ada)
-                    el.data('select2').$container.find('.select2-selection__clear').remove();
+// // 2. disable tombol clear (kalau ada)
+//                     el.data('select2').$container.find('.select2-selection__clear').remove();
 
-// 3. matikan interaksi UI (super lock)
-                    el.next('.select2-container').css({
-                        'pointer-events': 'none',
-                        'background': '#e9ecef'
-                    });
+// // 3. matikan interaksi UI (super lock)
+//                     el.next('.select2-container').css({
+//                         'pointer-events': 'none',
+//                         'background': '#e9ecef'
+//                     });
 
-                }
+//                 }
 
-            }).always(function () {
-                hideLoader();
-            });
+//             }).always(function () {
+//                 hideLoader();
+//             });
         })
         .fail(function () {
             console.log("Failed To Loading Data");
@@ -493,8 +579,22 @@ $("#idbarang").select2({
 });
 
 function setJtsValue(selector, value) {
-    $(selector).val(value);
-    _jtsseparator($(selector)[0]);
+
+    let $el = $(selector);
+
+    if ($el.is('input, select, textarea')) {
+
+        $el.val(value);
+
+        if ($el[0]) {
+            _jtsseparator($el[0]);
+        }
+
+    } else {
+
+        $el.text(value);
+
+    }
 }
 
 
@@ -515,7 +615,7 @@ function formatItemSelection(repo) {
 
 
 
-function save_standart_cost() {
+function save_bom() {
 
 
         // ===============================
@@ -583,7 +683,7 @@ function save_standart_cost() {
         // ===============================
 
         $.ajax({
-            url: HOST_URL + 'production/trans/save_standart_cost_mst',
+            url: HOST_URL + 'production/trans/save_bom_mst',
             type: 'POST',
             data: formData,
             dataType: 'json',
@@ -608,7 +708,7 @@ function save_standart_cost() {
                     }
 
                     $('#modalDtlStandartCost').modal('hide');
-                    reload_standart_cost_dtl();
+                    reload_bom_dtl();
                     $('#formStandartCostDtl')[0].reset();
 
                 } else {
@@ -639,10 +739,10 @@ function save_standart_cost() {
 
 
 /* TABLE PP DETAIL */
-function tabletmpStandartCost() {
+function tabletrxBOMMaterial() {
     /* Tabel PP Detail */
     var initTable = function () {
-        var table = $('#tmp_stdcost');
+        var table = $('#trx_bommaterialdtl');
         table.DataTable({
             "processing": true, //Feature control the processing indicator.
             "serverSide": true, //Feature control DataTables' server-side processing mode.
@@ -657,9 +757,10 @@ function tabletmpStandartCost() {
             "bFilter": true,
             "iDisplayLength": -1,
             "ajax": {
-                "url": HOST_URL + 'production/trans/list_mst_standart_cost_dtl',
+                "url": HOST_URL + 'production/trans/list_trx_bom_material_dtl',
                 "type": "POST",
                 "data": function (data) {
+                    data.docno = $('#docno').val();
                     //data.searchfilter = $('#searchitem').val()+'';
                     //data.idbarang = $('#idbarang').val()+'';
                     //data.idposition = $('#idposition').val()+'';
@@ -703,263 +804,249 @@ function tabletmpStandartCost() {
 }
 
 
-function reload_standart_cost_dtl() {
-    var table = $('#tmp_stdcost');
+function reload_bom_material_dtl() {
+    var table = $('#trx_bommaterialdtl');
     table.DataTable().ajax.reload(); //reload datatable ajax
 }
 
 
 // CHECK ALL
-$('#tmp_stdcost thead').on('change', '#checkAll', function () {
+$('#trx_bommaterialdtl thead').on('change', '#checkAll', function () {
     const checked = this.checked;
 
-    $('#tmp_stdcost tbody .row-check').prop('checked', checked);
+    $('#trx_bommaterialdtl tbody .row-check').prop('checked', checked);
 });
 
 // JIKA SALAH SATU ROW UNCHECK → CHECKALL MATI
-$('#tmp_stdcost tbody').on('change', '.row-check', function () {
-    const total = $('#tmp_stdcost tbody .row-check').length;
-    const checked = $('#tmp_stdcost tbody .row-check:checked').length;
+$('#trx_bommaterialdtl tbody').on('change', '.row-check', function () {
+    const total = $('#trx_bommaterialdtl tbody .row-check').length;
+    const checked = $('#trx_bommaterialdtl tbody .row-check:checked').length;
 
     $('#checkAll').prop('checked', total === checked);
 });
 
-$('#tmp_stdcost').on('draw.dt', function () {
+$('#trx_bommaterialdtl').on('draw.dt', function () {
     $('#checkAll').prop('checked', false);
 });
 
 
-
-
-function updateStandartCost() {
-    isLoadingUpdate = true;
-    const ids = getCheckedDetailIds();
-
-    if (!ids || ids.length === 0) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Peringatan',
-            text: 'Pilih satu data yang akan diupdate'
-        });
-        return;
-    }
-
-    if (ids.length > 1) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Peringatan',
-            text: 'Update hanya boleh satu data'
-        });
-        return;
-    }
-
-    $.ajax({
-        url: HOST_URL + 'production/trans/get_standart_cost_dtl',
-        type: 'GET',
-        data: { id: ids[0] },
-        dataType: 'json',
-        success: function (json) {
-
-            $('[name="idlocation_dtl"]').empty().trigger('change');
-            $('#idbarang').empty().trigger('change');
-            $('#batch').empty().trigger('change');
-
-            if (!json.dataTables.status) return;
-
-            let data = json.dataTables.items[0];
-
-            /*
-            =========================
-            TRIM DATA (CHAR FIX)
-            =========================
-            */
-
-            data.idbarang   = (data.idbarang || '').trim();
-            data.idlocation = (data.idlocation || '').trim();
-            data.batch      = (data.batch || '').trim();
-            data.dk         = (data.dk || '').trim();
-            data.docno      = (data.docno || '').trim();
-            data.nmbarang   = (data.nmbarang || '').trim();
-            data.unit       = (data.unit || '').trim();
-            data.actualcost       = (data.actualcost || '').trim();
-            data.lastcost       = (data.lastcost || '').trim();
-            data.newcost       = (data.newcost || '').trim();
-
-            /*
-            =========================
-            SET FORM
-            =========================
-            */
-
-            $('#idurut').val(data.idurut);
-            $('#description_detail').val(data.description);
-            $('#docno').val(data.docno);
-            $('#dk').val(data.dk).trigger('change');
-
-
-            $('#nmbarang').val(data.nmbarang);
-            $('#unit').val(data.unit);
-// Contoh implementasi saat data diterima dari AJAX
-
-            // $('#qty').val(data.qty);
-            // $('#val').val(data.val);
-            // $('#valsum').val(data.valsum);
-
-            // Mengisi field secara otomatis dengan separator dari separator
-            setJtsValue('#actualcost', data.actualcost);
-            setJtsValue('#lastcost', data.lastcost);
-            setJtsValue('#newcost', data.newcost);
-
-
-//             $('#qty').val(_jtsseparator(data.qty));
-//             $('#val').val(_jtsseparator(data.val));
-//             $('#valsum').val(_jtsseparator(data.valsum));
-            $('#currency').val(data.currency);
-
-            /*
-            =========================
-            RESET SELECT2
-            =========================
-            */
-
-
-            /*
-            =========================
-            1. LOAD LOCATION
-            =========================
-            */
-
-            $.ajax({
-                type: 'GET',
-                url: HOST_URL + 'api/globalmodule/list_mlocation',
-                data: { var: data.idlocation },
-                dataType: 'json'
-            }).then(function (resLocation) {
-
-                if (!resLocation.items || resLocation.items.length === 0) return;
-
-                let loc = resLocation.items[0];
-
-                loc.idlocation = (loc.idlocation || '').trim();
-
-                let optionLoc = new Option(loc.nmlocation, loc.idlocation, true, true);
-
-                $('[name="idlocation_dtl"]')
-                    .append(optionLoc)
-                    .trigger('change');
-
-                /*
-                =========================
-                2. LOAD ITEM
-                =========================
-                */
-
-                return $.ajax({
-                    type: 'POST',
-                    url: HOST_URL + 'api/globalmodule/list_item',
-                    data: {
-                        var: data.idbarang,
-                        //loccode: loc.idlocation
-                    },
-                    dataType: 'json'
-                });
-
-            }).then(function (resItem) {
-
-                if (!resItem || !resItem.items || resItem.items.length === 0) return;
-
-                let item = resItem.items[0];
-
-                item.idbarang = (item.idbarang || '').trim();
-
-                let optionItem = new Option(item.nmbarang, item.idbarang, true, true);
-
-                $('#idbarang')
-                    .append(optionItem)
-                    .trigger('change');
-
-                $('#idbarang').trigger({
-                    type: 'select2:select',
-                    params: { data: item }
-                });
-
-                /*
-                =========================
-                3. LOAD BATCH
-                =========================
-                */
-
-                // 🔥 VALIDASI AWAL (INI KUNCI)
-                let batchParam = (data.batch || '').trim();
-
-                if (!batchParam) {
-                    // batch kosong → stop di sini, tidak lanjut ke AJAX batch
-                    $('#batch').val(null);
-                    return;
-                }
-
-                return $.ajax({
-                    type: 'POST',
-                    url: HOST_URL + 'api/globalmodule/list_batch_item',
-                    data: {
-                        _parameterx_: data.idbarang,
-                        _var_: batchParam,
-                        loccode: $('[name="idlocation_dtl"]').val()
-                    },
-                    dataType: 'json'
-                });
-
-            }).then(function (resBatch) {
-
-                let $batch = $('#batch');
-                $batch.empty();
-
-                if (!resBatch || !resBatch.items || resBatch.items.length === 0) {
-                    $batch.val(null);
-                    return;
-                }
-
-                let batch = resBatch.items[0];
-                let batchVal = (batch.batch || '').trim();
-
-                // 🔥 double safety (opsional tapi bagus)
-                if (!batchVal) {
-                    $batch.val(null);
-                    return;
-                }
-
-                let optionBatch = new Option(batchVal, batchVal, true, true);
-
-                $batch.append(optionBatch);
-                $batch.val(batchVal).trigger('change');
-
-            });
-
-            /*
-            =========================
-            SHOW MODAL
-            =========================
-            */
-            isLoadingUpdate = false;
-            $('#modalDtlStandartCostTitle').text('Update Detail');
-            $('#modalDtlStandartCost').modal('show');
-
-
-
-        }
-    });
-
-}
-
-
-$('#checkAllDetail').on('change', function () {
+$('#checkAll').on('change', function () {
     $('.row-check').prop('checked', this.checked);
 });
 
 // auto uncheck checkAll jika salah satu dilepas
 $(document).on('change', '.row-check', function () {
     if (!this.checked) {
-        $('#checkAllDetail').prop('checked', false);
+        $('#checkAll').prop('checked', false);
+    }
+});
+
+
+/* TABLE PP DETAIL */
+function tabletrxBOMCost() {
+    /* Tabel PP Detail */
+    var initTable = function () {
+        var table = $('#trx_bomcostdtl');
+        table.DataTable({
+            "processing": true, //Feature control the processing indicator.
+            "serverSide": true, //Feature control DataTables' server-side processing mode.
+            "language": languageDatatable(),
+            "paging": false,
+            "lengthChange": true,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "responsive": false,
+            "bFilter": true,
+            "iDisplayLength": -1,
+            "ajax": {
+                "url": HOST_URL + 'production/trans/list_trx_bom_cost_dtl',
+                "type": "POST",
+                "data": function (data) {
+                    data.docno = $('#docno').val();
+                    //data.searchfilter = $('#searchitem').val()+'';
+                    //data.idbarang = $('#idbarang').val()+'';
+                    //data.idposition = $('#idposition').val()+'';
+                },
+                "dataFilter": function (data) {
+                    var json = jQuery.parseJSON(data);
+                    json.draw = json.dataTables.draw;
+                    json.recordsTotal = json.dataTables.recordsTotal;
+                    json.recordsFiltered = json.dataTables.recordsFiltered;
+                    json.data = json.dataTables.data;
+                    return JSON.stringify(json); // return JSON string
+                }
+            },
+            //Set column definition initialisation properties.
+            "columnDefs": [
+                {
+                    "targets": 0,
+                    "orderable": false,
+                    "searchable": false,
+                    "className": "text-center",
+                    "render": function (data, type, row) {
+                        // row[1] = kolom ID (ID Tax)
+                        return '<input type="checkbox" class="row-check-cost" value="' + row[0] + '">';
+                    }
+                },
+                {
+                    "targets": [-1],
+                    "orderable": false
+                }
+            ],
+            // Di dalam konfigurasi DataTable Anda:
+            "drawCallback": function(settings) {
+                // Panggil fungsi manual tadi
+                // updateGrandTotal();
+            }
+        });
+    }
+
+    return initTable();
+
+}
+
+
+function reload_bom_cost_dtl() {
+    var table = $('#trx_bomcostdtl');
+    table.DataTable().ajax.reload(); //reload datatable ajax
+}
+
+
+// CHECK ALL
+$('#trx_bomcostdtl thead').on('change', '#checkAll', function () {
+    const checked = this.checked;
+
+    $('#trx_bomcostdtl tbody .row-check-cost').prop('checked', checked);
+});
+
+// JIKA SALAH SATU ROW UNCHECK → CHECKALL MATI
+$('#trx_bomcostdtl tbody').on('change', '.row-check-cost', function () {
+    const total = $('#trx_bomcostdtl tbody .row-check-cost').length;
+    const checked = $('#trx_bomcostdtl tbody .row-check-cost:checked').length;
+
+    $('#checkAll').prop('checked', total === checked);
+});
+
+$('#trx_bomcostdtl').on('draw.dt', function () {
+    $('#checkAll').prop('checked', false);
+});
+
+
+$('#checkAllCost').on('change', function () {
+    $('.row-check-cost').prop('checked', this.checked);
+});
+
+// auto uncheck checkAll jika salah satu dilepas
+$(document).on('change', '.row-check-cost', function () {
+    if (!this.checked) {
+        $('#checkAllCost').prop('checked', false);
+    }
+});
+
+
+/* TABLE PP DETAIL */
+function tabletrxBOMWip() {
+    /* Tabel PP Detail */
+    var initTable = function () {
+        var table = $('#trx_bomwipdtl');
+        table.DataTable({
+            "processing": true, //Feature control the processing indicator.
+            "serverSide": true, //Feature control DataTables' server-side processing mode.
+            "language": languageDatatable(),
+            "paging": false,
+            "lengthChange": true,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "responsive": false,
+            "bFilter": true,
+            "iDisplayLength": -1,
+            "ajax": {
+                "url": HOST_URL + 'production/trans/list_trx_bom_wip_dtl',
+                "type": "POST",
+                "data": function (data) {
+                    data.docno = $('#docno').val();
+                    //data.searchfilter = $('#searchitem').val()+'';
+                    //data.idbarang = $('#idbarang').val()+'';
+                    //data.idposition = $('#idposition').val()+'';
+                },
+                "dataFilter": function (data) {
+                    var json = jQuery.parseJSON(data);
+                    json.draw = json.dataTables.draw;
+                    json.recordsTotal = json.dataTables.recordsTotal;
+                    json.recordsFiltered = json.dataTables.recordsFiltered;
+                    json.data = json.dataTables.data;
+                    return JSON.stringify(json); // return JSON string
+                }
+            },
+            //Set column definition initialisation properties.
+            "columnDefs": [
+                {
+                    "targets": 0,
+                    "orderable": false,
+                    "searchable": false,
+                    "className": "text-center",
+                    "render": function (data, type, row) {
+                        // row[1] = kolom ID (ID Tax)
+                        return '<input type="checkbox" class="row-check-wip" value="' + row[0] + '">';
+                    }
+                },
+                {
+                    "targets": [-1],
+                    "orderable": false
+                }
+            ],
+            // Di dalam konfigurasi DataTable Anda:
+            "drawCallback": function(settings) {
+                // Panggil fungsi manual tadi
+                // updateGrandTotal();
+            }
+        });
+    }
+
+    return initTable();
+
+}
+
+
+function reload_bom_wip_dtl() {
+    var table = $('#trx_bomwipdtl');
+    table.DataTable().ajax.reload(); //reload datatable ajax
+}
+
+
+// CHECK ALL
+$('#trx_bomwipdtl thead').on('change', '#checkAll', function () {
+    const checked = this.checked;
+
+    $('#trx_bomwipdtl tbody .row-check-wip').prop('checked', checked);
+});
+
+// JIKA SALAH SATU ROW UNCHECK → CHECKALL MATI
+$('#trx_bomwipdtl tbody').on('change', '.row-check-wip', function () {
+    const total = $('#trx_bomwipdtl tbody .row-check-wip').length;
+    const checked = $('#trx_bomwipdtl tbody .row-check-wip:checked').length;
+
+    $('#checkAll').prop('checked', total === checked);
+});
+
+$('#trx_bomwipdtl').on('draw.dt', function () {
+    $('#checkAll').prop('checked', false);
+});
+
+
+
+$('#checkAllWip').on('change', function () {
+    $('.row-check-wip').prop('checked', this.checked);
+});
+
+// auto uncheck checkAll jika salah satu dilepas
+$(document).on('change', '.row-check-wip', function () {
+    if (!this.checked) {
+        $('#checkAllWip').prop('checked', false);
     }
 });
 
@@ -975,8 +1062,10 @@ function getCheckedDetailIds() {
 
 $(document).ready(function () {
 
-    table_mst_standart_cost();
+    table_trx_bom();
     documentReadable();
-    tabletmpStandartCost();
+    tabletrxBOMMaterial();
+    tabletrxBOMCost();
+    tabletrxBOMWip();
 
 });

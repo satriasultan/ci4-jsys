@@ -1,27 +1,56 @@
---I.R.A.3
---DELETE FROM sc_mst.trxtype WHERE jenistrx='I.R.A.2';
+--I.R.A.4
+--DELETE FROM sc_mst.trxtype WHERE jenistrx='I.R.A.4';
 insert into sc_mst.trxtype
 (kdtrx,jenistrx,uraian)
 VALUES
-('I','I.R.A.3','DRAFT'),
-('E','I.R.A.3','REVISI/EDIT'),
-('F','I.R.A.3','FINAL USER'),
-('A','I.R.A.3','APPROVE'),
-('A2','I.R.A.3','APPROVE 2'),
-('A3','I.R.A.3','APPROVE 3'),
-('P','I.R.A.3','CETAK/PRINT'),
-('O','I.R.A.3','OBSOLATE'),
-('C','I.R.A.3','CANCEL'),
-('D','I.R.A.3','DELETE');
+('I','I.R.A.4','DRAFT'),
+('E','I.R.A.4','REVISI/EDIT'),
+('F','I.R.A.4','FINAL USER'),
+('A','I.R.A.4','APPROVE'),
+('A2','I.R.A.4','APPROVE 2'),
+('A3','I.R.A.4','APPROVE 3'),
+('P','I.R.A.4','CETAK/PRINT'),
+('O','I.R.A.4','OBSOLATE'),
+('C','I.R.A.4','CANCEL'),
+('D','I.R.A.4','DELETE');
 
 
 
 
---drop table sc_tmp.bom_mst;
-CREATE TABLE IF NOT EXISTS sc_tmp.bom_mst
+--drop table sc_tmp.workingorder_mst;
+CREATE TABLE IF NOT EXISTS sc_tmp.workingorder_mst
 (
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
-    doctype character(20) default 'BOM' ,
+    doctype character(20) default 'WO',
+	cabang character (30 ) COLLATE pg_catalog."default",    
+    pemohon character(100) COLLATE pg_catalog."default",
+    docdate date,
+    docdatefinish date,
+    kdcustomer character(30) COLLATE pg_catalog."default",
+    nmcustomer character(250) COLLATE pg_catalog."default",
+    alamatcustomer TEXT,
+    docref character(30) COLLATE pg_catalog."default",
+    status character(6) COLLATE pg_catalog."default",
+    keterangan TEXT,
+	noso character(30),
+    inputby character(50) COLLATE pg_catalog."default",
+    inputdate timestamp without time zone,
+    updateby character varying(50) COLLATE pg_catalog."default",
+    updatedate timestamp without time zone,
+    docnotmp character(30) COLLATE pg_catalog."default",
+    CONSTRAINT pk_tmp_workingorder_mst PRIMARY KEY (docno)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS sc_tmp.workingorder_mst
+    OWNER to postgres;
+
+--drop table sc_tmp.workingorder_bom_mst;
+CREATE TABLE IF NOT EXISTS sc_tmp.workingorder_bom_mst
+(
+    docno character(30) COLLATE pg_catalog."default" NOT NULL,
+    doctype character(20) default 'WO',
 	cabang character (30 ) COLLATE pg_catalog."default",    
     pemohon character(100) COLLATE pg_catalog."default",
     docdate date,
@@ -29,38 +58,37 @@ CREATE TABLE IF NOT EXISTS sc_tmp.bom_mst
     nmbarang_jadi text,
     docref character(30) COLLATE pg_catalog."default",
     status character(6) COLLATE pg_catalog."default",
-    keterangan TEXT,
-	buildfor numeric(18,2),
+    buildfor numeric(18,2),
     ttlmaterial numeric(18,2),
     ttlcost numeric(18,2),
     ttlwip numeric(18,2),
     ttlprice numeric(18,2),
     buildunit character(30),
 	minimumqty numeric(18,2),
-	dari_bagian	character(30),
-	inactive BOOLEAN default false,
-    inputby character varying(50) COLLATE pg_catalog."default",
+    desc_bom TEXT,
+    inputby character(50) COLLATE pg_catalog."default",
     inputdate timestamp without time zone,
     updateby character varying(50) COLLATE pg_catalog."default",
     updatedate timestamp without time zone,
     docnotmp character(30) COLLATE pg_catalog."default",
-    CONSTRAINT pk_tmp_bom_mst PRIMARY KEY (docno)
+    CONSTRAINT pk_tmp_workingorder_bom_mst PRIMARY KEY (docno,docref)
 )
 
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS sc_tmp.bom_mst
+ALTER TABLE IF EXISTS sc_tmp.workingorder_bom_mst
     OWNER to postgres;
 
 
 /** 'MATERIAL, COST, WIP' **/
---drop table sc_tmp.bom_dtl;
-CREATE TABLE IF NOT EXISTS sc_tmp.bom_dtl
+--drop table sc_tmp.workingorder_bom_dtl;
+CREATE TABLE IF NOT EXISTS sc_tmp.workingorder_bom_dtl
 (
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
-    doctype character(20) default 'BOM' ,
+    doctype character(20) default 'WO',
     doctype_detail character(20) default 'MATERIAL' ,
-    cabang character (30 ) COLLATE pg_catalog."default",    
+    cabang character (30 ) COLLATE pg_catalog."default",
+    docref character(30) COLLATE pg_catalog."default",    
     pemohon character(100) COLLATE pg_catalog."default",
     docdate date,
     idbarang character(50) COLLATE pg_catalog."default",
@@ -82,22 +110,52 @@ CREATE TABLE IF NOT EXISTS sc_tmp.bom_dtl
     docnotmp character(30) COLLATE pg_catalog."default",
 	idurut bigserial,
 	uniqueid text,
-    CONSTRAINT pk_tmp_bom_dtl PRIMARY KEY (docno,uniqueid,idurut)
+    CONSTRAINT pk_tmp_workingorder_bom_dtl PRIMARY KEY (docno,uniqueid,idurut,docref)
 )
 
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS sc_tmp.bom_dtl
+ALTER TABLE IF EXISTS sc_tmp.workingorder_bom_dtl
     OWNER to postgres;
 
 
 /* MST ATAU TRANSAKSI */
 
---drop table sc_trx.bom_mst;
-CREATE TABLE IF NOT EXISTS sc_trx.bom_mst
+--drop table sc_trx.workingorder_mst;
+CREATE TABLE IF NOT EXISTS sc_trx.workingorder_mst
 (
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
-    doctype character(20) default 'BOM' ,
+    doctype character(20) default 'WO' ,
+	cabang character (30 ) COLLATE pg_catalog."default",    
+    pemohon character(100) COLLATE pg_catalog."default",
+    docdate date,
+    docdatefinish date,
+    kdcustomer character(30) COLLATE pg_catalog."default",
+    nmcustomer character(250) COLLATE pg_catalog."default",
+    alamatcustomer TEXT,
+    docref character(30) COLLATE pg_catalog."default",
+    status character(6) COLLATE pg_catalog."default",
+    keterangan TEXT,
+    noso character(30),
+    inputby character varying(50) COLLATE pg_catalog."default",
+    inputdate timestamp without time zone,
+    updateby character varying(50) COLLATE pg_catalog."default",
+    updatedate timestamp without time zone,
+    docnotmp character(30) COLLATE pg_catalog."default",
+    CONSTRAINT pk_tmp_workingorder_mst PRIMARY KEY (docno)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS sc_trx.workingorder_mst
+    OWNER to postgres;
+
+
+--drop table sc_trx.workingorder_bom_mst;
+CREATE TABLE IF NOT EXISTS sc_trx.workingorder_bom_mst
+(
+    docno character(30) COLLATE pg_catalog."default" NOT NULL,
+    doctype character(20) default 'WO' ,
 	cabang character (30 ) COLLATE pg_catalog."default",    
     pemohon character(100) COLLATE pg_catalog."default",
     docdate date,
@@ -105,37 +163,36 @@ CREATE TABLE IF NOT EXISTS sc_trx.bom_mst
     nmbarang_jadi text,
     docref character(30) COLLATE pg_catalog."default",
     status character(6) COLLATE pg_catalog."default",
-    keterangan TEXT,
-	buildfor numeric(18,2),
+    buildfor numeric(18,2),
     ttlmaterial numeric(18,2),
     ttlcost numeric(18,2),
     ttlwip numeric(18,2),
     ttlprice numeric(18,2),
     buildunit character(30),
 	minimumqty numeric(18,2),
-	dari_bagian	character(30),
-	inactive BOOLEAN default false,
+    desc_bom TEXT,
     inputby character varying(50) COLLATE pg_catalog."default",
     inputdate timestamp without time zone,
     updateby character varying(50) COLLATE pg_catalog."default",
     updatedate timestamp without time zone,
     docnotmp character(30) COLLATE pg_catalog."default",
-    CONSTRAINT pk_tmp_bom_mst PRIMARY KEY (docno)
+    CONSTRAINT pk_tmp_workingorder_bom_mst PRIMARY KEY (docno, docref)
 )
 
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS sc_trx.bom_mst
+ALTER TABLE IF EXISTS sc_trx.workingorder_bom_mst
     OWNER to postgres;
 
 
---drop table sc_trx.bom_dtl;
-CREATE TABLE IF NOT EXISTS sc_trx.bom_dtl
+--drop table sc_trx.workingorder_bom_dtl;
+CREATE TABLE IF NOT EXISTS sc_trx.workingorder_bom_dtl
 (
 	docno character(30) COLLATE pg_catalog."default" NOT NULL,
-    doctype character(20) default 'BOM' ,
+    doctype character(20) default 'WO' ,
     doctype_detail character(20) default 'MATERIAL' ,
-    cabang character (30 ) COLLATE pg_catalog."default",    
+    cabang character (30 ) COLLATE pg_catalog."default",
+    docref character(30) COLLATE pg_catalog."default",    
     pemohon character(100) COLLATE pg_catalog."default",
     docdate date,
     idbarang character(50) COLLATE pg_catalog."default",
@@ -157,27 +214,27 @@ CREATE TABLE IF NOT EXISTS sc_trx.bom_dtl
     docnotmp character(30) COLLATE pg_catalog."default",
 	idurut integer,
 	uniqueid text,
-    CONSTRAINT pk_tmp_bom_dtl PRIMARY KEY (docno,uniqueid,idurut)
+    CONSTRAINT pk_tmp_workingorder_bom_dtl PRIMARY KEY (docno,uniqueid,idurut,docref)
 )
 
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS sc_trx.bom_dtl
+ALTER TABLE IF EXISTS sc_trx.workingorder_bom_dtl
     OWNER to postgres;
 
 
 -- =========================================
 -- DROP TRIGGER & FUNCTION
 -- =========================================
-DROP TRIGGER IF EXISTS tr_tmp_bom_mst
-ON sc_tmp.bom_mst;
+DROP TRIGGER IF EXISTS tr_tmp_workingorder_mst
+ON sc_tmp.workingorder_mst;
 
-DROP FUNCTION IF EXISTS sc_tmp.tr_tmp_bom_mst();
+DROP FUNCTION IF EXISTS sc_tmp.tr_tmp_workingorder_mst();
 
 -- =========================================
 -- FUNCTION TMP -> TRX
 -- =========================================
-CREATE OR REPLACE FUNCTION sc_tmp.tr_tmp_bom_mst()
+CREATE OR REPLACE FUNCTION sc_tmp.tr_tmp_workingorder_mst()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $BODY$
@@ -192,7 +249,7 @@ DECLARE
 
 BEGIN
 
-    RAISE NOTICE 'TMP BOM TRIGGER : %, OLD=%, NEW=%',
+    RAISE NOTICE 'TMP WO TRIGGER : %, OLD=%, NEW=%',
         NEW.docno,
         OLD.status,
         NEW.status;
@@ -219,7 +276,7 @@ BEGIN
 
             EXIT WHEN NOT EXISTS (
                 SELECT 1
-                FROM sc_trx.bom_mst
+                FROM sc_trx.workingorder_mst
                 WHERE TRIM(docno)=TRIM(v_new_docno)
             );
 
@@ -242,27 +299,21 @@ BEGIN
         -- =================================================
         -- INSERT MASTER
         -- =================================================
-        INSERT INTO sc_trx.bom_mst (
+        INSERT INTO sc_trx.workingorder_mst (
 
             docno,
             doctype,
             cabang,
             pemohon,
             docdate,
-            idbarang_jadi,
-            nmbarang_jadi,
+            docdatefinish,
+            kdcustomer,
+            nmcustomer,
+            alamatcustomer,
             docref,
             status,
             keterangan,
-            buildfor,
-            buildunit,
-            minimumqty,
-            ttlmaterial,
-            ttlcost,
-            ttlwip,
-            ttlprice,
-            dari_bagian,
-            inactive,
+            noso,
             inputby,
             inputdate,
             updateby,
@@ -277,38 +328,91 @@ BEGIN
             cabang,
             pemohon,
             docdate,
-            idbarang_jadi,
-            nmbarang_jadi,
+            docdatefinish,
+            kdcustomer,
+            nmcustomer,
+            alamatcustomer,
             docref,
             'F',
             keterangan,
-            buildfor,
-            buildunit,
-            minimumqty,
-            ttlmaterial,
-            ttlcost,
-            ttlwip,
-            ttlprice,
-            dari_bagian,
-            inactive,
+            noso,
             inputby,
             inputdate,
             updateby,
             updatedate,
             docnotmp
 
-        FROM sc_tmp.bom_mst
+        FROM sc_tmp.workingorder_mst
         WHERE TRIM(docno)=TRIM(OLD.docno);
+
+
+        -- =================================================
+        -- INSERT BOM HEADER
+        -- =================================================
+        INSERT INTO sc_trx.workingorder_bom_mst (
+
+            docno,
+            doctype,
+            cabang,
+            pemohon,
+            docdate,
+            idbarang_jadi,
+            nmbarang_jadi,
+            docref,
+            buildfor,
+            ttlmaterial,
+            ttlcost,
+            ttlwip,
+            ttlprice,
+            buildunit,
+            minimumqty,
+            status,
+            desc_bom,
+            inputby,
+            inputdate,
+            updateby,
+            updatedate,
+            docnotmp
+
+        )
+        SELECT
+
+            docno,
+            doctype,
+            cabang,
+            pemohon,
+            docdate,
+            idbarang_jadi,
+            nmbarang_jadi,
+            v_docno,
+            buildfor,
+            ttlmaterial,
+            ttlcost,
+            ttlwip,
+            ttlprice,
+            buildunit,
+            minimumqty,
+            'F',
+            desc_bom,
+            inputby,
+            inputdate,
+            updateby,
+            updatedate,
+            docnotmp
+
+        FROM sc_tmp.workingorder_bom_mst
+        WHERE TRIM(docref)=TRIM(OLD.docno);
 
         -- =================================================
         -- INSERT DETAIL
         -- =================================================
-        INSERT INTO sc_trx.bom_dtl (
+        INSERT INTO sc_trx.workingorder_bom_dtl (
 
             docno,
             doctype,
             doctype_detail,
             cabang,
+            docref,
             pemohon,
             docdate,
             
@@ -335,10 +439,11 @@ BEGIN
         )
         SELECT
 
-            v_docno,
+            docno,
             doctype,
             doctype_detail,
             cabang,
+            v_docno,
             pemohon,
             docdate,
             
@@ -362,16 +467,19 @@ BEGIN
             idurut,
             uniqueid
 
-        FROM sc_tmp.bom_dtl
-        WHERE TRIM(docno)=TRIM(OLD.docno);
+        FROM sc_tmp.workingorder_bom_dtl
+        WHERE TRIM(docref)=TRIM(OLD.docno);
 
         -- =================================================
         -- CLEAN TMP
         -- =================================================
-        DELETE FROM sc_tmp.bom_dtl
-        WHERE TRIM(docno)=TRIM(OLD.docno);
+        DELETE FROM sc_tmp.workingorder_bom_dtl
+        WHERE TRIM(docref)=TRIM(OLD.docno);
 
-        DELETE FROM sc_tmp.bom_mst
+        DELETE FROM sc_tmp.workingorder_bom_mst
+        WHERE TRIM(docref)=TRIM(OLD.docno);
+
+        DELETE FROM sc_tmp.workingorder_mst
         WHERE TRIM(docno)=TRIM(OLD.docno);
 
     -- =====================================================
@@ -384,36 +492,33 @@ BEGIN
         -- =================================================
         -- DELETE OLD TRX
         -- =================================================
-        DELETE FROM sc_trx.bom_dtl
-        WHERE TRIM(docno)=TRIM(NEW.docnotmp);
+        DELETE FROM sc_trx.workingorder_bom_dtl
+        WHERE TRIM(docref)=TRIM(NEW.docnotmp);
 
-        DELETE FROM sc_trx.bom_mst
+        DELETE FROM sc_trx.workingorder_bom_mst
+        WHERE TRIM(docref)=TRIM(NEW.docnotmp);
+
+        DELETE FROM sc_trx.workingorder_mst
         WHERE TRIM(docno)=TRIM(NEW.docnotmp);
 
         -- =================================================
         -- INSERT MASTER
         -- =================================================
-        INSERT INTO sc_trx.bom_mst (
+        INSERT INTO sc_trx.workingorder_mst (
 
             docno,
             doctype,
             cabang,
             pemohon,
             docdate,
-            idbarang_jadi,
-            nmbarang_jadi,
+            docdatefinish,
+            kdcustomer,
+            nmcustomer,
+            alamatcustomer,
             docref,
             status,
             keterangan,
-            buildfor,
-            buildunit,
-            minimumqty,
-            ttlmaterial,
-            ttlcost,
-            ttlwip,
-            ttlprice,
-            dari_bagian,
-            inactive,
+            noso,
             inputby,
             inputdate,
             updateby,
@@ -428,38 +533,90 @@ BEGIN
             cabang,
             pemohon,
             docdate,
-            idbarang_jadi,
-            nmbarang_jadi,
+            docdatefinish,
+            kdcustomer,
+            nmcustomer,
+            alamatcustomer,
             docref,
             'F',
             keterangan,
-            buildfor,
-            buildunit,
-            minimumqty,
-            ttlmaterial,
-            ttlcost,
-            ttlwip,
-            ttlprice,
-            dari_bagian,
-            inactive,
+            noso,
             inputby,
             inputdate,
             updateby,
             updatedate,
             docnotmp
 
-        FROM sc_tmp.bom_mst
+        FROM sc_tmp.workingorder_mst
         WHERE TRIM(docno)=TRIM(NEW.docno);
+
+        -- =================================================
+        -- INSERT BOM HEADER
+        -- =================================================
+        INSERT INTO sc_trx.workingorder_bom_mst (
+
+            docno,
+            doctype,
+            cabang,
+            pemohon,
+            docdate,
+            idbarang_jadi,
+            nmbarang_jadi,
+            docref,
+            buildfor,
+            ttlmaterial,
+            ttlcost,
+            ttlwip,
+            ttlprice,
+            buildunit,
+            minimumqty,
+            status,
+            desc_bom,
+            inputby,
+            inputdate,
+            updateby,
+            updatedate,
+            docnotmp
+
+        )
+        SELECT
+
+            docno,
+            doctype,
+            cabang,
+            pemohon,
+            docdate,
+            idbarang_jadi,
+            nmbarang_jadi,
+            NEW.docnotmp,
+            buildfor,
+            ttlmaterial,
+            ttlcost,
+            ttlwip,
+            ttlprice,
+            buildunit,
+            minimumqty,
+            'F',
+            desc_bom,
+            inputby,
+            inputdate,
+            updateby,
+            updatedate,
+            docnotmp
+
+        FROM sc_tmp.workingorder_bom_mst
+        WHERE TRIM(docref)=TRIM(OLD.docno);
 
         -- =================================================
         -- INSERT DETAIL
         -- =================================================
-        INSERT INTO sc_trx.bom_dtl (
+        INSERT INTO sc_trx.workingorder_bom_dtl (
 
             docno,
             doctype,
             doctype_detail,
             cabang,
+            docref,
             pemohon,
             docdate,
             
@@ -486,10 +643,11 @@ BEGIN
         )
         SELECT
 
-            NEW.docnotmp,
+            docno,
             doctype,
             doctype_detail,
             cabang,
+            NEW.docnotmp,
             pemohon,
             docdate,
             
@@ -513,16 +671,19 @@ BEGIN
             idurut,
             uniqueid
 
-        FROM sc_tmp.bom_dtl
-        WHERE TRIM(docno)=TRIM(NEW.docno);
+        FROM sc_tmp.workingorder_bom_dtl
+        WHERE TRIM(docref)=TRIM(NEW.docno);
 
         -- =================================================
         -- CLEAN TMP
         -- =================================================
-        DELETE FROM sc_tmp.bom_dtl
-        WHERE TRIM(docno)=TRIM(NEW.docno);
+        DELETE FROM sc_tmp.workingorder_bom_dtl
+        WHERE TRIM(docref)=TRIM(NEW.docno);
 
-        DELETE FROM sc_tmp.bom_mst
+        DELETE FROM sc_tmp.workingorder_bom_mst
+        WHERE TRIM(docref)=TRIM(NEW.docno);
+
+        DELETE FROM sc_tmp.workingorder_mst
         WHERE TRIM(docno)=TRIM(NEW.docno);
 
     -- =====================================================
@@ -531,15 +692,18 @@ BEGIN
     ELSIF UPPER(TRIM(OLD.status))='E'
        AND UPPER(TRIM(NEW.status))='C' THEN
 
-        UPDATE sc_trx.bom_mst
+        UPDATE sc_trx.workingorder_mst
         SET status='F'
         WHERE TRIM(docno)=TRIM(NEW.docnotmp);
 
-        DELETE FROM sc_tmp.bom_dtl
-        WHERE TRIM(docno)=TRIM(NEW.docno);
+        DELETE FROM sc_tmp.workingorder_bom_dtl
+        WHERE TRIM(docref)=TRIM(NEW.docno);
 
-        DELETE FROM sc_tmp.bom_mst
-        WHERE TRIM(docno)=TRIM(NEW.docno);
+        DELETE FROM sc_tmp.workingorder_bom_mst
+        WHERE TRIM(docref)=TRIM(NEW.docno);
+
+        DELETE FROM sc_tmp.workingorder_mst
+        WHERE TRIM(docref)=TRIM(NEW.docno);
 
     END IF;
 
@@ -551,33 +715,33 @@ $BODY$;
 -- =========================================
 -- TRIGGER
 -- =========================================
-CREATE TRIGGER tr_tmp_bom_mst
+CREATE TRIGGER tr_tmp_workingorder_mst
 AFTER UPDATE
-ON sc_tmp.bom_mst
+ON sc_tmp.workingorder_mst
 FOR EACH ROW
-EXECUTE FUNCTION sc_tmp.tr_tmp_bom_mst();
+EXECUTE FUNCTION sc_tmp.tr_tmp_workingorder_mst();
 
 
 
 -- =========================================
 -- DROP TRIGGER & FUNCTION
 -- =========================================
-DROP TRIGGER IF EXISTS tr_mst_bom_mst
-ON sc_trx.bom_mst;
+DROP TRIGGER IF EXISTS tr_mst_workingorder_mst
+ON sc_trx.workingorder_mst;
 
-DROP FUNCTION IF EXISTS sc_trx.tr_mst_bom_mst();
+DROP FUNCTION IF EXISTS sc_trx.tr_mst_workingorder_mst();
 
 -- =========================================
 -- FUNCTION TRX -> TMP
 -- =========================================
-CREATE OR REPLACE FUNCTION sc_trx.tr_mst_bom_mst()
+CREATE OR REPLACE FUNCTION sc_trx.tr_mst_workingorder_mst()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $BODY$
 
 BEGIN
 
-    RAISE NOTICE 'TRX BOM TRIGGER : %, OLD=%, NEW=%',
+    RAISE NOTICE 'TRX WO TRIGGER : %, OLD=%, NEW=%',
         NEW.docno,
         OLD.status,
         NEW.status;
@@ -591,7 +755,56 @@ BEGIN
         -- =================================================
         -- INSERT TMP MASTER
         -- =================================================
-        INSERT INTO sc_tmp.bom_mst (
+        INSERT INTO sc_tmp.workingorder_mst (
+
+            docno,
+            doctype,
+            cabang,
+            pemohon,
+            docdate,
+            docdatefinish,
+            kdcustomer,
+            nmcustomer,
+            alamatcustomer,
+            docref,
+            status,
+            keterangan,
+            noso,
+            inputby,
+            inputdate,
+            updateby,
+            updatedate,
+            docnotmp
+
+        )
+        SELECT
+
+            docno,
+            doctype,
+            cabang,
+            pemohon,
+            docdate,
+            docdatefinish,
+            kdcustomer,
+            nmcustomer,
+            alamatcustomer,
+            docref,
+            'E',
+            keterangan,
+            noso,
+            inputby,
+            inputdate,
+            updateby,
+            updatedate,
+            docno
+
+        FROM sc_trx.workingorder_mst
+        WHERE TRIM(docno)=TRIM(NEW.docno);
+
+        -- =================================================
+        -- INSERT TMP BOM MASTER
+        -- =================================================
+        INSERT INTO sc_tmp.workingorder_bom_mst (
 
             docno,
             doctype,
@@ -601,17 +814,15 @@ BEGIN
             idbarang_jadi,
             nmbarang_jadi,
             docref,
-            status,
-            keterangan,
             buildfor,
-            buildunit,
-            minimumqty,
             ttlmaterial,
             ttlcost,
             ttlwip,
             ttlprice,
-            dari_bagian,
-            inactive,
+            buildunit,
+            minimumqty,
+            status,
+            desc_bom,
             inputby,
             inputdate,
             updateby,
@@ -629,35 +840,34 @@ BEGIN
             idbarang_jadi,
             nmbarang_jadi,
             docref,
-            'E',
-            keterangan,
             buildfor,
-            buildunit,
-            minimumqty,
             ttlmaterial,
             ttlcost,
             ttlwip,
             ttlprice,
-            dari_bagian,
-            inactive,
+            buildunit,
+            minimumqty,
+            'E',
+            desc_bom,
             inputby,
             inputdate,
             updateby,
             updatedate,
-            docno
+            docref
 
-        FROM sc_trx.bom_mst
-        WHERE TRIM(docno)=TRIM(NEW.docno);
+        FROM sc_trx.workingorder_bom_mst
+        WHERE TRIM(docref)=TRIM(NEW.docno);
 
         -- =================================================
-        -- INSERT TMP DETAIL
+        -- INSERT TMP BOM DETAIL
         -- =================================================
-        INSERT INTO sc_tmp.bom_dtl (
+        INSERT INTO sc_tmp.workingorder_bom_dtl (
 
             docno,
             doctype,
             doctype_detail,
             cabang,
+            docref,
             pemohon,
             docdate,
             
@@ -687,6 +897,7 @@ BEGIN
             doctype,
             doctype_detail,
             cabang,
+            docref,
             pemohon,
             docdate,
             
@@ -706,11 +917,11 @@ BEGIN
             inputdate,
             updateby,
             updatedate,
-            docno,
+            docref,
             uniqueid
 
-        FROM sc_trx.bom_dtl
-        WHERE TRIM(docno)=TRIM(NEW.docno);
+        FROM sc_trx.workingorder_bom_dtl
+        WHERE TRIM(docref)=TRIM(NEW.docno);
 
     END IF;
 
@@ -722,8 +933,8 @@ $BODY$;
 -- =========================================
 -- TRIGGER
 -- =========================================
-CREATE TRIGGER tr_mst_bom_mst
+CREATE TRIGGER tr_mst_workingorder_mst
 AFTER UPDATE
-ON sc_trx.bom_mst
+ON sc_trx.workingorder_mst
 FOR EACH ROW
-EXECUTE FUNCTION sc_trx.tr_mst_bom_mst();
+EXECUTE FUNCTION sc_trx.tr_mst_workingorder_mst();

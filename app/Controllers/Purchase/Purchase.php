@@ -992,7 +992,7 @@ class Purchase extends BaseController
 
             return $this->response->setJSON([
                 'status'  => true,
-                'message' => 'Data Tax Detail berhasil dihapus'
+                'message' => 'Data PP Detail berhasil dihapus'
             ]);
 
         } catch (\Throwable $e) {

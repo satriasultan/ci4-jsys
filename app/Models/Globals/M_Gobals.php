@@ -440,6 +440,69 @@ group by docno order by docno asc");
                 $param
         ");
     }
+
+
+    function q_bom($param){
+        // return $this->db->query("select *, trim(docno) as id from sc_trx.salesorder where trim(status)='A' and coalesce(trim(docno),'')!='' $param ");
+        return $this->db->query("
+            SELECT DISTINCT 
+                bom.*, 
+                trim(bom.docno) as id 
+            FROM sc_trx.bom_mst bom              
+            WHERE (trim(bom.status) = 'F')
+                $param
+        ");
+    }
+
+    function q_woe($param){
+        // return $this->db->query("select *, trim(docno) as id from sc_trx.salesorder where trim(status)='A' and coalesce(trim(docno),'')!='' $param ");
+        return $this->db->query("
+            SELECT DISTINCT 
+                woe.*, 
+                trim(woe.docno) as id 
+            FROM sc_trx.woe woe              
+            WHERE (trim(woe.status) = 'F')
+                $param
+        ");
+    }
+
+    
+    function q_wo($param){
+        // return $this->db->query("select *, trim(docno) as id from sc_trx.salesorder where trim(status)='A' and coalesce(trim(docno),'')!='' $param ");
+        return $this->db->query("
+            SELECT DISTINCT 
+                wo.*, 
+                trim(wo.docno) as id 
+            FROM sc_trx.workingorder_mst wo              
+            WHERE (trim(wo.status) = 'F')
+                $param
+        ");
+    }
+
+    public function q_workingorder_bom($param)
+    {
+        return $this->db->query("
+            SELECT DISTINCT
+                bom.*,
+                trim(bom.docno) as id
+            FROM sc_trx.workingorder_bom_mst bom
+            WHERE 1=1
+            $param
+        ");
+    }
+
+    public function q_workingorder_item($param)
+    {
+        return $this->db->query("
+            SELECT
+                trim(a.idbarang) as id,
+                a.*
+            FROM sc_trx.workingorder_bom_dtl a
+            WHERE 1=1 AND TRIM(doctype_detail) = 'MATERIAL'
+            $param
+        ");
+    }
+
     function q_master_barang($param){
         return $this->db->query("select *, trim(idbarang) as id from sc_mst.mbarang where coalesce(trim(idbarang),'')!='' $param ");
     }

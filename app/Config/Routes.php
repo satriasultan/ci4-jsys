@@ -1054,6 +1054,8 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
     $routes->add('globalmodule/list_unit', 'Globalmodule::list_unit');
     $routes->add('globalmodule/list_subunit', 'Globalmodule::list_subunit');
     $routes->add('globalmodule/list_item', 'Globalmodule::list_item');
+    $routes->add('globalmodule/list_item_std_cost', 'Globalmodule::list_item_std_cost');
+    $routes->add('globalmodule/list_item_bom', 'Globalmodule::list_item_bom');
     $routes->add('globalmodule/list_supplier', 'Globalmodule::list_supplier');
     $routes->add('globalmodule/list_outstanding_po', 'Globalmodule::list_outstanding_po');
     $routes->add('globalmodule/list_user', 'Globalmodule::list_user');
@@ -1089,6 +1091,11 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
     $routes->add('globalmodule/list_lpb', 'Globalmodule::list_lpb');
 
     $routes->add('globalmodule/list_so', 'Globalmodule::list_so');
+    $routes->add('globalmodule/list_bom', 'Globalmodule::list_bom');
+    $routes->add('globalmodule/list_woe', 'Globalmodule::list_woe');
+    $routes->add('globalmodule/list_wo', 'Globalmodule::list_wo');
+    $routes->add('globalmodule/list_workingorder_bom', 'Globalmodule::list_workingorder_bom');
+    $routes->add('globalmodule/list_workingorder_item', 'Globalmodule::list_workingorder_item');
     $routes->add('globalmodule/get_tax_percent', 'Globalmodule::get_tax_percent');
 
     $routes->add('globalmodule/list_branchjob', 'Globalmodule::list_branchjob');
@@ -1299,15 +1306,165 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('save_bom_dtl', 'Production::save_bom_dtl');
     $routes->add('save_bom_mst', 'Production::save_bom_mst');
     $routes->add('clear_bom_Tmp', 'Production::clear_bom_Tmp');
-    $routes->add('list_tmp_bom_dtl', 'Production::list_tmp_bom_dtl');
-    $routes->add('list_mst_bom_dtl', 'Production::list_mst_bom_dtl');
+    $routes->add('list_tmp_bom_material_dtl', 'Production::list_tmp_bom_material_dtl');
+    $routes->add('list_trx_bom_material_dtl', 'Production::list_trx_bom_material_dtl');
+    $routes->add('list_tmp_bom_cost_dtl', 'Production::list_tmp_bom_cost_dtl');
+    $routes->add('list_trx_bom_cost_dtl', 'Production::list_trx_bom_cost_dtl');
+    $routes->add('list_tmp_bom_wip_dtl', 'Production::list_tmp_bom_wip_dtl');
+    $routes->add('list_trx_bom_wip_dtl', 'Production::list_trx_bom_wip_dtl');
     $routes->add('get_bom_dtl(:any)', 'Production::get_bom_dtl$1');
     $routes->add('final_input_bom', 'Production::final_input_bom');
+    $routes->add("delete_bom_detail", "Production::delete_bom_detail");
 
     /* BUILD OF MATERIAL */
     $routes->add('update_bom_(:any)', 'Production::update_bom_$1');
     $routes->add('detail_bom_(:any)','Production::detail_bom_$1');
     $routes->add('cancel_bom_(:any)','Production::cancel_bom_$1');
+
+
+
+    
+    /* WORKING ORDER */
+
+    $routes->add('workingorder', 'Production::workingorder');
+    $routes->add('list_workingorder_mst', 'Production::list_workingorder_mst');
+    $routes->add('add_workingorder', 'Production::add_workingorder');
+    $routes->get('showing_tmp_workingorder_mst(:any)', 'Production::showing_tmp_workingorder_mst$1');
+    $routes->get('showing_trx_workingorder_mst(:any)', 'Production::showing_trx_workingorder_mst$1');
+    $routes->add('getNextSuffix_workingorder_mst', 'Production::getNextSuffix_workingorder_mst');
+    $routes->add('save_workingorder_dtl', 'Production::save_workingorder_dtl');
+    $routes->add('save_workingorder_mst', 'Production::save_workingorder_mst');
+    $routes->add('save_update_workingorder_bom', 'Production::save_update_workingorder_bom');
+    
+    $routes->add('clear_workingorder_Tmp', 'Production::clear_workingorder_Tmp');
+    $routes->add('list_tmp_workingorder_bom_mst', 'Production::list_tmp_workingorder_bom_mst');
+    $routes->add('list_trx_workingorder_bom_mst', 'Production::list_trx_workingorder_bom_mst');
+    $routes->add('list_tmp_workingorder_material_dtl', 'Production::list_tmp_workingorder_material_dtl');
+    $routes->add('list_trx_workingorder_material_dtl', 'Production::list_trx_workingorder_material_dtl');
+    $routes->add('list_tmp_workingorder_cost_dtl', 'Production::list_tmp_workingorder_cost_dtl');
+    $routes->add('list_trx_workingorder_cost_dtl', 'Production::list_trx_workingorder_cost_dtl');
+    $routes->add('list_tmp_workingorder_wip_dtl', 'Production::list_tmp_workingorder_wip_dtl');
+    $routes->add('list_trx_workingorder_wip_dtl', 'Production::list_trx_workingorder_wip_dtl');
+    $routes->add('get_workingorder_dtl(:any)', 'Production::get_workingorder_dtl$1');
+    $routes->add('final_input_workingorder', 'Production::final_input_workingorder');
+    $routes->add("delete_workingorder_detail", "Production::delete_workingorder_detail");
+
+    /* BUILD OF MATERIAL */
+    $routes->add('update_workingorder_(:any)', 'Production::update_workingorder_$1');
+    $routes->add('detail_workingorder_(:any)','Production::detail_workingorder_$1');
+    $routes->add('cancel_workingorder_(:any)','Production::cancel_workingorder_$1');
+
+
+
+    //WOE
+    $routes->add('woe', 'Production::woe');
+    $routes->add('list_woe', 'Production::list_woe');
+    $routes->add('list_woe_apprv', 'Production::list_woe_apprv');
+
+    $routes->add('addWOE', 'Production::addWOE');
+    $routes->add('detailWOE', 'Production::detailWOE');
+    // $routes->add('showing_sikbsp_mst', 'Production::showing_sikbsp_mst');
+
+    $routes->add('clearEntryWOE', 'Production::clearEntryWOE');
+    $routes->add('finalEntryWOE', 'Production::finalEntryWOE');
+    $routes->add('showing_woetemp', 'Production::showing_woetemp');
+    $routes->add('updateStatusWOE', 'Production::updateStatusWOE');
+
+
+    $routes->add('save_woe_detail', 'Production::save_woe_detail');
+    $routes->get('updateWOE(:any)', 'Production::updateWOE$1');
+
+    $routes->add('deleteWOEDtl', 'Production::deleteWOEDtl');
+    $routes->add('show_woe', 'Production::show_woe');
+    $routes->add('api_woe(:any)', 'Production::api_woe$1');
+    $routes->add('showing_woetrx', 'Production::showing_woetrx');
+    $routes->add('getBranchInfoWOE', 'Production::getBranchInfoWOE');
+    $routes->add('getNextSuffixWOE', 'Production::getNextSuffixWOE');
+    $routes->add('initWOEHeader', 'Production::initWOEHeader');
+    $routes->add('saveWOEDetail', 'Production::saveWOEDetail');
+
+
+
+
+
+    /* Material Release */
+
+    $routes->add('materialrelease', 'Production::materialrelease');
+    $routes->add('list_materialrelease_mst', 'Production::list_materialrelease_mst');
+    $routes->add('add_materialrelease', 'Production::add_materialrelease');
+    $routes->get('showing_tmp_materialrelease_mst(:any)', 'Production::showing_tmp_materialrelease_mst$1');
+    $routes->get('showing_trx_materialrelease_mst(:any)', 'Production::showing_trx_materialrelease_mst$1');
+    $routes->add('getNextSuffix_materialrelease_mst', 'Production::getNextSuffix_materialrelease_mst');
+    $routes->add('save_materialrelease_dtl', 'Production::save_materialrelease_dtl');
+    $routes->add('save_materialrelease_mst', 'Production::save_materialrelease_mst');
+    $routes->add('save_materialrelease_from_wo', 'Production::save_materialrelease_from_wo');
+    $routes->add('clear_materialrelease_Tmp', 'Production::clear_materialrelease_Tmp');
+    $routes->add('list_tmp_materialrelease_dtl', 'Production::list_tmp_materialrelease_dtl');
+    $routes->add('list_trx_materialrelease_dtl', 'Production::list_trx_materialrelease_dtl');
+    $routes->add('get_materialrelease_dtl(:any)', 'Production::get_materialrelease_dtl$1');
+    $routes->add('final_input_materialrelease', 'Production::final_input_materialrelease');
+    $routes->add("delete_materialrelease_detail", "Production::delete_materialrelease_detail");
+
+    /* BUILD OF MATERIAL */
+    $routes->add('update_materialrelease_(:any)', 'Production::update_materialrelease_$1');
+    $routes->add('detail_materialrelease_(:any)','Production::detail_materialrelease_$1');
+    $routes->add('cancel_materialrelease_(:any)','Production::cancel_materialrelease_$1');
+
+
+
+
+    
+    /* Penerimaan Barang Produksi */
+
+    $routes->add('penerimaanbp', 'Production::penerimaanbp');
+    $routes->add('list_penerimaanbp_mst', 'Production::list_penerimaanbp_mst');
+    $routes->add('add_penerimaanbp', 'Production::add_penerimaanbp');
+    $routes->get('showing_tmp_penerimaanbp_mst(:any)', 'Production::showing_tmp_penerimaanbp_mst$1');
+    $routes->get('showing_trx_penerimaanbp_mst(:any)', 'Production::showing_trx_penerimaanbp_mst$1');
+    $routes->add('getNextSuffix_penerimaanbp_mst', 'Production::getNextSuffix_penerimaanbp_mst');
+    $routes->add('save_penerimaanbp_dtl', 'Production::save_penerimaanbp_dtl');
+    $routes->add('save_penerimaanbp_mst', 'Production::save_penerimaanbp_mst');
+    $routes->add('save_penerimaanbp_from_wo', 'Production::save_penerimaanbp_from_wo');
+    $routes->add('clear_penerimaanbp_Tmp', 'Production::clear_penerimaanbp_Tmp');
+    $routes->add('list_tmp_penerimaanbp_dtl', 'Production::list_tmp_penerimaanbp_dtl');
+    $routes->add('list_trx_penerimaanbp_dtl', 'Production::list_trx_penerimaanbp_dtl');
+    $routes->add('get_penerimaanbp_dtl(:any)', 'Production::get_penerimaanbp_dtl$1');
+    $routes->add('final_input_penerimaanbp', 'Production::final_input_penerimaanbp');
+    $routes->add("delete_penerimaanbp_detail", "Production::delete_penerimaanbp_detail");
+
+    /* BUILD OF MATERIAL */
+    $routes->add('update_penerimaanbp_(:any)', 'Production::update_penerimaanbp_$1');
+    $routes->add('detail_penerimaanbp_(:any)','Production::detail_penerimaanbp_$1');
+    $routes->add('cancel_penerimaanbp_(:any)','Production::cancel_penerimaanbp_$1');
+
+
+
+
+
+    
+    
+    /* Biaya Produksi Non Material */
+
+    $routes->add('biaya_produksi_non_material', 'Production::biaya_produksi_non_material');
+    $routes->add('list_bpnm_mst', 'Production::list_bpnm_mst');
+    $routes->add('add_bpnm', 'Production::add_bpnm');
+    $routes->get('showing_tmp_bpnm_mst(:any)', 'Production::showing_tmp_bpnm_mst$1');
+    $routes->get('showing_trx_bpnm_mst(:any)', 'Production::showing_trx_bpnm_mst$1');
+    $routes->add('getNextSuffix_bpnm_mst', 'Production::getNextSuffix_bpnm_mst');
+    $routes->add('save_bpnm_dtl', 'Production::save_bpnm_dtl');
+    $routes->add('save_bpnm_mst', 'Production::save_bpnm_mst');
+    $routes->add('save_bpnm_from_wo', 'Production::save_bpnm_from_wo');
+    $routes->add('clear_bpnm_Tmp', 'Production::clear_bpnm_Tmp');
+    $routes->add('list_tmp_bpnm_dtl', 'Production::list_tmp_bpnm_dtl');
+    $routes->add('list_trx_bpnm_dtl', 'Production::list_trx_bpnm_dtl');
+    $routes->add('get_bpnm_dtl(:any)', 'Production::get_bpnm_dtl$1');
+    $routes->add('final_input_bpnm', 'Production::final_input_bpnm');
+    $routes->add("delete_bpnm_detail", "Production::delete_bpnm_detail");
+
+    /* BUILD OF MATERIAL */
+    $routes->add('update_bpnm_(:any)', 'Production::update_bpnm_$1');
+    $routes->add('detail_bpnm_(:any)','Production::detail_bpnm_$1');
+    $routes->add('cancel_bpnm_(:any)','Production::cancel_bpnm_$1');
 });
 
 

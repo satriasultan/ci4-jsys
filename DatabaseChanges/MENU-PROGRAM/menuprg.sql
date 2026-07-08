@@ -243,8 +243,8 @@ INSERT INTO sc_mst.menuprg (
 ('JTS', 3, 'I.R.A.3', 'BILL OF MATERIAL (BOM)', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/bom', 'LEFT', 'NO'),
 ('JTS', 4, 'I.R.A.4', 'WORK ORDER', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/wo', 'LEFT', 'NO'),
 ('JTS', 5, 'I.R.A.5', 'WORK ORDER EXECUTION', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/woe', 'LEFT', 'NO'),
-('JTS', 6, 'I.R.A.6', 'SETOR ANTAR BAGIAN', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/setorbagian', 'LEFT', 'NO'),
-('JTS', 7, 'I.R.A.7', 'TERIMA ANTAR BAGIAN', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/terimabagian', 'LEFT', 'NO'),
-('JTS', 8, 'I.R.A.8', 'MATERIAL RELEASE', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/mr', 'LEFT', 'NO'),
-('JTS', 9, 'I.R.A.9', 'PENERIMAAN BRG PRODUKSI', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/pnm_produksi', 'LEFT', 'NO'),
+-- ('JTS', 6, 'I.R.A.6', 'SETOR ANTAR BAGIAN', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/setorbagian', 'LEFT', 'NO'),
+-- ('JTS', 7, 'I.R.A.7', 'TERIMA ANTAR BAGIAN', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/terimabagian', 'LEFT', 'NO'),
+('JTS', 8, 'I.R.A.8', 'MATERIAL RELEASE', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/materialrelease', 'LEFT', 'NO'),
+('JTS', 9, 'I.R.A.9', 'PENERIMAAN BRG PRODUKSI', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/penerimaanbp', 'LEFT', 'NO'),
 ('JTS', 10, 'I.R.A.10', 'BIAYA PROD NON MATERIAL', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/biaya_produksi_non_material', 'LEFT', 'NO');
