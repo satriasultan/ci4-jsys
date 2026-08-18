@@ -33,7 +33,7 @@ class Production extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.R.A.1'; $versirelease='I.R.A.1/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.R.A.1'; $versirelease='I.R.A.1/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -322,7 +322,7 @@ class Production extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.R.A.1'; $versirelease='I.R.A.1/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.R.A.1'; $versirelease='I.R.A.1/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -943,7 +943,7 @@ class Production extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('production/trans/standart_cost'));
         }
-        $kodemenu='I.R.A.1'; $versirelease='I.R.A.1/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.R.A.1'; $versirelease='I.R.A.1/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -1112,7 +1112,7 @@ class Production extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.R.A.2'; $versirelease='I.R.A.2/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.R.A.2'; $versirelease='I.R.A.2/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -1401,7 +1401,7 @@ class Production extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.R.A.2'; $versirelease='I.R.A.2/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.R.A.2'; $versirelease='I.R.A.2/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -2022,7 +2022,7 @@ class Production extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('production/trans/biaya_standart'));
         }
-        $kodemenu='I.R.A.2'; $versirelease='I.R.A.2/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.R.A.2'; $versirelease='I.R.A.2/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -2192,7 +2192,7 @@ class Production extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.R.A.3'; $versirelease='I.R.A.3/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.R.A.3'; $versirelease='I.R.A.3/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -2482,7 +2482,7 @@ class Production extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.R.A.3'; $versirelease='I.R.A.3/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.R.A.3'; $versirelease='I.R.A.3/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -3390,7 +3390,7 @@ class Production extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('production/trans/bom'));
         }
-        $kodemenu='I.R.A.3'; $versirelease='I.R.A.3/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.R.A.3'; $versirelease='I.R.A.3/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -3562,7 +3562,7 @@ class Production extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.R.A.4'; $versirelease='I.R.A.4/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.R.A.4'; $versirelease='I.R.A.4/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -3853,7 +3853,7 @@ class Production extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.R.A.4'; $versirelease='I.R.A.4/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.R.A.4'; $versirelease='I.R.A.4/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -4906,7 +4906,7 @@ class Production extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('production/trans/workingorder'));
         }
-        $kodemenu='I.R.A.4'; $versirelease='I.R.A.4/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.R.A.4'; $versirelease='I.R.A.4/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -5079,7 +5079,7 @@ class Production extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.R.A.5'; $versirelease='I.R.A.5/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.R.A.5'; $versirelease='I.R.A.5/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -5143,7 +5143,7 @@ class Production extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('production/trans/woe'));
         }
-        $kodemenu='I.R.A.5'; $versirelease='I.R.A.5/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.R.A.5'; $versirelease='I.R.A.5/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -5405,7 +5405,7 @@ class Production extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.R.A.5'; $versirelease='I.R.A.5/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.R.A.5'; $versirelease='I.R.A.5/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -6205,7 +6205,7 @@ class Production extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.R.A.8'; $versirelease='I.R.A.8/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.R.A.8'; $versirelease='I.R.A.8/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -6495,7 +6495,7 @@ class Production extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.R.A.8'; $versirelease='I.R.A.8/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.R.A.8'; $versirelease='I.R.A.8/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -7494,7 +7494,7 @@ class Production extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('production/trans/materialrelease'));
         }
-        $kodemenu='I.R.A.8'; $versirelease='I.R.A.8/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.R.A.8'; $versirelease='I.R.A.8/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -7679,7 +7679,7 @@ class Production extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.R.A.9'; $versirelease='I.R.A.9/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.R.A.9'; $versirelease='I.R.A.9/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -7969,7 +7969,7 @@ class Production extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.R.A.9'; $versirelease='I.R.A.9/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.R.A.9'; $versirelease='I.R.A.9/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -9023,7 +9023,7 @@ class Production extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('production/trans/penerimaanbp'));
         }
-        $kodemenu='I.R.A.9'; $versirelease='I.R.A.9/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.R.A.9'; $versirelease='I.R.A.9/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -9205,7 +9205,7 @@ class Production extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.R.A.10'; $versirelease='I.R.A.10/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.R.A.10'; $versirelease='I.R.A.10/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -9495,7 +9495,7 @@ class Production extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.R.A.10'; $versirelease='I.R.A.10/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.R.A.10'; $versirelease='I.R.A.10/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -10562,7 +10562,7 @@ class Production extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('production/trans/biaya_produksi_non_material'));
         }
-        $kodemenu='I.R.A.10'; $versirelease='I.R.A.10/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.R.A.10'; $versirelease='I.R.A.10/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];

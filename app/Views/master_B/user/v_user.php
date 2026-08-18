@@ -6,7 +6,7 @@
     <div class="col-md-7 align-self-center text-end">
         <div class="d-flex justify-content-end align-items-center">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><i style="color:transparent;"><?php echo $t; ?></i> Versi: <?php echo $version.''; ?></li>
+                <li class="breadcrumb-item"><i style="color:transparent;"><?php echo $t; ?></i> Menu ID <?php echo $version.''; ?></li>
                 <li><i class=""></i> - </li>
                 <input type="hidden" id="classmenu" value="<?= str_replace('.','_',$kodemenu) ?>" required>
                 <?php foreach ($y as $y1) { ?>

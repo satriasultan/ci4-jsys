@@ -13,7 +13,7 @@ class Location extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.M.B.1'; $versirelease='I.M.B.1/BETA.001'; $releasedate=date('2022-04-12 00:00:00');
+        $kodemenu='I.M.B.1'; $versirelease='I.M.B.1/01'; $releasedate=date('2022-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -165,7 +165,7 @@ class Location extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.M.B.2'; $versirelease='I.M.B.2/BETA.001'; $releasedate=date('2022-04-12 00:00:00');
+        $kodemenu='I.M.B.2'; $versirelease='I.M.B.2/01'; $releasedate=date('2022-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -488,7 +488,7 @@ class Location extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.M.B.4'; $versirelease='I.M.B.4/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.M.B.4'; $versirelease='I.M.B.4/01'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -614,7 +614,7 @@ class Location extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.M.B.5'; $versirelease='I.M.B.5/BETA.001'; $releasedate=date('2022-04-12 00:00:00');
+        $kodemenu='I.M.B.5'; $versirelease='I.M.B.5/01'; $releasedate=date('2022-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];

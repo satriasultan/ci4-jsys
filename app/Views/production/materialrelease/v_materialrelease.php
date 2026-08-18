@@ -12,7 +12,7 @@
 
                 <!-- VERSION -->
                 <div style="margin-right: 10px; font-size: 13px;">
-                    Versi: <?php echo $version; ?>
+                    Menu ID <?php echo $version; ?>
                 </div>
 
                 <!-- BREADCRUMB -->

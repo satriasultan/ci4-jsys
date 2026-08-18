@@ -18,7 +18,7 @@ class Finance extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.K.A.1'; $versirelease='I.K.A.1/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.K.A.1'; $versirelease='I.K.A.1/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -82,7 +82,7 @@ class Finance extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('ka/accounting/jup'));
         }
-        $kodemenu='I.K.A.1'; $versirelease='I.K.A.1/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.K.A.1'; $versirelease='I.K.A.1/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -367,7 +367,7 @@ class Finance extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.K.A.1'; $versirelease='I.K.A.1/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.K.A.1'; $versirelease='I.K.A.1/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -1570,7 +1570,7 @@ class Finance extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.K.B.1'; $versirelease='I.K.B.1/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.K.B.1'; $versirelease='I.K.B.1/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -1634,7 +1634,7 @@ class Finance extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('ka/finance/umt'));
         }
-        $kodemenu='I.K.B.1'; $versirelease='I.K.B.1/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.K.B.1'; $versirelease='I.K.B.1/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -1919,7 +1919,7 @@ class Finance extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.K.B.1'; $versirelease='I.K.B.1/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.K.B.1'; $versirelease='I.K.B.1/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -2720,7 +2720,7 @@ class Finance extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.K.B.2'; $versirelease='I.K.B.2/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.K.B.2'; $versirelease='I.K.B.2/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -2784,7 +2784,7 @@ class Finance extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('ka/finance/penerimaankb'));
         }
-        $kodemenu='I.K.B.2'; $versirelease='I.K.B.2/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.K.B.2'; $versirelease='I.K.B.2/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -3073,7 +3073,7 @@ class Finance extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.K.B.2'; $versirelease='I.K.B.2/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.K.B.2'; $versirelease='I.K.B.2/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -4424,7 +4424,7 @@ class Finance extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.K.B.3'; $versirelease='I.K.B.3/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.K.B.3'; $versirelease='I.K.B.3/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -4488,7 +4488,7 @@ class Finance extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('ka/finance/pengeluarankb'));
         }
-        $kodemenu='I.K.B.3'; $versirelease='I.K.B.3/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.K.B.3'; $versirelease='I.K.B.3/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -4777,7 +4777,7 @@ class Finance extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.K.B.3'; $versirelease='I.K.B.3/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.K.B.3'; $versirelease='I.K.B.3/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];

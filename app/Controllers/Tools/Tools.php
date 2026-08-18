@@ -17,7 +17,7 @@ class Tools extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.T.A.1'; $versirelease='I.T.A.1/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.T.A.1'; $versirelease='I.T.A.1/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -155,7 +155,7 @@ class Tools extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.T.A.2'; $versirelease='I.T.A.2/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.T.A.2'; $versirelease='I.T.A.2/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -219,7 +219,7 @@ class Tools extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('tools/settingawal/saldoawalhp'));
         }
-        $kodemenu='I.T.A.2'; $versirelease='I.T.A.2/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.T.A.2'; $versirelease='I.T.A.2/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -459,7 +459,7 @@ class Tools extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.T.A.2'; $versirelease='I.T.A.2/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.T.A.2'; $versirelease='I.T.A.2/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -1808,7 +1808,7 @@ class Tools extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.T.A.3'; $versirelease='I.T.A.3/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.T.A.3'; $versirelease='I.T.A.3/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -1948,7 +1948,7 @@ class Tools extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.T.B.1'; $versirelease='I.T.B.1/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.T.B.1'; $versirelease='I.T.B.1/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -2203,7 +2203,7 @@ class Tools extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.T.B.3'; $versirelease='I.T.B.3/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.T.B.3'; $versirelease='I.T.B.3/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -2388,7 +2388,7 @@ class Tools extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.T.C.1'; $versirelease='I.T.C.1/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.T.C.1'; $versirelease='I.T.C.1/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];

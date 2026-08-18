@@ -14,77 +14,150 @@ CREATE TABLE sc_mst.batch (
     created_by VARCHAR(20)
 );
 
+
 -- =========================================
--- STOCK BALANCE (FIXED)
+-- STOCK BALANCE
 -- =========================================
+
+
 DROP TABLE IF EXISTS sc_trx.stkblc CASCADE;
 
-CREATE TABLE sc_trx.stkblc (
-    idlocation VARCHAR(12) NOT NULL,
-    idarea VARCHAR(30) NOT NULL,
-    batch VARCHAR(100) DEFAULT '',
-    idbarang VARCHAR(20) NOT NULL,
-    trxdate TIMESTAMP NOT NULL,
-    doctype VARCHAR(20) NOT NULL,
-    docno VARCHAR(20) NOT NULL,
-    docref VARCHAR(20) NOT NULL,
+CREATE TABLE sc_trx.stkblc
+(
+    idlocation      VARCHAR(12) NOT NULL,
+    idarea          VARCHAR(30) NOT NULL,
+    batch           VARCHAR(100) DEFAULT '',
+    idbarang        VARCHAR(20) NOT NULL,
 
-    qty_in NUMERIC(18,2) DEFAULT 0,
-    qty_out NUMERIC(18,2) DEFAULT 0,
-    qty_sld NUMERIC(18,2) DEFAULT 0,
+    trxdate         TIMESTAMP NOT NULL,
 
-    hist VARCHAR(50) NOT NULL,
-    ctype VARCHAR(50) NOT NULL,
+    doctype         VARCHAR(20) NOT NULL,
+    docno           VARCHAR(20) NOT NULL,
+    docref          VARCHAR(20) NOT NULL,
 
-    pricelst_in NUMERIC(18,2) DEFAULT 0,
-    pricelst_out NUMERIC(18,2) DEFAULT 0,
-    pricelst_sld NUMERIC(18,2) DEFAULT 0,
+    qty_in          NUMERIC(18,2) DEFAULT 0,
+    qty_out         NUMERIC(18,2) DEFAULT 0,
+    qty_sld         NUMERIC(18,2) DEFAULT 0,
 
-    currcode CHAR(3) DEFAULT 'IDR',
-    currvalue NUMERIC(18,4) DEFAULT 1,
+    hist            VARCHAR(50) NOT NULL,
+    ctype           VARCHAR(50) NOT NULL,
 
-    is_posted BOOLEAN DEFAULT FALSE,
-    posted_at TIMESTAMP,
+    pricelst_in     NUMERIC(18,2) DEFAULT 0,
+    pricelst_out    NUMERIC(18,2) DEFAULT 0,
+    pricelst_sld    NUMERIC(18,2) DEFAULT 0,
 
-    picby VARCHAR(20),
-    unit VARCHAR(12),
-    subunit VARCHAR(12),
-    description TEXT,
+    currcode        CHAR(3) DEFAULT 'IDR',
+    currvalue       NUMERIC(18,4) DEFAULT 1,
 
-    idsort BIGSERIAL,
+    tax             NUMERIC(18,2) DEFAULT 0,
+    disc            NUMERIC(18,2) DEFAULT 0,
+    biaya           NUMERIC(18,2) DEFAULT 0,
 
-    CONSTRAINT pk_sc_trx_stkblc 
-    PRIMARY KEY (idlocation, idarea, batch, idbarang, trxdate, doctype, docno, docref, hist, ctype)
+    idgroup         VARCHAR(6),
+    grouptype       VARCHAR(20) DEFAULT 'STOCK',
+
+    is_posted       BOOLEAN DEFAULT FALSE,
+    posted_at       TIMESTAMP,
+
+    picby           VARCHAR(20),
+    unit            VARCHAR(12),
+    subunit         VARCHAR(12),
+
+    description     TEXT,
+
+    created_at      TIMESTAMP WITHOUT TIME ZONE,
+    created_by      CHAR(20),
+
+    status          CHAR(4) DEFAULT 'F',
+
+    -- =========================================
+    -- UNIQUE ID DETAIL
+    -- =========================================
+    uniqueid        TEXT NOT NULL DEFAULT '',
+
+    idsort          BIGSERIAL,
+
+    -- =========================================
+    -- PRIMARY KEY
+    -- =========================================
+    CONSTRAINT pk_sc_trx_stkblc
+    PRIMARY KEY
+    (
+        idlocation,
+        idarea,
+        batch,
+        idbarang,
+        trxdate,
+        doctype,
+        docno,
+        docref,
+        hist,
+        ctype,
+        uniqueid
+    ),
+
+    -- =========================================
+    -- UNIQUE KEY UNTUK UPSERT
+    -- =========================================
+    CONSTRAINT uq_stkblc_doc_item_location_batch_uniqueid
+    UNIQUE
+    (
+        docno,
+        idbarang,
+        idlocation,
+        batch,
+        uniqueid
+    )
 );
-ALTER TABLE sc_trx.stkblc
-ADD COLUMN tax NUMERIC(18,2) DEFAULT 0,
-ADD COLUMN disc NUMERIC(18,2) DEFAULT 0,
-ADD COLUMN biaya NUMERIC(18,2) DEFAULT 0;
 
-ALTER TABLE sc_trx.stkblc
-ADD COLUMN created_at timestamp without time ZONE,
-ADD COLUMN created_by character(20);
+-- =========================================
+-- INDEX PERFORMANCE
+-- =========================================
 
-ALTER TABLE sc_trx.stkblc
-ADD COLUMN idgroup VARCHAR(6);
+CREATE INDEX idx_stk_doc
+ON sc_trx.stkblc
+(
+    docno,
+    doctype
+);
 
-ALTER TABLE sc_trx.stkblc
-ADD COLUMN grouptype VARCHAR(20) DEFAULT 'STOCK';
-
-ALTER TABLE sc_trx.stkblc
-ADD COLUMN tax NUMERIC(18,2) DEFAULT 0,
-ADD COLUMN disc NUMERIC(18,2) DEFAULT 0,
-ADD COLUMN biaya NUMERIC(18,2) DEFAULT 0;
-
-alter table sc_trx.stkblc add column status character(4) default 'F' ;
-alter table sc_trx.stkblc add column uniqueid text default '' ;
+CREATE INDEX idx_stk_posted
+ON sc_trx.stkblc
+(
+    is_posted
+);
 
 
--- INDEX (PERFORMANCE)
-CREATE INDEX idx_stk_doc ON sc_trx.stkblc(docno, doctype);
-CREATE INDEX idx_stk_posted ON sc_trx.stkblc(is_posted);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_stkblc_unique
-ON sc_trx.stkblc (docno,idbarang,idlocation,batch);
+
+
+
+
+-- =========================================
+-- INDEX PERFORMANCE
+-- =========================================
+
+CREATE INDEX idx_stk_doc
+ON sc_trx.stkblc (
+    docno,
+    doctype
+);
+
+CREATE INDEX idx_stk_posted
+ON sc_trx.stkblc (
+    is_posted
+);
+
+CREATE UNIQUE INDEX idx_stkblc_unique
+ON sc_trx.stkblc
+(
+    docno,
+    idbarang,
+    idlocation,
+    batch,
+    uniqueid
+);
+
+
 
 
 -- =========================================

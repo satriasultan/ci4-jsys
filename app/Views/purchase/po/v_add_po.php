@@ -72,7 +72,7 @@
             </div><!-- /.col -->
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
-                    <div class="float-right" style="margin-right: 10px;vertical-align:middle;padding-top: 0.7%;"><i style="color:transparent;"><?php echo $t; ?></i> Versi: <?php echo $version; ?></div>
+                    <div class="float-right" style="margin-right: 10px;vertical-align:middle;padding-top: 0.7%;"><i style="color:transparent;"><?php echo $t; ?></i> Menu ID <?php echo $version; ?></div>
                     <input type="hidden" id="classmenu" value="<?= str_replace('.','_',$kodemenu) ?>" required>
                     <?php foreach ($y as $y1) { ?>
                         <?php if( trim($y1->kodemenu)!=trim($kodemenu)) { ?>
@@ -646,11 +646,27 @@
                         <div class="col-md-2">
                             <div class="form-group">
                                 <label>Harga</label>
-                                <input type="text"
-                                        name="harga"
-                                        id="harga"
-                                        class="form-control jtsseparator ratakanan"
-                                        placeholder="0.00">
+
+                                <div class="input-group">
+
+                                    <input type="text"
+                                           name="harga"
+                                           id="harga"
+                                           class="form-control jtsseparator ratakanan"
+                                           placeholder="0.00">
+
+                                    <button type="button"
+                                            class="btn btn-info"
+                                            id="btnHistoryHarga"
+                                            onclick="showHistoryHarga()"
+                                            title="History Harga">
+
+                                        <i class="fa fa-history"></i>
+
+                                    </button>
+
+                                </div>
+
                             </div>
                         </div>
                         <!-- <div class="col-md-2">
@@ -719,7 +735,93 @@
     </div>
 </div>
 
+<!-- =========================================================
+     MODAL HISTORY HARGA
+========================================================= -->
+<div class="modal fade" id="modalHistoryHarga" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
 
+            <div class="modal-header bg-info">
+                <h5 class="modal-title text-white">
+                    <i class="fa fa-history"></i> History Harga
+                </h5>
+
+                <button type="button"
+                        class="close text-white"
+                        data-bs-dismiss="modal">
+
+                    <span>&times;</span>
+
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+                <div class="row mb-3">
+
+                    <div class="col-md-4">
+                        <label>ID Barang</label>
+                        <input type="text"
+                               id="history_idbarang"
+                               class="form-control"
+                               readonly>
+                    </div>
+
+                    <div class="col-md-8">
+                        <label>Nama Barang</label>
+                        <input type="text"
+                               id="history_nmbarang"
+                               class="form-control"
+                               readonly>
+                    </div>
+
+                </div>
+
+                <div class="table-responsive">
+
+                    <table class="table table-bordered table-hover">
+
+                        <thead class="bg-primary text-white">
+
+                        <tr>
+
+                            <th width="5%">No</th>
+                            <th width="12%">Tanggal</th>
+                            <th>No PO</th>
+                            <th>Supplier</th>
+                            <th width="18%" class="text-end">Harga</th>
+                            <th width="8%">Curr</th>
+                            <th width="8%">Pilih</th>
+
+                        </tr>
+
+                        </thead>
+
+                        <tbody id="bodyHistoryHarga">
+
+                        <tr>
+
+                            <td colspan="7"
+                                class="text-center">
+
+                                Belum ada data
+
+                            </td>
+
+                        </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+</div>
 
 <script type="application/javascript" src="<?= base_url('assets/pagejs/purchase/po.js') ?>"></script>
 <script type="text/javascript">

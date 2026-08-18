@@ -15,7 +15,7 @@ class Purchase extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.P.A.1'; $versirelease='I.P.A.1/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.P.A.1'; $versirelease='I.P.A.1/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -79,7 +79,7 @@ class Purchase extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('purchase/trans/pp'));
         }
-        $kodemenu='I.P.A.1'; $versirelease='I.P.A.1/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.P.A.1'; $versirelease='I.P.A.1/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -553,7 +553,7 @@ class Purchase extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.P.A.1'; $versirelease='I.P.A.1/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.P.A.1'; $versirelease='I.P.A.1/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -1285,7 +1285,7 @@ class Purchase extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.P.A.2'; $versirelease='I.P.A.2/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.P.A.2'; $versirelease='I.P.A.2/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -1349,7 +1349,7 @@ class Purchase extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('purchase/trans/voidpp'));
         }
-        $kodemenu='I.P.A.2'; $versirelease='I.P.A.2/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.P.A.2'; $versirelease='I.P.A.2/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -1592,7 +1592,7 @@ class Purchase extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.P.A.2'; $versirelease='I.P.A.2/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.P.A.2'; $versirelease='I.P.A.2/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -2347,7 +2347,7 @@ class Purchase extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.P.A.3'; $versirelease='I.P.A.3/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.P.A.3'; $versirelease='I.P.A.3/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -2411,7 +2411,7 @@ class Purchase extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('purchase/trans/po'));
         }
-        $kodemenu='I.P.A.3'; $versirelease='I.P.A.3/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.P.A.3'; $versirelease='I.P.A.3/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -2647,197 +2647,430 @@ class Purchase extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-    
-    function list_po_apprv(){
+
+    public function list_po_apprv()
+    {
         $list = $this->m_purchase->get_t_front_po_apprv_view();
+
         $data = array();
+
         $no = $_POST['start'];
 
-
         $kmenu = 'I.P.A.3';
-        $nama=trim($this->session->get('nama'));
-        $role=trim($this->session->get('roleid'));
 
-        $datadtl['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
-        $dataanu['userinfo'] = $this->m_user->getUser(" and username='$nama'")->getRowArray();
+        $nama = trim($this->session->get('nama'));
+        $role = trim($this->session->get('roleid'));
 
-        $canUpdate = isset($datadtl['dtl_akses']['a_update']) && trim($datadtl['dtl_akses']['a_update']) === 't';
-        $canPrint = isset($datadtl['dtl_akses']['a_report']) && trim($datadtl['dtl_akses']['a_report']) === 't';
-        $canView = isset($datadtl['dtl_akses']['a_view']) && trim($datadtl['dtl_akses']['a_view']) === 't';
-        $canApprove = isset($datadtl['dtl_akses']['a_approve1']) && trim($datadtl['dtl_akses']['a_approve1']) === 't';
+        // =====================================================
+        // HAK AKSES
+        // =====================================================
+        $datadtl['dtl_akses'] =
+            $this->m_role
+                ->detail_user_akses($role, $kmenu)
+                ->getRowArray();
 
+        $dataanu['userinfo'] =
+            $this->m_user
+                ->getUser(" and username='$nama'")
+                ->getRowArray();
+
+        $canUpdate =
+            isset($datadtl['dtl_akses']['a_update']) &&
+            trim($datadtl['dtl_akses']['a_update']) === 't';
+
+        $canPrint =
+            isset($datadtl['dtl_akses']['a_report']) &&
+            trim($datadtl['dtl_akses']['a_report']) === 't';
+
+        $canView =
+            isset($datadtl['dtl_akses']['a_view']) &&
+            trim($datadtl['dtl_akses']['a_view']) === 't';
+
+        $canApprove =
+            isset($datadtl['dtl_akses']['a_approve1']) &&
+            trim($datadtl['dtl_akses']['a_approve1']) === 't';
+
+
+        // =====================================================
+        // LOOP DATA
+        // =====================================================
         foreach ($list as $lm) {
+
+            // =================================================
+            // STATUS
+            // =================================================
+            $status = strtoupper(trim(
+                $lm->status_desc ?? $lm->status ?? ''
+            ));
+
+
+            // =================================================
+            // HANYA FINAL USER
+            // STATUS LAIN TIDAK DITAMPILKAN
+            // =================================================
+            if ($status !== 'FINAL USER') {
+                continue;
+            }
+
+
+            // =================================================
+            // NOMOR
+            // =================================================
             $no++;
+
             $row = array();
 
-            $status = strtoupper(trim($lm->status_desc));
-            $docno  = trim($lm->docno);
+
+            // =================================================
+            // DOCNO
+            // =================================================
+            $docno = trim($lm->docno);
+
             $docnoHex = bin2hex($docno);
 
-            
-            $updateBtn = '';
-            $detailBtn = '';
-            $printBtn  = '';
-            $approveBtn  = '';
-            $disapproveBtn  = '';
 
-            // =========================
-            // Build button by access
-            // =========================
+            // =================================================
+            // RESET BUTTON
+            // =================================================
+            $updateBtn     = '';
+            $detailBtn     = '';
+            $printBtn      = '';
+            $approveBtn    = '';
+            $disapproveBtn = '';
 
-            if ($canUpdate && $status != "REVISION/EDITING" && $status != "APPROVED") {
+
+            // =================================================
+            // UPDATE
+            // =================================================
+            if (
+                $canUpdate &&
+                $status !== 'REVISION/EDITING' &&
+                $status !== 'APPROVED'
+            ) {
+
                 $updateBtn = '
-                <a class="dropdown-item bg-warning" 
-                    href="' . base_url('purchase/trans/updatePO') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Update This PO : ' . $docno . '\')">
-                    <i class="fa fa-edit"></i> Update PO 
-                </a>';
+                <a
+                    class="dropdown-item bg-warning"
+                    href="' .
+                    base_url('purchase/trans/updatePO') .
+                    '/?id=' . $docnoHex .
+                    '&docno=' . $docnoHex . '"
+                    onclick="return confirm(\'Update This PO : ' .
+                    htmlspecialchars($docno, ENT_QUOTES) .
+                    '\')"
+                >
+                    <i class="fa fa-edit"></i>
+                    Update PO
+                </a>
+            ';
             }
 
-            if($canView){
-                $detailBtn = 
-                '<a class="dropdown-item" 
-                    style="background-color:#3badf6;" 
-                    href="' . base_url('purchase/trans/detailPO') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'View Detail PO : ' . $docno . '\')">
-                    <i class="fa fa-eye"></i> Detail PO 
-                </a>';
+
+            // =================================================
+            // DETAIL
+            // =================================================
+            if ($canView) {
+
+                $detailBtn = '
+                <a
+                    class="dropdown-item"
+                    style="background-color:#3badf6;"
+                    href="' .
+                    base_url('purchase/trans/detailPO') .
+                    '/?id=' . $docnoHex .
+                    '&docno=' . $docnoHex . '"
+                    onclick="return confirm(\'View Detail PO : ' .
+                    htmlspecialchars($docno, ENT_QUOTES) .
+                    '\')"
+                >
+                    <i class="fa fa-eye"></i>
+                    Detail PO
+                </a>
+            ';
             }
 
-            if($canPrint){
+
+            // =================================================
+            // PRINT
+            // =================================================
+            if ($canPrint) {
+
                 $printBtn = '
-                <a class="dropdown-item" 
-                    style="background-color:#00ff8e;" 
-                    href="' . base_url('purchase/trans/show_po') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Print PO : ' . $docno . '\')">
-                    <i class="fa fa-print"></i> Print PO 
-                </a>';
+                <a
+                    class="dropdown-item"
+                    style="background-color:#00ff8e;"
+                    href="' .
+                    base_url('purchase/trans/show_po') .
+                    '/?id=' . $docnoHex .
+                    '&docno=' . $docnoHex . '"
+                    onclick="return confirm(\'Print PO : ' .
+                    htmlspecialchars($docno, ENT_QUOTES) .
+                    '\')"
+                >
+                    <i class="fa fa-print"></i>
+                    Print PO
+                </a>
+            ';
             }
 
 
-            if (trim($status) !== 'APPROVED' && trim($status) !== 'REVISION/EDITING') {
-                    $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
-                        <i class="fa fa-check-circle"></i> Approve</a>';
+            // =================================================
+            // APPROVE
+            // =================================================
+            if (
+                $canApprove &&
+                $status !== 'APPROVED' &&
+                $status !== 'REVISION/EDITING'
+            ) {
+
+                $approveBtn = '
+                <a
+                    class="dropdown-item bg-success"
+                    href="#"
+                    onclick="setToApproved(\'' .
+                    htmlspecialchars($docno, ENT_QUOTES) .
+                    '\'); return false;"
+                >
+                    <i class="fa fa-check-circle"></i>
+                    Approve
+                </a>
+            ';
             }
 
-            if (trim($status) == 'APPROVED') {
-                $disapproveBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToDisapproved(\'' . trim($lm->docno) . '\');">
-                    <i class="fa fa-times-circle"></i> Disapprove</a>';
+
+            // =================================================
+            // DISAPPROVE
+            // =================================================
+            if (
+                $canApprove &&
+                $status === 'APPROVED'
+            ) {
+
+                $disapproveBtn = '
+                <a
+                    class="dropdown-item bg-danger"
+                    href="#"
+                    onclick="setToDisapproved(\'' .
+                    htmlspecialchars($docno, ENT_QUOTES) .
+                    '\'); return false;"
+                >
+                    <i class="fa fa-times-circle"></i>
+                    Disapprove
+                </a>
+            ';
             }
 
 
+            // =================================================
+            // MENU
+            // =================================================
             $menuContent = '';
 
-            if ($status === 'CETAK/PRINT') {
-
-                // hanya detail jika ada akses
-                if ($canView) {
-                    $menuContent .= $detailBtn;
-                    $menuContent .= $printBtn;
-                }
-
-            } else {
-
-                // selain status tersebut → tampilkan sesuai hak akses
-                // if ($canUpdate) $menuContent .= $updateBtn;
-                // if ($canPrint)  $menuContent .= $printBtn;
-                if ($canView)   $menuContent .= $detailBtn;
-                if ($canApprove)   $menuContent .= $approveBtn;
-                if ($canApprove)   $menuContent .= $disapproveBtn;
+            // Karena hanya FINAL USER yang boleh masuk,
+            // langsung gunakan hak akses yang sama.
+            if ($canUpdate) {
+                $menuContent .= $updateBtn;
             }
 
-            // =========================
-            // Final Dropdown (jangan tampil kalau kosong)
-            // =========================
+            if ($canView) {
+                $menuContent .= $detailBtn;
+            }
+
+            if ($canPrint) {
+                $menuContent .= $printBtn;
+            }
+
+            if ($canApprove) {
+                $menuContent .= $approveBtn;
+                $menuContent .= $disapproveBtn;
+            }
+
+
+            // =================================================
+            // DROPDOWN
+            // =================================================
             if ($menuContent !== '') {
 
                 $dropdownMenu = '
-                    <div class="dropdown">
-                        <button class="btn btn-primary btn-sm dropdown-toggle" 
-                                type="button" 
-                                data-bs-toggle="dropdown" 
-                                aria-expanded="false">
-                            <i class="fa fa-bars"></i>
-                        </button>
-                        <div class="dropdown-menu">
-                            ' . $menuContent . '
-                        </div>
-                    </div>';
+                <div class="dropdown">
+
+                    <button
+                        class="btn btn-primary btn-sm dropdown-toggle"
+                        type="button"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                    >
+                        <i class="fa fa-bars"></i>
+                    </button>
+
+                    <div class="dropdown-menu">
+
+                        ' . $menuContent . '
+
+                    </div>
+
+                </div>
+            ';
 
             } else {
 
-                // Tidak punya hak akses apapun
                 $dropdownMenu = '';
             }
 
+
+            // =================================================
+            // COLUMN
+            // =================================================
             $row[] = $no;
+
             $row[] = $dropdownMenu;
 
             $row[] = $lm->docno;
-            $row[] = date(
-                'd/m/Y',
-                strtotime(trim($lm->docdate))
-            );
-            
+
+
+            // =================================================
+            // DOC DATE
+            // =================================================
+            $row[] = !empty($lm->docdate)
+                ? date(
+                    'd/m/Y',
+                    strtotime(trim($lm->docdate))
+                )
+                : '';
+
+
+            // =================================================
+            // JATUH TEMPO
+            // =================================================
             $docdate  = trim($lm->docdate);
             $jthtempo = (int) $lm->jthtempo;
-            
-            if (!empty($docdate)) {
-                
-                $date = new \DateTime(trim($lm->docdate));
-                $date->modify("+{$jthtempo} days");
-                
-                $jatuhTempo = $date->format('d/m/Y');
-                
-                } else {
-                    $jatuhTempo = '';
-                    }
-                    
-            $row[] = $jatuhTempo;
-            $row[] = date(
-                'd/m/Y',
-                strtotime(trim($lm->senddate))
-            );
-            $row[] = $lm->keterangan;
-            $row[] = $lm->kdsupplier;
-            $row[] = $lm->nmsupplier;
-            $status = $lm->status_desc ?? $lm->status;
-            $badgeClass = 'badge-secondary'; // Default
 
-            switch (strtoupper($status)) {
+            if (!empty($docdate)) {
+
+                $date = new \DateTime($docdate);
+
+                $date->modify("+{$jthtempo} days");
+
+                $jatuhTempo = $date->format('d/m/Y');
+
+            } else {
+
+                $jatuhTempo = '';
+            }
+
+            $row[] = $jatuhTempo;
+
+
+            // =================================================
+            // SEND DATE
+            // =================================================
+            $row[] = !empty($lm->senddate)
+                ? date(
+                    'd/m/Y',
+                    strtotime(trim($lm->senddate))
+                )
+                : '';
+
+
+            // =================================================
+            // KETERANGAN
+            // =================================================
+            $row[] = $lm->keterangan;
+
+
+            // =================================================
+            // SUPPLIER
+            // =================================================
+            $row[] = $lm->kdsupplier;
+
+            $row[] = $lm->nmsupplier;
+
+
+            // =================================================
+            // STATUS BADGE
+            // =================================================
+            $badgeClass = 'badge-secondary';
+
+            switch ($status) {
+
                 case 'DRAFT':
                     $badgeClass = 'badge-secondary';
                     break;
+
                 case 'REVISION/EDITING':
                     $badgeClass = 'badge-warning';
                     break;
+
                 case 'FINAL USER':
                     $badgeClass = 'badge-info';
                     break;
+
                 case 'CETAK/PRINT':
-                    $badgeClass = 'badge-success ';
+                    $badgeClass = 'badge-success';
                     break;
+
+                case 'APPROVED':
+                    $badgeClass = 'badge-primary';
+                    break;
+
                 default:
-                    $badgeClass = 'badge-primary'; // Default (primary) jika status tidak dikenali
+                    $badgeClass = 'badge-secondary';
                     break;
             }
 
-            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
-            // $row[] = $lm->alamatsupplier;
-            // $row[] = $lm->nmkota;
 
-            
+            $row[] = '
+            <div class="text-center">
 
+                <span
+                    style="font-size:12px"
+                    class="badge ' .
+                $badgeClass .
+                ' w-100"
+                >
+                    ' .
+                htmlspecialchars(
+                    $status,
+                    ENT_QUOTES,
+                    'UTF-8'
+                ) .
+                '
+                </span>
+
+            </div>
+        ';
+
+
+            // =================================================
+            // PUSH ROW
+            // =================================================
             $data[] = $row;
         }
 
+
+        // =====================================================
+        // DATATABLE RESPONSE
+        // =====================================================
         $output = array(
-            "draw" => $_POST['draw'],
-            "recordsTotal" => $this->m_purchase->t_front_po_apprv_view_count_all(),
-            "recordsFiltered" => $this->m_purchase->t_front_po_apprv_view_count_filtered(),
-            "data" => $data,
+
+            "draw" =>
+                $_POST['draw'],
+
+            "recordsTotal" =>
+                $this->m_purchase
+                    ->t_front_po_apprv_view_count_all(),
+
+            "recordsFiltered" =>
+                $this->m_purchase
+                    ->t_front_po_apprv_view_count_filtered(),
+
+            "data" =>
+                $data,
         );
-        echo $this->fiky_encryption->jDatatable($output);
+
+
+        echo $this->fiky_encryption
+            ->jDatatable($output);
     }
 
     function clearEntryPO()
@@ -2887,7 +3120,7 @@ class Purchase extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.P.A.3'; $versirelease='I.P.A.3/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.P.A.3'; $versirelease='I.P.A.3/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -4212,7 +4445,7 @@ class Purchase extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.P.A.4'; $versirelease='I.P.A.4/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.P.A.4'; $versirelease='I.P.A.4/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -4276,7 +4509,7 @@ class Purchase extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('purchase/trans/voidpo'));
         }
-        $kodemenu='I.P.A.4'; $versirelease='I.P.A.4/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.P.A.4'; $versirelease='I.P.A.4/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -4752,7 +4985,7 @@ class Purchase extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.P.A.4'; $versirelease='I.P.A.4/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.P.A.4'; $versirelease='I.P.A.4/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -5748,7 +5981,7 @@ class Purchase extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.P.A.5'; $versirelease='I.P.A.5/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.P.A.5'; $versirelease='I.P.A.5/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -5812,7 +6045,7 @@ class Purchase extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('purchase/trans/umb'));
         }
-        $kodemenu='I.P.A.5'; $versirelease='I.P.A.5/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.P.A.5'; $versirelease='I.P.A.5/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -6097,7 +6330,7 @@ class Purchase extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.P.A.5'; $versirelease='I.P.A.5/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.P.A.5'; $versirelease='I.P.A.5/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -6899,7 +7132,7 @@ class Purchase extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.P.A.6'; $versirelease='I.P.A.6/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.P.A.6'; $versirelease='I.P.A.6/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -6963,7 +7196,7 @@ class Purchase extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('purchase/trans/lpb'));
         }
-        $kodemenu='I.P.A.6'; $versirelease='I.P.A.6/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.P.A.6'; $versirelease='I.P.A.6/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -7442,7 +7675,7 @@ class Purchase extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.P.A.6'; $versirelease='I.P.A.6/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.P.A.6'; $versirelease='I.P.A.6/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -8511,7 +8744,7 @@ class Purchase extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.P.A.7'; $versirelease='I.P.A.7/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.P.A.7'; $versirelease='I.P.A.7/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -8575,7 +8808,7 @@ class Purchase extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('purchase/trans/returbeli'));
         }
-        $kodemenu='I.P.A.7'; $versirelease='I.P.A.7/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.P.A.7'; $versirelease='I.P.A.7/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -9054,7 +9287,7 @@ class Purchase extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.P.A.7'; $versirelease='I.P.A.7/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.P.A.7'; $versirelease='I.P.A.7/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -10096,5 +10329,172 @@ class Purchase extends BaseController
                 'detail' => $datadtl->getResult(),
             ), JSON_PRETTY_PRINT);
     }
+
+
+    public function historyHargaPO()
+    {
+        $idbarang = trim($this->request->getGet('idbarang'));
+
+        // =====================================================
+        // VALIDASI
+        // =====================================================
+        if ($idbarang === '') {
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'ID Barang tidak boleh kosong',
+                'data'    => []
+            ]);
+        }
+
+        try {
+
+            // =====================================================
+            // HISTORY HARGA DARI PENERIMAAN / LPB
+            //
+            // HEADER :
+            // sc_trx.lpb
+            //
+            // DETAIL :
+            // sc_trx.lpb_dtl
+            //
+            // Harga diambil dari harga penerimaan terakhir.
+            // =====================================================
+            $sql = "
+                        SELECT
+                            TRIM(d.idbarang) AS idbarang,
+                            TRIM(d.nmbarang) AS nmbarang,
+                            TRIM(h.docno) AS docno,
+                            h.docdate,
+                            TRIM(h.kdsupplier) AS kdsupplier,
+                            TRIM(h.nmsupplier) AS supplier,
+                            TRIM(h.currcode) AS currcode,
+                            COALESCE(h.kurs, 1) AS kurs,
+                            COALESCE(d.qty, 0) AS qty,
+                            COALESCE(d.harga, 0) AS harga,
+                            COALESCE(d.nilai, 0) AS nilai,
+                            TRIM(d.docnopo) AS docnopo
+                    
+                        FROM sc_trx.lpb_dtl d
+                    
+                        INNER JOIN sc_trx.lpb h
+                            ON TRIM(h.docno) = TRIM(d.docno)
+                    
+                        WHERE TRIM(d.idbarang) = ?
+                    
+                          AND COALESCE(d.harga, 0) > 0
+                    
+                          AND TRIM(COALESCE(h.status, '')) IN ('F', 'P')
+                    
+                        ORDER BY
+                            h.docdate DESC,
+                            h.docno DESC,
+                            d.idurut DESC
+                    
+                        LIMIT 50
+                    ";
+
+            $rows = $this->db
+                ->query($sql, [$idbarang])
+                ->getResultArray();
+
+
+            // =====================================================
+            // FORMAT RESPONSE
+            // =====================================================
+            $data = [];
+
+            foreach ($rows as $row) {
+
+                $data[] = [
+
+                    'idbarang' => trim(
+                        $row['idbarang'] ?? ''
+                    ),
+
+                    'nmbarang' => trim(
+                        $row['nmbarang'] ?? ''
+                    ),
+
+                    'docno' => trim(
+                        $row['docno'] ?? ''
+                    ),
+
+                    'docnopo' => trim(
+                        $row['docnopo'] ?? ''
+                    ),
+
+                    'docdate' => !empty($row['docdate'])
+                        ? date(
+                            'd/m/Y',
+                            strtotime($row['docdate'])
+                        )
+                        : '-',
+
+                    'kdsupplier' => trim(
+                        $row['kdsupplier'] ?? ''
+                    ),
+
+                    'supplier' => trim(
+                        $row['supplier'] ?? '-'
+                    ),
+
+                    'currcode' => trim(
+                        $row['currcode'] ?? 'IDR'
+                    ),
+
+                    'kurs' => (float) (
+                        $row['kurs'] ?? 1
+                    ),
+
+                    'qty' => (float) (
+                        $row['qty'] ?? 0
+                    ),
+
+                    'harga' => (float) (
+                        $row['harga'] ?? 0
+                    ),
+
+                    'nilai' => (float) (
+                        $row['nilai'] ?? 0
+                    )
+                ];
+            }
+
+
+            // =====================================================
+            // RESPONSE
+            // =====================================================
+            return $this->response->setJSON([
+
+                'success' => true,
+
+                'message' => 'History harga penerimaan berhasil diambil',
+
+                'data' => $data
+
+            ]);
+
+        } catch (\Throwable $e) {
+
+            log_message(
+                'error',
+                'historyHargaPO ERROR : ' . $e->getMessage()
+            );
+
+            return $this->response->setJSON([
+
+                'success' => false,
+
+                'message' => 'Gagal mengambil history harga penerimaan',
+
+                'error' => $e->getMessage(),
+
+                'data' => []
+
+            ]);
+        }
+    }
+
 
 }

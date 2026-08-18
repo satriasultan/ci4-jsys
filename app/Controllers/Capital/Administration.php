@@ -13,7 +13,7 @@ class Administration extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.T.A.2'; $versirelease='I.T.A.2/BETA.001'; $releasedate=date('2022-04-12 00:00:00');
+        $kodemenu='I.T.A.2'; $versirelease='I.T.A.2/01'; $releasedate=date('2022-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -37,7 +37,7 @@ class Administration extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.T.B.1'; $versirelease='I.T.B.1/BETA.001'; $releasedate=date('2022-04-12 00:00:00');
+        $kodemenu='I.T.B.1'; $versirelease='I.T.B.1/01'; $releasedate=date('2022-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -308,7 +308,7 @@ class Administration extends BaseController
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
         $dept=trim($this->session->get('kddept'));
-        $kodemenu='I.T.B.2'; $versirelease='I.T.B.2/BETA.001'; $releasedate=date('2022-04-12 00:00:00');
+        $kodemenu='I.T.B.2'; $versirelease='I.T.B.2/01'; $releasedate=date('2022-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -425,7 +425,7 @@ class Administration extends BaseController
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
         $dept=trim($this->session->get('kddept'));
-        $kodemenu='I.T.B.3'; $versirelease='I.T.B.3/BETA.001'; $releasedate=date('2022-04-12 00:00:00');
+        $kodemenu='I.T.B.3'; $versirelease='I.T.B.3/01'; $releasedate=date('2022-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -928,7 +928,7 @@ class Administration extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.T.B.4'; $versirelease='I.T.B.4/BETA.001'; $releasedate=date('2022-04-12 00:00:00');
+        $kodemenu='I.T.B.4'; $versirelease='I.T.B.4/01'; $releasedate=date('2022-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -1088,7 +1088,7 @@ class Administration extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.T.B.4'; $versirelease='I.T.B.4/BETA.001'; $releasedate=date('2022-04-12 00:00:00');
+        $kodemenu='I.T.B.4'; $versirelease='I.T.B.4/01'; $releasedate=date('2022-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];

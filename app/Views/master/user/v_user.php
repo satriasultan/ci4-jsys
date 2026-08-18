@@ -14,7 +14,7 @@
 
                 <!-- VERSION INFO -->
                 <small class="text-muted mr-3">
-                    Versi: <?= $version; ?>
+                    Menu ID <?= $version; ?>
                 </small>
 
                 <!-- HIDDEN INPUT (AMAN DI LUAR OL) -->

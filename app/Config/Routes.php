@@ -151,7 +151,7 @@ $routes->group('/arap/report', ["namespace" => "App\Controllers\Arap"], function
 });
 
 $routes->group('/arap/transaksi', ["namespace" => "App\Controllers\Arap"], function ($routes) {
-    
+
     $routes->add('ndk', 'Arap::ndk');
     $routes->add('list_ndk', 'Arap::list_ndk');
     $routes->add('list_ndk_apprv', 'Arap::list_ndk_apprv');
@@ -291,7 +291,7 @@ $routes->group('/ka/finance', ["namespace" => "App\Controllers\Finance"], functi
 
 
 
-    
+
 
 
     $routes->add('pengeluarankb', 'Finance::pengeluarankb');
@@ -537,6 +537,7 @@ $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], f
     $routes->add("delete_voidpo_detail", "Purchase::delete_voidpo_detail");
 
 
+    $routes->get('historyHargaPO(:any)','Purchase::historyHargaPO$1');
 
     $routes->add('umb', 'Purchase::umb');
     $routes->add('list_umb', 'Purchase::list_umb');
@@ -900,7 +901,7 @@ $routes->group('/master/data', ["namespace" => "App\Controllers\Master"], functi
 
 
 
-    
+
     $routes->add('area', 'Location::area');
     $routes->add('list_marea', 'Location::list_marea');
     $routes->post("saveEntryArea", "Location::saveEntryArea");
@@ -962,25 +963,25 @@ $routes->group('/master/data', ["namespace" => "App\Controllers\Master"], functi
     $routes->get("showing_data_golonganbarang(:any)", "GolonganBarang::showing_data_golonganbarang$1");
 
 
-    
+
     $routes->add("jenisproduk", "JenisProduk::jenisproduk");
     $routes->add("list_jenisproduk", "JenisProduk::list_jenisproduk");
     $routes->post("saveJenisProduk", "JenisProduk::saveJenisProduk");
     $routes->get("showing_data_jenisproduk(:any)", "JenisProduk::showing_data_jenisproduk$1");
 
 
-    
 
-    
+
+
     $routes->add("kelompokbarang", "KelompokBrg::kelompokbarang");
     $routes->add("list_kelompokbarang", "KelompokBrg::list_kelompokbarang");
     $routes->post("saveKelompokBarang", "KelompokBrg::saveKelompokBarang");
     $routes->get("showing_data_kelompokbarang(:any)", "KelompokBrg::showing_data_kelompokbarang$1");
 
 
-    
 
-    
+
+
     $routes->add("principal", "Principal::principal");
     $routes->add("list_principal", "Principal::list_principal");
     $routes->post("savePrincipal", "Principal::savePrincipal");
@@ -1168,7 +1169,7 @@ $routes->group('/persediaan/trans', ["namespace" => "App\Controllers\Persediaan"
     $routes->add('get_trx_transfer_location_dtl(:any)', 'Persediaan::get_trx_transfer_location_dtl$1');
     $routes->add('showing_transfer_mst_trx', 'Persediaan::showing_transfer_mst_trx');
     $routes->add('list_trx_spk_transfers_dtl', 'Persediaan::list_trx_spk_transfers_dtl');
-$routes->add('getBranchInfoStockTransfers', 'Persediaan::getBranchInfoStockTransfers');
+    $routes->add('getBranchInfoStockTransfers', 'Persediaan::getBranchInfoStockTransfers');
     $routes->add('getNextSuffixStockTransfers', 'Persediaan::getNextSuffixStockTransfers');
 
 
@@ -1323,7 +1324,7 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
 
 
 
-    
+
     /* WORKING ORDER */
 
     $routes->add('workingorder', 'Production::workingorder');
@@ -1335,7 +1336,7 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('save_workingorder_dtl', 'Production::save_workingorder_dtl');
     $routes->add('save_workingorder_mst', 'Production::save_workingorder_mst');
     $routes->add('save_update_workingorder_bom', 'Production::save_update_workingorder_bom');
-    
+
     $routes->add('clear_workingorder_Tmp', 'Production::clear_workingorder_Tmp');
     $routes->add('list_tmp_workingorder_bom_mst', 'Production::list_tmp_workingorder_bom_mst');
     $routes->add('list_trx_workingorder_bom_mst', 'Production::list_trx_workingorder_bom_mst');
@@ -1413,7 +1414,7 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
 
 
 
-    
+
     /* Penerimaan Barang Produksi */
 
     $routes->add('penerimaanbp', 'Production::penerimaanbp');
@@ -1441,8 +1442,8 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
 
 
 
-    
-    
+
+
     /* Biaya Produksi Non Material */
 
     $routes->add('biaya_produksi_non_material', 'Production::biaya_produksi_non_material');

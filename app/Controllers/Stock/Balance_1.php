@@ -14,7 +14,7 @@ class Balance extends BaseController
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
         $loccode=trim($this->session->get('loccode'));
-        $kodemenu='I.D.C.1'; $versirelease='I.D.C.1/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.D.C.1'; $versirelease='I.D.C.1/01'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -91,7 +91,7 @@ class Balance extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.D.C.2'; $versirelease='I.D.C.2/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.D.C.2'; $versirelease='I.D.C.2/01'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -421,7 +421,7 @@ class Balance extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.D.C.3'; $versirelease='I.D.C.3/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.D.C.3'; $versirelease='I.D.C.3/01'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -544,7 +544,7 @@ class Balance extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.D.C.3'; $versirelease='I.D.C.3/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.D.C.3'; $versirelease='I.D.C.3/01'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -785,7 +785,7 @@ class Balance extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.D.C.6'; $versirelease='I.D.C.6/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.D.C.6'; $versirelease='I.D.C.6/01'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -902,7 +902,7 @@ class Balance extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.D.C.6'; $versirelease='I.D.C.6/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.D.C.6'; $versirelease='I.D.C.6/01'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -1051,7 +1051,7 @@ class Balance extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.D.C.6'; $versirelease='I.D.C.6/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.D.C.6'; $versirelease='I.D.C.6/01'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -1482,7 +1482,7 @@ class Balance extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.D.C.4'; $versirelease='I.D.C.4/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.D.C.4'; $versirelease='I.D.C.4/01'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -1596,7 +1596,7 @@ class Balance extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.D.C.4'; $versirelease='I.D.C.4/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.D.C.4'; $versirelease='I.D.C.4/01'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -2177,7 +2177,7 @@ class Balance extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.D.C.8'; $versirelease='I.D.C.8/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.D.C.8'; $versirelease='I.D.C.8/01'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -2309,7 +2309,7 @@ class Balance extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.D.C.8'; $versirelease='I.D.C.8/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.D.C.8'; $versirelease='I.D.C.8/01'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];

@@ -1563,7 +1563,96 @@ $("#fjurnal").on("change", function () {
     });
 });
 
+function showHistoryHarga()
+{
+    let idbarang = $.trim($('#idbarang').val() || '');
+    let nmbarang = $.trim($('#nmbarang').val() || '');
 
+    if(idbarang==''){
+        Swal.fire('Warning','Pilih barang terlebih dahulu','warning');
+        return;
+    }
+
+    $('#history_idbarang').val(idbarang);
+    $('#history_nmbarang').val(nmbarang);
+
+    $('#bodyHistoryHarga').html(
+        '<tr><td colspan="7" class="text-center">'+
+        '<i class="fa fa-spinner fa-spin"></i> Loading...'+
+        '</td></tr>'
+    );
+
+    $('#modalHistoryHarga').modal('show');
+
+    $.ajax({
+        url : HOST_URL + '/purchase/trans/historyHargaPO',
+        type: 'GET',
+        data: {idbarang:idbarang},
+        dataType:'json',
+
+        success:function(res){
+
+            let html='';
+
+            if(res.data.length==0){
+
+                html='<tr><td colspan="7" class="text-center">Tidak ada history harga</td></tr>';
+
+            }else{
+
+                $.each(res.data,function(i,row){
+
+                    html+=`
+                    <tr>
+
+                        <td class="text-center">${i+1}</td>
+
+                        <td>${row.docdate}</td>
+
+                        <td>${row.docno}</td>
+
+                        <td>${row.supplier}</td>
+
+                        <td class="text-end">${number_format(row.harga,2,'.',',')}</td>
+
+                        <td class="text-center">${row.currcode}</td>
+
+                        <td class="text-center">
+
+                            <button class="btn btn-sm btn-success pilihHarga"
+                                    data-harga="${row.harga}">
+
+                                <i class="fa fa-check"></i>
+
+                            </button>
+
+                        </td>
+
+                    </tr>
+                    `;
+                });
+
+            }
+
+            $('#bodyHistoryHarga').html(html);
+
+        }
+    });
+
+}
+
+$(document).on('click','.pilihHarga',function(){
+
+    let harga=$(this).data('harga');
+
+    $('#harga').val(number_format(harga,2,'.',','));
+
+    // hitung ulang nilai
+    $('#harga').trigger('keyup');
+
+    $('#modalHistoryHarga').modal('hide');
+
+});
 
 $(document).ready(function() {
     // Handle form submission event

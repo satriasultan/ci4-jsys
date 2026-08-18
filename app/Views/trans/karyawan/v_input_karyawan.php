@@ -8,7 +8,7 @@
 error_reporting(0);
 ?>
 <ol class="breadcrumb">
-    <div class="pull-right"><i style="color:transparent;"><?php echo $t; ?></i> Versi: <?php echo $version; ?></div>
+    <div class="pull-right"><i style="color:transparent;"><?php echo $t; ?></i> Menu ID <?php echo $version; ?></div>
     <input type="hidden" id="classmenu" value="<?= str_replace('.','_',$kodemenu) ?>">
     <?php foreach ($y as $y1) { ?>
         <?php if( trim($y1->kodemenu)!=trim($kodemenu)) { ?>

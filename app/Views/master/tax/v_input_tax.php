@@ -27,7 +27,7 @@
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
                     <div class="float-right" style="margin-right:10px;padding-top:.7%">
-                        Versi: <?= $version; ?>
+                        Menu ID <?= $version; ?>
                     </div>
                     <input type="hidden" id="classmenu"
                            value="<?= str_replace('.','_',$kodemenu) ?>">

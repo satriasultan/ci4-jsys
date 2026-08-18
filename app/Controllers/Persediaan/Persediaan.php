@@ -29,7 +29,7 @@ class Persediaan extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.Q.A.1'; $versirelease='I.Q.A.1/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.Q.A.1'; $versirelease='I.Q.A.1/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -87,7 +87,7 @@ class Persediaan extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.Q.A.1'; $versirelease='I.Q.A.1/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.Q.A.1'; $versirelease='I.Q.A.1/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -757,7 +757,7 @@ class Persediaan extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('persediaan/trans/perintah_transfer'));
         }
-        $kodemenu='I.Q.A.1'; $versirelease='I.Q.A.1/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.Q.A.1'; $versirelease='I.Q.A.1/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -809,7 +809,7 @@ class Persediaan extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.Q.A.2'; $versirelease='I.Q.A.2/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.Q.A.2'; $versirelease='I.Q.A.2/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -1003,7 +1003,7 @@ class Persediaan extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.Q.A.2'; $versirelease='I.Q.A.2/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.Q.A.2'; $versirelease='I.Q.A.2/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -1445,7 +1445,7 @@ class Persediaan extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('persediaan/trans/perintah_transfer'));
         }
-        $kodemenu='I.Q.A.2'; $versirelease='I.Q.A.2/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.Q.A.2'; $versirelease='I.Q.A.2/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -1612,7 +1612,7 @@ class Persediaan extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.Q.A.3'; $versirelease='I.Q.A.3/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.Q.A.3'; $versirelease='I.Q.A.3/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -1856,7 +1856,7 @@ class Persediaan extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.Q.A.3'; $versirelease='I.Q.A.3/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.Q.A.3'; $versirelease='I.Q.A.3/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -2349,7 +2349,7 @@ class Persediaan extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('persediaan/trans/perintah_transfer'));
         }
-        $kodemenu='I.Q.A.3'; $versirelease='I.Q.A.3/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.Q.A.3'; $versirelease='I.Q.A.3/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -2604,7 +2604,7 @@ class Persediaan extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.Q.A.5'; $versirelease='I.Q.A.5/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.Q.A.5'; $versirelease='I.Q.A.5/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -2799,7 +2799,7 @@ class Persediaan extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.Q.A.5'; $versirelease='I.Q.A.5/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.Q.A.5'; $versirelease='I.Q.A.5/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -3260,7 +3260,7 @@ class Persediaan extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('persediaan/trans/perintah_transfer'));
         }
-        $kodemenu='I.Q.A.5'; $versirelease='I.Q.A.5/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.Q.A.5'; $versirelease='I.Q.A.5/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -3470,7 +3470,7 @@ class Persediaan extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.Q.A.6'; $versirelease='I.Q.A.6/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.Q.A.6'; $versirelease='I.Q.A.6/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -3665,7 +3665,7 @@ class Persediaan extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.Q.A.6'; $versirelease='I.Q.A.6/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.Q.A.6'; $versirelease='I.Q.A.6/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -4139,7 +4139,7 @@ class Persediaan extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('persediaan/trans/perintah_transfer'));
         }
-        $kodemenu='I.Q.A.6'; $versirelease='I.Q.A.6/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.Q.A.6'; $versirelease='I.Q.A.6/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];

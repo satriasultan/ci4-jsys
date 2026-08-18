@@ -16,7 +16,7 @@ class Formbackup extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.N.A.1'; $versirelease='I.N.A.1/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.N.A.1'; $versirelease='I.N.A.1/01'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -132,7 +132,7 @@ class Formbackup extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.N.A.1'; $versirelease='I.N.A.1/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.N.A.1'; $versirelease='I.N.A.1/01'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -182,7 +182,7 @@ class Formbackup extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.N.A.1'; $versirelease='I.N.A.1/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.N.A.1'; $versirelease='I.N.A.1/01'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -460,7 +460,7 @@ class Formbackup extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.N.A.2'; $versirelease='I.N.A.2/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.N.A.2'; $versirelease='I.N.A.2/01'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -577,7 +577,7 @@ class Formbackup extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.N.A.2'; $versirelease='I.N.A.2/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.N.A.2'; $versirelease='I.N.A.2/01'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -625,7 +625,7 @@ class Formbackup extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.N.A.2'; $versirelease='I.N.A.2/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.N.A.2'; $versirelease='I.N.A.2/01'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];

@@ -222,6 +222,28 @@
             background: linear-gradient(135deg, #001f3f 0%, #0052A2 50%, #00A6E0 100%);
             overflow: hidden; /* Mencegah scroll karena wave */
         }
+
+        .login-spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            margin-right: 6px;
+            border: 2px solid rgba(255,255,255,0.4);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: loginSpin 0.7s linear infinite;
+            vertical-align: -2px;
+        }
+
+        @keyframes loginSpin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .btn-login:disabled {
+            cursor: not-allowed !important;
+        }
     </style>
 
 </head>
@@ -254,8 +276,7 @@
                type="text"
                required
                name="username"
-               placeholder="Username"
-               oninput="this.value = this.value.toUpperCase();">
+               placeholder="Username">
 
         <input class="form-control mt-3" type="password" required name="password" placeholder="Password">
 
@@ -306,26 +327,184 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
 <script>
-    const fp = flatpickr("#datePick", {
-        dateFormat: "d-m-Y",
-        allowInput: false,
-        disableMobile: false,
-        defaultDate: "today"
-    });
+    $(document).ready(function () {
 
-    const input = document.getElementById("datePick");
+        // =========================================
+        // FLATPICKR
+        // =========================================
 
-    input.addEventListener("keydown", function (e) {
-        if (e.code === "Space" || e.code === "Enter") {
-            e.preventDefault(); // supaya tidak submit form
+        const fp = flatpickr("#datePick", {
+            dateFormat: "d-m-Y",
+            defaultDate: new Date(),
+            allowInput: false,
+            disableMobile: true,
+            clickOpens: true
+        });
+
+        $('.calendar-icon').on('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
             fp.open();
+        });
+
+
+        // =========================================
+        // LOGIN
+        // =========================================
+
+        $('#loginform').on('submit', function (e) {
+
+            e.preventDefault();
+
+            const form = $(this);
+            const button = form.find('.btn-login');
+
+            // Cegah double click
+            if (button.prop('disabled')) {
+                return;
+            }
+
+            // Validasi
+            if (!this.checkValidity()) {
+                this.reportValidity();
+                return;
+            }
+
+            // =================================================
+            // AMBIL DATA SEBELUM FIELD DI-DISABLE
+            // =================================================
+
+            const formData = form.serialize();
+
+            // =================================================
+            // LOCK FORM
+            // =================================================
+
+            button
+                .prop('disabled', true)
+                .html('<span class="login-spinner"></span> PROCESSING...')
+                .css({
+                    'cursor': 'not-allowed',
+                    'opacity': '0.7'
+                });
+
+            // Disable semua field
+            form.find('input, select, button').prop('disabled', true);
+
+            // =================================================
+            // AJAX
+            // =================================================
+
+            $.ajax({
+                url: form.attr('action'),
+                type: 'POST',
+                data: formData,
+                dataType: 'json',
+
+                success: function (response) {
+
+                    console.log(response);
+
+                    if (response.status === true) {
+
+                        button
+                            .prop('disabled', true)
+                            .html('✓ SUCCESS');
+
+                        window.location.href = response.redirect;
+
+                    } else {
+
+                        unlockLoginForm();
+
+                        showLoginError(
+                            response.messages ||
+                            'Username atau Password Salah'
+                        );
+
+                        if (typeof grecaptcha !== 'undefined') {
+                            grecaptcha.reset();
+                        }
+                    }
+                },
+
+                error: function (xhr, status, error) {
+
+                    console.error(xhr.responseText);
+
+                    unlockLoginForm();
+
+                    showLoginError(
+                        'Terjadi kesalahan saat proses login. Silakan coba lagi.'
+                    );
+
+                    if (typeof grecaptcha !== 'undefined') {
+                        grecaptcha.reset();
+                    }
+                }
+            });
+
+        });
+
+
+        // =========================================
+        // UNLOCK FORM
+        // =========================================
+
+        function unlockLoginForm() {
+
+            const form = $('#loginform');
+            const button = form.find('.btn-login');
+
+            form.find('input, select, button')
+                .prop('disabled', false);
+
+            button
+                .prop('disabled', false)
+                .html('LOGIN')
+                .css({
+                    'cursor': 'pointer',
+                    'opacity': '1'
+                });
         }
+
+
+        // =========================================
+        // ERROR
+        // =========================================
+
+        function showLoginError(message) {
+
+            let alert = $('#login-error');
+
+            if (alert.length === 0) {
+
+                alert = $('<div id="login-error"></div>');
+
+                alert.css({
+                    'color': '#ffaaaa',
+                    'margin-top': '10px',
+                    'font-weight': '500'
+                });
+
+                $('.btn-login').before(alert);
+            }
+
+            alert
+                .stop(true, true)
+                .hide()
+                .text(message)
+                .fadeIn(200);
+
+            setTimeout(function () {
+                alert.fadeOut(300);
+            }, 5000);
+        }
+
     });
-    document.querySelector('.calendar-icon').addEventListener('click', function () {
-        fp.open();
-    });
+</script>
+<script>
 
 
 

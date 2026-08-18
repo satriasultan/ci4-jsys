@@ -15,7 +15,7 @@ class Bbk extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.D.E.1'; $versirelease='I.D.E.1/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.D.E.1'; $versirelease='I.D.E.1/01'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -154,7 +154,7 @@ class Bbk extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.D.E.1'; $versirelease='I.D.E.1/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.D.E.1'; $versirelease='I.D.E.1/01'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -302,7 +302,7 @@ class Bbk extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.D.E.1'; $versirelease='I.D.E.1/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.D.E.1'; $versirelease='I.D.E.1/01'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -813,7 +813,7 @@ class Bbk extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.D.E.5'; $versirelease='I.D.E.5/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.D.E.5'; $versirelease='I.D.E.5/01'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -862,7 +862,7 @@ class Bbk extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.D.E.6'; $versirelease='I.D.E.6/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.D.E.6'; $versirelease='I.D.E.6/01'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -922,7 +922,7 @@ class Bbk extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.D.E.6'; $versirelease='I.D.E.6/BETA.001'; $releasedate=date('2020-04-12 00:00:00');
+        $kodemenu='I.D.E.6'; $versirelease='I.D.E.6/01'; $releasedate=date('2020-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -1580,7 +1580,7 @@ delete from sc_tmp.item_void_dtl where docno='$nama';");
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.D.E.8'; $versirelease='I.D.E.8/BETA.001'; $releasedate=date('2022-04-12 00:00:00');
+        $kodemenu='I.D.E.8'; $versirelease='I.D.E.8/01'; $releasedate=date('2022-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];

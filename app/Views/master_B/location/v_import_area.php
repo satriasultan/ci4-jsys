@@ -27,7 +27,7 @@
             </div><!-- /.col -->
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
-                    <div class="float-right" style="margin-right: 10px;vertical-align:middle;padding-top: 0.7%;"><i style="color:transparent;"><?php echo $t; ?></i> Versi: <?php echo $version; ?></div>
+                    <div class="float-right" style="margin-right: 10px;vertical-align:middle;padding-top: 0.7%;"><i style="color:transparent;"><?php echo $t; ?></i> Menu ID <?php echo $version; ?></div>
                     <input type="hidden" id="classmenu" value="<?= str_replace('.','_',$kodemenu) ?>" required>
                     <?php foreach ($y as $y1) { ?>
                         <?php if( trim($y1->kodemenu)!=trim($kodemenu)) { ?>

@@ -81,6 +81,33 @@ if (!function_exists('base_url')) {
         box-shadow: 0 12px 28px rgba(0,0,0,0.10);
     }
 
+    /* MENU AKTIF SAAT DI-CLICK */
+    .dd-toggle:checked + .card-erp {
+        background: var(--menu-color, #0d6efd) !important;
+        color: #fff !important;
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px rgba(0,0,0,.25);
+        z-index: 1001;
+    }
+
+    .dd-toggle:checked + .card-erp .icon-erp,
+    .dd-toggle:checked + .card-erp .title-erp {
+        color: #fff !important;
+    }
+
+    .dd-toggle:checked + .card-erp .count-erp {
+        color: rgba(255,255,255,.8) !important;
+    }
+
+    .erp-col:has(.dd-toggle:checked),
+    .erp-dropdown:has(.dd-toggle:checked) {
+        z-index: 9999 !important;
+    }
+
+    .dd-menu {
+        z-index: 99999 !important;
+    }
+
     .icon-erp  { font-size: 52px; line-height: 1; }
     .title-erp { font-size: 15px; font-weight: 600; margin-top: 12px; color: #2c313a; text-align: center; }
     .count-erp { font-size: 11px; color: #9aa0b2; margin-top: 4px; }
@@ -203,8 +230,49 @@ if (!function_exists('base_url')) {
     .erp-dropdown:hover .dd-menu,
     .dd-toggle:checked + label + .dd-menu {
         display: block;
+        z-index: 99999 !important;
     }
-    .erp-dropdown:not(:hover) .dd-menu { display: none; }
+
+    .dd-toggle:checked + label + .dd-menu {
+        display: block !important;
+    }
+
+    /* =========================================
+   FIX DROPDOWN TERPOTONG
+   ========================================= */
+
+    #app-zoom,
+    #main-wrapper,
+    .page-wrapper,
+    .container-fluid,
+    .erp-menu-row,
+    .erp-col,
+    .erp-dropdown {
+        overflow: visible !important;
+    }
+
+    /* Menu yang sedang aktif paling depan */
+    .erp-col:has(.dd-toggle:checked),
+    .erp-dropdown:has(.dd-toggle:checked) {
+        position: relative !important;
+        z-index: 99999 !important;
+    }
+
+    /* Dropdown */
+    .dd-menu {
+        z-index: 999999 !important;
+    }
+
+    /* Card aktif */
+    .dd-toggle:checked + .card-erp {
+        position: relative;
+        z-index: 100000 !important;
+    }
+
+    /* Jangan paksa dropdown tertutup */
+    .dd-toggle:checked + label + .dd-menu {
+        display: block !important;
+    }
 </style>
 
 <!-- ══════════════════════════════════════

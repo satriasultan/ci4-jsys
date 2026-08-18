@@ -19,7 +19,7 @@ class PostSales extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.S.B.3'; $versirelease='I.S.B.3/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.S.B.3'; $versirelease='I.S.B.3/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -80,7 +80,7 @@ class PostSales extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('sales/postsales/salesorderexternal'));
         }
-        $kodemenu='I.S.B.3'; $versirelease='I.S.B.3/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.S.B.3'; $versirelease='I.S.B.3/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -287,7 +287,7 @@ class PostSales extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.S.B.3'; $versirelease='I.S.B.3/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.S.B.3'; $versirelease='I.S.B.3/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -1433,7 +1433,7 @@ class PostSales extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.S.B.1'; $versirelease='I.S.B.1/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.S.B.1'; $versirelease='I.S.B.1/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -1497,7 +1497,7 @@ class PostSales extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('sales/postsales/salesorder'));
         }
-        $kodemenu='I.S.B.1'; $versirelease='I.S.B.1/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.S.B.1'; $versirelease='I.S.B.1/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -1996,7 +1996,7 @@ class PostSales extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.S.B.1'; $versirelease='I.S.B.1/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.S.B.1'; $versirelease='I.S.B.1/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -3074,7 +3074,7 @@ class PostSales extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.S.B.2'; $versirelease='I.S.B.2/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.S.B.2'; $versirelease='I.S.B.2/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -3138,7 +3138,7 @@ class PostSales extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('sales/postsales/penjualan'));
         }
-        $kodemenu='I.S.B.2'; $versirelease='I.S.B.2/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.S.B.2'; $versirelease='I.S.B.2/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -3631,7 +3631,7 @@ class PostSales extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.S.B.2'; $versirelease='I.S.B.2/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.S.B.2'; $versirelease='I.S.B.2/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -4778,7 +4778,7 @@ class PostSales extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.S.B.2'; $versirelease='I.S.B.2/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.S.B.2'; $versirelease='I.S.B.2/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -4839,7 +4839,7 @@ class PostSales extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('sales/postsales/soi'));
         }
-        $kodemenu='I.S.B.2'; $versirelease='I.S.B.2/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.S.B.2'; $versirelease='I.S.B.2/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -5189,7 +5189,7 @@ class PostSales extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.S.B.2'; $versirelease='I.S.B.2/BETA.001'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.S.B.2'; $versirelease='I.S.B.2/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];

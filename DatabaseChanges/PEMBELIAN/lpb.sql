@@ -8,180 +8,267 @@ DROP TABLE IF EXISTS sc_trx.lpb_dtl;
 
 
 
-CREATE TABLE IF NOT EXISTS sc_tmp.lpb
+DROP TABLE IF EXISTS sc_tmp.lpb CASCADE;
+
+CREATE TABLE sc_tmp.lpb
 (
-    idurut serial NOT NULL,
-    docno character(30) COLLATE pg_catalog."default" NOT NULL,
-    docdate character(20) COLLATE pg_catalog."default",
-    -- senddate character(20) COLLATE pg_catalog."default",
-    cabang character (30 ) COLLATE pg_catalog."default",    
-    pemohon character(100) COLLATE pg_catalog."default",
-    kdsupplier character(30) COLLATE pg_catalog."default",
-    nmsupplier character(250) COLLATE pg_catalog."default",
-    alamatsupplier TEXT,
-    -- alamatkirim TEXT,
-    jthtempo numeric(18,2),
-    biayavol numeric(18,2),
-    biayavol2 numeric(18,2),
-    idtax character(20),
-    isinclusive character(6),
-    currcode character(3),
-    kurs numeric(18,2),
-    nofaktur character(30),
-    nosj character(30),
-    dpp numeric(18,2),
-    jumlahpajak numeric(18,2),
-    total numeric(18,2),
-    -- syarat TEXT,
-    status character(6) COLLATE pg_catalog."default",
-    keterangan TEXT,
-    inputby character varying(50) COLLATE pg_catalog."default",
-    inputdate timestamp without time zone,
-    updateby character varying(50) COLLATE pg_catalog."default",
-    updatedate timestamp without time zone,
-    printby character varying(50) COLLATE pg_catalog."default",
-    printdate timestamp without time zone,
-    docnotmp character(30) COLLATE pg_catalog."default",
-    CONSTRAINT pk_tmp_lpb PRIMARY KEY (docno)
-)
+    idurut          SERIAL NOT NULL,
+    docno           CHARACTER(30) NOT NULL,
+    docdate         DATE,
 
-TABLESPACE pg_default;
+    cabang          CHARACTER(30),
+    pemohon         CHARACTER(100),
 
-ALTER TABLE IF EXISTS sc_tmp.lpb
-    OWNER to postgres;
+    kdsupplier      CHARACTER(30),
+    nmsupplier      CHARACTER(250),
+    alamatsupplier  TEXT,
 
+    jthtempo        NUMERIC(18,2),
 
+    biayavol        NUMERIC(18,2),
+    biayavol2       NUMERIC(18,2),
 
+    idtax           CHARACTER(20),
+    isinclusive     CHARACTER(6),
 
+    currcode        CHARACTER(3),
+    kurs            NUMERIC(18,2),
 
-CREATE TABLE IF NOT EXISTS sc_trx.lpb
-(
-    idurut serial NOT NULL,
-    docno character(30) COLLATE pg_catalog."default" NOT NULL,
-    docdate character(20) COLLATE pg_catalog."default",
-    -- senddate character(20) COLLATE pg_catalog."default",
-    cabang character (30 ) COLLATE pg_catalog."default",    
-    pemohon character(100) COLLATE pg_catalog."default",
-    kdsupplier character(30) COLLATE pg_catalog."default",
-    nmsupplier character(250) COLLATE pg_catalog."default",
-    alamatsupplier TEXT,
-    -- alamatkirim TEXT,
-    jthtempo numeric(18,2),
-    biayavol numeric(18,2),
-    biayavol2 numeric(18,2),
-    idtax character(20),
-    isinclusive character(6),
-    currcode character(3),
-    kurs numeric(18,2),
-    nofaktur character(30),
-    nosj character(30),
-    dpp numeric(18,2),
-    jumlahpajak numeric(18,2),
-    total numeric(18,2),
-    -- syarat TEXT,
-    status character(6) COLLATE pg_catalog."default",
-    keterangan TEXT,
-    inputby character varying(50) COLLATE pg_catalog."default",
-    inputdate timestamp without time zone,
-    updateby character varying(50) COLLATE pg_catalog."default",
-    updatedate timestamp without time zone,
-    printby character varying(50) COLLATE pg_catalog."default",
-    printdate timestamp without time zone,
-    docnotmp character(30) COLLATE pg_catalog."default",
-    CONSTRAINT pk_trx_lpb PRIMARY KEY (docno)
-)
+    nofaktur        CHARACTER(30),
+    nosj            CHARACTER(30),
 
-TABLESPACE pg_default;
+    dpp             NUMERIC(18,2),
+    jumlahpajak     NUMERIC(18,2),
+    total           NUMERIC(18,2),
 
-ALTER TABLE IF EXISTS sc_trx.lpb
-    OWNER to postgres;
+    status          CHARACTER(6),
+    keterangan      TEXT,
 
+    inputby         VARCHAR(50),
+    inputdate       TIMESTAMP WITHOUT TIME ZONE,
 
+    updateby        VARCHAR(50),
+    updatedate      TIMESTAMP WITHOUT TIME ZONE,
 
-CREATE TABLE IF NOT EXISTS sc_tmp.lpb_dtl
-(
-    idurut SERIAL PRIMARY KEY,
-    docno CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
-    -- docnopp CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
-    docnopo CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
-    uniqueid VARCHAR(64),
-    idbarang CHARACTER(20) COLLATE pg_catalog."default",
-    nmbarang CHARACTER(150) COLLATE pg_catalog."default",
-    idprincipal CHARACTER(20) COLLATE pg_catalog."default",
-    idgudang CHARACTER(30) COLLATE pg_catalog."default",
-    idspec CHARACTER(30) COLLATE pg_catalog."default",
-    unit CHARACTER(20) COLLATE pg_catalog."default",
-    qty NUMERIC(18,2),
-    qtybonus NUMERIC(18,2),
-    harga NUMERIC(18,2),
-    multidisc NUMERIC(18,2),
-    volitem NUMERIC(18,2),
-    biaya NUMERIC(18,2),
-    biaya2 NUMERIC(18,2),
-    
+    printby         VARCHAR(50),
+    printdate       TIMESTAMP WITHOUT TIME ZONE,
 
-    nilai NUMERIC(18,2),
-    descriptionpo TEXT COLLATE pg_catalog."default",
-    descriptionpp TEXT COLLATE pg_catalog."default",
-    status CHARACTER(6) COLLATE pg_catalog."default",
-    inputby CHARACTER VARYING(50) COLLATE pg_catalog."default",
-    inputdate TIMESTAMP WITHOUT TIME ZONE,
-    updateby CHARACTER VARYING(50) COLLATE pg_catalog."default",
-    updatedate TIMESTAMP WITHOUT TIME ZONE,
-    docnotmp character(30)
+    docnotmp        CHARACTER(30),
+
+    -- sudah termasuk ALTER TABLE sebelumnya
+    doctype         CHARACTER(10) DEFAULT 'GR',
+
+    CONSTRAINT pk_tmp_lpb
+        PRIMARY KEY (docno)
 )
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS sc_tmp.lpb_dtl
+ALTER TABLE sc_tmp.lpb
+    OWNER TO postgres;
+
+
+DROP TABLE IF EXISTS sc_trx.lpb CASCADE;
+
+CREATE TABLE sc_trx.lpb
+(
+    idurut          SERIAL NOT NULL,
+    docno           CHARACTER(30) NOT NULL,
+    docdate         DATE,
+
+    cabang          CHARACTER(30),
+    pemohon         CHARACTER(100),
+
+    kdsupplier      CHARACTER(30),
+    nmsupplier      CHARACTER(250),
+    alamatsupplier  TEXT,
+
+    jthtempo        NUMERIC(18,2),
+
+    biayavol        NUMERIC(18,2),
+    biayavol2       NUMERIC(18,2),
+
+    idtax           CHARACTER(20),
+    isinclusive     CHARACTER(6),
+
+    currcode        CHARACTER(3),
+    kurs            NUMERIC(18,2),
+
+    nofaktur        CHARACTER(30),
+    nosj            CHARACTER(30),
+
+    dpp             NUMERIC(18,2),
+    jumlahpajak     NUMERIC(18,2),
+    total           NUMERIC(18,2),
+
+    status          CHARACTER(6),
+    keterangan      TEXT,
+
+    inputby         VARCHAR(50),
+    inputdate       TIMESTAMP WITHOUT TIME ZONE,
+
+    updateby        VARCHAR(50),
+    updatedate      TIMESTAMP WITHOUT TIME ZONE,
+
+    printby         VARCHAR(50),
+    printdate       TIMESTAMP WITHOUT TIME ZONE,
+
+    docnotmp        CHARACTER(30),
+
+    -- sudah termasuk ALTER TABLE sebelumnya
+    doctype         CHARACTER(10) DEFAULT 'GR',
+
+    CONSTRAINT pk_trx_lpb
+        PRIMARY KEY (docno)
+)
+TABLESPACE pg_default;
+
+ALTER TABLE sc_trx.lpb
+    OWNER TO postgres;
+
+DROP TABLE IF EXISTS sc_tmp.lpb_dtl CASCADE;
+
+CREATE TABLE sc_tmp.lpb_dtl
+(
+    idurut          SERIAL PRIMARY KEY,
+
+    docno           CHARACTER(30) NOT NULL,
+    docnopo         CHARACTER(30) NOT NULL,
+
+    uniqueid        VARCHAR(64),
+
+    idbarang        CHARACTER(20),
+    nmbarang        CHARACTER(150),
+
+    idprincipal     CHARACTER(20),
+    idgudang        CHARACTER(30),
+    idspec          CHARACTER(30),
+
+    unit            CHARACTER(20),
+
+    qty             NUMERIC(18,2),
+    qtybonus        NUMERIC(18,2),
+
+    harga           NUMERIC(18,2),
+
+    multidisc       NUMERIC(18,2),
+
+    volitem         NUMERIC(18,2),
+
+    biaya           NUMERIC(18,2),
+    biaya2          NUMERIC(18,2),
+
+    nilai           NUMERIC(18,2),
+
+    descriptionpo   TEXT,
+    descriptionpp   TEXT,
+
+    status          CHARACTER(6),
+
+    inputby         VARCHAR(50),
+    inputdate       TIMESTAMP WITHOUT TIME ZONE,
+
+    updateby        VARCHAR(50),
+    updatedate      TIMESTAMP WITHOUT TIME ZONE,
+
+    docnotmp        CHARACTER(30),
+
+    -- =========================================
+    -- KOLOM YANG SEBELUMNYA DITAMBAHKAN ALTER
+    -- =========================================
+
+    doctype         CHARACTER(10) DEFAULT 'GR',
+
+    idtax           CHARACTER(20),
+    currcode        CHARACTER(3),
+    kurs            NUMERIC(18,2),
+
+    nilaikonversi   NUMERIC(18,2),
+    nilaipajak      NUMERIC(18,2),
+
+    qtyretur        NUMERIC(18,2) DEFAULT 0
+
+)
+TABLESPACE pg_default;
+
+ALTER TABLE sc_tmp.lpb_dtl
     OWNER TO postgres;
 
 
 
+DROP TABLE IF EXISTS sc_trx.lpb_dtl CASCADE;
 
-CREATE TABLE IF NOT EXISTS sc_trx.lpb_dtl
+CREATE TABLE sc_trx.lpb_dtl
 (
-    idurut SERIAL PRIMARY KEY,
-    docno CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
-    -- docnopp CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
-    docnopo CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
-    uniqueid VARCHAR(64),
-    idbarang CHARACTER(20) COLLATE pg_catalog."default",
-    nmbarang CHARACTER(150) COLLATE pg_catalog."default",
-    idprincipal CHARACTER(20) COLLATE pg_catalog."default",
-    idgudang CHARACTER(30) COLLATE pg_catalog."default",
-    idspec CHARACTER(30) COLLATE pg_catalog."default",
-    unit CHARACTER(20) COLLATE pg_catalog."default",
-    qty NUMERIC(18,2),
-    qtybonus NUMERIC(18,2),
-    harga NUMERIC(18,2),
-    multidisc NUMERIC(18,2),
-    volitem NUMERIC(18,2),
-    biaya NUMERIC(18,2),
-    biaya2 NUMERIC(18,2),
-    
+    idurut          SERIAL PRIMARY KEY,
 
-    nilai NUMERIC(18,2),
-    descriptionpo TEXT COLLATE pg_catalog."default",
-    descriptionpp TEXT COLLATE pg_catalog."default",
-    status CHARACTER(6) COLLATE pg_catalog."default",
-    inputby CHARACTER VARYING(50) COLLATE pg_catalog."default",
-    inputdate TIMESTAMP WITHOUT TIME ZONE,
-    updateby CHARACTER VARYING(50) COLLATE pg_catalog."default",
-    updatedate TIMESTAMP WITHOUT TIME ZONE,
-    docnotmp character(30)
+    docno           CHARACTER(30) NOT NULL,
+    docnopo         CHARACTER(30) NOT NULL,
+
+    uniqueid        VARCHAR(64),
+
+    idbarang        CHARACTER(20),
+    nmbarang        CHARACTER(150),
+
+    idprincipal     CHARACTER(20),
+    idgudang        CHARACTER(30),
+    idspec          CHARACTER(30),
+
+    unit            CHARACTER(20),
+
+    qty             NUMERIC(18,2),
+    qtybonus        NUMERIC(18,2),
+
+    harga           NUMERIC(18,2),
+
+    multidisc       NUMERIC(18,2),
+
+    volitem         NUMERIC(18,2),
+
+    biaya           NUMERIC(18,2),
+    biaya2          NUMERIC(18,2),
+
+    nilai           NUMERIC(18,2),
+
+    descriptionpo   TEXT,
+    descriptionpp   TEXT,
+
+    status          CHARACTER(6),
+
+    inputby         VARCHAR(50),
+    inputdate       TIMESTAMP WITHOUT TIME ZONE,
+
+    updateby        VARCHAR(50),
+    updatedate      TIMESTAMP WITHOUT TIME ZONE,
+
+    docnotmp        CHARACTER(30),
+
+    -- =========================================
+    -- KOLOM YANG SEBELUMNYA DITAMBAHKAN ALTER
+    -- =========================================
+
+    doctype         CHARACTER(10) DEFAULT 'GR',
+
+    idtax           CHARACTER(20),
+    currcode        CHARACTER(3),
+    kurs            NUMERIC(18,2),
+
+    nilaikonversi   NUMERIC(18,2),
+    nilaipajak      NUMERIC(18,2),
+
+    qtyretur        NUMERIC(18,2) DEFAULT 0
+
 )
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS sc_trx.lpb_dtl
+ALTER TABLE sc_trx.lpb_dtl
     OWNER TO postgres;
-
-
-alter table sc_trx.lpb add column doctype character(10) default 'GR';
-alter table sc_tmp.lpb add column doctype character(10) default 'GR';
-alter table sc_tmp.lpb_dtl add column doctype character(10) default 'GR';
-alter table sc_trx.lpb_dtl add column doctype character(10) default 'GR';
-
-
+	
+	
+	
+	
+	
+	
+/* FUNCTION STORE PROCEDURE TRIGGER */
 
 -- FUNCTION: sc_tmp.tr_lpb_finalize()
 
@@ -388,16 +475,22 @@ LEFT JOIN sc_mst.mbarang mb
 --WHERE rtrim(h.docno) = rtrim(OLD.docno)
   --AND h.inputby = v_inputby
 
-        ON CONFLICT (docno, idbarang, idlocation, batch)
-        DO UPDATE SET
-            qty_in = EXCLUDED.qty_in,
-            pricelst_in = EXCLUDED.pricelst_in,
-            currcode = EXCLUDED.currcode,
-            currvalue = EXCLUDED.currvalue,
-            idgroup = EXCLUDED.idgroup,
-            grouptype = EXCLUDED.grouptype,
-            is_posted = FALSE,
-            posted_at = NULL;
+        ON CONFLICT (
+    docno,
+    idbarang,
+    idlocation,
+    batch,
+    uniqueid
+)
+DO UPDATE SET
+    qty_in      = EXCLUDED.qty_in,
+    pricelst_in = EXCLUDED.pricelst_in,
+    currcode    = EXCLUDED.currcode,
+    currvalue   = EXCLUDED.currvalue,
+    idgroup     = EXCLUDED.idgroup,
+    grouptype   = EXCLUDED.grouptype,
+    is_posted   = FALSE,
+    posted_at   = NULL;
             
             
         /* END NILAI PERSEDIAAN DAN NILAI COA */	
@@ -690,33 +783,4 @@ CREATE OR REPLACE TRIGGER tr_lpb
     FOR EACH ROW
     EXECUTE FUNCTION sc_trx.tr_lpb();
 
-
-
-
-
-
--- ALTER TABLE sc_tmp.lpb_dtl
--- ADD COLUMN uniqueid VARCHAR(64)
-
--- ALTER TABLE sc_trx.lpb_dtl
--- ADD COLUMN uniqueid VARCHAR(64)
-
-
--- Tambahkan kolom di sc_trx.lpb_dtl
-ALTER TABLE sc_trx.lpb_dtl 
-ADD COLUMN idtax character(20),
-ADD COLUMN currcode character(3),
-ADD COLUMN kurs numeric(18,2),
-ADD COLUMN nilaikonversi numeric(18,2),
-ADD COLUMN nilaipajak numeric(18,2),
-ADD COLUMN IF NOT EXISTS qtyretur numeric(18,2) DEFAULT 0;
-
--- Tambahkan kolom di sc_tmp.lpb_dtl
-ALTER TABLE sc_tmp.lpb_dtl 
-ADD COLUMN idtax character(20),
-ADD COLUMN currcode character(3),
-ADD COLUMN kurs numeric(18,2),
-ADD COLUMN nilaikonversi numeric(18,2),
-ADD COLUMN nilaipajak numeric(18,2),    
-ADD COLUMN IF NOT EXISTS qtyretur numeric(18,2) DEFAULT 0;
 

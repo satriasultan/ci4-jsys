@@ -96,16 +96,399 @@ use App\Libraries\Fiky_encryption;
         }
     </style>
     <style>
+        /*#app-zoom {*/
+        /*    zoom: 0.75; */
+        /*    width: 100%; */
+        /*}*/
+
         #app-zoom {
-            zoom: 0.75; 
-            width: 100%; 
+            zoom: 0.90;
+            width: 100%;
         }
 
         #app-zoom .modal {
             zoom: 1.333; 
         }
+
+        /*paksa global colour*/
+        .nav-link {
+            color: #3232f3 !important;
+        }
+        .nav-link,
+        .nav-link:hover,
+        .nav-link:focus,
+        .nav-link.active {
+            color: #3232f3 !important;
+        }
     </style>
-    <style> .ratakanan { text-align : right; } </style>
+    <style> .ratakanan { text-align : right; }
+
+
+        /* =========================================
+           FIXED FOOTER
+           ========================================= */
+
+        .footer {
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            z-index: 9999 !important;
+
+            height: 35px;
+            padding: 8px 20px !important;
+
+            background: rgba(255, 255, 255, 0.95) !important;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .page-wrapper {
+            padding-bottom: 45px !important;
+        }
+
+
+    </style>
+    <style>
+        /*Global Tabs*/
+
+        /* =====================================================
+   GLOBAL CORPORATE TABS
+   ===================================================== */
+        /* =========================================
+           GLOBAL CORPORATE TABS
+           ========================================= */
+
+        .nav-tabs {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+
+            margin: 0 !important;
+            padding: 0 8px;
+
+            border-bottom: 1px solid #d9dee7 !important;
+            background: #ffffff;
+        }
+
+        /* ITEM */
+        .nav-tabs .nav-item {
+            margin-bottom: -1px !important;
+        }
+
+        /* TAB */
+        .nav-tabs .nav-link {
+            position: relative;
+
+            padding: 8px 18px !important;
+
+            border: 1px solid transparent !important;
+            border-bottom: 0 !important;
+
+            border-radius: 6px 6px 0 0 !important;
+
+            background: transparent !important;
+
+            color: #6b7280 !important;
+
+            font-size: 13px;
+            font-weight: 600;
+
+            transition: all .2s ease;
+        }
+
+        /* HOVER */
+        .nav-tabs .nav-link:hover {
+            color: #0042c3 !important;
+
+            background: linear-gradient(
+                    to bottom,
+                    rgba(0, 66, 195, 0.06),
+                    rgba(0, 66, 195, 0)
+            ) !important;
+        }
+
+        /* ACTIVE */
+        .nav-tabs .nav-link.active {
+            color: #0042c3 !important;
+
+            background: linear-gradient(
+                    to bottom,
+                    rgba(0, 66, 195, 0.10) 0%,
+                    rgba(0, 66, 195, 0.03) 45%,
+                    #ffffff 100%
+            ) !important;
+
+            border: 1px solid #d9dee7 !important;
+            border-bottom: 1px solid #ffffff !important;
+
+            font-weight: 600;
+        }
+
+        /* GARIS ACTIVE */
+        .nav-tabs .nav-link.active::after {
+            content: "";
+
+            position: absolute;
+
+            left: 14px;
+            right: 14px;
+            bottom: -1px;
+
+            height: 2px;
+
+            background: #0042c3;
+
+            border-radius: 2px 2px 0 0;
+        }
+
+        /* FOCUS */
+        .nav-tabs .nav-link:focus {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+    </style>
+    <style>
+        /* =========================================
+   GLOBAL CORPORATE DATATABLE
+   ========================================= */
+
+        table.dataTable {
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+            font-size: 13px;
+        }
+
+        table.dataTable thead th {
+            background: linear-gradient(
+                    135deg,
+                    #1f2937,
+                    #374151
+            ) !important;
+
+            color: #ffffff !important;
+            font-weight: 600;
+            text-align: center;
+
+            padding: 10px 8px !important;
+
+            border: 1px solid #dee2e6 !important;
+
+            vertical-align: middle;
+            white-space: nowrap;
+
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+
+        table.dataTable thead th:first-child {
+            border-top-left-radius: 8px;
+        }
+
+        table.dataTable thead th:last-child {
+            border-top-right-radius: 8px;
+        }
+
+        table.dataTable tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        table.dataTable tbody tr:hover {
+            background-color: #e9f2ff !important;
+            transition: .2s ease-in-out;
+        }
+
+
+        /* =========================================
+           GLOBAL CORPORATE CARD
+           ========================================= */
+
+        .card {
+            border: none !important;
+            border-radius: 14px !important;
+
+            box-shadow:
+                    0 10px 25px rgba(0,0,0,.05) !important;
+        }
+
+        .card-header {
+            background: linear-gradient(
+                    135deg,
+                    #4b5563,
+                    #6b7280
+            ) !important;
+
+            border-bottom: none !important;
+
+            padding: 12px 18px !important;
+
+            border-top-left-radius: 14px !important;
+            border-top-right-radius: 14px !important;
+        }
+
+
+        /* =========================================
+           GLOBAL CARD HEADER BUTTON
+           ========================================= */
+
+        .card-header .btn-primary {
+            background: #e5e7eb !important;
+            color: #374151 !important;
+
+            border: none !important;
+
+            font-weight: 600;
+
+            padding: 8px 16px !important;
+
+            border-radius: 8px !important;
+
+            transition: all .2s ease-in-out;
+        }
+
+        .card-header .btn-primary:hover {
+            background: #d1d5db !important;
+
+            transform: translateY(-2px);
+        }
+
+
+        /* =========================================
+           GLOBAL DROPDOWN
+           ========================================= */
+
+        .dropdown-menu {
+            border-radius: 10px !important;
+
+            border: none !important;
+
+            box-shadow:
+                    0 10px 25px rgba(0,0,0,.10) !important;
+
+            padding: 6px 0 !important;
+        }
+
+        .dropdown-item {
+            padding: 8px 16px !important;
+
+            font-size: 14px;
+
+            color: #374151 !important;
+
+            transition: .2s ease-in-out;
+        }
+
+        .dropdown-item:hover {
+            background: #f3f4f6 !important;
+
+            color: #111827 !important;
+
+            padding-left: 20px !important;
+        }
+
+        .dropdown-item i {
+            width: 20px;
+
+            color: #6b7280;
+        }
+
+        /* =========================================
+   GLOBAL DROPDOWN - BLUE CORPORATE
+   ========================================= */
+
+        .dropdown-menu {
+            border-radius: 10px !important;
+            border: 1px solid #d7e3f5 !important;
+
+            background: linear-gradient(
+                    to bottom,
+                    #eef5ff 0%,
+                    #f7faff 55%,
+                    #ffffff 100%
+            ) !important;
+
+            box-shadow:
+                    0 10px 25px rgba(0, 66, 195, 0.15) !important;
+
+            padding: 6px 0 !important;
+        }
+
+
+        /* SEMUA LI */
+        .dropdown-menu li {
+            background: transparent !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+
+        /* ITEM */
+        .dropdown-menu li > a,
+        .dropdown-menu .dropdown-item {
+            display: block !important;
+            width: 100% !important;
+
+            padding: 8px 16px !important;
+
+            font-size: 14px;
+            font-weight: 500;
+
+            color: #1f2937 !important;
+
+            background: transparent !important;
+
+            transition: all .2s ease;
+        }
+
+
+        /* HOVER */
+        .dropdown-menu li > a:hover,
+        .dropdown-menu .dropdown-item:hover {
+            color: #0042c3 !important;
+
+            background: linear-gradient(
+                    to right,
+                    rgba(0, 66, 195, 0.16),
+                    rgba(0, 66, 195, 0.04),
+                    rgba(255,255,255,0)
+            ) !important;
+
+            padding-left: 20px !important;
+        }
+
+
+        /* ICON */
+        .dropdown-menu li > a i,
+        .dropdown-menu .dropdown-item i {
+            width: 20px;
+
+            color: #0042c3 !important;
+
+            margin-right: 5px;
+        }
+
+
+        /* ACTIVE */
+        .dropdown-menu li > a.active,
+        .dropdown-menu .dropdown-item.active {
+            color: #0042c3 !important;
+
+            background: linear-gradient(
+                    to right,
+                    rgba(0, 66, 195, 0.18),
+                    rgba(0, 66, 195, 0.05),
+                    transparent
+            ) !important;
+
+            font-weight: 600;
+
+            border-left: 3px solid #0042c3;
+        }
+    </style>
     <!-- END CUSTOM CSS  -->
     <?php echo $_ini_jsnya;?>
     <?php echo $_ini_keyaccess;?>
@@ -179,11 +562,11 @@ use App\Libraries\Fiky_encryption;
     <!-- ============================================================== -->
     <!-- footer -->
     <!-- ============================================================== -->
-  <!--  <footer class="footer">
-        Copyright © 2022  IT
+    <footer class="footer">
+        Copyright © 2026  IT
         <a href="https://www.jts.co.id">PT. Jatim Taman Steel.MFG</a>
-        2022
-    </footer>-->
+        2026
+    </footer>
     <!-- ============================================================== -->
     <!-- End footer -->
     <!-- ============================================================== -->
