@@ -146,7 +146,7 @@ function documentReadable(){
                 });
             });
             skipRoleChange = true;
-            $('[name="docdate"]').val(json.dataTables.items[0].docdate);
+            $('[name="docdate"]').val(moment(json.dataTables.items[0].docdate).format('DD-MM-YYYY'));
             // $('[name="estpakai"]').val(json.dataTables.items[0].estpakai);
             $('[name="pemohon"]').val(json.dataTables.items[0].pemohon);
 
@@ -378,6 +378,23 @@ function tableVoidPPDetail(){
                 }
             ]
         });
+
+
+        $('#tabppdtl tbody').on('click', 'tr', function(e) {
+            // Cegah jika yang diklik adalah checkbox itu sendiri (untuk menghindari double trigger)
+            if ($(e.target).is('input[type="checkbox"]')) {
+                return;
+            }
+            
+            // Cari checkbox di dalam baris ini
+            var checkbox = $(this).find('input[type="checkbox"].row-check');
+            
+            // Toggle status checkbox
+            checkbox.prop('checked', !checkbox.prop('checked'));
+            
+            // Trigger event change jika diperlukan
+            checkbox.trigger('change');
+        });
     }
 
     return initTable();
@@ -434,6 +451,8 @@ function setSelect2Ajax(selector, value, text) {
     let option = new Option(text || value, value, true, true);
     $(selector).append(option).trigger('change');
 }
+
+let currentEditId = null;
 function btnUpdateDetail(){
     const ids = getCheckedDetailIds();
     console.log('IDS:', ids);
@@ -467,16 +486,21 @@ function btnUpdateDetail(){
             if(res.status){
 
                 $('#idurut').val(res.data.idurut);
+                $('#uniqueid').val(res.data.uniqueid);
                 $('#description').val(res.data.description);
                 $('#docno').val(res.data.docno);
+                $('#docnoppmodal').val(res.data.docnopp);
                 $('#idbarang').val(res.data.idbarang);
                 $('#nmbarang').val(res.data.nmbarang);
                 $('#unit').val(res.data.unit);
                 $('#qty').val(res.data.qty);
+                $('#capexno').val(res.data.capexno);
                 setSelect2Ajax('#idbarang', res.data.idbarang, res.data.idbarang);
 
-                $('#modalDetailVoidPPLabel').text('Update VoidPP Detail');
-                $('#modalDetailVoidPP').modal('show');
+                currentEditId = res.data.idurut;
+
+                $('#modalUpdateVoidPPLabel').text('Update VoidPP Detail');
+                $('#modalUpdateVoidPP').modal('show');
 
             }else{
                 Swal.fire({
@@ -489,6 +513,11 @@ function btnUpdateDetail(){
     });
 }
 
+
+// Reset currentEditId ketika modal ditutup
+$('#modalUpdateVoidPP').on('hidden.bs.modal', function () {
+    currentEditId = null;
+});
 
 function btnDeleteDetail(){
     const ids = getCheckedDetailIds();
@@ -645,7 +674,42 @@ $('#btn-reset').click(function(){ //button reset event click
 });
 
 
-
+function setToCancel(docno) {
+    Swal.fire({
+        title: 'Batalkan pembuatan Void PP?',
+        text: "Pengajuan dokumen akan dibatalkan",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, Batalkan'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: HOST_URL + '/purchase/trans/updateStatusVoidPP',
+                type: 'POST',
+                data: { docno: docno, status: 'C' },
+                dataType: 'json',
+                success: function(res) {
+                    if (res.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil',
+                            text: 'Pengajuan dokumen berhasil dibatalkan'
+                        }).then(() => {
+                            reload_tableVoidPPTrx()
+                        });
+                    } else {
+                        Swal.fire('Gagal', res.message || 'Terjadi kesalahan', 'error');
+                    }
+                },
+                error: function() {
+                    Swal.fire('Error', 'Tidak dapat terhubung ke server', 'error');
+                }
+            });
+        }
+    });
+}
 
 
 function saveVoidPPDetail() {
@@ -671,6 +735,10 @@ function saveVoidPPDetail() {
 
         // docno gabungan (lebih aman pakai hidden header)
         formData.set('docno', $('#prefix').val() + '/' + $('#infix').val() + '/' + $('#sufix').val());
+        let qty = $('#qty').val();
+        formData.set('qty', convertToDbNumber(qty));
+        formData.set('uniqueid', $('#uniqueid').val());
+        formData.set('docnopp', $('#docnopp').val());
         // convert qty ke numeric DB
         // let qty = $('#qty').val();
         // formData.set('qty', convertToDbNumber(qty));
@@ -727,8 +795,9 @@ function saveVoidPPDetail() {
 
                 // Jika hanya tambah detail
                 $('#modalDetailVoidPP').modal('hide');
+                $('#modalUpdateVoidPP').modal('hide');
                 reload_table_voidpp_dtl();
-                $('#formVoidPPDetail')[0].reset();
+                $('#formVoidPPUpdate')[0].reset();
             },
 
             error: function (xhr) {
@@ -749,7 +818,21 @@ function saveVoidPPDetail() {
 
 function btnInputDetail() {
 
-    $('#formVoidPPDetail')[0].reset();
+    let cabang = $('#cabang').val();
+
+    if (!cabang || cabang.trim() === '') {
+        Swal.fire({
+            title: 'Peringatan',
+            text: 'Cabang harus dipilih terlebih dahulu.',
+            icon: 'warning',
+            confirmButtonText: 'OK'
+        });
+
+        $('#cabang').focus();
+        return;
+    }
+
+    $('#formVoidPPUpdate')[0].reset();
 
     
     // 🔹 Clear select2
@@ -823,12 +906,12 @@ $('#cabang').on('change', function () {
                                 startDate: today,
                                 minDate: startDate,
                                 maxDate: endDate,
-                                locale: { format: 'YYYY-MM-DD' },
+                                locale: { format: 'DD-MM-YYYY' },
                                 cancelLabel: 'Clear'
                             });
                             // rebind handlers jika perlu (apply/cancel)
                             $el.on('apply.daterangepicker', function(ev, picker) {
-                                $(this).val(picker.startDate.format('YYYY-MM-DD'));
+                                $(this).val(picker.startDate.format('DD-MM-YYYY'));
                             });
                             $el.on('cancel.daterangepicker', function(ev, picker) {
                                 $(this).val('');
@@ -836,7 +919,7 @@ $('#cabang').on('change', function () {
                         }
 
                         // isi input langsung (opsional)
-                        $el.val(today.format('YYYY-MM-DD'));
+                        $el.val(today.format('DD-MM-YYYY'));
                     }
 
                     $('#docno').val(

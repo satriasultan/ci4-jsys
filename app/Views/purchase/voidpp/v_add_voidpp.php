@@ -232,13 +232,13 @@
                             <i class="fa fa-plus"></i>
                         </button>
 
-                        <!-- <button type="button"
+                        <button type="button"
                                 class="btn btn-warning btn-lg action-btn"
                                 data-bs-toggle="tooltip"
                                 title="Update Data"
                                 onclick="btnUpdateDetail()">
                             <i class="fa fa-edit"></i>
-                        </button> -->
+                        </button>
 
                         <button type="button"
                                 class="btn btn-danger btn-lg action-btn"
@@ -261,6 +261,7 @@
                             <th>PP</th>
                             <th>ID Barang</th>
                             <th>Nama Barang</th>
+                            <th>No. Capex</th>
                             <th>Satuan</th>
                             <th>Quantity</th>
                             <th>Keterangan</th>
@@ -273,10 +274,16 @@
                     </table>
                 </div>
                 <div class="card-footer bg-light">
-                    <a href="<?= base_url('purchase/trans/voidpp') ?>"
+                    <!-- <a href="<?= base_url('purchase/trans/voidpp') ?>"
                         class="btn btn-default btn-lg">
                         <i class="fa fa-arrow-left mr-2"></i>
                         Kembali
+                    </a> -->
+                    <a href="<?= base_url('purchase/trans/clearEntryVoidPP') ?>" 
+                        onclick="return confirm('Are you sure clear this entry?')" 
+                        class="btn btn-default float-left">
+                        <i class="fa fa-arrow-left"></i>
+                        Back
                     </a>
                     <?php if ($typeform != 'DETAIL' && $dtldata != null): ?>
                         <button type="submit"
@@ -416,6 +423,136 @@
 
 
 
+
+<div class="modal fade" id="modalUpdateVoidPP" tabindex="-1" role="dialog" aria-labelledby="modalUpdateVoidPPLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+
+            <!-- HEADER -->
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title" id="modalUpdateVoidPPLabel">
+                    </i> Input Item Detail
+                </h5>
+                <button type="button" class="close text-white" data-bs-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+
+            <!-- FORM -->
+            <form id="formVoidPPUpdate">
+                <div class="modal-body">
+
+                    <!-- hidden -->
+                    <input type="hidden" name="idurut" id="idurut">
+                    <input type="hidden" name="uniqueid" id="uniqueid">
+                    <input type="hidden" name="docno" id="docno">
+                    <!-- <input type="hidden" name="status" id="status" value="P">
+                    <input type="hidden" name="chold" id="chold" value="NO"> -->
+
+                    <!-- ROW 1 -->
+                    <div class="row">
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label>PP</label>
+                                <input name="docnoppmodal" id="docnoppmodal"
+                                        class="form-control"
+                                        style="width:100%" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label>ID Barang <span style="color: red;">*</span></label>
+                                <select name="idbarang" id="idbarang"
+                                        class="form-control select2"
+                                        style="width:100%" readonly></select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-8">
+                            <div class="form-group">
+                                <label>Nama Barang <span style="color: red;">*</span></label>
+                                <input type="text"
+                                        name="nmbarang"
+                                        id="nmbarang"
+                                        class="form-control"
+                                        placeholder="Nama Barang"
+                                        style="text-transform:uppercase" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ROW 2 -->
+                    <div class="row">
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label>Satuan <span style="color: red;">*</span></label>
+                                <input name="unit" id="unit"
+                                        class="form-control select2"
+                                        style="width:100%" readonly>
+                            </div>
+                        </div>
+
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label>Quantity <span style="color: red;">*</span></label>
+                                <input type="text"
+                                        name="qty"
+                                        id="qty"
+                                        required
+                                        class="form-control jtsseparator ratakanan"
+                                        placeholder="0.00">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label>No. Capex</label>
+                                <input type="text"
+                                        name="capexno"
+                                        id="capexno"
+                                        maxlength="30"
+                                        class="form-control"
+                                        readonly
+                                        style="text-transform: uppercase;"
+                                        placeholder="No. Capex">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Keterangan<span style="color: red;">*</span></label>
+                                <textarea type="text"
+                                        name="description"
+                                        rows="4"
+                                        style="text-transform: uppercase;"
+                                        id="description"
+                                        readonly
+                                        class="form-control"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FOOTER -->
+                <div class="modal-footer bg-light">
+                    
+                    <button type="button"
+                        class="btn btn-primary"
+                        onclick="saveVoidPPDetail()">
+                        <i class="fa fa-save"></i> Simpan
+                    </button>
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                            onclick="$('#modalDetailPP').modal('hide')">
+                        <i class="fa fa-times"></i> Batal
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
 <script type="application/javascript" src="<?= base_url('assets/pagejs/purchase/voidpp.js') ?>"></script>
 <script type="text/javascript">
     $(function() {
@@ -437,13 +574,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#docdate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('DD-MM-YYYY'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'docdate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'docdate');
         });
@@ -457,13 +594,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#estpakai').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('DD-MM-YYYY'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'estpakai', 'NOT_VALIDATED').bootstrapValidator('validateField', 'estpakai');
         });

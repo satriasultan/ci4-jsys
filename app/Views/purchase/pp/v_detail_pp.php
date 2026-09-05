@@ -260,6 +260,7 @@
                             </th>
                             <th>ID Barang</th>
                             <th>Nama Barang</th>
+                            <th>No. Capex</th>
                             <th>Status</th>
                             <th>Satuan</th>
                             <th>Quantity</th>
@@ -365,7 +366,19 @@
                                         placeholder="0.00">
                             </div>
                         </div>
-                        <div class="col-md-8">
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label>No. Capex</label>
+                                <input type="text"
+                                        name="capexno"
+                                        id="capexno"
+                                        maxlength="30"
+                                        class="form-control"
+                                        style="text-transform: uppercase;"
+                                        placeholder="No. Capex">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
                             <div class="form-group">
                                 <label>Keterangan</label>
                                 <textarea type="text"
@@ -422,13 +435,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#docdate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('DD-MM-YYYY'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'docdate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'docdate');
         });
@@ -442,13 +455,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#estpakai').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('DD-MM-YYYY'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'estpakai', 'NOT_VALIDATED').bootstrapValidator('validateField', 'estpakai');
         });

@@ -29,7 +29,7 @@
 		<div class="card">
 			<div class="card-header">
                 <div class="btn-group">
-                    <button type="button" class="btn btn-primary dropdown-toggle dropdown-icon" data-bs-toggle="dropdown"><?php echo 'Menu'; ?>
+                    <button type="button" class="btn btn-primary btn-sm dropdown-toggle dropdown-icon" data-bs-toggle="dropdown"><?php echo 'Menu'; ?>
                     </button>
                     <div class="dropdown-menu">
                         <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#filter"  href="#" disabled="true"><i class="fa fa-filter"></i><?php echo '    Filter'; ?></a>

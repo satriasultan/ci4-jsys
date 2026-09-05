@@ -34,7 +34,7 @@
 		<div class="card">
             <div class="card-header">
                 <div class="btn-group">
-                    <button type="button" class="btn btn-primary dropdown-toggle dropdown-icon" data-bs-toggle="dropdown"><?php echo 'Menu'; ?>
+                    <button type="button" class="btn btn-primary btn-sm dropdown-toggle dropdown-icon" data-bs-toggle="dropdown"><?php echo 'Menu'; ?>
                     </button>
                     <div class="dropdown-menu">
                         <a class="dropdown-item" href="<?= base_url('master/item/input') ?>"><i class="fa fa-plus"></i><?php echo '   Input'; ?> </a>

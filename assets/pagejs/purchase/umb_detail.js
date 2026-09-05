@@ -804,12 +804,12 @@ $('#cabang').on('change', function () {
                                 startDate: today,
                                 minDate: startDate,
                                 maxDate: endDate,
-                                locale: { format: 'YYYY-MM-DD' },
+                                locale: { format: 'DD-MM-YYYY' },
                                 cancelLabel: 'Clear'
                             });
                             // rebind handlers jika perlu (apply/cancel)
                             $el.on('apply.daterangepicker', function(ev, picker) {
-                                $(this).val(picker.startDate.format('YYYY-MM-DD'));
+                                $(this).val(picker.startDate.format('DD-MM-YYYY'));
                             });
                             $el.on('cancel.daterangepicker', function(ev, picker) {
                                 $(this).val('');
@@ -817,7 +817,7 @@ $('#cabang').on('change', function () {
                         }
 
                         // isi input langsung (opsional)
-                        $el.val(today.format('YYYY-MM-DD'));
+                        $el.val(today.format('DD-MM-YYYY'));
                     }
 
                     $('#docno').val(

@@ -261,6 +261,7 @@
                             <th>PP</th>
                             <th>ID Barang</th>
                             <th>Nama Barang</th>
+                            <th>No. Capex</th>
                             <th>Satuan</th>
                             <th>Quantity</th>
                             <th>Keterangan</th>

@@ -355,6 +355,7 @@
                                             <th>PP</th>
                                             <th>ID Barang</th>
                                             <th>Nama Barang</th>
+                                            <th>No. Capex</th>
                                             <th>Satuan</th>
                                             <th>Qty</th>
                                             <th>Bonus Qty</th>
@@ -465,10 +466,16 @@
 
                 </div>
                 <div class="card-footer bg-light">
-                    <a href="<?= base_url('purchase/trans/po') ?>"
+                    <!-- <a href="<?= base_url('purchase/trans/po') ?>"
                         class="btn btn-default btn-lg">
                         <i class="fa fa-arrow-left mr-2"></i>
                         Kembali
+                    </a> -->
+                    <a href="<?= base_url('purchase/trans/clearEntryPO') ?>" 
+                        onclick="return confirm('Are you sure clear this entry?')" 
+                        class="btn btn-default float-left">
+                        <i class="fa fa-arrow-left"></i>
+                        Back
                     </a>
                     <?php if ($typeform != 'DETAIL' && $dtldata != null): ?>
                         <button type="submit"
@@ -537,7 +544,7 @@
                     <button type="button"
                             class="btn btn-primary"
                             onclick="savePODetail()">
-                        <i class="fa fa-save"></i> Simpan
+                        <i class="fa fa-save"></i> Proses
                     </button>
                     <button type="button"
                             class="btn btn-secondary"
@@ -839,20 +846,42 @@
             $('#docno').val(dtldata.docno.trim()).prop('readonly', true);
         }
 
+         $(document).ready(function() {
+            // Misal dapat prefix dari input lain
+            const prefix = $('#prefix').val() || 'JI'; // contoh
+            
+            // Setup berdasarkan prefix
+            setupEstpakai(prefix);
+            
+            // Event listener untuk perubahan prefix
+            $('#prefix').on('change', function() {
+                const newPrefix = $(this).val();
+                setupEstpakai(newPrefix);
+            });
+            
+            // Tambahan: tombol untuk menampilkan opsi pilihan
+            $('#btnShowOptions').on('click', function() {
+                const prefix = $('#prefix').val() || 'JI';
+                showDateOptions(prefix);
+            });
+        });
 
         $('#docdate').daterangepicker({
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#docdate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
-            // jika butuh validasi bootstrapValidator:
-            // $('#formInputTransfers').bootstrapValidator('updateStatus', 'docdate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'docdate');
+            const dateStr = picker.startDate.format('DD-MM-YYYY');
+            $(this).val(dateStr);
+            
+            // Update estpakai berdasarkan docdate baru
+            const prefix = $('#prefix').val() || 'JI';
+            setupEstpakai(prefix);
         });
         $('#docdate').on('cancel.daterangepicker', function(ev, picker) {
             $(this).val('');
@@ -864,13 +893,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#senddate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('DD-MM-YYYY'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'senddate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'senddate');
         });

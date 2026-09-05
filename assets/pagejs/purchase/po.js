@@ -280,8 +280,17 @@ function documentReadable(){
                 // $("#phone").val(data.phone).prop('readonly', true);
             });
             skipRoleChange = true;
-            $('[name="docdate"]').val(json.dataTables.items[0].docdate);
-            $('[name="senddate"]').val(json.dataTables.items[0].senddate);
+            $('[name="docdate"]').val(moment(json.dataTables.items[0].docdate).format('DD-MM-YYYY'));
+            $('[name="senddate"]').val(moment(json.dataTables.items[0].senddate).format('DD-MM-YYYY'));
+
+            if (prefixParts[0]) {
+                // Ambil nilai senddate yang sudah di-set
+                const senddateValue = $('[name="senddate"]').val();
+                setupEstpakai(prefixParts[0], senddateValue);
+            }
+            
+
+            // $('[name="senddate"]').val(json.dataTables.items[0].senddate);
             setJtsValue('[name="jthtempo"]', convertToDbNumber(json.dataTables.items[0].jthtempo));
             setJtsValue('[name="kurs"]', convertToDbNumber(json.dataTables.items[0].kurs));
             $('[name="isinclusive"]').prop(
@@ -392,6 +401,44 @@ function documentReadable(){
 //     $('[name="unit"]').val(data.unit.trim()).prop("readonly", true);
 //     $("#batch").val(null).trigger('change');
 // });
+
+function setToCancel(docno) {
+    Swal.fire({
+        title: 'Batalkan pembuatan PO?',
+        text: "Pengajuan dokumen akan dibatalkan",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, Batalkan'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: HOST_URL + '/purchase/trans/updateStatusPO',
+                type: 'POST',
+                data: { docno: docno, status: 'C' },
+                dataType: 'json',
+                success: function(res) {
+                    if (res.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil',
+                            text: 'Pengajuan dokumen berhasil dibatalkan'
+                        }).then(() => {
+                            reload_tablePOTrx()
+                            reload_tablePOApprvTrx()
+                        });
+                    } else {
+                        Swal.fire('Gagal', res.message || 'Terjadi kesalahan', 'error');
+                    }
+                },
+                error: function() {
+                    Swal.fire('Error', 'Tidak dapat terhubung ke server', 'error');
+                }
+            });
+        }
+    });
+}
 
 
 function setToApproved(docno) {
@@ -772,6 +819,22 @@ function tablePODetail(){
                 }
             ]
         });
+
+        $('#tabppdtl tbody').on('click', 'tr', function(e) {
+            // Cegah jika yang diklik adalah checkbox itu sendiri (untuk menghindari double trigger)
+            if ($(e.target).is('input[type="checkbox"]')) {
+                return;
+            }
+            
+            // Cari checkbox di dalam baris ini
+            var checkbox = $(this).find('input[type="checkbox"].row-check');
+            
+            // Toggle status checkbox
+            checkbox.prop('checked', !checkbox.prop('checked'));
+            
+            // Trigger event change jika diperlukan
+            checkbox.trigger('change');
+        });
     }
 
     return initTable();
@@ -970,7 +1033,9 @@ function btnDeleteDetail(){
                         showConfirmButton: false
                     });
 
+
                     $('#tabppdtl').DataTable().ajax.reload(null,false);
+                    documentReadable()
 
                 }else{
                     Swal.fire({
@@ -1091,10 +1156,10 @@ function savePODetail() {
 
     Swal.fire({
         title: 'Konfirmasi',
-        text: 'Simpan data PO Detail?',
+        text: 'Proses data PP ke Detail PO?',
         icon: 'question',
         showCancelButton: true,
-        confirmButtonText: 'Ya, Simpan',
+        confirmButtonText: 'Ya, Proses',
         cancelButtonText: 'Batal',
         reverseButtons: true
     }).then((result) => {
@@ -1216,9 +1281,15 @@ function btnInputDetail() {
     let cabang = $('#cabang').val();
 
     if (!cabang || cabang.trim() === '') {
-        alert('Cabang harus dipilih terlebih dahulu');
+        Swal.fire({
+            title: 'Peringatan',
+            text: 'Cabang harus dipilih terlebih dahulu.',
+            icon: 'warning',
+            confirmButtonText: 'OK'
+        });
+
         $('#cabang').focus();
-        return; // stop proses
+        return;
     }
     $('#formPODetail')[0].reset();
 
@@ -1357,12 +1428,12 @@ $('#cabang').on('change', function () {
                                 startDate: today,
                                 minDate: startDate,
                                 maxDate: endDate,
-                                locale: { format: 'YYYY-MM-DD' },
+                                locale: { format: 'DD-MM-YYYY' },
                                 cancelLabel: 'Clear'
                             });
                             // rebind handlers jika perlu (apply/cancel)
                             $el.on('apply.daterangepicker', function(ev, picker) {
-                                $(this).val(picker.startDate.format('YYYY-MM-DD'));
+                                $(this).val(picker.startDate.format('DD-MM-YYYY'));
                             });
                             $el.on('cancel.daterangepicker', function(ev, picker) {
                                 $(this).val('');
@@ -1370,12 +1441,25 @@ $('#cabang').on('change', function () {
                         }
 
                         // isi input langsung (opsional)
-                        $el.val(today.format('YYYY-MM-DD'));
+                        $el.val(today.format('DD-MM-YYYY'));
                     }
 
                     $('#docno').val(
                         'POB/' + res.infix + '/' + currentKodeSuffix + '0001'
                     );
+
+                    // Set alamat kirim (bisa diedit manual nanti)
+                    if (idbranch === '01.02') {
+                        $('#alamatkirim').val(
+                            'JL. MAYJEND SUNGKONO NO. 90 KEL. PRAMBANGAN KEC.KEBOMAS GRESIK.'
+                        );
+                    } else if (idbranch) {
+                        $('#alamatkirim').val(
+                            'JL. RAYA TAMAN NO. 1 RT.014 RW.003 TAMAN, TAMAN SIDOARJO'
+                        );
+                    } else {
+                        $('#alamatkirim').val(''); // null / kosong
+                    }
                 }
             });
     }
@@ -1408,9 +1492,218 @@ $('#prefix').on('blur', function () {
             $('#docno').val(
                 prefix + '/' + infix + '/' + res.suffix
             );
+            setupEstpakai(prefix);
         }
     });
 });
+
+
+
+
+function setupEstpakai(prefix = '', existingValue = null) {
+    const type = getPrefixType(prefix);
+    const docDateValue = $('#docdate').val();
+    const options = generateDateOptions(type, docDateValue);
+    
+    // Hapus daterangepicker lama
+    if ($('#senddate').data('daterangepicker')) {
+        $('#senddate').daterangepicker('destroy');
+    }
+    
+    // Tentukan tanggal default
+    let defaultDate;
+    let selectedValue = existingValue;
+    
+    // Parse docDate
+    const docDateMoment = moment(docDateValue, 'DD-MM-YYYY');
+    const isDocDateValid = docDateMoment.isValid();
+    
+    if (existingValue) {
+        // Coba parse existing value
+        const parsed = moment(existingValue, 'DD-MM-YYYY');
+        if (parsed.isValid()) {
+            defaultDate = parsed;
+            selectedValue = existingValue;
+        } else {
+            // Jika existingValue tidak valid, gunakan docDate
+            if (isDocDateValid) {
+                defaultDate = docDateMoment;
+                selectedValue = defaultDate.format('DD-MM-YYYY');
+            } else {
+                defaultDate = options.length > 0 ? options[0].date : moment();
+                selectedValue = defaultDate.format('DD-MM-YYYY');
+            }
+        }
+    } else {
+        // Gunakan docDate + 1 minggu/bulan sebagai default
+        if (isDocDateValid) {
+            // Default ke +1 minggu (atau +1 bulan untuk import)
+            const defaultOption = options.length > 0 ? options[0] : null;
+            if (defaultOption) {
+                defaultDate = defaultOption.date;
+                selectedValue = defaultOption.value;
+            } else {
+                defaultDate = docDateMoment;
+                selectedValue = defaultDate.format('DD-MM-YYYY');
+            }
+        } else {
+            defaultDate = options.length > 0 ? options[0].date : moment();
+            selectedValue = defaultDate.format('DD-MM-YYYY');
+        }
+    }
+    
+    // Inisialisasi daterangepicker
+    $('#senddate').daterangepicker({
+        autoUpdateInput: false,
+        singleDatePicker: true,
+        showDropdowns: true,
+        startDate: defaultDate,
+        locale: { format: 'DD-MM-YYYY' },
+        cancelLabel: 'Clear'
+    });
+    
+    $('#senddate').val(selectedValue);
+    
+    // Hapus event lama
+    $('#senddate').off('apply.daterangepicker cancel.daterangepicker');
+    
+    // Event apply
+    $('#senddate').on('apply.daterangepicker', function(ev, picker) {
+        const dateStr = picker.startDate.format('DD-MM-YYYY');
+        $(this).val(dateStr);
+        updateActiveButton(dateStr);
+    });
+    
+    // Event cancel
+    $('#senddate').on('cancel.daterangepicker', function(ev, picker) {
+        $(this).val('');
+        $('.senddate-btn').removeClass('active').css({
+            'background-color': '#ffffff',
+            'color': '#007bff'
+        });
+    });
+    
+    // Buat tombol pilihan cepat
+    let buttonHtml = '<div style="display:flex; flex-wrap:wrap; gap:5px; margin-top:5px;">';
+    
+    options.forEach((opt) => {
+        // Cek apakah nilai ini match dengan selectedValue
+        const isActive = (selectedValue && opt.value === selectedValue);
+        
+        buttonHtml += `<button type="button" 
+                            class="senddate-btn ${isActive ? 'active' : ''}" 
+                            data-date="${opt.value}"
+                            style="
+                                padding: 6px 16px;
+                                background-color: ${isActive ? '#007bff' : '#ffffff'};
+                                color: ${isActive ? '#ffffff' : '#007bff'};
+                                border: 1px solid #007bff;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 13px;
+                                transition: all 0.3s;
+                            "
+                            onmouseover="if(!this.classList.contains('active')){this.style.backgroundColor='#007bff'; this.style.color='#ffffff';}"
+                            onmouseout="if(!this.classList.contains('active')){this.style.backgroundColor='#ffffff'; this.style.color='#007bff';}"
+                            onclick="selectEstpakai('${opt.value}', this)">
+                            ${opt.label}
+                        </button>`;
+    });
+    
+    buttonHtml += '</div>';
+    
+    // Tambahkan tombol setelah input
+    if ($('#senddate_buttons').length === 0) {
+        $('#senddate').after(`<div id="senddate_buttons">${buttonHtml}</div>`);
+    } else {
+        $('#senddate_buttons').html(buttonHtml);
+    }
+}
+
+// Fungsi update active button
+function updateActiveButton(date) {
+    $('.senddate-btn').each(function() {
+        const isActive = $(this).data('date') === date;
+        $(this).toggleClass('active', isActive);
+        
+        if (isActive) {
+            $(this).css({
+                'background-color': '#007bff',
+                'color': '#ffffff'
+            });
+        } else {
+            $(this).css({
+                'background-color': '#ffffff',
+                'color': '#007bff'
+            });
+        }
+    });
+}
+
+function selectEstpakai(date, element) {
+    $('#senddate').val(date);
+    
+    const picker = $('#senddate').data('daterangepicker');
+    if (picker) {
+        picker.setStartDate(moment(date, 'DD-MM-YYYY'));
+    }
+    
+    updateActiveButton(date);
+}
+
+function getPrefixType(prefix) {
+    const cleanPrefix = prefix ? prefix.trim() : '';
+    
+    // Cek import: 3 char dan diakhiri 'I'
+    if (cleanPrefix.length === 3 && cleanPrefix.endsWith('I')) {
+        return 'import';
+    }
+    
+    // Cek local: 'JI' atau lainnya
+    if (cleanPrefix === 'JI') {
+        return 'local';
+    }
+    
+    return 'local'; // default
+}
+
+function generateDateOptions(type, docDate = null) {
+    // Gunakan docDate jika ada, jika tidak gunakan hari ini
+    let baseDate;
+    if (docDate) {
+        baseDate = moment(docDate, 'DD-MM-YYYY');
+        // Jika docDate tidak valid, fallback ke hari ini
+        if (!baseDate.isValid()) {
+            baseDate = moment();
+        }
+    } else {
+        baseDate = moment();
+    }
+    
+    let options = [];
+    
+    if (type === 'import') {
+        for (let i = 1; i <= 6; i++) {
+            const date = baseDate.clone().add(i, 'months');
+            options.push({
+                value: date.format('DD-MM-YYYY'),
+                label: `+${i} Bulan`,
+                date: date
+            });
+        }
+    } else {
+        for (let i = 1; i <= 4; i++) {
+            const date = baseDate.clone().add(i, 'weeks');
+            options.push({
+                value: date.format('DD-MM-YYYY'),
+                label: `+${i} Minggu`,
+                date: date
+            });
+        }
+    }
+    
+    return options;
+}
 
 
 
@@ -1602,32 +1895,26 @@ function showHistoryHarga()
 
                 $.each(res.data,function(i,row){
 
+                    // Format harga dengan toLocaleString
+                    let hargaFormatted = parseFloat(row.harga).toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+
                     html+=`
                     <tr>
-
                         <td class="text-center">${i+1}</td>
-
                         <td>${row.docdate}</td>
-
                         <td>${row.docno}</td>
-
                         <td>${row.supplier}</td>
-
-                        <td class="text-end">${number_format(row.harga,2,'.',',')}</td>
-
+                        <td class="text-end">${hargaFormatted}</td>
                         <td class="text-center">${row.currcode}</td>
-
                         <td class="text-center">
-
                             <button class="btn btn-sm btn-success pilihHarga"
                                     data-harga="${row.harga}">
-
                                 <i class="fa fa-check"></i>
-
                             </button>
-
                         </td>
-
                     </tr>
                     `;
                 });
@@ -1638,18 +1925,22 @@ function showHistoryHarga()
 
         }
     });
-
 }
 
 $(document).on('click','.pilihHarga',function(){
 
-    let harga=$(this).data('harga');
+    let harga = $(this).data('harga');
+    
+    let hargaFormatted = parseFloat(harga).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
 
-    $('#harga').val(number_format(harga,2,'.',','));
+    $('#harga').val(hargaFormatted);
+    
+    $('#harga').trigger('input');
 
-    // hitung ulang nilai
     $('#harga').trigger('keyup');
-
     $('#modalHistoryHarga').modal('hide');
 
 });

@@ -146,7 +146,7 @@ function documentReadable(){
                 });
             });
             skipRoleChange = true;
-            $('[name="docdate"]').val(json.dataTables.items[0].docdate).prop('readonly',true);
+            $('[name="docdate"]').val(moment(json.dataTables.items[0].docdate).format('DD-MM-YYYY')).prop('disabled',true);
             // $('[name="estpakai"]').val(json.dataTables.items[0].estpakai).prop('readonly',true);
             $('[name="pemohon"]').val(json.dataTables.items[0].pemohon).prop('readonly',true);
 

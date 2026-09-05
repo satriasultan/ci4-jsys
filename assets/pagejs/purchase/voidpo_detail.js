@@ -211,7 +211,7 @@ function documentReadable(){
                 // $("#phone").val(data.phone).prop('readonly', true);
             });
             skipRoleChange = true;
-            $('[name="docdate"]').val(json.dataTables.items[0].docdate).prop('readonly',true);;
+            $('[name="docdate"]').val(moment(json.dataTables.items[0].docdate).format('DD-MM-YYYY')).prop('disabled',true);
             // $('[name="senddate"]').val(json.dataTables.items[0].senddate);
             setJtsValue('[name="jthtempo"]', convertToDbNumber(json.dataTables.items[0].jthtempo));
             setJtsValue('[name="kurs"]', convertToDbNumber(json.dataTables.items[0].kurs));

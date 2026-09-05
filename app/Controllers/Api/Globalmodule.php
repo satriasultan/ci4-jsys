@@ -3129,8 +3129,10 @@ class Globalmodule extends BaseController
     {
         $request = service('request');
         $data = $request->getJSON();
-
+        $nama = trim($this->session->get('nama'));
         $docno = $data->docno;
+        $module = $data->module;
+        $menu = $data->menu;
         $table = $data->table;
 
         $db = \Config\Database::connect();
@@ -3139,12 +3141,21 @@ class Globalmodule extends BaseController
 
         $OYE = $db->table($table)
             ->set('status', 'P')
+            ->set('printby', $nama)
+            ->set('printdate', date('Y-m-d H:i:s')) 
+            ->set('printcount', 'COALESCE(printcount, 0) + 1', false)
             ->where('docno', $docno)
             ->update();
 
         if (!$OYE) {
             return $this->response->setJSON(['status' => 'invalid table']);
         }
+        $this->m_global->insertlogtrans(
+            $docno,
+            'P',               // action: PRINT (1 huruf)
+            $module,           // kode module dari menuprg: I.P, I.S, dll
+            $menu              // kode menu dari menuprg: I.P.A.1, I.P.A.3, dll
+        );
         return $this->response->setJSON(['status' => 'ok']);
     }
 

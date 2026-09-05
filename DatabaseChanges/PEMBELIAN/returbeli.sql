@@ -179,7 +179,16 @@ DECLARE
     v_lock_key  BIGINT;
     v_base_docno TEXT;
     v_new_docno  TEXT;
+
+    v_client_ip TEXT;
+    v_uniqueid  VARCHAR(64);
 BEGIN
+
+    -- ===============================
+    -- AMBIL IP DARI sc_log.useronline
+    -- ===============================
+    v_client_ip := sc_log.fn_get_user_ip(NEW.inputby);
+
     IF OLD.status = 'E' AND NEW.status = 'F' AND COALESCE(NEW.docnotmp, '') = '' THEN
 
         -- ===============================
@@ -232,7 +241,7 @@ BEGIN
             ,idtax,isinclusive, currcode, kurs, dpp, 
             jumlahpajak, total,
             keterangan, complain, status, inputby, inputdate,
-            updateby, updatedate, printby, printdate
+            updateby, updatedate, printby, printdate, printcount
         )
         SELECT
             idurut, v_docno, cabang, docdate, pemohon, kdsupplier,
@@ -240,7 +249,7 @@ BEGIN
             ,idtax,isinclusive, currcode, kurs, dpp, 
             jumlahpajak, total,
             keterangan, complain, 'F', inputby, inputdate,
-            updateby, updatedate, printby, printdate
+            updateby, updatedate, printby, printdate, printcount
         FROM sc_tmp.returbeli
         WHERE rtrim(docno) = rtrim(OLD.docno)
             AND inputby = v_inputby
@@ -250,13 +259,13 @@ BEGIN
         -- INSERT DETAIL
         -- ===============================
         INSERT INTO sc_trx.returbeli_dtl (
-            idurut, docno, docnolpb, idbarang, uniqueid,  nmbarang,
+            idurut, docno, docnolpb, idbarang, capexno, uniqueid,  nmbarang,
             idgudang, idspec, unit, qty, 
             harga, nilai, descriptionpo, descriptionpp,
             inputby, inputdate, status, updateby, updatedate
         )
         SELECT
-            idurut, v_docno, docnolpb, idbarang, uniqueid,  nmbarang,
+            idurut, v_docno, docnolpb, idbarang, capexno, uniqueid,  nmbarang,
             idgudang, idspec, unit, qty, 
             harga, nilai, descriptionpo, descriptionpp,
             inputby, inputdate, status, updateby, updatedate
@@ -281,16 +290,57 @@ BEGIN
         ) pod
         WHERE ppd.uniqueid = pod.uniqueid;
 
-        -- UPDATE sc_trx.pp p
-        --     SET status = 'PO'
-        --     WHERE p.docno IN (
-        --         SELECT DISTINCT docnopp
-        --         FROM sc_tmp.returbeli_dtl
-        --         WHERE rtrim(docno) = rtrim(OLD.docno)
-        --         AND inputby = v_inputby
-        --         AND docnopp IS NOT NULL
-        --         AND docnopp <> ''
-        -- );
+        -- ===============================
+        -- UPDATE STATUS LPB_DTL -> RTR
+        -- ===============================
+        UPDATE sc_trx.lpb_dtl ppd
+        SET status = CASE 
+            WHEN ppd.qty = COALESCE(ppd.qtyretur, 0) THEN 'RTR'
+            ELSE 'F'
+        END
+        FROM sc_tmp.returbeli_dtl t
+        WHERE rtrim(t.docno) = rtrim(OLD.docno)
+        AND t.inputby = v_inputby
+        AND ppd.uniqueid = t.uniqueid;
+
+        -- ===============================
+        -- UPDATE STATUS LPB HEADER -> RTR
+        -- JIKA SEMUA DETAILNYA QTY DAN QTYRETUR SAMA SEMUA
+        -- ===============================
+        UPDATE sc_trx.lpb lpb
+        SET status = 'RTR'
+        WHERE EXISTS (
+            SELECT 1 
+            FROM sc_tmp.returbeli_dtl t
+            WHERE rtrim(t.docno) = rtrim(OLD.docno)
+            AND t.inputby = v_inputby
+            AND t.uniqueid IN (
+                SELECT uniqueid 
+                FROM sc_trx.lpb_dtl 
+                WHERE rtrim(docno) = rtrim(lpb.docno)
+            )
+        )
+        AND NOT EXISTS (
+            SELECT 1 
+            FROM sc_trx.lpb_dtl ppd
+            WHERE rtrim(ppd.docno) = rtrim(lpb.docno)
+            AND ppd.qty != COALESCE(ppd.qtyretur, 0)
+        );
+
+        -- ===============================
+        -- LOG: INSERT HEADER RETUR BELI
+        -- ===============================
+        PERFORM sc_log.fn_log_transaction(
+            v_docno::CHAR(30),
+            NULL,
+            'I.P',
+            'I.P.A.7',
+            'I',
+            v_inputby,
+            v_client_ip,
+            v_inputby
+        );
+
 
         -- -- ===============================
         -- -- CLEANUP TMP
@@ -310,20 +360,49 @@ BEGIN
     -- ===============================
     ELSIF OLD.status = 'E' AND NEW.status = 'F' AND COALESCE(NEW.docnotmp, '') <> '' THEN
 
+        UPDATE sc_trx.lpb_dtl ppd
+            SET qtyretur = COALESCE(ppd.qtyretur, 0) - pod_lama.qty_retur_lama
+            FROM (
+                SELECT uniqueid, SUM(qty) as qty_retur_lama
+                FROM sc_trx.returbeli_dtl
+                WHERE rtrim(docno) = rtrim(NEW.docno)
+                    AND inputby = NEW.inputby
+                    AND uniqueid IS NOT NULL AND uniqueid <> ''
+                GROUP BY uniqueid
+            ) pod_lama
+            WHERE ppd.uniqueid = pod_lama.uniqueid;
+
         DELETE FROM sc_trx.returbeli WHERE docno = NEW.docnotmp;
         DELETE FROM sc_trx.returbeli_dtl WHERE docno = NEW.docnotmp;
 
         INSERT INTO sc_trx.returbeli_dtl
-        (idurut, docno, docnolpb, idbarang, uniqueid,  nmbarang,
+        (idurut, docno, docnolpb, idbarang, capexno, uniqueid,  nmbarang,
         idgudang, idspec, unit, qty, 
         harga, nilai, descriptionpo, descriptionpp,
         inputby, inputdate, status, updateby, updatedate, docnotmp)
         SELECT
-            idurut, NEW.docnotmp, docnolpb, idbarang, uniqueid,  nmbarang,
+            idurut, NEW.docnotmp, docnolpb, idbarang, capexno, uniqueid,  nmbarang,
             idgudang, idspec, unit, qty, 
             harga, nilai, descriptionpo, descriptionpp,
             inputby, inputdate, status, updateby, updatedate, docnotmp
         FROM sc_tmp.returbeli_dtl
+        WHERE rtrim(docno) = rtrim(NEW.docno);
+
+        INSERT INTO sc_trx.returbeli
+        (idurut, docno, cabang, docdate, pemohon, kdsupplier,
+        nmsupplier, alamatsupplier, jthtempo
+        ,idtax,isinclusive, currcode, kurs, dpp, 
+        jumlahpajak, total,
+        keterangan, complain, status, inputby, inputdate,
+        updateby, updatedate, printby, printdate, printcount, docnotmp)
+        SELECT
+            idurut, NEW.docnotmp, cabang, docdate, pemohon, kdsupplier,
+            nmsupplier, alamatsupplier, jthtempo
+            ,idtax,isinclusive, currcode, kurs, dpp, 
+            jumlahpajak, total,
+            keterangan, complain, status, inputby, inputdate,
+            updateby, updatedate, printby, printdate, printcount, docnotmp
+        FROM sc_tmp.returbeli
         WHERE rtrim(docno) = rtrim(NEW.docno);
 
         UPDATE sc_trx.lpb_dtl ppd
@@ -335,7 +414,7 @@ BEGIN
                 uniqueid,
                 SUM(qty) as qty_used
             FROM sc_tmp.lpb_dtl
-            WHERE rtrim(docno) = rtrim(OLD.docno)
+            WHERE rtrim(docno) = rtrim(NEW.docno)
                 AND inputby = v_inputby
                 AND uniqueid IS NOT NULL
                 AND uniqueid <> ''
@@ -343,36 +422,55 @@ BEGIN
         ) pod
         WHERE ppd.uniqueid = pod.uniqueid;
 
-                -- ===============================
-        -- UPDATE STATUS PP MENJADI 'PO'
         -- ===============================
-        -- UPDATE sc_trx.pp p
-        -- SET status = 'PO'
-        -- WHERE p.docno IN (
-        --     SELECT DISTINCT docnopp
-        --     FROM sc_tmp.returbeli_dtl
-        --     WHERE rtrim(docno) = rtrim(NEW.docno)
-        --         AND docnopp IS NOT NULL
-        --         AND docnopp <> ''
-        -- );
+        -- UPDATE STATUS LPB_DTL -> RTR
+        -- ===============================
+        UPDATE sc_trx.lpb_dtl ppd
+        SET status = CASE 
+            WHEN ppd.qty = COALESCE(ppd.qtyretur, 0) THEN 'RTR'
+            ELSE 'F'
+        END
+        FROM sc_tmp.returbeli_dtl t
+        WHERE rtrim(t.docno) = rtrim(NEW.docno)
+        AND t.inputby = v_inputby
+        AND ppd.uniqueid = t.uniqueid;
 
+        -- ===============================
+        -- UPDATE STATUS LPB HEADER -> RTR
+        -- ===============================
+        UPDATE sc_trx.lpb lpb
+        SET status = 'RTR'
+        WHERE EXISTS (
+            SELECT 1 
+            FROM sc_tmp.returbeli_dtl t
+            WHERE rtrim(t.docno) = rtrim(NEW.docno)
+            AND t.inputby = v_inputby
+            AND t.uniqueid IN (
+                SELECT uniqueid 
+                FROM sc_trx.lpb_dtl 
+                WHERE rtrim(docno) = rtrim(lpb.docno)
+            )
+        )
+        AND NOT EXISTS (
+            SELECT 1 
+            FROM sc_trx.lpb_dtl ppd
+            WHERE rtrim(ppd.docno) = rtrim(lpb.docno)
+            AND ppd.qty != COALESCE(ppd.qtyretur, 0)
+        );
 
-        INSERT INTO sc_trx.returbeli
-        (idurut, docno, cabang, docdate, pemohon, kdsupplier,
-        nmsupplier, alamatsupplier, jthtempo
-        ,idtax,isinclusive, currcode, kurs, dpp, 
-        jumlahpajak, total,
-        keterangan, complain, status, inputby, inputdate,
-        updateby, updatedate, printby, printdate, docnotmp)
-        SELECT
-            idurut, NEW.docnotmp, cabang, docdate, pemohon, kdsupplier,
-            nmsupplier, alamatsupplier, jthtempo
-            ,idtax,isinclusive, currcode, kurs, dpp, 
-            jumlahpajak, total,
-            keterangan, complain, status, inputby, inputdate,
-            updateby, updatedate, printby, printdate, docnotmp
-        FROM sc_tmp.returbeli
-        WHERE rtrim(docno) = rtrim(NEW.docno);
+        -- ===============================
+        -- LOG: UPDATE HEADER RETUR BELI
+        -- ===============================
+        PERFORM sc_log.fn_log_transaction(
+            NEW.docno,
+            NULL,
+            'I.P',
+            'I.P.A.7',
+            'U',
+            COALESCE(NEW.updateby, NEW.inputby),
+            v_client_ip,
+            COALESCE(NEW.updateby, NEW.inputby)
+        );
 
         DELETE FROM sc_tmp.returbeli WHERE rtrim(docno) = rtrim(NEW.docno);
         DELETE FROM sc_tmp.returbeli_dtl WHERE rtrim(docno) = rtrim(NEW.docno);
@@ -422,16 +520,100 @@ DECLARE
 	vr_nowprefix char(15);  
 	vr_id_dtl numeric;
 	vr_lastdoc NUMERIC(18);
-BEGIN		
 
+    v_docno     TEXT;
+    v_client_ip TEXT;
+    v_inputby   TEXT;
+BEGIN		
+        -- ===============================
+        -- AMBIL IP
+        -- ===============================
+        v_docno := rtrim(NEW.docno);
+        v_inputby := NEW.inputby;
+        v_client_ip := sc_log.fn_get_user_ip(v_inputby);
+
+        PERFORM pg_advisory_xact_lock(hashtext(NEW.docno));
+
+        -- ===============================
+        -- RETUR BELI DIBATALKAN (F -> C)
+        -- ===============================
+        IF (OLD.STATUS = 'F' AND NEW.STATUS = 'C') THEN
+            
+            -- ===============================
+            -- REVERT QTYRETUR DI LPB_DTL
+            -- ===============================
+            UPDATE sc_trx.lpb_dtl ppd
+            SET qtyretur = COALESCE(ppd.qtyretur, 0) - pod.qty_used
+            FROM (
+                SELECT uniqueid, SUM(qty) as qty_used
+                FROM sc_trx.returbeli_dtl
+                WHERE rtrim(docno) = rtrim(NEW.docno)
+                    AND uniqueid IS NOT NULL AND uniqueid <> ''
+                GROUP BY uniqueid
+            ) pod
+            WHERE ppd.uniqueid = pod.uniqueid;
+
+            -- ===============================
+            -- UPDATE STATUS LPB_DTL
+            -- ===============================
+            UPDATE sc_trx.lpb_dtl ppd
+            SET status = CASE 
+                WHEN ppd.qty = COALESCE(ppd.qtyretur, 0) THEN 'RTR'
+                ELSE 'F'
+            END
+            FROM sc_trx.returbeli_dtl vd
+            WHERE ppd.uniqueid = vd.uniqueid
+                AND rtrim(vd.docno) = rtrim(NEW.docno);
+
+            -- ===============================
+            -- UPDATE STATUS LPB HEADER
+            -- ===============================
+            UPDATE sc_trx.lpb lpb
+                SET status = CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM sc_trx.lpb_dtl ppd
+                        WHERE rtrim(ppd.docno) = rtrim(lpb.docno)
+                        AND ppd.qty != COALESCE(ppd.qtyretur, 0)  -- ✅ MASIH ADA SISA
+                    ) THEN 'F'  -- ✅ MASIH STATUS F
+                    ELSE 'RTR'  -- ✅ SEMUA SUDAH DI-RETUR
+                END
+                WHERE EXISTS (
+                    SELECT 1 
+                    FROM sc_trx.returbeli_dtl vd
+                    WHERE rtrim(vd.docno) = rtrim(NEW.docno)
+                    AND vd.uniqueid IN (
+                        SELECT uniqueid 
+                        FROM sc_trx.lpb_dtl 
+                        WHERE rtrim(docno) = rtrim(lpb.docno)
+                    )
+                );
+
+            -- ===============================
+            -- LOG: CANCEL RETUR BELI
+            -- ===============================
+            PERFORM sc_log.fn_log_transaction(
+                NEW.docno,
+                NULL,
+                'I.P',
+                'I.P.A.7',
+                'C',
+                COALESCE(NEW.updateby, NEW.inputby),
+                v_client_ip,
+                COALESCE(NEW.updateby, NEW.inputby)
+            );
+            
+        END IF;
+
+        
 		IF (OLD.STATUS='F' AND NEW.STATUS='E') THEN
 			-- Insert into pp_dtl with new columns
 			INSERT INTO sc_tmp.returbeli_dtl
-			( idurut, docno, docnolpb, idbarang, uniqueid, nmbarang,
+			( idurut, docno, docnolpb, idbarang, capexno, uniqueid, nmbarang,
             idgudang, idspec, unit, qty, 
             harga, nilai, descriptionpo, descriptionpp,
             inputby, inputdate, status, updateby, updatedate, docnotmp)
-			SELECT idurut, NEW.docno, docnolpb, idbarang, uniqueid, nmbarang,
+			SELECT idurut, NEW.docno, docnolpb, idbarang, capexno, uniqueid, nmbarang,
             idgudang, idspec, unit, qty, 
             harga, nilai, descriptionpo, descriptionpp,
             inputby, inputdate, status, updateby, updatedate, NEW.docno
@@ -446,14 +628,14 @@ BEGIN
                 idtax,isinclusive, currcode, kurs, dpp, 
                 jumlahpajak, total,
                 keterangan, complain, status, inputby, inputdate, updateby, updatedate,
-                printby, printdate, docnotmp
+                printby, printdate, printcount, docnotmp
             )
 			SELECT  idurut, NEW.docno, cabang, docdate, pemohon, kdsupplier,
             nmsupplier, alamatsupplier, jthtempo
             ,idtax,isinclusive, currcode, kurs, dpp, 
             jumlahpajak, total,
             keterangan, complain, status , inputby, inputdate, updateby, updatedate,
-            printby, printdate, NEW.docno
+            printby, printdate, printcount, NEW.docno
 			FROM sc_trx.returbeli 
 			WHERE docno = NEW.docno;
 
@@ -509,3 +691,34 @@ ADD COLUMN currcode character(3),
 ADD COLUMN kurs numeric(18,2),
 ADD COLUMN nilaikonversi numeric(18,2),
 ADD COLUMN nilaipajak numeric(18,2);
+
+
+
+
+
+-- =========== TAMBAHAN 24/8/26 ====================
+ALTER TABLE sc_tmp.returbeli_dtl
+ADD COLUMN capexno character(30)
+
+ALTER TABLE sc_trx.returbeli_dtl
+ADD COLUMN capexno character(30)
+
+
+
+-- docdate
+ALTER TABLE sc_trx.returbeli
+ALTER COLUMN docdate TYPE DATE
+USING TRIM(docdate)::DATE;
+ALTER TABLE sc_tmp.returbeli
+ALTER COLUMN docdate TYPE DATE
+USING TRIM(docdate)::DATE;
+
+
+
+-- printcount
+ALTER TABLE sc_tmp.returbeli
+ADD COLUMN printcount integer
+ALTER TABLE sc_trx.returbeli
+ADD COLUMN printcount integer
+
+-- ==================== END OFTAMBAHAN 24/8/26  ====================

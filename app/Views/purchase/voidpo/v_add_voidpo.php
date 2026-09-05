@@ -355,6 +355,7 @@
                                             <th>PO</th>
                                             <th>ID Barang</th>
                                             <th>Nama Barang</th>
+                                            <th>No. Capex</th>
                                             <th>Satuan</th>
                                             <th>Qty</th>
                                             <!-- <th>Bonus Qty</th> -->
@@ -459,10 +460,16 @@
 
                 </div>
                 <div class="card-footer bg-light">
-                    <a href="<?= base_url('purchase/trans/voidpo') ?>"
+                    <!-- <a href="<?= base_url('purchase/trans/voidpo') ?>"
                         class="btn btn-default btn-lg">
                         <i class="fa fa-arrow-left mr-2"></i>
                         Kembali
+                    </a> -->
+                    <a href="<?= base_url('purchase/trans/clearEntryVoidPO') ?>" 
+                        onclick="return confirm('Are you sure clear this entry?')" 
+                        class="btn btn-default float-left">
+                        <i class="fa fa-arrow-left"></i>
+                        Back
                     </a>
                     <?php if ($typeform != 'DETAIL' && $dtldata != null): ?>
                         <button type="submit"
@@ -569,6 +576,7 @@
                     <input type="hidden" name="idurut" id="idurut">
                     <input type="hidden" name="uniqueid" id="uniqueid">
                     <input type="hidden" name="docno" id="docno">
+                    <input type="hidden" name="docnopo" id="docnopo">
                     <!-- <input type="hidden" name="status" id="status" value="P">
                     <input type="hidden" name="chold" id="chold" value="NO"> -->
 
@@ -633,6 +641,7 @@
                                 <input type="text"
                                         name="harga"
                                         id="harga"
+                                        readonly
                                         class="form-control jtsseparator ratakanan"
                                         placeholder="0.00">
                             </div>

@@ -364,6 +364,7 @@
                                             <th>PP</th>
                                             <th>ID Barang</th>
                                             <th>Nama Barang</th>
+                                            <th>No. Capex</th>
                                             <th>Satuan</th>
                                             <th>Qty</th>
                                             <!-- <th>Bonus Qty</th> -->

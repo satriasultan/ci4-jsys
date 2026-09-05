@@ -452,6 +452,7 @@ $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], f
     $routes->add('clearEntryVoidPP', 'Purchase::clearEntryVoidPP');
     $routes->add('finalEntryVoidPP', 'Purchase::finalEntryVoidPP');
     $routes->add('showing_voidpptemp', 'Purchase::showing_voidpptemp');
+    $routes->add('updateStatusVoidPP', 'Purchase::updateStatusVoidPP');
 
     $routes->add('save_voidpp_detail', 'Purchase::save_voidpp_detail');
     $routes->get('updateVoidPP(:any)', 'Purchase::updateVoidPP$1');

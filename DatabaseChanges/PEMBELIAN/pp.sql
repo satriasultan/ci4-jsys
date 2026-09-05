@@ -121,7 +121,16 @@ DECLARE
     v_lock_key  BIGINT;
     v_base_docno TEXT;
     v_new_docno  TEXT;
+    
+    v_client_ip TEXT;
+    v_uniqueid  VARCHAR(64);
 BEGIN
+
+    -- ===============================
+    -- AMBIL IP DARI sc_log.useronline
+    -- ===============================
+    v_client_ip := sc_log.fn_get_user_ip(NEW.inputby);
+
     IF OLD.status = 'E' AND NEW.status = 'F' AND COALESCE(NEW.docnotmp, '') = '' THEN
 
         -- ===============================
@@ -171,12 +180,12 @@ BEGIN
         INSERT INTO sc_trx.pp (
             idurut, docno, cabang, docdate, pemohon, estpakai,
             keterangan, status, inputby, inputdate,
-            updateby, updatedate, printby, printdate
+            updateby, updatedate, printby, printdate, printcount
         )
         SELECT
             idurut, v_docno, cabang, docdate, pemohon, estpakai,
             keterangan, 'F', inputby, inputdate,
-            updateby, updatedate, printby, printdate
+            updateby, updatedate, printby, printdate, printcount
         FROM sc_tmp.pp
         WHERE rtrim(docno) = rtrim(OLD.docno)
           AND inputby = v_inputby
@@ -186,16 +195,30 @@ BEGIN
         -- INSERT DETAIL
         -- ===============================
         INSERT INTO sc_trx.pp_dtl (
-            idurut, docno, idbarang, uniqueid, nmbarang, unit, qty, description,
+            idurut, docno, idbarang, capexno, uniqueid, nmbarang, unit, qty, description,
             inputby, inputdate, status, updateby, updatedate
         )
         SELECT
-            idurut, v_docno, idbarang, uniqueid, nmbarang, unit, qty, description,
+            idurut, v_docno, idbarang, capexno, uniqueid, nmbarang, unit, qty, description,
             inputby, inputdate, status, updateby, updatedate
         FROM sc_tmp.pp_dtl
         WHERE rtrim(docno) = rtrim(OLD.docno)
           AND inputby = v_inputby;
 
+
+        -- ===============================
+        -- LOG: INSERT HEADER PP
+        -- ===============================
+        PERFORM sc_log.fn_log_transaction(
+            v_docno::CHAR(30),
+            NULL,
+            'I.P',                  -- kode module dari menuprg
+            'I.P.A.1',              -- kode menu untuk PP
+            'I',                    -- action: INPUT (1 huruf)
+            v_inputby,
+            v_client_ip,
+            v_inputby
+        );
         -- ===============================
         -- CLEANUP TMP
         -- ===============================
@@ -217,10 +240,10 @@ BEGIN
         DELETE FROM sc_trx.pp_dtl WHERE docno = NEW.docnotmp;
 
         INSERT INTO sc_trx.pp_dtl
-        (idurut, docno, idbarang, uniqueid, nmbarang, unit, qty, description,
+        (idurut, docno, idbarang, capexno, uniqueid, nmbarang, unit, qty, description,
          inputby, inputdate, status, updateby, updatedate, docnotmp)
         SELECT
-            idurut, NEW.docnotmp, idbarang, uniqueid, nmbarang, unit, qty, description,
+            idurut, NEW.docnotmp, idbarang, capexno, uniqueid, nmbarang, unit, qty, description,
             inputby, inputdate, status, updateby, updatedate, docnotmp
         FROM sc_tmp.pp_dtl
         WHERE rtrim(docno) = rtrim(NEW.docno);
@@ -228,13 +251,27 @@ BEGIN
         INSERT INTO sc_trx.pp
         (idurut, docno, cabang, docdate, pemohon, estpakai,
          keterangan, status, inputby, inputdate,
-         updateby, updatedate, printby, printdate, docnotmp)
+         updateby, updatedate, printby, printdate, printcount, docnotmp)
         SELECT
             idurut, NEW.docnotmp, cabang, docdate, pemohon, estpakai,
             keterangan, status, inputby, inputdate,
-            updateby, updatedate, printby, printdate, docnotmp
+            updateby, updatedate, printby, printdate, printcount, docnotmp
         FROM sc_tmp.pp
         WHERE rtrim(docno) = rtrim(NEW.docno);
+
+         -- ===============================
+        -- LOG: INSERT HEADER PP
+        -- ===============================
+        PERFORM sc_log.fn_log_transaction(
+            NEW.docno,
+            NULL,
+            'I.P',                  -- kode module dari menuprg
+            'I.P.A.1',              -- kode menu untuk PP
+            'U',                    -- action: UPDATE (1 huruf)
+            COALESCE(NEW.updateby, NEW.inputby),
+            v_client_ip,
+            COALESCE(NEW.updateby, NEW.inputby)
+        );
 
         DELETE FROM sc_tmp.pp WHERE rtrim(docno) = rtrim(NEW.docno);
         DELETE FROM sc_tmp.pp_dtl WHERE rtrim(docno) = rtrim(NEW.docno);
@@ -285,14 +322,43 @@ DECLARE
 	vr_nowprefix char(15);  
 	vr_id_dtl numeric;
 	vr_lastdoc NUMERIC(18);
+    v_docno     TEXT;
+    v_client_ip TEXT;
+    v_inputby   TEXT;
 BEGIN		
+        -- ===============================
+        -- AMBIL IP DARI sc_log.useronline
+        -- ===============================
+        v_docno := rtrim(NEW.docno);
+        v_inputby := NEW.inputby;
+
+        v_client_ip := sc_log.fn_get_user_ip(v_inputby);
+
+        
+        IF (OLD.STATUS='F' AND NEW.STATUS='C') THEN
+            -- ===============================
+            -- LOG: INSERT HEADER PP
+            -- ===============================
+            PERFORM sc_log.fn_log_transaction(
+                NEW.docno,
+                NULL,
+                'I.P',                  -- kode module dari menuprg
+                'I.P.A.1',              -- kode menu untuk PP
+                'C',                    -- action: UPDATE (1 huruf)
+                COALESCE(NEW.updateby, NEW.inputby),
+                v_client_ip,
+                COALESCE(NEW.updateby, NEW.inputby)
+            );
+
+        END IF;
+
 
 		IF (OLD.STATUS='F' AND NEW.STATUS='E') THEN
 			-- Insert into pp_dtl with new columns
 			INSERT INTO sc_tmp.pp_dtl
-			( idurut, docno, idbarang, uniqueid,nmbarang, unit, qty, description,
+			( idurut, docno, idbarang, capexno, uniqueid,nmbarang, unit, qty, description,
             inputby, inputdate, status, updateby, updatedate, docnotmp)
-			SELECT idurut, NEW.docno, idbarang, uniqueid,nmbarang, unit, qty, description,
+			SELECT idurut, NEW.docno, idbarang, capexno, uniqueid,nmbarang, unit, qty, description,
             inputby, inputdate, status, updateby, updatedate, NEW.docno
 			FROM sc_trx.pp_dtl 
 			WHERE docno = NEW.docno;
@@ -302,13 +368,28 @@ BEGIN
             (
                 idurut, docno, cabang, docdate, pemohon, estpakai,
                 keterangan, status, inputby, inputdate, updateby, updatedate,
-                printby, printdate, docnotmp
+                printby, printdate, printcount, docnotmp
             )
 			SELECT  idurut, NEW.docno, cabang, docdate, pemohon, estpakai,
             keterangan, status , inputby, inputdate, updateby, updatedate,
-            printby, printdate, NEW.docno
+            printby, printdate, printcount, NEW.docno
 			FROM sc_trx.pp 
 			WHERE docno = NEW.docno;
+
+
+            -- -- ===============================
+            -- -- LOG: INSERT HEADER PP
+            -- -- ===============================
+            -- PERFORM sc_log.fn_log_transaction(
+            --     NEW.docno,
+            --     NULL,
+            --     'I.P',                  -- kode module dari menuprg
+            --     'I.P.A.1',              -- kode menu untuk PP
+            --     'E',                    -- action: UPDATE (1 huruf)
+            --     COALESCE(NEW.updateby, NEW.inputby),
+            --     v_client_ip,
+            --     COALESCE(NEW.updateby, NEW.inputby)
+            -- );
 
 		END IF;	
 			
@@ -368,3 +449,41 @@ ADD COLUMN nilaikonversi numeric(18,2),
 ADD COLUMN nilaipajak numeric(18,2),
 ADD COLUMN IF NOT EXISTS qtypo numeric(18,2) DEFAULT 0,
 ADD COLUMN IF NOT EXISTS qtyvoid numeric(18,2) DEFAULT 0;
+
+
+
+
+
+-- =========== TAMBAHAN 24/8/26 ====================
+ALTER TABLE sc_tmp.pp_dtl
+ADD COLUMN capexno character(30)
+
+ALTER TABLE sc_trx.pp_dtl
+ADD COLUMN capexno character(30)
+
+
+
+-- docdate
+ALTER TABLE sc_trx.pp
+ALTER COLUMN docdate TYPE DATE
+USING TRIM(docdate)::DATE;
+ALTER TABLE sc_tmp.pp
+ALTER COLUMN docdate TYPE DATE
+USING TRIM(docdate)::DATE;
+
+
+-- estpakai 
+ALTER TABLE sc_trx.pp
+ALTER COLUMN estpakai TYPE DATE
+USING TRIM(estpakai)::DATE;
+ALTER TABLE sc_tmp.pp
+ALTER COLUMN estpakai TYPE DATE
+USING TRIM(estpakai)::DATE;
+
+-- printcount
+ALTER TABLE sc_tmp.pp
+ADD COLUMN printcount integer
+ALTER TABLE sc_trx.pp
+ADD COLUMN printcount integer
+
+-- ==================== END OFTAMBAHAN 24/8/26  ====================

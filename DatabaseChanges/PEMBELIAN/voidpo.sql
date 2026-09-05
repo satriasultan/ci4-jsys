@@ -173,7 +173,16 @@ DECLARE
     v_lock_key  BIGINT;
     v_base_docno TEXT;
     v_new_docno  TEXT;
+
+    v_client_ip TEXT;   
+    v_uniqueid  VARCHAR(64);
 BEGIN
+
+    -- ===============================
+    -- AMBIL IP DARI sc_log.useronline
+    -- ===============================
+    v_client_ip := sc_log.fn_get_user_ip(NEW.inputby);
+    
     IF OLD.status = 'E' AND NEW.status = 'F' AND COALESCE(NEW.docnotmp, '') = '' THEN
 
         -- ===============================
@@ -226,7 +235,7 @@ BEGIN
             idtax,isinclusive, currcode, kurs, dpp, 
             jumlahpajak, total, syarat,
             keterangan, status, inputby, inputdate,
-            updateby, updatedate, printby, printdate
+            updateby, updatedate, printby, printdate, printcount
         )
         SELECT
             idurut, v_docno, cabang, docdate, pemohon, kdsupplier,
@@ -234,7 +243,7 @@ BEGIN
             idtax,isinclusive, currcode, kurs, dpp, 
             jumlahpajak, total, syarat,
             keterangan, 'F', inputby, inputdate,
-            updateby, updatedate, printby, printdate
+            updateby, updatedate, printby, printdate, printcount
         FROM sc_tmp.voidpo
         WHERE rtrim(docno) = rtrim(OLD.docno)
             AND inputby = v_inputby
@@ -244,19 +253,18 @@ BEGIN
         -- INSERT DETAIL
         -- ===============================
         INSERT INTO sc_trx.voidpo_dtl (
-            idurut, docno, docnopo, idbarang, uniqueid,  nmbarang, unit, qty, 
+            idurut, docno, docnopo, idbarang, capexno, uniqueid,  nmbarang, unit, qty, 
             harga, nilai, descriptionpo, descriptionpp,
             inputby, inputdate, status, updateby, updatedate
         )
         SELECT
-            idurut, v_docno, docnopo, idbarang, uniqueid,  nmbarang, unit, qty, 
+            idurut, v_docno, docnopo, idbarang, capexno, uniqueid,  nmbarang, unit, qty, 
             harga, nilai, descriptionpo, descriptionpp,
             inputby, inputdate, status, updateby, updatedate
         FROM sc_tmp.voidpo_dtl
         WHERE rtrim(docno) = rtrim(OLD.docno)
             AND inputby = v_inputby;
 
-        
         UPDATE sc_trx.po_dtl ppd
         SET qtyvoid = COALESCE(ppd.qtyvoid, 0) + pod.qty_used
             -- updateby = v_inputby,
@@ -266,7 +274,7 @@ BEGIN
                 uniqueid,
                 SUM(qty) as qty_used
             FROM sc_tmp.voidpo_dtl
-            WHERE rtrim(docno) = rtrim(OLD.docno)
+            WHERE rtrim(docno) = rtrim(NEW.docno)
                 AND inputby = v_inputby
                 AND uniqueid IS NOT NULL
                 AND uniqueid <> ''
@@ -274,16 +282,56 @@ BEGIN
         ) pod
         WHERE ppd.uniqueid = pod.uniqueid;
 
-        -- UPDATE sc_trx.pp p
-        --     SET status = 'PO'
-        --     WHERE p.docno IN (
-        --         SELECT DISTINCT docnopp
-        --         FROM sc_tmp.voidpo_dtl
-        --         WHERE rtrim(docno) = rtrim(OLD.docno)
-        --         AND inputby = v_inputby
-        --         AND docnopp IS NOT NULL
-        --         AND docnopp <> ''
-        -- );
+
+        -- ===============================
+        -- UPDATE STATUS PO_DTL -> VP
+        -- ===============================
+        UPDATE sc_trx.po_dtl p
+        SET status = CASE 
+            WHEN p.qty = COALESCE(p.qtyvoid, 0) THEN 'VP'
+            ELSE 'F'
+        END
+        FROM sc_tmp.voidpo_dtl t
+        WHERE rtrim(t.docno) = rtrim(OLD.docno)
+        AND t.inputby = v_inputby
+        AND p.uniqueid = t.uniqueid;
+
+        
+
+        -- ===============================
+        -- UPDATE STATUS PO HEADER MENJADI VP 
+        -- JIKA SEMUA DETAILNYA QTY DAN QTYVOID SAMA SEMUA
+        -- ===============================
+        UPDATE sc_trx.po po
+            SET status = 'VP'
+            WHERE po.docno IN (
+                SELECT DISTINCT docno 
+                FROM sc_tmp.voidpo_dtl 
+                WHERE docno = OLD.docno
+                AND inputby = v_inputby
+            )
+            AND NOT EXISTS (
+                SELECT 1 
+                FROM sc_trx.po_dtl pod
+                WHERE pod.docno = po.docno
+                AND pod.qty != COALESCE(pod.qtyvoid, 0)
+            );
+
+        PERFORM sc_trx.fn_recalculate_po_header(v_docno);
+
+        -- ===============================
+        -- LOG: INSERT HEADER VOID PO
+        -- ===============================
+        PERFORM sc_log.fn_log_transaction(
+            v_docno::CHAR(30),
+            NULL,
+            'I.P',                  -- kode module dari menuprg
+            'I.P.A.4',              -- kode menu untuk VOID PO
+            'I',                    -- action: INPUT (1 huruf)
+            v_inputby,
+            v_client_ip,
+            v_inputby
+        );
 
         -- -- ===============================
         -- -- CLEANUP TMP
@@ -291,7 +339,6 @@ BEGIN
         DELETE FROM sc_tmp.voidpo
         WHERE rtrim(docno) = rtrim(OLD.docno)
             AND inputby = v_inputby
-            
             AND idurut = v_idurut;
 
         DELETE FROM sc_tmp.voidpo_dtl
@@ -303,52 +350,39 @@ BEGIN
     -- ===============================
     ELSIF OLD.status = 'E' AND NEW.status = 'F' AND COALESCE(NEW.docnotmp, '') <> '' THEN
 
+        
+        -- ===============================
+        -- STEP 1: REVERT QTYVOID (KURANGI DENGAN DATA LAMA)
+        -- ===============================
+        UPDATE sc_trx.po_dtl pod
+        SET qtyvoid = COALESCE(pod.qtyvoid, 0) - pod_lama.qty_void_lama
+        FROM (
+            SELECT 
+                uniqueid,
+                SUM(qty) as qty_void_lama
+            FROM sc_trx.voidpo_dtl
+            WHERE rtrim(docno) = rtrim(NEW.docno)
+                AND inputby = NEW.inputby
+                AND uniqueid IS NOT NULL
+                AND uniqueid <> ''
+            GROUP BY uniqueid
+        ) pod_lama
+        WHERE pod.uniqueid = pod_lama.uniqueid;
+
         DELETE FROM sc_trx.voidpo WHERE docno = NEW.docnotmp;
         DELETE FROM sc_trx.voidpo_dtl WHERE docno = NEW.docnotmp;
 
         INSERT INTO sc_trx.voidpo_dtl
-        (idurut, docno, docnopo, idbarang, uniqueid,  nmbarang, unit, qty, 
+        (idurut, docno, docnopo, idbarang, capexno, uniqueid,  nmbarang, unit, qty, 
         harga, nilai, descriptionpo, descriptionpp,
         inputby, inputdate, status, updateby, updatedate, docnotmp)
         SELECT
-            idurut, NEW.docnotmp, docnopo, idbarang, uniqueid,  nmbarang, unit, qty, 
+            idurut, NEW.docnotmp, docnopo, idbarang, capexno, uniqueid,  nmbarang, unit, qty, 
             harga, nilai, descriptionpo, descriptionpp,
             inputby, inputdate, status, updateby, updatedate, docnotmp
         FROM sc_tmp.voidpo_dtl
         WHERE rtrim(docno) = rtrim(NEW.docno);
-
         
-        
-        UPDATE sc_trx.po_dtl ppd
-        SET qtyvoid = COALESCE(ppd.qtyvoid, 0) + pod.qty_used
-            -- updateby = v_inputby,
-            -- updatedate = CURRENT_TIMESTAMP
-        FROM (
-            SELECT 
-                uniqueid,
-                SUM(qty) as qty_used
-            FROM sc_tmp.voidpo_dtl
-            WHERE rtrim(docno) = rtrim(OLD.docno)
-                AND inputby = v_inputby
-                AND uniqueid IS NOT NULL
-                AND uniqueid <> ''
-            GROUP BY uniqueid
-        ) pod
-        WHERE ppd.uniqueid = pod.uniqueid;
-
-                -- ===============================
-        -- UPDATE STATUS PP MENJADI 'PO'
-        -- ===============================
-        -- UPDATE sc_trx.pp p
-        -- SET status = 'PO'
-        -- WHERE p.docno IN (
-        --     SELECT DISTINCT docnopp
-        --     FROM sc_tmp.voidpo_dtl
-        --     WHERE rtrim(docno) = rtrim(NEW.docno)
-        --         AND docnopp IS NOT NULL
-        --         AND docnopp <> ''
-        -- );
-
 
         INSERT INTO sc_trx.voidpo
         (idurut, docno, cabang, docdate, pemohon, kdsupplier,
@@ -356,16 +390,86 @@ BEGIN
         idtax,isinclusive, currcode, kurs, dpp, 
         jumlahpajak, total, syarat,
         keterangan, status, inputby, inputdate,
-        updateby, updatedate, printby, printdate, docnotmp)
+        updateby, updatedate, printby, printdate, printcount, docnotmp)
         SELECT
             idurut, NEW.docnotmp, cabang, docdate, pemohon, kdsupplier,
             nmsupplier, alamatsupplier, jthtempo,
             idtax,isinclusive, currcode, kurs, dpp, 
             jumlahpajak, total, syarat,
             keterangan, status, inputby, inputdate,
-            updateby, updatedate, printby, printdate, docnotmp
+            updateby, updatedate, printby, printdate, printcount, docnotmp
         FROM sc_tmp.voidpo
         WHERE rtrim(docno) = rtrim(NEW.docno);
+
+
+        -- ===============================
+        -- STEP 2: TAMBAH QTYVOID DENGAN DATA BARU
+        -- ===============================
+        UPDATE sc_trx.po_dtl ppd
+        SET qtyvoid = COALESCE(ppd.qtyvoid, 0) + pod.qty_used
+        FROM (
+            SELECT 
+                uniqueid,
+                SUM(qty) as qty_used
+            FROM sc_tmp.voidpo_dtl
+            WHERE rtrim(docno) = rtrim(NEW.docno)
+                AND inputby = v_inputby
+                AND uniqueid IS NOT NULL
+                AND uniqueid <> ''
+            GROUP BY uniqueid
+        ) pod
+        WHERE ppd.uniqueid = pod.uniqueid;
+
+
+        -- ===============================
+        -- UPDATE STATUS PO_DTL -> VP
+        -- ===============================
+        UPDATE sc_trx.po_dtl p
+        SET status = CASE 
+            WHEN p.qty = COALESCE(p.qtyvoid, 0) THEN 'VP'
+            ELSE 'F'
+        END
+        FROM sc_tmp.voidpo_dtl t
+        WHERE rtrim(t.docno) = rtrim(NEW.docno)
+        AND t.inputby = v_inputby
+        AND p.uniqueid = t.uniqueid;
+
+        
+
+        -- ===============================
+        -- UPDATE STATUS PO HEADER MENJADI VP 
+        -- JIKA SEMUA DETAILNYA SUDAH QTY DAN QTYVOID PASTI SAMA
+        -- ===============================
+        UPDATE sc_trx.po po
+            SET status = 'VP'
+            WHERE po.docno IN (
+                SELECT DISTINCT docno 
+                FROM sc_tmp.voidpo_dtl 
+                WHERE docno = OLD.docno
+                AND inputby = v_inputby
+            )
+            AND NOT EXISTS (
+                SELECT 1 
+                FROM sc_trx.po_dtl pod
+                WHERE pod.docno = po.docno
+                AND pod.qty != COALESCE(pod.qtyvoid, 0)
+            );
+
+        PERFORM sc_trx.fn_recalculate_po_header(NEW.docnotmp);
+
+        -- ===============================
+        -- LOG: INSERT HEADER VOID PO
+        -- ===============================
+        PERFORM sc_log.fn_log_transaction(
+            NEW.docno,
+            NULL,
+            'I.P',                  -- kode module dari menuprg
+            'I.P.A.4',              -- kode menu untuk VOID PO
+            'U',                    -- action: UPDATE (1 huruf)
+            COALESCE(NEW.updateby, NEW.inputby),
+            v_client_ip,
+            COALESCE(NEW.updateby, NEW.inputby)
+        );
 
         DELETE FROM sc_tmp.voidpo WHERE rtrim(docno) = rtrim(NEW.docno);
         DELETE FROM sc_tmp.voidpo_dtl WHERE rtrim(docno) = rtrim(NEW.docno);
@@ -415,15 +519,110 @@ DECLARE
 	vr_nowprefix char(15);  
 	vr_id_dtl numeric;
 	vr_lastdoc NUMERIC(18);
+
+    v_docno     TEXT;
+    v_client_ip TEXT;
+    v_inputby   TEXT;
+
+    v_total_po  NUMERIC(18,2);
+    v_total_void NUMERIC(18,2);
+    v_rec       RECORD;
 BEGIN		
+        -- ===============================
+        -- AMBIL IP DARI sc_log.useronline
+        -- ===============================
+        v_docno := rtrim(NEW.docno);
+        v_inputby := NEW.inputby;
+
+        v_client_ip := sc_log.fn_get_user_ip(v_inputby);
+        -- ===============================
+        -- ADVISORY LOCK (CEGAH RACE CONDITION)
+        -- ===============================
+        PERFORM pg_advisory_xact_lock(hashtext(NEW.docno));
+        -- ===============================
+        -- VOID PO DIBATALKAN (F -> C) - REVERT QTYVOID
+        -- ===============================
+        IF (OLD.STATUS = 'F' AND NEW.STATUS = 'C') THEN
+            
+            -- ===============================
+            -- REVERT QTYVOID DI PO_DTL
+            -- ===============================
+            UPDATE sc_trx.po_dtl ppd
+                SET qtyvoid = COALESCE(ppd.qtyvoid, 0) - pod.qty_used
+                FROM (
+                    SELECT 
+                        uniqueid,
+                        SUM(qty) as qty_used
+                    FROM sc_trx.voidpo_dtl
+                    WHERE rtrim(docno) = rtrim(NEW.docno)
+                        AND uniqueid IS NOT NULL
+                        AND uniqueid <> ''
+                    GROUP BY uniqueid
+                ) pod
+                WHERE ppd.uniqueid = pod.uniqueid;
+
+            -- ===============================
+            -- UPDATE STATUS PO_DTL BERDASARKAN QTY
+            -- ===============================
+            UPDATE sc_trx.po_dtl pod
+            SET status = CASE 
+                WHEN pod.qty = COALESCE(pod.qtyvoid, 0) THEN 'VP'
+                ELSE 'F'
+            END
+            FROM sc_trx.voidpo_dtl vd
+            WHERE pod.uniqueid = vd.uniqueid
+                AND rtrim(vd.docno) = rtrim(NEW.docno);
+            
+            -- ===============================
+            -- UPDATE STATUS PO HEADER BERDASARKAN QTY
+            -- ===============================
+            UPDATE sc_trx.po po
+            SET status = CASE 
+                WHEN EXISTS (
+                    SELECT 1 
+                    FROM sc_trx.po_dtl pod
+                    WHERE rtrim(pod.docno) = rtrim(po.docno)
+                    AND pod.qty != COALESCE(pod.qtyvoid, 0)
+                ) THEN 'P'
+                ELSE 'VP'
+            END
+            WHERE EXISTS (
+                SELECT 1 
+                FROM sc_trx.voidpo_dtl vd
+                WHERE rtrim(vd.docno) = rtrim(NEW.docno)
+                AND vd.uniqueid IN (
+                    SELECT uniqueid 
+                    FROM sc_trx.po_dtl 
+                    WHERE rtrim(docno) = rtrim(po.docno)
+                )
+            );
+
+            PERFORM sc_trx.fn_recalculate_po_header(NEW.docno);
+            
+            -- ===============================
+            -- LOG: CANCEL HEADER VOID PO
+            -- ===============================
+            PERFORM sc_log.fn_log_transaction(
+                NEW.docno,
+                NULL,
+                'I.P',                  -- kode module dari menuprg
+                'I.P.A.4',              -- kode menu untuk VOID PO
+                'C',                    -- action: UPDATE (1 huruf)
+                COALESCE(NEW.updateby, NEW.inputby),
+                v_client_ip,
+                COALESCE(NEW.updateby, NEW.inputby)
+            );
+            
+        END IF;
+
 
 		IF (OLD.STATUS='F' AND NEW.STATUS='E') THEN
 			-- Insert into pp_dtl with new columns
 			INSERT INTO sc_tmp.voidpo_dtl
-			( idurut, docno, docnopo, idbarang, uniqueid, nmbarang, unit, qty, 
+			( idurut, docno, docnopo, idbarang, capexno, uniqueid, nmbarang, unit, qty, 
             harga, nilai, descriptionpo, descriptionpp,
             inputby, inputdate, status, updateby, updatedate, docnotmp)
-			SELECT idurut, NEW.docno, docnopo, idbarang, uniqueid, nmbarang, unit, qty, 
+			SELECT idurut, NEW.docno, docnopo, idbarang, capexno, uniqueid, nmbarang, unit, qty, 
             harga, nilai, descriptionpo, descriptionpp,
             inputby, inputdate, status, updateby, updatedate, NEW.docno
 			FROM sc_trx.voidpo_dtl 
@@ -437,14 +636,14 @@ BEGIN
                 idtax,isinclusive, currcode, kurs, dpp, 
                 jumlahpajak, total, syarat,
                 keterangan, status, inputby, inputdate, updateby, updatedate,
-                printby, printdate, docnotmp
+                printby, printdate, printcount, docnotmp
             )
 			SELECT  idurut, NEW.docno, cabang, docdate, pemohon, kdsupplier,
             nmsupplier, alamatsupplier, jthtempo,
             idtax,isinclusive, currcode, kurs, dpp, 
             jumlahpajak, total, syarat,
             keterangan, status , inputby, inputdate, updateby, updatedate,
-            printby, printdate, NEW.docno
+            printby, printdate, printcount, NEW.docno
 			FROM sc_trx.voidpo 
 			WHERE docno = NEW.docno;
 
@@ -505,3 +704,84 @@ ADD COLUMN nilaipajak numeric(18,2);
 
 
 
+
+-- =========== TAMBAHAN 24/8/26 ====================
+ALTER TABLE sc_tmp.voidpo_dtl
+ADD COLUMN capexno character(30)
+
+ALTER TABLE sc_trx.voidpo_dtl
+ADD COLUMN capexno character(30)
+
+
+
+-- docdate
+ALTER TABLE sc_trx.voidpo
+ALTER COLUMN docdate TYPE DATE
+USING TRIM(docdate)::DATE;
+ALTER TABLE sc_tmp.voidpo
+ALTER COLUMN docdate TYPE DATE
+USING TRIM(docdate)::DATE;
+
+
+-- printcount
+ALTER TABLE sc_tmp.voidpo
+ADD COLUMN printcount integer
+ALTER TABLE sc_trx.voidpo
+ADD COLUMN printcount integer
+
+-- ==================== END OFTAMBAHAN 24/8/26  ====================
+
+
+
+
+
+
+-- Fungsi untuk recalculate header PO
+CREATE OR REPLACE FUNCTION sc_trx.fn_recalculate_po_header(
+    p_docno TEXT
+)
+RETURNS VOID AS $$
+DECLARE
+    v_idtax TEXT;
+    v_dpp NUMERIC(18,2);
+    v_jumlahpajak NUMERIC(18,2);
+    v_total NUMERIC(18,2);
+    v_tax_percent NUMERIC(5,2);
+BEGIN
+    -- Ambil idtax dari header
+    SELECT idtax INTO v_idtax
+    FROM sc_trx.po
+    WHERE rtrim(docno) = rtrim(p_docno);
+    
+    -- Hitung total DPP dari detail
+    SELECT COALESCE(SUM(nilai), 0) INTO v_dpp
+    FROM sc_trx.po_dtl
+    WHERE rtrim(docno) = rtrim(p_docno);
+    
+    -- Hitung pajak
+    v_jumlahpajak := 0;
+    IF v_idtax IS NOT NULL AND TRIM(v_idtax) != 'NON' AND v_dpp > 0 THEN
+        FOR v_tax_percent IN 
+            SELECT percentation 
+            FROM sc_mst.tax_dtl 
+            WHERE idtax = v_idtax
+        LOOP
+            v_jumlahpajak := v_jumlahpajak + (v_dpp * v_tax_percent / 100);
+        END LOOP;
+    END IF;
+    
+    -- Hitung total
+    v_total := v_dpp + v_jumlahpajak;
+    
+    -- Update header
+    UPDATE sc_trx.po
+    SET 
+        dpp = v_dpp,
+        jumlahpajak = v_jumlahpajak,
+        total = v_total,
+        updateby = CURRENT_USER,
+        updatedate = CURRENT_TIMESTAMP
+    WHERE rtrim(docno) = rtrim(p_docno);
+    
+END;
+$$ LANGUAGE plpgsql;

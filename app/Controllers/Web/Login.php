@@ -242,6 +242,13 @@ order by msession);");
 
         $this->session->set($newdata);
 
+         $this->m_global->insertlogtrans(
+                trim($dtl['username']),
+                'L',           // A / R / C (1 huruf)
+                'AUTH',             // kode module dari menuprg
+                'LOGIN'          // kode menu untuk PP
+            );
+
 
         // ==========================================
         // LOGIN LOG

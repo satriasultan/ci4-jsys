@@ -506,5 +506,28 @@ group by docno order by docno asc");
     function q_master_barang($param){
         return $this->db->query("select *, trim(idbarang) as id from sc_mst.mbarang where coalesce(trim(idbarang),'')!='' $param ");
     }
+    
+    
+    function insertlogtrans($docno, $action, $modul, $menu, $uniqueid = null)
+    {
+        $this->session = \Config\Services::session();
+        $fiky_encryption = new \App\Libraries\Fiky_encryption();
+        $nama = trim($this->session->get('nama'));
+        $ip = $fiky_encryption->getUserIP();
+        $db = \Config\Database::connect();
+
+        $db->query("
+            SELECT sc_log.fn_log_transaction(
+                ?,  -- docno
+                ?,  -- uniqueid
+                ?,  -- modul (kode module dari menuprg: I.P, I.S, dll)
+                ?,  -- menu (kode menu dari menuprg: I.P.A.1, I.P.A.3, dll)
+                ?,  -- action (1 huruf: I, U, C, A, dll)
+                ?,  -- inputby
+                ?,  -- ip
+                ?   -- username
+            )
+        ", [$docno, $uniqueid, $modul, $menu, $action, $nama, $ip, $nama]);
+    }
 
 }

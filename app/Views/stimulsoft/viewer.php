@@ -145,6 +145,8 @@ require_once $helper;
                 },
                 body: JSON.stringify({
                     docno: "<?= $docno ?>",
+                    module: "<?= $module ?>",
+                    menu: "<?= $menu ?>",
                     table: "<?= $table ?>"
                 })
             })
@@ -179,6 +181,8 @@ require_once $helper;
                 },
                 body: JSON.stringify({
                     docno: "<?= $docno ?>",
+                    module: "<?= $module ?>",
+                    menu: "<?= $menu ?>",
                     table: "<?= $table ?>"
                 })
             })

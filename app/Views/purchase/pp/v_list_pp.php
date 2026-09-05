@@ -33,7 +33,7 @@
 		<div class="card">
             <div class="card-header">
                 <div class="btn-group">
-                    <button type="button" class="btn btn-primary dropdown-toggle dropdown-icon" data-bs-toggle="dropdown"><?php echo 'Menu'; ?>
+                    <button type="button" class="btn btn-primary btn-sm dropdown-toggle dropdown-icon" data-bs-toggle="dropdown"><?php echo 'Menu'; ?>
                     </button>
                     <div class="dropdown-menu">
                         <?php if (isset($dtl_akses['a_input']) && trim($dtl_akses['a_input']) === 't'): ?>
@@ -77,7 +77,7 @@
                                             <tr>
                                                 <th style="min-width:10px; text-align:center; vertical-align:middle;">No.</th>
                                                 <th style="min-width:10px; text-align:center; vertical-align:middle;">Action</th>
-                                                <th style="min-width:100px; text-align:center; vertical-align:middle;">Docno</th>
+                                                <th style="min-width:100px; text-align:center; vertical-align:middle;">No. Doc</th>
                                                 <th style="min-width:100px; text-align:center; vertical-align:middle;">Tanggal</th>
                                                 <th style="min-width:50px; text-align:center; vertical-align:middle;">Pemohon</th>
                                                 <th style="min-width:400px; text-align:center; vertical-align:middle;">Remark</th>
@@ -101,7 +101,7 @@
                                             <tr>
                                                 <th style="min-width:10px; text-align:center; vertical-align:middle;">No.</th>
                                                 <th style="min-width:10px; text-align:center; vertical-align:middle;">Action</th>
-                                                <th style="min-width:100px; text-align:center; vertical-align:middle;">Docno</th>
+                                                <th style="min-width:100px; text-align:center; vertical-align:middle;">No. Doc</th>
                                                 <th style="min-width:100px; text-align:center; vertical-align:middle;">Tanggal</th>
                                                 <th style="min-width:50px; text-align:center; vertical-align:middle;">Pemohon</th>
                                                 <th style="min-width:400px; text-align:center; vertical-align:middle;">Remark</th>
@@ -152,6 +152,7 @@
                                         <option value="ALL">Semua Status</option>
                                         <option value="F">FINAL USER</option>
                                         <option value="A">APPROVED</option>
+                                        <option value="P">CETAK/PRINT</option>
                                         <option value="PO">DITARIK PO</option>
                                         <option value="C">CANCELED</option>
                                     </select>

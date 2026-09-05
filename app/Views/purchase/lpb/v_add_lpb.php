@@ -391,6 +391,7 @@
                                             <th>PO</th>
                                             <th>ID Barang</th>
                                             <th>Nama Barang</th>
+                                            <th>No. Capex</th>
                                             <th>Principal</th>
                                             <th>Gudang</th>
                                             <th>Spec</th>
@@ -501,10 +502,16 @@
 
                 </div>
                 <div class="card-footer bg-light">
-                    <a href="<?= base_url('purchase/trans/lpb') ?>"
+                    <!-- <a href="<?= base_url('purchase/trans/lpb') ?>"
                         class="btn btn-default btn-lg">
                         <i class="fa fa-arrow-left mr-2"></i>
                         Kembali
+                    </a> -->
+                    <a href="<?= base_url('purchase/trans/clearEntryLPB') ?>" 
+                        onclick="return confirm('Are you sure clear this entry?')" 
+                        class="btn btn-default float-left">
+                        <i class="fa fa-arrow-left"></i>
+                        Back
                     </a>
                     <?php if ($typeform != 'DETAIL' && $dtldata != null): ?>
                         <button type="submit"
@@ -839,13 +846,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#docdate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('DD-MM-YYYY'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'docdate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'docdate');
         });
@@ -859,13 +866,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#senddate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('DD-MM-YYYY'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'senddate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'senddate');
         });

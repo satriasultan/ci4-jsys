@@ -63,6 +63,38 @@
     }
 
 
+    .date-options-container {
+        padding: 10px 0;
+    }
+
+    .date-options-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .date-option {
+        padding: 10px 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .date-option:hover {
+        background-color: #f0f0f0;
+    }
+
+    .date-option.active {
+        background-color: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+
+    .date-option .option-label {
+        font-size: 14px;
+    }
+
 </style>
 <div class="content-header">
     <div class="container-fluid">
@@ -116,7 +148,7 @@
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="form-group">
-                                                <label for="cabang">Cabang / Job</label>
+                                                <label for="cabang">Cabang / Job <span style="color: red;">*</span></label>
                                                 <select name="cabang" id="cabang" class="form-control" required></select>
                                             </div>
                                         </div>
@@ -127,7 +159,7 @@
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="form-group">
-                                                <label>No. Jurnal</label>
+                                                <label>No. Jurnal <span style="color: red;">*</span></label>
 
                                                 <div class="d-flex">
                                                     <input type="text"
@@ -160,7 +192,7 @@
                                             <input type="hidden" name="docno" class="form-control col-sm-12" id="docno" maxlength="20"     value="<?= isset($dtldata['docno']) ? esc(trim($dtldata['docno'])) : '' ?>" style="text-transform: uppercase;" readonly>
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label for="docdate">Tanggal</label>
+                                                    <label for="docdate">Tanggal <span style="color: red;">*</span></label>
                                                     <input type="text"
                                                     name="docdate"
                                                     id="docdate"
@@ -172,7 +204,7 @@
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="form-group">
-                                                <label for="estpakai">Estimasi Tanggal Pakai</label>
+                                                <label for="estpakai">Estimasi Tanggal Pakai <span style="color: red;">*</span></label>
                                                 <input type="text"
                                                     name="estpakai"
                                                     id="estpakai"
@@ -183,7 +215,7 @@
                                         <div class="col-md-6">
 
                                             <div class="form-group">
-                                                <label for="pemohon">Pemohon</label>
+                                                <label for="pemohon">Pemohon <span style="color: red;">*</span></label>
                                                 <input type="text"
                                                     name="pemohon"
                                                     id="pemohon"
@@ -201,7 +233,7 @@
                                 <!-- RIGHT COLUMN -->
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <label for="keterangan">Keterangan</label>
+                                        <label for="keterangan">Keterangan <span style="color: red;">*</span></label>
                                         <textarea name="keterangan"
                                                 id="keterangan"
                                                 class="form-control"
@@ -260,6 +292,7 @@
                             </th>
                             <th>ID Barang</th>
                             <th>Nama Barang</th>
+                            <th>No. Capex</th>
                             <th>Status</th>
                             <th>Satuan</th>
                             <th>Quantity</th>
@@ -273,10 +306,16 @@
                     </table>
                 </div>
                 <div class="card-footer bg-light">
-                    <a href="<?= base_url('purchase/trans/pp') ?>"
+                    <!-- <a href="<?= base_url('purchase/trans/pp') ?>"
                         class="btn btn-default btn-lg">
                         <i class="fa fa-arrow-left mr-2"></i>
                         Kembali
+                    </a> -->
+                    <a href="<?= base_url('purchase/trans/clearEntryPP') ?>" 
+                        onclick="return confirm('Are you sure clear this entry?')" 
+                        class="btn btn-default float-left">
+                        <i class="fa fa-arrow-left"></i>
+                        Back
                     </a>
                     <?php if ($typeform != 'DETAIL' && $dtldata != null): ?>
                         <button type="submit"
@@ -331,21 +370,22 @@
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
-                                <label>ID Barang</label>
+                                <label>ID Barang <span style="color: red;">*</span></label>
                                 <select name="idbarang" id="idbarang"
                                         class="form-control select2"
-                                        style="width:100%"></select>
+                                        style="width:100%" required></select>
                             </div>
                         </div>
 
                         <div class="col-md-8">
                             <div class="form-group">
-                                <label>Nama Barang</label>
+                                <label>Nama Barang <span style="color: red;">*</span></label>
                                 <input type="text"
                                         name="nmbarang"
                                         id="nmbarang"
                                         class="form-control"
                                         placeholder="Nama Barang"
+                                        required
                                         style="text-transform:uppercase" readonly>
                             </div>
                         </div>
@@ -355,31 +395,46 @@
                     <div class="row">
                         <div class="col-md-2">
                             <div class="form-group">
-                                <label>Satuan</label>
+                                <label>Satuan <span style="color: red;">*</span></label>
                                 <input name="unit" id="unit"
                                         class="form-control select2"
+                                        required
                                         style="width:100%" readonly>
                             </div>
                         </div>
 
                         <div class="col-md-2">
                             <div class="form-group">
-                                <label>Quantity</label>
+                                <label>Quantity <span style="color: red;">*</span></label>
                                 <input type="text"
                                         name="qty"
                                         id="qty"
+                                        required
                                         class="form-control jtsseparator ratakanan"
                                         placeholder="0.00">
                             </div>
                         </div>
-                        <div class="col-md-8">
+                        <div class="col-md-2">
                             <div class="form-group">
-                                <label>Keterangan</label>
+                                <label>No. Capex</label>
+                                <input type="text"
+                                        name="capexno"
+                                        id="capexno"
+                                        maxlength="30"
+                                        class="form-control"
+                                        style="text-transform: uppercase;"
+                                        placeholder="No. Capex">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Keterangan<span style="color: red;">*</span></label>
                                 <textarea type="text"
                                         name="description"
                                         rows="4"
                                         style="text-transform: uppercase;"
                                         id="description"
+                                        required
                                         class="form-control"></textarea>
                             </div>
                         </div>
@@ -436,15 +491,20 @@
             singleDatePicker: true,
             showDropdowns: true,
             startDate: today,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // set default value ke input
-        $('#docdate').val(today.format('YYYY-MM-DD'));
+        $('#docdate').val(today.format('DD-MM-YYYY'));
 
         $('#docdate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            const dateStr = picker.startDate.format('DD-MM-YYYY');
+            $(this).val(dateStr);
+            
+            // Update estpakai berdasarkan docdate baru
+            const prefix = $('#prefix').val() || 'JI';
+            setupEstpakai(prefix);
         });
 
         $('#docdate').on('cancel.daterangepicker', function(ev, picker) {
@@ -453,25 +513,47 @@
 
 
 
-        $('#estpakai').daterangepicker({
-            autoUpdateInput: false,
-            singleDatePicker: true,
-            showDropdowns: true,
-            startDate: nextWeek,
-            locale: { format: 'YYYY-MM-DD' },
-            cancelLabel: 'Clear'
-        });
+        // $('#estpakai').daterangepicker({
+        //     autoUpdateInput: false,
+        //     singleDatePicker: true,
+        //     showDropdowns: true,
+        //     startDate: nextWeek,
+        //     locale: { format: 'DD-MM-YYYY' },
+        //     cancelLabel: 'Clear'
+        // });
 
-        // set default value ke input
-        $('#estpakai').val(nextWeek.format('YYYY-MM-DD'));
+        // // set default value ke input
+        // $('#estpakai').val(nextWeek.format('DD-MM-YYYY'));
 
-        $('#estpakai').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
-        });
+        // $('#estpakai').on('apply.daterangepicker', function(ev, picker) {
+        //     $(this).val(picker.startDate.format('DD-MM-YYYY'));
+        // });
 
-        $('#estpakai').on('cancel.daterangepicker', function(ev, picker) {
-            $(this).val('');
+        // $('#estpakai').on('cancel.daterangepicker', function(ev, picker) {
+        //     $(this).val('');
+        // });
+
+    // Contoh penggunaan dengan prefix
+    // Panggil ketika prefix berubah atau saat load
+    $(document).ready(function() {
+        // Misal dapat prefix dari input lain
+        const prefix = $('#prefix').val() || 'JI'; // contoh
+        
+        // Setup berdasarkan prefix
+        setupEstpakai(prefix);
+        
+        // Event listener untuk perubahan prefix
+        $('#prefix').on('change', function() {
+            const newPrefix = $(this).val();
+            setupEstpakai(newPrefix);
         });
+        
+        // Tambahan: tombol untuk menampilkan opsi pilihan
+        $('#btnShowOptions').on('click', function() {
+            const prefix = $('#prefix').val() || 'JI';
+            showDateOptions(prefix);
+        });
+    });
 
         
         $('#periodemulai').daterangepicker({

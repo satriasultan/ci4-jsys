@@ -78,7 +78,7 @@ class Suppliers extends BaseController
 
             if ($canView || $canUpdate || $canDelete) {
                 $btnActions = '<div class="btn-group">
-                    <button type="button" class="btn btn-info dropdown-toggle text-white"
+                    <button type="button" class="btn btn-primary btn-sm dropdown-toggle text-white"
                         data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         <i class="fa fa-gear"></i>
                     </button>

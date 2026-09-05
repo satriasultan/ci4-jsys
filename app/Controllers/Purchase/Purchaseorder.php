@@ -59,7 +59,7 @@ class Purchaseorder extends BaseController
             $row[] = $no;
             $row[] = '
             <div class="dropdown">
-                <button class="btn btn-primary dropdown-toggle " style="margin:0px; color:#FFFFFF;" id="menu1" type="button" data-bs-toggle="dropdown" autocomplete="off" aria-expanded="false"><i class="fa fa-gear"></i>
+                <button class="btn btn-primary btn-sm dropdown-toggle " style="margin:0px; color:#FFFFFF;" id="menu1" type="button" data-bs-toggle="dropdown" autocomplete="off" aria-expanded="false"><i class="fa fa-gear"></i>
                     <span class="caret"></span></button>
                     <div class="dropdown-menu" role="menu">
                       <a class="dropdown-Purchaseorder" href="#" onclick="editPurchaseorder('."'".trim($lm->id)."'".');"><i class="fa fa-gear"></i> Update</a>

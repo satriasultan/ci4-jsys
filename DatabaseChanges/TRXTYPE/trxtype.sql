@@ -7,7 +7,9 @@ INSERT INTO sc_mst.trxtype (kdtrx, jenistrx, uraian) VALUES
     ('C', 'I.P.A.1', 'CANCELED'),
     ('F', 'I.P.A.1', 'FINAL USER'),
     ('A', 'I.P.A.1', 'APPROVED'),
-    ('P', 'I.P.A.1', 'CETAK/PRINT');
+    ('P', 'I.P.A.1', 'CETAK/PRINT'),
+    ('VP', 'I.P.A.1', 'VOID PP'),
+    ('PO', 'I.P.A.1', 'DITARIK PO');
 
 
 
@@ -20,7 +22,8 @@ INSERT INTO sc_mst.trxtype (kdtrx, jenistrx, uraian) VALUES
     ('E', 'I.P.A.2', 'REVISION/EDITING'),
     ('F', 'I.P.A.2', 'FINAL USER'),
     ('A', 'I.P.A.2', 'APPROVED'),
-    ('P', 'I.P.A.2', 'CETAK/PRINT');
+    ('P', 'I.P.A.2', 'CETAK/PRINT')
+    ('C', 'I.P.A.2', 'CANCELED');
 
 
     
@@ -33,7 +36,9 @@ INSERT INTO sc_mst.trxtype (kdtrx, jenistrx, uraian) VALUES
     ('F', 'I.P.A.3', 'FINAL USER'),
     ('A', 'I.P.A.3', 'APPROVED'),
     ('D', 'I.P.A.3', 'DISAPPROVED'),
-    ('P', 'I.P.A.3', 'CETAK/PRINT');
+    ('P', 'I.P.A.3', 'CETAK/PRINT'),
+    ('LPB', 'I.P.A.3', 'DITARIK LPB')
+    ('VP', 'I.P.A.3', 'VOID PO'),;
 
 
 
