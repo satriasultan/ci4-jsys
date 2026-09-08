@@ -407,7 +407,7 @@
                     <button type="button"
                             class="btn btn-primary"
                             onclick="saveVoidPPDetail()">
-                        <i class="fa fa-save"></i> Simpan
+                        <i class="fa fa-save"></i> Proses Void
                     </button>
                     <button type="button"
                             class="btn btn-secondary"

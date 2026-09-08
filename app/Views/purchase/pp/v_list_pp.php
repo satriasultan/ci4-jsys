@@ -81,7 +81,7 @@
                                                 <th style="min-width:100px; text-align:center; vertical-align:middle;">Tanggal</th>
                                                 <th style="min-width:50px; text-align:center; vertical-align:middle;">Pemohon</th>
                                                 <th style="min-width:400px; text-align:center; vertical-align:middle;">Remark</th>
-                                                <th style="min-width:150px; text-align:center; vertical-align:middle;">Cost Center</th>
+                                                <th style="min-width:150px; text-align:center; vertical-align:middle;">Cabang/Job</th>
                                                 <th style="min-width:80px; text-align:center; vertical-align:middle;">Status</th>
                                             </tr>
                                         </thead>

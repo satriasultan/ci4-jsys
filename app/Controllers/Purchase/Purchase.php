@@ -10,6 +10,7 @@ class Purchase extends BaseController
     
     public function pp()
     {
+
         $data['title']="Permintaan Pembelian";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
         $branch=$dtlbranch['branch'];
@@ -21,7 +22,7 @@ class Purchase extends BaseController
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
         $data['kodemenu']=$kodemenu; $data['version']=$versidb;
         /* END CODE UNTUK VERSI */
-
+        $logindate = trim($this->session->get('logindate'));
         $paramerror=" and userid='$nama' and modul='I.P.A.1'";
         $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
         $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
@@ -762,9 +763,37 @@ class Purchase extends BaseController
 
     public function savePPDetail()
     {
-        $nama=trim($this->session->get('nama'));    
+        $nama=trim($this->session->get('nama'));
+        $logindate = trim($this->session->get('logindate'));
+
+
         $docno  = strtoupper($this->request->getPost('docno'));
         $idurut     = $this->request->getPost('idurut'); // 🔹 untuk update
+
+        /* String To Time */
+        $cek_logindate = date('Ym',strtotime($this->session->get('logindate')));
+        $cek_docdate = date('Ym', strtotime($this->request->getPost('docdate')));
+
+        // ==========================================
+        // PERIODE HARUS SAMA
+        // ==========================================
+
+        if ($cek_logindate != $cek_docdate) {
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Periode tanggal dokumen harus sama dengan periode login. Periode aktif: '
+                    . date(
+                        'm-Y',
+                        strtotime(
+                            $this->session->get('logindate')
+                        )
+                    )
+            ]);
+        }
+
+
+
 
         if (!$docno) {
             return $this->response->setJSON([
@@ -1055,11 +1084,14 @@ class Purchase extends BaseController
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
             $row[] = $lm->capexno;
-            $row[] = trim($lm->status) == 'VP' ? 
-            '<div class="text-center"><span style="font-size:12px" class="badge badge-danger w-100">' . 'Void PP' . '</span></div>' : 
-            '<div class="text-center"><span style="font-size:12px" class="badge badge-primary w-100">' . 'Final User' . '</span></div>'  ;
+/*status pp detail tidak usah dimunculkan dulu */
+//            $row[] = trim($lm->status) == 'VP' ?
+//            '<div class="text-center"><span style="font-size:12px" class="badge badge-danger w-100">' . 'Void PP' . '</span></div>' :
+//            '<div class="text-center"><span style="font-size:12px" class="badge badge-primary w-100">' . 'Final User' . '</span></div>'  ;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. $lm->qty  . '</div>';
+            $row[] = '<div class="ratakanan">'
+                . number_format((float) $lm->qty, 2, '.', ',')
+                . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -1107,97 +1139,308 @@ class Purchase extends BaseController
     }
 
 
-    function finalEntryPP(){
-        $nama = trim($this->session->get('nama'));
-        // $loccode = trim($this->session->get('loccode'));
-        $param = " and coalesce(inputby,'')='$nama'";
-        $paramdtl = " AND COALESCE(inputby, '') = '$nama' AND (COALESCE(unit, '') = ''  OR qty = '0.00' OR qty = '0' OR COALESCE(nmbarang, '') = '' OR COALESCE(description, '') = '') ";
-        $paramdtl2 = " and coalesce(inputby,'')='$nama'";
+    public function finalEntryPP()
+    {
+        // ==========================================
+        // SESSION
+        // ==========================================
 
-        $header = $this->m_purchase->q_pp_master_temp($param);
-        $status = trim($header->getRowArray()['status']);
-        $cek = $this->m_purchase->q_pp_dtl_temp($paramdtl);
-        $cek2 = $this->m_purchase->q_pp_dtl_temp($paramdtl2);
+        $nama = trim(
+            (string) $this->session->get('nama')
+        );
 
-
-        $builder = $this->db->table('sc_tmp.pp');
-
-        //INSERT TRX ERROR
-        $builder_trxerror = $this->db->table('sc_mst.trxerror');
-        $builder_trxerror->where('userid', $nama);
-        $builder_trxerror->where('modul', 'I.P.A.1');
-        $builder_trxerror->delete();
+        $logindate = trim(
+            (string) $this->session->get('logindate')
+        );
 
 
-        if (($status==='E' and $cek->getNumRows() > 0) or ($cek2->getNumRows() <= '0'))
-        {
-            $infotrxerror = array(
-                'userid' => $nama,
-                'errorcode' => 3,
-                'nomorakhir1' => $cek->getNumRows(),
-                'nomorakhir2' => $cek2->getNumRows(),
-                'modul' => 'I.P.A.1',
-            );
-            $builder_trxerror->insert($infotrxerror);
+        // ==========================================
+        // AMBIL DOCDATE
+        // ==========================================
 
-            return redirect()->to(base_url('/purchase/trans/addPP'));
-        } else {
-            // Ambil dari request POST
-            $pemohon = strtoupper(trim($this->request->getPost('pemohon')));
-            $keterangan = strtoupper(trim($this->request->getPost('keterangan')));
-            $estpakai  = trim($this->request->getPost('estpakai'));
-            $docdate   = trim($this->request->getPost('docdate'));
-            // Convert expdate ke format YYYY-MM-DD
-            $estpakaiph = null;
-            if (!empty($estpakai)) {
-                $estpakaiph = date('Y-m-d', strtotime($estpakai));
-            }
+        $docdate = trim(
+            (string) $this->request->getPost('docdate')
+        );
 
-             // Convert expdate ke format YYYY-MM-DD
-            $docdateph = null;
-            if (!empty($docdate)) {
-                $docdateph = date('Y-m-d', strtotime($docdate));
-            }
 
-            // Update data header dulu sebelum set status F
-            $updateHeader = [
-                'docdate'      => $docdateph,
-                'pemohon'       => $pemohon,
-                'keterangan'        => $keterangan,
-                'estpakai' => $estpakaiph,
-            ];
+        // ==========================================
+        // VALIDASI TANGGAL
+        // ==========================================
 
-            $builder->where('inputby', $nama);
-            $builder->update($updateHeader);
+        if ($logindate === '' || $docdate === '') {
 
-            $info = array(
-                'status' => 'F'
-            );
-            $builder->where('inputby',$nama);
-            if ($builder->update($info)) {
-                $paramerror=" and userid='$nama' and modul='I.P.A.1'";
-                $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
-                $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
-
-                // $docno = trim(bin2hex(trim($dtlerror['nomorakhir1'])));
-
-                return redirect()->to(base_url('/purchase/trans/pp'));
-            } else {
-                $infotrxerror = array(
-                    'userid' => $nama,
-                    'errorcode' => 3,
-                    'nomorakhir1' => $cek->getNumRows(),
-                    'nomorakhir2' => $cek2->getNumRows(),
-                    'modul' => 'I.P.A.1',
+            return redirect()
+                ->back()
+                ->with(
+                    'error',
+                    'Tanggal login dan tanggal dokumen wajib diisi.'
                 );
-                $builder_trxerror->insert($infotrxerror);
-                return redirect()->to(base_url('/purchase/trans/addPP'));
-            }
-
-
-
         }
 
+
+        // ==========================================
+        // STRING TO TIME
+        // ==========================================
+
+        $cek_logindate = date(
+            'Ym',
+            strtotime($logindate)
+        );
+
+        $cek_docdate = date(
+            'Ym',
+            strtotime($docdate)
+        );
+
+
+        // ==========================================
+        // PERIODE HARUS SAMA
+        // ==========================================
+
+        if ($cek_logindate != $cek_docdate) {
+
+            return redirect()
+                ->back()
+                ->with(
+                    'error',
+                    'Periode tanggal dokumen harus sama dengan periode login. Periode aktif: '
+                    . date(
+                        'm-Y',
+                        strtotime($logindate)
+                    )
+                );
+        }
+
+
+        // ==========================================
+        // PARAMETER QUERY
+        // ==========================================
+
+        $param = " AND COALESCE(inputby,'')='$nama'";
+
+        $paramdtl = "
+        AND COALESCE(inputby, '') = '$nama'
+        AND (
+            COALESCE(unit, '') = ''
+            OR qty = '0.00'
+            OR qty = '0'
+            OR COALESCE(nmbarang, '') = ''
+            OR COALESCE(description, '') = ''
+        )
+    ";
+
+        $paramdtl2 = "
+        AND COALESCE(inputby, '') = '$nama'
+    ";
+
+
+        // ==========================================
+        // AMBIL HEADER
+        // ==========================================
+
+        $header = $this->m_purchase->q_pp_master_temp(
+            $param
+        );
+
+        $headerRow = $header->getRowArray();
+
+        $status = trim(
+            (string) ($headerRow['status'] ?? '')
+        );
+
+
+        // ==========================================
+        // CEK DETAIL
+        // ==========================================
+
+        $cek = $this->m_purchase->q_pp_dtl_temp(
+            $paramdtl
+        );
+
+        $cek2 = $this->m_purchase->q_pp_dtl_temp(
+            $paramdtl2
+        );
+
+
+        // ==========================================
+        // BUILDER
+        // ==========================================
+
+        $builder = $this->db->table(
+            'sc_tmp.pp'
+        );
+
+
+        // ==========================================
+        // INSERT TRX ERROR
+        // ==========================================
+
+        $builder_trxerror = $this->db->table(
+            'sc_mst.trxerror'
+        );
+
+
+        // HAPUS ERROR LAMA
+
+        $builder_trxerror
+            ->where('userid', $nama)
+            ->where('modul', 'I.P.A.1')
+            ->delete();
+
+
+        // ==========================================
+        // VALIDASI DETAIL
+        // ==========================================
+
+        if (
+            ($status === 'E' && $cek->getNumRows() > 0)
+            || ($cek2->getNumRows() <= 0)
+        ) {
+
+            $infotrxerror = [
+
+                'userid' => $nama,
+
+                'errorcode' => 3,
+
+                'nomorakhir1' => $cek->getNumRows(),
+
+                'nomorakhir2' => $cek2->getNumRows(),
+
+                'modul' => 'I.P.A.1'
+
+            ];
+
+
+            $builder_trxerror->insert(
+                $infotrxerror
+            );
+
+
+            return redirect()->to(
+                base_url('/purchase/trans/addPP')
+            );
+        }
+
+
+        // ==========================================
+        // AMBIL DATA POST
+        // ==========================================
+
+        $pemohon = strtoupper(
+            trim(
+                (string) $this->request->getPost('pemohon')
+            )
+        );
+
+        $keterangan = strtoupper(
+            trim(
+                (string) $this->request->getPost('keterangan')
+            )
+        );
+
+        $estpakai = trim(
+            (string) $this->request->getPost('estpakai')
+        );
+
+
+        // ==========================================
+        // CONVERT ESTPAKAI
+        // ==========================================
+
+        $estpakaiph = null;
+
+        if (!empty($estpakai)) {
+
+            $estpakaiph = date(
+                'Y-m-d',
+                strtotime($estpakai)
+            );
+        }
+
+
+        // ==========================================
+        // CONVERT DOCDATE
+        // ==========================================
+
+        $docdateph = date(
+            'Y-m-d',
+            strtotime($docdate)
+        );
+
+
+        // ==========================================
+        // UPDATE HEADER
+        // ==========================================
+
+        $updateHeader = [
+
+            'docdate' => $docdateph,
+
+            'pemohon' => $pemohon,
+
+            'keterangan' => $keterangan,
+
+            'estpakai' => $estpakaiph
+
+        ];
+
+
+        $builder
+            ->where('inputby', $nama)
+            ->update($updateHeader);
+
+
+        // ==========================================
+        // UPDATE STATUS FINAL
+        // ==========================================
+
+        $info = [
+
+            'status' => 'F'
+
+        ];
+
+
+        $builder
+            ->where('inputby', $nama);
+
+
+        if ($builder->update($info)) {
+
+            return redirect()->to(
+                base_url('/purchase/trans/pp')
+            );
+        }
+
+
+        // ==========================================
+        // JIKA UPDATE GAGAL
+        // ==========================================
+
+        $infotrxerror = [
+
+            'userid' => $nama,
+
+            'errorcode' => 3,
+
+            'nomorakhir1' => $cek->getNumRows(),
+
+            'nomorakhir2' => $cek2->getNumRows(),
+
+            'modul' => 'I.P.A.1'
+
+        ];
+
+
+        $builder_trxerror->insert(
+            $infotrxerror
+        );
+
+
+        return redirect()->to(
+            base_url('/purchase/trans/addPP')
+        );
     }
 
 
@@ -2753,7 +2996,7 @@ class Purchase extends BaseController
                 $date = new \DateTime(trim($lm->docdate));
                 $date->modify("+{$jthtempo} days");
 
-                $jatuhTempo = $date->format('d/m/Y');
+                $jatuhTempo = $date->format('d-m-Y');
 
             } else {
                 $jatuhTempo = '';
@@ -3299,46 +3542,163 @@ class Purchase extends BaseController
     }
 
 
-   public function getBranchInfoPO()
+    public function getBranchInfoPO()
     {
-        $idbranch = trim($this->request->getGet('idbranch'));
+        // ==========================================
+        // AMBIL ID BRANCH
+        // ==========================================
 
-        $row = $this->db->table('sc_mst.branchjob')
-            ->select('nmbranch')
+        $idbranch = trim(
+            (string) $this->request->getGet('idbranch')
+        );
+
+
+        // ==========================================
+        // VALIDASI
+        // ==========================================
+
+        if ($idbranch === '') {
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Branch wajib dipilih.'
+            ]);
+        }
+
+
+        // ==========================================
+        // AMBIL DATA BRANCH
+        // ==========================================
+
+        $row = $this->db
+            ->table('sc_mst.branchjob')
+            ->select('idbranch, nmbranch')
             ->where('idbranch', $idbranch)
             ->get()
             ->getRowArray();
 
+
+        // ==========================================
+        // CEK BRANCH
+        // ==========================================
+
         if (!$row) {
+
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Cabang tidak ditemukan'
+                'message' => 'Cabang tidak ditemukan.'
             ]);
         }
 
-        // mapping nmbranch → kode suffix
+
+        // ==========================================
+        // MAPPING NAMA BRANCH
+        // ==========================================
+
         $map = [
+
             'PT JATIM TAMAN STEEL MFG' => 'PT',
-            'PLANT I'                 => 'PA',
-            'PLANT II'                => 'PB',
+
+            'PLANT I' => 'PA',
+
+            'PLANT II' => 'PB',
+
         ];
 
-        $kodeSuffix = $map[trim($row['nmbranch'])] ?? '';
+
+        $nmbranch = trim(
+            (string) $row['nmbranch']
+        );
+
+
+        $kodeSuffix = $map[$nmbranch] ?? '';
+
+
+        // ==========================================
+        // CEK MAPPING
+        // ==========================================
 
         if ($kodeSuffix === '') {
+
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Mapping cabang belum diset'
+                'message' => 'Mapping cabang belum diset.'
             ]);
         }
 
-        $logindate = $this->session->get('logindate'); // dd-mm-yyyy
-        $infix = date('ym', strtotime($logindate));
+
+        // ==========================================
+        // AMBIL KONFIGURASI
+        // ==========================================
+
+//        $konfigurasi = $this->db
+//            ->table('sc_mst.konfigurasi')
+//            ->get()
+//            ->getResultArray();
+
+
+        // ==========================================
+        // AMBIL KONFIGURASI UMUM
+        // ==========================================
+
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray();
+
+
+        // ==========================================
+        // LOGIN DATE
+        // ==========================================
+
+        $logindate = trim(
+            (string) $this->session->get('logindate')
+        );
+
+
+        // ==========================================
+        // FORMAT INFIX
+        // ==========================================
+
+        $infix = '';
+
+        if ($logindate !== '') {
+
+            $infix = date(
+                'ym',
+                strtotime($logindate)
+            );
+
+        }
+
+
+        // ==========================================
+        // RESPONSE
+        // ==========================================
 
         return $this->response->setJSON([
-            'success'      => true,
-            'kode_suffix'  => $kodeSuffix,
-            'infix'        => $infix
+
+            'success' => true,
+
+            // BRANCH
+            'idbranch' => trim($row['idbranch']),
+
+            'nmbranch' => $nmbranch,
+
+            'kode_suffix' => $kodeSuffix,
+
+
+            // PERIODE
+            'logindate' => $logindate,
+
+            'infix' => $infix,
+
+
+            // KONFIGURASI
+            //'konfigurasi' => $konfigurasi,
+
+            'konfigurasi_umum' => $konfigurasiUmum
+
         ]);
     }
 
@@ -3430,7 +3790,11 @@ class Purchase extends BaseController
         $docno  = strtoupper(trim($this->request->getPost('docno')));
         $docnopp = strtoupper(trim($this->request->getPost('docnopp')));
         $idurut = $this->request->getPost('idurut'); // HAPUS strtoupper, biarkan apa adanya
-        
+        $multidisc       = $this->request->getPost('multidisc');
+        $totaldiscount   = $this->request->getPost('totaldiscount');
+        $multidisctype   = $this->request->getPost('multidisctype');
+        $idhistory_price = $this->request->getPost('idhistory_price');
+
         // Tambahkan mode untuk membedakan add/edit dengan lebih jelas
         // $mode = $this->request->getPost('mode'); // 'add' atau 'edit'
 
@@ -3482,6 +3846,10 @@ class Purchase extends BaseController
                 'currcode'    => strtoupper($this->request->getPost('currcode')),
                 'kurs'    => strtoupper($this->request->getPost('kurs')),
                 'keterangan'    => strtoupper($this->request->getPost('keterangan')),
+                'multidisc'    => $this->request->getPost('multidisc'),
+                'totaldiscount'    => $this->request->getPost('totaldiscount'),
+                'multidisctype'    => $this->request->getPost('multidisctype'),
+                'idhistory_price'    => $this->request->getPost('idhistory_price'),
                 'status'    => 'E',
                 'inputby'   => $nama,
                 'inputdate' => date('Y-m-d H:i:s')
@@ -3552,6 +3920,10 @@ class Purchase extends BaseController
                 'kurs'          => strtoupper($this->request->getPost('kurs')),
                 'idtax'         => strtoupper($this->request->getPost('idtax')),
                 'currcode'      => strtoupper($this->request->getPost('currcode')),
+                'multidisc'    => $this->request->getPost('multidisc'),
+                'totaldiscount'    => $this->request->getPost('totaldiscount'),
+                'multidisctype'    => $this->request->getPost('multidisctype'),
+                'idhistory_price'    => $this->request->getPost('idhistory_price'),
                 'descriptionpo' => $descriptionpo,
                 'updateby'     => $nama,
                 'updatedate'   => date('Y-m-d H:i:s')
@@ -3686,6 +4058,10 @@ class Purchase extends BaseController
                         'kurs'          => strtoupper($this->request->getPost('kurs')),
                         'idtax'         => strtoupper($this->request->getPost('idtax')),
                         'currcode'      => strtoupper($this->request->getPost('currcode')),
+                        'multidisc'     => $this->request->getPost('multidisc'),
+                        'totaldiscount' => $this->request->getPost('totaldiscount'),
+                        'multidisctype' => $this->request->getPost('multidisctype'),
+                        'idhistory_price' => $this->request->getPost('idhistory_price'),
                         'qtybonus'      => 0, // Default 0 untuk new insert
                         'harga'         => 0, // Default 0 untuk new insert
                         'multidisc'     => 0, // Default 0 untuk new insert

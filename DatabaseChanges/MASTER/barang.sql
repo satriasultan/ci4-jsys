@@ -51,3 +51,37 @@ add column issn CHARACTER(6);
 
 ALTER TABLE sc_mst.mbarang
 ADD COLUMN grouptype character(10) default 'STOCK';
+
+
+
+-- DROP TABLE IF EXISTS sc_mst.mbarang_unit CASCADE;
+
+CREATE TABLE IF NOT EXISTS sc_mst.mbarang_unit
+(
+    idbarang character(20) COLLATE pg_catalog."default" NOT NULL,
+
+    idunit character varying(10) COLLATE pg_catalog."default" NOT NULL,
+
+    basic_value numeric(18,2) DEFAULT 1,
+
+    conv_value numeric(18,2),
+
+    inputdate timestamp without time zone,
+
+    inputby character(20) COLLATE pg_catalog."default",
+
+    cdefault char(5) COLLATE pg_catalog."default"
+        DEFAULT 'NO'::bpchar,
+
+    chold character(4) COLLATE pg_catalog."default"
+        DEFAULT 'NO'::bpchar,
+
+    CONSTRAINT mbarang_unit_pkey
+        PRIMARY KEY (idbarang, idunit)
+)
+
+TABLESPACE pg_default;
+
+
+ALTER TABLE IF EXISTS sc_mst.mbarang_unit
+    OWNER TO postgres;

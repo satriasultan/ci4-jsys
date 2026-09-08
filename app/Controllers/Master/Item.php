@@ -1437,4 +1437,406 @@ class Item extends BaseController
             'status' => true,
         ),JSON_PRETTY_PRINT);
     }
+
+
+
+    public function saveBarangUnit()
+    {
+        // ==========================================
+        // SESSION USER
+        // ==========================================
+
+        $nama = trim(
+            (string) $this->session->get('nama')
+        );
+
+
+        // ==========================================
+        // POST DATA
+        // ==========================================
+
+        $idbarang = strtoupper(
+            trim(
+                (string) $this->request->getPost('idbarang')
+            )
+        );
+
+        $idunit = strtoupper(
+            trim(
+                (string) $this->request->getPost('idunit')
+            )
+        );
+        $idunit_tax = strtoupper(
+            trim(
+                (string) $this->request->getPost('idunit_tax')
+            )
+        );
+        $basic_value = trim(
+            (string) $this->request->getPost('basic_value')
+        );
+
+        $conv_value = trim(
+            (string) $this->request->getPost('conv_value')
+        );
+
+        $cdefault = strtoupper(
+            trim(
+                (string) $this->request->getPost('cdefault')
+            )
+        );
+
+
+        // ==========================================
+        // VALIDASI
+        // ==========================================
+
+        if ($idbarang === '') {
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'ID Barang tidak ditemukan.'
+            ]);
+        }
+
+
+        if ($idunit === '') {
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Unit wajib dipilih.'
+            ]);
+        }
+
+
+        // ==========================================
+        // DEFAULT VALUE
+        // ==========================================
+
+        if ($basic_value === '') {
+            $basic_value = '1.00';
+        }
+
+        if ($conv_value === '') {
+            $conv_value = '1.00';
+        }
+
+        if ($cdefault === '') {
+            $cdefault = 'NO';
+        }
+
+
+        // ==========================================
+        // FORMAT NUMBER
+        // 1,000.00 -> 1000.00
+        // ==========================================
+
+        $basic_value = str_replace(',', '', $basic_value);
+        $conv_value  = str_replace(',', '', $conv_value);
+
+
+        // ==========================================
+        // VALIDASI ANGKA
+        // ==========================================
+
+        if (
+            !is_numeric($basic_value) ||
+            !is_numeric($conv_value)
+        ) {
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Basic Value dan Conversion Value harus berupa angka.'
+            ]);
+        }
+
+
+        // ==========================================
+        // VALIDASI DEFAULT
+        // ==========================================
+
+        if (!in_array($cdefault, ['YES', 'NO'], true)) {
+
+            $cdefault = 'NO';
+        }
+
+
+        // ==========================================
+        // BUILDER
+        // ==========================================
+
+        $builder = $this->db->table(
+            'sc_mst.mbarang_unit'
+        );
+
+
+        // ==========================================
+        // CEK DUPLIKASI
+        // PRIMARY KEY:
+        // idbarang + idunit
+        // ==========================================
+
+        $exists = $builder
+            ->where('idbarang', $idbarang)
+            ->where('idunit', $idunit)
+            ->countAllResults();
+
+
+        if ($exists > 0) {
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Satuan sudah terdaftar untuk barang ini.'
+            ]);
+        }
+
+
+        // ==========================================
+        // TRANSACTION
+        // ==========================================
+
+        $this->db->transStart();
+
+
+        // ==========================================
+        // JIKA DEFAULT = YES
+        // RESET DEFAULT UNIT LAIN
+        // ==========================================
+
+        if ($cdefault === 'YES') {
+
+            $this->db
+                ->table('sc_mst.mbarang_unit')
+                ->where('idbarang', $idbarang)
+                ->update([
+                    'cdefault' => 'NO'
+                ]);
+        }
+
+
+        // ==========================================
+        // INSERT SATUAN
+        // ==========================================
+
+        $builder->insert([
+
+            'idbarang'    => $idbarang,
+
+            'idunit'      => $idunit,
+
+            'idunit_tax'  => $idunit_tax,
+
+            'basic_value' => $basic_value,
+
+            'conv_value'  => $conv_value,
+
+            'inputdate'   => date('Y-m-d H:i:s'),
+
+            'inputby'     => $nama,
+
+            'cdefault'    => $cdefault,
+
+            'chold'       => 'NO'
+
+        ]);
+
+
+        // ==========================================
+        // COMPLETE TRANSACTION
+        // ==========================================
+
+        $this->db->transComplete();
+
+
+        if ($this->db->transStatus() === false) {
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Gagal menyimpan satuan barang.'
+            ]);
+        }
+
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Satuan barang berhasil ditambahkan.'
+        ]);
+    }
+
+    public function barangUnitList()
+    {
+        /* paksa untuk masuk ke barang unit list secara default */
+        $this->db->query("insert into sc_mst.mbarang_unit
+(idbarang,idunit,idunit_tax,basic_value,conv_value,cdefault,chold)
+(select idbarang,trim(unit),'',1,1,'YES','NO' from sc_mst.mbarang where trim(idbarang)||trim(unit)
+not in (select trim(idbarang)||trim(idunit) from sc_mst.mbarang_unit));");
+
+
+        $idbarang = strtoupper(
+            trim(
+                (string) $this->request->getGet('idbarang')
+            )
+        );
+
+
+        if ($idbarang === '') {
+
+            return $this->response->setJSON([
+                'data' => []
+            ]);
+        }
+
+
+        $builder = $this->db
+            ->table('sc_mst.mbarang_unit');
+
+
+        $data = $builder
+            ->select('
+            idbarang,
+            idunit,
+            idunit_tax,
+            basic_value,
+            conv_value,
+            cdefault
+        ')
+            ->where('idbarang', $idbarang)
+            ->orderBy('idunit', 'ASC')
+            ->get()
+            ->getResultArray();
+
+
+        $result = [];
+
+        $no = 1;
+
+
+        foreach ($data as $row) {
+
+            $result[] = [
+
+                'no' => $no++,
+
+                'idbarang' => trim($row['idbarang']),
+
+                'idunit' => trim($row['idunit']),
+
+                'idunit_tax' => trim(
+                    $row['idunit_tax'] ?? ''
+                ),
+
+                'basic_value' => number_format(
+                    (float) ($row['basic_value'] ?? 0),
+                    2,
+                    '.',
+                    ','
+                ),
+
+                'conv_value' => number_format(
+                    (float) ($row['conv_value'] ?? 0),
+                    2,
+                    '.',
+                    ','
+                ),
+
+                'cdefault' => trim(
+                    $row['cdefault'] ?? 'NO'
+                )
+
+            ];
+
+        }
+
+
+        return $this->response->setJSON([
+            'data' => $result
+        ]);
+    }
+
+    public function deleteBarangUnit()
+    {
+        // ==========================================
+        // SESSION USER
+        // ==========================================
+
+        $nama = trim(
+            (string) $this->session->get('nama')
+        );
+
+
+        // ==========================================
+        // AMBIL DATA POST
+        // ==========================================
+
+        $idbarang = trim(
+            (string) $this->request->getPost('idbarang')
+        );
+
+        $idunit = strtoupper(
+            trim(
+                (string) $this->request->getPost('idunit')
+            )
+        );
+
+
+        // ==========================================
+        // VALIDASI
+        // ==========================================
+
+        if ($idbarang === '' || $idunit === '') {
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'ID Barang dan Unit wajib diisi.'
+            ]);
+        }
+
+
+        // ==========================================
+        // DATABASE
+        // ==========================================
+
+        $builder = $this->db->table(
+            'sc_mst.mbarang_unit'
+        );
+
+
+        // ==========================================
+        // CEK DATA
+        // ==========================================
+
+        $exists = $builder
+            ->where('idbarang', $idbarang)
+            ->where('idunit', $idunit)
+            ->countAllResults();
+
+
+        if ($exists <= 0) {
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Data Unit tidak ditemukan.'
+            ]);
+        }
+
+
+        // ==========================================
+        // DELETE
+        // ==========================================
+
+        $builder
+            ->where('idbarang', $idbarang)
+            ->where('idunit', $idunit)
+            ->delete();
+
+
+        // ==========================================
+        // RESPONSE
+        // ==========================================
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Unit berhasil dihapus.'
+        ]);
+    }
+
 }

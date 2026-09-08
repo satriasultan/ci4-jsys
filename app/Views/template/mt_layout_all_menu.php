@@ -330,14 +330,6 @@ use App\Libraries\Fiky_encryption;
             border-top-right-radius: 14px !important;
         }
 
-        .modal .bg-primary {
-            background: linear-gradient(
-                    135deg,
-                    #4b5563,
-                    #6b7280
-            ) !important;
-        }
-
 
         /* =========================================
            GLOBAL CARD HEADER BUTTON

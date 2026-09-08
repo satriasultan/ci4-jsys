@@ -388,33 +388,267 @@
                             </div>
                         </div>
                         <div class="tab-pane fade" id="satuantab" role="tabpanel">
+
                             <div class="section-block">
+
                                 <div class="section-header">
                                     <i class="fa fa-cube"></i> Satuan
                                 </div>
+
+
+                                <!-- =========================
+                                     FORM INPUT
+                                ========================== -->
                                 <div class="row">
+
+                                    <!-- UNIT -->
                                     <div class="col-md-3">
                                         <div class="form-group">
-                                            <label for="Unit">Unit</label>
-                                            <select name="unit" id="unit" class="form-control" placeholder="Unit" style="text-transform:uppercase;" >
-                                                </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="form-group">
-                                            <label for="Unit">Sub Unit (Satuan Kecil)</label>
-                                            <select name="subunit" id="subunit" class="form-control" placeholder="Sub Unit" style="text-transform:uppercase;" >
+
+                                            <label for="unit">Unit</label>
+
+                                            <select name="unit"
+                                                    id="unit"
+                                                    class="form-control"
+                                                    style="text-transform:uppercase;">
+
                                             </select>
+
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
+
+
+                                    <!-- SUB UNIT -->
+                                    <div class="col-md-3">
                                         <div class="form-group">
-                                            <label for="satuantax">Satuan Tax</label>
-                                            <input type="text" name="satuantax" class="form-control" id="satuantax" maxlength="6" placeholder="Satuan Tax" style="text-transform:uppercase;">
+
+                                            <label for="subunit">
+                                                Sub Unit (Satuan Kecil)
+                                            </label>
+
+                                            <select name="subunit"
+                                                    id="subunit"
+                                                    class="form-control"
+                                                    style="text-transform:uppercase;">
+
+                                            </select>
+
+                                        </div>
+                                    </div>
+
+
+                                    <!-- SATUAN TAX -->
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+
+                                            <label for="satuantax">
+                                                Satuan Tax
+                                            </label>
+
+                                            <input type="text"
+                                                   name="satuantax"
+                                                   class="form-control"
+                                                   id="satuantax"
+
+                                                   placeholder="Satuan Tax"
+                                                   style="text-transform:uppercase;">
+
                                         </div>
                                     </div>
                                 </div>
+<!-- TAMBAHKAN ROW -->
+                                <div class="row">
+
+                                    <!-- ID BARANG -->
+                                    <input type="hidden"
+                                           name="idbarang"
+                                           id="idbarang_unit">
+
+                                    <!-- UNIT -->
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+
+                                            <label for="unit">
+                                                ID Unit Konversi <span class="text-danger">*</span>
+                                            </label>
+
+                                            <input type="text"
+                                                   name="idunit"
+                                                   id="idunit"
+                                                   class="form-control"
+                                                   maxlength="10"
+                                                   placeholder="Masukkan Unit"
+                                                   style="text-transform:uppercase;"
+                                                   >
+
+                                        </div>
+                                    </div>
+
+
+                                    <!-- SATUAN TAX -->
+                                    <div class="col-md-2">
+                                        <div class="form-group">
+
+                                            <label for="idunit_tax">
+                                                Satuan Tax
+                                            </label>
+
+                                            <input type="text"
+                                                   name="idunit_tax"
+                                                   id="idunit_tax"
+                                                   class="form-control"
+                                                   maxlength="10"
+                                                   placeholder="Satuan Tax"
+                                                   style="text-transform:uppercase;">
+
+                                        </div>
+                                    </div>
+
+
+                                    <!-- BASIC VALUE -->
+                                    <div class="col-md-2">
+                                        <div class="form-group">
+
+                                            <label for="basic_value">
+                                                Basic Value
+                                            </label>
+
+                                            <input type="text"
+                                                   name="basic_value"
+                                                   id="basic_value"
+                                                   class="form-control jtsseparator ratakanan"
+                                                   value="1.00"
+                                                   placeholder="1.00">
+
+                                        </div>
+                                    </div>
+
+
+                                    <!-- CONVERSION VALUE -->
+                                    <div class="col-md-2">
+                                        <div class="form-group">
+
+                                            <label for="conv_value">
+                                                Conversion Value
+                                            </label>
+
+                                            <input type="text"
+                                                   name="conv_value"
+                                                   id="conv_value"
+                                                   class="form-control jtsseparator ratakanan"
+                                                   value="1.00"
+                                                   placeholder="1.00">
+
+                                        </div>
+                                    </div>
+
+
+                                    <!-- DEFAULT -->
+                                    <div class="col-md-2">
+                                        <div class="form-group">
+
+                                            <label for="cdefault">
+                                                Default
+                                            </label>
+
+                                            <select name="cdefault"
+                                                    id="cdefault"
+                                                    class="form-control">
+
+                                                <option value="NO">
+                                                    NO
+                                                </option>
+
+                                                <option value="YES">
+                                                    YES
+                                                </option>
+
+                                            </select>
+
+                                        </div>
+                                    </div>
+
+
+                                    <!-- BUTTON TAMBAH -->
+                                    <div class="col-md-1">
+
+                                        <div class="form-group">
+
+                                            <label>&nbsp;</label>
+
+                                            <button type="button"
+                                                    class="btn btn-primary btn-block"
+                                                    id="btnAddSatuan"
+                                                    title="Tambah Satuan">
+
+                                                <i class="fa fa-plus"></i>
+
+                                            </button>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+<!-- TAMBAHKAN ROW -->
+
+                                <!-- =========================
+                                     GRID SATUAN
+                                ========================== -->
+
+                                <div class="table-responsive mt-3">
+
+                                    <table class="table table-bordered table-striped"
+                                           id="tableSatuan">
+
+                                        <thead class="bg-primary text-white">
+
+                                        <tr>
+
+                                            <th style="width:50px;" class="text-center">
+                                                No
+                                            </th>
+
+                                            <th>
+                                                Unit
+                                            </th>
+
+                                            <th>
+                                                Satuan Tax
+                                            </th>
+
+                                            <th class="text-end">
+                                                Basic Value
+                                            </th>
+
+                                            <th class="text-end">
+                                                Conversion Value
+                                            </th>
+
+                                            <th style="width:100px;" class="text-center">
+                                                Default
+                                            </th>
+
+                                            <th style="width:100px;" class="text-center">
+                                                Action
+                                            </th>
+
+                                        </tr>
+
+                                        </thead>
+
+                                        <tbody>
+
+                                        <!-- DATA MASUK DISINI -->
+
+                                        </tbody>
+
+                                    </table>
+
+                                </div>
+
                             </div>
+
                         </div>
                         <div class="tab-pane fade" id="accounttab" role="tabpanel">
                             <div class="section-block">

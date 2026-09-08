@@ -3266,5 +3266,119 @@ class Globalmodule extends BaseController
         );
     }
 
+
+    public function list_unit_item()
+    {
+        // =========================================
+        // REQUEST
+        // =========================================
+
+        $search = strtoupper(
+            trim($this->request->getPost('_search_'))
+        );
+
+        $idbarang = trim(
+            $this->request->getGet('idbarang')
+        );
+
+        $idunit = trim(
+            $this->request->getGet('idunit')
+        );
+
+
+        // =========================================
+        // VALIDASI
+        // =========================================
+
+        if (empty($idbarang)) {
+
+            return $this->response
+                ->setContentType('application/json')
+                ->setJSON([
+                    'total_count' => 0,
+                    'items' => [],
+                    'message' => 'ID Barang tidak boleh kosong'
+                ]);
+
+        }
+
+
+        // =========================================
+        // PARAMETER ID BARANG
+        // =========================================
+
+        $param = "
+        AND TRIM(idbarang) = " . $this->db->escape($idbarang) . "
+    ";
+
+
+        // =========================================
+        // PARAMETER ID UNIT
+        // =========================================
+
+        if (!empty($idunit)) {
+
+            $param .= "
+            AND TRIM(idunit) = " . $this->db->escape($idunit) . "
+        ";
+
+        }
+
+
+        // =========================================
+        // SEARCH SELECT2
+        // =========================================
+
+        if (!empty($search)) {
+
+            $param .= "
+            AND UPPER(TRIM(idunit))
+            LIKE '%" . $this->db->escapeLikeString($search) . "%'
+        ";
+
+        }
+
+
+        // =========================================
+        // ORDER
+        // =========================================
+
+        $param .= "
+        ORDER BY TRIM(idunit) ASC
+    ";
+
+
+        // =========================================
+        // GET DATA
+        // =========================================
+
+        $getResult = $this->m_global
+            ->m_barang_unit($param)
+            ->getResult();
+
+
+        // =========================================
+        // COUNT
+        // =========================================
+
+        $count = count($getResult);
+
+
+        // =========================================
+        // RESPONSE
+        // =========================================
+
+        return $this->response
+            ->setContentType('application/json')
+            ->setJSON([
+
+                'total_count' => $count,
+
+                'items' => $getResult,
+
+                'incomplete_getResults' => false,
+
+            ]);
+    }
 }
 

@@ -1,8 +1,8 @@
 
 -- JALANKAN INI DULU
 
-DROP TABLE IF EXISTS sc_tmp.sahp_dtl
-DROP TABLE IF EXISTS sc_trx.sahp_dtl
+DROP TABLE IF EXISTS sc_tmp.sahp_dtl;
+DROP TABLE IF EXISTS sc_trx.sahp_dtl;
 
 
 

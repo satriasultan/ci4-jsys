@@ -373,7 +373,7 @@ $("#idbarang").select2({
     placeholder: "Choose Your Item List",
     allowClear: true,
     width:'100%',
-    minimumInputLength: 2,
+    // minimumInputLength: 2,
     dropdownParent: $('#modalDetailPP'),
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_item',
@@ -436,7 +436,7 @@ function formatItem(repo) {
     return markup;
 }
 function formatItemSelection(repo) {
-    return repo.nmbarang || repo.text;
+    return repo.idbarang || repo.text;
 }
 
 
@@ -985,17 +985,18 @@ function savePPDetail() {
         return;
     }
 
-    Swal.fire({
-        title: 'Konfirmasi',
-        text: 'Simpan data PP Detail?',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Ya, Simpan',
-        cancelButtonText: 'Batal',
-        reverseButtons: true
-    }).then((result) => {
+    /* TIDAK PERLU KONFIRMASI */
+    // Swal.fire({
+    //     title: 'Konfirmasi',
+    //     text: 'Simpan data PP Detail?',
+    //     icon: 'question',
+    //     showCancelButton: true,
+    //     confirmButtonText: 'Ya, Simpan',
+    //     cancelButtonText: 'Batal',
+    //     reverseButtons: true
+    // }).then((result) => {
 
-        if (!result.isConfirmed) return;
+        // if (!result.isConfirmed) return;
 
         let formData = new FormData(document.getElementById('formPPDetail'));
         formData.append('docdate', $('#docdate').val());
@@ -1022,13 +1023,15 @@ function savePPDetail() {
 
                 if (res.success) {
 
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil',
-                        text: res.message || 'Data PP Detail berhasil disimpan',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
+
+                    //tidak usah ada swal fire saat simpan
+                    // Swal.fire({
+                    //     icon: 'success',
+                    //     title: 'Berhasil',
+                    //     text: res.message || 'Data PP Detail berhasil disimpan',
+                    //     timer: 2000,
+                    //     showConfirmButton: false
+                    // });
 
                     //  if (!res.success) {
                     //     Swal.fire('Error', res.message, 'error');
@@ -1064,7 +1067,7 @@ function savePPDetail() {
             }
         });
 
-    });
+    // });
 }
 
 function btnInputDetail() {

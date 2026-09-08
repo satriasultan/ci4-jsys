@@ -933,7 +933,46 @@ function btnUpdateDetail(){
                 $('#docnoppmodal').val(res.data.docnopp);
                 $('#idbarang').val(res.data.idbarang);
                 $('#nmbarang').val(res.data.nmbarang);
-                $('#unit').val(res.data.unit);
+                //$('#unit').val(res.data.unit);
+                var idbarang = $.trim(res.data.idbarang);
+                var idunit   = $.trim(res.data.unit);
+
+                if (idbarang !== '' && idunit !== '') {
+
+                    $.ajax({
+                        type: 'GET',
+                        url: HOST_URL + 'api/globalmodule/list_unit_item',
+                        data: {
+                            idbarang: idbarang,
+                            idunit: idunit
+                        },
+                        dataType: 'json'
+                    }).then(function (datax) {
+
+                        if (datax.items && datax.items.length > 0) {
+
+                            var unitData = datax.items[0];
+
+                            var option = new Option(
+                                unitData.idunit,
+                                unitData.idunit,
+                                true,
+                                true
+                            );
+
+                            $('#unit')
+                                .empty()
+                                .append(option)
+                                .trigger('change');
+
+                            // Simpan data lengkap unit
+                            $(option).data('unit-data', unitData);
+
+                        }
+
+                    });
+
+                }
                 setJtsValue('[name="qty"]', convertToDbNumber(res.data.qty));
                 setJtsValue('[name="qtybonus"]', convertToDbNumber(res.data.qtybonus));
                 setJtsValue('[name="harga"]', convertToDbNumber(res.data.harga));
@@ -1154,17 +1193,17 @@ $('#btn-reset').click(function(){ //button reset event click
 
 function savePODetail() {
 
-    Swal.fire({
-        title: 'Konfirmasi',
-        text: 'Proses data PP ke Detail PO?',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Ya, Proses',
-        cancelButtonText: 'Batal',
-        reverseButtons: true
-    }).then((result) => {
 
-        if (!result.isConfirmed) return;
+    // Swal.fire({
+    //     title: 'Konfirmasi',
+    //     text: 'Proses data PP ke Detail PO?',
+    //     icon: 'question',
+    //     showCancelButton: true,
+    //     confirmButtonText: 'Ya, Proses',
+    //     cancelButtonText: 'Batal',
+    //     reverseButtons: true
+    // }).then((result) => {
+     //   if (!result.isConfirmed) return;
 
         let formData = new FormData(document.getElementById('formPODetail'));
         formData.append('docdate', $('#docdate').val());
@@ -1187,8 +1226,15 @@ function savePODetail() {
         let qty = $('#qty').val();
         let qtybonus = $('#qtybonus').val();
         let harga = $('#harga').val();
-        // let multidisc = $('#multidisc').val();
-        let nilai = $('#nilai').val();
+
+
+    let multidisc       = $('#multidisc').val();
+    let multidisctype   = $('#multidisctype').val();
+    let totaldiscount   = $('#totaldiscount').val();
+    let nilai           = $('#nilai').val();
+    let idhistory_price = $('#idhistory_price').val();
+
+
         formData.set('qty', convertToDbNumber(qty));
         formData.set('qtybonus', convertToDbNumber(qtybonus));
         formData.set('harga', convertToDbNumber(harga));
@@ -1198,7 +1244,30 @@ function savePODetail() {
         formData.set('descriptionpo', $('#descriptionpo').val());
         formData.set('uniqueid', $('#uniqueid').val());
         formData.set('docnopp', $('#docnopp').val());
-        
+        formData.set(
+            'multidisc',
+            convertToDbNumber(multidisc)
+        );
+
+        formData.set(
+            'multidisctype',
+            multidisctype
+        );
+
+        formData.set(
+            'totaldiscount',
+            convertToDbNumber(totaldiscount)
+        );
+
+        formData.set(
+            'idhistory_price',
+            idhistory_price
+        );
+
+        formData.set(
+            'nilai',
+            convertToDbNumber(nilai)
+        );
         // formData.set('descriptionpo', convertToDbNumber(qty));
 
         $.ajax({
@@ -1211,6 +1280,10 @@ function savePODetail() {
 
             success: function (res) {
 
+                // ==============================
+                // JIKA GAGAL → TAMPILKAN SWAL
+                // ==============================
+
                 if (!res.success) {
 
                     Swal.fire({
@@ -1222,43 +1295,53 @@ function savePODetail() {
                     return;
                 }
 
+
                 // ==============================
-                // SUCCESS
+                // BERHASIL
+                // TANPA SWAL
                 // ==============================
 
-                // Jika tidak ada item baru (semua sudah ada)
-                let iconType = 'success';
-                let titleText = 'Berhasil';
-
-                if (res.message && res.message.toLowerCase().includes('sudah ada')) {
-                    iconType = 'info';
-                    titleText = 'Tidak Ada Perubahan';
-                }
-
-                Swal.fire({
-                    icon: iconType,
-                    title: titleText,
-                    text: res.message,
-                    timer: 2000,
-                    showConfirmButton: false
-                });
 
                 // Jika header baru dibuat → reload
                 if (res.reload === true) {
-                    setTimeout(function () {
-                        window.location.reload();
-                    }, 1000);
+
+                    window.location.reload();
+
                     return;
                 }
 
-                // Jika hanya tambah detail
+
+                // ==============================
+                // TUTUP MODAL
+                // ==============================
+
                 $('#modalDetailPO').modal('hide');
+
                 $('#modalUpdatePO').modal('hide');
+
+
+                // ==============================
+                // RESET FORM
+                // ==============================
+
                 $('#formPOUpdate')[0].reset();
-                reload_table_po_dtl();
-                documentReadable()
+
                 $('#formPODetail')[0].reset();
+
+
+                // ==============================
+                // RELOAD TABLE
+                // ==============================
+
+                reload_table_po_dtl();
+
+                documentReadable();
             },
+
+
+            // ==============================
+            // SERVER ERROR
+            // ==============================
 
             error: function (xhr) {
 
@@ -1273,7 +1356,7 @@ function savePODetail() {
         });
 
 
-    });
+    //});
 }
 
 function btnInputDetail() {
@@ -1373,97 +1456,509 @@ $("#kdsupplier").select2({
 });
 
 
+// =====================================================
+// AUTO LOAD CURRENCY DARI API
+// =====================================================
+function loadDefaultCurrency(currcode, kurs = 1) {
+
+    currcode = $.trim(currcode || '');
+
+    if (currcode === '') {
+        return;
+    }
+
+    $.ajax({
+        type: 'GET',
+
+        url: HOST_URL +
+            'api/globalmodule/list_currency?var=' +
+            encodeURIComponent(currcode),
+
+        dataType: 'json',
+
+        delay: 250,
+
+        success: function (datax) {
+
+            if (
+                !datax ||
+                !datax.items ||
+                datax.items.length === 0
+            ) {
+
+                console.warn(
+                    'Currency tidak ditemukan:',
+                    currcode
+                );
+
+                return;
+            }
+
+
+            // =============================================
+            // DATA CURRENCY
+            // =============================================
+
+            var currencyData = datax.items[0];
+
+            // Simpan kurs
+            currencyData.kurs = kurs;
+
+
+            // =============================================
+            // HAPUS OPTION SEBELUMNYA JIKA ADA
+            // =============================================
+
+            $('[name="currcode"] option[value="' +
+                currcode.replace(/"/g, '\\"') +
+                '"]').remove();
+
+
+            // =============================================
+            // CREATE OPTION SELECT2
+            // =============================================
+
+            var option = new Option(
+
+                currencyData.currname,
+                currencyData.currcode,
+
+                true,
+                true
+
+            );
+
+
+            // Simpan seluruh data currency
+
+            $(option).data(
+                'currency-data',
+                currencyData
+            );
+
+
+            // =============================================
+            // APPEND + TRIGGER SELECT2
+            // =============================================
+
+            $('[name="currcode"]')
+                .append(option)
+                .trigger('change');
+
+
+            // =============================================
+            // SET KURS
+            // =============================================
+
+            var nilaiKurs = kurs;
+
+            // Jika kurs kosong ambil dari API
+
+            if (
+                nilaiKurs === null ||
+                nilaiKurs === undefined ||
+                nilaiKurs === ''
+            ) {
+
+                nilaiKurs =
+                    currencyData.kurs || 1;
+
+            }
+
+
+            setJtsValue(
+                '[name="kurs"]',
+                convertToDbNumber(nilaiKurs)
+            );
+
+
+            $('[name="kurs"]').prop(
+                'readonly',
+                false
+            );
+
+        },
+
+        error: function (xhr) {
+
+            console.error(
+                'Gagal load currency:',
+                xhr.responseText
+            );
+
+        }
+
+    });
+
+}
+
+
+// =====================================================
+// AUTO LOAD TAX DARI API
+// =====================================================
+function loadDefaultTax(idtax) {
+
+    idtax = $.trim(idtax || '');
+
+    if (idtax === '') {
+        return;
+    }
+
+
+    $.ajax({
+        type: 'GET',
+
+        url: HOST_URL +
+            'api/globalmodule/list_tax?var=' +
+            encodeURIComponent(idtax),
+
+        dataType: 'json',
+
+        delay: 250,
+
+        success: function (datax) {
+
+            if (
+                !datax ||
+                !datax.items ||
+                datax.items.length === 0
+            ) {
+
+                console.warn(
+                    'Tax tidak ditemukan:',
+                    idtax
+                );
+
+                return;
+            }
+
+
+            // =============================================
+            // DATA TAX
+            // =============================================
+
+            var taxData = datax.items[0];
+
+
+            // =============================================
+            // HAPUS OPTION LAMA JIKA ADA
+            // =============================================
+
+            $('[name="idtax"] option[value="' +
+                idtax.replace(/"/g, '\\"') +
+                '"]').remove();
+
+
+            // =============================================
+            // CREATE OPTION SELECT2
+            // =============================================
+
+            var option = new Option(
+
+                taxData.nmtax,
+                taxData.idtax,
+
+                true,
+                true
+
+            );
+
+
+            // =============================================
+            // APPEND OPTION
+            // =============================================
+
+            $('[name="idtax"]')
+                .append(option)
+                .trigger('change');
+
+
+            // =============================================
+            // TRIGGER SELECT2 SELECT
+            // =============================================
+
+            $('[name="idtax"]').trigger({
+
+                type: 'select2:select',
+
+                params: {
+
+                    data: taxData
+
+                }
+
+            });
+
+        },
+
+        error: function (xhr) {
+
+            console.error(
+                'Gagal load tax:',
+                xhr.responseText
+            );
+
+        }
+
+    });
+
+}
+
+
 let currentKodeSuffix = '';
 
 $('#cabang').on('change', function () {
-    if (skipRoleChange) return; // skip
+
+    if (skipRoleChange) return;
 
     let idbranch = $(this).val();
 
-    if(idbranch){
+    if (idbranch) {
+
         $.ajax({
-                url: HOST_URL + '/purchase/trans/getBranchInfoPO',
-                method: 'GET',
-                data: { idbranch: idbranch },
-                dataType: 'json',
-                success: function (res) {
-                    if (!res.success) {
-                        Swal.fire('Error', res.message, 'warning');
-                        return;
-                    }
+            url: HOST_URL + '/purchase/trans/getBranchInfoPO',
+            method: 'GET',
+            data: {
+                idbranch: idbranch
+            },
+            dataType: 'json',
 
-                    currentKodeSuffix = res.kode_suffix; // PT / PA / PB
-                    $('#infix').val(res.infix);          // YYMM
-                    $('#prefix').val('POB');             // default
-                    $('#sufix').val(currentKodeSuffix + '0001');
-                    defaultInitialPP = currentKodeSuffix
-                    var infix = (res.infix || '').toString();
-                    if (infix.length === 4) {
-                        $('#docdate').prop('disabled', false);
-                        var yy = infix.substring(0,2);
-                        var mm = infix.substring(2,4);
-                        var year = 2000 + parseInt(yy,10);
-                        var month = parseInt(mm,10) - 1; // moment month index
+            success: function (res) {
 
-                        var today = moment();
+                if (!res.success) {
 
-                        var startDate = moment([year, month, 1]);
-                        var endDate = moment(startDate).endOf('month');
-
-                        var $el = $('#docdate');
-                        var drp = $el.data('daterangepicker');
-
-                        if (drp) {
-                            // update limits & selected date
-                            drp.minDate = startDate;
-                            drp.maxDate = endDate;
-                            drp.setStartDate(startDate);
-                            drp.setEndDate(startDate);
-                        } else {
-                            // fallback: (re)initialize with limits
-                            $el.daterangepicker({
-                                autoUpdateInput: false,
-                                singleDatePicker: true,
-                                showDropdowns: true,
-                                startDate: today,
-                                minDate: startDate,
-                                maxDate: endDate,
-                                locale: { format: 'DD-MM-YYYY' },
-                                cancelLabel: 'Clear'
-                            });
-                            // rebind handlers jika perlu (apply/cancel)
-                            $el.on('apply.daterangepicker', function(ev, picker) {
-                                $(this).val(picker.startDate.format('DD-MM-YYYY'));
-                            });
-                            $el.on('cancel.daterangepicker', function(ev, picker) {
-                                $(this).val('');
-                            });
-                        }
-
-                        // isi input langsung (opsional)
-                        $el.val(today.format('DD-MM-YYYY'));
-                    }
-
-                    $('#docno').val(
-                        'POB/' + res.infix + '/' + currentKodeSuffix + '0001'
+                    Swal.fire(
+                        'Error',
+                        res.message,
+                        'warning'
                     );
 
-                    // Set alamat kirim (bisa diedit manual nanti)
-                    if (idbranch === '01.02') {
-                        $('#alamatkirim').val(
-                            'JL. MAYJEND SUNGKONO NO. 90 KEL. PRAMBANGAN KEC.KEBOMAS GRESIK.'
-                        );
-                    } else if (idbranch) {
-                        $('#alamatkirim').val(
-                            'JL. RAYA TAMAN NO. 1 RT.014 RW.003 TAMAN, TAMAN SIDOARJO'
-                        );
-                    } else {
-                        $('#alamatkirim').val(''); // null / kosong
-                    }
+                    return;
                 }
-            });
+
+
+                // =====================================================
+                // DATA BRANCH
+                // =====================================================
+
+                currentKodeSuffix = res.kode_suffix;
+
+                $('#infix').val(res.infix);
+
+                $('#prefix').val('POB');
+
+                $('#sufix').val(
+                    currentKodeSuffix + '0001'
+                );
+
+                defaultInitialPP = currentKodeSuffix;
+
+
+                // =====================================================
+                // AMBIL KONFIGURASI UMUM
+                // =====================================================
+
+                var config = null;
+
+                if (
+                    Array.isArray(res.konfigurasi_umum) &&
+                    res.konfigurasi_umum.length > 0
+                ) {
+
+                    config = res.konfigurasi_umum[0];
+
+                }
+
+
+                // =====================================================
+                // AUTO SELECT CURRENCY
+                // =====================================================
+
+                if (config) {
+
+                    var currcode = $.trim(
+                        config.currcode || ''
+                    );
+
+                    var idtax = $.trim(
+                        config.idtax || ''
+                    );
+
+
+                    // =============================================
+                    // DEFAULT KURS
+                    // =============================================
+
+                    var kurs = config.kurs;
+
+                    if (
+                        kurs === null ||
+                        kurs === undefined ||
+                        kurs === ''
+                    ) {
+
+                        // IDR default 1
+
+                        if (currcode === 'IDR') {
+
+                            kurs = 1;
+
+                        }
+
+                    }
+
+
+                    // =============================================
+                    // LOAD CURRENCY SELECT2
+                    // =============================================
+
+                    if (currcode !== '') {
+
+                        loadDefaultCurrency(
+                            currcode,
+                            kurs
+                        );
+
+                    }
+
+
+                    // =============================================
+                    // LOAD TAX SELECT2
+                    // =============================================
+
+                    if (idtax !== '') {
+
+                        loadDefaultTax(idtax);
+
+                    }
+
+                }
+
+
+                // =====================================================
+                // DATE RANGE BERDASARKAN INFIX
+                // =====================================================
+
+                var infix = (res.infix || '').toString();
+
+                if (infix.length === 4) {
+
+                    $('#docdate').prop('disabled', false);
+
+                    var yy = infix.substring(0, 2);
+
+                    var mm = infix.substring(2, 4);
+
+                    var year = 2000 + parseInt(yy, 10);
+
+                    var month = parseInt(mm, 10) - 1;
+
+                    var today = moment();
+
+                    var startDate = moment([
+                        year,
+                        month,
+                        1
+                    ]);
+
+                    var endDate =
+                        moment(startDate).endOf('month');
+
+
+                    var $el = $('#docdate');
+
+                    var drp =
+                        $el.data('daterangepicker');
+
+
+                    if (drp) {
+
+                        drp.minDate = startDate;
+
+                        drp.maxDate = endDate;
+
+                        drp.setStartDate(startDate);
+
+                        drp.setEndDate(startDate);
+
+                    }
+
+
+                    // =====================================================
+                    // SET TANGGAL
+                    // =====================================================
+
+                    if (
+                        today.isSameOrAfter(startDate) &&
+                        today.isSameOrBefore(endDate)
+                    ) {
+
+                        $el.val(
+                            today.format('DD-MM-YYYY')
+                        );
+
+                    } else {
+
+                        $el.val(
+                            startDate.format('DD-MM-YYYY')
+                        );
+
+                    }
+
+                }
+
+
+                // =====================================================
+                // GENERATE DOCNO
+                // =====================================================
+
+                $('#docno').val(
+
+                    'POB/' +
+                    res.infix +
+                    '/' +
+                    currentKodeSuffix +
+                    '0001'
+
+                );
+
+
+                // =====================================================
+                // ALAMAT KIRIM
+                // =====================================================
+
+                if (idbranch === '01.02') {
+
+                    $('#alamatkirim').val(
+                        'JL. MAYJEND SUNGKONO NO. 90 KEL. PRAMBANGAN KEC.KEBOMAS GRESIK.'
+                    );
+
+                } else {
+
+                    $('#alamatkirim').val(
+                        'JL. RAYA TAMAN NO. 1 RT.014 RW.003 TAMAN, TAMAN SIDOARJO'
+                    );
+
+                }
+
+            },
+
+            error: function (xhr) {
+
+                console.error(xhr.responseText);
+
+                Swal.fire(
+                    'Error',
+                    'Gagal mengambil informasi cabang',
+                    'error'
+                );
+
+            }
+
+        });
+
     }
-    
+
 });
 
 
@@ -1944,6 +2439,236 @@ $(document).on('click','.pilihHarga',function(){
     $('#modalHistoryHarga').modal('hide');
 
 });
+
+
+$('#unit').select2({
+    dropdownParent: $('#modalUpdatePO'),
+
+    ajax: {
+        url: HOST_URL + 'api/globalmodule/list_unit_item',
+
+        type: 'GET',
+        dataType: 'json',
+        delay: 250,
+
+        data: function (params) {
+
+            return {
+                idbarang: $.trim($('#idbarang').val()),
+
+                _search_: params.term || ''
+            };
+
+        },
+
+        processResults: function (data) {
+
+            return {
+                results: $.map(data.items, function (item) {
+
+                    return {
+                        id: $.trim(item.idunit),
+                        text: $.trim(item.idunit),
+
+                        basic_value: item.basic_value,
+                        conv_value: item.conv_value,
+                        idunit_tax: item.idunit_tax,
+                        cdefault: item.cdefault
+                    };
+
+                })
+            };
+
+        }
+
+    },
+
+    placeholder: 'Pilih Satuan',
+    allowClear: true
+});
+
+// =====================================================
+// FUNGSI AMBIL NILAI ANGKA
+// =====================================================
+function getNumericValue(selector) {
+
+    let value = $(selector).val() || 0;
+
+    // Gunakan fungsi convert jika sudah tersedia
+    if (typeof convertToDbNumber === 'function') {
+        return parseFloat(convertToDbNumber(value)) || 0;
+    }
+
+    // Fallback
+    value = value.toString()
+        .replace(/\./g, '')
+        .replace(',', '.');
+
+    return parseFloat(value) || 0;
+}
+
+
+// =====================================================
+// FUNGSI SET NILAI
+// =====================================================
+function setNumericValue(selector, value) {
+
+    value = parseFloat(value) || 0;
+
+    // Jika menggunakan plugin jtsseparator
+    if (typeof setJtsValue === 'function') {
+
+        setJtsValue(selector, value);
+
+    } else {
+
+        $(selector).val(value);
+
+    }
+}
+
+
+// =====================================================
+// HITUNG TOTAL DISCOUNT DAN NILAI
+// =====================================================
+function calculatePODiscount() {
+
+    // ==========================================
+    // AMBIL DATA
+    // ==========================================
+    let qty = getNumericValue('#qty');
+    let harga = getNumericValue('#harga');
+    let multidisc = getNumericValue('#multidisc');
+
+    let multidisctype = ($('#multidisctype').val() || 'NILAI')
+        .toUpperCase();
+
+
+    // ==========================================
+    // NILAI KOTOR
+    // ==========================================
+    let subtotal = qty * harga;
+
+    let totalDiscount = 0;
+
+
+    // ==========================================
+    // DISCOUNT NILAI
+    //
+    // Qty × Discount
+    // ==========================================
+    if (multidisctype === 'NILAI') {
+
+        totalDiscount = qty * multidisc;
+
+    }
+
+
+        // ==========================================
+        // DISCOUNT PERCENT
+        //
+        // Qty × Harga × % / 100
+    // ==========================================
+    else if (
+        multidisctype === 'PERCENT' ||
+        multidisctype === '%'
+    ) {
+
+        totalDiscount =
+            subtotal * multidisc / 100;
+
+    }
+
+
+    // ==========================================
+    // NILAI AKHIR
+    //
+    // Qty × Harga - Total Discount
+    // ==========================================
+    let nilai = subtotal - totalDiscount;
+
+
+    // ==========================================
+    // JANGAN MINUS
+    // ==========================================
+    if (nilai < 0) {
+        nilai = 0;
+    }
+
+
+    // ==========================================
+    // UPDATE FIELD
+    // ==========================================
+    setNumericValue('#totaldiscount', totalDiscount);
+
+    setNumericValue('#nilai', nilai);
+
+
+    // Debug
+    console.log({
+        qty: qty,
+        harga: harga,
+        multidisc: multidisc,
+        multidisctype: multidisctype,
+        subtotal: subtotal,
+        totalDiscount: totalDiscount,
+        nilai: nilai
+    });
+}
+// =====================================================
+// EVENT QUANTITY
+// =====================================================
+$(document).on(
+    'input change keyup',
+    '#qty',
+    function () {
+
+        calculatePODiscount();
+
+    }
+);
+
+
+// =====================================================
+// EVENT HARGA
+// =====================================================
+$(document).on(
+    'input change keyup',
+    '#harga',
+    function () {
+
+        calculatePODiscount();
+
+    }
+);
+
+
+// =====================================================
+// EVENT DISCOUNT DIKETIK
+// =====================================================
+$(document).on(
+    'input change keyup',
+    '#multidisc',
+    function () {
+
+        calculatePODiscount();
+
+    }
+);
+
+
+// =====================================================
+// EVENT JENIS DISCOUNT
+// =====================================================
+$(document).on(
+    'change',
+    '#multidisctype',
+    function () {
+
+        calculatePODiscount();
+
+    }
+);
 
 $(document).ready(function() {
     // Handle form submission event

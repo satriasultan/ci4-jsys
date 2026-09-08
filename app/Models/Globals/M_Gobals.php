@@ -530,4 +530,24 @@ group by docno order by docno asc");
         ", [$docno, $uniqueid, $modul, $menu, $action, $nama, $ip, $nama]);
     }
 
+
+    public function m_barang_unit($param)
+    {
+        return $this->db->query("
+        SELECT
+            TRIM(idbarang)||TRIM(idunit) as id,
+            TRIM(idbarang) AS idbarang,
+            TRIM(idunit) AS idunit,
+            TRIM(idunit_tax) AS idunit_tax,
+            basic_value,
+            conv_value,
+            inputdate,
+            TRIM(inputby) AS inputby,
+            TRIM(cdefault) AS cdefault,
+            TRIM(chold) AS chold
+        FROM sc_mst.mbarang_unit
+        WHERE idbarang IS NOT NULL
+        $param
+    ");
+    }
 }

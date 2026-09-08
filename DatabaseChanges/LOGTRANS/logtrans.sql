@@ -128,3 +128,9 @@ $BODY$;
         );
     END;
     $BODY$;
+	
+	
+--fixing error nilai terlalu panjang untuk tipe character(10)
+alter table sc_log.logtrans alter column action type char(100);
+	
+	

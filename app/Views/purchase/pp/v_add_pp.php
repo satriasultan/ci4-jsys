@@ -120,6 +120,15 @@
 </div>
 
 <?php echo $message;?>
+<?php if (session()->getFlashdata('error')) : ?>
+
+    <div class="alert alert-danger">
+
+        <?= session()->getFlashdata('error') ?>
+
+    </div>
+
+<?php endif; ?>
 <?php
     $isIT = isset($userinfo['rolename']) && trim($userinfo['rolename']) === 'IT';
     $disabled = $isIT ? '' : 'disabled';
@@ -293,7 +302,8 @@
                             <th>ID Barang</th>
                             <th>Nama Barang</th>
                             <th>No. Capex</th>
-                            <th>Status</th>
+                            <!--Status Detail Tidak Perlu Dimunculkan-->
+                            <!--<th>Status</th>-->
                             <th>Satuan</th>
                             <th>Quantity</th>
                             <th>Keterangan</th>
@@ -423,7 +433,7 @@
                                         maxlength="30"
                                         class="form-control"
                                         style="text-transform: uppercase;"
-                                        placeholder="No. Capex">
+                                        placeholder="No. Capex Jika Ada">
                             </div>
                         </div>
                         <div class="col-md-6">

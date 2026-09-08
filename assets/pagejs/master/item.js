@@ -473,13 +473,6 @@ $('#formInputItem').bootstrapValidator({
                 }
             }
         },
-        unit: {
-            validators: {
-                notEmpty: {
-                    message: 'The field can not be empty'
-                }
-            }
-        },
         idbarcode: {
             validators: {
                 notEmpty: {
@@ -1970,6 +1963,565 @@ $(document).ready(function() {
     if ($('[name="type"]').val() === 'DETAIL') {
         documentReadableDetail();
     }
+
+
+    /* FUNGSI DOCUMEN SATUAN */
+
+    /* =========================================================
+       SATUAN BARANG
+    ========================================================= */
+
+    let tableSatuan;
+
+
+    /* =========================================================
+       INITIALIZE DATATABLE
+    ========================================================= */
+
+    function initTableSatuan() {
+
+        const idbarang = $('#idbarang').val();
+
+        // ==========================================
+        // VALIDASI ID BARANG
+        // ==========================================
+
+        if (!idbarang) {
+            console.warn('ID Barang belum tersedia.');
+            return;
+        }
+
+
+        // ==========================================
+        // JIKA DATATABLE SUDAH ADA
+        // ==========================================
+
+        if ($.fn.DataTable.isDataTable('#tableSatuan')) {
+
+            tableSatuan.ajax.reload(null, false);
+
+            return;
+        }
+
+
+        // ==========================================
+        // CREATE DATATABLE
+        // ==========================================
+
+        tableSatuan = $('#tableSatuan').DataTable({
+
+            processing: true,
+
+            responsive: true,
+
+            autoWidth: false,
+
+            pageLength: 10,
+
+            lengthChange: false,
+
+            searching: false,
+
+            ordering: false,
+
+            info: false,
+
+
+            // ==========================================
+            // AJAX
+            // ==========================================
+
+            ajax: {
+
+                url: HOST_URL + 'master/data/barangUnitList',
+
+                type: 'GET',
+
+                data: function (d) {
+
+                    d.idbarang = $('#idbarang').val();
+
+                }
+
+            },
+
+
+            // ==========================================
+            // COLUMNS
+            // ==========================================
+
+            columns: [
+
+                {
+                    data: 'no',
+                    className: 'text-center'
+                },
+
+                {
+                    data: 'idunit'
+                },
+
+                {
+                    data: 'idunit_tax'
+                },
+
+                {
+                    data: 'basic_value',
+                    className: 'text-end'
+                },
+
+                {
+                    data: 'conv_value',
+                    className: 'text-end'
+                },
+
+                {
+                    data: 'cdefault',
+
+                    className: 'text-center',
+
+                    render: function (data) {
+
+                        if (data === 'YES') {
+
+                            return `
+                            <span class="badge bg-success">
+                                YES
+                            </span>
+                        `;
+
+                        }
+
+
+                        return `
+                        <span class="badge bg-default">
+                            NO
+                        </span>
+                    `;
+
+                    }
+
+                },
+
+                {
+                    data: null,
+
+                    className: 'text-center',
+
+                    orderable: false,
+
+                    searchable: false,
+
+                    render: function (data, type, row) {
+
+                        // ==========================================
+                        // DEFAULT UNIT TIDAK BOLEH DIHAPUS
+                        // ==========================================
+
+                        if (
+                            row.cdefault &&
+                            row.cdefault.trim().toUpperCase() === 'YES'
+                        ) {
+
+                            return '';
+
+                        }
+
+
+                        // ==========================================
+                        // TOMBOL DELETE
+                        // ==========================================
+
+                        return `
+
+            <button type="button"
+                    class="btn btn-danger btn-sm btnDeleteSatuan"
+                    data-idbarang="${row.idbarang}"
+                    data-idunit="${row.idunit}"
+                    title="Hapus Satuan">
+
+                <i class="fa fa-trash"></i>
+
+            </button>
+
+        `;
+
+                    }
+
+                }
+
+            ],
+
+
+            // ==========================================
+            // LANGUAGE
+            // ==========================================
+
+            language: {
+
+                emptyTable: 'Belum ada data satuan',
+
+                processing: 'Memuat data...'
+
+            }
+
+        });
+
+    }
+
+
+    /* =========================================================
+       LOAD / RELOAD TABLE
+    ========================================================= */
+
+    function loadTableSatuan() {
+
+        const idbarang = $('#idbarang').val();
+
+
+        // ==========================================
+        // VALIDASI
+        // ==========================================
+
+        if (!idbarang) {
+
+            console.warn('ID Barang belum tersedia.');
+
+            return;
+
+        }
+
+
+        // ==========================================
+        // JIKA SUDAH ADA DATATABLE → RELOAD
+        // ==========================================
+
+        if ($.fn.DataTable.isDataTable('#tableSatuan')) {
+
+            tableSatuan.ajax.reload(null, false);
+
+            return;
+
+        }
+
+
+        // ==========================================
+        // JIKA BELUM ADA → INITIALIZE
+        // ==========================================
+
+        initTableSatuan();
+
+    }
+
+
+    /* =========================================================
+       TAMBAH SATUAN
+    ========================================================= */
+
+    $('#btnAddSatuan').on('click', function () {
+
+
+        // ==========================================
+        // AMBIL DATA FORM
+        // ==========================================
+
+        const idbarang = $('#idbarang')
+            .val()
+            .trim();
+
+
+        const idunit = $('#idunit')
+            .val();
+
+
+        const idunit_tax = $('#idunit_tax')
+            .val()
+            .toUpperCase()
+            .trim();
+
+
+        const basic_value = $('#basic_value')
+            .val();
+
+
+        const conv_value = $('#conv_value')
+            .val();
+
+
+        const cdefault = $('#cdefault')
+            .val();
+
+
+        // ==========================================
+        // VALIDASI ID BARANG
+        // ==========================================
+
+        if (!idbarang) {
+
+            Swal.fire({
+                icon: 'warning',
+                title: 'Warning',
+                text: 'ID Barang tidak ditemukan.'
+            });
+
+            return;
+
+        }
+
+
+        // ==========================================
+        // VALIDASI UNIT
+        // ==========================================
+
+        if (!idunit) {
+
+            Swal.fire({
+                icon: 'warning',
+                title: 'Warning',
+                text: 'ID Unit Konversi wajib dipilih.'
+            });
+
+            return;
+
+        }
+
+
+        // ==========================================
+        // AJAX SAVE
+        // ==========================================
+
+        $.ajax({
+
+            url: HOST_URL + 'master/data/saveBarangUnit',
+
+            type: 'POST',
+
+            dataType: 'json',
+
+            data: {
+
+                idbarang: idbarang,
+
+                idunit: idunit,
+
+                idunit_tax: idunit_tax,
+
+                basic_value: basic_value,
+
+                conv_value: conv_value,
+
+                cdefault: cdefault
+
+            },
+
+
+            // ==========================================
+            // SUCCESS
+            // ==========================================
+
+            success: function (res) {
+
+                if (!res.success) {
+
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Gagal',
+                        text: res.message
+                    });
+
+                    return;
+
+                }
+
+
+                // ==========================================
+                // RELOAD DATATABLE
+                // ==========================================
+
+                loadTableSatuan();
+
+
+                // ==========================================
+                // RESET FORM
+                // ==========================================
+
+                $('#idunit')
+                    .val('')
+                    .trigger('change');
+
+
+                $('#idunit_tax')
+                    .val('')
+                    .trigger('change');
+
+
+                $('#basic_value')
+                    .val('1.00');
+
+
+                $('#conv_value')
+                    .val('1.00');
+
+
+                $('#cdefault')
+                    .val('NO');
+
+            },
+
+
+            // ==========================================
+            // ERROR
+            // ==========================================
+
+            error: function (xhr) {
+
+                console.error(xhr.responseText);
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Server Error',
+                    text: 'Terjadi kesalahan saat menyimpan satuan.'
+                });
+
+            }
+
+        });
+
+    });
+
+
+    /* =========================================================
+       DELETE SATUAN
+    ========================================================= */
+
+    $(document).on(
+        'click',
+        '.btnDeleteSatuan',
+        function () {
+
+
+            const button = $(this);
+
+
+            const idbarang = button.data('idbarang');
+
+
+            const idunit = button.data('idunit');
+
+
+            // ==========================================
+            // KONFIRMASI
+            // ==========================================
+
+            Swal.fire({
+
+                icon: 'warning',
+
+                title: 'Hapus Satuan?',
+
+                text: 'Data satuan yang dihapus tidak dapat dikembalikan.',
+
+                showCancelButton: true,
+
+                confirmButtonText: 'Ya, Hapus',
+
+                cancelButtonText: 'Batal'
+
+            }).then(function (result) {
+
+
+                if (!result.isConfirmed) {
+
+                    return;
+
+                }
+
+
+                // ==========================================
+                // AJAX DELETE
+                // ==========================================
+
+                $.ajax({
+
+                    url: HOST_URL + 'master/data/deleteBarangUnit',
+
+                    type: 'POST',
+
+                    dataType: 'json',
+
+                    data: {
+
+                        idbarang: idbarang,
+
+                        idunit: idunit
+
+                    },
+
+
+                    success: function (res) {
+
+                        if (!res.success) {
+
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Gagal',
+                                text: res.message
+                            });
+
+                            return;
+
+                        }
+
+
+                        // ==========================================
+                        // RELOAD TABLE
+                        // ==========================================
+
+                        loadTableSatuan();
+
+                    },
+
+
+                    error: function (xhr) {
+
+                        console.error(xhr.responseText);
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Server Error',
+                            text: 'Terjadi kesalahan saat menghapus satuan.'
+                        });
+
+                    }
+
+                });
+
+            });
+
+        }
+    );
+
+
+    /* =========================================================
+       LOAD SAAT TAB SATUAN DIBUKA
+    ========================================================= */
+
+    $('a[data-bs-toggle="tab"]').on(
+        'shown.bs.tab',
+        function (e) {
+
+            const target = $(e.target).attr('href');
+
+
+            if (target === '#satuantab') {
+
+                loadTableSatuan();
+
+            }
+
+        }
+    );
+    /* FUNGSI DOCUMEN */
 
 
 });

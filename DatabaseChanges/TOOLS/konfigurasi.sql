@@ -1,4 +1,7 @@
-CREATE TABLE konfigurasi_umum (
+/* ini master konfigurasi umum tidak ada sc_mst.konfigurasi_umum  */
+
+
+CREATE TABLE sc_mst.konfigurasi_umum (
     id INT PRIMARY KEY DEFAULT 1,
     -- PEMBELIAN
     pp character(10),

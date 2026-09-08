@@ -1,8 +1,8 @@
 
 -- JALANKAN INI DULU
 
-DROP TABLE IF EXISTS sc_tmp.po_dtl
-DROP TABLE IF EXISTS sc_trx.po_dtl
+DROP TABLE IF EXISTS sc_tmp.po_dtl;
+DROP TABLE IF EXISTS sc_trx.po_dtl;
 
 
 
@@ -672,20 +672,20 @@ CREATE OR REPLACE TRIGGER tr_po
 
 
 ALTER TABLE sc_tmp.po_dtl
-ADD COLUMN uniqueid VARCHAR(64)
+ADD COLUMN uniqueid VARCHAR(64);
 
 ALTER TABLE sc_trx.po_dtl
-ADD COLUMN uniqueid VARCHAR(64)
+ADD COLUMN uniqueid VARCHAR(64);
 
 
 
 
 
 ALTER TABLE sc_tmp.po
-ADD COLUMN docnoumb character(30)
+ADD COLUMN docnoumb character(30);
 
 ALTER TABLE sc_trx.po
-ADD COLUMN docnoumb character(30)
+ADD COLUMN docnoumb character(30);
 
 
 
@@ -715,10 +715,10 @@ ADD COLUMN IF NOT EXISTS qtyvoid numeric(18,2) DEFAULT 0;
 
 -- =========== TAMBAHAN 24/8/26 ====================
 ALTER TABLE sc_tmp.po_dtl
-ADD COLUMN capexno character(30)
+ADD COLUMN capexno character(30);
 
 ALTER TABLE sc_trx.po_dtl
-ADD COLUMN capexno character(30)
+ADD COLUMN capexno character(30);
 
 
 
@@ -741,8 +741,23 @@ USING TRIM(senddate)::DATE;
 
 -- printcount
 ALTER TABLE sc_tmp.po
-ADD COLUMN printcount integer
+ADD COLUMN printcount integer;
 ALTER TABLE sc_trx.po
-ADD COLUMN printcount integer
+ADD COLUMN printcount integer;
 
 -- ==================== END OFTAMBAHAN 24/8/26  ====================
+
+
+
+
+--TAMBAHN MULTIDISCOUNT----
+alter table sc_tmp.po_dtl
+add column idhistory_price char(30),
+add column multidisctype char(30),
+add column totaldiscount numeric(18,2);
+
+alter table sc_trx.po_dtl
+add column idhistory_price char(30),
+add column multidisctype char(30),
+add column totaldiscount numeric(18,2);
+

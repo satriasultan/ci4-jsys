@@ -624,9 +624,14 @@
                         <div class="col-md-2">
                             <div class="form-group">
                                 <label>Satuan</label>
-                                <input name="unit" id="unit"
+
+                                <select name="unit"
+                                        id="unit"
                                         class="form-control select2"
-                                        style="width:100%" readonly>
+                                        style="width:100%">
+                                    <option value="">-- Pilih Satuan --</option>
+                                </select>
+
                             </div>
                         </div>
 
@@ -676,25 +681,67 @@
 
                             </div>
                         </div>
-                        <!-- <div class="col-md-2">
+                        <!-- MULTI DISCOUNT -->
+                        <div class="col-md-3">
                             <div class="form-group">
-                                <label>Multi Disc (%)</label>
-                                <input type="text"
-                                        name="multidisc"
-                                        id="multidisc"
-                                        class="form-control jtsseparator ratakanan"
-                                        placeholder="0.00">
+
+                                <label>Multi Discount</label>
+
+                                <div class="input-group">
+
+                                    <select
+                                            name="multidisctype"
+                                            id="multidisctype"
+                                            class="form-control">
+
+                                        <option value="NILAI">Nilai</option>
+                                        <option value="PERCENT">%</option>
+
+                                    </select>
+
+                                    <input
+                                            type="text"
+                                            name="multidisc"
+                                            id="multidisc"
+                                            class="form-control jtsseparator ratakanan"
+                                            value="0">
+
+                                </div>
+
                             </div>
-                        </div> -->
+                        </div>
+
+
                         <div class="col-md-2">
                             <div class="form-group">
+
+                                <label>Total Discount</label>
+
+                                <input
+                                        type="text"
+                                        name="totaldiscount"
+                                        id="totaldiscount"
+                                        class="form-control jtsseparator ratakanan"
+                                        readonly
+                                        value="0">
+
+                            </div>
+                        </div>
+
+
+                        <div class="col-md-3">
+                            <div class="form-group">
+
                                 <label>Nilai</label>
-                                <input type="text"
+
+                                <input
+                                        type="text"
                                         name="nilai"
                                         id="nilai"
                                         class="form-control jtsseparator ratakanan"
                                         readonly
-                                        placeholder="0.00">
+                                        value="0">
+
                             </div>
                         </div>
                         <div class="col-md-4">

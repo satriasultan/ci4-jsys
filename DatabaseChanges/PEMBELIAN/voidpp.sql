@@ -632,10 +632,10 @@ ADD COLUMN uniqueid VARCHAR(64);
 
 -- =========== TAMBAHAN 24/8/26 ====================
 ALTER TABLE sc_tmp.voidpp_dtl
-ADD COLUMN capexno character(30)
+ADD COLUMN capexno character(30);
 
 ALTER TABLE sc_trx.voidpp_dtl
-ADD COLUMN capexno character(30)
+ADD COLUMN capexno character(30);
 
 
 
@@ -650,8 +650,8 @@ USING TRIM(docdate)::DATE;
 
 -- printcount
 ALTER TABLE sc_tmp.voidpp
-ADD COLUMN printcount integer
+ADD COLUMN printcount integer;
 ALTER TABLE sc_trx.voidpp
-ADD COLUMN printcount integer
+ADD COLUMN printcount integer;
 
 -- ==================== END OFTAMBAHAN 24/8/26  ====================
