@@ -538,7 +538,7 @@
                     <button type="button"
                             class="btn btn-primary"
                             onclick="saveVoidPODetail()">
-                        <i class="fa fa-save"></i> Simpan
+                        <i class="fa fa-save"></i> Proses
                     </button>
                     <button type="button"
                             class="btn btn-secondary"

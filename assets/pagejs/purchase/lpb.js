@@ -211,6 +211,8 @@ function documentReadable(){
                 $('[name="kurs"]').prop('readonly', true);
                 // $("#phone").val(data.phone).prop('readonly', true);
             });
+
+
             skipRoleChange = true;
             $('[name="docdate"]').val(moment(json.dataTables.items[0].docdate).format('DD-MM-YYYY'));
             // $('[name="senddate"]').val(json.dataTables.items[0].senddate);
@@ -528,14 +530,35 @@ $("#docnopo").select2({
 
 /* Format Group */
 function formatPO(repo) {
-    if (repo.loading) return repo.text;
-    var markup ="<div class='select2-result-repository__description'>" + repo.docno +"   <i class='fa fa-circle-o'></i>   "+ repo.keterangan +"</div>";
-    return markup;
-}
-function formatPOSelection(repo) {
-    return repo.keterangan || repo.text;
+
+    if (repo.loading) {
+        return repo.text;
+    }
+
+    return (
+        "<div class='select2-result-repository__description'>" +
+        (repo.docno || '') +
+        " <i class='fa fa-circle-o'></i> " +
+        (repo.keterangan || '') +
+        "</div>"
+    );
 }
 
+
+function formatPOSelection(repo) {
+
+    // Saat belum ada data
+    if (!repo.docno) {
+        return repo.text || '';
+    }
+
+    // Tampilkan NOMOR PO + KETERANGAN
+    return (
+        repo.docno +
+        ' - ' +
+        (repo.keterangan || '')
+    );
+}
 
 
 function formatCurrency(repo) {
@@ -861,7 +884,7 @@ function btnUpdateDetail(){
                 $('[name="docnopo"]').val(res.data.docnopo);
                 $('#idbarang').val(res.data.idbarang);
                 $('#nmbarang').val(res.data.nmbarang);
-                $('#idspec').val(res.data.idspec);
+                //$('#idspec').val(res.data.idspec);
                 $('#unit').val(res.data.unit);
                 setJtsValue('[name="qty"]', convertToDbNumber(res.data.qty));
                 setJtsValue('[name="qtybonus"]', convertToDbNumber(res.data.qtybonus));
@@ -880,23 +903,118 @@ function btnUpdateDetail(){
                 // $('#multidisc').val(res.data.multidisc);
                 // setSelect2Ajax('#idprincipal', res.data.idprincipal, res.data.idprincipal);
                 // setSelect2Ajax('#idgudang', res.data.idgudang, res.data.idgudang);
+                //idspec
+                // =====================================================
+                // AUTO SELECT BATCH / SPECIFICATION
+                // =====================================================
+
+                var selectedSpec = $.trim(res.data.idspec || '');
+                var selectedItem = $.trim(res.data.idbarang || '');
+
+// Reset Batch / Specification dari data sebelumnya
+                $('#idspec')
+                    .empty()
+                    .val(null)
+                    .trigger('change');
+
+// Jika idspec kosong, pastikan tidak ada yang terpilih
+                if (selectedSpec === '') {
+
+                    $('#idspec')
+                        .val(null)
+                        .trigger('change');
+
+                } else {
+
+                    $.ajax({
+                        type: 'POST',
+                        url: HOST_URL + 'api/globalmodule/list_batch_item',
+                        dataType: 'json',
+                        data: {
+                            _search_: selectedSpec,
+                            _page_: 1,
+                            _draw_: true,
+                            _start_: 1,
+                            _perpage_: 30,
+                            _paramglobal_: '',
+                            _parameterx_: selectedItem,
+                            _var_: selectedSpec
+                        }
+                    }).then(function (datax) {
+
+                        if (!datax || !datax.items || datax.items.length === 0) {
+                            console.warn('Batch / Specification tidak ditemukan');
+                            $('#idspec').empty().val(null).trigger('change');
+                            return;
+                        }
+
+                        var specData = datax.items.find(function (item) {
+                            return $.trim(item.batch || '') === selectedSpec;
+                        });
+
+                        if (!specData) {
+                            console.warn('Batch yang sesuai tidak ditemukan:', selectedSpec);
+                            $('#idspec').empty().val(null).trigger('change');
+                            return;
+                        }
+
+                        specData.id = specData.batch;
+                        specData.text = specData.batch;
+
+                        var option = new Option(
+                            specData.batch,
+                            specData.batch,
+                            true,
+                            true
+                        );
+
+                        $(option).data('spec-data', specData);
+
+                        $('#idspec')
+                            .empty()
+                            .append(option)
+                            .val(specData.batch)
+                            .trigger('change');
+
+                        $('#idspec').trigger({
+                            type: 'select2:select',
+                            params: {
+                                data: specData
+                            }
+                        });
+
+                    });
+
+                }
+                /* ID PRINCIPAL */
                 $.ajax({
                     type: 'GET',
-                    url: HOST_URL + 'api/globalmodule/list_principal' + '?var=' + res.data.idprincipal,
+                    url: HOST_URL + 'api/globalmodule/list_principal?var=' + encodeURIComponent(res.data.idprincipal),
                     dataType: 'json',
-                    delay: 250,
+                    delay: 250
                 }).then(function (datax) {
-                    // create the option and append to Select2
-                    var option = new Option(datax.items[0].nmprincipal, datax.items[0].idprincipal, true, true);
-                    $('[name="idprincipal"]').append(option).trigger('change')
 
-                    // manually trigger the `select2:select` event
-                    $('[name="idprincipal"]').trigger({
-                        type: 'select2:select',
-                        params: {
-                            data: datax
-                        }
-                    });
+                    if (!datax || !datax.items || datax.items.length === 0) {
+                        console.warn('Principal tidak ditemukan');
+                        return;
+                    }
+
+                    var principalData = datax.items[0];
+
+                    var option = new Option(
+                        principalData.idprincipal + ' - ' + principalData.nmprincipal,
+                        principalData.idprincipal,
+                        true,
+                        true
+                    );
+
+                    $(option).data('principal-data', principalData);
+
+                    $('[name="idprincipal"]')
+                        .append(option)
+                        .trigger('change')
+                        .prop('disabled', true);
+
                 });
 
                 $.ajax({
@@ -1137,7 +1255,7 @@ function saveLPBDetail() {
         formData.append('currcode', $('#currcode').val());
         formData.append('kurs', convertToDbNumber($('#kurs').val()));
         formData.append('biayavol', convertToDbNumber($('#biayavol').val()));
-        formData.append('biayavol2', convertToDbNumber($('#biayavol').val()));
+        formData.append('biayavol2', convertToDbNumber($('#biayavol2').val()));
         // formData.append('alamatkirim', $('#alamatkirim').val());
         formData.append('keterangan', $('#keterangan').val());
         // formData.append('estpakai', $('#estpakai').val());
@@ -1163,7 +1281,9 @@ function saveLPBDetail() {
         formData.set('biaya2', convertToDbNumber(biaya2));
         formData.set('descriptionpo', $('#descriptionpo').val());
         formData.set('uniqueid', $('#uniqueid').val());
+        //formData.set('idprincipal', $('#idprincipal').val());
         formData.set('idprincipal', $('#idprincipal').val());
+
         formData.set('idgudang', $('#idgudang').val());
         formData.set('idspec', $('#idspec').val());
         // formData.set('docnopo', $('#docnopo').val());
@@ -1357,82 +1477,428 @@ $("#kdsupplier").select2({
 let currentKodeSuffix = '';
 
 $('#cabang').on('change', function () {
-    if (skipRoleChange) return; // skip
+
+    if (skipRoleChange) return;
 
     let idbranch = $(this).val();
 
-    if(idbranch){
-        $.ajax({
-                url: HOST_URL + '/purchase/trans/getBranchInfoLPB',
-                method: 'GET',
-                data: { idbranch: idbranch },
+    if (!idbranch) {
+        return;
+    }
+
+
+    $.ajax({
+
+        url: HOST_URL + '/purchase/trans/getBranchInfoLPB',
+
+        method: 'GET',
+
+        data: {
+            idbranch: idbranch
+        },
+
+        dataType: 'json',
+
+
+        success: function (res) {
+
+            // =====================================================
+            // VALIDASI RESPONSE
+            // =====================================================
+
+            if (!res.success) {
+
+                Swal.fire(
+                    'Error',
+                    res.message,
+                    'warning'
+                );
+
+                return;
+            }
+
+
+            // =====================================================
+            // DATA BRANCH
+            // =====================================================
+
+            currentKodeSuffix = res.kode_suffix;
+
+            $('#infix').val(res.infix);
+
+            $('#prefix').val('LPB');
+
+            $('#sufix').val(
+                currentKodeSuffix + '0001'
+            );
+
+            defaultInitialPO = currentKodeSuffix;
+
+
+            // =====================================================
+            // FORCE DEFAULT CURRENCY IDR
+            // =====================================================
+
+            var defaultCurrcode = 'IDR';
+
+            $.ajax({
+
+                type: 'GET',
+
+                url:
+                    HOST_URL +
+                    'api/globalmodule/list_currency?var=' +
+                    encodeURIComponent(defaultCurrcode),
+
                 dataType: 'json',
-                success: function (res) {
-                    if (!res.success) {
-                        Swal.fire('Error', res.message, 'warning');
+
+
+                success: function (datax) {
+
+                    // =============================================
+                    // VALIDASI CURRENCY
+                    // =============================================
+
+                    if (
+                        !datax ||
+                        !datax.items ||
+                        datax.items.length === 0
+                    ) {
+
+                        console.warn(
+                            'Currency IDR tidak ditemukan'
+                        );
+
                         return;
                     }
 
-                    currentKodeSuffix = res.kode_suffix; // PT / PA / PB
-                    $('#infix').val(res.infix);          // YYMM
-                    $('#prefix').val('LPB');             // default
-                    $('#sufix').val(currentKodeSuffix + '0001');
-                    defaultInitialPO = currentKodeSuffix
 
-                    var infix = (res.infix || '').toString();
-                    if (infix.length === 4) {
-                        $('#docdate').prop('disabled', false);
-                        var yy = infix.substring(0,2);
-                        var mm = infix.substring(2,4);
-                        var year = 2000 + parseInt(yy,10);
-                        var month = parseInt(mm,10) - 1; // moment month index
+                    // =============================================
+                    // DATA CURRENCY
+                    // =============================================
 
-                        var today = moment();
+                    var currencyData = datax.items[0];
 
-                        var startDate = moment([year, month, 1]);
-                        var endDate = moment(startDate).endOf('month');
+                    // IDR SELALU KURS 1
+                    currencyData.kurs = 1;
 
-                        var $el = $('#docdate');
-                        var drp = $el.data('daterangepicker');
 
-                        if (drp) {
-                            // update limits & selected date
-                            drp.minDate = startDate;
-                            drp.maxDate = endDate;
-                            drp.setStartDate(startDate);
-                            drp.setEndDate(startDate);
-                        } else {
-                            // fallback: (re)initialize with limits
-                            $el.daterangepicker({
-                                autoUpdateInput: false,
-                                singleDatePicker: true,
-                                showDropdowns: true,
-                                startDate: today,
-                                minDate: startDate,
-                                maxDate: endDate,
-                                locale: { format: 'DD-MM-YYYY' },
-                                cancelLabel: 'Clear'
-                            });
-                            // rebind handlers jika perlu (apply/cancel)
-                            $el.on('apply.daterangepicker', function(ev, picker) {
-                                $(this).val(picker.startDate.format('DD-MM-YYYY'));
-                            });
-                            $el.on('cancel.daterangepicker', function(ev, picker) {
-                                $(this).val('');
-                            });
-                        }
+                    // =============================================
+                    // HAPUS CURRENCY SEBELUMNYA
+                    // =============================================
 
-                        // isi input langsung (opsional)
-                        $el.val(today.format('DD-MM-YYYY'));
-                    }
+                    $('[name="currcode"]')
+                        .empty();
 
-                    $('#docno').val(
-                        'LPB/' + res.infix + '/' + currentKodeSuffix + '0001'
+
+                    // =============================================
+                    // CREATE OPTION SELECT2
+                    // =============================================
+
+                    var option = new Option(
+
+                        currencyData.currname,
+                        currencyData.currcode,
+
+                        true,
+                        true
+
                     );
+
+
+                    // =============================================
+                    // SIMPAN DATA CURRENCY
+                    // =============================================
+
+                    $(option).data(
+                        'currency-data',
+                        currencyData
+                    );
+
+
+                    // =============================================
+                    // SET SELECT2
+                    // =============================================
+
+                    $('[name="currcode"]')
+                        .append(option)
+                        .val(currencyData.currcode)
+                        .trigger('change.select2');
+
+
+                    // =============================================
+                    // FORCE KURS = 1
+                    // =============================================
+
+                    setJtsValue(
+                        '[name="kurs"]',
+                        1
+                    );
+
+
+                    // =============================================
+                    // KURS READONLY
+                    // =============================================
+
+                    $('[name="kurs"]')
+                        .prop(
+                            'readonly',
+                            true
+                        );
+
+                },
+
+
+                error: function (xhr) {
+
+                    console.error(
+                        'Gagal load Currency IDR:',
+                        xhr.responseText
+                    );
+
                 }
+
             });
-    }
-    
+
+
+            // =====================================================
+            // AMBIL KONFIGURASI UMUM
+            // =====================================================
+
+            var config = null;
+
+            if (
+                Array.isArray(res.konfigurasi_umum) &&
+                res.konfigurasi_umum.length > 0
+            ) {
+
+                config =
+                    res.konfigurasi_umum[0];
+
+            }
+
+
+            // =====================================================
+            // AUTO SELECT TAX DARI KONFIGURASI BRANCH
+            // =====================================================
+
+            if (config) {
+
+                var idtax = $.trim(
+                    config.idtax || ''
+                );
+
+
+                if (idtax !== '') {
+
+                    loadDefaultTax(idtax);
+
+                }
+
+            }
+
+
+            // =====================================================
+            // DATE RANGE BERDASARKAN INFIX
+            // =====================================================
+
+            var infix =
+                (res.infix || '').toString();
+
+
+            if (infix.length === 4) {
+
+                $('#docdate').prop(
+                    'disabled',
+                    false
+                );
+
+
+                var yy =
+                    infix.substring(0, 2);
+
+
+                var mm =
+                    infix.substring(2, 4);
+
+
+                var year =
+                    2000 + parseInt(yy, 10);
+
+
+                var month =
+                    parseInt(mm, 10) - 1;
+
+
+                var today =
+                    moment();
+
+
+                var startDate =
+                    moment([
+                        year,
+                        month,
+                        1
+                    ]);
+
+
+                var endDate =
+                    moment(startDate)
+                        .endOf('month');
+
+
+                var $el =
+                    $('#docdate');
+
+
+                var drp =
+                    $el.data('daterangepicker');
+
+
+                // =====================================================
+                // UPDATE DATEPICKER
+                // =====================================================
+
+                if (drp) {
+
+                    drp.minDate =
+                        startDate;
+
+                    drp.maxDate =
+                        endDate;
+
+                    drp.setStartDate(
+                        startDate
+                    );
+
+                    drp.setEndDate(
+                        startDate
+                    );
+
+                } else {
+
+                    // =================================================
+                    // INITIALIZE DATEPICKER
+                    // =================================================
+
+                    $el.daterangepicker({
+
+                        autoUpdateInput: false,
+
+                        singleDatePicker: true,
+
+                        showDropdowns: true,
+
+                        startDate: today,
+
+                        minDate: startDate,
+
+                        maxDate: endDate,
+
+                        locale: {
+                            format: 'DD-MM-YYYY'
+                        },
+
+                        cancelLabel: 'Clear'
+
+                    });
+
+
+                    // =============================================
+                    // APPLY DATE
+                    // =============================================
+
+                    $el.on(
+                        'apply.daterangepicker',
+                        function (ev, picker) {
+
+                            $(this).val(
+                                picker.startDate.format(
+                                    'DD-MM-YYYY'
+                                )
+                            );
+
+                        }
+                    );
+
+
+                    // =============================================
+                    // CANCEL DATE
+                    // =============================================
+
+                    $el.on(
+                        'cancel.daterangepicker',
+                        function () {
+
+                            $(this).val('');
+
+                        }
+                    );
+
+                }
+
+
+                // =====================================================
+                // SET DEFAULT DOCUMENT DATE
+                // =====================================================
+
+                if (
+                    today.isSameOrAfter(startDate) &&
+                    today.isSameOrBefore(endDate)
+                ) {
+
+                    $el.val(
+                        today.format('DD-MM-YYYY')
+                    );
+
+                } else {
+
+                    $el.val(
+                        startDate.format('DD-MM-YYYY')
+                    );
+
+                }
+
+            }
+
+
+            // =====================================================
+            // GENERATE DOCNO LPB
+            // =====================================================
+
+            $('#docno').val(
+
+                'LPB/' +
+                res.infix +
+                '/' +
+                currentKodeSuffix +
+                '0001'
+
+            );
+
+        },
+
+
+        // =====================================================
+        // AJAX ERROR
+        // =====================================================
+
+        error: function (xhr) {
+
+            console.error(
+                xhr.responseText
+            );
+
+            Swal.fire(
+                'Error',
+                'Gagal mengambil informasi cabang',
+                'error'
+            );
+
+        }
+
+    });
+
 });
 
 
@@ -1615,9 +2081,339 @@ $("#fjurnal").on("change", function () {
         }
     });
 });
+function new_spec() {
+
+    // =============================================
+    // RESET INPUT
+    // =============================================
+
+    $('#newbatch')
+        .val('')
+        .prop('disabled', false)
+        .prop('readonly', false);
 
 
+    // =============================================
+    // OPEN MODAL BOOTSTRAP 5
+    // =============================================
 
+    const modalElement =
+        document.getElementById('modalNewSpec');
+
+
+    const modalNewSpec =
+        bootstrap.Modal.getOrCreateInstance(
+            modalElement
+        );
+
+
+    modalNewSpec.show();
+
+
+    // =============================================
+    // FOCUS INPUT
+    // =============================================
+
+    modalElement.addEventListener(
+        'shown.bs.modal',
+        function () {
+
+            $('#newbatch').focus();
+
+        },
+        {
+            once: true
+        }
+    );
+
+}
+function save_new_spec() {
+
+    // =============================================
+    // AMBIL DATA
+    // =============================================
+
+    const newbatch =
+        $.trim(
+            $('#newbatch').val() || ''
+        ).toUpperCase();
+
+
+    const idbarang =
+        $.trim(
+            $('[name="idbarang"]').val() || ''
+        );
+
+
+    // =============================================
+    // VALIDASI BATCH
+    // =============================================
+
+    if (newbatch === '') {
+
+        $('#newbatch').focus();
+
+        alert(
+            'Batch / Specification harus diisi.'
+        );
+
+        return;
+
+    }
+
+
+    // =============================================
+    // VALIDASI BARANG
+    // =============================================
+
+    if (idbarang === '') {
+
+        alert(
+            'Item Barang belum dipilih.'
+        );
+
+        return;
+
+    }
+
+
+    // =============================================
+    // DISABLE BUTTON AGAR TIDAK DOUBLE CLICK
+    // =============================================
+
+    $.ajax({
+
+        type: 'POST',
+
+        url:
+            HOST_URL +
+            'api/globalmodule/add_newbatch',
+
+        dataType: 'json',
+
+        data: {
+
+            idbarang: idbarang,
+
+            batch: newbatch
+
+        },
+
+
+        success: function (datax) {
+
+            if (datax.status) {
+
+                // =========================================
+                // MASUKKAN KE INPUT SPEC LPB
+                // =========================================
+
+                $('#idspec')
+                    .prop('disabled', false)
+                    .prop('readonly', false)
+                    .val(newbatch)
+                    .trigger('change');
+
+
+                // =========================================
+                // TUTUP MODAL NEW SPEC
+                // =========================================
+
+                const modalElement =
+                    document.getElementById(
+                        'modalNewSpec'
+                    );
+
+
+                const modalInstance =
+                    bootstrap.Modal.getInstance(
+                        modalElement
+                    );
+
+
+                if (modalInstance) {
+
+                    modalInstance.hide();
+
+                }
+
+
+                // =========================================
+                // FOCUS KEMBALI KE SPEC
+                // =========================================
+
+                setTimeout(function () {
+
+                    $('#idspec').focus();
+
+                }, 300);
+
+
+                // =========================================
+                // NOTIFIKASI
+                // =========================================
+
+                Swal.fire({
+
+                    icon: 'success',
+
+                    title: 'Berhasil',
+
+                    text:
+                        datax.messages ||
+                        'Batch / Specification berhasil disimpan.'
+
+                });
+
+            } else {
+
+                alert(
+                    datax.messages ||
+                    'Gagal menyimpan Batch / Specification.'
+                );
+
+            }
+
+        },
+
+
+        error: function (xhr) {
+
+            console.error(
+                xhr.responseText
+            );
+
+
+            alert(
+                'Unable To Response Data'
+            );
+
+        }
+
+    });
+
+}
+$("#idspec").select2({
+
+    placeholder: "Silahkan pilih spek, click x untuk reset pilihan",
+
+    allowClear: true,
+
+    ajax: {
+
+        url: HOST_URL + 'api/globalmodule/list_batch_item',
+
+        type: 'POST',
+
+        dataType: 'json',
+
+        delay: 250,
+
+
+        data: function (params) {
+
+            return {
+
+                _search_: params.term,
+
+                _page_: params.page,
+
+                _draw_: true,
+
+                _start_: 1,
+
+                _perpage_: 30,
+
+                _paramglobal_: "",
+
+                _parameterx_: $('[name="idbarang"]').val(),
+
+                term: params.term
+
+            };
+
+        },
+
+
+        processResults: function (data, params) {
+
+            params.page = params.page || 1;
+
+
+            // =============================================
+            // PASTIKAN VALUE SELECT2 = BATCH
+            // =============================================
+
+            var results = $.map(
+                data.items || [],
+                function (item) {
+
+                    return {
+
+                        id: item.batch,      // VALUE YANG DISIMPAN
+                        text: item.batch,    // TEXT SELECT2
+
+                        batch: item.batch
+
+                    };
+
+                }
+            );
+
+
+            return {
+
+                results: results,
+
+                pagination: {
+
+                    more:
+                        (params.page * 30) <
+                        (data.total_count || 0)
+
+                }
+
+            };
+
+        },
+
+
+        cache: false
+
+    },
+
+
+    escapeMarkup: function (markup) {
+
+        return markup;
+
+    },
+
+
+    templateResult: formatBatch,
+
+    templateSelection: formatBatchSelection
+
+}).on("select2:select", function (e) {
+
+    var data = e.params.data;
+
+    console.log(
+        'Batch dipilih:',
+        data.batch
+    );
+
+});
+
+/* Format Group */
+function formatBatch(repo) {
+    if (repo.loading) return repo.text;
+    var markup ="<div class='select2-result-repository__description'>" + repo.batch +"</div>";
+    return markup;
+}
+function formatBatchSelection(repo) {
+    return repo.batch || repo.text;
+}
 $(document).ready(function() {
     // Handle form submission event
     // Handle form submission event

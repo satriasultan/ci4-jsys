@@ -366,13 +366,13 @@ BEGIN
             idurut, docno, docnopo, idbarang, capexno, uniqueid,  nmbarang,
             idprincipal, idgudang, idspec, volitem, biaya, biaya2, unit, qty, 
             harga, nilai, descriptionpo, descriptionpp, multidisc,
-            inputby, inputdate, status, updateby, updatedate,idtax,currcode,kurs,nilaikonversi,nilaipajak,qtyretur
+            inputby, inputdate, status, updateby, updatedate,idtax,currcode,kurs,nilaikonversi,nilaipajak,qtyretur,idhistory_price,multidisctype,totaldiscount
         )
         SELECT
             idurut, v_docno, docnopo, idbarang, capexno, uniqueid,  nmbarang,
             idprincipal, idgudang, idspec, volitem, biaya, biaya2, unit, qty, 
             harga, nilai, descriptionpo, descriptionpp, multidisc,
-            inputby, inputdate, status, updateby, updatedate,idtax,currcode,kurs,nilaikonversi,nilaipajak,qtyretur
+            inputby, inputdate, status, updateby, updatedate,idtax,currcode,kurs,nilaikonversi,nilaipajak,qtyretur,idhistory_price,multidisctype,totaldiscount
         FROM sc_tmp.lpb_dtl
         WHERE rtrim(docno) = rtrim(OLD.docno)
             AND inputby = v_inputby;
@@ -563,12 +563,12 @@ BEGIN
         (idurut, docno, docnopo, idbarang, capexno, uniqueid,  nmbarang,
         idprincipal, idgudang, idspec, volitem, biaya, biaya2, unit, qty, 
         harga, nilai, descriptionpo, descriptionpp, multidisc,
-        inputby, inputdate, status, updateby, updatedate, docnotmp,idtax,currcode,kurs,nilaikonversi,nilaipajak,qtyretur)
+        inputby, inputdate, status, updateby, updatedate, docnotmp,idtax,currcode,kurs,nilaikonversi,nilaipajak,qtyretur,idhistory_price,multidisctype,totaldiscount)
         SELECT
             idurut, NEW.docnotmp, docnopo, idbarang, capexno, uniqueid,  nmbarang,
             idprincipal, idgudang, idspec, volitem, biaya, biaya2, unit, qty, 
             harga, nilai, descriptionpo, descriptionpp, multidisc,
-            inputby, inputdate, status, updateby, updatedate, docnotmp,idtax,currcode,kurs,nilaikonversi,nilaipajak,qtyretur
+            inputby, inputdate, status, updateby, updatedate, docnotmp,idtax,currcode,kurs,nilaikonversi,nilaipajak,qtyretur,idhistory_price,multidisctype,totaldiscount
         FROM sc_tmp.lpb_dtl
         WHERE rtrim(docno) = rtrim(NEW.docno);
 
@@ -872,11 +872,11 @@ BEGIN
 			( idurut, docno, docnopo, idbarang, capexno, uniqueid, nmbarang,
             idprincipal, idgudang, idspec, volitem, biaya, biaya2, unit, qty, 
             harga, nilai, descriptionpo, descriptionpp, multidisc,
-            inputby, inputdate, status, updateby, updatedate, docnotmp,idtax,currcode,kurs,nilaikonversi,nilaipajak,qtyretur)
+            inputby, inputdate, status, updateby, updatedate, docnotmp,idtax,currcode,kurs,nilaikonversi,nilaipajak,qtyretur,idhistory_price,multidisctype,totaldiscount)
 			SELECT idurut, NEW.docno, docnopo, idbarang, capexno, uniqueid, nmbarang,
             idprincipal, idgudang, idspec, volitem, biaya, biaya2, unit, qty, 
             harga, nilai, descriptionpo, descriptionpp, multidisc,
-            inputby, inputdate, status, updateby, updatedate, NEW.docno,idtax,currcode,kurs,nilaikonversi,nilaipajak,qtyretur
+            inputby, inputdate, status, updateby, updatedate, NEW.docno,idtax,currcode,kurs,nilaikonversi,nilaipajak,qtyretur,idhistory_price,multidisctype,totaldiscount
 			FROM sc_trx.lpb_dtl 
 			WHERE docno = NEW.docno;
 
@@ -955,3 +955,17 @@ ALTER TABLE sc_trx.lpb
 ADD COLUMN printcount integer
 
 -- ==================== END OFTAMBAHAN 24/8/26  ====================
+
+
+--TAMBAHN MULTIDISCOUNT----
+alter table sc_tmp.lpb_dtl
+add column idhistory_price char(30),
+add column multidisctype char(30),
+add column totaldiscount numeric(18,2);
+
+alter table sc_trx.lpb_dtl
+add column idhistory_price char(30),
+add column multidisctype char(30),
+add column totaldiscount numeric(18,2);
+
+--,idhistory_price,multidisctype,totaldiscount

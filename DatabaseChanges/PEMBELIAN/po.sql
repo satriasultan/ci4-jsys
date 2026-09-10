@@ -250,13 +250,13 @@ BEGIN
             idurut, docno, docnopp, idbarang, capexno, uniqueid,  nmbarang, unit, qty, qtybonus, 
             harga, multidisc, nilai, nilaipajak, nilaikonversi, currcode, idtax, kurs,
             descriptionpo, descriptionpp,
-            inputby, inputdate, status, updateby, updatedate
+            inputby, inputdate, status, updateby, updatedate,idhistory_price,multidisctype,totaldiscount
         )
         SELECT
             idurut, v_docno, docnopp, idbarang, capexno, uniqueid,  nmbarang, unit, qty, qtybonus, 
             harga, multidisc, nilai, nilaipajak, nilaikonversi, currcode, idtax, kurs,
             descriptionpo, descriptionpp,
-            inputby, inputdate, status, updateby, updatedate
+            inputby, inputdate, status, updateby, updatedate,idhistory_price,multidisctype,totaldiscount
         FROM sc_tmp.po_dtl
         WHERE rtrim(docno) = rtrim(OLD.docno)
             AND inputby = v_inputby;
@@ -363,12 +363,12 @@ BEGIN
         (idurut, docno, docnopp, idbarang, capexno, uniqueid,  nmbarang, unit, qty, qtybonus, 
         harga, multidisc, nilai, nilaipajak, nilaikonversi, currcode, idtax, kurs,
         descriptionpo, descriptionpp,
-        inputby, inputdate, status, updateby, updatedate, docnotmp)
+        inputby, inputdate, status, updateby, updatedate, docnotmp,idhistory_price,multidisctype,totaldiscount)
         SELECT
             idurut, NEW.docnotmp, docnopp, idbarang, capexno, uniqueid,  nmbarang, unit, qty, qtybonus, 
             harga, multidisc, nilai, nilaipajak, nilaikonversi, currcode, idtax, kurs,
             descriptionpo, descriptionpp,
-            inputby, inputdate, status, updateby, updatedate, docnotmp
+            inputby, inputdate, status, updateby, updatedate, docnotmp,idhistory_price,multidisctype,totaldiscount
         FROM sc_tmp.po_dtl
         WHERE rtrim(docno) = rtrim(NEW.docno);
 
@@ -601,11 +601,11 @@ BEGIN
 			( idurut, docno, docnopp, idbarang, capexno, uniqueid, nmbarang, unit, qty, qtybonus, 
             harga, multidisc, nilai, nilaipajak, nilaikonversi, currcode, idtax, kurs,
             descriptionpo, descriptionpp,
-            inputby, inputdate, status, updateby, updatedate, docnotmp)
+            inputby, inputdate, status, updateby, updatedate, docnotmp,idhistory_price,multidisctype,totaldiscount)
 			SELECT idurut, NEW.docno, docnopp, idbarang, capexno, uniqueid, nmbarang, unit, qty, qtybonus, 
             harga, multidisc, nilai, nilaipajak, nilaikonversi, currcode, idtax, kurs,
             descriptionpo, descriptionpp,
-            inputby, inputdate, status, updateby, updatedate, NEW.docno
+            inputby, inputdate, status, updateby, updatedate, NEW.docno,idhistory_price,multidisctype,totaldiscount
 			FROM sc_trx.po_dtl 
 			WHERE docno = NEW.docno;
 

@@ -3380,5 +3380,45 @@ class Globalmodule extends BaseController
 
             ]);
     }
+
+    public function get_exchange_rate()
+    {
+        $idcurr  = $this->request->getGet('idcurr');
+        $docdate = $this->request->getGet('docdate');
+
+        if (empty($idcurr) || empty($docdate)) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'ID Currency dan Document Date wajib diisi'
+            ]);
+        }
+
+        $row = $this->db
+            ->table('sc_mst.exchangerate')
+            ->select('
+            id,
+            exchangedate,
+            nilai,
+            idcurr
+        ')
+            ->where('idcurr', $idcurr)
+            ->where('exchangedate <=', $docdate)
+            ->orderBy('exchangedate', 'DESC')
+            ->orderBy('id', 'DESC')
+            ->get()
+            ->getRowArray();
+
+        if (!$row) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Exchange rate tidak ditemukan'
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'status' => true,
+            'data'   => $row
+        ]);
+    }
 }
 

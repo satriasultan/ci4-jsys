@@ -88,6 +88,13 @@
 </div>
 
 <?php echo $message;?>
+<?php if (session()->getFlashdata('error')) : ?>
+
+    <div class="alert alert-danger">
+        <?= session()->getFlashdata('error'); ?>
+    </div>
+
+<?php endif; ?>
 <?php
     $isIT = isset($userinfo['rolename']) && trim($userinfo['rolename']) === 'IT';
     $disabled = $isIT ? '' : 'disabled';
@@ -361,6 +368,7 @@
                                             <th>Bonus Qty</th>
                                             <th>Harga</th>
                                             <th>Multi Disc</th>
+                                            <th>Total Disc</th>
                                             <th>Nilai</th>
                                             <th>Keterangan PO</th>
                                             <th>Keterangan PP</th>
@@ -692,10 +700,14 @@
                                     <select
                                             name="multidisctype"
                                             id="multidisctype"
-                                            class="form-control">
-
-                                        <option value="NILAI">Nilai</option>
+                                            class="form-control"
+                                            style="
+        background-color: #e9ecef;
+        color: #6c757d;
+    ">
                                         <option value="PERCENT">%</option>
+                                        <option value="NILAI">Nilai</option>
+
 
                                     </select>
 
@@ -729,7 +741,7 @@
                         </div>
 
 
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <div class="form-group">
 
                                 <label>Nilai</label>
@@ -744,23 +756,33 @@
 
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label>Capex No</label>
+                                <input
+                                        type="text"
+                                        name="capexno"
+                                        id="capexno" class="form-control">
+
+                            </div>
+                        </div>
+                        <div class="col-md-3">
                             <div class="form-group">
                                 <label>Keterangan PO</label>
                                 <textarea type="text"
                                         name="descriptionpo"
-                                        rows="4"
+                                        rows="2"
                                         style="text-transform: uppercase;"
                                         id="descriptionpo"
                                         class="form-control"></textarea>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="form-group">
                                 <label>Keterangan PP</label>
                                 <textarea type="text"
                                         name="descriptionpp"
-                                        rows="4"
+                                        rows="2"
                                         style="text-transform: uppercase;"
                                         id="descriptionpp"
                                         class="form-control" readonly></textarea>

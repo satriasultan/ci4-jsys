@@ -1,21 +1,9 @@
-/*
- * Created by PhpStorm.
- *  * User: FIKY-PC
- *  * Date: 12/2/20, 2:32 PM
- *  * Last Modified: 12/2/20, 2:32 PM.
- *  Developed By: Fiky Ashariza Powered By PhpStorm
- *  Copyright© 2020 .All rights reserved.
- *
- */
-
-
 var save_method; //for save method string
 var table;
 var initTable;
 //"use strict";
 
 function tablePOTrx(){
-    // var lg = languageDatatable;
     var initTable = function () {
         var table = $('#tablepoTrx');
         table.DataTable({
@@ -78,13 +66,10 @@ function reload_tablePOTrx()
 {
     var table = $('#tablepoTrx');
     table.DataTable().ajax.reload(); //reload datatable ajax
-    //console.log('HALO HALO BANDUNG');
 }
 
 
-
 function tablePOApprvTrx(){
-    // var lg = languageDatatable;
     var initTable = function () {
         var table = $('#tablepoapprvTrx');
         table.DataTable({
@@ -147,7 +132,6 @@ function reload_tablePOApprvTrx()
 {
     var table = $('#tablepoapprvTrx');
     table.DataTable().ajax.reload(); //reload datatable ajax
-    //console.log('HALO HALO BANDUNG');
 }
 
 $('#btn-filter-tx').click(function(){ //button filter event click
@@ -163,7 +147,6 @@ $('#btn-reset-tx').click(function(){ //button reset event click
 });
 
 let skipRoleChange = false;
-
 
 
 //EDIT ITEM
@@ -202,17 +185,17 @@ function documentReadable(){
                 delay: 250,
             }).then(function (datax) {
 
-            // Tambahkan data alamat dan phone ke object
+                // Tambahkan data alamat dan phone ke object
                 var supplierData = datax.items[0];
                 supplierData.alamat = json.dataTables.items[0].alamatsupplier;
                 // supplierData.phone = data.phone;
-                
+
                 // create the option dan simpan data lengkap
                 var option = new Option(supplierData.nmsupplier, supplierData.kdsupplier, true, true);
                 $(option).data('supplier-data', supplierData); // Simpan data lengkap
-                
+
                 $('[name="kdsupplier"]').append(option).trigger('change');
-                
+
                 // Set alamat dan phone langsung
                 $("#alamatsupplier").val(json.dataTables.items[0].alamatsupplier).prop('readonly', true);
                 // $("#phone").val(data.phone).prop('readonly', true);
@@ -267,13 +250,13 @@ function documentReadable(){
                 var currencyData = datax.items[0];
                 currencyData.kurs = json.dataTables.items[0].kurs;
                 // currencyData.phone = data.phone;
-                
+
                 // create the option dan simpan data lengkap
                 var option = new Option(currencyData.currname, currencyData.currcode, true, true);
                 $(option).data('currency-data', currencyData); // Simpan data lengkap
-                
+
                 $('[name="currcode"]').append(option).trigger('change');
-                
+
                 // Set alamat dan phone langsung
                 setJtsValue('[name="kurs"]', convertToDbNumber(json.dataTables.items[0].kurs));
                 $('[name="kurs"]').prop('readonly', false);
@@ -288,7 +271,7 @@ function documentReadable(){
                 const senddateValue = $('[name="senddate"]').val();
                 setupEstpakai(prefixParts[0], senddateValue);
             }
-            
+
 
             // $('[name="senddate"]').val(json.dataTables.items[0].senddate);
             setJtsValue('[name="jthtempo"]', convertToDbNumber(json.dataTables.items[0].jthtempo));
@@ -317,7 +300,7 @@ function documentReadable(){
             setJtsValue('[name="jumlahpajak"]', convertToDbNumber(json.dataTables.items[0].jumlahpajak));
             setJtsValue('[name="total"]', convertToDbNumber(json.dataTables.items[0].total));
             // $('[name="estpakai"]').val(json.dataTables.items[0].estpakai);
-            
+
 
             // $('[name="keterangan"]').val(json.dataTables.items[0].keterangan);
             //$('[name="chold"]').val(json.dataTables.items[0].chold.trim()).trigger('change');
@@ -341,66 +324,9 @@ function documentReadable(){
 /* FOR INPUT FUNCTION */
 
 
-// +++++++++++++++++++++++++++++++++++++++++++++++++++++ RANAH GROUP ++++++++++++++++++++++++++++++++++++++++//
-
-// var defaultInitialGroupBrng = '';
-// $("#idbarang").select2({
-//     placeholder: "Choose Your Item List",
-//     allowClear: true,
-//     width:'100%',
-//     ajax: {
-//         url: HOST_URL + 'api/globalmodule/list_item',
-//         type: 'POST',
-//         dataType: 'json',
-//         delay: 250,
-//         data: function(params) {
-//             return {
-//                 _search_: params.term, // search term
-//                 _page_: params.page,
-//                 _draw_: true,
-//                 _start_: 1,
-//                 _perpage_: 2,
-//                 _paramglobal_: defaultInitialGroupBrng,
-//                 _parameterx_: defaultInitialGroupBrng,
-//                 term: params.term,
-//             };
-//         },
-//         processResults: function (data, params) {
-//             // var searchTerm = $("#idbarang").data("select2").$dropdown.find("input").val();
-//             // if (data.items.length === 1 && data.items[0].text === searchTerm) {
-//             //     var option = new Option(data.items[0].nmbarang, data.items[0].idbarang, true, true);
-//             //     $('#idbarang').append(option).trigger('change').select2("close");
-//             //     // manually trigger the `select2:select` event
-//             //     $('#idbarang').trigger({
-//             //         type: 'select2:select',
-//             //         params: {
-//             //             data: data
-//             //         }
-//             //     });
-//             // }
-//             params.page = params.page || 1;
-//             return {
-//                 results: data.items,
-//                 pagination: {
-//                     more: (params.page * 30) < data.total_count
-//                 }
-//             };
-//         },
-
-//         cache: false
-//     },
-//     escapeMarkup: function(markup) {
-//         return markup;
-//     }, // let our custom formatter work
-//     // minimumInputLength: 1,
-//     templateResult: formatItem, // omitted for brevity, see the source of this page
-//     templateSelection: formatItemSelection // omitted for brevity, see the source of this page
-// }).on("select2:select", function (e) {
-//     var data = e.params.data;
-//     $('[name="nmbarang"]').val(data.nmbarang.trim()).prop("readonly", true);
-//     $('[name="unit"]').val(data.unit.trim()).prop("readonly", true);
-//     $("#batch").val(null).trigger('change');
-// });
+// ============================================================
+// DOCUMENT STATUS
+// ============================================================
 
 function setToCancel(docno) {
     Swal.fire({
@@ -589,9 +515,8 @@ function formatPPSelection(repo) {
 }
 
 
-
 function formatCurrency(repo) {
-if (repo.loading) return repo.text;
+    if (repo.loading) return repo.text;
     var markup ="<div class='select2-result-repository__description'>" + repo.currcode +"   <i class='fa fa-circle'></i>   "+ repo.currname +"   <i class='fa fa-circle'></i>   "+  repo.kurs +"  </div>";
     return markup;
 }
@@ -650,10 +575,8 @@ $("#currcode").select2({
 });
 
 
-
-
 function formatTax(repo) {
-if (repo.loading) return repo.text;
+    if (repo.loading) return repo.text;
     var markup ="<div class='select2-result-repository__description'>" + repo.idtax +"   <i class='fa fa-circle'></i>   "+ repo.nmtax +"  </div>";
     return markup;
 }
@@ -716,7 +639,6 @@ $("#idtax").select2({
 });
 
 
-
 function hitungPajak() {
 
     let dpp = $('#dpp').val().replace(/,/g,'');
@@ -756,19 +678,14 @@ function setJtsValue(selector, value) {
 }
 
 
-
-
 $(document).on('input', '.jtsseparator', function () {
     _jtsseparator(this);
 });
 
 
-
-
-
 /* TABLE PO DETAIL */
 function tablePODetail(){
-        /* Tabel PO Detail */
+    /* Tabel PO Detail */
     var initTable = function () {
         var table = $('#tabppdtl');
         table.DataTable({
@@ -825,13 +742,13 @@ function tablePODetail(){
             if ($(e.target).is('input[type="checkbox"]')) {
                 return;
             }
-            
+
             // Cari checkbox di dalam baris ini
             var checkbox = $(this).find('input[type="checkbox"].row-check');
-            
+
             // Toggle status checkbox
             checkbox.prop('checked', !checkbox.prop('checked'));
-            
+
             // Trigger event change jika diperlukan
             checkbox.trigger('change');
         });
@@ -847,7 +764,6 @@ function reload_table_po_dtl()
     var table = $('#tabppdtl');
     table.DataTable().ajax.reload(); //reload datatable ajax
 }
-
 
 
 // CHECK ALL
@@ -868,12 +784,6 @@ $('#tabppdtl tbody').on('change', '.row-check', function () {
 $('#tabppdtl').on('draw.dt', function () {
     $('#checkAll').prop('checked', false);
 });
-function getSelectedPODetail(){
-    return $('#tabppdtl tbody .row-check:checked')
-        .map(function () {
-            return $(this).val();
-        }).get();
-}
 
 function getCheckedDetailIds(){
     let ids = [];
@@ -883,14 +793,6 @@ function getCheckedDetailIds(){
     return ids;
 }
 
-
-
-function setSelect2Ajax(selector, value, text) {
-    if (!value) return;
-
-    let option = new Option(text || value, value, true, true);
-    $(selector).append(option).trigger('change');
-}
 
 let currentEditId = null;
 function btnUpdateDetail(){
@@ -933,6 +835,11 @@ function btnUpdateDetail(){
                 $('#docnoppmodal').val(res.data.docnopp);
                 $('#idbarang').val(res.data.idbarang);
                 $('#nmbarang').val(res.data.nmbarang);
+                $('#multidisctype')
+                    .val(
+                        $.trim(res.data.multidisctype || 'NILAI')
+                    )
+                    .trigger('change');
                 //$('#unit').val(res.data.unit);
                 var idbarang = $.trim(res.data.idbarang);
                 var idunit   = $.trim(res.data.unit);
@@ -978,6 +885,7 @@ function btnUpdateDetail(){
                 setJtsValue('[name="harga"]', convertToDbNumber(res.data.harga));
                 // setJtsValue('[name="multidisc"]', convertToDbNumber(res.data.multidisc));
                 setJtsValue('[name="nilai"]', convertToDbNumber(res.data.nilai));
+                setJtsValue('[name="multidisc"]', convertToDbNumber(res.data.multidisc));
 
 
                 currentEditId = res.data.idurut;
@@ -1014,19 +922,19 @@ $(document).on('input', '.form-control', function () {
         let qty = parseFloat($('#qty').val().replace(/,/g, '')) || 0;
         let harga = parseFloat($('#harga').val().replace(/,/g, '')) || 0;
         // let multidisc = parseFloat($('#multidisc').val().replace(/,/g, '')) || 0;
-        
+
         // Hitung nilai awal (qty * harga)
         let nilaiAwal = qty * harga;
-        
+
         // Hitung diskon
         // let diskon = (nilaiAwal * multidisc) / 100;
-        
+
         // Hitung nilai akhir setelah diskon
         let nilaiAkhir = nilaiAwal;
-        
+
         // Format ke en-US: separator ribuan = koma, desimal = titik
         $('#nilai').val(nilaiAkhir.toLocaleString('en-US', {
-            minimumFractionDigits: 2, 
+            minimumFractionDigits: 2,
             maximumFractionDigits: 2
         }));
     }
@@ -1063,14 +971,14 @@ function btnDeleteDetail(){
             dataType: 'json',
             success: function(res){
                 if(res.status){
-
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil',
-                        text: 'Data berhasil dihapus',
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
+                    //
+                    // Swal.fire({
+                    //     icon: 'success',
+                    //     title: 'Berhasil',
+                    //     text: 'Data berhasil dihapus',
+                    //     timer: 1500,
+                    //     showConfirmButton: false
+                    // });
 
 
                     $('#tabppdtl').DataTable().ajax.reload(null,false);
@@ -1189,8 +1097,6 @@ $('#btn-reset').click(function(){ //button reset event click
 });
 
 
-
-
 function savePODetail() {
 
 
@@ -1203,29 +1109,30 @@ function savePODetail() {
     //     cancelButtonText: 'Batal',
     //     reverseButtons: true
     // }).then((result) => {
-     //   if (!result.isConfirmed) return;
+    //   if (!result.isConfirmed) return;
 
-        let formData = new FormData(document.getElementById('formPODetail'));
-        formData.append('docdate', $('#docdate').val());
-        formData.append('cabang', $('#cabang').val());
-        formData.append('senddate', $('#senddate').val());
-        formData.append('jthtempo', convertToDbNumber($('#jthtempo').val()));
-        formData.append('kdsupplier', $('#kdsupplier').val());
-        formData.append('isinclusive', $('#isinclusive').is(':checked') ? 'YES' : 'NO');
-        formData.append('alamatsupplier', $('#alamatsupplier').val());
-        formData.append('idtax', $('#idtax').val());
-        formData.append('currcode', $('#currcode').val());
-        formData.append('kurs', convertToDbNumber($('#kurs').val()));
-        formData.append('alamatkirim', $('#alamatkirim').val());
-        formData.append('keterangan', $('#keterangan').val());
-        // formData.append('estpakai', $('#estpakai').val());
+    let formData = new FormData(document.getElementById('formPODetail'));
+    formData.append('docdate', $('#docdate').val());
+    formData.append('cabang', $('#cabang').val());
+    formData.append('senddate', $('#senddate').val());
+    formData.append('jthtempo', convertToDbNumber($('#jthtempo').val()));
+    formData.append('kdsupplier', $('#kdsupplier').val());
+    formData.append('isinclusive', $('#isinclusive').is(':checked') ? 'YES' : 'NO');
+    formData.append('alamatsupplier', $('#alamatsupplier').val());
+    formData.append('idtax', $('#idtax').val());
+    formData.append('currcode', $('#currcode').val());
+    formData.append('kurs', convertToDbNumber($('#kurs').val()));
+    formData.append('alamatkirim', $('#alamatkirim').val());
+    formData.append('keterangan', $('#keterangan').val());
+    formData.append('capexno', $('#capexno').val());
+    // formData.append('estpakai', $('#estpakai').val());
 
-        // docno gabungan (lebih aman pakai hidden header)
-        formData.set('docno', $('#prefix').val() + '/' + $('#infix').val() + '/' + $('#sufix').val());
-        // convert qty ke numeric DB
-        let qty = $('#qty').val();
-        let qtybonus = $('#qtybonus').val();
-        let harga = $('#harga').val();
+    // docno gabungan (lebih aman pakai hidden header)
+    formData.set('docno', $('#prefix').val() + '/' + $('#infix').val() + '/' + $('#sufix').val());
+    // convert qty ke numeric DB
+    let qty = $('#qty').val();
+    let qtybonus = $('#qtybonus').val();
+    let harga = $('#harga').val();
 
 
     let multidisc       = $('#multidisc').val();
@@ -1235,125 +1142,125 @@ function savePODetail() {
     let idhistory_price = $('#idhistory_price').val();
 
 
-        formData.set('qty', convertToDbNumber(qty));
-        formData.set('qtybonus', convertToDbNumber(qtybonus));
-        formData.set('harga', convertToDbNumber(harga));
-        // formData.set('multidisc', convertToDbNumber(multidisc));
-        formData.set('nilai', convertToDbNumber(nilai));
-        // formData.set('nilai', convertToDbNumber(nilai));
-        formData.set('descriptionpo', $('#descriptionpo').val());
-        formData.set('uniqueid', $('#uniqueid').val());
-        formData.set('docnopp', $('#docnopp').val());
-        formData.set(
-            'multidisc',
-            convertToDbNumber(multidisc)
-        );
+    formData.set('qty', convertToDbNumber(qty));
+    formData.set('qtybonus', convertToDbNumber(qtybonus));
+    formData.set('harga', convertToDbNumber(harga));
+    // formData.set('multidisc', convertToDbNumber(multidisc));
+    formData.set('nilai', convertToDbNumber(nilai));
+    // formData.set('nilai', convertToDbNumber(nilai));
+    formData.set('descriptionpo', $('#descriptionpo').val());
+    formData.set('uniqueid', $('#uniqueid').val());
+    formData.set('docnopp', $('#docnopp').val());
+    formData.set(
+        'multidisc',
+        convertToDbNumber(multidisc)
+    );
 
-        formData.set(
-            'multidisctype',
-            multidisctype
-        );
+    formData.set(
+        'multidisctype',
+        multidisctype
+    );
 
-        formData.set(
-            'totaldiscount',
-            convertToDbNumber(totaldiscount)
-        );
+    formData.set(
+        'totaldiscount',
+        convertToDbNumber(totaldiscount)
+    );
 
-        formData.set(
-            'idhistory_price',
-            idhistory_price
-        );
+    formData.set(
+        'idhistory_price',
+        idhistory_price
+    );
 
-        formData.set(
-            'nilai',
-            convertToDbNumber(nilai)
-        );
-        // formData.set('descriptionpo', convertToDbNumber(qty));
+    formData.set(
+        'nilai',
+        convertToDbNumber(nilai)
+    );
+    // formData.set('descriptionpo', convertToDbNumber(qty));
 
-        $.ajax({
-            url: HOST_URL + 'purchase/trans/savePODetail',
-            type: 'POST',
-            data: formData,
-            dataType: 'json',
-            processData: false,
-            contentType: false,
+    $.ajax({
+        url: HOST_URL + 'purchase/trans/savePODetail',
+        type: 'POST',
+        data: formData,
+        dataType: 'json',
+        processData: false,
+        contentType: false,
 
-            success: function (res) {
-
-                // ==============================
-                // JIKA GAGAL → TAMPILKAN SWAL
-                // ==============================
-
-                if (!res.success) {
-
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Gagal',
-                        text: res.message
-                    });
-
-                    return;
-                }
-
-
-                // ==============================
-                // BERHASIL
-                // TANPA SWAL
-                // ==============================
-
-
-                // Jika header baru dibuat → reload
-                if (res.reload === true) {
-
-                    window.location.reload();
-
-                    return;
-                }
-
-
-                // ==============================
-                // TUTUP MODAL
-                // ==============================
-
-                $('#modalDetailPO').modal('hide');
-
-                $('#modalUpdatePO').modal('hide');
-
-
-                // ==============================
-                // RESET FORM
-                // ==============================
-
-                $('#formPOUpdate')[0].reset();
-
-                $('#formPODetail')[0].reset();
-
-
-                // ==============================
-                // RELOAD TABLE
-                // ==============================
-
-                reload_table_po_dtl();
-
-                documentReadable();
-            },
-
+        success: function (res) {
 
             // ==============================
-            // SERVER ERROR
+            // JIKA GAGAL → TAMPILKAN SWAL
             // ==============================
 
-            error: function (xhr) {
-
-                console.error(xhr.responseText);
+            if (!res.success) {
 
                 Swal.fire({
-                    icon: 'error',
-                    title: 'Server Error',
-                    text: 'Terjadi kesalahan pada server (500)'
+                    icon: 'warning',
+                    title: 'Gagal',
+                    text: res.message
                 });
+
+                return;
             }
-        });
+
+
+            // ==============================
+            // BERHASIL
+            // TANPA SWAL
+            // ==============================
+
+
+            // Jika header baru dibuat → reload
+            if (res.reload === true) {
+
+                window.location.reload();
+
+                return;
+            }
+
+
+            // ==============================
+            // TUTUP MODAL
+            // ==============================
+
+            $('#modalDetailPO').modal('hide');
+
+            $('#modalUpdatePO').modal('hide');
+
+
+            // ==============================
+            // RESET FORM
+            // ==============================
+
+            $('#formPOUpdate')[0].reset();
+
+            $('#formPODetail')[0].reset();
+
+
+            // ==============================
+            // RELOAD TABLE
+            // ==============================
+
+            reload_table_po_dtl();
+
+            documentReadable();
+        },
+
+
+        // ==============================
+        // SERVER ERROR
+        // ==============================
+
+        error: function (xhr) {
+
+            console.error(xhr.responseText);
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Server Error',
+                text: 'Terjadi kesalahan pada server (500)'
+            });
+        }
+    });
 
 
     //});
@@ -1376,7 +1283,7 @@ function btnInputDetail() {
     }
     $('#formPODetail')[0].reset();
 
-    
+
     // 🔹 Clear select2
     $('#docnopp').val(null).trigger('change');
 
@@ -1388,8 +1295,6 @@ function btnInputDetail() {
     $('#modalDetailPOLabel').text('Tambah Item Detail');
     $('#modalDetailPO').modal('show');
 }
-
-
 
 
 function formatSupplier(repo) {
@@ -1448,7 +1353,7 @@ $("#kdsupplier").select2({
 }).on("select2:select", function (e) {
     if (e.params && e.params.data) {
         var selectedData = e.params.data;
-        
+
         $("#alamatsupplier").val(selectedData.alamat || '').prop('disabled', true);
         $("#jthtempo").val(selectedData.jthtempo || '')
         // $("#phone").val(selectedData.phone || '').prop('disabled', true);
@@ -1459,13 +1364,37 @@ $("#kdsupplier").select2({
 // =====================================================
 // AUTO LOAD CURRENCY DARI API
 // =====================================================
-function loadDefaultCurrency(currcode, kurs = 1) {
+function loadDefaultCurrency(currcode, kurs = null, docdate = null) {
 
-    currcode = $.trim(currcode || '');
+    currcode = $.trim(currcode || '').toUpperCase();
 
     if (currcode === '') {
         return;
     }
+
+
+    // =============================================
+    // JIKA IDR MAKA KURS SELALU 1
+    // =============================================
+
+    if (currcode === 'IDR') {
+
+        setJtsValue(
+            '[name="kurs"]',
+            convertToDbNumber(1)
+        );
+
+        $('[name="kurs"]')
+            .prop('readonly', true)
+            .trigger('change');
+
+        return;
+    }
+
+
+    // =============================================
+    // LOAD DATA CURRENCY
+    // =============================================
 
     $.ajax({
         type: 'GET',
@@ -1475,8 +1404,6 @@ function loadDefaultCurrency(currcode, kurs = 1) {
             encodeURIComponent(currcode),
 
         dataType: 'json',
-
-        delay: 250,
 
         success: function (datax) {
 
@@ -1501,12 +1428,9 @@ function loadDefaultCurrency(currcode, kurs = 1) {
 
             var currencyData = datax.items[0];
 
-            // Simpan kurs
-            currencyData.kurs = kurs;
-
 
             // =============================================
-            // HAPUS OPTION SEBELUMNYA JIKA ADA
+            // SET SELECT CURRENCY
             // =============================================
 
             $('[name="currcode"] option[value="' +
@@ -1514,22 +1438,13 @@ function loadDefaultCurrency(currcode, kurs = 1) {
                 '"]').remove();
 
 
-            // =============================================
-            // CREATE OPTION SELECT2
-            // =============================================
-
             var option = new Option(
-
                 currencyData.currname,
                 currencyData.currcode,
-
                 true,
                 true
-
             );
 
-
-            // Simpan seluruh data currency
 
             $(option).data(
                 'currency-data',
@@ -1537,45 +1452,135 @@ function loadDefaultCurrency(currcode, kurs = 1) {
             );
 
 
-            // =============================================
-            // APPEND + TRIGGER SELECT2
-            // =============================================
-
             $('[name="currcode"]')
                 .append(option)
                 .trigger('change');
 
 
             // =============================================
-            // SET KURS
+            // JIKA KURS DIKIRIM LANGSUNG
             // =============================================
 
-            var nilaiKurs = kurs;
-
-            // Jika kurs kosong ambil dari API
-
             if (
-                nilaiKurs === null ||
-                nilaiKurs === undefined ||
-                nilaiKurs === ''
+                kurs !== null &&
+                kurs !== undefined &&
+                kurs !== ''
             ) {
 
-                nilaiKurs =
-                    currencyData.kurs || 1;
+                setJtsValue(
+                    '[name="kurs"]',
+                    convertToDbNumber(kurs)
+                );
+
+                $('[name="kurs"]')
+                    .prop('readonly', false)
+                    .trigger('change');
+
+                return;
+            }
+
+
+            // =============================================
+            // AMBIL DOCDATE JIKA BELUM DIKIRIM
+            // =============================================
+
+            if (
+                !docdate ||
+                $.trim(docdate) === ''
+            ) {
+
+                docdate = $('[name="docdate"]').val();
 
             }
 
 
-            setJtsValue(
-                '[name="kurs"]',
-                convertToDbNumber(nilaiKurs)
-            );
+            // =============================================
+            // VALIDASI IDCURR
+            // =============================================
+
+            if (
+                !currencyData.idcurr
+            ) {
+
+                console.warn(
+                    'ID Currency tidak ditemukan'
+                );
+
+                return;
+            }
 
 
-            $('[name="kurs"]').prop(
-                'readonly',
-                false
-            );
+            // =============================================
+            // AMBIL EXCHANGE RATE BERDASARKAN TANGGAL
+            // =============================================
+
+            $.ajax({
+
+                type: 'GET',
+
+                url:
+                    HOST_URL +
+                    'api/globalmodule/get_exchange_rate',
+
+                data: {
+                    idcurr: currencyData.idcurr,
+                    docdate: docdate
+                },
+
+                dataType: 'json',
+
+                success: function (response) {
+
+                    var nilaiKurs = 1;
+
+
+                    if (
+                        response &&
+                        response.status === true &&
+                        response.data
+                    ) {
+
+                        nilaiKurs =
+                            response.data.nilai || 1;
+
+                    }
+
+
+                    // =============================================
+                    // SIMPAN KURS KE CURRENCY DATA
+                    // =============================================
+
+                    currencyData.kurs =
+                        nilaiKurs;
+
+
+                    // =============================================
+                    // SET KURS
+                    // =============================================
+
+                    setJtsValue(
+                        '[name="kurs"]',
+                        convertToDbNumber(nilaiKurs)
+                    );
+
+
+                    $('[name="kurs"]')
+                        .prop('readonly', false)
+                        .trigger('change');
+
+
+                },
+
+                error: function (xhr) {
+
+                    console.error(
+                        'Gagal mengambil exchange rate:',
+                        xhr.responseText
+                    );
+
+                }
+
+            });
 
         },
 
@@ -1704,7 +1709,6 @@ function loadDefaultTax(idtax) {
 
 }
 
-
 let currentKodeSuffix = '';
 
 $('#cabang').on('change', function () {
@@ -1716,12 +1720,17 @@ $('#cabang').on('change', function () {
     if (idbranch) {
 
         $.ajax({
+
             url: HOST_URL + '/purchase/trans/getBranchInfoPO',
+
             method: 'GET',
+
             data: {
                 idbranch: idbranch
             },
+
             dataType: 'json',
+
 
             success: function (res) {
 
@@ -1755,6 +1764,124 @@ $('#cabang').on('change', function () {
 
 
                 // =====================================================
+                // FORCE DEFAULT CURRENCY IDR
+                // =====================================================
+
+                var defaultCurrcode = 'IDR';
+
+                $.ajax({
+
+                    type: 'GET',
+
+                    url:
+                        HOST_URL +
+                        'api/globalmodule/list_currency?var=' +
+                        encodeURIComponent(defaultCurrcode),
+
+                    dataType: 'json',
+
+                    success: function (datax) {
+
+                        // =============================================
+                        // VALIDASI CURRENCY
+                        // =============================================
+
+                        if (
+                            !datax ||
+                            !datax.items ||
+                            datax.items.length === 0
+                        ) {
+
+                            console.warn(
+                                'Currency IDR tidak ditemukan'
+                            );
+
+                            return;
+                        }
+
+
+                        // =============================================
+                        // DATA CURRENCY
+                        // =============================================
+
+                        var currencyData = datax.items[0];
+
+                        // FORCE KURS IDR = 1
+                        currencyData.kurs = 1;
+
+
+                        // =============================================
+                        // HAPUS CURRENCY SEBELUMNYA
+                        // =============================================
+
+                        $('[name="currcode"]')
+                            .empty();
+
+
+                        // =============================================
+                        // CREATE OPTION
+                        // =============================================
+
+                        var option = new Option(
+
+                            currencyData.currname,
+                            currencyData.currcode,
+                            true,
+                            true
+
+                        );
+
+
+                        // Simpan data currency
+                        $(option).data(
+                            'currency-data',
+                            currencyData
+                        );
+
+
+                        // =============================================
+                        // SET SELECT2 IDR
+                        // =============================================
+
+                        $('[name="currcode"]')
+                            .append(option)
+                            .val(currencyData.currcode)
+                            .trigger('change.select2');
+
+
+                        // =============================================
+                        // FORCE KURS = 1
+                        // =============================================
+
+                        setJtsValue(
+                            '[name="kurs"]',
+                            1
+                        );
+
+
+                        // =============================================
+                        // KURS IDR READONLY
+                        // =============================================
+
+                        $('[name="kurs"]')
+                            .prop('readonly', true);
+
+                    },
+
+
+                    error: function (xhr) {
+
+                        console.error(
+                            'Gagal load Currency IDR:',
+                            xhr.responseText
+                        );
+
+                    }
+
+                });
+
+
+                // =====================================================
                 // AMBIL KONFIGURASI UMUM
                 // =====================================================
 
@@ -1771,55 +1898,14 @@ $('#cabang').on('change', function () {
 
 
                 // =====================================================
-                // AUTO SELECT CURRENCY
+                // AUTO SELECT TAX
                 // =====================================================
 
                 if (config) {
 
-                    var currcode = $.trim(
-                        config.currcode || ''
-                    );
-
                     var idtax = $.trim(
                         config.idtax || ''
                     );
-
-
-                    // =============================================
-                    // DEFAULT KURS
-                    // =============================================
-
-                    var kurs = config.kurs;
-
-                    if (
-                        kurs === null ||
-                        kurs === undefined ||
-                        kurs === ''
-                    ) {
-
-                        // IDR default 1
-
-                        if (currcode === 'IDR') {
-
-                            kurs = 1;
-
-                        }
-
-                    }
-
-
-                    // =============================================
-                    // LOAD CURRENCY SELECT2
-                    // =============================================
-
-                    if (currcode !== '') {
-
-                        loadDefaultCurrency(
-                            currcode,
-                            kurs
-                        );
-
-                    }
 
 
                     // =============================================
@@ -1843,7 +1929,10 @@ $('#cabang').on('change', function () {
 
                 if (infix.length === 4) {
 
-                    $('#docdate').prop('disabled', false);
+                    $('#docdate').prop(
+                        'disabled',
+                        false
+                    );
 
                     var yy = infix.substring(0, 2);
 
@@ -1943,6 +2032,7 @@ $('#cabang').on('change', function () {
 
             },
 
+
             error: function (xhr) {
 
                 console.error(xhr.responseText);
@@ -1993,26 +2083,24 @@ $('#prefix').on('blur', function () {
 });
 
 
-
-
 function setupEstpakai(prefix = '', existingValue = null) {
     const type = getPrefixType(prefix);
     const docDateValue = $('#docdate').val();
     const options = generateDateOptions(type, docDateValue);
-    
+
     // Hapus daterangepicker lama
     if ($('#senddate').data('daterangepicker')) {
         $('#senddate').daterangepicker('destroy');
     }
-    
+
     // Tentukan tanggal default
     let defaultDate;
     let selectedValue = existingValue;
-    
+
     // Parse docDate
     const docDateMoment = moment(docDateValue, 'DD-MM-YYYY');
     const isDocDateValid = docDateMoment.isValid();
-    
+
     if (existingValue) {
         // Coba parse existing value
         const parsed = moment(existingValue, 'DD-MM-YYYY');
@@ -2046,7 +2134,7 @@ function setupEstpakai(prefix = '', existingValue = null) {
             selectedValue = defaultDate.format('DD-MM-YYYY');
         }
     }
-    
+
     // Inisialisasi daterangepicker
     $('#senddate').daterangepicker({
         autoUpdateInput: false,
@@ -2056,19 +2144,19 @@ function setupEstpakai(prefix = '', existingValue = null) {
         locale: { format: 'DD-MM-YYYY' },
         cancelLabel: 'Clear'
     });
-    
+
     $('#senddate').val(selectedValue);
-    
+
     // Hapus event lama
     $('#senddate').off('apply.daterangepicker cancel.daterangepicker');
-    
+
     // Event apply
     $('#senddate').on('apply.daterangepicker', function(ev, picker) {
         const dateStr = picker.startDate.format('DD-MM-YYYY');
         $(this).val(dateStr);
         updateActiveButton(dateStr);
     });
-    
+
     // Event cancel
     $('#senddate').on('cancel.daterangepicker', function(ev, picker) {
         $(this).val('');
@@ -2077,16 +2165,16 @@ function setupEstpakai(prefix = '', existingValue = null) {
             'color': '#007bff'
         });
     });
-    
+
     // Buat tombol pilihan cepat
     let buttonHtml = '<div style="display:flex; flex-wrap:wrap; gap:5px; margin-top:5px;">';
-    
+
     options.forEach((opt) => {
         // Cek apakah nilai ini match dengan selectedValue
         const isActive = (selectedValue && opt.value === selectedValue);
-        
-        buttonHtml += `<button type="button" 
-                            class="senddate-btn ${isActive ? 'active' : ''}" 
+
+        buttonHtml += `<button type="button"
+                            class="senddate-btn ${isActive ? 'active' : ''}"
                             data-date="${opt.value}"
                             style="
                                 padding: 6px 16px;
@@ -2104,9 +2192,9 @@ function setupEstpakai(prefix = '', existingValue = null) {
                             ${opt.label}
                         </button>`;
     });
-    
+
     buttonHtml += '</div>';
-    
+
     // Tambahkan tombol setelah input
     if ($('#senddate_buttons').length === 0) {
         $('#senddate').after(`<div id="senddate_buttons">${buttonHtml}</div>`);
@@ -2120,7 +2208,7 @@ function updateActiveButton(date) {
     $('.senddate-btn').each(function() {
         const isActive = $(this).data('date') === date;
         $(this).toggleClass('active', isActive);
-        
+
         if (isActive) {
             $(this).css({
                 'background-color': '#007bff',
@@ -2137,28 +2225,28 @@ function updateActiveButton(date) {
 
 function selectEstpakai(date, element) {
     $('#senddate').val(date);
-    
+
     const picker = $('#senddate').data('daterangepicker');
     if (picker) {
         picker.setStartDate(moment(date, 'DD-MM-YYYY'));
     }
-    
+
     updateActiveButton(date);
 }
 
 function getPrefixType(prefix) {
     const cleanPrefix = prefix ? prefix.trim() : '';
-    
+
     // Cek import: 3 char dan diakhiri 'I'
     if (cleanPrefix.length === 3 && cleanPrefix.endsWith('I')) {
         return 'import';
     }
-    
+
     // Cek local: 'JI' atau lainnya
     if (cleanPrefix === 'JI') {
         return 'local';
     }
-    
+
     return 'local'; // default
 }
 
@@ -2174,9 +2262,9 @@ function generateDateOptions(type, docDate = null) {
     } else {
         baseDate = moment();
     }
-    
+
     let options = [];
-    
+
     if (type === 'import') {
         for (let i = 1; i <= 6; i++) {
             const date = baseDate.clone().add(i, 'months');
@@ -2196,11 +2284,9 @@ function generateDateOptions(type, docDate = null) {
             });
         }
     }
-    
+
     return options;
 }
-
-
 
 
 var defaultInitialBranch = '';
@@ -2425,14 +2511,14 @@ function showHistoryHarga()
 $(document).on('click','.pilihHarga',function(){
 
     let harga = $(this).data('harga');
-    
+
     let hargaFormatted = parseFloat(harga).toLocaleString('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     });
 
     $('#harga').val(hargaFormatted);
-    
+
     $('#harga').trigger('input');
 
     $('#harga').trigger('keyup');
@@ -2670,12 +2756,214 @@ $(document).on(
     }
 );
 
+/*ubah currency */
+function updateExchangeRate() {
+
+    var $currcode = $('[name="currcode"]');
+
+    var currcode = $.trim(
+        $currcode.val() || ''
+    ).toUpperCase();
+
+    // =============================================
+    // TIDAK ADA CURRENCY
+    // =============================================
+
+    if (!currcode) {
+
+        setJtsValue(
+            '[name="kurs"]',
+            0
+        );
+
+        return;
+    }
+
+
+    // =============================================
+    // IDR SELALU 1
+    // =============================================
+
+    if (currcode === 'IDR') {
+
+        setJtsValue(
+            '[name="kurs"]',
+            1
+        );
+
+        $('[name="kurs"]')
+            .prop('readonly', true);
+
+        return;
+    }
+
+
+    // =============================================
+    // SELAIN IDR
+    // =============================================
+
+    $('[name="kurs"]')
+        .prop('readonly', false);
+
+
+    // =============================================
+    // AMBIL DATA CURRENCY
+    // =============================================
+
+    var currencyData = $currcode
+        .find('option:selected')
+        .data('currency-data');
+
+
+    // Fallback Select2
+    if (!currencyData) {
+
+        var select2Data = $currcode.select2('data');
+
+        if (
+            select2Data &&
+            select2Data.length > 0
+        ) {
+
+            currencyData = select2Data[0];
+
+        }
+
+    }
+
+
+    if (
+        !currencyData ||
+        !currencyData.idcurr
+    ) {
+
+        console.warn(
+            'ID Currency tidak ditemukan'
+        );
+
+        return;
+    }
+
+
+    // =============================================
+    // AMBIL DOCDATE
+    // =============================================
+
+    var docdate = $.trim(
+        $('[name="docdate"]').val() || ''
+    );
+
+
+    if (!docdate) {
+
+        console.warn(
+            'Document Date belum diisi'
+        );
+
+        return;
+    }
+
+
+    // =============================================
+    // LOADING
+    // =============================================
+
+    $.ajax({
+
+        type: 'GET',
+
+        url:
+            HOST_URL +
+            'api/globalmodule/get_exchange_rate',
+
+        data: {
+            idcurr: currencyData.idcurr,
+            docdate: docdate
+        },
+
+        dataType: 'json',
+
+        success: function (response) {
+
+            if (
+                response &&
+                response.status === true &&
+                response.data &&
+                response.data.nilai !== null &&
+                response.data.nilai !== undefined
+            ) {
+
+                var nilaiKurs = response.data.nilai;
+
+                setJtsValue(
+                    '[name="kurs"]',
+                    nilaiKurs
+                );
+
+            } else {
+
+                console.warn(
+                    'Exchange rate tidak ditemukan'
+                );
+
+                // JANGAN OTOMATIS JADI 0
+                // Biarkan nilai sebelumnya
+            }
+
+        },
+
+        error: function (xhr) {
+
+            console.error(
+                'Gagal mengambil exchange rate:',
+                xhr.responseText
+            );
+
+        }
+
+    });
+
+}
+
+$(document).on(
+    'change',
+    '[name="currcode"]',
+    function () {
+
+        updateExchangeRate();
+
+    }
+);
+
+$(document).on(
+    'change',
+    '[name="docdate"]',
+    function () {
+
+        updateExchangeRate();
+
+    }
+);
+
+$(document).ready(function () {
+
+    // Default currency
+    loadDefaultCurrency('IDR');
+
+    setJtsValue(
+        '[name="kurs"]',
+        convertToDbNumber(1)
+    );
+
+    $('[name="kurs"]').prop('readonly', true);
+
+});
+/*ubah currency end*/
+
+
 $(document).ready(function() {
     // Handle form submission event
     // Handle form submission event
-
-
-
 
 
     tablePOTrx();
@@ -2711,11 +2999,9 @@ $(document).ready(function() {
     // }
     //console.log($('[name="type"]').val());
     // if ($('[name="typeform"]').val() === 'INPUT' || $('[name="typeform"]').val() === 'UPDATE' || $('[name="typeform"]').val() === 'DELETE' ) {
-        documentReadable();
+    documentReadable();
     // }
     $("#loadMe").modal("hide");
-
-
 
 
 });

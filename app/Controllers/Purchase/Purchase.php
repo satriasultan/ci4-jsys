@@ -2874,13 +2874,17 @@ class Purchase extends BaseController
                 </a>';
             }
 
-            if($canPrint && trim($status) == 'APPROVED' && (empty($lm->printby) && empty($lm->printdate))){
+            //if($canPrint && trim($status) == 'APPROVED' && (empty($lm->printby) && empty($lm->printdate))){
+            if (
+                $canPrint &&
+                in_array(trim($status), ['APPROVED', 'CETAK/PRINT'])
+            ) {
                 $printBtn = '
                 <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
                     href="' . base_url('purchase/trans/show_po') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'Preview PO : ' . $docno . '\')">
-                    <i class="fa fa-print"></i> Preview PO 
+                    <i class="fa fa-print"></i> Print/Preview PO 
                 </a>';
             }
 
@@ -3794,6 +3798,7 @@ class Purchase extends BaseController
         $totaldiscount   = $this->request->getPost('totaldiscount');
         $multidisctype   = $this->request->getPost('multidisctype');
         $idhistory_price = $this->request->getPost('idhistory_price');
+        $capexno = trim(strtoupper($this->request->getPost('capexno')));
 
         // Tambahkan mode untuk membedakan add/edit dengan lebih jelas
         // $mode = $this->request->getPost('mode'); // 'add' atau 'edit'
@@ -3846,10 +3851,7 @@ class Purchase extends BaseController
                 'currcode'    => strtoupper($this->request->getPost('currcode')),
                 'kurs'    => strtoupper($this->request->getPost('kurs')),
                 'keterangan'    => strtoupper($this->request->getPost('keterangan')),
-                'multidisc'    => $this->request->getPost('multidisc'),
-                'totaldiscount'    => $this->request->getPost('totaldiscount'),
-                'multidisctype'    => $this->request->getPost('multidisctype'),
-                'idhistory_price'    => $this->request->getPost('idhistory_price'),
+
                 'status'    => 'E',
                 'inputby'   => $nama,
                 'inputdate' => date('Y-m-d H:i:s')
@@ -3920,11 +3922,11 @@ class Purchase extends BaseController
                 'kurs'          => strtoupper($this->request->getPost('kurs')),
                 'idtax'         => strtoupper($this->request->getPost('idtax')),
                 'currcode'      => strtoupper($this->request->getPost('currcode')),
-                'multidisc'    => $this->request->getPost('multidisc'),
                 'totaldiscount'    => $this->request->getPost('totaldiscount'),
                 'multidisctype'    => $this->request->getPost('multidisctype'),
                 'idhistory_price'    => $this->request->getPost('idhistory_price'),
                 'descriptionpo' => $descriptionpo,
+                'capexno' => $capexno,
                 'updateby'     => $nama,
                 'updatedate'   => date('Y-m-d H:i:s')
             ]);
@@ -4058,7 +4060,6 @@ class Purchase extends BaseController
                         'kurs'          => strtoupper($this->request->getPost('kurs')),
                         'idtax'         => strtoupper($this->request->getPost('idtax')),
                         'currcode'      => strtoupper($this->request->getPost('currcode')),
-                        'multidisc'     => $this->request->getPost('multidisc'),
                         'totaldiscount' => $this->request->getPost('totaldiscount'),
                         'multidisctype' => $this->request->getPost('multidisctype'),
                         'idhistory_price' => $this->request->getPost('idhistory_price'),
@@ -4205,18 +4206,52 @@ class Purchase extends BaseController
 
 
 
+
     public function get_po_detail()
     {
         $id = $this->request->getGet('id');
 
         $row = $this->db->table('sc_tmp.po_dtl')
-            ->where('idurut', $id)
+            ->select("
+                idurut,
+                TRIM(docno) AS docno,
+                TRIM(docnopp) AS docnopp,
+                TRIM(idbarang) AS idbarang,
+                TRIM(nmbarang) AS nmbarang,
+                TRIM(unit) AS unit,
+                qty,
+                qtybonus,
+                harga,
+                multidisc,
+                nilai,
+                descriptionpo,
+                descriptionpp,
+                TRIM(status) AS status,
+                inputby,
+                inputdate,
+                updateby,
+                updatedate,
+                TRIM(docnotmp) AS docnotmp,
+                uniqueid,
+                TRIM(idtax) AS idtax,
+                TRIM(currcode) AS currcode,
+                kurs,
+                nilaikonversi,
+                nilaipajak,
+                qtylpb,
+                qtyvoid,
+                TRIM(capexno) AS capexno,
+                TRIM(idhistory_price) AS idhistory_price,
+                TRIM(multidisctype) AS multidisctype,
+                totaldiscount
+            ", false)
+            ->where('uniqueid', $id)
             ->get()
             ->getRowArray();
 
         if (!$row) {
             return $this->response->setJSON([
-                'status' => false,
+                'status'  => false,
                 'message' => 'Data tidak ditemukan'
             ]);
         }
@@ -4226,6 +4261,7 @@ class Purchase extends BaseController
             'data'   => $row
         ]);
     }
+
 
     public function delete_po_detail()
     {
@@ -4255,7 +4291,7 @@ class Purchase extends BaseController
             $docno = '';
             $firstDetail = $builder
                 ->select('docno')
-                ->whereIn('idurut', $ids)
+                ->whereIn('uniqueid', $ids)
                 ->get()
                 ->getRowArray();
             
@@ -4264,7 +4300,7 @@ class Purchase extends BaseController
             }
 
             $builder
-                ->whereIn('idurut', $ids)
+                ->whereIn('uniqueid', $ids)
                 ->delete();
 
             if ($db->affectedRows() === 0) {
@@ -4354,7 +4390,8 @@ class Purchase extends BaseController
             $no++;
             $row = array();
             // $row[] = $no;
-            $row[] = $lm->idurut;
+            $row[] = $lm->uniqueid;
+            //$row[] = $lm->idurut;
             //item
             $row[] = $lm->docnopp;
             $row[] = $lm->idbarang;
@@ -4364,7 +4401,19 @@ class Purchase extends BaseController
             $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 2, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan">'. number_format($lm->harga, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 2, '.', ',') . '% </div>';
+            $multidisctype = trim($lm->multidisctype ?? '');
+            $multidisc = (float) ($lm->multidisc ?? 0);
+
+            $row[] = '<div class="ratakanan">' .
+                number_format($multidisc, 2, '.', ',') .
+                (
+                $multidisc > 0 &&
+                in_array($multidisctype, ['PERCENT', '%'])
+                    ? ' %'
+                    : ''
+                ) .
+                '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->totaldiscount, 2, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 2, '.', ',') . '</div>';
             $row[] = $lm->descriptionpo;
             $row[] = $lm->descriptionpp;
@@ -4428,6 +4477,22 @@ class Purchase extends BaseController
         $status = trim($header->getRowArray()['status']);
         $cek = $this->m_purchase->q_po_dtl_temp($paramdtl);
         $cek2 = $this->m_purchase->q_po_dtl_temp($paramdtl2);
+
+        // =====================================================
+        // CEK QTY DAN HARGA DETAIL PO
+        // =====================================================
+
+        $cekQtyHargaKosong = $this->db
+            ->table('sc_tmp.po_dtl')
+            ->where('inputby', $nama)
+            ->groupStart()
+            ->where('qty IS NULL', null, false)
+            ->orWhere('qty <=', 0)
+            ->orWhere('harga IS NULL', null, false)
+            ->orWhere('harga <=', 0)
+            ->groupEnd()
+            ->countAllResults();
+
 
 
         $builder = $this->db->table('sc_tmp.po');
@@ -4514,27 +4579,60 @@ class Purchase extends BaseController
                 'status' => 'F'
             );
             $builder->where('inputby',$nama);
-            if ($builder->update($info)) {
-                $paramerror=" and userid='$nama' and modul='I.P.A.3'";
-                $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
-                $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
 
-                // $docno = trim(bin2hex(trim($dtlerror['nomorakhir1'])));
 
-                return redirect()->to(base_url('/purchase/trans/po'));
-            } else {
-                $infotrxerror = array(
-                    'userid' => $nama,
-                    'errorcode' => 3,
-                    'nomorakhir1' => $cek->getNumRows(),
-                    'nomorakhir2' => $cek2->getNumRows(),
-                    'modul' => 'I.P.A.3',
+            // =====================================================
+// VALIDASI QTY DAN HARGA
+// =====================================================
+
+            if ($cekQtyHargaKosong > 0) {
+
+                $this->session->setFlashdata(
+                    'error',
+                    'Tidak dapat Final Entry. Masih terdapat ' .
+                    $cekQtyHargaKosong .
+                    ' item dengan Quantity atau Harga kosong / 0.'
                 );
-                $builder_trxerror->insert($infotrxerror);
-                return redirect()->to(base_url('/purchase/trans/addPO'));
+
+                return redirect()->to(
+                    base_url('/purchase/trans/addPO')
+                );
+
+            } else {
+
+                if ($builder->update($info)) {
+
+                    $paramerror = " and userid='$nama' and modul='I.P.A.3'";
+
+                    $dtlerror = $this->m_trxerror
+                        ->q_trxerror($paramerror)
+                        ->getRowArray();
+
+                    $count_err = $this->m_trxerror
+                        ->q_trxerror($paramerror)
+                        ->getNumRows();
+
+                    return redirect()->to(
+                        base_url('/purchase/trans/po')
+                    );
+
+                } else {
+
+                    $infotrxerror = array(
+                        'userid'       => $nama,
+                        'errorcode'    => 3,
+                        'nomorakhir1'  => $cek->getNumRows(),
+                        'nomorakhir2'  => $cek2->getNumRows(),
+                        'modul'        => 'I.P.A.3',
+                    );
+
+                    $builder_trxerror->insert($infotrxerror);
+
+                    return redirect()->to(
+                        base_url('/purchase/trans/addPO')
+                    );
+                }
             }
-
-
 
         }
 
@@ -8630,7 +8728,7 @@ class Purchase extends BaseController
         // ===============================
         if (!empty($idurut)) {
 
-            $uniqueid = $this->request->getPost('uniqueid');
+            $uniqueid = trim($this->request->getPost('uniqueid'));
 
             $qty = (float)($this->request->getPost('qty') ?? 0);
             $harga = (float)($this->request->getPost('harga') ?? 0);
@@ -8643,9 +8741,9 @@ class Purchase extends BaseController
             $biaya2 = (float)($this->request->getPost('biaya2') ?? 0);
 
             $descriptionpo = strtoupper($this->request->getPost('descriptionpo') ?? '');
-            $idprincipal = strtoupper($this->request->getPost('idprincipal') ?? '');
+            $idprincipal = strtoupper(trim($this->request->getPost('idprincipal') ?? ''));
             $idgudang = strtoupper($this->request->getPost('idgudang') ?? '');
-            $idspec = strtoupper($this->request->getPost('idspec') ?? 'BATCH01');
+            $idspec = strtoupper($this->request->getPost('idspec') ?? '');
 
             $h = $db->table('sc_tmp.lpb')
                 ->select('kurs,idtax')
@@ -8688,7 +8786,7 @@ class Purchase extends BaseController
                     'volitem' => $volitem,
                     'biaya' => $biaya,
                     'biaya2' => $biaya2,
-                    'idprincipal' => $idprincipal,
+                    'idprincipal' => strtoupper(trim($this->request->getPost('idprincipal') ?? '')),
                     'idgudang' => $idgudang,
                     'idspec' => $idspec,
                     'descriptionpo' => $descriptionpo,
@@ -8767,6 +8865,8 @@ class Purchase extends BaseController
                     'idtax' => $row->idtax,
                     'descriptionpp' => $row->descriptionpp,
                     'descriptionpo' => $row->descriptionpo,
+                    'idprincipal' => strtoupper(trim($this->request->getPost('idprincipal') ?? '')),
+                    'idspec' => '',
                     'inputby' => $nama,
                     'inputdate' => date('Y-m-d H:i:s')
                 ]);
