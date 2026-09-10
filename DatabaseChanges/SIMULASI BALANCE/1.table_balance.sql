@@ -159,6 +159,267 @@ ON sc_trx.stkblc
 
 
 
+-- =====================================================
+-- TAMBAH DATA PAJAK KE HISTORI STOK
+-- =====================================================
+-- =====================================================
+-- TAX SNAPSHOT
+-- =====================================================
+
+ALTER TABLE sc_trx.stkblc
+ADD COLUMN IF NOT EXISTS idtax VARCHAR(50);
+
+ALTER TABLE sc_trx.stkblc
+ADD COLUMN IF NOT EXISTS isinclusive VARCHAR(10);
+
+ALTER TABLE sc_trx.stkblc
+ADD COLUMN IF NOT EXISTS tax_percent NUMERIC(18,6) DEFAULT 0;
+
+
+-- =====================================================
+-- TAX VALUE CURRENCY ASLI
+-- =====================================================
+
+ALTER TABLE sc_trx.stkblc
+ADD COLUMN IF NOT EXISTS nilai_dpp_curr NUMERIC(18,2) DEFAULT 0;
+
+ALTER TABLE sc_trx.stkblc
+ADD COLUMN IF NOT EXISTS nilai_ppn_curr NUMERIC(18,2) DEFAULT 0;
+
+ALTER TABLE sc_trx.stkblc
+ADD COLUMN IF NOT EXISTS nilai_bruto_curr NUMERIC(18,2) DEFAULT 0;
+
+
+-- =====================================================
+-- TAX VALUE IDR / BASE CURRENCY
+-- =====================================================
+
+ALTER TABLE sc_trx.stkblc
+ADD COLUMN IF NOT EXISTS nilai_dpp NUMERIC(18,2) DEFAULT 0;
+
+ALTER TABLE sc_trx.stkblc
+ADD COLUMN IF NOT EXISTS nilai_ppn NUMERIC(18,2) DEFAULT 0;
+
+ALTER TABLE sc_trx.stkblc
+ADD COLUMN IF NOT EXISTS nilai_bruto NUMERIC(18,2) DEFAULT 0;
+
+
+-- =====================================================
+-- COA TAX SNAPSHOT
+-- =====================================================
+
+ALTER TABLE sc_trx.stkblc
+ADD COLUMN IF NOT EXISTS coa_tax_masukan VARCHAR(50);
+
+ALTER TABLE sc_trx.stkblc
+ADD COLUMN IF NOT EXISTS coa_tax_keluaran VARCHAR(50);
+
+
+
+
+
+
+-- =========================================
+-- STOCK GUDANG
+-- =========================================
+DROP TABLE IF EXISTS sc_mst.stkgdw CASCADE;
+
+CREATE TABLE sc_mst.stkgdw (
+    idlocation VARCHAR(12) NOT NULL,
+    idarea VARCHAR(30) NOT NULL,
+    batch VARCHAR(100) NOT NULL,
+    idbarang VARCHAR(50) NOT NULL,
+
+    onhand NUMERIC(18,2),
+    allocated NUMERIC(18,2),
+    tmpalloca NUMERIC(18,2),
+
+    docno VARCHAR(50),
+    docref VARCHAR(50),
+
+    prc_onhand NUMERIC(18,2),
+    prc_allocated NUMERIC(18,2),
+    prc_tmpalloca NUMERIC(18,2),
+
+    ctype VARCHAR(50),
+    unit VARCHAR(10),
+    subunit VARCHAR(10),
+
+    lasttrxdate TIMESTAMP,
+    id BIGSERIAL,
+
+    defaultcurrency CHAR(3) DEFAULT 'IDR',
+
+    CONSTRAINT pk_stkgdw 
+    PRIMARY KEY (idlocation, idarea, batch, idbarang)
+);
+
+
+CREATE OR REPLACE FUNCTION sc_trx.fn_update_stkgdw()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_idbarang   VARCHAR;
+    v_idlocation VARCHAR;
+    v_idarea     VARCHAR;
+    v_batch      VARCHAR;
+
+    v_onhand     NUMERIC := 0;
+    v_lastdate   TIMESTAMP;
+BEGIN
+
+    -- =============================================
+    -- AMBIL KEY BERDASARKAN OPERATION
+    -- =============================================
+    IF TG_OP = 'DELETE' THEN
+
+        v_idbarang   := OLD.idbarang;
+        v_idlocation := OLD.idlocation;
+        v_idarea     := OLD.idarea;
+        v_batch      := COALESCE(OLD.batch, '');
+
+    ELSE
+
+        v_idbarang   := NEW.idbarang;
+        v_idlocation := NEW.idlocation;
+        v_idarea     := NEW.idarea;
+        v_batch      := COALESCE(NEW.batch, '');
+
+    END IF;
+
+
+    -- =============================================
+    -- SKIP NON STOCK
+    -- =============================================
+    IF TG_OP = 'DELETE' THEN
+
+        IF COALESCE(OLD.grouptype, 'STOCK') = 'NON STOCK' THEN
+            RETURN OLD;
+        END IF;
+
+    ELSE
+
+        IF COALESCE(NEW.grouptype, 'STOCK') = 'NON STOCK' THEN
+            RETURN NEW;
+        END IF;
+
+    END IF;
+
+
+    -- =============================================
+    -- HITUNG ULANG SALDO DARI STKBLC
+    -- =============================================
+    SELECT
+        COALESCE(SUM(
+            COALESCE(qty_in, 0)
+            -
+            COALESCE(qty_out, 0)
+        ), 0),
+
+        MAX(trxdate)
+
+    INTO
+        v_onhand,
+        v_lastdate
+
+    FROM sc_trx.stkblc
+
+    WHERE idbarang = v_idbarang
+      AND idlocation = v_idlocation
+      AND idarea = v_idarea
+      AND COALESCE(batch, '') = v_batch
+      AND COALESCE(grouptype, 'STOCK') = 'STOCK';
+
+
+    -- =============================================
+    -- JIKA MASIH ADA STOCK → UPSERT STKGDW
+    -- =============================================
+    IF v_onhand <> 0 THEN
+
+        INSERT INTO sc_mst.stkgdw
+        (
+            idlocation,
+            idarea,
+            batch,
+            idbarang,
+
+            onhand,
+            allocated,
+            tmpalloca,
+
+            lasttrxdate
+        )
+        VALUES
+        (
+            v_idlocation,
+            v_idarea,
+            v_batch,
+            v_idbarang,
+
+            v_onhand,
+            0,
+            0,
+
+            v_lastdate
+        )
+
+        ON CONFLICT
+        (
+            idlocation,
+            idarea,
+            batch,
+            idbarang
+        )
+
+        DO UPDATE SET
+
+            onhand = EXCLUDED.onhand,
+
+            lasttrxdate = EXCLUDED.lasttrxdate;
+
+    ELSE
+
+        -- =============================================
+        -- JIKA SALDO SUDAH 0 → HAPUS DATA GUDANG
+        -- =============================================
+        DELETE FROM sc_mst.stkgdw
+        WHERE idlocation = v_idlocation
+          AND idarea = v_idarea
+          AND batch = v_batch
+          AND idbarang = v_idbarang;
+
+    END IF;
+
+
+    RETURN COALESCE(NEW, OLD);
+
+END;
+$$;
+
+
+
+CREATE OR REPLACE TRIGGER trg_update_stkgdw
+
+AFTER INSERT OR UPDATE OR DELETE
+
+ON sc_trx.stkblc
+
+FOR EACH ROW
+
+EXECUTE FUNCTION sc_trx.fn_update_stkgdw();
+
+
+
+
+
+
+
+
+
+
+
+
 
 -- =========================================
 -- AVG COST TABLE
@@ -243,83 +504,13 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- TRIGGER
-DROP TRIGGER IF EXISTS trg_avgcost_stkblc ON sc_trx.stkblc;
+--DROP TRIGGER IF EXISTS trg_avgcost_stkblc ON sc_trx.stkblc;
 
-CREATE TRIGGER trg_avgcost_stkblc
+CREATE OR REPLACE TRIGGER trg_avgcost_stkblc
 AFTER INSERT ON sc_trx.stkblc
 FOR EACH ROW
 EXECUTE FUNCTION sc_trx.fn_update_avgcost();
 
--- =========================================
--- STOCK GUDANG
--- =========================================
-DROP TABLE IF EXISTS sc_mst.stkgdw CASCADE;
-
-CREATE TABLE sc_mst.stkgdw (
-    idlocation VARCHAR(12) NOT NULL,
-    idarea VARCHAR(30) NOT NULL,
-    batch VARCHAR(100) NOT NULL,
-    idbarang VARCHAR(50) NOT NULL,
-
-    onhand NUMERIC(18,2),
-    allocated NUMERIC(18,2),
-    tmpalloca NUMERIC(18,2),
-
-    docno VARCHAR(50),
-    docref VARCHAR(50),
-
-    prc_onhand NUMERIC(18,2),
-    prc_allocated NUMERIC(18,2),
-    prc_tmpalloca NUMERIC(18,2),
-
-    ctype VARCHAR(50),
-    unit VARCHAR(10),
-    subunit VARCHAR(10),
-
-    lasttrxdate TIMESTAMP,
-    id BIGSERIAL,
-
-    defaultcurrency CHAR(3) DEFAULT 'IDR',
-
-    CONSTRAINT pk_stkgdw 
-    PRIMARY KEY (idlocation, idarea, batch, idbarang)
-);
-
--- =========================================
--- FUNCTION CLEAN STK (FIXED)
--- =========================================
-CREATE OR REPLACE FUNCTION sc_mst.tr_mst_stkgdw()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $$
-BEGIN
-
-    IF TG_OP = 'DELETE' THEN
-
-        DELETE FROM sc_trx.stkblc 
-        WHERE idlocation = OLD.idlocation 
-          AND batch = OLD.batch 
-          AND idbarang = OLD.idbarang;
-
-        DELETE FROM sc_trx.stkblc_avgcost
-        WHERE idlocation = OLD.idlocation 
-          AND batch = OLD.batch 
-          AND idbarang = OLD.idbarang;
-
-    END IF;
-
-    RETURN COALESCE(NEW, OLD);
-END;
-$$;
-
--- TRIGGER
-DROP TRIGGER IF EXISTS tr_mst_stkgdw ON sc_mst.stkgdw;
-
-CREATE TRIGGER tr_mst_stkgdw
-AFTER INSERT OR UPDATE OR DELETE 
-ON sc_mst.stkgdw
-FOR EACH ROW
-EXECUTE FUNCTION sc_mst.tr_mst_stkgdw();
 
 
 
@@ -439,3 +630,94 @@ BEGIN
 
 END;
 $$;
+
+
+CREATE OR REPLACE FUNCTION sc_trx.tr_rebuild_avgcost()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    -- =====================================================
+    -- INSERT
+    -- =====================================================
+    IF TG_OP = 'INSERT' THEN
+
+        PERFORM sc_trx.sp_rebuild_avgcost(
+            NEW.idbarang,
+            NEW.idlocation,
+            NEW.batch
+        );
+
+        RETURN NEW;
+
+    END IF;
+
+
+    -- =====================================================
+    -- DELETE
+    -- =====================================================
+    IF TG_OP = 'DELETE' THEN
+
+        PERFORM sc_trx.sp_rebuild_avgcost(
+            OLD.idbarang,
+            OLD.idlocation,
+            OLD.batch
+        );
+
+        RETURN OLD;
+
+    END IF;
+
+
+    -- =====================================================
+    -- UPDATE
+    -- =====================================================
+    IF TG_OP = 'UPDATE' THEN
+
+        -- Rebuild data lama jika key berubah
+        IF OLD.idbarang IS DISTINCT FROM NEW.idbarang
+           OR OLD.idlocation IS DISTINCT FROM NEW.idlocation
+           OR OLD.batch IS DISTINCT FROM NEW.batch
+        THEN
+
+            PERFORM sc_trx.sp_rebuild_avgcost(
+                OLD.idbarang,
+                OLD.idlocation,
+                OLD.batch
+            );
+
+        END IF;
+
+
+        -- Rebuild data baru
+        PERFORM sc_trx.sp_rebuild_avgcost(
+            NEW.idbarang,
+            NEW.idlocation,
+            NEW.batch
+        );
+
+        RETURN NEW;
+
+    END IF;
+
+
+    RETURN NULL;
+
+END;
+$$;
+
+
+DROP TRIGGER IF EXISTS trg_rebuild_avgcost
+ON sc_trx.stkblc;
+
+
+CREATE TRIGGER trg_rebuild_avgcost
+
+AFTER INSERT OR UPDATE OR DELETE
+
+ON sc_trx.stkblc
+
+FOR EACH ROW
+
+EXECUTE FUNCTION sc_trx.tr_rebuild_avgcost();

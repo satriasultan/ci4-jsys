@@ -598,6 +598,9 @@ $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], f
     $routes->add("get_lpb_detail(:any)", "Purchase::get_lpb_detail$1");
     $routes->add("delete_lpb_detail", "Purchase::delete_lpb_detail");
 
+    $routes->add("delete_document_lpb", "Purchase::delete_document_lpb");
+    $routes->post(
+        'laporan_jurnal_transaksi_lpb', 'Purchase::laporan_jurnal_transaksi_lpb');
 
 
 
@@ -958,6 +961,12 @@ $routes->group('/master/data', ["namespace" => "App\Controllers\Master"], functi
     $routes->add("final_data", "Item::final_data");
     $routes->add("unit", "Item::unit");
 
+    /*barangunit*/
+
+    $routes->post("saveBarangUnit", "Item::saveBarangUnit");
+    $routes->get("barangUnitList", "Item::barangUnitList");
+    $routes->post("deleteBarangUnit", "Item::deleteBarangUnit");
+
     $routes->add("golonganbarang", "GolonganBarang::golonganbarang");
     $routes->add("list_golonganbarang", "GolonganBarang::list_golonganbarang");
     $routes->post("saveGolonganBarang", "GolonganBarang::saveGolonganBarang");
@@ -1107,6 +1116,12 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
     $routes->add('globalmodule/updatePrintStatus', 'Globalmodule::updatePrintStatus');
     $routes->add('globalmodule/list_avg_stock', 'Globalmodule::list_avg_stock');
 
+
+    /*unit conversion per item*/
+    $routes->add('globalmodule/list_unit_item', 'Globalmodule::list_unit_item');
+    /* load exchange rate
+    */
+    $routes->add('globalmodule/get_exchange_rate(:any)', 'Globalmodule::get_exchange_rate$1');
 
     //validator & request keluar
     $routes->add('validatorabsensi', 'ValidatorAbsensi::index');

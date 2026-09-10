@@ -1,22 +1,255 @@
 /* SIMULASI INPUT LEGER
-INSERT stkblc
-   ↓
-avg cost auto update (trigger)
-   ↓
-v_stk_to_gl hitung nilai
-   ↓
-sp_post_stk_to_gl
-   ↓
-jurnal terbentuk
-   ↓
-status stk jadi posted
+FLOW PURCHASE → INVENTORY → ACCOUNTING → AP → PAYMENT
 
- */
 
+PURCHASE
+│
+├── Purchase Request (PP)
+│   ├── sc_trx.pp
+│   └── sc_trx.pp_dtl
+│
+├── Purchase Order (PO)
+│   ├── sc_trx.po
+│   └── sc_trx.po_dtl
+│
+└── Goods Receipt / LPB
+    ├── sc_trx.lpb
+    └── sc_trx.lpb_dtl
+
+
+INVENTORY
+│
+├── Stock Transaction
+│   └── sc_trx.stkblc
+│
+├── Stock Card
+│   └── sc_trx.v_kartu_stock
+│
+└── Average Cost
+    └── sc_trx.stkblc_avgcost
+
+
+ACCOUNTING
+│
+├── Journal Transaction
+│   ├── sc_trx.jurnal_hd
+│   └── sc_trx.jurnal_dt
+│
+├── General Ledger
+│
+└── Trial Balance
+
+
+FINANCE
+│
+├── Account Payable
+│   ├── AP Invoice
+│   │   ├── sc_trx.ap_hd
+│   │   └── sc_trx.ap_dtl
+│   │
+│   └── AP Payment
+│       ├── sc_trx.ap_payment_hd
+│       └── sc_trx.ap_payment_dtl
+│
+├── Cash & Bank
+│
+└── Other Expense
+    ├── Expense Voucher
+    └── Payment Voucher
+ 
+/*
+┌─────────────────────────────────────────────────────────────────────┐
+│                        PURCHASE REQUEST (PP)                         │
+│                         Permintaan Pembelian                         │
+├─────────────────────────────────────────────────────────────────────┤
+│ MENU   : Purchase → Purchase Request                                │
+│ HEADER : sc_trx.pp                                                   │
+│ DETAIL : sc_trx.pp_dtl                                               │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
+                               │ Approval
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                         PURCHASE ORDER (PO)                          │
+│                            Pesanan Pembelian                         │
+├─────────────────────────────────────────────────────────────────────┤
+│ MENU   : Purchase → Purchase Order                                  │
+│ HEADER : sc_trx.po                                                   │
+│ DETAIL : sc_trx.po_dtl                                               │
+│                                                                      │
+│ STATUS : P → LPB                                                     │
+│ qtylpb : Bertambah saat barang diterima                              │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
+                               │ Barang Datang
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                     LPB / GOODS RECEIPT (GR)                        │
+│                        Penerimaan Barang                             │
+├─────────────────────────────────────────────────────────────────────┤
+│ MENU   : Purchase → LPB / Goods Receipt                             │
+│ HEADER : sc_trx.lpb                                                  │
+│ DETAIL : sc_trx.lpb_dtl                                              │
+│                                                                      │
+│ DATA PENTING:                                                        │
+│ • Supplier                                                           │
+│ • PO Reference                                                       │
+│ • Currency                                                           │
+│ • Kurs                                                               │
+│ • Harga                                                              │
+│ • Tax / PPN                                                          │
+│ • Tax Inclusive / Exclusive                                          │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
+                               │ FINALIZE LPB
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                         INVENTORY POSTING                            │
+│                           STOCK MOVEMENT                             │
+├─────────────────────────────────────────────────────────────────────┤
+│ TABLE : sc_trx.stkblc                                                │
+│                                                                      │
+│ MENYIMPAN:                                                           │
+│ • Stock IN / OUT                                                     │
+│ • Qty                                                                │
+│ • Harga                                                              │
+│ • Currency                                                           │
+│ • Exchange Rate                                                      │
+│ • Tax ID                                                             │
+│ • Tax Percent                                                        │
+│ • Tax Inclusive                                                      │
+│ • DPP                                                                │
+│ • PPN                                                                │
+│ • Gross Value                                                        │
+│ • COA Tax                                                            │
+│                                                                      │
+│ DOCTYPE : GR                                                         │
+│ HIST    : LPB                                                        │
+│ CTYPE   : IN                                                         │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
+                               │ Update Cost
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                       INVENTORY AVERAGE COST                         │
+├─────────────────────────────────────────────────────────────────────┤
+│ TABLE : sc_trx.stkblc_avgcost                                        │
+│                                                                      │
+│ • idbarang                                                           │
+│ • idlocation                                                         │
+│ • batch                                                              │
+│ • qty                                                                │
+│ • total_value                                                        │
+│ • avg_cost                                                           │
+│                                                                      │
+│ FUNCTION:                                                            │
+│ sc_trx.sp_rebuild_avgcost()                                          │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
+                               │ POST GL
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                         GENERAL LEDGER POSTING                       │
+├─────────────────────────────────────────────────────────────────────┤
+│ VIEW     : sc_trx.v_stk_to_gl                                        │
+│ FUNCTION : sc_trx.sp_post_gl(p_user)                                 │
+│                                                                      │
+│ Mengambil data dari:                                                  │
+│ • sc_trx.stkblc                                                      │
+│ • sc_trx.stkblc_avgcost                                              │
+│ • sc_mst.mbarang                                                     │
+│ • sc_mst.currency                                                    │
+│ • Tax snapshot pada stkblc                                           │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
+                               ▼
+╔═════════════════════════════════════════════════════════════════════╗
+║                         JOURNAL HEADER                              ║
+╠═════════════════════════════════════════════════════════════════════╣
+║ TABLE : sc_trx.jurnal_hd                                            ║
+║                                                                     ║
+║ • id                                                                ║
+║ • docno                                                             ║
+║ • doctype                                                           ║
+║ • trxdate                                                           ║
+║ • total_debet                                                       ║
+║ • total_kredit                                                      ║
+║ • status                                                            ║
+╚═══════════════════════════════┬═════════════════════════════════════╝
+                                │
+                                ▼
+╔═════════════════════════════════════════════════════════════════════╗
+║                         JOURNAL DETAIL                              ║
+╠═════════════════════════════════════════════════════════════════════╣
+║ TABLE : sc_trx.jurnal_dt                                            ║
+║                                                                     ║
+║ • jurnal_id                                                         ║
+║ • idcoa                                                             ║
+║ • debet                                                             ║
+║ • kredit                                                            ║
+║ • ref_docno                                                         ║
+║ • ref_doctype                                                       ║
+╚═══════════════════════════════┬═════════════════════════════════════╝
+                                │
+                                ▼
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                    JURNAL DAGANG / ACCOUNT PAYABLE                  │
+│                              (AP)                                   │
+├─────────────────────────────────────────────────────────────────────┤
+│ MENU : Finance → Account Payable → Invoice / Hutang Dagang          │
+│                                                                      │
+│ HEADER : sc_trx.ap_hd        ← rekomendasi                          │
+│ DETAIL : sc_trx.ap_dtl       ← rekomendasi                          │
+│                                                                      │
+│ REFERENSI:                                                           │
+│ LPB / GR                                                             │
+│ PO                                                                   │
+│ Supplier                                                             │
+│                                                                      │
+│ STATUS:                                                              │
+│ OPEN → PARTIAL → PAID                                                │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
+                               │ Payment
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                        PAYMENT HUTANG DAGANG                         │
+├─────────────────────────────────────────────────────────────────────┤
+│ MENU : Finance → AP Payment                                         │
+│                                                                      │
+│ HEADER : sc_trx.ap_payment_hd   ← rekomendasi                       │
+│ DETAIL : sc_trx.ap_payment_dtl  ← rekomendasi                       │
+│                                                                      │
+│ REFERENSI:                                                           │
+│ • Supplier                                                           │
+│ • AP Invoice                                                         │
+│ • LPB                                                                │
+│ • Payment Number                                                     │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                          CASH / BANK                                │
+├─────────────────────────────────────────────────────────────────────┤
+│ MENU : Finance → Cash & Bank                                        │
+│                                                                      │
+│ TABLE HEADER : sc_trx.cashbank_hd ← rekomendasi                     │
+│ TABLE DETAIL : sc_trx.cashbank_dt ← rekomendasi                     │
+│                                                                      │
+│ JURNAL PEMBAYARAN:                                                   │
+│                                                                      │
+│ DEBET  Hutang Dagang                                                 │
+│ KREDIT Kas / Bank                                                    │
+└─────────────────────────────────────────────────────────────────────┘
+*/
 
 
 /* MANUAL INSERT */
 
+/* MANUAL INSERT */
+select * from sc_mst.currency
 select * from sc_trx.stkblc;
 select * from sc_trx.stkblc_avgcost; --persedian dan stock
 select * from sc_trx.stkblc_snapshot; --jurnal posting saldo akhir per bulan
@@ -24,240 +257,15 @@ select * from sc_mst.stkgdw; --stock perarea
 
 /*posting perkiraan jurnal */
 select * from sc_trx.jurnal_hd;
-select * from sc_trx.jurnal_dt;
+select * from sc_trx.jurnal_dt a;
+select * from  sc_trx.v_stk_to_gl
+--DELETE FROM sc_trx.stkblc_avgcost;
+COMMIT;
 
-
---delete from sc_trx.stkblc where docno='LPB/2604/PA0002' and doctype='GR';
-
-INSERT INTO sc_trx.stkblc (idlocation, idarea, batch, idbarang, trxdate, doctype, docno, docref, qty_in, qty_out, qty_sld, hist, ctype, pricelst_in, pricelst_out, pricelst_sld, currcode, currvalue, is_posted, posted_at, picby, unit, subunit, description, idsort, created_at, created_by, idgroup, grouptype, tax, disc, biaya) VALUES ('16401', '16401.0000', '', '010403A0000157', '2026-04-17 12:42:46.232572', 'GR', 'LPB/2604/PA0002', '05M/2604/PA0003', 3.00, 0.00, 0.00, 'LPB', 'IN', 3000000.00, 0.00, 0.00, 'IDR', 1.0000, true, '2026-04-17 12:42:46.232572', null, null, null, null, 44, null, null, 'BRG   ', 'STOCK     ', 0.00, 0.00, 0.00);
-INSERT INTO sc_trx.stkblc (idlocation, idarea, batch, idbarang, trxdate, doctype, docno, docref, qty_in, qty_out, qty_sld, hist, ctype, pricelst_in, pricelst_out, pricelst_sld, currcode, currvalue, is_posted, posted_at, picby, unit, subunit, description, idsort, created_at, created_by, idgroup, grouptype, tax, disc, biaya) VALUES ('16401', '16401.0000', '', '010104A0000027', '2026-04-17 12:42:46.232572', 'GR', 'LPB/2604/PA0002', '05M/2604/PA0003', 5.00, 0.00, 0.00, 'LPB', 'IN', 150000.00, 0.00, 0.00, 'IDR', 1.0000, true, '2026-04-17 12:42:46.232572', null, null, null, null, 45, null, null, 'BRG   ', 'STOCK     ', 0.00, 0.00, 0.00);
-INSERT INTO sc_trx.stkblc (idlocation, idarea, batch, idbarang, trxdate, doctype, docno, docref, qty_in, qty_out, qty_sld, hist, ctype, pricelst_in, pricelst_out, pricelst_sld, currcode, currvalue, is_posted, posted_at, picby, unit, subunit, description, idsort, created_at, created_by, idgroup, grouptype, tax, disc, biaya) VALUES ('16401', '16401.0000', '', '01050A00000104', '2026-04-17 12:42:46.232572', 'GR', 'LPB/2604/PA0002', '05M/2604/PA0003', 5.00, 0.00, 0.00, 'LPB', 'IN', 700000.00, 0.00, 0.00, 'IDR', 1.0000, true, '2026-04-17 12:42:46.232572', null, null, null, null, 46, null, null, 'BRG   ', 'STOCK     ', 0.00, 0.00, 0.00);
-INSERT INTO sc_trx.stkblc (idlocation, idarea, batch, idbarang, trxdate, doctype, docno, docref, qty_in, qty_out, qty_sld, hist, ctype, pricelst_in, pricelst_out, pricelst_sld, currcode, currvalue, is_posted, posted_at, picby, unit, subunit, description, idsort, created_at, created_by, idgroup, grouptype, tax, disc, biaya) VALUES ('16401', '16401.0000', '', '01050A00000155', '2026-04-17 12:42:46.232572', 'GR', 'LPB/2604/PA0002', '05M/2604/PA0003', 5.00, 0.00, 0.00, 'LPB', 'IN', 1500000.00, 0.00, 0.00, 'IDR', 1.0000, true, '2026-04-17 12:42:46.232572', null, null, null, null, 47, null, null, 'BRG   ', 'STOCK     ', 0.00, 0.00, 0.00);
-
-
-
-
-
--- 7. TEST RUN
--- =========================================
--- SELECT sc_trx.sp_post_gl('SYSTEM');
--- SELECT sc_trx.sp_unpost_stk_to_gl('GR001','GR');
--- SELECT sc_trx.sp_rebuild_stk_to_gl('GR001','GR','SYSTEM');
--- SELECT sc_trx.sp_rebuild_periode('2026-01-01','2026-01-31','SYSTEM');
-
-
-
-CREATE OR REPLACE FUNCTION sc_trx.sp_repost_universal(
-    p_docno   VARCHAR,
-    p_doctype VARCHAR,
-    p_user    VARCHAR
-)
-RETURNS VOID
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    v_doctype VARCHAR;
-BEGIN
-
-    -- =========================================
-    -- NORMALISASI
-    -- =========================================
-    v_doctype := TRIM(COALESCE(p_doctype,'GR'));
-    p_docno   := TRIM(p_docno);
-
-    RAISE NOTICE 'REPOST START: % - %', p_docno, v_doctype;
-
-    -- =========================================
-    -- 🔥 1. HARD DELETE (ANTI DUPLICATE)
-    -- =========================================
-    DELETE FROM sc_trx.stkblc
-    WHERE docno = p_docno
-      AND doctype = v_doctype;
-
-    -- =========================================
-    -- 🔥 2. INSERT ULANG PER DOCTYPE
-    -- =========================================
-
-    ----------------------------------------------------------------
-    -- 🟢 GR (LPB)
-    ----------------------------------------------------------------
-    IF v_doctype = 'GR' THEN
-
-        INSERT INTO sc_trx.stkblc (
-            idlocation,idarea,batch,idbarang,
-            trxdate,doctype,docno,docref,
-            qty_in,pricelst_in,
-            currcode,currvalue,
-            hist,ctype,
-            idgroup,grouptype,
-            uniqueid,status,is_posted,
-            created_at,created_by
-        )
-        SELECT DISTINCT
-            d.idgudang,
-            d.idgudang||'.0000',
-            COALESCE(d.idspec,''),
-            d.idbarang,
-
-            h.docdate::date + CURRENT_TIME,
-            v_doctype,
-            p_docno,
-            d.docnopo,
-
-            CASE 
-                WHEN COALESCE(mb.grouptype,'STOCK')='NON STOCK' THEN 0
-                ELSE COALESCE(d.qty,0)+COALESCE(d.qtybonus,0)
-            END,
-
-            COALESCE(d.harga,0),
-
-            h.currcode,
-            COALESCE(h.kurs,1),
-
-            'LPB',
-            CASE 
-                WHEN COALESCE(mb.grouptype,'STOCK')='NON STOCK' THEN 'NON'
-                ELSE 'IN'
-            END,
-
-            mb.idgroup,
-            COALESCE(mb.grouptype,'STOCK'),
-
-            d.uniqueid,
-            'A', FALSE,
-            NOW(), p_user
-
-        FROM sc_tmp.lpb h
-        JOIN sc_tmp.lpb_dtl d ON TRIM(d.docno) = TRIM(h.docno)
-        LEFT JOIN sc_mst.mbarang mb ON mb.idbarang = d.idbarang
-        WHERE TRIM(h.docno) = p_docno;
-
-    ----------------------------------------------------------------
-    -- 🔵 PEMAKAIAN BARANG
-    ----------------------------------------------------------------
-    ELSIF v_doctype = 'PMKBRG' THEN
-
-        INSERT INTO sc_trx.stkblc (
-            idlocation,idarea,batch,idbarang,
-            trxdate,doctype,docno,docref,
-            qty_out,pricelst_out,
-            hist,ctype,
-            currcode,currvalue,
-            idgroup,grouptype,
-            uniqueid,status,is_posted,
-            created_at,created_by
-        )
-        SELECT DISTINCT
-            d.idlocation,
-            h.cabang,
-            COALESCE(d.batch,''),
-            d.idbarang,
-
-            h.docdate::date + CURRENT_TIME,
-            v_doctype,
-            p_docno,
-            p_docno,
-
-            CASE 
-                WHEN COALESCE(mb.grouptype,'STOCK')='NON STOCK' THEN 0
-                ELSE COALESCE(d.qty,0)
-            END,
-
-            COALESCE(d.val,0),
-
-            'PEMAKAIAN',
-            CASE 
-                WHEN COALESCE(mb.grouptype,'STOCK')='NON STOCK' THEN 'NON'
-                ELSE 'OUT'
-            END,
-
-            'IDR',1,
-
-            mb.idgroup,
-            COALESCE(mb.grouptype,'STOCK'),
-
-            d.uniqueid,
-            'A', FALSE,
-            NOW(), p_user
-
-        FROM sc_tmp.pmk_brng_mst h
-        JOIN sc_tmp.pmk_brng_dtl d ON TRIM(d.docno) = TRIM(h.docno)
-        LEFT JOIN sc_mst.mbarang mb ON mb.idbarang = d.idbarang
-        WHERE TRIM(h.docno) = p_docno;
-
-    ----------------------------------------------------------------
-    -- 🔴 SALES
-    ----------------------------------------------------------------
-    ELSIF v_doctype = 'SALES' THEN
-
-        INSERT INTO sc_trx.stkblc (
-            idlocation,idarea,batch,idbarang,
-            trxdate,doctype,docno,docref,
-            qty_out,pricelst_out,
-            hist,ctype,
-            currcode,currvalue,
-            idgroup,grouptype,
-            uniqueid,status,is_posted,
-            created_at,created_by
-        )
-        SELECT DISTINCT
-            d.idlocation,
-            h.cabang,
-            COALESCE(d.batch,''),
-            d.idbarang,
-
-            h.docdate::date + CURRENT_TIME,
-            v_doctype,
-            p_docno,
-            p_docno,
-
-            COALESCE(d.qty,0),
-            COALESCE(d.harga,0),
-
-            'PENJUALAN','OUT',
-
-            h.currcode,
-            COALESCE(h.kurs,1),
-
-            mb.idgroup,
-            COALESCE(mb.grouptype,'STOCK'),
-
-            d.uniqueid,
-            'A', FALSE,
-            NOW(), p_user
-
-        FROM sc_tmp.sales_mst h
-        JOIN sc_tmp.sales_dtl d ON TRIM(d.docno) = TRIM(h.docno)
-        LEFT JOIN sc_mst.mbarang mb ON mb.idbarang = d.idbarang
-        WHERE TRIM(h.docno) = p_docno;
-
-    END IF;
-
-    -- =========================================
-    -- 🔥 3. REBUILD AVG COST
-    -- =========================================
-    PERFORM sc_trx.sp_rebuild_avgcost_item_all(p_docno);
-
-    -- =========================================
-    -- 🔥 4. DELETE GL (BY DOCTYPE)
-    -- =========================================
-    DELETE FROM sc_trx.jurnal_dt
-    WHERE jurnal_id IN (
-        SELECT id FROM sc_trx.jurnal_hd
-        WHERE docno = p_docno
-          AND doctype = v_doctype
-    );
-
-    DELETE FROM sc_trx.jurnal_hd
-    WHERE docno = p_docno
-      AND doctype = v_doctype;
-
-    -- =========================================
-    -- 🔥 5. POST ULANG GL
-    -- =========================================
-    PERFORM sc_trx.sp_post_gl(p_user);
-
-    RAISE NOTICE 'REPOST DONE: % - %', p_docno, v_doctype;
-
-END;
-$$;
+--reverse juga dari table ini
+select * from sc_trx.stkblc_avgcost; 
+select * from sc_trx.jurnal_hd;
+select * from sc_trx.jurnal_dt a;
+select * from sc_mst.tax_dtl
+select * from sc_trx.lpb a le
+select * from sc_trx.lpb_dtl a left outer join sc_mst.where docno='LPB/2609/PA0001'

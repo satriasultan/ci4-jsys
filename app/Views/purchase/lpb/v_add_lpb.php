@@ -509,10 +509,21 @@
                     </a> -->
                     <a href="<?= base_url('purchase/trans/clearEntryLPB') ?>" 
                         onclick="return confirm('Are you sure clear this entry?')" 
-                        class="btn btn-default float-left">
+                        class="btn btn-default float-left btn-lg">
                         <i class="fa fa-arrow-left"></i>
                         Back
                     </a>
+                    <!-- HAPUS PENERIMAAN -->
+                    <!-- HAPUS PENERIMAAN -->
+                    <button type="button"
+                            id="btnDeleteLPB"
+                            class="btn btn-danger float-left btn-lg">
+                        <i class="fa fa-trash"></i>
+                        Hapus Penerimaan
+                    </button>
+
+
+
                     <?php if ($typeform != 'DETAIL' && $dtldata != null): ?>
                         <button type="submit"
                                 onclick="return confirm('Finish Entry?')"

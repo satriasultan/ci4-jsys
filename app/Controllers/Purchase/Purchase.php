@@ -2855,7 +2855,7 @@ class Purchase extends BaseController
             // Build button by access
             // =========================
 
-            if ($canUpdate && $status != "REVISION/EDITING" && $status != "APPROVED") {
+            if ($canUpdate &&  !in_array(trim($status), ['REVISION/EDITING', 'APPROVED','DITARIK LPB'])) {
                 $updateBtn = '
                 <a class="dropdown-item bg-warning" 
                     href="' . base_url('purchase/trans/updatePO') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
@@ -2889,7 +2889,8 @@ class Purchase extends BaseController
             }
 
 
-            if (trim($status) !== 'APPROVED' && trim($status) !== 'REVISION/EDITING') {
+            if (trim($status) &&  !in_array(trim($status), ['REVISION/EDITING', 'APPROVED','DITARIK LPB'])) {
+            //if (trim($status) !== 'APPROVED' && trim($status) !== 'REVISION/EDITING') {
                     $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
                         <i class="fa fa-check-circle"></i> Approve</a>';
             }
@@ -3170,25 +3171,7 @@ class Purchase extends BaseController
             // =================================================
             // PRINT
             // =================================================
-            if ($canPrint) {
 
-                $printBtn = '
-                <a
-                    class="dropdown-item"
-                    style="background-color:#00ff8e;"
-                    href="' .
-                    base_url('purchase/trans/show_po') .
-                    '/?id=' . $docnoHex .
-                    '&docno=' . $docnoHex . '"
-                    onclick="return confirm(\'Print PO : ' .
-                    htmlspecialchars($docno, ENT_QUOTES) .
-                    '\')"
-                >
-                    <i class="fa fa-print"></i>
-                    Print PO
-                </a>
-            ';
-            }
 
 
             // =================================================
@@ -3328,7 +3311,7 @@ class Purchase extends BaseController
 
                 $date->modify("+{$jthtempo} days");
 
-                $jatuhTempo = $date->format('d/m/Y');
+                $jatuhTempo = $date->format('d-m-Y');
 
             } else {
 
@@ -4522,7 +4505,8 @@ class Purchase extends BaseController
             $docdate   = trim($this->request->getPost('docdate'));
             $senddate   = trim($this->request->getPost('senddate'));
             $jthtempo   = trim($this->request->getPost('jthtempo'));
-            $kdsupplier   = trim($this->request->getPost('kdsupplier'));
+            $kdsupplier = trim($this->request->getPost('kdsupplier'));
+            $nmsupplier = trim($this->request->getPost('nmsupplier'));
             $alamatsupplier   = trim($this->request->getPost('alamatsupplier'));
             $alamatkirim   = trim($this->request->getPost('alamatkirim'));
             $keterangan   = trim($this->request->getPost('keterangan'));
@@ -4561,6 +4545,7 @@ class Purchase extends BaseController
                 'senddate'       => $senddateph,
                 'jthtempo'       => $jthtempo,
                 'kdsupplier'     => strtoupper($kdsupplier),
+                'nmsupplier'     => strtoupper($nmsupplier),
                 'alamatsupplier' => strtoupper($alamatsupplier),
                 'alamatkirim'    => strtoupper($alamatkirim),
                 'keterangan'     => strtoupper($keterangan),
@@ -8422,41 +8407,62 @@ class Purchase extends BaseController
 
     function clearEntryLPB()
     {
-        $nama=trim($this->session->get('nama'));
-        $param = " and coalesce(inputby,'')='$nama'";
+        $nama = trim($this->session->get('nama'));
+
+        $param = " AND COALESCE(inputby,'') = '$nama'";
+
         $dtl = $this->m_purchase->q_lpb_master_temp($param);
-        // if(isEmpty($dtl->getRowArray()['status'])){
-        //     return redirect()->to(base_url('purchase/trans/pp'));
-        // }
-        $status = trim($dtl->getRowArray()['status']);
+
+        // =====================================================
+        // JIKA TIDAK ADA DATA / ROW LANGSUNG KEMBALI KE LPB
+        // =====================================================
+        if (!$dtl || $dtl->getNumRows() == 0) {
+            return redirect()->to(base_url('purchase/trans/lpb'));
+        }
+
+        $row = $dtl->getRowArray();
+
+        // JIKA DOCNO ATAU DATA TIDAK ADA
+        if (empty($row) || empty(trim($row['docno'] ?? ''))) {
+            return redirect()->to(base_url('purchase/trans/lpb'));
+        }
+
+        $status = trim($row['status'] ?? '');
+
         $builder = $this->db->table('sc_tmp.lpb');
         $builder_dtl = $this->db->table('sc_tmp.lpb_dtl');
 
-        if ($status==='I') {
-            // $builder= $this->db->table('sc_tmp.standart_usage_mst');
-            $builder->where('inputby',$nama);
-            $builder->delete();
-            // $builderDtl= $this->db->table('sc_tmp.pp');
-            // $builderDtl->where('inputby',$nama);
-            // $builderDtl->delete();
+        if ($status === 'I') {
+
+            $builder
+                ->where('inputby', $nama)
+                ->delete();
+
+            $builder_dtl
+                ->where('inputby', $nama)
+                ->delete();
+
             return redirect()->to(base_url('purchase/trans/lpb'));
-        } else if ($status==='E') {
-            $builder->where('inputby',$nama);
-            if ($builder->update(array('status' => 'C'))) {
-                $result = array('status' => true, 'messages' => 'Sukses Di Proses');
-                echo json_encode($result);
+
+        } elseif ($status === 'E') {
+
+            $builder->where('inputby', $nama);
+
+            if ($builder->update([
+                'status' => 'C'
+            ])) {
+
                 return redirect()->to(base_url('purchase/trans/lpb'));
-            }
-            else {
-                $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                echo json_encode($result);
-            }
-        } else {
-                // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                // echo json_encode($result);
+
+            } else {
+
                 return redirect()->to(base_url('purchase/trans/lpb'));
+
+            }
+
         }
 
+        return redirect()->to(base_url('purchase/trans/lpb'));
     }
 
     function addLPB()
@@ -8702,6 +8708,7 @@ class Purchase extends BaseController
                 'isinclusive'   => $isinclusive,                              // ← Dari PO
                 
                 'kdsupplier'    => strtoupper($this->request->getPost('kdsupplier')),
+                'nmsupplier'    => strtoupper($this->request->getPost('nmsupplier')),
                 'alamatsupplier'    => strtoupper($this->request->getPost('alamatsupplier')),
                 // 'alamatkirim'    => strtoupper($this->request->getPost('alamatkirim')),
                 'idtax'         => strtoupper($idtax),                        // ← Dari PO
@@ -9063,6 +9070,149 @@ class Purchase extends BaseController
             'status' => true,
             'data'   => $row
         ]);
+    }
+
+    public function delete_document_lpb()
+    {
+        try {
+                // =====================================================
+                // USER LOGIN
+                // =====================================================
+                $nama = trim($this->session->get('nama') ?? '');
+
+                // =====================================================
+                // DOCNO
+                // =====================================================
+                $docno = trim($this->request->getPost('docno') ?? '');
+
+
+                // =====================================================
+                // VALIDASI DOCNO
+                // =====================================================
+                if ($docno === '') {
+
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Document Number LPB tidak ditemukan.'
+                    ]);
+
+                }
+
+
+                // =====================================================
+                // VALIDASI USER
+                // =====================================================
+                if ($nama === '') {
+
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'User login tidak ditemukan.'
+                    ]);
+
+                }
+
+
+                // =====================================================
+                // PANGGIL POSTGRESQL FUNCTION
+                // SELECT sc_trx.sp_delete_lpb('DOCNO', 'USERNAME');
+                // =====================================================
+                $query = $this->db->query(
+                    "SELECT sc_trx.sp_delete_lpb(?, ?) AS result",
+                    [
+                        $docno,
+                        $nama
+                    ]
+                );
+
+
+                $result = $query->getRowArray();
+
+
+                // =====================================================
+                // VALIDASI RESULT DATABASE
+                // =====================================================
+                if (!$result || empty($result['result'])) {
+
+                    throw new \Exception(
+                        'Tidak ada response dari proses penghapusan LPB.'
+                    );
+
+                }
+
+
+                // =====================================================
+                // POSTGRESQL JSONB RESULT
+                // =====================================================
+                $response = json_decode(
+                    $result['result'],
+                    true
+                );
+
+
+                if (!$response) {
+
+                    throw new \Exception(
+                        'Response database tidak valid.'
+                    );
+
+                }
+
+
+                // =====================================================
+                // JIKA FUNCTION MENGEMBALIKAN GAGAL
+                // =====================================================
+                if (
+                    !isset($response['success'])
+                    || $response['success'] !== true
+                ) {
+
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => $response['message']
+                            ?? 'Gagal menghapus LPB.'
+                    ]);
+
+                }
+
+
+                // =====================================================
+                // SUCCESS
+                // =====================================================
+                return $this->response->setJSON([
+                    'success'      => true,
+                    'message'      => $response['message']
+                        ?? 'LPB berhasil dihapus.',
+                    'docno'        => $response['docno']
+                        ?? $docno,
+                    'total_detail' => $response['total_detail']
+                        ?? 0
+                ]);
+
+
+            } catch (\Throwable $e) {
+
+                // =====================================================
+                // ERROR / EXCEPTION
+                // =====================================================
+                log_message(
+                    'error',
+                    'DELETE LPB ERROR [' . $docno . '] : ' . $e->getMessage()
+                );
+
+
+                return $this->response
+                    ->setStatusCode(500)
+                    ->setJSON([
+
+                        'success' => false,
+
+                        'message' => 'Gagal menghapus LPB: '
+                            . $e->getMessage()
+
+                    ]);
+
+            }
+
     }
 
     public function delete_lpb_detail()
@@ -11281,6 +11431,101 @@ class Purchase extends BaseController
                 'data' => []
             ]);
         }
+    }
+
+
+
+    public function laporan_jurnal_transaksi_lpb()
+    {
+        try {
+
+            // =================================================
+            // GET DOCNO
+            // =================================================
+
+            $docno = trim(
+                $this->request->getPost('docno')
+            );
+
+
+            // =================================================
+            // VALIDASI
+            // =================================================
+
+            if ($docno === '') {
+
+                return $this->response
+                    ->setJSON([
+
+                        'status'   => false,
+
+                        'messages' => 'Doc No LPB tidak ditemukan',
+
+                        'data'     => []
+
+                    ]);
+
+            }
+
+
+            // =================================================
+            // PARAMETER QUERY
+            // =================================================
+
+            $params = "
+
+            AND TRIM(jh.docno) = " .
+                $this->db->escape($docno);
+
+            // =================================================
+            // GET DATA
+            // =================================================
+
+            $query = $this->m_purchase
+                ->q_laporan_jurnal_transaksi($params);
+
+
+            $data = $query->getResultArray();
+
+
+            // =================================================
+            // RESPONSE
+            // =================================================
+
+            return $this->response
+                ->setJSON([
+
+                    'status'   => true,
+
+                    'messages' => 'Data berhasil diambil',
+
+                    'data'     => $data
+
+                ]);
+
+        }
+        catch (\Throwable $e) {
+
+            log_message(
+                'error',
+                'laporan_jurnal_transaksi_lpb: '
+                . $e->getMessage()
+            );
+
+
+            return $this->response
+                ->setJSON([
+
+                    'status'   => false,
+
+                    'messages' => $e->getMessage(),
+
+                    'data'     => []
+
+                ]);
+
+        }
+
     }
 
 

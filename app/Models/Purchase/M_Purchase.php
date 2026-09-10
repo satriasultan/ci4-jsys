@@ -2967,4 +2967,115 @@ class M_Purchase extends Model
         return $query->getRow();
     }
 
+    function q_laporan_jurnal_transaksi($params = '')
+    {
+        return $this->db->query("
+        WITH data_jurnal AS (
+            
+            SELECT
+                jd.id,
+                jd.jurnal_id,
+
+                TRIM(jd.idcoa) AS idcoa,
+                TRIM(coa.nmcoa) AS nmcoa,
+
+                jd.debet,
+                jd.kredit,
+
+                TRIM(jd.ref_docno) AS ref_docno,
+                TRIM(jd.ref_doctype) AS ref_doctype,
+
+                TRIM(jh.docno) AS docno,
+                TRIM(jh.doctype) AS doctype,
+
+                jh.trxdate,
+
+                TRIM(lpb.kdsupplier) AS kdsupplier,
+                TRIM(lpb.nmsupplier) AS nmsupplier
+
+            FROM sc_trx.jurnal_dt jd
+
+            INNER JOIN sc_trx.jurnal_hd jh
+                ON jh.id = jd.jurnal_id
+
+            LEFT JOIN sc_mst.coa coa
+                ON TRIM(coa.idcoa) = TRIM(jd.idcoa)
+
+            LEFT JOIN sc_trx.lpb lpb
+                ON TRIM(lpb.docno) = COALESCE(
+                    NULLIF(TRIM(jd.ref_docno), ''),
+                    NULLIF(TRIM(jh.docno), '')
+                )
+
+            WHERE 1=1
+            $params
+        )
+
+        /* ============================================
+           DETAIL JURNAL
+        ============================================ */
+
+        SELECT
+            id,
+            jurnal_id,
+            idcoa,
+            nmcoa,
+            debet,
+            kredit,
+            ref_docno,
+            ref_doctype,
+            docno,
+            doctype,
+            trxdate,
+            kdsupplier,
+            nmsupplier,
+
+            0 AS urutan
+
+        FROM data_jurnal
+
+
+        UNION ALL
+
+
+        /* ============================================
+           TOTAL
+        ============================================ */
+
+        SELECT
+            NULL::BIGINT,
+            NULL::BIGINT,
+
+            NULL::VARCHAR,
+            'TOTAL'::VARCHAR,
+
+            COALESCE(SUM(debet), 0),
+            COALESCE(SUM(kredit), 0),
+
+            NULL::VARCHAR,
+            NULL::VARCHAR,
+
+            NULL::VARCHAR,
+            NULL::VARCHAR,
+
+            NULL::DATE,
+
+            NULL::VARCHAR,
+            NULL::VARCHAR,
+
+            1 AS urutan
+
+        FROM data_jurnal
+
+
+        ORDER BY
+            urutan,
+            trxdate DESC NULLS LAST,
+            jurnal_id,
+            id
+    ");
+    }
+
+
+
 }

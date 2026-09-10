@@ -1110,14 +1110,34 @@ function savePODetail() {
     //     reverseButtons: true
     // }).then((result) => {
     //   if (!result.isConfirmed) return;
+    // ==========================================
+    // AMBIL DATA SUPPLIER DARI SELECT2
+    // ==========================================
+    let supplierData = $('#kdsupplier').select2('data');
+
+    let kdsupplier = '';
+    let nmsupplier = '';
+
+    if (supplierData && supplierData.length > 0) {
+        kdsupplier = supplierData[0].kdsupplier || supplierData[0].id || '';
+        nmsupplier = supplierData[0].nmsupplier || supplierData[0].text || '';
+    }
 
     let formData = new FormData(document.getElementById('formPODetail'));
     formData.append('docdate', $('#docdate').val());
     formData.append('cabang', $('#cabang').val());
     formData.append('senddate', $('#senddate').val());
     formData.append('jthtempo', convertToDbNumber($('#jthtempo').val()));
-    formData.append('kdsupplier', $('#kdsupplier').val());
-    formData.append('isinclusive', $('#isinclusive').is(':checked') ? 'YES' : 'NO');
+    // ==========================================
+    // SUPPLIER
+    // ==========================================
+    formData.append('kdsupplier', kdsupplier);
+    formData.append('nmsupplier', nmsupplier);
+
+    formData.append(
+        'isinclusive',
+        $('#isinclusive').is(':checked') ? 'YES' : 'NO'
+    );
     formData.append('alamatsupplier', $('#alamatsupplier').val());
     formData.append('idtax', $('#idtax').val());
     formData.append('currcode', $('#currcode').val());

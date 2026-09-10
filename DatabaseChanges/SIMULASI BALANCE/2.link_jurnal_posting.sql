@@ -41,13 +41,35 @@ CREATE TABLE IF NOT EXISTS sc_trx.jurnal_dt (
 -- =========================================
 -- 2. VIEW (CURRENCY + NILAI)
 -- =========================================
+-- =========================================
+-- DROP VIEW
+-- =========================================
+
 DROP VIEW IF EXISTS sc_trx.v_stk_to_gl;
 
+
+-- =========================================
+-- VIEW STOCK TO GL
+-- CURRENCY + NILAI + TAX
+-- =========================================
+
 CREATE OR REPLACE VIEW sc_trx.v_stk_to_gl AS
+
 SELECT
 
     /* =====================================================
-       DATA STOK
+       DATA STOCK
+
+       Semua kolom asli dari STKBLC tetap dibawa.
+       Termasuk:
+       idtax
+       tax_percent
+       isinclusive
+       nilai_dpp
+       nilai_ppn
+       nilai_bruto
+       coa_tax_masukan
+       coa_tax_keluaran
     ===================================================== */
 
     s.*,
@@ -72,7 +94,9 @@ SELECT
 
 
     /* =====================================================
-       NILAI TRANSAKSI
+       NILAI DASAR TRANSAKSI
+
+       NILAI DALAM CURRENCY TRANSAKSI
     ===================================================== */
 
     CASE
@@ -80,6 +104,7 @@ SELECT
         /* -----------------------------------------------
            NON STOCK
         ----------------------------------------------- */
+
         WHEN TRIM(COALESCE(s.grouptype, '')) = 'NON STOCK'
         THEN
             COALESCE(s.qty_in, 0)
@@ -89,6 +114,7 @@ SELECT
         /* -----------------------------------------------
            STOCK MASUK
         ----------------------------------------------- */
+
         WHEN COALESCE(s.qty_in, 0) > 0
         THEN
             COALESCE(s.qty_in, 0)
@@ -98,6 +124,7 @@ SELECT
         /* -----------------------------------------------
            STOCK KELUAR
         ----------------------------------------------- */
+
         WHEN COALESCE(s.qty_out, 0) > 0
         THEN
             COALESCE(s.qty_out, 0)
@@ -110,40 +137,25 @@ SELECT
 
 
     /* =====================================================
-       NILAI IDR
+       NILAI IDR DASAR
+
+       IN  = QTY × PRICE × KURS
+       OUT = QTY × AVG COST
     ===================================================== */
 
     CASE
 
-        /* -----------------------------------------------
-           NON STOCK
-        ----------------------------------------------- */
-        WHEN TRIM(COALESCE(s.grouptype, '')) = 'NON STOCK'
-        THEN
-            COALESCE(s.qty_in, 0)
-            * COALESCE(s.pricelst_in, 0)
-            * COALESCE(s.currvalue, 1)
-
-
-        /* -----------------------------------------------
-           STOCK MASUK
-        ----------------------------------------------- */
         WHEN COALESCE(s.qty_in, 0) > 0
         THEN
+
             COALESCE(s.qty_in, 0)
             * COALESCE(s.pricelst_in, 0)
             * COALESCE(s.currvalue, 1)
 
 
-        /* -----------------------------------------------
-           STOCK KELUAR
-
-           HPP menggunakan avg cost.
-           Tidak dikalikan kurs karena avg_cost diasumsikan
-           sudah dalam nilai base currency / IDR.
-        ----------------------------------------------- */
         WHEN COALESCE(s.qty_out, 0) > 0
         THEN
+
             COALESCE(s.qty_out, 0)
             * COALESCE(ac.avg_cost, 0)
 
@@ -154,15 +166,272 @@ SELECT
 
 
     /* =====================================================
+       GL NILAI DPP
+
+       Tidak menggunakan nama nilai_dpp karena
+       nilai_dpp sudah ada di s.*
+    ===================================================== */
+
+    CASE
+
+        WHEN COALESCE(s.qty_in, 0) > 0
+        THEN
+
+            COALESCE(
+
+                s.nilai_dpp,
+
+                CASE
+
+                    /* -------------------------------------
+                       TAX INCLUDE
+                    ------------------------------------- */
+
+                    WHEN NULLIF(TRIM(COALESCE(s.isinclusive, '')), '') = 'YES'
+                     AND COALESCE(s.tax_percent, 0) > 0
+
+                    THEN
+
+                        (
+                            COALESCE(s.qty_in, 0)
+                            * COALESCE(s.pricelst_in, 0)
+                            * COALESCE(s.currvalue, 1)
+                        )
+                        /
+                        (
+                            1
+                            + (
+                                COALESCE(s.tax_percent, 0) / 100
+                              )
+                        )
+
+
+                    /* -------------------------------------
+                       TAX EXCLUDE / NO TAX
+                    ------------------------------------- */
+
+                    ELSE
+
+                        COALESCE(s.qty_in, 0)
+                        * COALESCE(s.pricelst_in, 0)
+                        * COALESCE(s.currvalue, 1)
+
+                END
+
+            )
+
+
+        WHEN COALESCE(s.qty_out, 0) > 0
+        THEN
+
+            COALESCE(s.qty_out, 0)
+            * COALESCE(ac.avg_cost, 0)
+
+
+        ELSE 0
+
+    END AS gl_nilai_dpp,
+
+
+    /* =====================================================
+       GL NILAI PPN
+
+       PRIORITAS:
+       1. Snapshot nilai_ppn dari STKBLC
+       2. Jika belum ada, hitung dari TAX %
+    ===================================================== */
+
+    CASE
+
+        WHEN COALESCE(s.qty_in, 0) > 0
+        THEN
+
+            COALESCE(
+
+                NULLIF(s.nilai_ppn, 0),
+
+                CASE
+
+                    /* -------------------------------------
+                       TIDAK ADA TAX
+                    ------------------------------------- */
+
+                    WHEN NULLIF(TRIM(COALESCE(s.idtax, '')), '') IS NULL
+                    THEN 0
+
+
+                    /* -------------------------------------
+                       TAX INCLUDE
+
+                       PPN = NILAI BRUTO - DPP
+                    ------------------------------------- */
+
+                    WHEN UPPER(TRIM(COALESCE(s.isinclusive, 'NO'))) = 'YES'
+                     AND COALESCE(s.tax_percent, 0) > 0
+
+                    THEN
+
+                        (
+                            COALESCE(s.qty_in, 0)
+                            * COALESCE(s.pricelst_in, 0)
+                            * COALESCE(s.currvalue, 1)
+                        )
+
+                        -
+
+                        (
+                            (
+                                COALESCE(s.qty_in, 0)
+                                * COALESCE(s.pricelst_in, 0)
+                                * COALESCE(s.currvalue, 1)
+                            )
+
+                            /
+
+                            (
+                                1
+                                + (
+                                    COALESCE(s.tax_percent, 0) / 100
+                                  )
+                            )
+                        )
+
+
+                    /* -------------------------------------
+                       TAX EXCLUDE
+
+                       PPN = DPP × %
+                    ------------------------------------- */
+
+                    WHEN UPPER(TRIM(COALESCE(s.isinclusive, 'NO'))) = 'NO'
+                     AND COALESCE(s.tax_percent, 0) > 0
+
+                    THEN
+
+                        (
+                            COALESCE(s.qty_in, 0)
+                            * COALESCE(s.pricelst_in, 0)
+                            * COALESCE(s.currvalue, 1)
+                        )
+
+                        *
+                        (
+                            COALESCE(s.tax_percent, 0) / 100
+                        )
+
+
+                    ELSE 0
+
+                END
+
+            )
+
+
+        ELSE 0
+
+    END AS gl_nilai_ppn,
+
+
+    /* =====================================================
+       GL NILAI BRUTO
+
+       INCLUDE:
+           Harga sudah termasuk PPN
+
+       EXCLUDE:
+           DPP + PPN
+    ===================================================== */
+
+    CASE
+
+        WHEN COALESCE(s.qty_in, 0) > 0
+        THEN
+
+            COALESCE(
+
+                s.nilai_bruto,
+
+                CASE
+
+                    /* -------------------------------------
+                       INCLUDE
+                    ------------------------------------- */
+
+                    WHEN UPPER(TRIM(COALESCE(s.isinclusive, 'NO'))) = 'YES'
+
+                    THEN
+
+                        COALESCE(s.qty_in, 0)
+                        * COALESCE(s.pricelst_in, 0)
+                        * COALESCE(s.currvalue, 1)
+
+
+                    /* -------------------------------------
+                       EXCLUDE
+                    ------------------------------------- */
+
+                    WHEN UPPER(TRIM(COALESCE(s.isinclusive, 'NO'))) = 'NO'
+                     AND COALESCE(s.tax_percent, 0) > 0
+
+                    THEN
+
+                        (
+                            COALESCE(s.qty_in, 0)
+                            * COALESCE(s.pricelst_in, 0)
+                            * COALESCE(s.currvalue, 1)
+                        )
+
+                        +
+
+                        (
+                            (
+                                COALESCE(s.qty_in, 0)
+                                * COALESCE(s.pricelst_in, 0)
+                                * COALESCE(s.currvalue, 1)
+                            )
+
+                            *
+                            (
+                                COALESCE(s.tax_percent, 0) / 100
+                            )
+                        )
+
+
+                    ELSE
+
+                        COALESCE(s.qty_in, 0)
+                        * COALESCE(s.pricelst_in, 0)
+                        * COALESCE(s.currvalue, 1)
+
+                END
+
+            )
+
+
+        WHEN COALESCE(s.qty_out, 0) > 0
+        THEN
+
+            COALESCE(s.qty_out, 0)
+            * COALESCE(ac.avg_cost, 0)
+
+
+        ELSE 0
+
+    END AS gl_nilai_bruto,
+
+
+    /* =====================================================
        HPP
     ===================================================== */
 
     CASE
 
         WHEN COALESCE(s.qty_out, 0) > 0
+
          AND TRIM(COALESCE(s.grouptype, '')) = 'STOCK'
 
         THEN
+
             COALESCE(s.qty_out, 0)
             * COALESCE(ac.avg_cost, 0)
 
@@ -177,14 +446,13 @@ SELECT
 
     CASE
 
-        WHEN TRIM(COALESCE(s.grouptype, '')) = 'NON STOCK'
-        THEN 'NON'
-
         WHEN COALESCE(s.qty_in, 0) > 0
         THEN 'IN'
 
+
         WHEN COALESCE(s.qty_out, 0) > 0
         THEN 'OUT'
+
 
         ELSE 'UNKNOWN'
 
@@ -195,45 +463,15 @@ SELECT
        COA DARI MBARANG
     ===================================================== */
 
-
-    /* -----------------------------------------------
-       PERSEDIAAN
-    ----------------------------------------------- */
-
     NULLIF(TRIM(b.ppersediaan), '') AS ppersediaan,
-
-
-    /* -----------------------------------------------
-       JASA
-    ----------------------------------------------- */
 
     NULLIF(TRIM(b.pjasa), '') AS pjasa,
 
-
-    /* -----------------------------------------------
-       SALES / PENJUALAN
-    ----------------------------------------------- */
-
     NULLIF(TRIM(b.salesakun), '') AS salesakun,
-
-
-    /* -----------------------------------------------
-       HPP / COGS
-    ----------------------------------------------- */
 
     NULLIF(TRIM(b.pcogs), '') AS pcogs,
 
-
-    /* -----------------------------------------------
-       HPP PRODUKSI
-    ----------------------------------------------- */
-
     NULLIF(TRIM(b.phpproduksi), '') AS phpproduksi,
-
-
-    /* -----------------------------------------------
-       WASTE
-    ----------------------------------------------- */
 
     NULLIF(TRIM(b.pwaste), '') AS pwaste,
 
@@ -242,25 +480,23 @@ SELECT
        COA DEBET UTAMA
 
        NON STOCK → PJASA
-       STOCK     → PPERSEDIAAN
+       STOCK     → PERSEDIAAN
     ===================================================== */
 
     CASE
 
         WHEN TRIM(COALESCE(s.grouptype, '')) = 'NON STOCK'
-        THEN
-            NULLIF(TRIM(b.pjasa), '')
 
-        ELSE
-            NULLIF(TRIM(b.ppersediaan), '')
+        THEN NULLIF(TRIM(b.pjasa), '')
+
+
+        ELSE NULLIF(TRIM(b.ppersediaan), '')
 
     END AS coa_debet,
 
 
     /* =====================================================
        COA HPP
-
-       Menggunakan PCOGS dari mbarang
     ===================================================== */
 
     NULLIF(TRIM(b.pcogs), '') AS coa_hpp,
@@ -268,8 +504,6 @@ SELECT
 
     /* =====================================================
        COA CURRENCY
-
-       Nama kolom DIPERTAHANKAN sesuai sp_post_gl lama
     ===================================================== */
 
     NULLIF(TRIM(c.phutang), '') AS phutang,
@@ -285,237 +519,659 @@ FROM sc_trx.stkblc s
 
 
 /* =====================================================
-   RELASI MBARANG
-
-   stkblc.idbarang
-       ↓
-   mbarang.idbarang
+   RELASI BARANG
 ===================================================== */
 
 LEFT JOIN sc_mst.mbarang b
 
-    ON TRIM(b.idbarang) =
+    ON TRIM(b.idbarang)
+       =
        TRIM(s.idbarang)
 
 
 /* =====================================================
    RELASI AVG COST
-
-   idbarang
-   + idlocation
-   + batch
 ===================================================== */
 
 LEFT JOIN sc_trx.stkblc_avgcost ac
 
-    ON TRIM(ac.idbarang) =
+    ON TRIM(ac.idbarang)
+       =
        TRIM(s.idbarang)
 
-   AND TRIM(ac.idlocation) =
+   AND TRIM(ac.idlocation)
+       =
        TRIM(s.idlocation)
 
-   AND TRIM(COALESCE(ac.batch, '')) =
+   AND TRIM(COALESCE(ac.batch, ''))
+       =
        TRIM(COALESCE(s.batch, ''))
 
 
 /* =====================================================
    RELASI CURRENCY
-
-   stkblc.currcode
-       ↓
-   currency.currcode
 ===================================================== */
 
 LEFT JOIN sc_mst.currency c
 
-    ON TRIM(c.currcode) =
+    ON TRIM(c.currcode)
+       =
        TRIM(s.currcode);
-	
 
 -- =========================================
 -- 3. FUNCTION POSTING GL
 -- =========================================
-CREATE OR REPLACE FUNCTION sc_trx.sp_post_gl(p_user VARCHAR)
+-- =========================================
+-- FUNCTION POSTING GL - FIX
+-- =========================================
+
+-- =========================================
+-- FUNCTION POSTING GL - FIX COA PER GROUP
+-- COA CURRENCY + COA BARANG/HPP
+-- =========================================
+
+-- =========================================
+-- FUNCTION POSTING GL
+-- FIX DENGAN PPN / TAX
+-- =========================================
+-- =========================================
+-- FUNCTION POSTING GL
+-- STOCK IN / STOCK OUT
+-- DENGAN COA CURRENCY + PPN
+-- =========================================
+
+-- =========================================================
+-- FUNCTION POSTING GL
+-- STOCK / NON STOCK / SALES / HPP / TAX
+-- =========================================================
+
+CREATE OR REPLACE FUNCTION sc_trx.sp_post_gl(
+    p_user VARCHAR
+)
 RETURNS VOID
 LANGUAGE plpgsql
 AS $$
 DECLARE
+
     rec RECORD;
+
     v_jurnal_id BIGINT;
-    v_total NUMERIC;
+
 BEGIN
 
-FOR rec IN
-    SELECT TRIM(docno) AS docno, TRIM(doctype) AS doctype, DATE(trxdate) trxdate
-    FROM sc_trx.v_stk_to_gl
-    WHERE is_posted = FALSE
-    GROUP BY TRIM(docno), TRIM(doctype), DATE(trxdate)
-LOOP
+    -- =====================================================
+    -- LOOP DOKUMEN YANG BELUM POSTING
+    -- =====================================================
 
-    -- =========================
-    -- VALIDASI COA
-    -- =========================
-    IF EXISTS (
-        SELECT 1
-        FROM sc_trx.v_stk_to_gl
-        WHERE TRIM(docno) = rec.docno
-          AND phutang IS NULL
-    ) THEN
-        RAISE EXCEPTION 'COA currency belum diset untuk doc %', rec.docno;
-    END IF;
+    FOR rec IN
 
-    -- =========================
-    -- TOTAL
-    -- =========================
-    SELECT COALESCE(SUM(nilai_idr),0)
-    INTO v_total
-    FROM sc_trx.v_stk_to_gl
-    WHERE TRIM(docno) = rec.docno;
+        SELECT
+            TRIM(v.docno) AS docno,
+            TRIM(v.doctype) AS doctype,
+            DATE(v.trxdate) AS trxdate
 
-    -- =========================
-    -- HEADER
-    -- =========================
-    INSERT INTO sc_trx.jurnal_hd
-    (docno, doctype, trxdate, total_debet, total_kredit, createdby)
-    VALUES
-    (rec.docno, rec.doctype, rec.trxdate, v_total, v_total, p_user)
-    RETURNING id INTO v_jurnal_id;
+        FROM sc_trx.v_stk_to_gl v
 
-    -- =====================================
-    -- PEMBELIAN (IN) → SUMMARY
-    -- =====================================
+        WHERE COALESCE(v.is_posted, FALSE) = FALSE
 
-    -- DEBET (coa_debet: persediaan / jasa)
-    INSERT INTO sc_trx.jurnal_dt
-    SELECT
-        v_jurnal_id,
-        MAX(v.coa_debet),
-        SUM(v.nilai_idr),
-        0,
-        v.docno,
-        v.doctype
-    FROM sc_trx.v_stk_to_gl v
-    WHERE TRIM(v.docno) = rec.docno
-      AND v.trx_type = 'IN'
-    GROUP BY v.docno, v.doctype;
+        GROUP BY
+            TRIM(v.docno),
+            TRIM(v.doctype),
+            DATE(v.trxdate)
 
-    -- KREDIT (hutang)
-    INSERT INTO sc_trx.jurnal_dt
-    SELECT
-        v_jurnal_id,
-        MAX(v.phutang),
-        0,
-        SUM(v.nilai_idr),
-        v.docno,
-        v.doctype
-    FROM sc_trx.v_stk_to_gl v
-    WHERE TRIM(v.docno) = rec.docno
-      AND v.trx_type = 'IN'
-    GROUP BY v.docno, v.doctype;
+    LOOP
 
-    -- =====================================
-    -- PENJUALAN (OUT)
-    -- =====================================
 
-    -- DEBET PIUTANG (DETAIL)
-    INSERT INTO sc_trx.jurnal_dt
-    SELECT
-        v_jurnal_id,
-        v.ppiutang,
-        v.nilai_idr,
-        0,
-        v.docno,
-        v.doctype
-    FROM sc_trx.v_stk_to_gl v
-    WHERE TRIM(v.docno) = rec.docno
-      AND v.trx_type = 'OUT';
+        -- =================================================
+        -- CEK JURNAL SUDAH ADA
+        -- =================================================
 
-    -- KREDIT PENDAPATAN (SUMMARY)
-    INSERT INTO sc_trx.jurnal_dt
-    SELECT
-        v_jurnal_id,
-        MAX(v.ppendapatan),
-        0,
-        SUM(v.nilai_idr),
-        v.docno,
-        v.doctype
-    FROM sc_trx.v_stk_to_gl v
-    WHERE TRIM(v.docno) = rec.docno
-      AND v.trx_type = 'OUT'
-    GROUP BY v.docno, v.doctype;
+        IF EXISTS (
 
-    -- =====================================
-    -- 🔥 HPP (AUTO)
-    -- =====================================
+            SELECT 1
+            FROM sc_trx.jurnal_hd jh
+            WHERE TRIM(jh.docno) = rec.docno
+              AND TRIM(jh.doctype) = rec.doctype
 
-    -- DEBET HPP
-    INSERT INTO sc_trx.jurnal_dt
-    SELECT
-        v_jurnal_id,
-        COALESCE(NULLIF(TRIM(b.php),''),'5.2.1'),
-        SUM(v.qty_out * COALESCE(ac.avg_cost,0)),
-        0,
-        v.docno,
-        v.doctype
-    FROM sc_trx.stkblc v
-    LEFT JOIN sc_trx.stkblc_avgcost ac
-        ON ac.idbarang = v.idbarang
-       AND ac.idlocation = v.idlocation
-       AND ac.batch = v.batch
-    LEFT JOIN sc_mst.mbarang b
-        ON b.idbarang = v.idbarang
-    WHERE TRIM(v.docno) = rec.docno
-      AND v.qty_out > 0
-      AND v.grouptype = 'STOCK'
-    GROUP BY v.docno, v.doctype;
+        ) THEN
 
-    -- KREDIT PERSEDIAAN
-    INSERT INTO sc_trx.jurnal_dt
-    SELECT
-        v_jurnal_id,
-        MAX(v.coa_debet),
-        0,
-        SUM(v.qty_out * COALESCE(ac.avg_cost,0)),
-        v.docno,
-        v.doctype
-    FROM sc_trx.v_stk_to_gl v
-    LEFT JOIN sc_trx.stkblc_avgcost ac
-        ON ac.idbarang = v.idbarang
-       AND ac.idlocation = v.idlocation
-       AND ac.batch = v.batch
-    WHERE TRIM(v.docno) = rec.docno
-      AND v.trx_type = 'OUT'
-      AND v.grouptype = 'STOCK'
-    GROUP BY v.docno, v.doctype;
+            RAISE EXCEPTION
+                'Jurnal sudah ada untuk dokumen % (%)',
+                rec.docno,
+                rec.doctype;
 
-    -- =====================================
-    -- VALIDASI BALANCE
-    -- =====================================
-    IF EXISTS (
-        SELECT 1
-        FROM (
-            SELECT SUM(debet) d, SUM(kredit) k
-            FROM sc_trx.jurnal_dt
-            WHERE jurnal_id = v_jurnal_id
-        ) x
-        WHERE x.d <> x.k
-    ) THEN
-        RAISE EXCEPTION 'JURNAL TIDAK BALANCE %', rec.docno;
-    END IF;
+        END IF;
 
-    -- =====================================
-    -- UPDATE POSTED
-    -- =====================================
-    UPDATE sc_trx.stkblc
-    SET is_posted = TRUE,
-        posted_at = NOW()
-    WHERE TRIM(docno) = rec.docno;
 
-END LOOP;
+        -- =================================================
+        -- VALIDASI COA UTAMA
+        -- =================================================
+
+        IF EXISTS (
+
+            SELECT 1
+
+            FROM sc_trx.v_stk_to_gl v
+
+            WHERE TRIM(v.docno) = rec.docno
+              AND TRIM(v.doctype) = rec.doctype
+
+              AND (
+
+                    -- STOCK / NON STOCK MASUK
+                    (
+                        v.trx_type = 'IN'
+                        AND NULLIF(TRIM(v.coa_debet), '') IS NULL
+                    )
+
+                    OR
+
+                    -- HUTANG
+                    (
+                        v.trx_type = 'IN'
+                        AND NULLIF(TRIM(v.phutang), '') IS NULL
+                    )
+
+                    OR
+
+                    -- PPN MASUKAN
+                    (
+                        COALESCE(v.nilai_ppn, 0) > 0
+                        AND NULLIF(TRIM(v.coa_tax_masukan), '') IS NULL
+                    )
+
+                    OR
+
+                    -- PIUTANG
+                    (
+                        v.trx_type = 'OUT'
+                        AND NULLIF(TRIM(v.ppiutang), '') IS NULL
+                    )
+
+                    OR
+
+                    -- PENDAPATAN
+                    (
+                        v.trx_type = 'OUT'
+                        AND NULLIF(TRIM(v.ppendapatan), '') IS NULL
+                    )
+
+                    OR
+
+                    -- HPP
+                    (
+                        v.trx_type = 'OUT'
+                        AND TRIM(COALESCE(v.grouptype, '')) = 'STOCK'
+                        AND NULLIF(TRIM(v.coa_hpp), '') IS NULL
+                    )
+
+              )
+
+        ) THEN
+
+            RAISE EXCEPTION
+                'COA belum lengkap untuk dokumen %',
+                rec.docno;
+
+        END IF;
+
+
+        -- =================================================
+        -- INSERT JOURNAL HEADER
+        -- TOTAL AKAN DIUPDATE SETELAH DETAIL SELESAI
+        -- =================================================
+
+        INSERT INTO sc_trx.jurnal_hd
+        (
+            docno,
+            doctype,
+            trxdate,
+            total_debet,
+            total_kredit,
+            status,
+            createdby,
+            createddate
+        )
+        VALUES
+        (
+            rec.docno,
+            rec.doctype,
+            rec.trxdate,
+            0,
+            0,
+            'P',
+            p_user,
+            NOW()
+        )
+
+        RETURNING id INTO v_jurnal_id;
+
+
+        -- =================================================
+        -- =================================================
+        -- PEMBELIAN / LPB / STOCK IN
+        -- =================================================
+        -- =================================================
+
+
+        -- =================================================
+        -- DEBET PERSEDIAAN / JASA
+        --
+        -- MENGGUNAKAN DPP
+        -- =================================================
+
+        INSERT INTO sc_trx.jurnal_dt
+        (
+            jurnal_id,
+            idcoa,
+            debet,
+            kredit,
+            ref_docno,
+            ref_doctype
+        )
+
+        SELECT
+
+            v_jurnal_id,
+
+            TRIM(v.coa_debet),
+
+            SUM(
+                COALESCE(
+                    NULLIF(v.nilai_dpp, 0),
+                    v.nilai_idr
+                )
+            ),
+
+            0,
+
+            rec.docno,
+
+            rec.doctype
+
+        FROM sc_trx.v_stk_to_gl v
+
+        WHERE TRIM(v.docno) = rec.docno
+          AND TRIM(v.doctype) = rec.doctype
+          AND v.trx_type = 'IN'
+
+        GROUP BY
+            TRIM(v.coa_debet)
+
+        HAVING SUM(
+            COALESCE(
+                NULLIF(v.nilai_dpp, 0),
+                v.nilai_idr
+            )
+        ) <> 0;
+
+
+        -- =================================================
+        -- DEBET PPN MASUKAN
+        -- =================================================
+
+        INSERT INTO sc_trx.jurnal_dt
+        (
+            jurnal_id,
+            idcoa,
+            debet,
+            kredit,
+            ref_docno,
+            ref_doctype
+        )
+
+        SELECT
+
+            v_jurnal_id,
+
+            TRIM(v.coa_tax_masukan),
+
+            SUM(COALESCE(v.nilai_ppn, 0)),
+
+            0,
+
+            rec.docno,
+
+            rec.doctype
+
+        FROM sc_trx.v_stk_to_gl v
+
+        WHERE TRIM(v.docno) = rec.docno
+          AND TRIM(v.doctype) = rec.doctype
+
+          AND v.trx_type = 'IN'
+
+          AND COALESCE(v.nilai_ppn, 0) <> 0
+
+          AND NULLIF(TRIM(v.coa_tax_masukan), '') IS NOT NULL
+
+        GROUP BY
+            TRIM(v.coa_tax_masukan)
+
+        HAVING SUM(COALESCE(v.nilai_ppn, 0)) <> 0;
+
+
+        -- =================================================
+        -- KREDIT HUTANG
+        --
+        -- DPP + PPN
+        -- =================================================
+
+        INSERT INTO sc_trx.jurnal_dt
+        (
+            jurnal_id,
+            idcoa,
+            debet,
+            kredit,
+            ref_docno,
+            ref_doctype
+        )
+
+        SELECT
+
+            v_jurnal_id,
+
+            TRIM(v.phutang),
+
+            0,
+
+            SUM(
+
+                COALESCE(
+                    NULLIF(v.nilai_bruto, 0),
+
+                    COALESCE(
+                        NULLIF(v.nilai_dpp, 0),
+                        v.nilai_idr
+                    )
+
+                    +
+
+                    COALESCE(v.nilai_ppn, 0)
+
+                )
+
+            ),
+
+            rec.docno,
+
+            rec.doctype
+
+        FROM sc_trx.v_stk_to_gl v
+
+        WHERE TRIM(v.docno) = rec.docno
+          AND TRIM(v.doctype) = rec.doctype
+          AND v.trx_type = 'IN'
+
+        GROUP BY
+            TRIM(v.phutang)
+
+        HAVING SUM(
+
+            COALESCE(
+                NULLIF(v.nilai_bruto, 0),
+
+                COALESCE(
+                    NULLIF(v.nilai_dpp, 0),
+                    v.nilai_idr
+                )
+                +
+                COALESCE(v.nilai_ppn, 0)
+
+            )
+
+        ) <> 0;
+
+
+        -- =================================================
+        -- =================================================
+        -- PENJUALAN / STOCK OUT
+        -- =================================================
+        -- =================================================
+
+
+        -- =================================================
+        -- DEBET PIUTANG
+        -- =================================================
+
+        INSERT INTO sc_trx.jurnal_dt
+        (
+            jurnal_id,
+            idcoa,
+            debet,
+            kredit,
+            ref_docno,
+            ref_doctype
+        )
+
+        SELECT
+
+            v_jurnal_id,
+
+            TRIM(v.ppiutang),
+
+            SUM(v.nilai_idr),
+
+            0,
+
+            rec.docno,
+
+            rec.doctype
+
+        FROM sc_trx.v_stk_to_gl v
+
+        WHERE TRIM(v.docno) = rec.docno
+          AND TRIM(v.doctype) = rec.doctype
+          AND v.trx_type = 'OUT'
+
+        GROUP BY
+            TRIM(v.ppiutang);
+
+
+        -- =================================================
+        -- KREDIT PENDAPATAN
+        -- =================================================
+
+        INSERT INTO sc_trx.jurnal_dt
+        (
+            jurnal_id,
+            idcoa,
+            debet,
+            kredit,
+            ref_docno,
+            ref_doctype
+        )
+
+        SELECT
+
+            v_jurnal_id,
+
+            TRIM(v.ppendapatan),
+
+            0,
+
+            SUM(v.nilai_idr),
+
+            rec.docno,
+
+            rec.doctype
+
+        FROM sc_trx.v_stk_to_gl v
+
+        WHERE TRIM(v.docno) = rec.docno
+          AND TRIM(v.doctype) = rec.doctype
+          AND v.trx_type = 'OUT'
+
+        GROUP BY
+            TRIM(v.ppendapatan);
+
+
+        -- =================================================
+        -- DEBET HPP
+        -- =================================================
+
+        INSERT INTO sc_trx.jurnal_dt
+        (
+            jurnal_id,
+            idcoa,
+            debet,
+            kredit,
+            ref_docno,
+            ref_doctype
+        )
+
+        SELECT
+
+            v_jurnal_id,
+
+            TRIM(v.coa_hpp),
+
+            SUM(COALESCE(v.hpp, 0)),
+
+            0,
+
+            rec.docno,
+
+            rec.doctype
+
+        FROM sc_trx.v_stk_to_gl v
+
+        WHERE TRIM(v.docno) = rec.docno
+          AND TRIM(v.doctype) = rec.doctype
+
+          AND v.trx_type = 'OUT'
+
+          AND TRIM(COALESCE(v.grouptype, '')) = 'STOCK'
+
+        GROUP BY
+            TRIM(v.coa_hpp)
+
+        HAVING SUM(COALESCE(v.hpp, 0)) <> 0;
+
+
+        -- =================================================
+        -- KREDIT PERSEDIAAN
+        -- =================================================
+
+        INSERT INTO sc_trx.jurnal_dt
+        (
+            jurnal_id,
+            idcoa,
+            debet,
+            kredit,
+            ref_docno,
+            ref_doctype
+        )
+
+        SELECT
+
+            v_jurnal_id,
+
+            TRIM(v.coa_debet),
+
+            0,
+
+            SUM(COALESCE(v.hpp, 0)),
+
+            rec.docno,
+
+            rec.doctype
+
+        FROM sc_trx.v_stk_to_gl v
+
+        WHERE TRIM(v.docno) = rec.docno
+          AND TRIM(v.doctype) = rec.doctype
+
+          AND v.trx_type = 'OUT'
+
+          AND TRIM(COALESCE(v.grouptype, '')) = 'STOCK'
+
+        GROUP BY
+            TRIM(v.coa_debet)
+
+        HAVING SUM(COALESCE(v.hpp, 0)) <> 0;
+
+
+        -- =================================================
+        -- VALIDASI BALANCE
+        -- =================================================
+
+        IF EXISTS
+        (
+            SELECT 1
+
+            FROM
+            (
+                SELECT
+
+                    COALESCE(SUM(jd.debet), 0) AS total_debet,
+
+                    COALESCE(SUM(jd.kredit), 0) AS total_kredit
+
+                FROM sc_trx.jurnal_dt jd
+
+                WHERE jd.jurnal_id = v_jurnal_id
+
+            ) x
+
+            WHERE ROUND(x.total_debet, 2)
+               <> ROUND(x.total_kredit, 2)
+
+        ) THEN
+
+            RAISE EXCEPTION
+                'JURNAL TIDAK BALANCE. DOCNO: %',
+                rec.docno;
+
+        END IF;
+
+
+        -- =================================================
+        -- UPDATE JOURNAL HEADER
+        -- =================================================
+
+        UPDATE sc_trx.jurnal_hd jh
+
+        SET
+
+            total_debet =
+            (
+                SELECT COALESCE(SUM(jd.debet), 0)
+                FROM sc_trx.jurnal_dt jd
+                WHERE jd.jurnal_id = v_jurnal_id
+            ),
+
+            total_kredit =
+            (
+                SELECT COALESCE(SUM(jd.kredit), 0)
+                FROM sc_trx.jurnal_dt jd
+                WHERE jd.jurnal_id = v_jurnal_id
+            )
+
+        WHERE jh.id = v_jurnal_id;
+
+
+        -- =================================================
+        -- UPDATE STOCK POSTED
+        -- =================================================
+
+        UPDATE sc_trx.stkblc s
+
+        SET
+
+            is_posted = TRUE,
+
+            posted_at = NOW()
+
+        WHERE TRIM(s.docno) = rec.docno
+          AND TRIM(s.doctype) = rec.doctype;
+
+
+    END LOOP;
 
 END;
-$$;
 
+$$;
 -- =========================================
 -- 7. TEST RUN
 -- =========================================
@@ -527,3 +1183,211 @@ $$;
 
 
 
+
+SELECT sc_trx.sp_preview_gl('LPB/2609/PA0001');
+-- =========================================================
+-- FUNCTION : sc_trx.sp_preview_gl
+-- PURPOSE  : Preview jurnal tanpa INSERT / UPDATE
+--            Tanpa mengubah jurnal_hd, jurnal_dt, stkblc
+-- =========================================================
+CREATE OR REPLACE FUNCTION sc_trx.sp_preview_gl(
+    p_docno VARCHAR
+)
+RETURNS TABLE
+(
+    docno        VARCHAR,
+    doctype      VARCHAR,
+    jurnal_type  VARCHAR,
+    idcoa        VARCHAR,
+    debet        NUMERIC,
+    kredit       NUMERIC
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    -- =====================================================
+    -- VALIDASI
+    -- =====================================================
+
+    IF COALESCE(TRIM(p_docno), '') = '' THEN
+        RAISE EXCEPTION 'DOCNO tidak boleh kosong';
+    END IF;
+
+
+    -- =====================================================
+    -- CEK DOKUMEN
+    -- =====================================================
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM sc_trx.v_stk_to_gl AS v
+        WHERE TRIM(v.docno) = TRIM(p_docno)
+    ) THEN
+
+        RAISE EXCEPTION
+            'Data DOCNO % tidak ditemukan',
+            p_docno;
+
+    END IF;
+
+
+    -- =====================================================
+    -- STOCK IN
+    -- DEBET PERSEDIAAN / BIAYA
+    -- =====================================================
+
+    RETURN QUERY
+    SELECT
+        TRIM(v.docno)::VARCHAR,
+        TRIM(v.doctype)::VARCHAR,
+        'DEBET PERSEDIAAN / BIAYA'::VARCHAR,
+        TRIM(v.coa_debet)::VARCHAR,
+        SUM(COALESCE(v.nilai_idr, 0))::NUMERIC,
+        0::NUMERIC
+
+    FROM sc_trx.v_stk_to_gl AS v
+
+    WHERE TRIM(v.docno) = TRIM(p_docno)
+      AND TRIM(v.trx_type) = 'IN'
+      AND COALESCE(TRIM(v.coa_debet), '') <> ''
+
+    GROUP BY
+        TRIM(v.docno),
+        TRIM(v.doctype),
+        TRIM(v.coa_debet);
+
+
+    -- =====================================================
+    -- STOCK IN
+    -- KREDIT HUTANG
+    -- =====================================================
+
+    RETURN QUERY
+    SELECT
+        TRIM(v.docno)::VARCHAR,
+        TRIM(v.doctype)::VARCHAR,
+        'KREDIT HUTANG'::VARCHAR,
+        TRIM(v.phutang)::VARCHAR,
+        0::NUMERIC,
+        SUM(COALESCE(v.nilai_idr, 0))::NUMERIC
+
+    FROM sc_trx.v_stk_to_gl AS v
+
+    WHERE TRIM(v.docno) = TRIM(p_docno)
+      AND TRIM(v.trx_type) = 'IN'
+      AND COALESCE(TRIM(v.phutang), '') <> ''
+
+    GROUP BY
+        TRIM(v.docno),
+        TRIM(v.doctype),
+        TRIM(v.phutang);
+
+
+    -- =====================================================
+    -- STOCK OUT
+    -- DEBET PIUTANG
+    -- =====================================================
+
+    RETURN QUERY
+    SELECT
+        TRIM(v.docno)::VARCHAR,
+        TRIM(v.doctype)::VARCHAR,
+        'DEBET PIUTANG'::VARCHAR,
+        TRIM(v.ppiutang)::VARCHAR,
+        SUM(COALESCE(v.nilai_idr, 0))::NUMERIC,
+        0::NUMERIC
+
+    FROM sc_trx.v_stk_to_gl AS v
+
+    WHERE TRIM(v.docno) = TRIM(p_docno)
+      AND TRIM(v.trx_type) = 'OUT'
+      AND COALESCE(TRIM(v.ppiutang), '') <> ''
+
+    GROUP BY
+        TRIM(v.docno),
+        TRIM(v.doctype),
+        TRIM(v.ppiutang);
+
+
+    -- =====================================================
+    -- STOCK OUT
+    -- KREDIT PENDAPATAN
+    -- =====================================================
+
+    RETURN QUERY
+    SELECT
+        TRIM(v.docno)::VARCHAR,
+        TRIM(v.doctype)::VARCHAR,
+        'KREDIT PENDAPATAN'::VARCHAR,
+        TRIM(v.ppendapatan)::VARCHAR,
+        0::NUMERIC,
+        SUM(COALESCE(v.nilai_idr, 0))::NUMERIC
+
+    FROM sc_trx.v_stk_to_gl AS v
+
+    WHERE TRIM(v.docno) = TRIM(p_docno)
+      AND TRIM(v.trx_type) = 'OUT'
+      AND COALESCE(TRIM(v.ppendapatan), '') <> ''
+
+    GROUP BY
+        TRIM(v.docno),
+        TRIM(v.doctype),
+        TRIM(v.ppendapatan);
+
+
+    -- =====================================================
+    -- STOCK OUT
+    -- DEBET HPP
+    -- =====================================================
+
+    RETURN QUERY
+    SELECT
+        TRIM(v.docno)::VARCHAR,
+        TRIM(v.doctype)::VARCHAR,
+        'DEBET HPP'::VARCHAR,
+        TRIM(v.coa_hpp)::VARCHAR,
+        SUM(COALESCE(v.hpp, 0))::NUMERIC,
+        0::NUMERIC
+
+    FROM sc_trx.v_stk_to_gl AS v
+
+    WHERE TRIM(v.docno) = TRIM(p_docno)
+      AND TRIM(v.trx_type) = 'OUT'
+      AND TRIM(COALESCE(v.grouptype, '')) = 'STOCK'
+      AND COALESCE(TRIM(v.coa_hpp), '') <> ''
+
+    GROUP BY
+        TRIM(v.docno),
+        TRIM(v.doctype),
+        TRIM(v.coa_hpp);
+
+
+    -- =====================================================
+    -- STOCK OUT
+    -- KREDIT PERSEDIAAN
+    -- =====================================================
+
+    RETURN QUERY
+    SELECT
+        TRIM(v.docno)::VARCHAR,
+        TRIM(v.doctype)::VARCHAR,
+        'KREDIT PERSEDIAAN'::VARCHAR,
+        TRIM(v.coa_debet)::VARCHAR,
+        0::NUMERIC,
+        SUM(COALESCE(v.hpp, 0))::NUMERIC
+
+    FROM sc_trx.v_stk_to_gl AS v
+
+    WHERE TRIM(v.docno) = TRIM(p_docno)
+      AND TRIM(v.trx_type) = 'OUT'
+      AND TRIM(COALESCE(v.grouptype, '')) = 'STOCK'
+      AND COALESCE(TRIM(v.coa_debet), '') <> ''
+
+    GROUP BY
+        TRIM(v.docno),
+        TRIM(v.doctype),
+        TRIM(v.coa_debet);
+
+END;
+$$;

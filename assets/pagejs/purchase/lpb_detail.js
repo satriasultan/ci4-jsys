@@ -1383,7 +1383,359 @@ $("#fjurnal").on("change", function () {
     });
 });
 
+let tableLaporanJurnal = null;
 
+
+$('#btnLaporanJurnal').on('click', function () {
+
+    // =====================================================
+    // AMBIL DOCNO LPB
+    // =====================================================
+
+    let docno = $.trim($('#docno').val());
+
+
+    // =====================================================
+    // VALIDASI
+    // =====================================================
+
+    if (docno === '') {
+
+        Swal.fire({
+            icon: 'warning',
+            title: 'LPB belum dipilih',
+            text: 'Silahkan pilih atau buka transaksi LPB terlebih dahulu'
+        });
+
+        return;
+
+    }
+
+
+    // =====================================================
+    // BUKA MODAL
+    // =====================================================
+
+    $('#modalLaporanJurnal').modal('show');
+
+
+    // =====================================================
+    // DESTROY DATATABLE SEBELUMNYA
+    // =====================================================
+
+    if ($.fn.DataTable.isDataTable('#tableLaporanJurnal')) {
+
+        $('#tableLaporanJurnal')
+            .DataTable()
+            .destroy();
+
+    }
+
+
+    // =====================================================
+    // LOADING
+    // =====================================================
+
+    $('#tableLaporanJurnal tbody').html(`
+        <tr>
+            <td colspan="8" class="text-center">
+                <i class="fa fa-spinner fa-spin"></i>
+                Loading...
+            </td>
+        </tr>
+    `);
+
+
+    // =====================================================
+    // AJAX
+    // =====================================================
+
+    $.ajax({
+
+        url: HOST_URL + 'purchase/trans/laporan_jurnal_transaksi_lpb',
+
+        type: 'POST',
+
+        dataType: 'json',
+
+        data: {
+
+            docno: docno
+
+        },
+
+
+        success: function (response) {
+
+
+            // =================================================
+            // ERROR
+            // =================================================
+
+            if (!response.status) {
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: response.messages
+                });
+
+                return;
+
+            }
+
+
+            // =================================================
+            // INIT DATATABLE
+            // =================================================
+
+            tableLaporanJurnal = $('#tableLaporanJurnal').DataTable({
+
+                data: response.data,
+
+                destroy: true,
+
+                paging: false,
+
+                searching: false,
+
+                ordering: false,
+
+                info: false,
+
+
+                columns: [
+
+                    {
+                        data: null,
+
+                        render: function (
+                            data,
+                            type,
+                            row,
+                            meta
+                        ) {
+
+                            if (row.urutan == 1) {
+
+                                return '';
+
+                            }
+
+                            return meta.row + 1;
+
+                        }
+                    },
+
+
+                    {
+                        data: 'trxdate',
+
+                        render: function (data) {
+
+                            if (
+                                data === null ||
+                                data === ''
+                            ) {
+
+                                return '';
+
+                            }
+
+                            return data;
+
+                        }
+                    },
+
+
+                    {
+                        data: 'docno',
+
+                        render: function (data) {
+
+                            return data || '';
+
+                        }
+                    },
+
+
+                    {
+                        data: 'nmsupplier',
+
+                        render: function (
+                            data,
+                            type,
+                            row
+                        ) {
+
+                            if (row.urutan == 1) {
+
+                                return '';
+
+                            }
+
+                            return data || '';
+
+                        }
+                    },
+
+
+                    {
+                        data: 'idcoa',
+
+                        render: function (
+                            data,
+                            type,
+                            row
+                        ) {
+
+                            if (row.urutan == 1) {
+
+                                return '';
+
+                            }
+
+                            return data || '';
+
+                        }
+                    },
+
+
+                    {
+                        data: 'nmcoa',
+
+                        render: function (
+                            data,
+                            type,
+                            row
+                        ) {
+
+                            // TOTAL
+                            if (row.urutan == 1) {
+
+                                return `
+                                    <b style="font-size:16px">
+                                        TOTAL
+                                    </b>
+                                `;
+
+                            }
+
+                            return data || '';
+
+                        }
+                    },
+
+
+                    {
+                        data: 'debet',
+
+                        className: 'text-right',
+
+                        render: function (data) {
+
+                            return formatNumber(
+                                data || 0
+                            );
+
+                        }
+                    },
+
+
+                    {
+                        data: 'kredit',
+
+                        className: 'text-right',
+
+                        render: function (data) {
+
+                            return formatNumber(
+                                data || 0
+                            );
+
+                        }
+                    }
+
+                ],
+
+
+                // =============================================
+                // STYLE TOTAL
+                // =============================================
+
+                createdRow: function (
+                    row,
+                    data
+                ) {
+
+                    if (data.urutan == 1) {
+
+                        $(row).css({
+
+                            'font-weight': 'bold',
+                            'background-color': '#f1f1f1'
+
+                        });
+
+                    }
+
+                }
+
+            });
+
+
+            // =================================================
+            // ADJUST MODAL DATATABLE
+            // =================================================
+
+            setTimeout(function () {
+
+                tableLaporanJurnal
+                    .columns
+                    .adjust();
+
+            }, 300);
+
+        },
+
+
+        error: function (
+            xhr,
+            status,
+            error
+        ) {
+
+            console.error(xhr.responseText);
+
+
+            Swal.fire({
+
+                icon: 'error',
+
+                title: 'Error',
+
+                text: 'Gagal mengambil laporan jurnal'
+
+            });
+
+        }
+
+    });
+
+});
+
+function formatNumber(value) {
+
+    return parseFloat(value || 0)
+        .toLocaleString(
+            'en-US',
+            {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }
+        );
+
+}
 
 $(document).ready(function() {
     // Handle form submission event

@@ -1229,25 +1229,46 @@ function saveLPBDetail() {
     let ok =  $('#docnopo').val()
     let ok2 = $('[name="docnopo"]').val();
 
-    Swal.fire({
-        title: 'Konfirmasi',
-        text: 'Simpan data Penerimaan Pembelian?',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Ya, Simpan',
-        cancelButtonText: 'Batal',
-        reverseButtons: true
-    }).then((result) => {
+    // Swal.fire({
+    //     title: 'Konfirmasi',
+    //     text: 'Simpan data Penerimaan Pembelian?',
+    //     icon: 'question',
+    //     showCancelButton: true,
+    //     confirmButtonText: 'Ya, Simpan',
+    //     cancelButtonText: 'Batal',
+    //     reverseButtons: true
+    // }).then((result) => {
 
-        if (!result.isConfirmed) return;
+        // if (!result.isConfirmed) return;
+
+        // ==========================================
+        // AMBIL DATA SUPPLIER DARI SELECT2
+        // ==========================================
+        let supplierData = $('#kdsupplier').select2('data');
+
+        let kdsupplier = '';
+        let nmsupplier = '';
+
+        if (supplierData && supplierData.length > 0) {
+            kdsupplier = supplierData[0].kdsupplier || supplierData[0].id || '';
+            nmsupplier = supplierData[0].nmsupplier || supplierData[0].text || '';
+        }
 
         let formData = new FormData(document.getElementById('formLPBDetail'));
         formData.append('docdate', $('#docdate').val());
         formData.append('cabang', $('#cabang').val());
         // formData.append('senddate', $('#senddate').val());
         formData.append('jthtempo', convertToDbNumber($('#jthtempo').val()));
-        formData.append('kdsupplier', $('#kdsupplier').val());
-        formData.append('isinclusive', $('#isinclusive').is(':checked') ? 'YES' : 'NO');
+        // ==========================================
+        // SUPPLIER
+        // ==========================================
+        formData.append('kdsupplier', kdsupplier);
+        formData.append('nmsupplier', nmsupplier);
+
+        formData.append(
+            'isinclusive',
+            $('#isinclusive').is(':checked') ? 'YES' : 'NO'
+        );
         formData.append('alamatsupplier', $('#alamatsupplier').val());
         formData.append('nosj', $('#nosj').val());
         formData.append('nofaktur', $('#nofaktur').val());
@@ -1282,10 +1303,10 @@ function saveLPBDetail() {
         formData.set('descriptionpo', $('#descriptionpo').val());
         formData.set('uniqueid', $('#uniqueid').val());
         //formData.set('idprincipal', $('#idprincipal').val());
-        formData.set('idprincipal', $('#idprincipal').val());
-
+        formData.set('idprincipal', $('#idprincipal').val() ?? '');
+        formData.set('idspec', $('#idspec').val() ?? '');
         formData.set('idgudang', $('#idgudang').val());
-        formData.set('idspec', $('#idspec').val());
+
         // formData.set('docnopo', $('#docnopo').val());
         let docnopo = $('#docnopo').val();
 
@@ -1310,11 +1331,11 @@ function saveLPBDetail() {
 
                 if (!res.success) {
 
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Gagal',
-                        text: res.message
-                    });
+                    // Swal.fire({
+                    //     icon: 'warning',
+                    //     title: 'Gagal',
+                    //     text: res.message
+                    // });
 
                     return;
                 }
@@ -1332,13 +1353,13 @@ function saveLPBDetail() {
                     titleText = 'Tidak Ada Perubahan';
                 }
 
-                Swal.fire({
-                    icon: iconType,
-                    title: titleText,
-                    text: res.message,
-                    timer: 2000,
-                    showConfirmButton: false
-                });
+                // Swal.fire({
+                //     icon: iconType,
+                //     title: titleText,
+                //     text: res.message,
+                //     timer: 2000,
+                //     showConfirmButton: false
+                // });
 
                 // Jika header baru dibuat → reload
                 if (res.reload === true) {
@@ -1370,7 +1391,7 @@ function saveLPBDetail() {
         });
 
 
-    });
+    // });
 }
 
 function btnInputDetail() {
@@ -2414,6 +2435,174 @@ function formatBatch(repo) {
 function formatBatchSelection(repo) {
     return repo.batch || repo.text;
 }
+
+
+$('#btnDeleteLPB').on('click', function () {
+
+    // Ambil Document Number dari input #docno
+    let docno = $.trim($('#docno').val());
+
+    // Validasi
+    if (docno === '') {
+
+        Swal.fire({
+            icon: 'warning',
+            title: 'Warning',
+            text: 'Document Number LPB tidak ditemukan.'
+        });
+
+        return;
+    }
+
+
+    // Konfirmasi hapus
+    Swal.fire({
+        title: 'Hapus Penerimaan?',
+        html:
+            'Yakin ingin menghapus penerimaan:<br><br>' +
+            '<b>' + docno + '</b><br><br>' +
+            '<span class="text-danger">' +
+            'Data LPB, transaksi inventory dan jurnal terkait akan direverse.' +
+            '</span>',
+
+        icon: 'warning',
+
+        showCancelButton: true,
+
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+
+        confirmButtonText:
+            '<i class="fa fa-trash"></i> Ya, Hapus',
+
+        cancelButtonText: 'Cancel'
+
+    }).then((result) => {
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
+
+        // =====================================================
+        // AJAX DELETE LPB
+        // =====================================================
+        $.ajax({
+
+            url: HOST_URL + 'purchase/trans/delete_document_lpb',
+
+            type: 'POST',
+
+            dataType: 'json',
+
+            data: {
+                docno: docno
+            },
+
+
+            beforeSend: function () {
+
+                $('#btnDeleteLPB')
+                    .prop('disabled', true)
+                    .html(
+                        '<i class="fa fa-spinner fa-spin"></i> Processing...'
+                    );
+
+            },
+
+
+            success: function (response) {
+
+                if (response.success) {
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil',
+                        text:
+                            response.message ||
+                            'Penerimaan berhasil dihapus.',
+
+                        allowOutsideClick: false,
+                        allowEscapeKey: false
+
+                    }).then(() => {
+
+                        // Kembali ke halaman LPB
+                        window.location.href =
+                            HOST_URL + 'purchase/trans/lpb';
+
+                    });
+
+                    return;
+                }
+
+
+                // =============================================
+                // RESPONSE GAGAL
+                // =============================================
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text:
+                        response.message ||
+                        'Gagal menghapus penerimaan.'
+                });
+
+
+                $('#btnDeleteLPB')
+                    .prop('disabled', false)
+                    .html(
+                        '<i class="fa fa-trash"></i> Hapus Penerimaan'
+                    );
+
+            },
+
+
+            error: function (xhr) {
+
+                console.error(
+                    'DELETE LPB ERROR:',
+                    xhr.responseText
+                );
+
+
+                let message =
+                    'Terjadi kesalahan saat menghapus penerimaan.';
+
+
+                // Jika controller mengirim JSON error
+                if (
+                    xhr.responseJSON &&
+                    xhr.responseJSON.message
+                ) {
+
+                    message =
+                        xhr.responseJSON.message;
+
+                }
+
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: message
+                });
+
+
+                $('#btnDeleteLPB')
+                    .prop('disabled', false)
+                    .html(
+                        '<i class="fa fa-trash"></i> Hapus Penerimaan'
+                    );
+
+            }
+
+        });
+
+    });
+
+});
+
 $(document).ready(function() {
     // Handle form submission event
     // Handle form submission event
