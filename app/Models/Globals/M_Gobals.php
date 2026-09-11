@@ -293,7 +293,14 @@ group by docno order by docno asc");
         return $this->db->query("select *, trim(idcoa) as id from sc_mst.coa where coalesce(trim(idcoa),'')!='' $param ");
     }
 
-    function q_currency($param){
+    function q_currency($param, $docdate = null){
+        // Jika docdate ada, gunakan untuk filter kurs
+        $docdateFilter = "";
+        if (!empty($docdate)) {
+            $docdateFormatted = date('Y-m-d', strtotime($docdate));
+            $docdateFilter = " AND exchangedate <= '$docdateFormatted'::date";
+        }
+        
         return $this->db->query("
             select 
                 a.*, 
@@ -305,6 +312,7 @@ group by docno order by docno asc");
             left join (
                 select distinct on (idcurr) idcurr, nilai, exchangedate
                 from sc_mst.exchangerate
+                where 1=1 $docdateFilter
                 order by idcurr, exchangedate desc
             ) b on b.idcurr = a.id
             where coalesce(trim(a.currcode),'') != '' 
@@ -436,7 +444,38 @@ group by docno order by docno asc");
             INNER JOIN sc_trx.salesorder_dtl so_dtl ON so.docno = so_dtl.docno 
             WHERE coalesce(trim(so.docno),'') != '' 
             AND (so_dtl.qty - coalesce(so_dtl.qtypenjualan, 0)) > 0                
-            AND (trim(so.status) = 'A')
+            AND (trim(so.status) = 'P' OR trim(so.status) = 'DO' OR trim(so.status) = 'PJO') 
+                $param
+        ");
+    }
+
+    function q_do($param){
+        // return $this->db->query("select *, trim(docno) as id from sc_trx.deliveryorder where trim(status)='A' and coalesce(trim(docno),'')!='' $param ");
+        return $this->db->query("
+            SELECT DISTINCT 
+                d.*, 
+                trim(d.docno) as id 
+            FROM sc_trx.deliveryorder d
+            INNER JOIN sc_trx.deliveryorder_dtl do_dtl ON d.docno = do_dtl.docno 
+            WHERE coalesce(trim(d.docno),'') != '' 
+            AND (do_dtl.qty - coalesce(do_dtl.qtysj, 0)) > 0                
+            AND (trim(d.status) = 'P' OR trim(d.status) = 'SJ') 
+                $param
+        ");
+    }
+
+
+    function q_sj($param){
+        // return $this->db->query("select *, trim(docno) as id from sc_trx.suratjalan where trim(status)='A' and coalesce(trim(docno),'')!='' $param ");
+        return $this->db->query("
+            SELECT DISTINCT 
+                sj.*, 
+                trim(sj.docno) as id 
+            FROM sc_trx.suratjalan sj 
+            INNER JOIN sc_trx.suratjalan_dtl sj_dtl ON sj.docno = sj_dtl.docno 
+            WHERE coalesce(trim(sj.docno),'') != '' 
+            AND (sj_dtl.qty - coalesce(sj_dtl.qtypenjualan, 0)) > 0                
+            AND (trim(sj.status) = 'P' OR trim(sj.status) = 'PJO' OR trim(sj.status) = 'F') 
                 $param
         ");
     }

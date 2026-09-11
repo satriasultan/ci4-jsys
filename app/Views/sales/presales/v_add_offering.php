@@ -633,13 +633,13 @@
         autoUpdateInput: false,
         singleDatePicker: true,
         showDropdowns: true,
-        locale: { format: 'YYYY-MM-DD' },
+        locale: { format: 'DD-MM-YYYY' },
         cancelLabel: 'Clear'
     });
 
     // handler apply/cancel
     $('#docdate').on('apply.daterangepicker', function(ev, picker) {
-        $(this).val(picker.startDate.format('YYYY-MM-DD'));
+        $(this).val(picker.startDate.format('DD-MM-YYYY'));
         // jika butuh validasi bootstrapValidator:
         // $('#formInputTransfers').bootstrapValidator('updateStatus', 'docdate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'docdate');
     });
@@ -654,12 +654,12 @@
         showDropdowns: true,
         minDate: moment(), // <--- ini untuk disable backdate
         locale: {
-            format: 'YYYY-MM-DD'
+            format: 'DD-MM-YYYY'
         },
         cancelLabel: 'Clear',
     });
     $('#expdateph').on('apply.daterangepicker', function(ev, picker) {
-        $(this).val(picker.startDate.format('YYYY-MM-DD'));
+        $(this).val(picker.startDate.format('DD-MM-YYYY'));
         $('#formInputTransfers').bootstrapValidator('updateStatus', 'expdateph', 'NOT_VALIDATED').bootstrapValidator('validateField', 'expdateph');
     });
     $('#expdateph').on('cancel.daterangepicker', function(ev, picker) {
@@ -672,12 +672,12 @@
         singleDatePicker: true,
         showDropdowns: true,
         locale: {
-            format: 'YYYY-MM-DD'
+            format: 'DD-MM-YYYY'
         },
         cancelLabel: 'Clear',
     });
     $('#datereturn').on('apply.daterangepicker', function(ev, picker) {
-        $(this).val(picker.startDate.format('YYYY-MM-DD'));
+        $(this).val(picker.startDate.format('DD-MM-YYYY'));
         $('#formInputTransfers').bootstrapValidator('updateStatus', 'datereturn', 'NOT_VALIDATED').bootstrapValidator('validateField', 'datereturn');
     });
     $('#datereturn').on('cancel.daterangepicker', function(ev, picker) {

@@ -676,6 +676,71 @@ $routes->group('/sales/postsales', ["namespace" => "App\Controllers\Sales"], fun
 
 
 
+    $routes->add('deliveryorder', 'PostSales::deliveryorder');
+    $routes->add('list_deliveryorder', 'PostSales::list_deliveryorder');
+    $routes->add('list_deliveryorder_apprv', 'PostSales::list_deliveryorder_apprv');
+
+    $routes->add('addDeliveryOrder', 'PostSales::addDeliveryOrder');
+    $routes->add('detailDeliveryOrder', 'PostSales::detailDeliveryOrder');
+    $routes->add('list_tmp_deliveryorder_dtl', 'PostSales::list_tmp_deliveryorder_dtl');
+    // $routes->add('showing_sikbsp_mst', 'PostSales::showing_sikbsp_mst');
+
+    $routes->add('clearEntryDeliveryOrder', 'PostSales::clearEntryDeliveryOrder');
+    $routes->add('finalEntryDeliveryOrder', 'PostSales::finalEntryDeliveryOrder');
+    $routes->add('finalEntryDeliveryOrder_SJ', 'PostSales::finalEntryDeliveryOrder_SJ');
+    $routes->add('showing_deliveryordertemp', 'PostSales::showing_deliveryordertemp');
+    $routes->add('updateStatusDeliveryOrder', 'PostSales::updateStatusDeliveryOrder');
+
+
+    $routes->add('save_deliveryorder_detail', 'PostSales::save_deliveryorder_detail');
+    $routes->get('updateDeliveryOrder(:any)', 'PostSales::updateDeliveryOrder$1');
+
+    $routes->add('deleteDeliveryOrderDtl', 'PostSales::deleteDeliveryOrderDtl');
+    $routes->add('show_deliveryorder', 'PostSales::show_deliveryorder');
+    $routes->add('api_deliveryorder(:any)', 'PostSales::api_deliveryorder$1');
+    $routes->add('list_trx_deliveryorder_dtl', 'PostSales::list_trx_deliveryorder_dtl');
+    $routes->add('showing_deliveryordertrx', 'PostSales::showing_deliveryordertrx');
+    $routes->add('getBranchInfoDeliveryOrder', 'PostSales::getBranchInfoDeliveryOrder');
+    $routes->add('getNextSuffixDeliveryOrder', 'PostSales::getNextSuffixDeliveryOrder');
+    $routes->add('initDeliveryOrderHeader', 'PostSales::initDeliveryOrderHeader');
+    $routes->add('saveDeliveryOrderDetail', 'PostSales::saveDeliveryOrderDetail');
+    $routes->add("get_deliveryorder_detail(:any)", "PostSales::get_deliveryorder_detail$1");
+    $routes->add("delete_deliveryorder_detail", "PostSales::delete_deliveryorder_detail");
+
+
+
+    
+    $routes->add('suratjalan', 'PostSales::suratjalan');
+    $routes->add('list_suratjalan', 'PostSales::list_suratjalan');
+    $routes->add('list_suratjalan_apprv', 'PostSales::list_suratjalan_apprv');
+
+    $routes->add('addSuratJalan', 'PostSales::addSuratJalan');
+    $routes->add('detailSuratJalan', 'PostSales::detailSuratJalan');
+    $routes->add('list_tmp_suratjalan_dtl', 'PostSales::list_tmp_suratjalan_dtl');
+    // $routes->add('showing_sikbsp_mst', 'PostSales::showing_sikbsp_mst');
+
+    $routes->add('clearEntrySuratJalan', 'PostSales::clearEntrySuratJalan');
+    $routes->add('finalEntrySuratJalan', 'PostSales::finalEntrySuratJalan');
+    $routes->add('showing_suratjalantemp', 'PostSales::showing_suratjalantemp');
+    $routes->add('updateStatusSuratJalan', 'PostSales::updateStatusSuratJalan');
+
+
+    $routes->add('save_suratjalan_detail', 'PostSales::save_suratjalan_detail');
+    $routes->get('updateSuratJalan(:any)', 'PostSales::updateSuratJalan$1');
+
+    $routes->add('deleteSuratJalanDtl', 'PostSales::deleteSuratJalanDtl');
+    $routes->add('show_suratjalan', 'PostSales::show_suratjalan');
+    $routes->add('api_suratjalan(:any)', 'PostSales::api_suratjalan$1');
+    $routes->add('list_trx_suratjalan_dtl', 'PostSales::list_trx_suratjalan_dtl');
+    $routes->add('showing_suratjalantrx', 'PostSales::showing_suratjalantrx');
+    $routes->add('getBranchInfoSuratJalan', 'PostSales::getBranchInfoSuratJalan');
+    $routes->add('getNextSuffixSuratJalan', 'PostSales::getNextSuffixSuratJalan');
+    $routes->add('initSuratJalanHeader', 'PostSales::initSuratJalanHeader');
+    $routes->add('saveSuratJalanDetail', 'PostSales::saveSuratJalanDetail');
+    $routes->add("get_suratjalan_detail(:any)", "PostSales::get_suratjalan_detail$1");
+    $routes->add("delete_suratjalan_detail", "PostSales::delete_suratjalan_detail");
+
+
 
     $routes->add('penjualan', 'PostSales::penjualan');
     $routes->add('list_penjualan', 'PostSales::list_penjualan');
@@ -1102,6 +1167,9 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
     $routes->add('globalmodule/list_lpb', 'Globalmodule::list_lpb');
 
     $routes->add('globalmodule/list_so', 'Globalmodule::list_so');
+    $routes->add('globalmodule/list_do', 'Globalmodule::list_do');
+    $routes->add('globalmodule/list_sj', 'Globalmodule::list_sj');
+
     $routes->add('globalmodule/list_bom', 'Globalmodule::list_bom');
     $routes->add('globalmodule/list_woe', 'Globalmodule::list_woe');
     $routes->add('globalmodule/list_wo', 'Globalmodule::list_wo');

@@ -32,22 +32,22 @@
                     </button>
                     <div class="dropdown-menu">
                         <?php if (isset($dtl_akses['a_input']) && trim($dtl_akses['a_input']) === 't'): ?>
-                            <a class="dropdown-item" href="<?= base_url('tools/settingawal/addSAHP') ?>"><i class="fa fa-plus"></i><?php echo '   Input'; ?> </a>
+                            <a class="dropdown-item" href="<?= base_url('sales/postsales/addDeliveryOrder') ?>"><i class="fa fa-plus"></i><?php echo '   Input'; ?> </a>
                         <?php endif; ?>
                             <!-- <a class="dropdown-item disabled" data-bs-toggle="modal" data-bs-target="#filter"  href="#"><i class="fa fa-filter"></i><?php echo '   Filter'; ?></a> -->
                         <a class="dropdown-item" href="#"  onclick="reload_tablePOTrx()"><i class="fa fa-refresh"></i><?php echo '    Reload'; ?> </a>
                     </div>
                 </div>
             </div><!-- /.card-header -->
-            <!-- <ul class="nav nav-tabs" id="poTab" role="tablist">
+            <!-- <ul class="nav nav-tabs" id="soTab" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" 
-                            id="po-tab" 
+                            id="so-tab" 
                             data-bs-toggle="tab" 
-                            data-bs-target="#po-content" 
+                            data-bs-target="#so-content" 
                             type="button" 
                             role="tab">
-                        Purchasing Order
+                        DeliveryOrder
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -57,7 +57,7 @@
                             data-bs-target="#pending-content" 
                             type="button" 
                             role="tab">
-                        Daftar PO Belum Approve
+                        Daftar SO Belum Approve
                     </button>
                 </li>
             </ul> -->
@@ -66,24 +66,26 @@
                 <div class="row">
                     <div class="col-md-12">
                         <div class="table-responsive"  style='overflow-x:auto;'>
-                            <table id="tablesaldoawalhpTrx" class="table table-bordered table-striped"  style="width:100%;" cellspacing="0">
+                            <table id="tabledeliveryorderTrx" class="table table-bordered table-striped"  style="width:100%;" cellspacing="0">
                                 <thead class="text-center">
                                     <tr>
                                         <th style="min-width:10px; text-align:center; vertical-align:middle;">No.</th>
                                         <th style="min-width:10px; text-align:center; vertical-align:middle;">Action</th>
-                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Kode</th>
-                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Sub Account</th>
-                                        <th style="min-width:80px; text-align:center; vertical-align:middle;">Alamat</th>
-                                        <th style="min-width:50px; text-align:center; vertical-align:middle;">Kota</th>
-                                        <th style="min-width:150px; text-align:center; vertical-align:middle;">Jurnal</th>
-                                        <th style="min-width:150px; text-align:center; vertical-align:middle;">Tanggal</th>
-                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Tgl JT</th>
-                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Cur</th>
+                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Docno</th>
+                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Tanggal</th>
+                                        <th style="min-width:80px; text-align:center; vertical-align:middle;">Status</th>
+                                        <th style="min-width:50px; text-align:center; vertical-align:middle;">Kode Customer</th>
+                                        <th style="min-width:150px; text-align:center; vertical-align:middle;">Nama Customer</th>
+                                        <th style="min-width:150px; text-align:center; vertical-align:middle;">Alamat Customer</th>
+                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Kota Customer</th>
+                                        <th style="min-width:150px; text-align:center; vertical-align:middle;">Deliver To</th>
+                                        <th style="min-width:150px; text-align:center; vertical-align:middle;">Alamat Kirim</th>
+                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Kota Kirim</th>
                                         <!-- <th style="min-width:100px; text-align:center; vertical-align:middle;">Tanggal Kirim</th> -->
-                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Pajak</th>
-                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">DK</th>
-                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Nilai</th>
-                                        <th style="min-width:400px; text-align:center; vertical-align:middle;">Remark</th>
+                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Salesman</th>
+                                        <!-- <th style="min-width:100px; text-align:center; vertical-align:middle;">No. PO Customer</th> -->
+                                        <th style="min-width:200px; text-align:center; vertical-align:middle;">Keterangan</th>
+                                        <th style="min-width:150px; text-align:center; vertical-align:middle;">Cost Center</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -125,10 +127,11 @@
                                 <div class="col-sm-12">
                                     <select class="form-control input-sm" id="status_filter" name="status_filter">
                                         <option value="ALL">Semua Status</option>
-                                        <option value="I">DRAFT USER</option>
-                                        <option value="C">CLOSE</option>
-                                        <option value="O">OPEN</option>
-                                        <option value="R">BATAL</option>
+                                        <option value="F">FINAL USER</option>
+                                        <option value="A">APPROVED</option>
+                                        <option value="P">CETAK/PRINT</option>
+                                        <!-- <option value="PO">DITARIK PO</option> -->
+                                        <option value="C">CANCELED</option>
                                     </select>
                                 </div>
                             </div>
@@ -149,7 +152,7 @@
 <!-- /.modal -->
 
 
-<script type="application/javascript" src="<?= base_url('assets/pagejs/tools/sahp.js') ?>"></script>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/sales/postsales/deliveryorder/deliveryorder.js') ?>"></script>
 <script type="text/javascript">
     $(function() {
         $("#example1").dataTable();

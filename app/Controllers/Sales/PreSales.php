@@ -1357,7 +1357,8 @@ class PreSales extends BaseController
     }
 
     function show_offering(){
-        $module = 'Penawaran Harga';
+        $module = 'I.S';
+        $menu = 'I.S.A.3';
         $table = 'sc_trx.offering';
         $nama = trim($this->session->get('nama'));
         $docno = $this->request->getGet('docno');  // Mengambil 'docno' dari URL
@@ -1397,7 +1398,7 @@ class PreSales extends BaseController
         //     $datamrt =  base_url("assets/mrt/report_offering_non_header.mrt") ;
         // }
 
-        return $this->fiky_report->render($datajson,$datamrt,$title,$nama,$module,$table,$docno);
+        return $this->fiky_report->render($datajson,$datamrt,$title,$nama,$module,$table,$docno,$menu);
     }
 
     function api_offering(){

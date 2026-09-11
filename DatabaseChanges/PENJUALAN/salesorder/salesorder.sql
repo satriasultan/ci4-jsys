@@ -179,7 +179,16 @@ DECLARE
     v_lock_key  BIGINT;
     v_base_docno TEXT;
     v_new_docno  TEXT;
+
+    v_client_ip TEXT;
+    v_uniqueid  VARCHAR(64);
 BEGIN
+
+    -- ===============================
+    -- AMBIL IP DARI sc_log.useronline
+    -- ===============================
+    v_client_ip := sc_log.fn_get_user_ip(NEW.inputby);
+    
     IF OLD.status = 'E' AND NEW.status = 'F' AND COALESCE(NEW.docnotmp, '') = '' THEN
 
         -- ===============================
@@ -233,7 +242,7 @@ BEGIN
             idtax,isinclusive, currcode, kurs, dpp, 
             jumlahpajak, total,
             keterangan, status, inputby, inputdate,
-            updateby, updatedate, printby, printdate
+            updateby, updatedate, printby, printdate, printcount
         )
         SELECT
             idurut, v_docno, cabang, docdate, pemohon, kdcustomer,
@@ -242,7 +251,7 @@ BEGIN
             idtax,isinclusive, currcode, kurs, dpp, 
             jumlahpajak, total,
             keterangan, 'F', inputby, inputdate,
-            updateby, updatedate, printby, printdate
+            updateby, updatedate, printby, printdate, printcount
         FROM sc_tmp.salesorder
         WHERE rtrim(docno) = rtrim(OLD.docno)
             AND inputby = v_inputby
@@ -254,30 +263,35 @@ BEGIN
         INSERT INTO sc_trx.salesorder_dtl (
             idurut, docno, idbarang, uniqueid,  nmbarang,
             idprincipal, idgudang, idspec, unit, qty, 
-            harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
+            harga, nilai, nilaikonversi, nilaipajak, qtypenjualan, qtyretur, qtydo,
+            kurs, idtax, currcode,
             bomdesc, multidisc,
             inputby, inputdate, status, updateby, updatedate
         )
         SELECT
             idurut, v_docno, idbarang, uniqueid,  nmbarang,
             idprincipal, idgudang, idspec, unit, qty, 
-            harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
+            harga, nilai, nilaikonversi, nilaipajak, qtypenjualan, qtyretur, qtydo,
+            kurs, idtax, currcode,
             bomdesc, multidisc,
             inputby, inputdate, status, updateby, updatedate
         FROM sc_tmp.salesorder_dtl
         WHERE rtrim(docno) = rtrim(OLD.docno)
             AND inputby = v_inputby;
 
-        -- UPDATE sc_trx.pp p
-        --     SET status = 'PO'
-        --     WHERE p.docno IN (
-        --         SELECT DISTINCT docnopp
-        --         FROM sc_tmp.salesorder_dtl
-        --         WHERE rtrim(docno) = rtrim(OLD.docno)
-        --         AND inputby = v_inputby
-        --         AND docnopp IS NOT NULL
-        --         AND docnopp <> ''
-        -- );
+        -- ===============================
+        -- LOG: INSERT HEADER SO
+        -- ===============================
+        PERFORM sc_log.fn_log_transaction(
+            v_docno::CHAR(30),
+            NULL,
+            'I.S',                  -- kode module dari menuprg
+            'I.S.B.1',              -- kode menu untuk SO
+            'I',                    -- action: INPUT (1 huruf)
+            v_inputby,
+            v_client_ip,
+            v_inputby
+        );
 
         -- -- ===============================
         -- -- CLEANUP TMP
@@ -303,13 +317,15 @@ BEGIN
         INSERT INTO sc_trx.salesorder_dtl
         (idurut, docno, idbarang, uniqueid,  nmbarang,
         idprincipal, idgudang, idspec, unit, qty, 
-        harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
+        harga, nilai, nilaikonversi, nilaipajak, qtypenjualan, qtyretur, qtydo,
+        kurs, idtax, currcode,
         bomdesc, multidisc,
         inputby, inputdate, status, updateby, updatedate, docnotmp)
         SELECT
             idurut, NEW.docnotmp, idbarang, uniqueid,  nmbarang,
             idprincipal, idgudang, idspec, unit, qty, 
-            harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
+            harga, nilai, nilaikonversi, nilaipajak, qtypenjualan, qtyretur, qtydo,
+            kurs, idtax, currcode,
             bomdesc, multidisc,
             inputby, inputdate, status, updateby, updatedate, docnotmp
         FROM sc_tmp.salesorder_dtl
@@ -336,7 +352,7 @@ BEGIN
         idtax,isinclusive, currcode, kurs, dpp, 
         jumlahpajak, total,
         keterangan, status, inputby, inputdate,
-        updateby, updatedate, printby, printdate, docnotmp)
+        updateby, updatedate, printby, printdate, printcount, docnotmp)
         SELECT
             idurut, NEW.docnotmp, cabang, docdate, pemohon, kdcustomer,
             nmcustomer, alamatcustomer, jthtempo,
@@ -344,9 +360,20 @@ BEGIN
             idtax,isinclusive, currcode, kurs, dpp, 
             jumlahpajak, total,
             keterangan, status, inputby, inputdate,
-            updateby, updatedate, printby, printdate, docnotmp
+            updateby, updatedate, printby, printdate, printcount, docnotmp
         FROM sc_tmp.salesorder
         WHERE rtrim(docno) = rtrim(NEW.docno);
+
+        PERFORM sc_log.fn_log_transaction(
+            NEW.docno,
+            NULL,
+            'I.S',                  -- kode module dari menuprg
+            'I.S.B.1',              -- kode menu untuk PP
+            'U',                    -- action: UPDATE (1 huruf)
+            COALESCE(NEW.updateby, NEW.inputby),
+            v_client_ip,
+            COALESCE(NEW.updateby, NEW.inputby)
+        );
 
         DELETE FROM sc_tmp.salesorder WHERE rtrim(docno) = rtrim(NEW.docno);
         DELETE FROM sc_tmp.salesorder_dtl WHERE rtrim(docno) = rtrim(NEW.docno);
@@ -396,19 +423,49 @@ DECLARE
 	vr_nowprefix char(15);  
 	vr_id_dtl numeric;
 	vr_lastdoc NUMERIC(18);
+    v_docno     TEXT;
+    v_client_ip TEXT;
+    v_inputby   TEXT;
 BEGIN		
+
+        -- ===============================
+        -- AMBIL IP DARI sc_log.useronline
+        -- ===============================
+        v_docno := rtrim(NEW.docno);
+        v_inputby := NEW.inputby;
+
+        v_client_ip := sc_log.fn_get_user_ip(v_inputby);
+
+        IF (OLD.STATUS='F' AND NEW.STATUS='C') THEN
+            -- ===============================
+            -- LOG: INSERT HEADER SO
+            -- ===============================
+            PERFORM sc_log.fn_log_transaction(
+                NEW.docno,
+                NULL,
+                'I.S',                  -- kode module dari menuprg
+                'I.S.B.1',              -- kode menu untuk SO
+                'C',                    -- action: UPDATE (1 huruf)
+                COALESCE(NEW.updateby, NEW.inputby),
+                v_client_ip,
+                COALESCE(NEW.updateby, NEW.inputby)
+            );
+
+        END IF;
 
 		IF (OLD.STATUS='F' AND NEW.STATUS='E') THEN
 			-- Insert into pp_dtl with new columns
 			INSERT INTO sc_tmp.salesorder_dtl
 			( idurut, docno, idbarang, uniqueid, nmbarang,
             idprincipal, idgudang, idspec, unit, qty, 
-            harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
+            harga, nilai, nilaikonversi, nilaipajak, qtypenjualan, qtyretur, qtydo,
+            kurs, idtax, currcode,
             bomdesc, multidisc,
             inputby, inputdate, status, updateby, updatedate, docnotmp)
 			SELECT idurut, NEW.docno, idbarang, uniqueid, nmbarang,
             idprincipal, idgudang, idspec, unit, qty, 
-            harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
+            harga, nilai, nilaikonversi, nilaipajak, qtypenjualan, qtyretur, qtydo,
+            kurs, idtax, currcode,
             bomdesc, multidisc,
             inputby, inputdate, status, updateby, updatedate, NEW.docno
 			FROM sc_trx.salesorder_dtl 
@@ -423,7 +480,7 @@ BEGIN
                 idtax,isinclusive, currcode, kurs, dpp, 
                 jumlahpajak, total,
                 keterangan, status, inputby, inputdate, updateby, updatedate,
-                printby, printdate, docnotmp
+                printby, printdate, printcount, docnotmp
             )
 			SELECT  idurut, NEW.docno, cabang, docdate, pemohon, kdcustomer,
             nmcustomer, alamatcustomer, jthtempo,
@@ -431,7 +488,7 @@ BEGIN
             idtax,isinclusive, currcode, kurs, dpp, 
             jumlahpajak, total,
             keterangan, status , inputby, inputdate, updateby, updatedate,
-            printby, printdate, NEW.docno
+            printby, printdate, printcount, NEW.docno
 			FROM sc_trx.salesorder 
 			WHERE docno = NEW.docno;
 
@@ -472,7 +529,8 @@ ADD COLUMN kurs numeric(18,2),
 ADD COLUMN nilaikonversi numeric(18,2),
 ADD COLUMN nilaipajak numeric(18,2),
 ADD COLUMN IF NOT EXISTS qtypenjualan numeric(18,2) DEFAULT 0,
-ADD COLUMN IF NOT EXISTS qtyretur numeric(18,2) DEFAULT 0;
+ADD COLUMN IF NOT EXISTS qtyretur numeric(18,2) DEFAULT 0,
+ADD COLUMN IF NOT EXISTS qtydo numeric(18,2) DEFAULT 0;
 
 -- Tambahkan kolom di sc_tmp.salesorder_dtl
 ALTER TABLE sc_tmp.salesorder_dtl 
@@ -482,7 +540,8 @@ ADD COLUMN kurs numeric(18,2),
 ADD COLUMN nilaikonversi numeric(18,2),
 ADD COLUMN nilaipajak numeric(18,2),
 ADD COLUMN IF NOT EXISTS qtypenjualan numeric(18,2) DEFAULT 0,
-ADD COLUMN IF NOT EXISTS qtyretur numeric(18,2) DEFAULT 0;
+ADD COLUMN IF NOT EXISTS qtyretur numeric(18,2) DEFAULT 0,
+ADD COLUMN IF NOT EXISTS qtydo numeric(18,2) DEFAULT 0;
 
 
 
@@ -493,4 +552,33 @@ ADD COLUMN IF NOT EXISTS qtyretur numeric(18,2) DEFAULT 0;
 
 -- ALTER TABLE sc_trx.salesorder_dtl
 -- ADD COLUMN uniqueid VARCHAR(64)
+
+
+
+
+-- =========== TAMBAHAN 24/8/26 ====================
+-- docdate
+ALTER TABLE sc_trx.salesorder
+ALTER COLUMN docdate TYPE DATE
+USING TRIM(docdate)::DATE;
+ALTER TABLE sc_tmp.salesorder
+ALTER COLUMN docdate TYPE DATE
+USING TRIM(docdate)::DATE;
+
+
+-- delivdate 
+ALTER TABLE sc_trx.salesorder
+ALTER COLUMN delivdate TYPE DATE
+USING TRIM(delivdate)::DATE;
+ALTER TABLE sc_tmp.salesorder
+ALTER COLUMN delivdate TYPE DATE
+USING TRIM(delivdate)::DATE;
+
+-- printcount
+ALTER TABLE sc_tmp.salesorder
+ADD COLUMN printcount integer
+ALTER TABLE sc_trx.salesorder
+ADD COLUMN printcount integer
+
+-- ==================== END OFTAMBAHAN 24/8/26  ====================
 

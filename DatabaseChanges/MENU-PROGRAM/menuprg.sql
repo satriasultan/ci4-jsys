@@ -104,12 +104,14 @@ INSERT INTO sc_mst.menuprg (
 ('JTS', 3, 'I.S.A.3', 'PROFORMA INVOICE', 'I.S', 'I.S.A', 'P', 'false', 'fa-money', 'sales/presales/performainvoice', 'LEFT', 'NO'),
 ('JTS', 2, 'I.S.B', 'POST PENJUALAN', 'I.S', '', 'S', 'false', 'fa-handshake-o', '#', 'LEFT', 'NO'),
 ('JTS', 1, 'I.S.B.1', 'SALES ORDER', 'I.S', 'I.S.B', 'P', 'false', 'fa-file-text', 'sales/postsales/salesorder', 'LEFT', 'NO'),
-('JTS', 2, 'I.S.B.2', 'PENJUALAN', 'I.S', 'I.S.B', 'P', 'false', 'fa-file-text', 'sales/postsales/penjualan', 'LEFT', 'NO'),
-('JTS', 3, 'I.S.B.3', 'SOI', 'I.S', 'I.S.B', 'P', 'false', 'fa-file-text-o', 'sales/postsales/soi', 'LEFT', 'NO'),
-('JTS', 4, 'I.S.B.4', 'SALES ORDER EXTERNAL', 'I.S', 'I.S.B', 'P', 'false', 'fa-file-text', 'sales/postsales/salesorderexternal', 'LEFT', 'NO'),
+('JTS', 2, 'I.S.B.2', 'DELIVERY ORDER', 'I.S', 'I.S.B', 'P', 'false', 'fa-file-text', 'sales/postsales/deliveryorder', 'LEFT', 'NO'),
+('JTS', 3, 'I.S.B.3', 'SURAT JALAN', 'I.S', 'I.S.B', 'P', 'false', 'fa-file-text', 'sales/postsales/suratjalan', 'LEFT', 'NO'),
+('JTS', 4, 'I.S.B.4', 'PENJUALAN', 'I.S', 'I.S.B', 'P', 'false', 'fa-file-text', 'sales/postsales/penjualan', 'LEFT', 'NO'),
+('JTS', 5, 'I.S.B.5', 'SOI', 'I.S', 'I.S.B', 'P', 'false', 'fa-file-text-o', 'sales/postsales/soi', 'LEFT', 'NO'),
+('JTS', 6, 'I.S.B.6', 'SALES ORDER EXTERNAL', 'I.S', 'I.S.B', 'P', 'false', 'fa-file-text', 'sales/postsales/salesorderexternal', 'LEFT', 'NO');
 -- ('JTS', 5, 'I.S.B.5', 'DELIVERY SPEC', 'I.S', 'I.S.B', 'P', 'false', 'fa-list', 'sales/postsales/deliveryspec', 'LEFT', 'NO'),
 -- ('JTS', 6, 'I.S.B.6', 'DELIVERY ORDER', 'I.S', 'I.S.B', 'P', 'false', 'fa-truck', 'sales/postsales/deliveryorder', 'LEFT', 'NO')
-;
+
 
 
 

@@ -55,6 +55,7 @@ INSERT INTO sc_mst.trxtype (kdtrx, jenistrx, uraian) VALUES
     ('C', 'I.S.B.1', 'CANCEL'),
     ('A', 'I.S.B.1', 'APPROVED'),
     ('D', 'I.S.B.1', 'DISAPPROVED'),
+    ('DO', 'I.S.B.1', 'DIPROSES DO'),
     ('P', 'I.S.B.1', 'CETAK/PRINT');
 
 
@@ -96,4 +97,21 @@ INSERT INTO sc_mst.trxtype (kdtrx, jenistrx, uraian) VALUES
     ('C', 'I.S.B.2', 'CANCEL'),
     ('A', 'I.S.B.2', 'APPROVED'),
     ('D', 'I.S.B.2', 'DISAPPROVED'),
+    ('SJP', 'I.S.B.2', 'SJ PARTIAL'),
+    ('SJF', 'I.S.B.2', 'SJ FULL'),
     ('P', 'I.S.B.2', 'CETAK/PRINT');
+
+
+
+    -- First, delete existing records for 'I.S.B.3'
+DELETE FROM sc_mst.trxtype WHERE jenistrx = 'I.S.B.3';
+
+INSERT INTO sc_mst.trxtype (kdtrx, jenistrx, uraian) VALUES
+    ('I', 'I.S.B.3', 'DRAFT'),
+    ('E', 'I.S.B.3', 'REVISION/EDITING'),
+    ('F', 'I.S.B.3', 'FINAL USER'),
+    ('C', 'I.S.B.3', 'CANCEL'),
+    ('A', 'I.S.B.3', 'APPROVED'),
+    ('D', 'I.S.B.3', 'DISAPPROVED'),
+    ('PJO', 'I.S.B.3', 'DITARIK PENJUALAN'),
+    ('P', 'I.S.B.3', 'CETAK/PRINT');

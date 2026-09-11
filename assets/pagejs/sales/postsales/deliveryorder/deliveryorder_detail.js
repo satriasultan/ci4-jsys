@@ -14,10 +14,10 @@ var table;
 var initTable;
 //"use strict";
 
-function tablePenjualanTrx(){
+function tableDeliveryOrderTrx(){
     // var lg = languageDatatable;
     var initTable = function () {
-        var table = $('#tablepenjualanTrx');
+        var table = $('#tabledeliveryorderTrx');
         table.DataTable({
             "processing": true, //Feature control the processing indicator.
             "serverSide": true, //Feature control DataTables' server-side processing mode.
@@ -40,7 +40,7 @@ function tablePenjualanTrx(){
                 'pageLength','excel'
             ],
             "ajax": {
-                "url": HOST_URL + 'sales/postsales/list_penjualan',
+                "url": HOST_URL + 'sales/postsales/list_deliveryorder',
                 "type": "POST",
                 "data": function(data) {
                     data.tglrange = $('#tglrange').val();
@@ -74,9 +74,9 @@ function tablePenjualanTrx(){
     return initTable();
 }
 
-function reload_tablePenjualanTrx()
+function reload_tableDeliveryOrderTrx()
 {
-    var table = $('#tablepenjualanTrx');
+    var table = $('#tabledeliveryorderTrx');
     table.DataTable().ajax.reload(); //reload datatable ajax
     //console.log('HALO HALO BANDUNG');
 }
@@ -84,13 +84,13 @@ function reload_tablePenjualanTrx()
 
 
 $('#btn-filter-tx').click(function(){ //button filter event click
-    var table = $('#tablepenjualanTrx');
+    var table = $('#tabledeliveryorderTrx');
     table.DataTable().ajax.reload(); //reload datatable ajax
     $('#filter').modal('hide');
 });
 $('#btn-reset-tx').click(function(){ //button reset event click
     $('#form-filter')[0].reset();
-    var table = $('#tablepenjualanTrx');
+    var table = $('#tabledeliveryorderTrx');
     table.DataTable().ajax.reload(); //reload datatable ajax
     $('#filter').modal('hide');
 });
@@ -110,7 +110,7 @@ function documentReadable(){
 
     $.ajax({
         type: 'GET',
-        url: HOST_URL + 'sales/postsales/showing_penjualantrx',
+        url: HOST_URL + 'sales/postsales/showing_deliveryordertrx',
         data: { docno: docno },
         dataType: 'json',
         dataFilter: function(data) {
@@ -196,24 +196,7 @@ function documentReadable(){
                 });
             });
 
-            $.ajax({
-                type: 'GET',
-                url: HOST_URL + 'api/globalmodule/list_tax' + '?var=' + json.dataTables.items[0].idtax,
-                dataType: 'json',
-                delay: 250,
-            }).then(function (datax) {
-                // create the option and append to Select2
-                var option = new Option(datax.items[0].nmtax, datax.items[0].idtax, true, true);
-                $('[name="idtax"]').append(option).trigger('change').prop('disabled',true);
-
-                // manually trigger the `select2:select` event
-                $('[name="idtax"]').trigger({
-                    type: 'select2:select',
-                    params: {
-                        data: datax
-                    }
-                });
-            });
+            
 
             $.ajax({
                 type: 'GET',
@@ -234,30 +217,9 @@ function documentReadable(){
                 });
             });
 
-            $.ajax({
-                type: 'GET',
-                url: HOST_URL + 'api/globalmodule/list_currency' + '?var=' + json.dataTables.items[0].currcode,
-                dataType: 'json',
-                delay: 250,
-            }).then(function (datax) {
-                // create the option and append to Select2
-                var currencyData = datax.items[0];
-                currencyData.kurs = json.dataTables.items[0].kurs;
-                // currencyData.phone = data.phone;
-                
-                // create the option dan simpan data lengkap
-                var option = new Option(currencyData.currname, currencyData.currcode, true, true);
-                $(option).data('currency-data', currencyData); // Simpan data lengkap
-                
-                $('[name="currcode"]').append(option).trigger('change').prop('disabled',true);
-                
-                // Set alamat dan phone langsung
-                setJtsValue('[name="kurs"]', convertToDbNumber(json.dataTables.items[0].kurs));
-                $('[name="kurs"]').prop('readonly', true);
-                // $("#phone").val(data.phone).prop('readonly', true);
-            });
+            
             skipRoleChange = true;
-            $('[name="docdate"]').val(json.dataTables.items[0].docdate).prop('readonly',true);
+            $('[name="docdate"]').val(moment(json.dataTables.items[0].docdate).format('DD-MM-YYYY')).prop('disabled',true);
             setJtsValue('[name="jthtempo"]', convertToDbNumber(json.dataTables.items[0].jthtempo));
             // setJtsValue('[name="biayavol"]', convertToDbNumber(json.dataTables.items[0].biayavol));
             // setJtsValue('[name="biayavol2"]', convertToDbNumber(json.dataTables.items[0].biayavol2));
@@ -271,22 +233,22 @@ function documentReadable(){
                 $.trim((json.dataTables.items[0].isopenprice || '')).toUpperCase() === 'YES'
             );
             // $('[name="jthtempo"]').val(json.dataTables.items[0].jthtempo);
-            $('[name="jthtempo"]').prop('readonly',true);
+            // $('[name="jthtempo"]').prop('readonly',true);
             $('[name="kdsalesman"]').prop('readonly',true);
-            $('[name="kurs"]').prop('readonly',true);
-            $('[name="isopenprice"]').prop('disabled',true);
-            $('[name="isinclusive"]').prop('disabled',true);
+            // $('[name="kurs"]').prop('readonly',true);
+            // $('[name="isopenprice"]').prop('disabled',true);
+            // $('[name="isinclusive"]').prop('disabled',true);
             $('[name="alamatcustomer"]').val(json.dataTables.items[0].alamatcustomer).prop('readonly',true);
             $('[name="alamatcustomerdeliv"]').val(json.dataTables.items[0].alamatcustomerdeliv).prop('readonly',true);
-            $('[name="gradecustomer"]').val(json.dataTables.items[0].gradecustomer).prop('readonly',true);
+            // $('[name="gradecustomer"]').val(json.dataTables.items[0].gradecustomer).prop('readonly',true);
             // $('[name="isinclusive"]').val(json.dataTables.items[0].isinclusive).prop('readonly',true);
             $('[name="keterangan"]').val(json.dataTables.items[0].keterangan).prop('readonly',true);
             // $('[name="nodp"]').val(json.dataTables.items[0].nodp);
-            $('[name="carabayar"]').val(json.dataTables.items[0].carabayar).prop('readonly',true);
+            // $('[name="carabayar"]').val(json.dataTables.items[0].carabayar).prop('readonly',true);
 
-            setJtsValue('[name="dpp"]', convertToDbNumber(json.dataTables.items[0].dpp));
-            setJtsValue('[name="jumlahpajak"]', convertToDbNumber(json.dataTables.items[0].jumlahpajak));
-            setJtsValue('[name="total"]', convertToDbNumber(json.dataTables.items[0].total));
+            // setJtsValue('[name="dpp"]', convertToDbNumber(json.dataTables.items[0].dpp));
+            // setJtsValue('[name="jumlahpajak"]', convertToDbNumber(json.dataTables.items[0].jumlahpajak));
+            // setJtsValue('[name="total"]', convertToDbNumber(json.dataTables.items[0].total));
             // $('[name="estpakai"]').val(json.dataTables.items[0].estpakai);
             
 
@@ -454,7 +416,7 @@ function formatPrincipalSelection(repo) {
 $("#idprincipal").select2({
     placeholder: "Ketik/Pilih Principal",
     allowClear: true,
-    // dropdownParent: $('#modalDetailPenjualan'),
+    // dropdownParent: $('#modalDetailDeliveryOrder'),
     width: '100%',
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_principal',
@@ -500,7 +462,7 @@ $("#idprincipal").select2({
 
 function setToCancel(docno) {
     Swal.fire({
-        title: 'Batalkan Pengajuan Penjualan?',
+        title: 'Batalkan Pengajuan DeliveryOrder?',
         text: "Status dokumen akan diubah menjadi Cancel",
         icon: 'question',
         showCancelButton: true,
@@ -510,7 +472,7 @@ function setToCancel(docno) {
     }).then((result) => {
         if (result.isConfirmed) {
             $.ajax({
-                url: HOST_URL + '/sales/postsales/updateStatusPenjualan',
+                url: HOST_URL + '/sales/postsales/updateStatusDeliveryOrder',
                 type: 'POST',
                 data: { docno: docno, status: 'C' },
                 dataType: 'json',
@@ -521,8 +483,8 @@ function setToCancel(docno) {
                             title: 'Berhasil',
                             text: 'Status berhasil diubah menjadi Cancel'
                         }).then(() => {
-                            reload_tablePenjualanTrx()
-                            reload_tablePenjualanApprvTrx()
+                            reload_tableDeliveryOrderTrx()
+                            reload_tableDeliveryOrderApprvTrx()
                         });
                     } else {
                         Swal.fire('Gagal', res.message || 'Terjadi kesalahan', 'error');
@@ -539,7 +501,7 @@ function setToCancel(docno) {
 
 function setToApproved(docno) {
     Swal.fire({
-        title: 'Set Penjualan menjadi Approve?',
+        title: 'Set DeliveryOrder menjadi Approve?',
         text: "Status dokumen akan diubah menjadi Approve",
         icon: 'question',
         showCancelButton: true,
@@ -549,7 +511,7 @@ function setToApproved(docno) {
     }).then((result) => {
         if (result.isConfirmed) {
             $.ajax({
-                url: HOST_URL + '/sales/postsales/updateStatusPenjualan',
+                url: HOST_URL + '/sales/postsales/updateStatusDeliveryOrder',
                 type: 'POST',
                 data: { docno: docno, status: 'A' },
                 dataType: 'json',
@@ -560,8 +522,8 @@ function setToApproved(docno) {
                             title: 'Berhasil',
                             text: 'Status berhasil diubah menjadi Approve'
                         }).then(() => {
-                            reload_tablePenjualanTrx()
-                            reload_tablePenjualanApprvTrx()
+                            reload_tableDeliveryOrderTrx()
+                            reload_tableDeliveryOrderApprvTrx()
                         });
                     } else {
                         Swal.fire('Gagal', res.message || 'Terjadi kesalahan', 'error');
@@ -577,7 +539,7 @@ function setToApproved(docno) {
 
 function setToDisapproved(docno) {
     Swal.fire({
-        title: 'Set Penjualan menjadi Disapprove?',
+        title: 'Set DeliveryOrder menjadi Disapprove?',
         text: "Status dokumen akan diubah menjadi Disapprove",
         icon: 'warning',
         showCancelButton: true,
@@ -587,7 +549,7 @@ function setToDisapproved(docno) {
     }).then((result) => {
         if (result.isConfirmed) {
             $.ajax({
-                url: HOST_URL + '/sales/postsales/updateStatusPenjualan',
+                url: HOST_URL + '/sales/postsales/updateStatusDeliveryOrder',
                 type: 'POST',
                 data: { docno: docno, status: 'F' },
                 dataType: 'json',
@@ -598,8 +560,8 @@ function setToDisapproved(docno) {
                             title: 'Berhasil',
                             text: 'Status berhasil diubah menjadi Disapprove'
                         }).then(() => {
-                            reload_tablePenjualanTrx()
-                            reload_tablePenjualanApprvTrx()
+                            reload_tableDeliveryOrderTrx()
+                            reload_tableDeliveryOrderApprvTrx()
                         });
                     } else {
                         Swal.fire('Gagal', res.message || 'Terjadi kesalahan', 'error');
@@ -617,7 +579,7 @@ function setToDisapproved(docno) {
 var defaultInitialSO = '';
 $("#docnoso").select2({
     placeholder: "Choose Your SO",
-    dropdownParent: $('#modalDetailPenjualan'),
+    dropdownParent: $('#modalDetailDeliveryOrder'),
     allowClear: true,
     width:'100%',
     ajax: {
@@ -825,10 +787,10 @@ $(document).on('input', '.jtsseparator', function () {
 
 
 /* TABLE PO DETAIL */
-function tablePenjualanDetail(){
+function tableDeliveryOrderDetail(){
         /* Tabel PO Detail */
     var initTable = function () {
-        var table = $('#tabpenjualandtl');
+        var table = $('#tabdeliveryorderdtl');
         table.DataTable({
             "processing": true, //Feature control the processing indicator.
             "serverSide": true, //Feature control DataTables' server-side processing mode.
@@ -843,7 +805,7 @@ function tablePenjualanDetail(){
             "bFilter":true,
             "iDisplayLength": -1,
             "ajax": {
-                "url": HOST_URL + 'sales/postsales/list_trx_penjualan_dtl',
+                "url": HOST_URL + 'sales/postsales/list_trx_deliveryorder_dtl',
                 "type": "POST",
                 "data": function(data) {
                     data.docno = $('#docno').val(); // tambahkan parameter docno
@@ -885,34 +847,34 @@ function tablePenjualanDetail(){
 }
 
 
-function reload_table_penjualan_dtl()
+function reload_table_deliveryorder_dtl()
 {
-    var table = $('#tabpenjualandtl');
+    var table = $('#tabdeliveryorderdtl');
     table.DataTable().ajax.reload(); //reload datatable ajax
 }
 
 
 
 // CHECK ALL
-$('#tabpenjualandtl thead').on('change', '#checkAll', function () {
+$('#tabdeliveryorderdtl thead').on('change', '#checkAll', function () {
     const checked = this.checked;
 
-    $('#tabpenjualandtl tbody .row-check').prop('checked', checked);
+    $('#tabdeliveryorderdtl tbody .row-check').prop('checked', checked);
 });
 
 // JIKA SALAH SATU ROW UNCHECK → CHECKALL MATI
-$('#tabpenjualandtl tbody').on('change', '.row-check', function () {
-    const total = $('#tabpenjualandtl tbody .row-check').length;
-    const checked = $('#tabpenjualandtl tbody .row-check:checked').length;
+$('#tabdeliveryorderdtl tbody').on('change', '.row-check', function () {
+    const total = $('#tabdeliveryorderdtl tbody .row-check').length;
+    const checked = $('#tabdeliveryorderdtl tbody .row-check:checked').length;
 
     $('#checkAll').prop('checked', total === checked);
 });
 
-$('#tabpenjualandtl').on('draw.dt', function () {
+$('#tabdeliveryorderdtl').on('draw.dt', function () {
     $('#checkAll').prop('checked', false);
 });
-function getSelectedPenjualanDetail(){
-    return $('#tabpenjualandtl tbody .row-check:checked')
+function getSelectedDeliveryOrderDetail(){
+    return $('#tabdeliveryorderdtl tbody .row-check:checked')
         .map(function () {
             return $(this).val();
         }).get();
@@ -961,7 +923,7 @@ function btnUpdateDetail(){
     const id = ids[0];
 
     $.ajax({
-        url: HOST_URL + 'sales/postsales/get_penjualan_detail',
+        url: HOST_URL + 'sales/postsales/get_deliveryorder_detail',
         type: 'GET',
         data: { id: id },
         dataType: 'json',
@@ -974,18 +936,18 @@ function btnUpdateDetail(){
                 // $('#descriptionpo').val(res.data.descriptionpo);
                 $('#docno').val(res.data.docno);
                 $('#docnosomodal').val(res.data.docnoso);
-                $('#docnosjmodal').val(res.data.docnosj);
+                // $('#docnosjmodal').val(res.data.docnosj);
                 $('#idbarang').val(res.data.idbarang);
                 $('#nmbarang').val(res.data.nmbarang);
                 $('#unit').val(res.data.unit);
-                setJtsValue('[name="qty"]', convertToDbNumber(res.data.qty));
+                // setJtsValue('[name="qty"]', convertToDbNumber(res.data.qty));
                 // setJtsValue('[name="qtybonus"]', convertToDbNumber(res.data.qtybonus));
-                setJtsValue('[name="harga"]', convertToDbNumber(res.data.harga));
+                // setJtsValue('[name="harga"]', convertToDbNumber(res.data.harga));
                 // setJtsValue('[name="volitem"]', convertToDbNumber(res.data.volitem));
                 // setJtsValue('[name="biaya"]', convertToDbNumber(res.data.biaya));
                 // setJtsValue('[name="biaya2"]', convertToDbNumber(res.data.biaya2));
-                setJtsValue('[name="multidisc"]', convertToDbNumber(res.data.multidisc));
-                setJtsValue('[name="nilai"]', convertToDbNumber(res.data.nilai));
+                // setJtsValue('[name="multidisc"]', convertToDbNumber(res.data.multidisc));
+                // setJtsValue('[name="nilai"]', convertToDbNumber(res.data.nilai));
 
 
                 currentEditId = res.data.idurut;
@@ -993,11 +955,11 @@ function btnUpdateDetail(){
                 // $('#qtybonus').val(res.data.qtybonus);
                 // $('#harga').val(res.data.harga);
                 // $('#multidisc').val(res.data.multidisc);
-                setSelect2Ajax('#idprincipal', res.data.idprincipal, res.data.idprincipal);
+                // setSelect2Ajax('#idprincipal', res.data.idprincipal, res.data.idprincipal);
                 // setSelect2Ajax('#idbarang', res.data.idbarang, res.data.idbarang);
 
-                $('#modalUpdatePenjualanLabel').text('Update Penjualan Detail');
-                $('#modalUpdatePenjualan').modal('show');
+                $('#modalUpdateDeliveryOrderLabel').text('Update DeliveryOrder Detail');
+                $('#modalUpdateDeliveryOrder').modal('show');
 
             }else{
                 Swal.fire({
@@ -1011,34 +973,34 @@ function btnUpdateDetail(){
 }
 
 // Reset currentEditId ketika modal ditutup
-$('#modalUpdatePenjualan').on('hidden.bs.modal', function () {
+$('#modalUpdateDeliveryOrder').on('hidden.bs.modal', function () {
     currentEditId = null;
 });
 
-$(document).on('input', '.form-control', function () {
-    // Jika sedang dalam mode edit, gunakan currentEditId
-    if (currentEditId) {
-        // Baca nilai qty, harga, dan multidisc
-        let qty = parseFloat($('#qty').val().replace(/,/g, '')) || 0;
-        let harga = parseFloat($('#harga').val().replace(/,/g, '')) || 0;
-        let multidisc = parseFloat($('#multidisc').val().replace(/,/g, '')) || 0;
+// $(document).on('input', '.form-control', function () {
+//     // Jika sedang dalam mode edit, gunakan currentEditId
+//     if (currentEditId) {
+//         // Baca nilai qty, harga, dan multidisc
+//         let qty = parseFloat($('#qty').val().replace(/,/g, '')) || 0;
+//         let harga = parseFloat($('#harga').val().replace(/,/g, '')) || 0;
+//         let multidisc = parseFloat($('#multidisc').val().replace(/,/g, '')) || 0;
         
-        // Hitung nilai awal (qty * harga)
-        let nilaiAwal = qty * harga;
+//         // Hitung nilai awal (qty * harga)
+//         let nilaiAwal = qty * harga;
         
-        // Hitung diskon
-        let diskon = (nilaiAwal * multidisc) / 100;
+//         // Hitung diskon
+//         let diskon = (nilaiAwal * multidisc) / 100;
         
-        // Hitung nilai akhir setelah diskon
-        let nilaiAkhir = nilaiAwal - diskon;
+//         // Hitung nilai akhir setelah diskon
+//         let nilaiAkhir = nilaiAwal - diskon;
         
-        // Format ke en-US: separator ribuan = koma, desimal = titik
-        $('#nilai').val(nilaiAkhir.toLocaleString('en-US', {
-            minimumFractionDigits: 2, 
-            maximumFractionDigits: 2
-        }));
-    }
-});
+//         // Format ke en-US: separator ribuan = koma, desimal = titik
+//         $('#nilai').val(nilaiAkhir.toLocaleString('en-US', {
+//             minimumFractionDigits: 2, 
+//             maximumFractionDigits: 2
+//         }));
+//     }
+// });
 
 function btnDeleteDetail(){
     const ids = getCheckedDetailIds();
@@ -1065,7 +1027,7 @@ function btnDeleteDetail(){
         if(!result.isConfirmed) return;
 
         $.ajax({
-            url: HOST_URL + 'sales/postsales/delete_penjualan_detail',
+            url: HOST_URL + 'sales/postsales/delete_deliveryorder_detail',
             type: 'POST',
             data: { ids: ids },
             dataType: 'json',
@@ -1080,7 +1042,7 @@ function btnDeleteDetail(){
                         showConfirmButton: false
                     });
 
-                    $('#tabpenjualandtl').DataTable().ajax.reload(null,false);
+                    $('#tabdeliveryorderdtl').DataTable().ajax.reload(null,false);
                     documentReadable()
 
                 }else{
@@ -1155,7 +1117,7 @@ $('#formPOMasters').bootstrapValidator({
     },
     excluded: [':disabled']
 });
-$('#formPenjualandetail').bootstrapValidator({
+$('#formDeliveryOrderdetail').bootstrapValidator({
     message: 'This value is not valid',
     feedbackIcons: {
         valid: 'fa fa-check',
@@ -1183,11 +1145,11 @@ $('#formPenjualandetail').bootstrapValidator({
 });
 
 
-function savePenjualanDetail() {
+function saveDeliveryOrderDetail() {
 
     Swal.fire({
         title: 'Konfirmasi',
-        text: 'Simpan data Penjualan Detail?',
+        text: 'Simpan data DeliveryOrder Detail?',
         icon: 'question',
         showCancelButton: true,
         confirmButtonText: 'Ya, Simpan',
@@ -1197,7 +1159,7 @@ function savePenjualanDetail() {
 
         if (!result.isConfirmed) return;
 
-        let formData = new FormData(document.getElementById('formPenjualanDetail'));
+        let formData = new FormData(document.getElementById('formDeliveryOrderDetail'));
         formData.append('docdate', $('#docdate').val());
         formData.append('cabang', $('#cabang').val());
         // formData.append('delivdate', $('#delivdate').val());
@@ -1251,7 +1213,7 @@ function savePenjualanDetail() {
         // formData.set('descriptionpo', convertToDbNumber(qty));
 
         $.ajax({
-            url: HOST_URL + 'sales/postsales/savePenjualanDetail',
+            url: HOST_URL + 'sales/postsales/saveDeliveryOrderDetail',
             type: 'POST',
             data: formData,
             dataType: 'json',
@@ -1301,12 +1263,12 @@ function savePenjualanDetail() {
                 }
 
                 // Jika hanya tambah detail
-                $('#modalUpdatePenjualan').modal('hide');
-                $('#modalDetailPenjualan').modal('hide');
-                $('#formPenjualanUpdate')[0].reset();
-                reload_table_penjualan_dtl();
+                $('#modalUpdateDeliveryOrder').modal('hide');
+                $('#modalDetailDeliveryOrder').modal('hide');
+                $('#formDeliveryOrderUpdate')[0].reset();
+                reload_table_deliveryorder_dtl();
                 documentReadable()
-                $('#formPenjualanDetail')[0].reset();
+                $('#formDeliveryOrderDetail')[0].reset();
             },
 
             error: function (xhr) {
@@ -1386,7 +1348,7 @@ $("#idprincipal").select2({
 
 function btnInputDetail() {
 
-    $('#formPenjualanDetail')[0].reset();
+    $('#formDeliveryOrderDetail')[0].reset();
 
     
     // 🔹 Clear select2
@@ -1401,8 +1363,8 @@ function btnInputDetail() {
 
     $('#idurut').val(''); // pastikan id kosong (mode insert)
 
-    $('#modalDetailPenjualanLabel').text('Tambah Item Detail');
-    $('#modalDetailPenjualan').modal('show');
+    $('#modalDetailDeliveryOrderLabel').text('Tambah Item Detail');
+    $('#modalDetailDeliveryOrder').modal('show');
 }
 
 
@@ -1536,7 +1498,7 @@ $('#cabang').on('change', function () {
 
     if(idbranch){
         $.ajax({
-                url: HOST_URL + '/sales/postsales/getBranchInfoPenjualan',
+                url: HOST_URL + '/sales/postsales/getBranchInfoDeliveryOrder',
                 method: 'GET',
                 data: { idbranch: idbranch },
                 dataType: 'json',
@@ -1548,7 +1510,8 @@ $('#cabang').on('change', function () {
 
                     currentKodeSuffix = res.kode_suffix; // PT / PA / PB
                     $('#infix').val(res.infix);          // YYMM
-                    $('#prefix').val('INV');             // default
+                    var prefix = res.prefix;
+                    $('#prefix').val(prefix);             // default
                     $('#sufix').val(currentKodeSuffix + '0001');
 
                     var infix = (res.infix || '').toString();
@@ -1559,10 +1522,17 @@ $('#cabang').on('change', function () {
                         var year = 2000 + parseInt(yy,10);
                         var month = parseInt(mm,10) - 1; // moment month index
 
-                        var today = moment();
-
+                        // Gunakan logindate dari response sebagai default
+                        var logindate = res.logindate ? moment(res.logindate, 'DD-MM-YYYY') : moment();
+                        
+                        // Pastikan logindate dalam range bulan infix
                         var startDate = moment([year, month, 1]);
                         var endDate = moment(startDate).endOf('month');
+                        
+                        // Jika logindate dalam range, gunakan logindate,否则 gunakan startDate
+                        var selectedDate = logindate.isBetween(startDate, endDate, 'day', '[]') 
+                            ? logindate 
+                            : startDate;
 
                         var $el = $('#docdate');
                         var drp = $el.data('daterangepicker');
@@ -1571,36 +1541,43 @@ $('#cabang').on('change', function () {
                             // update limits & selected date
                             drp.minDate = startDate;
                             drp.maxDate = endDate;
-                            drp.setStartDate(startDate);
-                            drp.setEndDate(startDate);
+                            drp.setStartDate(selectedDate);
+                            drp.setEndDate(selectedDate);
                         } else {
                             // fallback: (re)initialize with limits
                             $el.daterangepicker({
                                 autoUpdateInput: false,
                                 singleDatePicker: true,
                                 showDropdowns: true,
-                                startDate: today,
+                                startDate: selectedDate,
                                 minDate: startDate,
                                 maxDate: endDate,
                                 locale: { format: 'DD-MM-YYYY' },
                                 cancelLabel: 'Clear'
                             });
-                            // rebind handlers jika perlu (apply/cancel)
+                            // rebind handlers
                             $el.on('apply.daterangepicker', function(ev, picker) {
                                 $(this).val(picker.startDate.format('DD-MM-YYYY'));
+                                // Trigger change untuk update kurs
+                                $(this).trigger('change');
                             });
                             $el.on('cancel.daterangepicker', function(ev, picker) {
                                 $(this).val('');
+                                // Trigger change untuk reset kurs
+                                $(this).trigger('change');
                             });
                         }
 
-                        // isi input langsung (opsional)
-                        $el.val(today.format('DD-MM-YYYY'));
+                        // isi input dengan selectedDate
+                        $el.val(selectedDate.format('DD-MM-YYYY'));
                     }
 
                     $('#docno').val(
-                        'INV/' + res.infix + '/' + currentKodeSuffix + '0001'
+                        prefix + '/' + res.infix + '/' + currentKodeSuffix + '0001'
                     );
+
+                    // Ambil docdate dari field
+                    var docdate = $('#docdate').val() || '';
                 }
             });
     }
@@ -1615,7 +1592,7 @@ $('#prefix').on('blur', function () {
     if (!prefix || !infix || !currentKodeSuffix) return;
 
     $.ajax({
-        url: HOST_URL + '/sales/postsales/getNextSuffixPenjualan',
+        url: HOST_URL + '/sales/postsales/getNextSuffixDeliveryOrder',
         method: 'GET',
         data: {
             prefix: prefix,
@@ -1798,10 +1775,10 @@ $(document).ready(function() {
 
 
 
-    tablePenjualanTrx();
-    // tablePenjualanApprvTrx();
+    tableDeliveryOrderTrx();
+    // tableDeliveryOrderApprvTrx();
     // tablePOApprvTrx();
-    tablePenjualanDetail();
+    tableDeliveryOrderDetail();
     //read_qrcode();
     $('#checkboxnik').change(function() {
         // this will contain a reference to the checkbox

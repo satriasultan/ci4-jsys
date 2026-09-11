@@ -2153,6 +2153,12 @@ class Globalmodule extends BaseController
         $page = intval($page);
         $limit = $perpage * $page;
 
+        // Ambil docdate dari parameter (bisa dari GET atau POST)
+        $docdate = trim($this->request->getGet('docdate'));
+        if (empty($docdate)) {
+            $docdate = trim($this->request->getPost('docdate'));
+        }
+
         if (!empty($pg) or $pg!=='') {
             $paramglobal = " and trim(coalesce(currcode,'')) ='$pg'";
         } else {
@@ -2175,8 +2181,8 @@ class Globalmodule extends BaseController
         $param=" and (currcode like '%$search%' $paramglobal $paramglobal1 $paramglobal2 ) or (upper(currname) like '%$search%' $paramglobal $paramglobal1 $paramglobal2 ) order by currcode asc";
         //$param="";
         // $getResult = $this->m_skperingatan->q_mst_karyawan()->getResult();
-        $getResult = $this->m_global->q_currency($param)->getResult();
-        $count = $this->m_global->q_currency($param)->getNumRows();
+        $getResult = $this->m_global->q_currency($param, $docdate)->getResult();
+        $count = $this->m_global->q_currency($param, $docdate)->getNumRows();
         header('Content-Type: application/json');
         echo json_encode(
             array(
@@ -2849,6 +2855,117 @@ class Globalmodule extends BaseController
         // $getResult = $this->m_skperingatan->q_mst_karyawan()->getResult();
         $getResult = $this->m_global->q_so($param)->getResult();
         $count = $this->m_global->q_so($param)->getNumRows();
+        header('Content-Type: application/json');
+        echo json_encode(
+            array(
+                'total_count' => $count,
+                'items' => $getResult,
+                'incomplete_getResults' => false,
+            ),
+            JSON_PRETTY_PRINT
+        );
+
+    }
+
+    function list_do(){
+        $branch = $this->session->get('branch');
+        $idbu = $this->session->get('idbu');
+        $param_c="";
+        //$count = $this->m_instock->q_kdgroup_param($param_c)->getNumRows();
+        $search = strtoupper($this->request->getPost('_search_'));
+        $perpage = $this->request->getPost('_perpage_');
+        $perpage = intval($perpage);
+        //$perpage = $perpage < 1 ? $count : $perpage;
+        $page = $this->request->getPost('_page_');
+        $pg = trim($this->request->getPost('_paramglobal_'));
+        $pg2 = trim($this->request->getPost('_paramglobalcust_'));
+        $page = intval($page);
+        $limit = $perpage * $page;
+
+        if (!empty($pg) or $pg!=='') {
+            $paramglobal = " and trim(coalesce(d.docno,'')) ='$pg'";
+        } else {
+            $paramglobal = "";
+        }
+
+        if (!empty($pg2)) {
+            $paramglobalcust = " and trim(d.kdcustomer) = '$pg2'";
+        }
+
+        $varGet = trim($this->request->getGet('var'));
+        $varPost = trim($this->request->getPost('var'));
+        if (!empty($varGet) or $varGet!=='') {
+            $paramglobal1= " and d.docno='$varGet'";
+        } else {
+            $paramglobal1= "";
+        }
+        if (!empty($varPost) or $varPost!=='') {
+            $paramglobal2= " and d.docno='$varGet'";
+        } else {
+            $paramglobal2= "";
+        }
+
+        $param=" and ((d.docno like '%$search%' $paramglobal $paramglobal1 $paramglobal2 $paramglobalcust) or (upper(keterangan) like '%$search%' $paramglobal $paramglobal1 $paramglobal2 $paramglobalcust)) order by d.docno asc";
+        //$param="";
+        // $getResult = $this->m_skperingatan->q_mst_karyawan()->getResult();
+        $getResult = $this->m_global->q_do($param)->getResult();
+        $count = $this->m_global->q_do($param)->getNumRows();
+        header('Content-Type: application/json');
+        echo json_encode(
+            array(
+                'total_count' => $count,
+                'items' => $getResult,
+                'incomplete_getResults' => false,
+            ),
+            JSON_PRETTY_PRINT
+        );
+
+    }
+
+
+    function list_sj(){
+        $branch = $this->session->get('branch');
+        $idbu = $this->session->get('idbu');
+        $param_c="";
+        //$count = $this->m_instock->q_kdgroup_param($param_c)->getNumRows();
+        $search = strtoupper($this->request->getPost('_search_'));
+        $perpage = $this->request->getPost('_perpage_');
+        $perpage = intval($perpage);
+        //$perpage = $perpage < 1 ? $count : $perpage;
+        $page = $this->request->getPost('_page_');
+        $pg = trim($this->request->getPost('_paramglobal_'));
+        $pg2 = trim($this->request->getPost('_paramglobalcust_'));
+        $page = intval($page);
+        $limit = $perpage * $page;
+
+        if (!empty($pg) or $pg!=='') {
+            $paramglobal = " and trim(coalesce(sj.docno,'')) ='$pg'";
+        } else {
+            $paramglobal = "";
+        }
+
+        if (!empty($pg2)) {
+            $paramglobalcust = " and trim(sj.kdcustomer) = '$pg2'";
+        }
+
+        $varGet = trim($this->request->getGet('var'));
+        $varPost = trim($this->request->getPost('var'));
+        if (!empty($varGet) or $varGet!=='') {
+            $paramglobal1= " and sj.docno='$varGet'";
+        } else {
+            $paramglobal1= "";
+        }
+        if (!empty($varPost) or $varPost!=='') {
+            $paramglobal2= " and sj.docno='$varGet'";
+        } else {
+            $paramglobal2= "";
+        }
+
+        $param=" and ((sj.docno like '%$search%' $paramglobal $paramglobal1 $paramglobal2 $paramglobalcust) or (upper(keterangan) like '%$search%' $paramglobal $paramglobal1 $paramglobal2 $paramglobalcust)) order by sj.docno asc";
+        //$param="";
+        // $getResult = $this->m_skperingatan->q_mst_karyawan()->getResult();
+        $getResult = $this->m_global->q_sj($param)->getResult();
+        $count = $this->m_global->q_sj($param)->getNumRows();
         header('Content-Type: application/json');
         echo json_encode(
             array(

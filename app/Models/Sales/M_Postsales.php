@@ -309,6 +309,7 @@ class M_Postsales extends Model
     private function _get_query_front_salesorder()
     {
         $this->session = \Config\Services::session();
+        $this->request = \Config\Services::request();
         $loccode=trim($this->session->get('loccode'));
         $nama=trim($this->session->get('nama'));
 
@@ -323,6 +324,24 @@ class M_Postsales extends Model
         // );
         $builder->select("x.*");
         // $builder->where('inputby', $nama);
+
+        $tglrange = $this->request->getPost('tglrange');
+        if (!empty($tglrange)) {
+            $dates = explode(' - ', $tglrange);
+            if (count($dates) == 2) {
+                $start = \DateTime::createFromFormat('d-m-Y', trim($dates[0]))->format('Y-m-d');
+                $end   = \DateTime::createFromFormat('d-m-Y', trim($dates[1]))->format('Y-m-d');
+                $builder->where("docdate BETWEEN '{$start}' AND '{$end}'");
+            }
+        }
+
+        
+        $status_filter = $this->request->getPost('status_filter');
+        if (!empty($status_filter) && $status_filter !== 'ALL') {
+            $builder->where('trim(x.status)', $status_filter);
+        } else if(($status_filter) == 'ALL'){
+            $builder->where('trim(x.status) !=', 'C');
+        }
 
         $i = 0;
 
@@ -416,7 +435,7 @@ class M_Postsales extends Model
     left outer join sc_mst.salesman s on a.kdsalesman=s.kdsalesman
     left outer join sc_mst.kotakab d on c.kota_kantor=d.kodekotakab
     left outer join sc_mst.trxtype z on a.status=z.kdtrx and z.jenistrx='I.S.B.1'
-    where z.uraian != 'APPROVED' AND z.uraian != 'CANCEL') as x";
+    where z.uraian != 'APPROVED' AND z.uraian != 'CANCEL' AND z.uraian != 'CETAK/PRINT') as x";
     var $t_front_salesorder_apprv_view_column = array('docno','docdate','status_desc','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','keterangan','nmbranch');
     var $t_front_salesorder_apprv_view_order = array('inputdate' => 'desc'); // default order
     private function _get_query_front_salesorder_apprv()
@@ -503,6 +522,1040 @@ class M_Postsales extends Model
     public function get_t_front_salesorder_apprv_view_by_id($id)
     {
         $builder = $this->_get_query_front_salesorder_apprv();
+        $builder->where('idmrpgroup',$id);
+        $query = $builder->get();
+        return $query->getRow();
+    }
+
+
+
+
+
+    /* UNTUK LIST DEPAN WO*/
+    /* TRX WO*/
+    var $t_deliveryorder_view = "sc_trx.deliveryorder";
+    var $t_deliveryorder_view_column = array('docno','docref','description');
+    var $t_deliveryorder_view_order = array("docname" => 'desc'); // default order
+    private function _get_query_t_deliveryorder()
+    {
+        $this->session = \Config\Services::session();
+        $loccode=trim($this->session->get('loccode'));
+        $nama=trim($this->session->get('nama'));
+
+        $builder = $this->db->table($this->t_deliveryorder_view);
+        $i = 0;
+
+        $builder->where("docno = '$nama'");
+        foreach ($this->t_deliveryorder_view_column as $mrp)
+        {
+            if($_POST['search']['value']) // if datatable send POST for search
+            {
+
+                if($i===0) // first loop
+                {
+                    $builder->groupStart(); // open bracket. query Where with OR clause better with bracket. because maybe can combine with other WHERE with AND.
+                    $builder->like("upper(cast(" . strtoupper($mrp) . " as varchar))", strtoupper($_POST['search']['value']));
+                }
+                else
+                {
+                    $builder->orLike("upper(cast(" . strtoupper($mrp) . " as varchar))", strtoupper($_POST['search']['value']));
+                }
+
+                if(count($this->t_deliveryorder_view_column) - 1 == $i) //last loop
+                    $builder->groupEnd(); //close bracket
+            }
+            $i++;
+        }
+
+        if(isset($_POST['order'])) // here order processing
+        {
+            if ($_POST['order']['0']['column']!= 0){ //diset klo deliveryorderst column 0
+                $builder->orderBy($this->t_deliveryorder_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+            }
+        }
+        else if(isset($this->t_deliveryorder_view_order))
+        {
+            $order = $this->t_deliveryorder_view_order;
+            foreach ($order as $key => $mrp){
+                $builder->orderBy($key, $mrp);
+            }
+        }
+        return $builder;
+    }
+
+
+    function get_t_deliveryorder_view(){
+        $builder = $this->_get_query_t_deliveryorder();
+        ////$this->_get_query_t_deliveryorder();
+        if($_POST['length'] != -1)
+            $builder->limit($_POST['length'],$_POST['start']);
+        $query = $builder->get();
+        return $query->getResult();
+    }
+
+
+    function t_deliveryorder_view_count_filtered()
+    {
+        $builder = $this->_get_query_t_deliveryorder();
+        ////$this->_get_query_t_deliveryorder();
+        $query = $builder->get();
+        return $query->getNumRows();
+    }
+    public function t_deliveryorder_view_count_all()
+    {
+        $builder = $this->_get_query_t_deliveryorder();
+        return $builder->countAllResults();
+    }
+    public function get_t_deliveryorder_view_by_id($id)
+    {
+        $builder = $this->_get_query_t_deliveryorder();
+        $builder->where('idmrpgroup',$id);
+        $query = $builder->get();
+        return $query->getRow();
+    }
+
+    /* TRX MRP DETAIL */
+    var $t_deliveryorder_dtl_view = "sc_trx.deliveryorder_dtl";
+    var $t_deliveryorder_dtl_view_column = array('idurut','docnoso','idbarang','nmbarang','unit','qty','descriptionpo','descriptionpp');
+    var $t_deliveryorder_dtl_view_order = array("idurut" => 'desc'); // default order
+    private function _get_query_t_deliveryorder_dtl($docnoParam)
+    {
+        $this->session = \Config\Services::session();
+        $loccode=trim($this->session->get('loccode'));
+        $nama=trim($this->session->get('nama'));
+
+        $builder = $this->db->table($this->t_deliveryorder_dtl_view);
+        $i = 0;
+
+        $builder->where("docno = '$docnoParam'");
+        foreach ($this->t_deliveryorder_dtl_view_column as $mrp)
+        {
+            if($_POST['search']['value']) // if datatable send POST for search
+            {
+
+                if($i===0) // first loop
+                {
+                    $builder->groupStart(); // open bracket. query Where with OR clause better with bracket. because maybe can combine with other WHERE with AND.
+                    $builder->like("upper(cast(" . strtoupper($mrp) . " as varchar))", strtoupper($_POST['search']['value']));
+                }
+                else
+                {
+                    $builder->orLike("upper(cast(" . strtoupper($mrp) . " as varchar))", strtoupper($_POST['search']['value']));
+                }
+
+                if(count($this->t_deliveryorder_dtl_view_column) - 1 == $i) //last loop
+                    $builder->groupEnd(); //close bracket
+            }
+            $i++;
+        }
+
+        if(isset($_POST['order'])) // here order processing
+        {
+            if ($_POST['order']['0']['column']!= 0){ //diset klo deliveryorderst column 0
+                $builder->orderBy($this->t_deliveryorder_dtl_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+            }
+        }
+        else if(isset($this->t_deliveryorder_dtl_view_order))
+        {
+            $order = $this->t_deliveryorder_dtl_view_order;
+            foreach ($order as $key => $mrp){
+                $builder->orderBy($key, $mrp);
+            }
+        }
+        return $builder;
+    }
+
+
+    function get_t_deliveryorder_dtl_view($docnoParam){
+        $builder = $this->_get_query_t_deliveryorder_dtl($docnoParam);
+        ////$this->_get_query_t_deliveryorder_dtl();
+        if($_POST['length'] != -1)
+            $builder->limit($_POST['length'],$_POST['start']);
+        $query = $builder->get();
+        return $query->getResult();
+    }
+
+    
+
+
+    function t_deliveryorder_dtl_view_count_filtered($docnoParam)
+    {
+        $builder = $this->_get_query_t_deliveryorder_dtl($docnoParam);
+        ////$this->_get_query_t_deliveryorder_dtl();
+        $query = $builder->get();
+        return $query->getNumRows();
+    }
+    public function t_deliveryorder_dtl_view_count_all($docnoParam)
+    {
+        $builder = $this->_get_query_t_deliveryorder_dtl($docnoParam);
+        return $builder->countAllResults();
+    }
+    public function get_t_deliveryorder_dtl_view_by_id($id,$docnoParam)
+    {
+        $builder = $this->_get_query_t_deliveryorder_dtl($docnoParam);
+        $builder->where('idmrpgroup',$id);
+        $query = $builder->get();
+        return $query->getRow();
+    }
+
+    public function q_deliveryorder_master_temp($param)
+    {
+        return $this->db->query("select * from sc_tmp.deliveryorder where docno is not null $param");
+    }
+
+    public function q_deliveryorder_dtl_temp($param)
+    {
+        return $this->db->query("select * from sc_tmp.deliveryorder_dtl where docno is not null $param order by idurut desc");
+    }
+
+
+    public function q_deliveryorder_master($param)
+    {
+        return $this->db->query("select * from sc_trx.deliveryorder where docno is not null $param");
+    }
+
+    public function q_deliveryorder_dtl($param)
+    {
+        return $this->db->query("select * from sc_trx.deliveryorder_dtl where docno is not null $param order by idurut desc");
+    }
+
+
+    //WO TEMP
+    /* WO DETAIL */
+    var $t_deliveryorder_dtl_temp_view = "sc_tmp.deliveryorder_dtl";
+    var $t_deliveryorder_dtl_temp_view_column = array('idurut','docnoso','idbarang','nmbarang','unit','qty','descriptionpo','descriptionpp');
+    var $t_deliveryorder_dtl_temp_view_order = array("idurut" => 'desc'); // default order
+    private function _get_query_t_deliveryorder_dtl_temp($docno)
+    {
+        $this->session = \Config\Services::session();
+        $loccode=trim($this->session->get('loccode'));
+        $nama=trim($this->session->get('nama'));
+
+        $builder = $this->db->table($this->t_deliveryorder_dtl_temp_view);
+        $builder->orderBy('idurut');
+
+        $i = 0;
+
+        // $builder->where("docno = '$docno'");
+        $builder->where("inputby = '$nama'");
+        foreach ($this->t_deliveryorder_dtl_temp_view_column as $mrp)
+        {
+            if($_POST['search']['value']) // if datatable send POST for search
+            {
+
+                if($i===0) // first loop
+                {
+                    $builder->groupStart(); // open bracket. query Where with OR clause better with bracket. because maybe can combine with other WHERE with AND.
+                    $builder->like("upper(cast(" . strtoupper($mrp) . " as varchar))", strtoupper($_POST['search']['value']));
+                }
+                else
+                {
+                    $builder->orLike("upper(cast(" . strtoupper($mrp) . " as varchar))", strtoupper($_POST['search']['value']));
+                }
+
+                if(count($this->t_deliveryorder_dtl_temp_view_column) - 1 == $i) //last loop
+                    $builder->groupEnd(); //close bracket
+            }
+            $i++;
+        }
+
+        if(isset($_POST['order'])) // here order processing
+        {
+            if ($_POST['order']['0']['column']!= 0){ //diset klo deliveryorderst column 0
+                $builder->orderBy($this->t_deliveryorder_dtl_temp_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+            }
+        }
+        else if(isset($this->t_deliveryorder_dtl_temp_view_order))
+        {
+            $order = $this->t_deliveryorder_dtl_temp_view_order;
+            foreach ($order as $key => $mrp){
+                $builder->orderBy($key, $mrp);
+            }
+        }
+        return $builder;
+    }
+
+
+    function get_t_deliveryorder_dtl_temp_view($docno){
+        $builder = $this->_get_query_t_deliveryorder_dtl_temp($docno);
+        ////$this->_get_query_t_deliveryorder_dtl_temp($docno);
+        if($_POST['length'] != -1)
+            $builder->limit($_POST['length'],$_POST['start']);
+        $query = $builder->get();
+        return $query->getResult();
+    }
+
+
+    function t_deliveryorder_dtl_temp_view_count_filtered($docno)
+    {
+        $builder = $this->_get_query_t_deliveryorder_dtl_temp($docno);
+        ////$this->_get_query_t_deliveryorder_dtl_temp($docno);
+        $query = $builder->get();
+        return $query->getNumRows();
+    }
+    public function t_deliveryorder_dtl_temp_view_count_all($docno)
+    {
+        $builder = $this->_get_query_t_deliveryorder_dtl_temp($docno);
+        return $builder->countAllResults();
+    }
+    public function get_t_deliveryorder_dtl_temp_view_by_id($id,$docno)
+    {
+        $builder = $this->_get_query_t_deliveryorder_dtl_temp($docno);
+        $builder->where('idmrpgroup',$id);
+        $query = $builder->get();
+        return $query->getRow();
+    }
+
+
+    /* UNTUK LIST DEPAN */
+    // var $t_front_deliveryorder_view = "sc_trx.deliveryorder";
+    var $t_front_deliveryorder_view = "(select a.*, 
+    c.kdcustomer as kdcust,
+    c.nmcustomer as nmcust,
+    c.alamat_kantor as alamatcust,
+    l.kdcustomer as kdcustdeliv,
+    l.nmcustomer as nmcustdeliv,
+    l.alamat_kantor as alamatcustdeliv,
+    b.nmbranch,
+    s.nmsalesman,
+    d.namakotakab AS nmkota,
+    k.namakotakab AS nmkotadeliv,
+    z.uraian as status_desc
+    from sc_trx.deliveryorder a 
+    left outer join sc_mst.branchjob b on a.cabang=b.idbranch
+    left outer join sc_mst.customer c on a.kdcustomer=c.kdcustomer
+    left outer join sc_mst.customer l on a.kdcustomerdeliv=l.kdcustomer
+    left outer join sc_mst.salesman s on a.kdsalesman=s.kdsalesman
+    left outer join sc_mst.kotakab d on c.kota_kantor=d.kodekotakab
+    left outer join sc_mst.kotakab k on l.kota_kantor=k.kodekotakab
+    left outer join sc_mst.trxtype z on a.status=z.kdtrx and z.jenistrx='I.S.B.2') as x";
+    var $t_front_deliveryorder_view_column = array('docno','docdate','status_desc','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','keterangan','nmbranch');
+    var $t_front_deliveryorder_view_order = array('inputdate' => 'desc'); // default order
+    private function _get_query_front_deliveryorder()
+    {
+        $this->session = \Config\Services::session();
+        $loccode=trim($this->session->get('loccode'));
+        $nama=trim($this->session->get('nama'));
+
+        $builder = $this->db->table($this->t_front_deliveryorder_view);
+        // $builder->join(
+        //     "(SELECT DISTINCT ON (kdtrx) kdtrx, uraian 
+        //     FROM sc_mst.trxtype 
+        //     WHERE jenistrx = 'I.P.A.2' 
+        //     ORDER BY kdtrx, uraian DESC) AS trx", 
+        //     "COALESCE(x.status, '') = COALESCE(trx.kdtrx, '')", 
+        //     "left"
+        // );
+        $builder->select("x.*");
+        // $builder->where('inputby', $nama);
+
+        $i = 0;
+
+        //$builder->where("docno = '$nama'");
+        foreach ($this->t_front_deliveryorder_view_column as $mrpgroup)
+        {
+            if($_POST['search']['value']) // if datatable send POST for search
+            {
+
+                if($i===0) // first loop
+                {
+                    $builder->groupStart(); // open bracket. query Where with OR clause better with bracket. because maybe can combine with other WHERE with AND.
+                    $builder->like("upper(cast(" . strtoupper($mrpgroup) . " as varchar))", strtoupper($_POST['search']['value']));
+                }
+                else
+                {
+                    $builder->orLike("upper(cast(" . strtoupper($mrpgroup) . " as varchar))", strtoupper($_POST['search']['value']));
+                }
+
+                if(count($this->t_front_deliveryorder_view_column) - 1 == $i) //last loop
+                    $builder->groupEnd(); //close bracket
+            }
+            $i++;
+        }
+
+        if(isset($_POST['order'])) // here order processing
+        {
+            if ($_POST['order']['0']['column']!= 0){ //diset klo deliveryorderst column 0
+                $builder->orderBy($this->t_front_deliveryorder_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+            }
+        }
+        else if(isset($this->t_front_deliveryorder_view_order))
+        {
+            $order = $this->t_front_deliveryorder_view_order;
+            foreach ($order as $key => $mrpgroup){
+                $builder->orderBy($key, $mrpgroup);
+            }
+        }
+        return $builder;
+    }
+
+
+    function get_t_front_deliveryorder_view(){
+        $builder = $this->_get_query_front_deliveryorder();
+        ////$this->_get_query_t_mstd_usage();
+        if($_POST['length'] != -1)
+            $builder->limit($_POST['length'],$_POST['start']);
+        $query = $builder->get();
+        return $query->getResult();
+    }
+
+
+    function t_front_deliveryorder_view_count_filtered()
+    {
+        $builder = $this->_get_query_front_deliveryorder();
+        ////$this->_get_query_t_deliveryorder();
+        $query = $builder->get();
+        return $query->getNumRows();
+    }
+    public function t_front_deliveryorder_view_count_all()
+    {
+        $builder = $this->_get_query_front_deliveryorder();
+        return $builder->countAllResults();
+    }
+    public function get_t_front_deliveryorder_view_by_id($id)
+    {
+        $builder = $this->_get_query_front_deliveryorder();
+        $builder->where('idmrpgroup',$id);
+        $query = $builder->get();
+        return $query->getRow();
+    }
+
+
+
+
+
+
+
+    
+    var $t_front_deliveryorder_apprv_view = "(select a.*, 
+    c.alamat_kantor as alamatcust,
+    c.nmcustomer as nmcust,
+    b.nmbranch,
+    c.nmcustomer,
+    s.nmsalesman,
+    d.namakotakab AS nmkota,
+    z.uraian as status_desc
+    from sc_trx.deliveryorder a 
+    left outer join sc_mst.branchjob b on a.cabang=b.idbranch
+    left outer join sc_mst.customer c on a.kdcustomer=c.kdcustomer
+    left outer join sc_mst.salesman s on a.kdsalesman=s.kdsalesman
+    left outer join sc_mst.kotakab d on c.kota_kantor=d.kodekotakab
+    left outer join sc_mst.trxtype z on a.status=z.kdtrx and z.jenistrx='I.S.B.2'
+    where z.uraian != 'APPROVED' AND z.uraian != 'CANCEL') as x";
+    var $t_front_deliveryorder_apprv_view_column = array('docno','docdate','status_desc','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','keterangan','nmbranch');
+    var $t_front_deliveryorder_apprv_view_order = array('inputdate' => 'desc'); // default order
+    private function _get_query_front_deliveryorder_apprv()
+    {
+        $this->session = \Config\Services::session();
+        $loccode=trim($this->session->get('loccode'));
+        $nama=trim($this->session->get('nama'));
+
+        $builder = $this->db->table($this->t_front_deliveryorder_apprv_view);
+        // $builder->join(
+        //     "(SELECT DISTINCT ON (kdtrx) kdtrx, uraian 
+        //     FROM sc_mst.trxtype 
+        //     WHERE jenistrx = 'I.P.A.2' 
+        //     ORDER BY kdtrx, uraian DESC) AS trx", 
+        //     "COALESCE(x.status, '') = COALESCE(trx.kdtrx, '')", 
+        //     "left"
+        // );
+        $builder->select("x.*");
+        // $builder->where('inputby', $nama);
+
+        $i = 0;
+
+        //$builder->where("docno = '$nama'");
+        foreach ($this->t_front_deliveryorder_apprv_view_column as $mrpgroup)
+        {
+            if($_POST['search']['value']) // if datatable send POST for search
+            {
+
+                if($i===0) // first loop
+                {
+                    $builder->groupStart(); // open bracket. query Where with OR clause better with bracket. because maybe can combine with other WHERE with AND.
+                    $builder->like("upper(cast(" . strtoupper($mrpgroup) . " as varchar))", strtoupper($_POST['search']['value']));
+                }
+                else
+                {
+                    $builder->orLike("upper(cast(" . strtoupper($mrpgroup) . " as varchar))", strtoupper($_POST['search']['value']));
+                }
+
+                if(count($this->t_front_deliveryorder_apprv_view_column) - 1 == $i) //last loop
+                    $builder->groupEnd(); //close bracket
+            }
+            $i++;
+        }
+
+        if(isset($_POST['order'])) // here order processing
+        {
+            if ($_POST['order']['0']['column']!= 0){ //diset klo deliveryorder_apprvst column 0
+                $builder->orderBy($this->t_front_deliveryorder_apprv_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+            }
+        }
+        else if(isset($this->t_front_deliveryorder_apprv_view_order))
+        {
+            $order = $this->t_front_deliveryorder_apprv_view_order;
+            foreach ($order as $key => $mrpgroup){
+                $builder->orderBy($key, $mrpgroup);
+            }
+        }
+        return $builder;
+    }
+
+
+    function get_t_front_deliveryorder_apprv_view(){
+        $builder = $this->_get_query_front_deliveryorder_apprv();
+        ////$this->_get_query_t_mstd_usage();
+        if($_POST['length'] != -1)
+            $builder->limit($_POST['length'],$_POST['start']);
+        $query = $builder->get();
+        return $query->getResult();
+    }
+
+
+    function t_front_deliveryorder_apprv_view_count_filtered()
+    {
+        $builder = $this->_get_query_front_deliveryorder_apprv();
+        ////$this->_get_query_t_deliveryorder_apprv();
+        $query = $builder->get();
+        return $query->getNumRows();
+    }
+    public function t_front_deliveryorder_apprv_view_count_all()
+    {
+        $builder = $this->_get_query_front_deliveryorder_apprv();
+        return $builder->countAllResults();
+    }
+    public function get_t_front_deliveryorder_apprv_view_by_id($id)
+    {
+        $builder = $this->_get_query_front_deliveryorder_apprv();
+        $builder->where('idmrpgroup',$id);
+        $query = $builder->get();
+        return $query->getRow();
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+    /* UNTUK LIST DEPAN WO*/
+    /* TRX WO*/
+    var $t_suratjalan_view = "sc_trx.suratjalan";
+    var $t_suratjalan_view_column = array('docno','docref','description');
+    var $t_suratjalan_view_order = array("docname" => 'desc'); // default order
+    private function _get_query_t_suratjalan()
+    {
+        $this->session = \Config\Services::session();
+        $loccode=trim($this->session->get('loccode'));
+        $nama=trim($this->session->get('nama'));
+
+        $builder = $this->db->table($this->t_suratjalan_view);
+        $i = 0;
+
+        $builder->where("docno = '$nama'");
+        foreach ($this->t_suratjalan_view_column as $mrp)
+        {
+            if($_POST['search']['value']) // if datatable send POST for search
+            {
+
+                if($i===0) // first loop
+                {
+                    $builder->groupStart(); // open bracket. query Where with OR clause better with bracket. because maybe can combine with other WHERE with AND.
+                    $builder->like("upper(cast(" . strtoupper($mrp) . " as varchar))", strtoupper($_POST['search']['value']));
+                }
+                else
+                {
+                    $builder->orLike("upper(cast(" . strtoupper($mrp) . " as varchar))", strtoupper($_POST['search']['value']));
+                }
+
+                if(count($this->t_suratjalan_view_column) - 1 == $i) //last loop
+                    $builder->groupEnd(); //close bracket
+            }
+            $i++;
+        }
+
+        if(isset($_POST['order'])) // here order processing
+        {
+            if ($_POST['order']['0']['column']!= 0){ //diset klo suratjalanst column 0
+                $builder->orderBy($this->t_suratjalan_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+            }
+        }
+        else if(isset($this->t_suratjalan_view_order))
+        {
+            $order = $this->t_suratjalan_view_order;
+            foreach ($order as $key => $mrp){
+                $builder->orderBy($key, $mrp);
+            }
+        }
+        return $builder;
+    }
+
+
+    function get_t_suratjalan_view(){
+        $builder = $this->_get_query_t_suratjalan();
+        ////$this->_get_query_t_suratjalan();
+        if($_POST['length'] != -1)
+            $builder->limit($_POST['length'],$_POST['start']);
+        $query = $builder->get();
+        return $query->getResult();
+    }
+
+
+    function t_suratjalan_view_count_filtered()
+    {
+        $builder = $this->_get_query_t_suratjalan();
+        ////$this->_get_query_t_suratjalan();
+        $query = $builder->get();
+        return $query->getNumRows();
+    }
+    public function t_suratjalan_view_count_all()
+    {
+        $builder = $this->_get_query_t_suratjalan();
+        return $builder->countAllResults();
+    }
+    public function get_t_suratjalan_view_by_id($id)
+    {
+        $builder = $this->_get_query_t_suratjalan();
+        $builder->where('idmrpgroup',$id);
+        $query = $builder->get();
+        return $query->getRow();
+    }
+
+    /* TRX MRP DETAIL */
+    var $t_suratjalan_dtl_view = "sc_trx.suratjalan_dtl";
+    var $t_suratjalan_dtl_view_column = array('idurut','docnoso','idbarang','nmbarang','unit','qty','descriptionpo','descriptionpp');
+    var $t_suratjalan_dtl_view_order = array("idurut" => 'desc'); // default order
+    private function _get_query_t_suratjalan_dtl($docnoParam)
+    {
+        $this->session = \Config\Services::session();
+        $loccode=trim($this->session->get('loccode'));
+        $nama=trim($this->session->get('nama'));
+
+        $builder = $this->db->table($this->t_suratjalan_dtl_view);
+        $i = 0;
+
+        $builder->where("docno = '$docnoParam'");
+        foreach ($this->t_suratjalan_dtl_view_column as $mrp)
+        {
+            if($_POST['search']['value']) // if datatable send POST for search
+            {
+
+                if($i===0) // first loop
+                {
+                    $builder->groupStart(); // open bracket. query Where with OR clause better with bracket. because maybe can combine with other WHERE with AND.
+                    $builder->like("upper(cast(" . strtoupper($mrp) . " as varchar))", strtoupper($_POST['search']['value']));
+                }
+                else
+                {
+                    $builder->orLike("upper(cast(" . strtoupper($mrp) . " as varchar))", strtoupper($_POST['search']['value']));
+                }
+
+                if(count($this->t_suratjalan_dtl_view_column) - 1 == $i) //last loop
+                    $builder->groupEnd(); //close bracket
+            }
+            $i++;
+        }
+
+        if(isset($_POST['order'])) // here order processing
+        {
+            if ($_POST['order']['0']['column']!= 0){ //diset klo suratjalanst column 0
+                $builder->orderBy($this->t_suratjalan_dtl_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+            }
+        }
+        else if(isset($this->t_suratjalan_dtl_view_order))
+        {
+            $order = $this->t_suratjalan_dtl_view_order;
+            foreach ($order as $key => $mrp){
+                $builder->orderBy($key, $mrp);
+            }
+        }
+        return $builder;
+    }
+
+
+    function get_t_suratjalan_dtl_view($docnoParam){
+        $builder = $this->_get_query_t_suratjalan_dtl($docnoParam);
+        ////$this->_get_query_t_suratjalan_dtl();
+        if($_POST['length'] != -1)
+            $builder->limit($_POST['length'],$_POST['start']);
+        $query = $builder->get();
+        return $query->getResult();
+    }
+
+    
+
+
+    function t_suratjalan_dtl_view_count_filtered($docnoParam)
+    {
+        $builder = $this->_get_query_t_suratjalan_dtl($docnoParam);
+        ////$this->_get_query_t_suratjalan_dtl();
+        $query = $builder->get();
+        return $query->getNumRows();
+    }
+    public function t_suratjalan_dtl_view_count_all($docnoParam)
+    {
+        $builder = $this->_get_query_t_suratjalan_dtl($docnoParam);
+        return $builder->countAllResults();
+    }
+    public function get_t_suratjalan_dtl_view_by_id($id,$docnoParam)
+    {
+        $builder = $this->_get_query_t_suratjalan_dtl($docnoParam);
+        $builder->where('idmrpgroup',$id);
+        $query = $builder->get();
+        return $query->getRow();
+    }
+
+    public function q_suratjalan_master_temp($param)
+    {
+        return $this->db->query("select * from sc_tmp.suratjalan where docno is not null $param");
+    }
+
+    public function q_suratjalan_dtl_temp($param)
+    {
+        return $this->db->query("select * from sc_tmp.suratjalan_dtl where docno is not null $param order by idurut desc");
+    }
+
+
+    public function q_suratjalan_master($param)
+    {
+        return $this->db->query("select * from sc_trx.suratjalan where docno is not null $param");
+    }
+
+    public function q_suratjalan_dtl($param)
+    {
+        return $this->db->query("select * from sc_trx.suratjalan_dtl where docno is not null $param order by idurut desc");
+    }
+
+
+    //WO TEMP
+    /* WO DETAIL */
+    var $t_suratjalan_dtl_temp_view = "sc_tmp.suratjalan_dtl";
+    var $t_suratjalan_dtl_temp_view_column = array('idurut','docnoso','idbarang','nmbarang','unit','qty','descriptionpo','descriptionpp');
+    var $t_suratjalan_dtl_temp_view_order = array("idurut" => 'desc'); // default order
+    private function _get_query_t_suratjalan_dtl_temp($docno)
+    {
+        $this->session = \Config\Services::session();
+        $loccode=trim($this->session->get('loccode'));
+        $nama=trim($this->session->get('nama'));
+
+        $builder = $this->db->table($this->t_suratjalan_dtl_temp_view);
+        $builder->orderBy('idurut');
+
+        $i = 0;
+
+        // $builder->where("docno = '$docno'");
+        $builder->where("inputby = '$nama'");
+        foreach ($this->t_suratjalan_dtl_temp_view_column as $mrp)
+        {
+            if($_POST['search']['value']) // if datatable send POST for search
+            {
+
+                if($i===0) // first loop
+                {
+                    $builder->groupStart(); // open bracket. query Where with OR clause better with bracket. because maybe can combine with other WHERE with AND.
+                    $builder->like("upper(cast(" . strtoupper($mrp) . " as varchar))", strtoupper($_POST['search']['value']));
+                }
+                else
+                {
+                    $builder->orLike("upper(cast(" . strtoupper($mrp) . " as varchar))", strtoupper($_POST['search']['value']));
+                }
+
+                if(count($this->t_suratjalan_dtl_temp_view_column) - 1 == $i) //last loop
+                    $builder->groupEnd(); //close bracket
+            }
+            $i++;
+        }
+
+        if(isset($_POST['order'])) // here order processing
+        {
+            if ($_POST['order']['0']['column']!= 0){ //diset klo suratjalanst column 0
+                $builder->orderBy($this->t_suratjalan_dtl_temp_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+            }
+        }
+        else if(isset($this->t_suratjalan_dtl_temp_view_order))
+        {
+            $order = $this->t_suratjalan_dtl_temp_view_order;
+            foreach ($order as $key => $mrp){
+                $builder->orderBy($key, $mrp);
+            }
+        }
+        return $builder;
+    }
+
+
+    function get_t_suratjalan_dtl_temp_view($docno){
+        $builder = $this->_get_query_t_suratjalan_dtl_temp($docno);
+        ////$this->_get_query_t_suratjalan_dtl_temp($docno);
+        if($_POST['length'] != -1)
+            $builder->limit($_POST['length'],$_POST['start']);
+        $query = $builder->get();
+        return $query->getResult();
+    }
+
+
+    function t_suratjalan_dtl_temp_view_count_filtered($docno)
+    {
+        $builder = $this->_get_query_t_suratjalan_dtl_temp($docno);
+        ////$this->_get_query_t_suratjalan_dtl_temp($docno);
+        $query = $builder->get();
+        return $query->getNumRows();
+    }
+    public function t_suratjalan_dtl_temp_view_count_all($docno)
+    {
+        $builder = $this->_get_query_t_suratjalan_dtl_temp($docno);
+        return $builder->countAllResults();
+    }
+    public function get_t_suratjalan_dtl_temp_view_by_id($id,$docno)
+    {
+        $builder = $this->_get_query_t_suratjalan_dtl_temp($docno);
+        $builder->where('idmrpgroup',$id);
+        $query = $builder->get();
+        return $query->getRow();
+    }
+
+
+    /* UNTUK LIST DEPAN */
+    // var $t_front_suratjalan_view = "sc_trx.suratjalan";
+    var $t_front_suratjalan_view = "(select a.*, 
+    c.kdcustomer as kdcust,
+    c.nmcustomer as nmcust,
+    c.alamat_kantor as alamatcust,
+    l.kdcustomer as kdcustdeliv,
+    l.nmcustomer as nmcustdeliv,
+    l.alamat_kantor as alamatcustdeliv,
+    b.nmbranch,
+    s.nmsalesman,
+    d.namakotakab AS nmkota,
+    k.namakotakab AS nmkotadeliv,
+    z.uraian as status_desc
+    from sc_trx.suratjalan a 
+    left outer join sc_mst.branchjob b on a.cabang=b.idbranch
+    left outer join sc_mst.customer c on a.kdcustomer=c.kdcustomer
+    left outer join sc_mst.customer l on a.kdcustomerdeliv=l.kdcustomer
+    left outer join sc_mst.salesman s on a.kdsalesman=s.kdsalesman
+    left outer join sc_mst.kotakab d on c.kota_kantor=d.kodekotakab
+    left outer join sc_mst.kotakab k on l.kota_kantor=k.kodekotakab
+    left outer join sc_mst.trxtype z on a.status=z.kdtrx and z.jenistrx='I.S.B.3') as x";
+    var $t_front_suratjalan_view_column = array('docno','docdate','status_desc','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','keterangan','nmbranch');
+    var $t_front_suratjalan_view_order = array('inputdate' => 'desc'); // default order
+    private function _get_query_front_suratjalan()
+    {
+        $this->session = \Config\Services::session();
+        $loccode=trim($this->session->get('loccode'));
+        $nama=trim($this->session->get('nama'));
+
+        $builder = $this->db->table($this->t_front_suratjalan_view);
+        // $builder->join(
+        //     "(SELECT DISTINCT ON (kdtrx) kdtrx, uraian 
+        //     FROM sc_mst.trxtype 
+        //     WHERE jenistrx = 'I.P.A.2' 
+        //     ORDER BY kdtrx, uraian DESC) AS trx", 
+        //     "COALESCE(x.status, '') = COALESCE(trx.kdtrx, '')", 
+        //     "left"
+        // );
+        $builder->select("x.*");
+        // $builder->where('inputby', $nama);
+
+        $i = 0;
+
+        //$builder->where("docno = '$nama'");
+        foreach ($this->t_front_suratjalan_view_column as $mrpgroup)
+        {
+            if($_POST['search']['value']) // if datatable send POST for search
+            {
+
+                if($i===0) // first loop
+                {
+                    $builder->groupStart(); // open bracket. query Where with OR clause better with bracket. because maybe can combine with other WHERE with AND.
+                    $builder->like("upper(cast(" . strtoupper($mrpgroup) . " as varchar))", strtoupper($_POST['search']['value']));
+                }
+                else
+                {
+                    $builder->orLike("upper(cast(" . strtoupper($mrpgroup) . " as varchar))", strtoupper($_POST['search']['value']));
+                }
+
+                if(count($this->t_front_suratjalan_view_column) - 1 == $i) //last loop
+                    $builder->groupEnd(); //close bracket
+            }
+            $i++;
+        }
+
+        if(isset($_POST['order'])) // here order processing
+        {
+            if ($_POST['order']['0']['column']!= 0){ //diset klo suratjalanst column 0
+                $builder->orderBy($this->t_front_suratjalan_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+            }
+        }
+        else if(isset($this->t_front_suratjalan_view_order))
+        {
+            $order = $this->t_front_suratjalan_view_order;
+            foreach ($order as $key => $mrpgroup){
+                $builder->orderBy($key, $mrpgroup);
+            }
+        }
+        return $builder;
+    }
+
+
+    function get_t_front_suratjalan_view(){
+        $builder = $this->_get_query_front_suratjalan();
+        ////$this->_get_query_t_mstd_usage();
+        if($_POST['length'] != -1)
+            $builder->limit($_POST['length'],$_POST['start']);
+        $query = $builder->get();
+        return $query->getResult();
+    }
+
+
+    function t_front_suratjalan_view_count_filtered()
+    {
+        $builder = $this->_get_query_front_suratjalan();
+        ////$this->_get_query_t_suratjalan();
+        $query = $builder->get();
+        return $query->getNumRows();
+    }
+    public function t_front_suratjalan_view_count_all()
+    {
+        $builder = $this->_get_query_front_suratjalan();
+        return $builder->countAllResults();
+    }
+    public function get_t_front_suratjalan_view_by_id($id)
+    {
+        $builder = $this->_get_query_front_suratjalan();
+        $builder->where('idmrpgroup',$id);
+        $query = $builder->get();
+        return $query->getRow();
+    }
+
+
+
+
+
+
+
+    
+    var $t_front_suratjalan_apprv_view = "(select a.*, 
+    c.alamat_kantor as alamatcust,
+    c.nmcustomer as nmcust,
+    b.nmbranch,
+    c.nmcustomer,
+    s.nmsalesman,
+    d.namakotakab AS nmkota,
+    z.uraian as status_desc
+    from sc_trx.suratjalan a 
+    left outer join sc_mst.branchjob b on a.cabang=b.idbranch
+    left outer join sc_mst.customer c on a.kdcustomer=c.kdcustomer
+    left outer join sc_mst.salesman s on a.kdsalesman=s.kdsalesman
+    left outer join sc_mst.kotakab d on c.kota_kantor=d.kodekotakab
+    left outer join sc_mst.trxtype z on a.status=z.kdtrx and z.jenistrx='I.S.B.3'
+    where z.uraian != 'APPROVED' AND z.uraian != 'CANCEL') as x";
+    var $t_front_suratjalan_apprv_view_column = array('docno','docdate','status_desc','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','keterangan','nmbranch');
+    var $t_front_suratjalan_apprv_view_order = array('inputdate' => 'desc'); // default order
+    private function _get_query_front_suratjalan_apprv()
+    {
+        $this->session = \Config\Services::session();
+        $loccode=trim($this->session->get('loccode'));
+        $nama=trim($this->session->get('nama'));
+
+        $builder = $this->db->table($this->t_front_suratjalan_apprv_view);
+        // $builder->join(
+        //     "(SELECT DISTINCT ON (kdtrx) kdtrx, uraian 
+        //     FROM sc_mst.trxtype 
+        //     WHERE jenistrx = 'I.P.A.2' 
+        //     ORDER BY kdtrx, uraian DESC) AS trx", 
+        //     "COALESCE(x.status, '') = COALESCE(trx.kdtrx, '')", 
+        //     "left"
+        // );
+        $builder->select("x.*");
+        // $builder->where('inputby', $nama);
+
+        $i = 0;
+
+        //$builder->where("docno = '$nama'");
+        foreach ($this->t_front_suratjalan_apprv_view_column as $mrpgroup)
+        {
+            if($_POST['search']['value']) // if datatable send POST for search
+            {
+
+                if($i===0) // first loop
+                {
+                    $builder->groupStart(); // open bracket. query Where with OR clause better with bracket. because maybe can combine with other WHERE with AND.
+                    $builder->like("upper(cast(" . strtoupper($mrpgroup) . " as varchar))", strtoupper($_POST['search']['value']));
+                }
+                else
+                {
+                    $builder->orLike("upper(cast(" . strtoupper($mrpgroup) . " as varchar))", strtoupper($_POST['search']['value']));
+                }
+
+                if(count($this->t_front_suratjalan_apprv_view_column) - 1 == $i) //last loop
+                    $builder->groupEnd(); //close bracket
+            }
+            $i++;
+        }
+
+        if(isset($_POST['order'])) // here order processing
+        {
+            if ($_POST['order']['0']['column']!= 0){ //diset klo suratjalan_apprvst column 0
+                $builder->orderBy($this->t_front_suratjalan_apprv_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+            }
+        }
+        else if(isset($this->t_front_suratjalan_apprv_view_order))
+        {
+            $order = $this->t_front_suratjalan_apprv_view_order;
+            foreach ($order as $key => $mrpgroup){
+                $builder->orderBy($key, $mrpgroup);
+            }
+        }
+        return $builder;
+    }
+
+
+    function get_t_front_suratjalan_apprv_view(){
+        $builder = $this->_get_query_front_suratjalan_apprv();
+        ////$this->_get_query_t_mstd_usage();
+        if($_POST['length'] != -1)
+            $builder->limit($_POST['length'],$_POST['start']);
+        $query = $builder->get();
+        return $query->getResult();
+    }
+
+
+    function t_front_suratjalan_apprv_view_count_filtered()
+    {
+        $builder = $this->_get_query_front_suratjalan_apprv();
+        ////$this->_get_query_t_suratjalan_apprv();
+        $query = $builder->get();
+        return $query->getNumRows();
+    }
+    public function t_front_suratjalan_apprv_view_count_all()
+    {
+        $builder = $this->_get_query_front_suratjalan_apprv();
+        return $builder->countAllResults();
+    }
+    public function get_t_front_suratjalan_apprv_view_by_id($id)
+    {
+        $builder = $this->_get_query_front_suratjalan_apprv();
         $builder->where('idmrpgroup',$id);
         $query = $builder->get();
         return $query->getRow();

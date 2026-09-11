@@ -46,7 +46,7 @@ function tablePenjualanTrx(){
                     data.tglrange = $('#tglrange').val();
                     data.idbarang = $('#idbarang_filter').val();
                     data.namacustomer = $('#namacustomer').val();
-                    data.status = $('#status_filter').val(); //A,P,S,ALL
+                    data.status_filter = $('#status_filter').val(); //A,P,S,ALL
                 },
                 "dataFilter": function(data) {
                     var json = jQuery.parseJSON(data);
@@ -81,6 +81,19 @@ function reload_tablePenjualanTrx()
     //console.log('HALO HALO BANDUNG');
 }
 
+
+
+$('#btn-filter').click(function(){ //button filter event click
+    var table = $('#tablepenjualanTrx');
+    table.DataTable().ajax.reload(); //reload datatable ajax
+    $('#filter').modal('hide');
+});
+$('#btn-reset').click(function(){ //button reset event click
+    $('#form-filter')[0].reset();
+    var table = $('#tablepenjualanTrx');
+    table.DataTable().ajax.reload(); //reload datatable ajax
+    $('#filter').modal('hide');
+});
 
 
 function tablePenjualanApprvTrx(){
@@ -325,7 +338,7 @@ function documentReadable(){
                 // $("#phone").val(data.phone).prop('readonly', true);
             });
             skipRoleChange = true;
-            $('[name="docdate"]').val(json.dataTables.items[0].docdate);
+            $('[name="docdate"]').val(json.dataTables.items[0].docdate).prop('disabled',true);
             setJtsValue('[name="jthtempo"]', convertToDbNumber(json.dataTables.items[0].jthtempo));
             // setJtsValue('[name="biayavol"]', convertToDbNumber(json.dataTables.items[0].biayavol));
             // setJtsValue('[name="biayavol2"]', convertToDbNumber(json.dataTables.items[0].biayavol2));
@@ -751,6 +764,80 @@ function formatSOSelection(repo) {
 
 
 
+var defaultInitialSJ = '';
+var defaultInitialCustSJ = '';
+$("#docnosj").select2({
+    placeholder: "Choose Your SJ",
+    dropdownParent: $('#modalDetailPenjualan'),
+    allowClear: true,
+    width:'100%',
+    ajax: {
+        url: HOST_URL + 'api/globalmodule/list_sj',
+        type: 'POST',
+        dataType: 'json',
+        delay: 250,
+        data: function(params) {
+            return {
+                _search_: params.term, // search term
+                _page_: params.page,
+                _draw_: true,
+                _start_: 1,
+                _perpage_: 2,
+                _paramglobal_: defaultInitialSJ,
+                _paramglobalcust_: defaultInitialCustSO,
+                _parameterx_: defaultInitialSJ,
+                term: params.term,
+            };
+        },
+        processResults: function (data, params) {
+            // var searchTerm = $("#idbarang").data("select2").$dropdown.find("input").val();
+            // if (data.items.length === 1 && data.items[0].text === searchTerm) {
+            //     var option = new Option(data.items[0].nmbarang, data.items[0].idbarang, true, true);
+            //     $('#idbarang').append(option).trigger('change').select2("close");
+            //     // manually trigger the `select2:select` event
+            //     $('#idbarang').trigger({
+            //         type: 'select2:select',
+            //         params: {
+            //             data: data
+            //         }
+            //     });
+            // }
+            params.page = params.page || 1;
+            return {
+                results: data.items,
+                pagination: {
+                    more: (params.page * 30) < data.total_count
+                }
+            };
+        },
+
+        cache: false
+    },
+    escapeMarkup: function(markup) {
+        return markup;
+    }, // let our custom formatter work
+    // minimumInputLength: 1,
+    templateResult: formatSJ, // omitted for brevity, see the source of this page
+    templateSelection: formatSJSelection // omitted for brevity, see the source of this page
+}).on("select2:select", function (e) {
+    var data = e.params.data;
+    // $('[name="nmbarang"]').val(data.nmbarang.trim()).prop("readonly", true);
+    // $('[name="unit"]').val(data.unit.trim()).prop("readonly", true);
+    // $("#batch").val(null).trigger('change');
+});
+
+/* Format Group */
+function formatSJ(repo) {
+    if (repo.loading) return repo.text;
+    var markup ="<div class='select2-result-repository__description'>" + repo.docno +"   <i class='fa fa-circle-o'></i>   "+ repo.keterangan +"</div>";
+    return markup;
+}
+function formatSJSelection(repo) {
+    return repo.keterangan || repo.text;
+}
+
+
+
 function formatCurrency(repo) {
 if (repo.loading) return repo.text;
     var markup ="<div class='select2-result-repository__description'>" + repo.currcode +"   <i class='fa fa-circle'></i>   "+ repo.currname +"   <i class='fa fa-circle'></i>   "+  repo.kurs +"  </div>";
@@ -773,6 +860,7 @@ $("#currcode").select2({
         dataType: 'json',
         delay: 250,
         data: function(params) {
+            var docdate = $('#docdate').val() || '';
             return {
                 _search_: params.term, // search term
                 _page_: params.page,
@@ -780,6 +868,7 @@ $("#currcode").select2({
                 _start_: 1,
                 _perpage_: 2,
                 _paramglobal_: '',
+                docdate: docdate // Tambahkan docdate ke parameter
             };
         },
         processResults: function(data, params) {
@@ -942,6 +1031,22 @@ function tablePenjualanDetail(){
                 }
             ]
         });
+
+        $('#tabpenjualandtl tbody').on('click', 'tr', function(e) {
+            // Cegah jika yang diklik adalah checkbox itu sendiri (untuk menghindari double trigger)
+            if ($(e.target).is('input[type="checkbox"]')) {
+                return;
+            }
+            
+            // Cari checkbox di dalam baris ini
+            var checkbox = $(this).find('input[type="checkbox"].row-check');
+            
+            // Toggle status checkbox
+            checkbox.prop('checked', !checkbox.prop('checked'));
+            
+            // Trigger event change jika diperlukan
+            checkbox.trigger('change');
+        });
     }
 
     return initTable();
@@ -1038,8 +1143,9 @@ function btnUpdateDetail(){
                 // $('#descriptionpo').val(res.data.descriptionpo);
                 $('#docno').val(res.data.docno);
                 $('#docnosomodal').val(res.data.docnoso);
-                $('[name="docnoso"]').val(res.data.docnoso);
                 $('#docnosjmodal').val(res.data.docnosj);
+                $('[name="docnoso"]').val(res.data.docnoso);
+                $('[name="docnosj"]').val(res.data.docnosj);
                 $('#idbarang').val(res.data.idbarang);
                 $('#nmbarang').val(res.data.nmbarang);
                 $('#unit').val(res.data.unit);
@@ -1355,6 +1461,65 @@ $('#formPenjualandetail').bootstrapValidator({
     excluded: [':disabled']
 });
 
+// document.addEventListener('copy', function (e) {
+//     // ambil teks yang di-select user
+//     let selection = window.getSelection().toString();
+
+//     if (!selection) return;
+
+//     // kalau isinya angka berkoma (contoh: 98,830,260)
+//     if (/^[\d,]+(\.\d+)?$/.test(selection.trim())) {
+//         let clean = selection.replace(/,/g, '');
+
+//         e.clipboardData.setData('text/plain', clean);
+//         e.preventDefault();
+//     }
+// });
+// Inisialisasi select2 (sesuaikan dengan yang sudah ada)
+    // $('#docnosj').select2({
+    //     dropdownParent: $('#modalDetailPenjualan'),
+    //     placeholder: '-- Pilih No. Surat Jalan --',
+    //     allowClear: true
+    // });
+
+    // $('#docnoso').select2({
+    //     dropdownParent: $('#modalDetailPenjualan'),
+    //     placeholder: '-- Pilih No. Sales Order --',
+    //     allowClear: true
+    // });
+
+    // =====================================================
+    // VALIDASI XOR: SO vs SJ
+    // =====================================================
+
+    // Saat SJ dipilih
+    $('#docnosj').on('select2:select', function () {
+        $('#docnoso').val(null).trigger('change.select2');
+        $('#docnoso').prop('disabled', true);
+    });
+
+    // Saat SJ di-clear
+    $('#docnosj').on('select2:clear', function () {
+        $('#docnoso').prop('disabled', false);
+    });
+
+    // Saat SO dipilih
+    $('#docnoso').on('select2:select', function () {
+        $('#docnosj').val(null).trigger('change.select2');
+        $('#docnosj').prop('disabled', true);
+    });
+
+    // Saat SO di-clear
+    $('#docnoso').on('select2:clear', function () {
+        $('#docnosj').prop('disabled', false);
+    });
+
+    // Reset saat modal ditutup
+    $('#modalDetailPenjualan').on('hidden.bs.modal', function () {
+        $('#docnosj').val(null).trigger('change.select2').prop('disabled', false);
+        $('#docnoso').val(null).trigger('change.select2').prop('disabled', false);
+    });
+
 
 function savePenjualanDetail() {
 
@@ -1418,18 +1583,24 @@ function savePenjualanDetail() {
         formData.set('idprincipal', $('#idprincipal').val());
         formData.set('idgudang', $('#idgudang').val());
         formData.set('idspec', $('#idspec').val());
-        formData.set('docnosj', $('#docnosj').val());
+        // formData.set('docnosj', $('#docnosj').val());
         // formData.set('docnoso', $('#docnoso').val());
         // formData.set('docnopo', $('#docnopo').val());
         let docnoso = $('#docnoso').val();
+        let docnosj = $('#docnosj').val();
 
         // fallback kalau di modal update
         if (!docnoso) {
             docnoso = $('#docnosomodal').val();
         }
 
+        if (!docnosj) {
+            docnosj = $('#docnosjmodal').val();
+        }
+
         formData.set('docnoso', docnoso);
-        
+        formData.set('docnosj', docnosj);
+
         // formData.set('descriptionpo', convertToDbNumber(qty));
 
         $.ajax({
@@ -1732,7 +1903,8 @@ $('#cabang').on('change', function () {
 
                     currentKodeSuffix = res.kode_suffix; // PT / PA / PB
                     $('#infix').val(res.infix);          // YYMM
-                    $('#prefix').val('INV');             // default
+                    var prefix = res.prefix;
+                    $('#prefix').val(prefix);             // default
                     $('#sufix').val(currentKodeSuffix + '0001');
 
                     var infix = (res.infix || '').toString();
@@ -1743,10 +1915,17 @@ $('#cabang').on('change', function () {
                         var year = 2000 + parseInt(yy,10);
                         var month = parseInt(mm,10) - 1; // moment month index
 
-                        var today = moment();
-
+                        // Gunakan logindate dari response sebagai default
+                        var logindate = res.logindate ? moment(res.logindate, 'DD-MM-YYYY') : moment();
+                        
+                        // Pastikan logindate dalam range bulan infix
                         var startDate = moment([year, month, 1]);
                         var endDate = moment(startDate).endOf('month');
+                        
+                        // Jika logindate dalam range, gunakan logindate,否则 gunakan startDate
+                        var selectedDate = logindate.isBetween(startDate, endDate, 'day', '[]') 
+                            ? logindate 
+                            : startDate;
 
                         var $el = $('#docdate');
                         var drp = $el.data('daterangepicker');
@@ -1755,36 +1934,109 @@ $('#cabang').on('change', function () {
                             // update limits & selected date
                             drp.minDate = startDate;
                             drp.maxDate = endDate;
-                            drp.setStartDate(startDate);
-                            drp.setEndDate(startDate);
+                            drp.setStartDate(selectedDate);
+                            drp.setEndDate(selectedDate);
                         } else {
                             // fallback: (re)initialize with limits
                             $el.daterangepicker({
                                 autoUpdateInput: false,
                                 singleDatePicker: true,
                                 showDropdowns: true,
-                                startDate: today,
+                                startDate: selectedDate,
                                 minDate: startDate,
                                 maxDate: endDate,
-                                locale: { format: 'YYYY-MM-DD' },
+                                locale: { format: 'DD-MM-YYYY' },
                                 cancelLabel: 'Clear'
                             });
-                            // rebind handlers jika perlu (apply/cancel)
+                            // rebind handlers
                             $el.on('apply.daterangepicker', function(ev, picker) {
-                                $(this).val(picker.startDate.format('YYYY-MM-DD'));
+                                $(this).val(picker.startDate.format('DD-MM-YYYY'));
+                                // Trigger change untuk update kurs
+                                $(this).trigger('change');
                             });
                             $el.on('cancel.daterangepicker', function(ev, picker) {
                                 $(this).val('');
+                                // Trigger change untuk reset kurs
+                                $(this).trigger('change');
                             });
                         }
 
-                        // isi input langsung (opsional)
-                        $el.val(today.format('YYYY-MM-DD'));
+                        // isi input dengan selectedDate
+                        $el.val(selectedDate.format('DD-MM-YYYY'));
                     }
 
                     $('#docno').val(
-                        'INV/' + res.infix + '/' + currentKodeSuffix + '0001'
+                        prefix + '/' + res.infix + '/' + currentKodeSuffix + '0001'
                     );
+
+                    // Ambil docdate dari field
+                    var docdate = $('#docdate').val() || '';
+                    
+                    // Load Currency dengan docdate
+                    if (res.currcode) {
+                        // Kosongkan Select2 terlebih dahulu
+                        $('[name="currcode"]').empty().trigger('change');
+                        
+                        // Panggil API dengan docdate
+                        var url = HOST_URL + 'api/globalmodule/list_currency' + '?var=' + res.currcode;
+                        if (docdate) {
+                            url += '&docdate=' + encodeURIComponent(docdate);
+                        }
+                        
+                        $.ajax({
+                            type: 'GET',
+                            url: url,
+                            dataType: 'json',
+                            delay: 250,
+                        }).then(function (datax) {
+                            if (datax.items && datax.items.length > 0) {
+                                // create the option and append to Select2
+                                var currencyData = datax.items[0];
+                                
+                                
+                                // create the option dan simpan data lengkap
+                                var option = new Option(currencyData.currname, currencyData.currcode, true, true);
+                                $(option).data('currency-data', currencyData); // Simpan data lengkap
+                                
+                                $('[name="currcode"]').append(option).trigger('change');
+                                
+                                // Set kurs
+                                setJtsValue('[name="kurs"]', convertToDbNumber(currencyData.kurs || 1));
+                                $('[name="kurs"]').prop('readonly', false);
+                            }
+                        }).fail(function() {
+                            console.error('Failed to load currency data');
+                        });
+                    }
+
+                    // Load Tax
+                    if (res.idtax) {
+                        // Kosongkan Select2 terlebih dahulu
+                        $('[name="idtax"]').empty().trigger('change');
+                        
+                        $.ajax({
+                            type: 'GET',
+                            url: HOST_URL + 'api/globalmodule/list_tax' + '?var=' + res.idtax,
+                            dataType: 'json',
+                            delay: 250,
+                        }).then(function (datax) {
+                            if (datax.items && datax.items.length > 0) {
+                                // create the option and append to Select2
+                                var option = new Option(datax.items[0].nmtax, datax.items[0].idtax, true, true);
+                                $('[name="idtax"]').append(option).trigger('change');
+
+                                // manually trigger the `select2:select` event
+                                $('[name="idtax"]').trigger({
+                                    type: 'select2:select',
+                                    params: {
+                                        data: datax
+                                    }
+                                });
+                            }
+                        }).fail(function() {
+                            console.error('Failed to load tax data');
+                        });
+                    }
                 }
             });
     }

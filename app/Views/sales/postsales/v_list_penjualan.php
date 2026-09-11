@@ -28,7 +28,7 @@
 		<div class="card">
             <div class="card-header">
                 <div class="btn-group">
-                    <button type="button" class="btn btn-primary dropdown-toggle dropdown-icon" data-bs-toggle="dropdown"><?php echo 'Menu'; ?>
+                    <button type="button" class="btn btn-primary btn-sm dropdown-toggle dropdown-icon" data-bs-toggle="dropdown"><?php echo 'Menu'; ?>
                     </button>
                     <div class="dropdown-menu">
                         <?php if (isset($dtl_akses['a_input']) && trim($dtl_akses['a_input']) === 't'): ?>
@@ -129,10 +129,11 @@
                                 <div class="col-sm-12">
                                     <select class="form-control input-sm" id="status_filter" name="status_filter">
                                         <option value="ALL">Semua Status</option>
-                                        <option value="I">DRAFT USER</option>
-                                        <option value="C">CLOSE</option>
-                                        <option value="O">OPEN</option>
-                                        <option value="R">BATAL</option>
+                                        <option value="F">FINAL USER</option>
+                                        <option value="A">APPROVED</option>
+                                        <option value="P">CETAK/PRINT</option>
+                                        <!-- <option value="PO">DITARIK PO</option> -->
+                                        <option value="C">CANCELED</option>
                                     </select>
                                 </div>
                             </div>

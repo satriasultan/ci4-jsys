@@ -46,7 +46,7 @@ function tableSalesOrderTrx(){
                     data.tglrange = $('#tglrange').val();
                     data.idbarang = $('#idbarang_filter').val();
                     data.namacustomer = $('#namacustomer').val();
-                    data.status = $('#status_filter').val(); //A,P,S,ALL
+                    data.status_filter = $('#status_filter').val(); //A,P,S,ALL
                 },
                 "dataFilter": function(data) {
                     var json = jQuery.parseJSON(data);
@@ -80,6 +80,19 @@ function reload_tableSalesOrderTrx()
     table.DataTable().ajax.reload(); //reload datatable ajax
     //console.log('HALO HALO BANDUNG');
 }
+
+
+$('#btn-filter').click(function(){ //button filter event click
+    var table = $('#tablesalesorderTrx');
+    table.DataTable().ajax.reload(); //reload datatable ajax
+    $('#filter').modal('hide');
+});
+$('#btn-reset').click(function(){ //button reset event click
+    $('#form-filter')[0].reset();
+    var table = $('#tablesalesorderTrx');
+    table.DataTable().ajax.reload(); //reload datatable ajax
+    $('#filter').modal('hide');
+});
 
 
 
@@ -299,8 +312,8 @@ function documentReadable(){
                 // $("#phone").val(data.phone).prop('readonly', true);
             });
             skipRoleChange = true;
-            $('[name="docdate"]').val(json.dataTables.items[0].docdate);
-            $('[name="delivdate"]').val(json.dataTables.items[0].delivdate);
+            $('[name="docdate"]').val(moment(json.dataTables.items[0].docdate).format('DD-MM-YYYY')).prop('disabled',true);
+            $('[name="delivdate"]').val(moment(json.dataTables.items[0].delivdate).format('DD-MM-YYYY'));
             $('[name="gradecustomer"]').val(json.dataTables.items[0].gradecustomer);
             setJtsValue('[name="jthtempo"]', convertToDbNumber(json.dataTables.items[0].jthtempo));
             // setJtsValue('[name="biayavol"]', convertToDbNumber(json.dataTables.items[0].biayavol));
@@ -348,7 +361,6 @@ function documentReadable(){
     $("#loadMe").modal("hide");
 }
 /* FOR INPUT FUNCTION */
-
 
 var defaultInitialGroupBrng = '';
 $("#idbarang").select2({
@@ -747,6 +759,7 @@ $("#currcode").select2({
         dataType: 'json',
         delay: 250,
         data: function(params) {
+            var docdate = $('#docdate').val() || '';
             return {
                 _search_: params.term, // search term
                 _page_: params.page,
@@ -754,6 +767,7 @@ $("#currcode").select2({
                 _start_: 1,
                 _perpage_: 2,
                 _paramglobal_: '',
+                docdate: docdate // Tambahkan docdate ke parameter
             };
         },
         processResults: function(data, params) {
@@ -916,6 +930,22 @@ function tableSalesOrderDetail(){
                 }
             ]
         });
+
+        $('#tabsalesorderdtl tbody').on('click', 'tr', function(e) {
+            // Cegah jika yang diklik adalah checkbox itu sendiri (untuk menghindari double trigger)
+            if ($(e.target).is('input[type="checkbox"]')) {
+                return;
+            }
+            
+            // Cari checkbox di dalam baris ini
+            var checkbox = $(this).find('input[type="checkbox"].row-check');
+            
+            // Toggle status checkbox
+            checkbox.prop('checked', !checkbox.prop('checked'));
+            
+            // Trigger event change jika diperlukan
+            checkbox.trigger('change');
+        });
     }
 
     return initTable();
@@ -1026,7 +1056,8 @@ function btnUpdateDetail(){
                 // $('#descriptionpo').val(res.data.descriptionpo);
                 $('#docno').val(res.data.docno);
                 // $('#docnopomodal').val(res.data.docnopo);
-                $('#idbarang').val(res.data.idbarang);
+                $('#idbarang').val(res.data.idbarang).prop('disabled',true);
+                $('#idspec').val(res.data.idspec);
                 $('#nmbarang').val(res.data.nmbarang);
                 $('#unit').val(res.data.unit);
                 setJtsValue('[name="qty"]', convertToDbNumber(res.data.qty));
@@ -1045,6 +1076,7 @@ function btnUpdateDetail(){
                 // $('#harga').val(res.data.harga);
                 // $('#multidisc').val(res.data.multidisc);
                 setSelect2Ajax('#idprincipal', res.data.idprincipal, res.data.idprincipal);
+                setSelect2Ajax('#idgudang', res.data.idgudang, res.data.idgudang);
                 setSelect2Ajax('#idbarang', res.data.idbarang, res.data.idbarang);
 
                 $('#modalDetailSalesOrderLabel').text('Update Sales Order Detail');
@@ -1513,8 +1545,9 @@ function btnInputDetail() {
     
     // 🔹 Clear select2
     // $('#docnopo').val(null).trigger('change');
-    $('#idbarang').val(null).trigger('change');
+    $('#idbarang').val(null).trigger('change').prop('disabled',false);
     $('#idprincipal').val(null).trigger('change');
+    $('#idgudang').val(null).trigger('change');
     
 
     // Jika ada select2 lain, lakukan hal sama
@@ -1615,7 +1648,8 @@ $('#cabang').on('change', function () {
 
                     currentKodeSuffix = res.kode_suffix; // PT / PA / PB
                     $('#infix').val(res.infix);          // YYMM
-                    $('#prefix').val('SOJ');             // default
+                    var prefix = res.prefix;
+                    $('#prefix').val(prefix);
                     $('#sufix').val(currentKodeSuffix + '0001');
 
                     var infix = (res.infix || '').toString();
@@ -1626,10 +1660,17 @@ $('#cabang').on('change', function () {
                         var year = 2000 + parseInt(yy,10);
                         var month = parseInt(mm,10) - 1; // moment month index
 
-                        var today = moment();
-
+                        // Gunakan logindate dari response sebagai default
+                        var logindate = res.logindate ? moment(res.logindate, 'DD-MM-YYYY') : moment();
+                        
+                        // Pastikan logindate dalam range bulan infix
                         var startDate = moment([year, month, 1]);
                         var endDate = moment(startDate).endOf('month');
+                        
+                        // Jika logindate dalam range, gunakan logindate,否则 gunakan startDate
+                        var selectedDate = logindate.isBetween(startDate, endDate, 'day', '[]') 
+                            ? logindate 
+                            : startDate;
 
                         var $el = $('#docdate');
                         var drp = $el.data('daterangepicker');
@@ -1638,36 +1679,109 @@ $('#cabang').on('change', function () {
                             // update limits & selected date
                             drp.minDate = startDate;
                             drp.maxDate = endDate;
-                            drp.setStartDate(startDate);
-                            drp.setEndDate(startDate);
+                            drp.setStartDate(selectedDate);
+                            drp.setEndDate(selectedDate);
                         } else {
                             // fallback: (re)initialize with limits
                             $el.daterangepicker({
                                 autoUpdateInput: false,
                                 singleDatePicker: true,
                                 showDropdowns: true,
-                                startDate: today,
+                                startDate: selectedDate,
                                 minDate: startDate,
                                 maxDate: endDate,
-                                locale: { format: 'YYYY-MM-DD' },
+                                locale: { format: 'DD-MM-YYYY' },
                                 cancelLabel: 'Clear'
                             });
-                            // rebind handlers jika perlu (apply/cancel)
+                            // rebind handlers
                             $el.on('apply.daterangepicker', function(ev, picker) {
-                                $(this).val(picker.startDate.format('YYYY-MM-DD'));
+                                $(this).val(picker.startDate.format('DD-MM-YYYY'));
+                                // Trigger change untuk update kurs
+                                $(this).trigger('change');
                             });
                             $el.on('cancel.daterangepicker', function(ev, picker) {
                                 $(this).val('');
+                                // Trigger change untuk reset kurs
+                                $(this).trigger('change');
                             });
                         }
 
-                        // isi input langsung (opsional)
-                        $el.val(today.format('YYYY-MM-DD'));
+                        // isi input dengan selectedDate
+                        $el.val(selectedDate.format('DD-MM-YYYY'));
                     }
 
                     $('#docno').val(
-                        'SOJ/' + res.infix + '/' + currentKodeSuffix + '0001'
+                        prefix + '/' + res.infix + '/' + currentKodeSuffix + '0001'
                     );
+
+                    // Ambil docdate dari field
+                    var docdate = $('#docdate').val() || '';
+                    
+                    // Load Currency dengan docdate
+                    if (res.currcode) {
+                        // Kosongkan Select2 terlebih dahulu
+                        $('[name="currcode"]').empty().trigger('change');
+                        
+                        // Panggil API dengan docdate
+                        var url = HOST_URL + 'api/globalmodule/list_currency' + '?var=' + res.currcode;
+                        if (docdate) {
+                            url += '&docdate=' + encodeURIComponent(docdate);
+                        }
+                        
+                        $.ajax({
+                            type: 'GET',
+                            url: url,
+                            dataType: 'json',
+                            delay: 250,
+                        }).then(function (datax) {
+                            if (datax.items && datax.items.length > 0) {
+                                // create the option and append to Select2
+                                var currencyData = datax.items[0];
+                                
+                                
+                                // create the option dan simpan data lengkap
+                                var option = new Option(currencyData.currname, currencyData.currcode, true, true);
+                                $(option).data('currency-data', currencyData); // Simpan data lengkap
+                                
+                                $('[name="currcode"]').append(option).trigger('change');
+                                
+                                // Set kurs
+                                setJtsValue('[name="kurs"]', convertToDbNumber(currencyData.kurs || 1));
+                                $('[name="kurs"]').prop('readonly', false);
+                            }
+                        }).fail(function() {
+                            console.error('Failed to load currency data');
+                        });
+                    }
+
+                    // Load Tax
+                    if (res.idtax) {
+                        // Kosongkan Select2 terlebih dahulu
+                        $('[name="idtax"]').empty().trigger('change');
+                        
+                        $.ajax({
+                            type: 'GET',
+                            url: HOST_URL + 'api/globalmodule/list_tax' + '?var=' + res.idtax,
+                            dataType: 'json',
+                            delay: 250,
+                        }).then(function (datax) {
+                            if (datax.items && datax.items.length > 0) {
+                                // create the option and append to Select2
+                                var option = new Option(datax.items[0].nmtax, datax.items[0].idtax, true, true);
+                                $('[name="idtax"]').append(option).trigger('change');
+
+                                // manually trigger the `select2:select` event
+                                $('[name="idtax"]').trigger({
+                                    type: 'select2:select',
+                                    params: {
+                                        data: datax
+                                    }
+                                });
+                            }
+                        }).fail(function() {
+                            console.error('Failed to load tax data');
+                        });
+                    }
                 }
             });
     }

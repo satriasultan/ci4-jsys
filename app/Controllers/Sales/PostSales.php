@@ -1578,7 +1578,10 @@ class PostSales extends BaseController
             // Build button by access
             // =========================
 
-            if ($canUpdate && $status != "REVISION/EDITING" && $status != "APPROVED") {
+            if ($canUpdate && trim($lm->inputby) == $nama && empty($lm->printby) &&
+                empty($lm->printdate) && 
+                trim($status) == 'FINAL USER'
+            ) {
                 $updateBtn = '
                 <a class="dropdown-item bg-warning" 
                     href="' . base_url('sales/postsales/updateSalesOrder') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
@@ -1597,7 +1600,7 @@ class PostSales extends BaseController
                 </a>';
             }
 
-            if($canPrint){
+            if ($canPrint && (trim($status) == 'APPROVED' || trim($status) == 'CETAK/PRINT')) {
                 $printBtn = '
                 <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
@@ -1607,16 +1610,19 @@ class PostSales extends BaseController
                 </a>';
             }
 
-            if($canDelete){
+            if ($canDelete && trim($lm->inputby) == $nama && empty($lm->printby) &&
+                empty($lm->printdate) && 
+                trim($status) == 'FINAL USER'
+            ) {
                 $cancelBtn =  '<a class="dropdown-item bg-danger" href="#" onclick="setToCancel(\'' . trim($lm->docno) . '\');">
-                        <i class="fa fa-trash"></i> Cancel</a>';
+                        <i class="fa fa-undo"></i> Batalkan Sales Order</a>';
             }
 
 
-            if (trim($status) !== 'APPROVED' && trim($status) !== 'REVISION/EDITING') {
-                    $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
-                        <i class="fa fa-check-circle"></i> Approve</a>';
-            }
+            // if (trim($status) !== 'APPROVED' && trim($status) !== 'REVISION/EDITING') {
+            //         $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
+            //             <i class="fa fa-check-circle"></i> Approve</a>';
+            // }
 
             if (trim($status) == 'APPROVED') {
                 $disapproveBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToDisapproved(\'' . trim($lm->docno) . '\');">
@@ -1696,6 +1702,9 @@ class PostSales extends BaseController
                     break;
                 case 'CETAK/PRINT':
                     $badgeClass = 'badge-success ';
+                    break;
+                case 'DIPROSES DO':
+                    $badgeClass = 'badge-cetak ';
                     break;
                 case 'CANCEL':
                     $badgeClass = 'badge-danger ';
@@ -1789,7 +1798,7 @@ class PostSales extends BaseController
             // Build button by access
             // =========================
 
-            if ($canUpdate && $status != "REVISION/EDITING" && $status != "APPROVED") {
+            if ($canUpdate && $status = "FINAL USER") {
                 $updateBtn = '
                 <a class="dropdown-item bg-warning" 
                     href="' . base_url('sales/postsales/updateSalesOrder') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
@@ -1808,7 +1817,7 @@ class PostSales extends BaseController
                 </a>';
             }
 
-            if($canPrint){
+            if ($canPrint && (trim($status) == 'APPROVED' || trim($status) == 'CETAK/PRINT')) {
                 $printBtn = '
                 <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
@@ -1843,8 +1852,8 @@ class PostSales extends BaseController
             } else {
 
                 // selain status tersebut → tampilkan sesuai hak akses
-                if ($canUpdate) $menuContent .= $updateBtn;
-                if ($canPrint)  $menuContent .= $printBtn;
+                // if ($canUpdate) $menuContent .= $updateBtn;
+                // if ($canPrint)  $menuContent .= $printBtn;
                 if ($canView)   $menuContent .= $detailBtn;
                 if ($canApprove)   $menuContent .= $approveBtn;
                 if ($canApprove)   $menuContent .= $disapproveBtn;
@@ -1954,6 +1963,9 @@ class PostSales extends BaseController
         $nama=trim($this->session->get('nama'));
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_postsales->q_salesorder_master_temp($param);
+        if(empty($dtl->getRowArray())){
+            return redirect()->to(base_url('sales/postsales/salesorder'));
+        }
         // if(isEmpty($dtl->getRowArray()['status'])){
         //     return redirect()->to(base_url('sales/postsales/pp'));
         // }
@@ -2078,13 +2090,29 @@ class PostSales extends BaseController
             ]);
         }
 
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray(); // Ini mengembalikan array of objects/arrays
+
+        // Karena hanya 1 row, ambil index ke-0
+        $prefix = trim($konfigurasiUmum[0]['salesorder']) ?? '';
+        $currcode = trim($konfigurasiUmum[0]['currcode']) ?? '';
+        $idtax = trim($konfigurasiUmum[0]['idtax']) ?? '';
+
         $logindate = $this->session->get('logindate'); // dd-mm-yyyy
         $infix = date('ym', strtotime($logindate));
 
         return $this->response->setJSON([
             'success'      => true,
             'kode_suffix'  => $kodeSuffix,
-            'infix'        => $infix
+            'infix'        => $infix,
+            'logindate'        => $logindate,
+            'prefix'        => $prefix,
+            'konfigurasi_umum' => $konfigurasiUmum,
+            'currcode' => $currcode,
+            'idtax' => $idtax,
+
         ]);
     }
 
@@ -2496,7 +2524,29 @@ class PostSales extends BaseController
         $info = array('status' => $status);
         $update = $builder->update($info);
 
+        $action = '';
+        switch ($status) {
+            case 'A': $action = 'A'; break;  // APPROVED → 1 huruf
+            case 'F': $action = 'R'; break;  // REJECT → 1 huruf (R)
+            case 'C': $action = 'C'; break;  // CANCEL → 1 huruf
+            default:
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Status tidak valid'
+                ]);
+        }
+
         if ($update) {
+            // ===============================
+            // LOG MENGGUNAKAN FUNGSI HELPER
+            // ===============================
+            $this->m_global->insertlogtrans(
+                $docno,
+                $action,           // A / R / C (1 huruf)
+                'I.S',             // kode module dari menuprg
+                'I.S.B.1'          // kode menu untuk SO
+            );
+
             return $this->response->setJSON(['success' => true]);
         } else {
             return $this->response->setJSON(['success' => false, 'message' => 'Gagal update status']);
@@ -2572,7 +2622,7 @@ class PostSales extends BaseController
         $id = $this->request->getGet('id');
 
         $row = $this->db->table('sc_tmp.salesorder_dtl')
-            ->where('idurut', $id)
+            ->where('uniqueid', $id)
             ->get()
             ->getRowArray();
 
@@ -2618,7 +2668,7 @@ class PostSales extends BaseController
             // ======================================
             $rows = $builder
                 ->select('docno')
-                ->whereIn('idurut', $ids)
+                ->whereIn('uniqueid', $ids)
                 ->get()
                 ->getResultArray();
 
@@ -2648,7 +2698,7 @@ class PostSales extends BaseController
             // DELETE DETAIL
             // ======================================
             $builder
-                ->whereIn('idurut', $ids)
+                ->whereIn('uniqueid', $ids)
                 ->delete();
 
             if ($db->affectedRows() === 0) {
@@ -2737,7 +2787,7 @@ class PostSales extends BaseController
             $no++;
             $row = array();
             // $row[] = $no;
-            $row[] = $lm->idurut;
+            $row[] = $lm->uniqueid;
             //item
             // $row[] = $lm->docnopo;
             $row[] = $lm->idbarang;
@@ -2847,7 +2897,7 @@ class PostSales extends BaseController
         } else {
             // Ambil dari request POST
             // $pemohon = strtoupper(trim($this->request->getPost('pemohon')));
-            $docdate   = trim($this->request->getPost('docdate'));
+            // $docdate   = trim($this->request->getPost('docdate'));
             $delivdate   = trim($this->request->getPost('delivdate'));
             // $senddate   = trim($this->request->getPost('senddate'));
             $jthtempo   = trim($this->request->getPost('jthtempo'));
@@ -2879,19 +2929,19 @@ class PostSales extends BaseController
             }
 
              // Convert expdate ke format YYYY-MM-DD
-            $docdateph = null;
-            if (!empty($docdate)) {
-                $docdateph = date('Y-m-d', strtotime(str_replace('-', '/', $docdate)));
-            }
+            // $docdateph = null;
+            // if (!empty($docdate)) {
+            //     $docdateph = date('Y-m-d', strtotime($docdate));
+            // }
 
             $delivdateph = null;
             if (!empty($delivdate)) {
-                $delivdateph = date('Y-m-d', strtotime(str_replace('-', '/', $delivdate)));
+                $delivdateph = date('Y-m-d', strtotime($delivdate));
             }
 
             // Update data header dulu sebelum set status F
             $updateHeader = [
-                'docdate'        => $docdateph,
+                // 'docdate'        => $docdateph,
                 'delivdate'       => $delivdateph,
                 'jthtempo'       => $jthtempo,
                 'kdcustomer'     => strtoupper($kdcustomer),
@@ -2946,7 +2996,8 @@ class PostSales extends BaseController
 
 
     function show_salesorder(){
-         $module = "Sales Order";
+        $module = 'I.S';
+        $menu = 'I.S.B.1';
         $table = "sc_trx.salesorder";
         $nama = trim($this->session->get('nama'));
         $docno = $this->request->getGet('docno');  // Mengambil 'docno' dari URL
@@ -2986,7 +3037,7 @@ class PostSales extends BaseController
         //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
         // }
 
-        return $this->fiky_report->render($datajson,$datamrt,$title,$nama,$module,$table,$docno);
+        return $this->fiky_report->render($datajson,$datamrt,$title,$nama,$module,$table,$docno,$menu);
     }
 
     function api_salesorder(){
@@ -3063,13 +3114,12 @@ class PostSales extends BaseController
 
 
 
+    // =================================== DELIVERY ORDER ===========================================
 
-    // =================================== PENJUALAN ===========================================
 
-
-     public function penjualan()
+     public function deliveryorder()
     {
-        $data['title']="Penjualan";
+        $data['title']="Delivery Order";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
@@ -3105,13 +3155,13 @@ class PostSales extends BaseController
         }
         /* Item Entry Master Check */
         $param = " and coalesce(inputby,'')='$nama'";
-        $dtl = $this->m_postsales->q_penjualan_master_temp($param);
+        $dtl = $this->m_postsales->q_deliveryorder_master_temp($param);
         $logindate = trim($this->session->get('logindate'));
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
-            $urlclear = base_url('sales/postsales/clearEntryPenjualan');
-            $urlnext = base_url('sales/postsales/addPenjualan');
+            $urlclear = base_url('sales/postsales/clearEntryDeliveryOrder');
+            $urlnext = base_url('sales/postsales/addDeliveryOrder');
             $body = " Entry not finished found....!!!";
             $data['showUnfinish'] = $this->m_trxerror->unfinish($nama, $urlclear, $urlnext, $title, $body);
         } else { $data['showUnfinish'] = '' ; }
@@ -3122,13 +3172,13 @@ class PostSales extends BaseController
         //auto insert unit
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
-        return $this->template->render('sales/postsales/v_list_penjualan',$data);
+        return $this->template->render('sales/postsales/v_list_deliveryorder',$data);
     }
 
-    function detailPenjualan()
+    function detailDeliveryOrder()
     {
         /* Penambahan Squence */
-        $data['title']="Detail Penjualan";
+        $data['title']="Detail DeliveryOrder";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
@@ -3136,7 +3186,7 @@ class PostSales extends BaseController
 
         $docno = $this->request->getGet('docno');
         if (empty($docno)) {
-            return redirect()->to(base_url('sales/postsales/penjualan'));
+            return redirect()->to(base_url('sales/postsales/deliveryorder'));
         }
         $kodemenu='I.S.B.2'; $versirelease='I.S.B.2/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
@@ -3176,6 +3226,3509 @@ class PostSales extends BaseController
         $data['typeform'] = 'DETAIL';
         $data['userlogin'] = $nama;
         $data['docnoParam'] = $decoded_docno;
+        $data['dtldata'] = $this->m_postsales->q_deliveryorder_master($param)->getRowArray();
+        return $this->template->render('sales/postsales/v_detail_deliveryorder',$data);
+    }
+
+    function list_deliveryorder(){
+        $list = $this->m_postsales->get_t_front_deliveryorder_view();
+        $data = array();
+        $no = $_POST['start'];
+
+
+        $kmenu = 'I.S.B.2';
+        $nama=trim($this->session->get('nama'));
+        $role=trim($this->session->get('roleid'));
+
+        $datadtl['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
+        $dataanu['userinfo'] = $this->m_user->getUser(" and username='$nama'")->getRowArray();
+
+        $canUpdate = isset($datadtl['dtl_akses']['a_update']) && trim($datadtl['dtl_akses']['a_update']) === 't';
+        $canPrint = isset($datadtl['dtl_akses']['a_report']) && trim($datadtl['dtl_akses']['a_report']) === 't';
+        $canView = isset($datadtl['dtl_akses']['a_view']) && trim($datadtl['dtl_akses']['a_view']) === 't';
+        // $canApprove = isset($datadtl['dtl_akses']['a_approve1']) && trim($datadtl['dtl_akses']['a_approve1']) === 't';
+        $canDelete = isset($datadtl['dtl_akses']['a_delete']) && trim($datadtl['dtl_akses']['a_delete']) === 't';
+
+        foreach ($list as $lm) {
+            $no++;
+            $row = array();
+
+            $status = strtoupper(trim($lm->status_desc));
+            $docno  = trim($lm->docno);
+            $docnoHex = bin2hex($docno);
+
+            
+            $updateBtn = '';
+            $detailBtn = '';
+            $printBtn  = '';
+            $approveBtn  = '';
+            $disapproveBtn  = '';
+            $cancelBtn  = '';
+
+            // =========================
+            // Build button by access
+            // =========================
+
+            if ($canUpdate && trim($lm->inputby) == $nama && empty($lm->printby) &&
+                empty($lm->printdate) && 
+                trim($status) == 'FINAL USER'
+            ){
+                $updateBtn = '
+                <a class="dropdown-item bg-warning" 
+                    href="' . base_url('sales/postsales/updateDeliveryOrder') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'Update This DeliveryOrder : ' . $docno . '\')">
+                    <i class="fa fa-edit"></i> Update DeliveryOrder 
+                </a>';
+            }
+
+            if($canView){
+                $detailBtn = 
+                '<a class="dropdown-item" 
+                    style="background-color:#3badf6;" 
+                    href="' . base_url('sales/postsales/detailDeliveryOrder') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'View Detail DeliveryOrder : ' . $docno . '\')">
+                    <i class="fa fa-eye"></i> Detail DeliveryOrder 
+                </a>';
+            }
+
+            if ($canPrint && (trim($status) == 'APPROVED' || trim($status) == 'CETAK/PRINT')) {
+                $printBtn = '
+                <a class="dropdown-item" 
+                    style="background-color:#00ff8e;" 
+                    href="' . base_url('sales/postsales/show_po') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'Print DeliveryOrder : ' . $docno . '\')">
+                    <i class="fa fa-print"></i> Print DeliveryOrder 
+                </a>';
+            }
+
+            if ($canDelete && trim($lm->inputby) == $nama && empty($lm->printby) &&
+                empty($lm->printdate) && 
+                trim($status) == 'FINAL USER'
+            ) {
+                $cancelBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToCancel(\'' . trim($lm->docno) . '\');">
+                    <i class="fa fa-undo"></i> Batalkan Delivery Order</a>';
+            }
+
+
+            // if (trim($status) !== 'APPROVED' && trim($status) !== 'REVISION/EDITING') {
+            //         $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
+            //             <i class="fa fa-check-circle"></i> Approve</a>';
+            // }
+
+            // if (trim($status) == 'APPROVED') {
+            //     $disapproveBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToDisapproved(\'' . trim($lm->docno) . '\');">
+            //         <i class="fa fa-times-circle"></i> Disapprove</a>';
+            // }
+
+
+            $menuContent = '';
+
+            if ($status === 'CETAK/PRINT') {
+
+                // hanya detail jika ada akses
+                if ($canView) {
+                    $menuContent .= $detailBtn;
+                    $menuContent .= $printBtn;
+                }
+
+            } else {
+
+                // selain status tersebut → tampilkan sesuai hak akses
+                if ($canUpdate) $menuContent .= $updateBtn;
+                if ($canPrint)  $menuContent .= $printBtn;
+                if ($canView)   $menuContent .= $detailBtn;
+                if ($canDelete)   $menuContent .= $cancelBtn;
+                // if ($canApprove)   $menuContent .= $approveBtn;
+                // if ($canApprove)   $menuContent .= $disapproveBtn;
+            }
+
+            // =========================
+            // Final Dropdown (jangan tampil kalau kosong)
+            // =========================
+            if ($menuContent !== '') {
+
+                $dropdownMenu = '
+                    <div class="dropdown">
+                        <button class="btn btn-primary btn-sm dropdown-toggle" 
+                                type="button" 
+                                data-bs-toggle="dropdown" 
+                                aria-expanded="false">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <div class="dropdown-menu">
+                            ' . $menuContent . '
+                        </div>
+                    </div>';
+
+            } else {
+
+                // Tidak punya hak akses apapun
+                $dropdownMenu = '';
+            }
+
+            $row[] = $no;
+            $row[] = $dropdownMenu;
+
+            $row[] = $lm->docno;
+            $row[] = date(
+                'd/m/Y',
+                strtotime(trim($lm->docdate))
+            );
+            $status = $lm->status_desc ?? $lm->status;
+            $badgeClass = 'badge-secondary'; // Default
+
+            switch (strtoupper($status)) {
+                case 'DRAFT':
+                    $badgeClass = 'badge-secondary';
+                    break;
+                case 'REVISION/EDITING':
+                    $badgeClass = 'badge-warning';
+                    break;
+                case 'FINAL USER':
+                    $badgeClass = 'badge-info';
+                    break;
+                case 'SJ PARTIAL':
+                    $badgeClass = 'badge-primary';
+                    break;
+                case 'SJ FULL':
+                    $badgeClass = 'badge-success';
+                    break;
+                case 'CETAK/PRINT':
+                    $badgeClass = 'badge-success ';
+                    break;
+                case 'CANCEL':
+                    $badgeClass = 'badge-danger ';
+                    break;
+                default:
+                    $badgeClass = 'badge-primary'; // Default (primary) jika status tidak dikenali
+                    break;
+            }
+
+            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
+
+            $row[] = $lm->kdcust;
+            $row[] = $lm->nmcust;
+            $row[] = $lm->alamatcust;
+            $row[] = $lm->nmkota;
+            // $row[] = $lm->kdcustdeliv;
+            $row[] = $lm->nmcustdeliv;
+            $row[] = $lm->alamatcustdeliv;
+            $row[] = $lm->nmkotadeliv;
+            // $row[] = $lm->currcode;
+            // $row[] = date(
+            //     'd/m/Y',
+            //     strtotime(trim($lm->senddate))
+            // );
+            // $docdate  = trim($lm->docdate);
+            // $jthtempo = (int) $lm->jthtempo;
+
+            // if (!empty($docdate)) {
+
+            //     $date = new \DateTime(trim($lm->docdate));
+            //     $date->modify("+{$jthtempo} days");
+
+            //     $jatuhTempo = $date->format('d/m/Y');
+
+            // } else {
+            //     $jatuhTempo = '';
+            // }
+
+            // $row[] = $jatuhTempo;
+            
+            $row[] = $lm->nmsalesman;
+            // $row[] = $lm->pocust;
+            $row[] = $lm->keterangan;
+
+            $row[] = $lm->nmbranch;
+            
+
+            $data[] = $row;
+        }
+
+        $output = array(
+            "draw" => $_POST['draw'],
+            "recordsTotal" => $this->m_postsales->t_front_deliveryorder_view_count_all(),
+            "recordsFiltered" => $this->m_postsales->t_front_deliveryorder_view_count_filtered(),
+            "data" => $data,
+        );
+        echo $this->fiky_encryption->jDatatable($output);
+    }
+
+    
+    function list_deliveryorder_apprv(){
+        $list = $this->m_postsales->get_t_front_deliveryorder_apprv_view();
+        $data = array();
+        $no = $_POST['start'];
+
+
+        $kmenu = 'I.S.B.2';
+        $nama=trim($this->session->get('nama'));
+        $role=trim($this->session->get('roleid'));
+
+        $datadtl['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
+        $dataanu['userinfo'] = $this->m_user->getUser(" and username='$nama'")->getRowArray();
+
+        $canUpdate = isset($datadtl['dtl_akses']['a_update']) && trim($datadtl['dtl_akses']['a_update']) === 't';
+        $canPrint = isset($datadtl['dtl_akses']['a_report']) && trim($datadtl['dtl_akses']['a_report']) === 't';
+        $canView = isset($datadtl['dtl_akses']['a_view']) && trim($datadtl['dtl_akses']['a_view']) === 't';
+        $canApprove = isset($datadtl['dtl_akses']['a_approve1']) && trim($datadtl['dtl_akses']['a_approve1']) === 't';
+
+        foreach ($list as $lm) {
+            $no++;
+            $row = array();
+
+            $status = strtoupper(trim($lm->status_desc));
+            $docno  = trim($lm->docno);
+            $docnoHex = bin2hex($docno);
+
+            
+            $updateBtn = '';
+            $detailBtn = '';
+            $printBtn  = '';
+            $approveBtn  = '';
+            $disapproveBtn  = '';
+
+            // =========================
+            // Build button by access
+            // =========================
+
+            if ($canUpdate && $status != "REVISION/EDITING" && $status != "APPROVED") {
+                $updateBtn = '
+                <a class="dropdown-item bg-warning" 
+                    href="' . base_url('sales/postsales/updateDeliveryOrder') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'Update This DeliveryOrder : ' . $docno . '\')">
+                    <i class="fa fa-edit"></i> Update DeliveryOrder 
+                </a>';
+            }
+
+            if($canView){
+                $detailBtn = 
+                '<a class="dropdown-item" 
+                    style="background-color:#3badf6;" 
+                    href="' . base_url('sales/postsales/detailDeliveryOrder') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'View Detail DeliveryOrder : ' . $docno . '\')">
+                    <i class="fa fa-eye"></i> Detail DeliveryOrder 
+                </a>';
+            }
+
+            if($canPrint){
+                $printBtn = '
+                <a class="dropdown-item" 
+                    style="background-color:#00ff8e;" 
+                    href="' . base_url('sales/postsales/show_po') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'Print DeliveryOrder : ' . $docno . '\')">
+                    <i class="fa fa-print"></i> Print DeliveryOrder 
+                </a>';
+            }
+
+
+            if (trim($status) !== 'APPROVED' && trim($status) !== 'REVISION/EDITING') {
+                    $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
+                        <i class="fa fa-check-circle"></i> Approve</a>';
+            }
+
+            if (trim($status) == 'APPROVED') {
+                $disapproveBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToDisapproved(\'' . trim($lm->docno) . '\');">
+                    <i class="fa fa-times-circle"></i> Disapprove</a>';
+            }
+
+
+            $menuContent = '';
+
+            if ($status === 'CETAK/PRINT') {
+
+                // hanya detail jika ada akses
+                if ($canView) {
+                    $menuContent .= $detailBtn;
+                    $menuContent .= $printBtn;
+                }
+
+            } else {
+
+                // selain status tersebut → tampilkan sesuai hak akses
+                if ($canUpdate) $menuContent .= $updateBtn;
+                if ($canPrint)  $menuContent .= $printBtn;
+                if ($canView)   $menuContent .= $detailBtn;
+                if ($canApprove)   $menuContent .= $approveBtn;
+                if ($canApprove)   $menuContent .= $disapproveBtn;
+            }
+
+            // =========================
+            // Final Dropdown (jangan tampil kalau kosong)
+            // =========================
+            if ($menuContent !== '') {
+
+                $dropdownMenu = '
+                    <div class="dropdown">
+                        <button class="btn btn-primary btn-sm dropdown-toggle" 
+                                type="button" 
+                                data-bs-toggle="dropdown" 
+                                aria-expanded="false">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <div class="dropdown-menu">
+                            ' . $menuContent . '
+                        </div>
+                    </div>';
+
+            } else {
+
+                // Tidak punya hak akses apapun
+                $dropdownMenu = '';
+            }
+
+            $row[] = $no;
+            $row[] = $dropdownMenu;
+
+            $row[] = $lm->docno;
+            $row[] = date(
+                'd/m/Y',
+                strtotime(trim($lm->docdate))
+            );
+            $status = $lm->status_desc ?? $lm->status;
+            $badgeClass = 'badge-secondary'; // Default
+
+            switch (strtoupper($status)) {
+                case 'DRAFT':
+                    $badgeClass = 'badge-secondary';
+                    break;
+                case 'REVISION/EDITING':
+                    $badgeClass = 'badge-warning';
+                    break;
+                case 'FINAL USER':
+                    $badgeClass = 'badge-info';
+                    break;
+                case 'CETAK/PRINT':
+                    $badgeClass = 'badge-success ';
+                    break;
+                default:
+                    $badgeClass = 'badge-primary'; // Default (primary) jika status tidak dikenali
+                    break;
+            }
+
+            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
+
+            $row[] = $lm->kdcust;
+            $row[] = $lm->nmcust;
+            $row[] = $lm->alamatcust;
+            $row[] = $lm->nmkota;
+            $row[] = $lm->kdcustdeliv;
+            $row[] = $lm->nmcustdeliv;
+            $row[] = $lm->alamatcustdeliv;
+            $row[] = $lm->nmkotadeliv;
+            $row[] = $lm->currcode;
+            // $row[] = date(
+            //     'd/m/Y',
+            //     strtotime(trim($lm->senddate))
+            // );
+            $docdate  = trim($lm->docdate);
+            $jthtempo = (int) $lm->jthtempo;
+
+            if (!empty($docdate)) {
+
+                $date = new \DateTime(trim($lm->docdate));
+                $date->modify("+{$jthtempo} days");
+
+                $jatuhTempo = $date->format('d/m/Y');
+
+            } else {
+                $jatuhTempo = '';
+            }
+
+            $row[] = $jatuhTempo;
+            
+            $row[] = $lm->nmsalesman;
+            // $row[] = $lm->pocust;
+            $row[] = $lm->keterangan;
+
+            $row[] = $lm->nmbranch;
+            
+
+            $data[] = $row;
+        }
+
+        $output = array(
+            "draw" => $_POST['draw'],
+            "recordsTotal" => $this->m_postsales->t_front_deliveryorder_apprv_view_count_all(),
+            "recordsFiltered" => $this->m_postsales->t_front_deliveryorder_apprv_view_count_filtered(),
+            "data" => $data,
+        );
+        echo $this->fiky_encryption->jDatatable($output);
+    }
+
+    function clearEntryDeliveryOrder()
+    {
+        $nama=trim($this->session->get('nama'));
+        $param = " and coalesce(inputby,'')='$nama'";
+        $dtl = $this->m_postsales->q_deliveryorder_master_temp($param);
+        if(empty($dtl->getRowArray())){
+            return redirect()->to(base_url('sales/postsales/deliveryorder'));
+        }
+        // if(isEmpty($dtl->getRowArray()['status'])){
+        //     return redirect()->to(base_url('sales/postsales/pp'));
+        // }
+        $status = trim($dtl->getRowArray()['status']);
+        $builder = $this->db->table('sc_tmp.deliveryorder');
+        $builder_dtl = $this->db->table('sc_tmp.deliveryorder_dtl');
+
+        if ($status==='I') {
+            // $builder= $this->db->table('sc_tmp.standart_usage_mst');
+            $builder->where('inputby',$nama);
+            $builder->delete();
+            // $builderDtl= $this->db->table('sc_tmp.pp');
+            // $builderDtl->where('inputby',$nama);
+            // $builderDtl->delete();
+            return redirect()->to(base_url('sales/postsales/deliveryorder'));
+        } else if ($status==='E') {
+            $builder->where('inputby',$nama);
+            if ($builder->update(array('status' => 'C'))) {
+                $result = array('status' => true, 'messages' => 'Sukses Di Proses');
+                echo json_encode($result);
+                return redirect()->to(base_url('sales/postsales/deliveryorder'));
+            }
+            else {
+                $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+                echo json_encode($result);
+            }
+        } else {
+                // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+                // echo json_encode($result);
+                return redirect()->to(base_url('sales/postsales/deliveryorder'));
+        }
+
+    }
+
+    function addDeliveryOrder()
+    {
+        /* Penambahan Squence */
+        $data['title']="Input Delivery Order";
+        $dtlbranch=$this->m_global->q_branch()->getRowArray();
+        $branch=$dtlbranch['branch'];
+        /* CODE UNTUK VERSI*/
+        $nama=trim($this->session->get('nama'));
+        $kodemenu='I.S.B.2'; $versirelease='I.S.B.2/01'; $releasedate=date('2025-04-12 00:00:00');
+        $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
+        $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
+        $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
+        $data['kodemenu']=$kodemenu; $data['version']=$versidb;
+        $data['nama']=$nama; $data['version']=$versidb;
+        /* END CODE UNTUK VERSI */
+
+
+        $paramerror=" and userid='$nama' and modul='I.S.B.2'";
+        $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
+        $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
+        if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
+        if(isset($dtlerror['nomorakhir1'])) { $nomorakhir1=trim($dtlerror['nomorakhir1']); } else { $nomorakhir1='';  }
+        if(isset($dtlerror['errorcode'])) { $errorcode=trim($dtlerror['errorcode']); } else { $errorcode='';  }
+
+        if($count_err>0 and $errordesc<>''){
+            if ($dtlerror['errorcode']==0){
+                $data['message']="<div class='alert alert-info'>DATA SUCCESSFULLY PROCESSED $nomorakhir1 </div>";
+            } else {
+                $data['message']="<div class='alert alert-info'>$errordesc</div>";
+            }
+
+        }else {
+            if ($errorcode=='0'){
+                $data['message']="<div class='alert alert-info'>DATA SUCCESSFULLY PROCESSED $nomorakhir1 </div>";
+            } else {
+                $data['message']="";
+            }
+
+        }
+
+        $param = " and trim(inputby)='$nama'";
+        $data['mst'] = $this->m_postsales->q_deliveryorder_master_temp($param)->getRowArray();
+        $logindate = trim($this->session->get('logindate'));
+
+        $data['typeform'] = 'INPUT';
+        $data['userlogin'] = $nama;
+        $param = " and trim(inputby)='$nama'";
+        $data['dtldata'] = $this->m_postsales->q_deliveryorder_master_temp($param)->getRowArray();
+        $logindate  = trim($this->session->get('logindate'));
+        $ts    = strtotime($logindate);
+
+        $pterror = " and userid='$nama'";
+        $this->m_trxerror->q_deltrxerror($pterror);
+        return $this->template->render('sales/postsales/v_add_deliveryorder',$data);
+    }
+
+
+   public function getBranchInfoDeliveryOrder()
+    {
+        $idbranch = trim($this->request->getGet('idbranch'));
+
+        $row = $this->db->table('sc_mst.branchjob')
+            ->select('nmbranch')
+            ->where('idbranch', $idbranch)
+            ->get()
+            ->getRowArray();
+
+        if (!$row) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Cabang tidak ditemukan'
+            ]);
+        }
+
+        // mapping nmbranch → kode suffix
+        $map = [
+            'PT JATIM TAMAN STEEL MFG' => 'PT',
+            'PLANT I'                 => 'PA',
+            'PLANT II'                => 'PB',
+        ];
+
+        $kodeSuffix = $map[trim($row['nmbranch'])] ?? '';
+
+        if ($kodeSuffix === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Mapping cabang belum diset'
+            ]);
+        }
+
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray(); // Ini mengembalikan array of objects/arrays
+
+        // Karena hanya 1 row, ambil index ke-0
+        $prefix = trim($konfigurasiUmum[0]['deliveryorder']) ?? '';
+        $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
+        $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
+
+        $logindate = $this->session->get('logindate'); // dd-mm-yyyy
+        $infix = date('ym', strtotime($logindate));
+
+        return $this->response->setJSON([
+            'success'      => true,
+            'kode_suffix'  => $kodeSuffix,
+            'infix'        => $infix,
+            'logindate'     => $logindate,
+            'prefix'        => $prefix,
+            'konfigurasi_umum' => $konfigurasiUmum,
+            'currcode'      => $currcode,
+            'idtax'         => $idtax,
+        ]);
+    }
+
+    public function getNextSuffixDeliveryOrder()
+    {
+        $prefix      = trim($this->request->getGet('prefix'));
+        $infix       = trim($this->request->getGet('infix'));
+        $kodeSuffix  = trim($this->request->getGet('kode_suffix'));
+
+        $like = $prefix . '/' . $infix . '/' . $kodeSuffix;
+
+        $row = $this->db->table('sc_trx.deliveryorder')
+            ->select('docno')
+            ->like('docno', $like, 'after')
+            ->orderBy('docno', 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRowArray();
+
+        if ($row) {
+            $parts = explode('/', $row['docno']);
+            $last  = substr($parts[2], 2); // ambil angka setelah PT/PA/PB
+            $next  = str_pad(((int)$last) + 1, 4, '0', STR_PAD_LEFT);
+        } else {
+            $next = '0001';
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'suffix'  => $kodeSuffix . $next
+        ]);
+    }
+
+    public function initDeliveryOrderHeader()
+    {
+        $nama = trim($this->session->get('nama'));
+
+        $docno      = strtoupper($this->request->getPost('docno'));
+        $docdate    = $this->request->getPost('docdate');
+        $cabang     = $this->request->getPost('cabang');
+        $pemohon    = strtoupper($this->request->getPost('pemohon'));
+        // $estpakai   = $this->request->getPost('estpakai');
+        // $keterangan = strtoupper($this->request->getPost('keterangan'));
+
+        if (!$docno || !$docdate || !$cabang) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Header belum lengkap'
+            ]);
+        }
+
+        $builder = $this->db->table('sc_tmp.deliveryorder');
+        $exists = $builder->where('docno', $docno)->countAllResults();
+
+        // HEADER SUDAH ADA → TIDAK PERLU RELOAD
+        if ($exists > 0) {
+            return $this->response->setJSON([
+                'success' => true,
+                'reload'  => false
+            ]);
+        }
+
+        // HEADER BARU → INSERT
+        $builder->insert([
+            'docno'      => $docno,
+            'docdate'    => $docdate,
+            'cabang'     => $cabang,
+            'pemohon'    => $pemohon,
+            // 'estpakai'   => $estpakai,
+            'status'     => 'E',
+            // 'keterangan' => $keterangan,
+            'inputby'    => $nama,
+            'inputdate'  => date('Y-m-d H:i:s')
+        ]);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'reload'  => true   // ⬅ PENTING
+        ]);
+    }
+
+
+
+    public function saveDeliveryOrderDetail()
+    {
+        $nama   = trim($this->session->get('nama'));
+        $docno  = strtoupper(trim($this->request->getPost('docno')));
+        $docnoso = strtoupper(trim($this->request->getPost('docnoso')));
+        $idurut = $this->request->getPost('idurut'); // HAPUS strtoupper, biarkan apa adanya
+        
+        // Tambahkan mode untuk membedakan add/edit dengan lebih jelas
+        // $mode = $this->request->getPost('mode'); // 'add' atau 'edit'
+
+        if (!$docno || !$docnoso) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'No. Jurnal tidak boleh kosong'
+            ]);
+        }
+
+        $db = $this->db;
+        $db->transStart();
+
+        $builderSO = $db->table('sc_trx.salesorder');
+        $soData = $builderSO
+            ->select('currcode, kurs, idtax, isinclusive')
+            ->where('docno', $docnoso)
+            ->get()
+            ->getRowArray();
+
+        // Jika data SO tidak ditemukan, beri response error
+        if (!$soData) {
+            $db->transRollback();
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => "Data SO dengan nomor {$docnoso} tidak ditemukan"
+            ]);
+        }
+
+
+        // =====================================================
+        // CEK / INSERT HEADER
+        // =====================================================
+        $builderHeader = $db->table('sc_tmp.deliveryorder');
+
+        $exists = $builderHeader
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->countAllResults();
+
+        $reload = false;
+        // Untuk pengambilan data dari POST
+        
+        if ($exists == 0) {
+
+            $builderHeader->insert([
+                'docno'     => $docno,
+                'cabang'     => $this->request->getPost('cabang'),
+                'docdate'   => date('Y-m-d', strtotime(trim($this->request->getPost('docdate')))),
+                // 'delivdate'   => date('Y-m-d', strtotime(trim($this->request->getPost('delivdate')))),
+                // 'jthtempo'     => $this->request->getPost('jthtempo'),
+                // 'isinclusive'     => $isinclusive,
+                // 'isopenprice'     => $isopenprice,
+                
+                'kdcustomer'    => strtoupper($this->request->getPost('kdcustomer')),
+                'alamatcustomer'    => strtoupper($this->request->getPost('alamatcustomer')),
+                'kdcustomerdeliv'    => strtoupper($this->request->getPost('kdcustomerdeliv')),
+                'alamatcustomerdeliv'    => strtoupper($this->request->getPost('alamatcustomerdeliv')),
+                // 'alamatkirim'    => strtoupper($this->request->getPost('alamatkirim')),
+                // 'idtax'    => strtoupper($this->request->getPost('idtax')),
+                'kdsalesman'    => ($this->request->getPost('kdsalesman')),
+                // 'gradecustomer'    => ($this->request->getPost('gradecustomer')),
+                // 'carabayar'    => strtoupper($this->request->getPost('carabayar')),
+                // 'pocust'    => strtoupper($this->request->getPost('pocust')),
+                // 'currcode'    => strtoupper($this->request->getPost('currcode')),
+                // 'kurs'    => ($this->request->getPost('kurs')),
+                'keterangan'    => strtoupper($this->request->getPost('keterangan')),
+                // 'pocust'    => strtoupper($this->request->getPost('pocust')),
+                // 'nodp'    => strtoupper($this->request->getPost('nodp')),
+                'status'    => 'E',
+                'inputby'   => $nama,
+                'inputdate' => date('Y-m-d H:i:s')
+            ]);
+
+            $reload = true;
+        }
+
+        $builderDetail = $db->table('sc_tmp.deliveryorder_dtl');
+        $insertCount = 0;
+        $message = '';
+
+        // CEK MODE: ADD atau EDIT
+        if (!empty($idurut)) {            
+
+            $uniqueid = $this->request->getPost('uniqueid');
+            // =====================================================
+            // MODE EDIT - UPDATE DATA
+            // =====================================================
+            $qty         = $this->request->getPost('qty');
+            // $qtybonus    = $this->request->getPost('qtybonus') ?: 0;
+            // $volitem   = $this->request->getPost('volitem') ?: 0;
+            // $biaya   = $this->request->getPost('biaya') ?: 0;
+            // $biaya2   = $this->request->getPost('biaya2') ?: 0;
+            $idgudang = strtoupper($this->request->getPost('idgudang'));
+
+            $builderDetail->where('uniqueid', $uniqueid)->update([
+                'qty'          => $qty,
+                // 'qtybonus'     => $qtybonus,
+                // 'harga'        => $harga,
+                // 'multidisc'    => $multidisc,
+                // 'nilai'        => $nilai,
+                // 'nilaikonversi' => $nilaikonversi,
+                // 'nilaipajak' => $nilaipajak,
+                // 'idtax' => $idtax,
+                // 'kurs' => $kurs,
+                // 'currcode' => $poData['currcode'] ?? '',
+                // 'volitem'      => $volitem,
+
+                // 'biaya'      => $biaya,
+                // 'biaya2'      => $biaya2,
+                // 'idprincipal'      => $idprincipal,
+                'idgudang'      => $idgudang,
+                // 'idspec'      => $idspec,
+
+                'updateby'     => $nama,
+                'updatedate'   => date('Y-m-d H:i:s')
+            ]);
+
+
+
+            
+            
+            $message = 'Data berhasil diupdate';
+            
+        } else {
+            // =====================================================
+            // MODE ADD - INSERT DATA DARI PP
+            // =====================================================
+            $soDetails = $db->query("
+                SELECT 
+                    docno,
+                    idbarang,
+                    uniqueid,
+                    nmbarang,
+                    unit,
+                    qty,
+                    qtypenjualan,
+                    idgudang,
+                    qtydo
+                FROM sc_trx.salesorder_dtl
+                WHERE TRIM(docno) = ?
+            ", [$docnoso])->getResult();
+
+            if (empty($soDetails)) {
+                $db->transRollback();   
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Data SO tidak ditemukan'
+                ]);
+            }
+
+            foreach ($soDetails as $row) {
+                $qtyDOSaatIni = 0;
+            
+                $existingDO = $db->query("
+                    SELECT qty 
+                    FROM sc_tmp.deliveryorder_dtl 
+                    WHERE
+                    uniqueid = ?
+                ", [$row->uniqueid])->getRow();
+                
+                if ($existingDO) {
+                    $qtyDOSaatIni = $existingDO->qty;
+                }
+
+                $sisaQty = $row->qty - ($row->qtypenjualan + $row->qtydo - $qtyDOSaatIni);
+                if ($sisaQty <= 0) continue;
+
+                $duplicate = $builderDetail
+                    ->where('docno', $docno)
+                    ->where('uniqueid', $row->uniqueid)
+                    ->countAllResults();
+
+                if ($duplicate == 0) {
+                    $builderDetail->insert([
+                        'docno'         => $docno,
+                        'docnoso'       => $docnoso,
+                        'idbarang'      => $row->idbarang,
+                        'uniqueid'      => $row->uniqueid,
+                        'nmbarang'      => $row->nmbarang,
+                        'unit'          => $row->unit,
+                        'qty'           => $sisaQty,
+                        // 'idprincipal'   => $row->idprincipal,
+                        'idgudang'      => $row->idgudang,
+                        // 'idspec'        => $row->idspec,
+                        // 'harga'         => $row->harga, // Default 0 untuk new insert
+                        // 'multidisc'     =>  $row->multidisc, // Default 0 untuk new insert
+                        // 'nilaipajak'    => $nilaipajakRow,
+                        // 'nilaikonversi' => $nilaikonversiRow,
+                        // 'currcode'      => $row->currcode,
+                        // 'kurs'          => $row->kurs,
+                        // 'idtax'         => $row->idtax,
+                        // 'nilai'         => $sisaQty * $row->harga, // Default 0 untuk new insert
+                        // 'description' => $row->description,
+                        'inputby'       => $nama,
+                        'inputdate'     => date('Y-m-d H:i:s')
+                    ]);
+
+                    $insertCount++;
+                }
+            }
+            
+            $message = $insertCount > 0 
+                        ? "$insertCount item berhasil ditambahkan"
+                        : "Semua item sudah ada sebelumnya";
+        }
+
+
+        $db->transComplete();
+
+        return $this->response->setJSON([
+            'success' => true,
+            'reload'  => $reload,
+            'message' => $message
+        ]);
+    }
+
+
+    public function updateStatusDeliveryOrder()
+    {
+        $docno = $this->request->getPost('docno');
+        $status = $this->request->getPost('status');
+        if (!$docno || !$status) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Parameter tidak lengkap'
+            ]);
+        }
+
+        $db = \Config\Database::connect();
+        $builder = $db->table('sc_trx.deliveryorder');
+        $builder->where('docno', $docno);
+        /*tambahan sultan*/
+        $info = array('status' => $status);
+        $update = $builder->update($info);
+
+        $action = '';
+        switch ($status) {
+            case 'A': $action = 'A'; break;  // APPROVED → 1 huruf
+            case 'F': $action = 'R'; break;  // REJECT → 1 huruf (R)
+            case 'C': $action = 'C'; break;  // CANCEL → 1 huruf
+            default:
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Status tidak valid'
+                ]);
+        }
+
+        if ($update) {
+            // ===============================
+            // LOG MENGGUNAKAN FUNGSI HELPER
+            // ===============================
+            $this->m_global->insertlogtrans(
+                $docno,
+                $action,           // A / R / C (1 huruf)
+                'I.S',             // kode module dari menuprg
+                'I.S.B.2'          // kode menu untuk PENJUALAN
+            );
+
+            return $this->response->setJSON(['success' => true]);
+        } else {
+            return $this->response->setJSON(['success' => false, 'message' => 'Gagal update status']);
+        }
+    }
+
+
+
+    function updateDeliveryOrder()
+    {
+        $nama = trim($this->session->get('nama'));
+        $docno = hex2bin($this->request->getGet('id'));
+        $param = " and coalesce(docno,'')='$docno'";
+        $dtl = $this->m_postsales->q_deliveryorder_master($param)->getRowArray();
+        $status = trim($dtl['status']);
+
+        if ($status === 'F' || $status === 'P') {
+            // Update hanya status di tabel sc_trx.standart_usage_mst
+            $info = array(
+                'status' => 'E',
+            );
+            $builder = $this->db->table('sc_trx.deliveryorder');
+            $builder->where('trim(docno)', $docno);
+            $builder->update($info);
+
+            // Redirect ke halaman addStdUsage
+            return redirect()->to(base_url('sales/postsales/addDeliveryOrder'));
+        } else {
+            // Jika status bukan 'F', redirect ke halaman mrpgroup
+            return redirect()->to(base_url('sales/postsales/deliveryorder'));
+        }
+    }
+
+    function showing_deliveryordertrx(){
+        $nama=trim($this->session->get('nama'));
+        $docno = trim($this->request->getGet('docno')); // Ambil parameter docno dari Ajax
+
+        $param = " and docno='$docno'";
+        $data = $this->m_postsales->q_deliveryorder_master($param);
+        $output = array(
+            'status' => true,
+            'total_count' => $data->getNumRows(),
+            'items' => $data->getResult(),
+            'incomplete_getResults' => false,
+        );
+        echo $this->fiky_encryption->jDatatable($output);
+    }
+
+    function showing_deliveryordertemp(){
+        $docno = trim($this->request->getGet('docno')); // ambil dari GET
+        $nama=trim($this->session->get('nama'));
+        $param = " and docno='$docno'";
+        $data = $this->m_postsales->q_deliveryorder_master_temp($param);
+        $output = array(
+            'status' => true,
+            'total_count' => $data->getNumRows(),
+            'items' => $data->getResult(),
+            'incomplete_getResults' => false,
+        );
+        echo $this->fiky_encryption->jDatatable($output);
+    }
+
+    function showing_deliveryorder_dtl($id){
+        $nama = trim($this->session->get('nama'));
+        $data = $this->m_postsales->q_deliveryorder_dtl_temp(" and docno='$nama' and idurut='$id'")->getRow();
+        echo json_encode($data);
+    }
+
+
+
+    public function get_deliveryorder_detail()
+    {
+        $id = $this->request->getGet('id');
+
+        $row = $this->db->table('sc_tmp.deliveryorder_dtl')
+            ->where('uniqueid', $id)
+            ->get()
+            ->getRowArray();
+
+        if (!$row) {
+            return $this->response->setJSON([
+                'status' => false,
+                'message' => 'Data tidak ditemukan'
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'status' => true,
+            'data'   => $row
+        ]);
+    }
+
+    public function delete_deliveryorder_detail()
+    {
+        $request = service('request');
+        $db      = \Config\Database::connect();
+        $builder = $db->table('sc_tmp.deliveryorder_dtl');
+        $nama    = trim($this->session->get('nama'));
+
+        $ids = $request->getPost('ids');
+
+        if (empty($ids)) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Parameter ids tidak boleh kosong'
+            ]);
+        }
+
+        if (!is_array($ids)) {
+            $ids = [$ids];
+        }
+
+        $db->transBegin();
+
+        try {
+
+            // ======================================
+            // AMBIL DOCNO DARI DETAIL
+            // ======================================
+            $rows = $builder
+                ->select('docno')
+                ->whereIn('uniqueid', $ids)
+                ->get()
+                ->getResultArray();
+
+            if (empty($rows)) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Data tidak ditemukan'
+                ]);
+            }
+
+
+            // ======================================
+            // DELETE DETAIL
+            // ======================================
+            $builder
+                ->whereIn('uniqueid', $ids)
+                ->delete();
+
+            if ($db->affectedRows() === 0) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Data tidak ditemukan'
+                ]);
+            }
+
+            
+            $db->transCommit();
+
+            return $this->response->setJSON([
+                'status'  => true,
+                'message' => 'Data DO Detail berhasil dihapus'
+            ]);
+
+        } catch (\Throwable $e) {
+
+            $db->transRollback();
+
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    function list_tmp_deliveryorder_dtl(){
+        $docno = trim($this->request->getPost('docno')); // ambil dari POST
+        $list = $this->m_postsales->get_t_deliveryorder_dtl_temp_view($docno);
+        $data = array();
+        $no = $_POST['start'];
+        foreach ($list as $lm) {
+            $no++;
+            $row = array();
+            // $row[] = $no;
+            $row[] = $lm->uniqueid;
+            //item
+            // $row[] = $lm->docnosj;
+            $row[] = $lm->docnoso;
+            $row[] = $lm->idbarang;
+            $row[] = $lm->nmbarang;
+            // $row[] = $lm->idprincipal;
+            $row[] = $lm->idgudang;
+            // $row[] = $lm->idspec;
+            $row[] = $lm->unit;
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->harga, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 0, '.', ',') . '% </div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 0, '.', ',') . '</div>';
+            // $row[] = $lm->description;
+            // $row[] = $lm->descriptionpp;
+            $data[] = $row;
+        }
+
+        $output = array(
+            "draw" => $_POST['draw'],
+            "recordsTotal" => $this->m_postsales->t_deliveryorder_dtl_temp_view_count_all($docno),
+            "recordsFiltered" => $this->m_postsales->t_deliveryorder_dtl_temp_view_count_filtered($docno),
+            "data" => $data,
+        );
+        echo $this->fiky_encryption->jDatatable($output);
+    }
+
+    function list_trx_deliveryorder_dtl(){
+        $docno = trim($this->request->getPost('docno')); // ambil dari POST
+        $list = $this->m_postsales->get_t_deliveryorder_dtl_view($docno);
+        $data = array();
+        $no = $_POST['start'];
+        foreach ($list as $lm) {
+            $no++;
+            $row = array();
+            // $row[] = $no;
+            $row[] = $lm->idurut;
+            //item
+            // $row[] = $lm->docnosj;
+            $row[] = $lm->docnoso;
+            $row[] = $lm->idbarang;
+            $row[] = $lm->nmbarang;
+            // $row[] = $lm->idprincipal;
+            $row[] = $lm->idgudang;
+            // $row[] = $lm->idspec;
+            $row[] = $lm->unit;
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->harga, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 0, '.', ',') . '</div>';
+            // $row[] = $lm->description;
+            // $row[] = $lm->descriptionpp;
+            $data[] = $row;   
+            
+        }
+
+        $output = array(
+            "draw" => $_POST['draw'],
+            "recordsTotal" => $this->m_postsales->t_deliveryorder_dtl_view_count_all($docno),
+            "recordsFiltered" => $this->m_postsales->t_deliveryorder_dtl_view_count_filtered($docno),
+            "data" => $data,
+        );
+        echo $this->fiky_encryption->jDatatable($output);
+    }
+
+    public function finalEntryDeliveryOrder_SJ()
+    {
+        $nama = trim($this->session->get('nama'));
+
+        /*
+        ==========================
+        1. VALIDASI DATA DO (SAMA seperti finalEntryDeliveryOrder)
+        ==========================
+        */
+        $param     = " and coalesce(inputby,'')='$nama'";
+        $paramdtl  = " AND COALESCE(inputby, '') = '$nama' 
+                    AND (COALESCE(unit, '') = ''  
+                    OR qty = '0.00' 
+                    OR qty = '0' 
+                    OR COALESCE(nmbarang, '') = '') ";
+        $paramdtl2 = " and coalesce(inputby,'')='$nama'";
+
+        $header = $this->m_postsales->q_deliveryorder_master_temp($param);
+        $status = trim($header->getRowArray()['status']);
+        $cek    = $this->m_postsales->q_deliveryorder_dtl_temp($paramdtl);
+        $cek2   = $this->m_postsales->q_deliveryorder_dtl_temp($paramdtl2);
+
+        $builder = $this->db->table('sc_tmp.deliveryorder');
+
+        // Bersihkan trxerror
+        $builder_trxerror = $this->db->table('sc_mst.trxerror');
+        $builder_trxerror->where('userid', $nama);
+        $builder_trxerror->where('modul', 'I.S.B.2');
+        $builder_trxerror->delete();
+
+        if (($status === 'E' && $cek->getNumRows() > 0) || ($cek2->getNumRows() <= 0)) {
+            $builder_trxerror->insert([
+                'userid'      => $nama,
+                'errorcode'   => 3,
+                'nomorakhir1' => $cek->getNumRows(),
+                'nomorakhir2' => $cek2->getNumRows(),
+                'modul'       => 'I.S.B.2',
+            ]);
+            return redirect()->to(base_url('/sales/postsales/addDeliveryOrder'));
+        }
+
+        /*
+        ==========================
+        2. AMBIL POST DATA & UPDATE HEADER TMP (SAMA)
+        ==========================
+        */
+        $kdcustomer          = trim($this->request->getPost('kdcustomer'));
+        $alamatcustomer      = trim($this->request->getPost('alamatcustomer'));
+        $kdcustomerdeliv     = trim($this->request->getPost('kdcustomerdeliv'));
+        $alamatcustomerdeliv = trim($this->request->getPost('alamatcustomerdeliv'));
+        $salesman            = trim($this->request->getPost('kdsalesman'));
+        $keterangan          = trim($this->request->getPost('keterangan'));
+
+        $updateHeader = [
+            'kdcustomer'          => strtoupper($kdcustomer),
+            'alamatcustomer'      => strtoupper($alamatcustomer),
+            'kdcustomerdeliv'     => strtoupper($kdcustomerdeliv),
+            'alamatcustomerdeliv' => strtoupper($alamatcustomerdeliv),
+            'keterangan'          => strtoupper($keterangan),
+            'kdsalesman'          => $salesman,
+        ];
+
+        $builder->where('inputby', $nama);
+        $builder->update($updateHeader);
+
+        /*
+        ==========================
+        3. FINALIZE DO (E → F) — SAMA
+        Trigger tr_deliveryorder_finalize jalan:
+        - insert ke sc_trx.deliveryorder + dtl
+        - update qtydo di salesorder_dtl
+        - insert logtrans
+        - delete tmp DO
+        ==========================
+        */
+        $builder->where('inputby', $nama);
+        $ok = $builder->update(['status' => 'F']);
+
+        if (!$ok) {
+            $builder_trxerror->insert([
+                'userid'      => $nama,
+                'errorcode'   => 3,
+                'nomorakhir1' => $cek->getNumRows(),
+                'nomorakhir2' => $cek2->getNumRows(),
+                'modul'       => 'I.S.B.2',
+            ]);
+            return redirect()->to(base_url('/sales/postsales/addDeliveryOrder'));
+        }
+
+        /*
+        ==========================
+        4. AMBIL DOCNO DO DARI sc_log.logtrans
+        (yang barusan diinsert oleh trigger)
+        ==========================
+        */
+        $log = $this->db->table('sc_log.logtrans')
+            ->where('inputby', $nama)
+            ->where('modul', 'PENJUALAN')
+            ->where('menu', 'DELIVERY ORDER')
+            ->orderBy('inputdate', 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRowArray();
+
+        if (!$log) {
+            // Tidak ada log → tidak bisa lanjut, redirect ke halaman DO
+            return redirect()->to(base_url('/sales/postsales/deliveryorder'));
+        }
+
+        $docnoDO = trim($log['docno']);
+
+        /*
+        ==========================
+        5. AMBIL HEADER DO DARI sc_trx.deliveryorder
+        ==========================
+        */
+        $headerDO = $this->db->table('sc_trx.deliveryorder')
+            ->where('docno', $docnoDO)
+            ->get()
+            ->getRowArray();
+
+        if (!$headerDO) {
+            return redirect()->to(base_url('/sales/postsales/deliveryorder'));
+        }
+
+        /*
+        ==========================
+        6. VALIDASI: SEMUA qtysj = qty?
+        Kalau semua sudah sama → tidak perlu SJ baru
+        ==========================
+        */
+        $totalBelumSJ = $this->db->table('sc_trx.deliveryorder_dtl')
+            ->where('docno', $docnoDO)
+            ->where('COALESCE(qtysj, 0) < qty', null, false)
+            ->countAllResults();
+
+        if ($totalBelumSJ === 0) {
+            // Semua sudah di-SJ → langsung redirect ke addSuratJalan
+            return redirect()->to(base_url('/sales/postsales/addSuratJalan'));
+        }
+
+        /*
+        ==========================
+        7. CLEAR TMP SJ MILIK USER INI
+        (harus ada 1 docno per user)
+        ==========================
+        */
+        $this->db->table('sc_tmp.suratjalan_dtl')
+            ->where('inputby', $nama)
+            ->delete();
+
+        $this->db->table('sc_tmp.suratjalan')
+            ->where('inputby', $nama)
+            ->delete();
+
+        /*
+        ==========================
+        8. AMBIL KONFIGURASI UMUM (prefix suratjalan)
+        ==========================
+        */
+        $konfig = $this->db->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getRowArray();
+
+        $prefix = trim($konfig['suratjalan'] ?? '');
+
+        if ($prefix === '') {
+            throw new \RuntimeException('Prefix suratjalan belum dikonfigurasi.');
+        }
+
+        /*
+        ==========================
+        9. TENTUKAN kodeSuffix DARI CABANG DO
+        ==========================
+        */
+        $idbranch = trim($headerDO['cabang']);
+
+        $branch = $this->db->table('sc_mst.branchjob')
+            ->select('nmbranch')
+            ->where('idbranch', $idbranch)
+            ->get()
+            ->getRowArray();
+
+        if (!$branch) {
+            throw new \RuntimeException('Cabang DO tidak ditemukan di branchjob.');
+        }
+
+        $map = [
+            'PT JATIM TAMAN STEEL MFG' => 'PT',
+            'PLANT I'                  => 'PA',
+            'PLANT II'                 => 'PB',
+        ];
+
+        $kodeSuffix = $map[trim($branch['nmbranch'])] ?? '';
+
+        if ($kodeSuffix === '') {
+            throw new \RuntimeException('Mapping cabang belum diset: ' . $branch['nmbranch']);
+        }
+
+        /*
+        ==========================
+        10. INFIX DARI logindate
+        ==========================
+        */
+        $logindate = $this->session->get('logindate');
+        $infix     = date('ym', strtotime($logindate));
+
+        /*
+        ==========================
+        11. GENERATE DOCNO SJ
+        ==========================
+        */
+        $like = $prefix . '/' . $infix . '/' . $kodeSuffix;
+
+        $lastSJ = $this->db->query("
+            SELECT docno FROM sc_trx.suratjalan 
+            WHERE docno LIKE ? 
+            UNION ALL
+            SELECT docno FROM sc_tmp.suratjalan 
+            WHERE docno LIKE ? 
+            ORDER BY docno DESC LIMIT 1
+        ", [$like . '%', $like . '%'])->getRowArray();
+
+        if ($lastSJ) {
+            $parts = explode('/', trim($lastSJ['docno']));
+            $last  = substr($parts[2], strlen($kodeSuffix));
+            $next  = str_pad(((int)$last) + 1, 4, '0', STR_PAD_LEFT);
+        } else {
+            $next = '0001';
+        }
+
+        $docnoSJ = $prefix . '/' . $infix . '/' . $kodeSuffix . $next;
+
+        /*
+        ==========================
+        12. INSERT HEADER SJ KE TMP (status E)
+        ==========================
+        */
+        $this->db->table('sc_tmp.suratjalan')->insert([
+            'docno'               => $docnoSJ,
+            'docdate'             => $headerDO['docdate'],
+            'cabang'              => $headerDO['cabang'],
+            'pemohon'             => $headerDO['pemohon'],
+            'kdcustomer'          => $headerDO['kdcustomer'],
+            'nmcustomer'          => $headerDO['nmcustomer'],
+            'alamatcustomer'      => $headerDO['alamatcustomer'],
+            'gradecustomer'       => $headerDO['gradecustomer'],
+            'kdcustomerdeliv'     => $headerDO['kdcustomerdeliv'],
+            'nmcustomerdeliv'     => $headerDO['nmcustomerdeliv'],
+            'alamatcustomerdeliv' => $headerDO['alamatcustomerdeliv'],
+            'kdsalesman'          => $headerDO['kdsalesman'],
+            'jthtempo'            => $headerDO['jthtempo'],
+            'idtax'               => $headerDO['idtax'],
+            'isinclusive'         => $headerDO['isinclusive'],
+            'isopenprice'         => $headerDO['isopenprice'],
+            'currcode'            => $headerDO['currcode'],
+            'kurs'                => $headerDO['kurs'],
+            'dpp'                 => $headerDO['dpp'],
+            'jumlahpajak'         => $headerDO['jumlahpajak'],
+            'total'               => $headerDO['total'],
+            'carabayar'           => $headerDO['carabayar'],
+            'keterangan'          => $headerDO['keterangan'],
+            'status'              => 'E',
+            'inputby'             => $nama,
+            'inputdate'           => date('Y-m-d H:i:s'),
+        ]);
+
+        /*
+        ==========================
+        13. INSERT DETAIL SJ KE TMP
+            docnodo = docnoDO
+            qty = qtydo - qtysj (sisa)
+        ==========================
+        */
+        $details = $this->db->table('sc_trx.deliveryorder_dtl')
+            ->where('docno', $docnoDO)
+            ->where('COALESCE(qtysj, 0) < qty', null, false)
+            ->get()
+            ->getResultArray();
+
+        $detailSJ = [];
+        foreach ($details as $d) {
+            $sisaQty = (float)$d['qty'] - (float)($d['qtysj'] ?? 0);
+
+            if ($sisaQty <= 0) continue;
+
+            $detailSJ[] = [
+                'docno'          => $docnoSJ,
+                // 'docnoso'        => $d['docnoso'],
+                'docnodo'        => $docnoDO,          // ← dari logtrans
+                'uniqueid'       => $d['uniqueid'],
+                'idbarang'       => $d['idbarang'],
+                'nmbarang'       => $d['nmbarang'],
+                // 'idprincipal'    => $d['idprincipal'],
+                'idgudang'       => $d['idgudang'],
+                // 'idspec'         => $d['idspec'],
+                'unit'           => $d['unit'],
+                'qty'            => $sisaQty,
+                // 'harga'          => $d['harga'],
+                // 'multidisc'      => $d['multidisc'],
+                // 'nilai'          => $d['nilai'],
+                // 'idtax'          => $d['idtax'],
+                // 'currcode'       => $d['currcode'],
+                // 'kurs'           => $d['kurs'],
+                // 'nilaikonversi'  => $d['nilaikonversi'],
+                // 'nilaipajak'     => $d['nilaipajak'],
+                // 'bomdesc'        => $d['bomdesc'],
+                // 'description'    => $d['description'],
+                'status'         => 'E',
+                'inputby'        => $nama,
+                'inputdate'      => date('Y-m-d H:i:s'),
+            ];
+        }
+
+        if (!empty($detailSJ)) {
+            $this->db->table('sc_tmp.suratjalan_dtl')->insertBatch($detailSJ);
+        }
+
+        /*
+        ==========================
+        14. REDIRECT KE addSuratJalan
+            (JANGAN finalize SJ — biarkan E di tmp)
+        ==========================
+        */
+        return redirect()->to(base_url('/sales/postsales/addSuratJalan'));
+    }
+
+
+    function finalEntryDeliveryOrder(){
+        $nama = trim($this->session->get('nama'));
+        // $loccode = trim($this->session->get('loccode'));
+        $param = " and coalesce(inputby,'')='$nama'";
+        $paramdtl = " AND COALESCE(inputby, '') = '$nama' AND (COALESCE(unit, '') = ''  OR qty = '0.00' OR qty = '0' OR COALESCE(nmbarang, '') = '') ";
+        $paramdtl2 = " and coalesce(inputby,'')='$nama'";
+
+        $header = $this->m_postsales->q_deliveryorder_master_temp($param);
+        $status = trim($header->getRowArray()['status']);
+        $cek = $this->m_postsales->q_deliveryorder_dtl_temp($paramdtl);
+        $cek2 = $this->m_postsales->q_deliveryorder_dtl_temp($paramdtl2);
+
+
+        $builder = $this->db->table('sc_tmp.deliveryorder');
+
+        //INSERT TRX ERROR
+        $builder_trxerror = $this->db->table('sc_mst.trxerror');
+        $builder_trxerror->where('userid', $nama);
+        $builder_trxerror->where('modul', 'I.S.B.2');
+        $builder_trxerror->delete();
+
+
+        if (($status==='E' and $cek->getNumRows() > 0) or ($cek2->getNumRows() <= '0'))
+        {
+            $infotrxerror = array(
+                'userid' => $nama,
+                'errorcode' => 3,
+                'nomorakhir1' => $cek->getNumRows(),
+                'nomorakhir2' => $cek2->getNumRows(),
+                'modul' => 'I.S.B.2',
+            );
+            $builder_trxerror->insert($infotrxerror);
+
+            return redirect()->to(base_url('/sales/postsales/addDeliveryOrder'));
+        } else {
+            // Ambil dari request POST
+            // $pemohon = strtoupper(trim($this->request->getPost('pemohon')));
+            // $docdate   = trim($this->request->getPost('docdate'));
+            // $senddate   = trim($this->request->getPost('senddate'));
+            // $jthtempo   = trim($this->request->getPost('jthtempo'));
+            $kdcustomer   = trim($this->request->getPost('kdcustomer'));
+            $alamatcustomer   = trim($this->request->getPost('alamatcustomer'));
+            // $gradecustomer   = trim($this->request->getPost('gradecustomer'));
+            $kdcustomerdeliv   = trim($this->request->getPost('kdcustomerdeliv'));
+            $alamatcustomerdeliv   = trim($this->request->getPost('alamatcustomerdeliv'));
+            // $alamatkirim   = trim($this->request->getPost('alamatkirim'));
+            // $keterangan   = trim($this->request->getPost('keterangan'));
+            // $currcode   = trim($this->request->getPost('currcode'));
+            $salesman   = trim($this->request->getPost('kdsalesman'));
+            // $kurs   = trim($this->request->getPost('kurs'));
+            // $isinclusive   = trim($this->request->getPost('isinclusive'));
+            // $idtax   = trim($this->request->getPost('idtax'));
+            $keterangan   = trim($this->request->getPost('keterangan'));
+            // $carabayar   = trim($this->request->getPost('carabayar'));
+            // $pocust   = trim($this->request->getPost('pocust'));
+            // $isinclusive = $this->request->getPost('isinclusive') ? 'YES' : 'NO';
+            // $isopenprice = $this->request->getPost('isopenprice') ? 'YES' : 'NO';
+
+
+            
+            // **BERSIHKAN FORMAT KURS**
+            // $kurs = trim($this->request->getPost('kurs'));
+            // $kurs_clean = 0;
+            // if (!empty($kurs)) {
+            //     $kurs_clean = str_replace(',', '', $kurs);
+            //     // $kurs_clean = str_replace('.', '.', $kurs_clean);
+            //     // $kurs_clean = floatval($kurs_clean);
+            // }
+
+             // Convert expdate ke format YYYY-MM-DD
+            // $docdateph = null;
+            // if (!empty($docdate)) {
+            //     $docdateph = date('Y-m-d', strtotime($docdate));
+            // }
+
+            // $delivdateph = null;
+            // if (!empty($delivdate)) {
+            //     $delivdateph = date('Y-m-d', strtotime($delivdate));
+            // }
+
+            // Update data header dulu sebelum set status F
+            $updateHeader = [
+                // 'docdate'        => $docdateph,
+                // 'delivdate'       => $delivdateph,
+                // 'jthtempo'       => $jthtempo,
+                'kdcustomer'     => strtoupper($kdcustomer),
+                'alamatcustomer' => strtoupper($alamatcustomer),
+                // 'gradecustomer' => strtoupper($gradecustomer),
+                'kdcustomerdeliv'     => strtoupper($kdcustomerdeliv),
+                'alamatcustomerdeliv' => strtoupper($alamatcustomerdeliv),
+                // 'alamatkirim'    => strtoupper($alamatkirim),
+                'keterangan'     => strtoupper($keterangan),
+                // 'currcode'       => $currcode,
+                'kdsalesman'       => $salesman,
+                // 'kurs'           => $kurs_clean,
+                // 'isinclusive'    => strtoupper($isinclusive),
+                // 'isopenprice'    => strtoupper($isopenprice),
+                // 'idtax'          => strtoupper($idtax),
+                // 'pocust'         => strtoupper($pocust),
+                // 'carabayar'         => strtoupper($carabayar),
+                // 'pemohon'       => $pemohon (jika masih diperlukan nanti bisa ditambahkan)
+            ];
+
+            $builder->where('inputby', $nama);
+            $builder->update($updateHeader);
+
+            $info = array(
+                'status' => 'F'
+            );
+            $builder->where('inputby',$nama);
+            if ($builder->update($info)) {
+                $paramerror=" and userid='$nama' and modul='I.S.B.2'";
+                $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
+                $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
+
+                // $docno = trim(bin2hex(trim($dtlerror['nomorakhir1'])));
+
+                return redirect()->to(base_url('/sales/postsales/deliveryorder'));
+            } else {
+                $infotrxerror = array(
+                    'userid' => $nama,
+                    'errorcode' => 3,
+                    'nomorakhir1' => $cek->getNumRows(),
+                    'nomorakhir2' => $cek2->getNumRows(),
+                    'modul' => 'I.S.B.2',
+                );
+                $builder_trxerror->insert($infotrxerror);
+                return redirect()->to(base_url('/sales/postsales/addDeliveryOrder'));
+            }
+
+
+
+        }
+
+    }
+
+
+    function show_deliveryorder(){
+        $module = 'I.S';
+        $menu = 'I.S.B.2';
+        $table = "sc_trx.deliveryorder";
+        $nama = trim($this->session->get('nama'));
+        $docno = $this->request->getGet('docno');  // Mengambil 'docno' dari URL
+        //$docdate = $this->request->getPost('docdate');
+        // $idlocation = $this->request->getPost('idlocation');
+        // $idgroup = $this->request->getPost('idgroup');
+        // $formheader = $this->request->getPost('formheader');
+        $nama = trim($this->session->get('nama'));
+        // $docno = hex2bin($this->request->getGet('docno'));
+        $docno = hex2bin($docno);
+        $builder = $this->db->table('sc_trx.deliveryorder');
+
+    //    $builder = $builder
+    //         ->where('docno', $docno)
+    //         ->update([
+    //             'status'=> 'P',
+    //             'printby' => $nama,
+    //             'printdate' => date('Y-m-d H:i:s')
+    //         ]);
+
+        
+        $enc_docno = $this->fiky_encryption->sealed($docno);
+        
+        //$enc_docdate= $this->fiky_encryption->sealed($docdate);
+        // $enc_idlocation = $this->fiky_encryption->sealed($idlocation);
+        // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
+        // $enc_formheader = $this->fiky_encryption->sealed($formheader);
+
+        $title = " Report Delivery Order";
+
+        //$datajson =  base_url("manufactur/production/api_pp/?enc_idbarang=$enc_idbarang&enc_docdate=$enc_docdate&enc_idlocation=$enc_idlocation&enc_idgroup=$enc_idgroup") ;
+        $datajson =  base_url("sales/postsales/api_deliveryorder/?enc_docno=$enc_docno") ;
+
+        // if($formheader==="HEADER"){
+            $datamrt =  base_url("assets/mrt/report_deliveryorder.mrt") ;
+        // } else {
+        //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
+        // }
+
+        return $this->fiky_report->render($datajson,$datamrt,$title,$nama,$module,$table,$docno,$menu);
+    }
+
+    function api_deliveryorder(){
+        $nama = trim($this->session->get('nama'));
+
+        $dtlbranch = $this->m_global->q_master_branch()->getRowArray();
+        $branch = strtoupper(trim($dtlbranch['branch']));
+        $docno=trim($this->fiky_encryption->unseal($this->request->getGet('enc_docno')));
+        //$docdate=trim($this->fiky_encryption->unseal($this->request->getGet('enc_docdate')));
+        // $idlocation=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idlocation')));
+        // $idgroup=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idgroup')));
+        //$docno=trim($this->request->getGet('enc_docno'));
+
+       // $ddate = explode(' - ',$docdate);
+       // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
+       // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
+
+        if (empty($docno) or $docno==='') {
+            $param_brg = "";
+        } else {
+            $param_brg = " and docno='$docno'";
+        }
+
+        // //idgroup
+        // if (!empty($idgroup)) {
+        //     $param_group=" and idgroup='$idgroup'";
+        // } else {  $param_group=""; }
+
+
+        $databranch = $this->m_global->q_master_branch();
+        $param=" and docno='$docno'";
+        $datamst = $this->m_postsales->q_deliveryorder_master($param);
+        $datadtl = $this->m_postsales->q_deliveryorder_dtl($param);
+        $tampungdtl = $datamst->getResult();
+        $detail = $tampungdtl[0] ?? null;        
+        if ($detail) {
+
+            $tujuan = isset($detail->tujuan) ? trim($detail->tujuan) : '';
+        
+            // Tambahkan properti baru isPindah
+            $detail->isPindah = false; // Default value
+            if ($tujuan === 'pindah') {
+                $detail->isPindah = true;
+            }
+
+             // Tambahkan properti baru isPembuangan
+             $detail->isPembuangan = false; // Default value
+             if ($tujuan === 'pembuangan') {
+                 $detail->isPembuangan = true;
+             }
+
+            // Tambahkan properti baru isPinjam
+            $detail->isPinjam = false; // Default value
+            if ($tujuan === 'pinjam') {
+                $detail->isPinjam = true;
+            }
+
+            $isreturn = isset($detail->isreturn) ? trim($detail->isreturn) : '';
+             // Tambahkan properti baru iskembali
+             $detail->iskembali = false; // Default value
+             if ($isreturn === 'kembali') {
+                 $detail->iskembali = true;
+             }
+
+             $detail->istidakkembali = false; // Default value
+             if ($isreturn === 'tidak_kembali') {
+                 $detail->istidakkembali = true;
+             }
+
+             $jenisbarang = isset($detail->jenisbarang) ? trim($detail->jenisbarang) : '';
+              // Tambahkan properti baru isAset
+              $detail->isAset = false; // Default value
+              if ($jenisbarang === 'aset') {
+                  $detail->isAset = true;
+              }
+
+              // Tambahkan properti baru isPersediaan
+              $detail->isPersediaan = false; // Default value
+              if ($jenisbarang === 'persediaan') {
+                  $detail->isPersediaan = true;
+              }
+
+              // Tambahkan properti baru isLainlain
+              $detail->isLainlain = false; // Default value
+              if ($jenisbarang === 'lainlain') {
+                  $detail->isLainlain = true;
+              }
+        }
+
+        header("Content-Type: text/json");
+        return json_encode(
+            array(
+
+                'info' => array([
+                    //'date1' => date('d-m-Y',strtotime($tgl1)),
+                    //'date2' => date('d-m-Y',strtotime($tgl2)),
+                    'date1' => date('d-m-Y'),
+                    'date2' => date('d-m-Y'),
+                    'datenow' => date('d-m-Y'),
+                    'userid' => $nama,
+                    'param' => $param,
+
+                    ]
+                ),
+                'branch' => $databranch->getResult(),
+                'master' => $datamst->getResult(),
+                'detail' => $datadtl->getResult(),
+            ), JSON_PRETTY_PRINT);
+    }
+
+
+
+
+
+
+
+
+
+    
+    // =================================== SURAT JALAN ===========================================
+
+
+     public function suratjalan()
+    {
+        $data['title']="Surat Jalan";
+        $dtlbranch=$this->m_global->q_branch()->getRowArray();
+        $branch=$dtlbranch['branch'];
+        /* CODE UNTUK VERSI*/
+        $nama=trim($this->session->get('nama'));
+        $kodemenu='I.S.B.3'; $versirelease='I.S.B.3/01'; $releasedate=date('2025-04-12 00:00:00');
+        $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
+        $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
+        $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
+        $data['kodemenu']=$kodemenu; $data['version']=$versidb;
+        /* END CODE UNTUK VERSI */
+
+        $paramerror=" and userid='$nama' and modul='I.S.B.3'";
+        $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
+        $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
+        if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
+        if(isset($dtlerror['nomorakhir1'])) { $nomorakhir1=trim($dtlerror['nomorakhir1']); } else { $nomorakhir1='';  }
+        if(isset($dtlerror['errorcode'])) { $errorcode=trim($dtlerror['errorcode']); } else { $errorcode='';  }
+
+        if($count_err>0 and $errordesc<>''){
+            if ($dtlerror['errorcode']==0){
+                $data['message']="<div class='alert alert-info'>DATA SUCCESSFULLY PROCESSED $nomorakhir1 </div>";
+            } else {
+                $data['message']="<div class='alert alert-info'>$errordesc</div>";
+            }
+
+        }else {
+            if ($errorcode=='0'){
+                $data['message']="<div class='alert alert-info'>DATA SUCCESSFULLY PROCESSED $nomorakhir1 </div>";
+            } else {
+                $data['message']="";
+            }
+
+        }
+        /* Item Entry Master Check */
+        $param = " and coalesce(inputby,'')='$nama'";
+        $dtl = $this->m_postsales->q_suratjalan_master_temp($param);
+        $logindate = trim($this->session->get('logindate'));
+
+        if ($dtl->getNumRows()>0) {
+            $title = "WARNING !!!";
+            $urlclear = base_url('sales/postsales/clearEntrySuratJalan');
+            $urlnext = base_url('sales/postsales/addSuratJalan');
+            $body = " Entry not finished found....!!!";
+            $data['showUnfinish'] = $this->m_trxerror->unfinish($nama, $urlclear, $urlnext, $title, $body);
+        } else { $data['showUnfinish'] = '' ; }
+
+        $kmenu = 'I.S.B.3';
+        $role = trim($this->session->get('roleid'));
+        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
+        //auto insert unit
+        $pterror = " and userid='$nama'";
+        $this->m_trxerror->q_deltrxerror($pterror);
+        return $this->template->render('sales/postsales/v_list_suratjalan',$data);
+    }
+
+    function detailSuratJalan()
+    {
+        /* Penambahan Squence */
+        $data['title']="Detail SuratJalan";
+        $dtlbranch=$this->m_global->q_branch()->getRowArray();
+        $branch=$dtlbranch['branch'];
+        /* CODE UNTUK VERSI*/
+        $nama=trim($this->session->get('nama'));
+
+        $docno = $this->request->getGet('docno');
+        if (empty($docno)) {
+            return redirect()->to(base_url('sales/postsales/suratjalan'));
+        }
+        $kodemenu='I.S.B.3'; $versirelease='I.S.B.3/01'; $releasedate=date('2025-04-12 00:00:00');
+        $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
+        $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
+        $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
+        $data['kodemenu']=$kodemenu; $data['version']=$versidb;
+        $data['nama']=$nama; $data['version']=$versidb;
+        /* END CODE UNTUK VERSI */
+
+        $paramerror=" and userid='$nama' and modul='I.S.B.3'";
+        $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
+        $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
+        if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
+        if(isset($dtlerror['nomorakhir1'])) { $nomorakhir1=trim($dtlerror['nomorakhir1']); } else { $nomorakhir1='';  }
+        if(isset($dtlerror['errorcode'])) { $errorcode=trim($dtlerror['errorcode']); } else { $errorcode='';  }
+
+        if($count_err>0 and $errordesc){
+            if ($dtlerror['errorcode']==0){
+                $data['message']="<div class='alert alert-info'>DATA SUKSES DIPROSES $nomorakhir1 </div>";
+            } else {
+                $data['message']="<div class='alert alert-info'>$errordesc</div>";
+            }
+
+        }else {
+            if ($errorcode=='0'){
+                $data['message']="<div class='alert alert-info'>DATA SUKSES DIPROSES $nomorakhir1 </div>";
+            } else {
+                $data['message']="";
+            }
+
+        }
+
+        $decoded_docno = hex2bin($docno); // Decode docno yang dikirim dalam bentuk hex
+        $param = " and coalesce(docno,'') = '$decoded_docno'";
+        $pterror = " and userid='$nama'";
+        $this->m_trxerror->q_deltrxerror($pterror);
+        $data['typeform'] = 'DETAIL';
+        $data['userlogin'] = $nama;
+        $data['docnoParam'] = $decoded_docno;
+        $data['dtldata'] = $this->m_postsales->q_suratjalan_master($param)->getRowArray();
+        return $this->template->render('sales/postsales/v_detail_suratjalan',$data);
+    }
+
+    function list_suratjalan(){
+        $list = $this->m_postsales->get_t_front_suratjalan_view();
+        $data = array();
+        $no = $_POST['start'];
+
+
+        $kmenu = 'I.S.B.3';
+        $nama=trim($this->session->get('nama'));
+        $role=trim($this->session->get('roleid'));
+
+        $datadtl['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
+        $dataanu['userinfo'] = $this->m_user->getUser(" and username='$nama'")->getRowArray();
+
+        $canUpdate = isset($datadtl['dtl_akses']['a_update']) && trim($datadtl['dtl_akses']['a_update']) === 't';
+        $canPrint = isset($datadtl['dtl_akses']['a_report']) && trim($datadtl['dtl_akses']['a_report']) === 't';
+        $canView = isset($datadtl['dtl_akses']['a_view']) && trim($datadtl['dtl_akses']['a_view']) === 't';
+        // $canApprove = isset($datadtl['dtl_akses']['a_approve1']) && trim($datadtl['dtl_akses']['a_approve1']) === 't';
+        $canDelete = isset($datadtl['dtl_akses']['a_delete']) && trim($datadtl['dtl_akses']['a_delete']) === 't';
+
+        foreach ($list as $lm) {
+            $no++;
+            $row = array();
+
+            $status = strtoupper(trim($lm->status_desc));
+            $docno  = trim($lm->docno);
+            $docnoHex = bin2hex($docno);
+
+            
+            $updateBtn = '';
+            $detailBtn = '';
+            $printBtn  = '';
+            $approveBtn  = '';
+            $disapproveBtn  = '';
+            $cancelBtn  = '';
+
+            // =========================
+            // Build button by access
+            // =========================
+
+            if ($canUpdate && trim($lm->inputby) == $nama && empty($lm->printby) &&
+                empty($lm->printdate) && 
+                trim($status) == 'FINAL USER'
+            ){
+                $updateBtn = '
+                <a class="dropdown-item bg-warning" 
+                    href="' . base_url('sales/postsales/updateSuratJalan') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'Update This SuratJalan : ' . $docno . '\')">
+                    <i class="fa fa-edit"></i> Update SuratJalan 
+                </a>';
+            }
+
+            if($canView){
+                $detailBtn = 
+                '<a class="dropdown-item" 
+                    style="background-color:#3badf6;" 
+                    href="' . base_url('sales/postsales/detailSuratJalan') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'View Detail SuratJalan : ' . $docno . '\')">
+                    <i class="fa fa-eye"></i> Detail SuratJalan 
+                </a>';
+            }
+
+            if ($canPrint && (trim($status) == 'FINALUSER' || trim($status) == 'CETAK/PRINT')) {
+                $printBtn = '
+                <a class="dropdown-item" 
+                    style="background-color:#00ff8e;" 
+                    href="' . base_url('sales/postsales/show_po') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'Print SuratJalan : ' . $docno . '\')">
+                    <i class="fa fa-print"></i> Print SuratJalan 
+                </a>';
+            }
+
+            if ($canDelete && trim($lm->inputby) == $nama && empty($lm->printby) &&
+                empty($lm->printdate) && 
+                trim($status) == 'FINAL USER'
+            ) {
+                $cancelBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToCancel(\'' . trim($lm->docno) . '\');">
+                    <i class="fa fa-undo"></i> Batalkan Surat Jalan</a>';
+            }
+
+
+            // if (trim($status) !== 'APPROVED' && trim($status) !== 'REVISION/EDITING') {
+            //         $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
+            //             <i class="fa fa-check-circle"></i> Approve</a>';
+            // }
+
+            // if (trim($status) == 'APPROVED') {
+            //     $disapproveBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToDisapproved(\'' . trim($lm->docno) . '\');">
+            //         <i class="fa fa-times-circle"></i> Disapprove</a>';
+            // }
+
+
+            $menuContent = '';
+
+            if ($status === 'CETAK/PRINT') {
+
+                // hanya detail jika ada akses
+                if ($canView) {
+                    $menuContent .= $detailBtn;
+                    $menuContent .= $printBtn;
+                }
+
+            } else {
+
+                // selain status tersebut → tampilkan sesuai hak akses
+                if ($canUpdate) $menuContent .= $updateBtn;
+                if ($canPrint)  $menuContent .= $printBtn;
+                if ($canView)   $menuContent .= $detailBtn;
+                if ($canDelete)   $menuContent .= $cancelBtn;
+                // if ($canApprove)   $menuContent .= $approveBtn;
+                // if ($canApprove)   $menuContent .= $disapproveBtn;
+            }
+
+            // =========================
+            // Final Dropdown (jangan tampil kalau kosong)
+            // =========================
+            if ($menuContent !== '') {
+
+                $dropdownMenu = '
+                    <div class="dropdown">
+                        <button class="btn btn-primary btn-sm dropdown-toggle" 
+                                type="button" 
+                                data-bs-toggle="dropdown" 
+                                aria-expanded="false">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <div class="dropdown-menu">
+                            ' . $menuContent . '
+                        </div>
+                    </div>';
+
+            } else {
+
+                // Tidak punya hak akses apapun
+                $dropdownMenu = '';
+            }
+
+            $row[] = $no;
+            $row[] = $dropdownMenu;
+
+            $row[] = $lm->docno;
+            $row[] = date(
+                'd/m/Y',
+                strtotime(trim($lm->docdate))
+            );
+            $status = $lm->status_desc ?? $lm->status;
+            $badgeClass = 'badge-secondary'; // Default
+
+            switch (strtoupper($status)) {
+                case 'DRAFT':
+                    $badgeClass = 'badge-secondary';
+                    break;
+                case 'REVISION/EDITING':
+                    $badgeClass = 'badge-warning';
+                    break;
+                case 'FINAL USER':
+                    $badgeClass = 'badge-info';
+                    break;
+                case 'CETAK/PRINT':
+                    $badgeClass = 'badge-success ';
+                    break;
+                default:
+                    $badgeClass = 'badge-primary'; // Default (primary) jika status tidak dikenali
+                    break;
+            }
+
+            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
+
+            $row[] = $lm->kdcust;
+            $row[] = $lm->nmcust;
+            $row[] = $lm->alamatcust;
+            $row[] = $lm->nmkota;
+            // $row[] = $lm->kdcustdeliv;
+            $row[] = $lm->nmcustdeliv;
+            $row[] = $lm->alamatcustdeliv;
+            $row[] = $lm->nmkotadeliv;
+            // $row[] = $lm->currcode;
+            // $row[] = date(
+            //     'd/m/Y',
+            //     strtotime(trim($lm->senddate))
+            // );
+            // $docdate  = trim($lm->docdate);
+            // $jthtempo = (int) $lm->jthtempo;
+
+            // if (!empty($docdate)) {
+
+            //     $date = new \DateTime(trim($lm->docdate));
+            //     $date->modify("+{$jthtempo} days");
+
+            //     $jatuhTempo = $date->format('d/m/Y');
+
+            // } else {
+            //     $jatuhTempo = '';
+            // }
+
+            // $row[] = $jatuhTempo;
+            
+            $row[] = $lm->nmsalesman;
+            // $row[] = $lm->pocust;
+            $row[] = $lm->keterangan;
+
+            $row[] = $lm->nmbranch;
+            
+
+            $data[] = $row;
+        }
+
+        $output = array(
+            "draw" => $_POST['draw'],
+            "recordsTotal" => $this->m_postsales->t_front_suratjalan_view_count_all(),
+            "recordsFiltered" => $this->m_postsales->t_front_suratjalan_view_count_filtered(),
+            "data" => $data,
+        );
+        echo $this->fiky_encryption->jDatatable($output);
+    }
+
+    
+    function list_suratjalan_apprv(){
+        $list = $this->m_postsales->get_t_front_suratjalan_apprv_view();
+        $data = array();
+        $no = $_POST['start'];
+
+
+        $kmenu = 'I.S.B.3';
+        $nama=trim($this->session->get('nama'));
+        $role=trim($this->session->get('roleid'));
+
+        $datadtl['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
+        $dataanu['userinfo'] = $this->m_user->getUser(" and username='$nama'")->getRowArray();
+
+        $canUpdate = isset($datadtl['dtl_akses']['a_update']) && trim($datadtl['dtl_akses']['a_update']) === 't';
+        $canPrint = isset($datadtl['dtl_akses']['a_report']) && trim($datadtl['dtl_akses']['a_report']) === 't';
+        $canView = isset($datadtl['dtl_akses']['a_view']) && trim($datadtl['dtl_akses']['a_view']) === 't';
+        $canApprove = isset($datadtl['dtl_akses']['a_approve1']) && trim($datadtl['dtl_akses']['a_approve1']) === 't';
+
+        foreach ($list as $lm) {
+            $no++;
+            $row = array();
+
+            $status = strtoupper(trim($lm->status_desc));
+            $docno  = trim($lm->docno);
+            $docnoHex = bin2hex($docno);
+
+            
+            $updateBtn = '';
+            $detailBtn = '';
+            $printBtn  = '';
+            $approveBtn  = '';
+            $disapproveBtn  = '';
+
+            // =========================
+            // Build button by access
+            // =========================
+
+            if ($canUpdate && $status != "REVISION/EDITING" && $status != "APPROVED") {
+                $updateBtn = '
+                <a class="dropdown-item bg-warning" 
+                    href="' . base_url('sales/postsales/updateSuratJalan') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'Update This SuratJalan : ' . $docno . '\')">
+                    <i class="fa fa-edit"></i> Update SuratJalan 
+                </a>';
+            }
+
+            if($canView){
+                $detailBtn = 
+                '<a class="dropdown-item" 
+                    style="background-color:#3badf6;" 
+                    href="' . base_url('sales/postsales/detailSuratJalan') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'View Detail SuratJalan : ' . $docno . '\')">
+                    <i class="fa fa-eye"></i> Detail SuratJalan 
+                </a>';
+            }
+
+            if($canPrint){
+                $printBtn = '
+                <a class="dropdown-item" 
+                    style="background-color:#00ff8e;" 
+                    href="' . base_url('sales/postsales/show_po') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'Print SuratJalan : ' . $docno . '\')">
+                    <i class="fa fa-print"></i> Print SuratJalan 
+                </a>';
+            }
+
+
+            if (trim($status) !== 'APPROVED' && trim($status) !== 'REVISION/EDITING') {
+                    $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
+                        <i class="fa fa-check-circle"></i> Approve</a>';
+            }
+
+            if (trim($status) == 'APPROVED') {
+                $disapproveBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToDisapproved(\'' . trim($lm->docno) . '\');">
+                    <i class="fa fa-times-circle"></i> Disapprove</a>';
+            }
+
+
+            $menuContent = '';
+
+            if ($status === 'CETAK/PRINT') {
+
+                // hanya detail jika ada akses
+                if ($canView) {
+                    $menuContent .= $detailBtn;
+                    $menuContent .= $printBtn;
+                }
+
+            } else {
+
+                // selain status tersebut → tampilkan sesuai hak akses
+                if ($canUpdate) $menuContent .= $updateBtn;
+                if ($canPrint)  $menuContent .= $printBtn;
+                if ($canView)   $menuContent .= $detailBtn;
+                if ($canApprove)   $menuContent .= $approveBtn;
+                if ($canApprove)   $menuContent .= $disapproveBtn;
+            }
+
+            // =========================
+            // Final Dropdown (jangan tampil kalau kosong)
+            // =========================
+            if ($menuContent !== '') {
+
+                $dropdownMenu = '
+                    <div class="dropdown">
+                        <button class="btn btn-primary btn-sm dropdown-toggle" 
+                                type="button" 
+                                data-bs-toggle="dropdown" 
+                                aria-expanded="false">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <div class="dropdown-menu">
+                            ' . $menuContent . '
+                        </div>
+                    </div>';
+
+            } else {
+
+                // Tidak punya hak akses apapun
+                $dropdownMenu = '';
+            }
+
+            $row[] = $no;
+            $row[] = $dropdownMenu;
+
+            $row[] = $lm->docno;
+            $row[] = date(
+                'd/m/Y',
+                strtotime(trim($lm->docdate))
+            );
+            $status = $lm->status_desc ?? $lm->status;
+            $badgeClass = 'badge-secondary'; // Default
+
+            switch (strtoupper($status)) {
+                case 'DRAFT':
+                    $badgeClass = 'badge-secondary';
+                    break;
+                case 'REVISION/EDITING':
+                    $badgeClass = 'badge-warning';
+                    break;
+                case 'FINAL USER':
+                    $badgeClass = 'badge-info';
+                    break;
+                case 'CETAK/PRINT':
+                    $badgeClass = 'badge-success ';
+                    break;
+                default:
+                    $badgeClass = 'badge-primary'; // Default (primary) jika status tidak dikenali
+                    break;
+            }
+
+            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
+
+            $row[] = $lm->kdcust;
+            $row[] = $lm->nmcust;
+            $row[] = $lm->alamatcust;
+            $row[] = $lm->nmkota;
+            $row[] = $lm->kdcustdeliv;
+            $row[] = $lm->nmcustdeliv;
+            $row[] = $lm->alamatcustdeliv;
+            $row[] = $lm->nmkotadeliv;
+            $row[] = $lm->currcode;
+            // $row[] = date(
+            //     'd/m/Y',
+            //     strtotime(trim($lm->senddate))
+            // );
+            $docdate  = trim($lm->docdate);
+            $jthtempo = (int) $lm->jthtempo;
+
+            if (!empty($docdate)) {
+
+                $date = new \DateTime(trim($lm->docdate));
+                $date->modify("+{$jthtempo} days");
+
+                $jatuhTempo = $date->format('d/m/Y');
+
+            } else {
+                $jatuhTempo = '';
+            }
+
+            $row[] = $jatuhTempo;
+            
+            $row[] = $lm->nmsalesman;
+            // $row[] = $lm->pocust;
+            $row[] = $lm->keterangan;
+
+            $row[] = $lm->nmbranch;
+            
+
+            $data[] = $row;
+        }
+
+        $output = array(
+            "draw" => $_POST['draw'],
+            "recordsTotal" => $this->m_postsales->t_front_suratjalan_apprv_view_count_all(),
+            "recordsFiltered" => $this->m_postsales->t_front_suratjalan_apprv_view_count_filtered(),
+            "data" => $data,
+        );
+        echo $this->fiky_encryption->jDatatable($output);
+    }
+
+    function clearEntrySuratJalan()
+    {
+        $nama=trim($this->session->get('nama'));
+        $param = " and coalesce(inputby,'')='$nama'";
+        $dtl = $this->m_postsales->q_suratjalan_master_temp($param);
+        if(empty($dtl->getRowArray())){
+            return redirect()->to(base_url('sales/postsales/suratjalan'));
+        }
+        // if(isEmpty($dtl->getRowArray()['status'])){
+        //     return redirect()->to(base_url('sales/postsales/pp'));
+        // }
+        $status = trim($dtl->getRowArray()['status']);
+        $builder = $this->db->table('sc_tmp.suratjalan');
+        $builder_dtl = $this->db->table('sc_tmp.suratjalan_dtl');
+
+        if ($status==='I') {
+            // $builder= $this->db->table('sc_tmp.standart_usage_mst');
+            $builder->where('inputby',$nama);
+            $builder->delete();
+            // $builderDtl= $this->db->table('sc_tmp.pp');
+            // $builderDtl->where('inputby',$nama);
+            // $builderDtl->delete();
+            return redirect()->to(base_url('sales/postsales/suratjalan'));
+        } else if ($status==='E') {
+            $builder->where('inputby',$nama);
+            if ($builder->update(array('status' => 'C'))) {
+                $result = array('status' => true, 'messages' => 'Sukses Di Proses');
+                echo json_encode($result);
+                return redirect()->to(base_url('sales/postsales/suratjalan'));
+            }
+            else {
+                $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+                echo json_encode($result);
+            }
+        } else {
+                // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+                // echo json_encode($result);
+                return redirect()->to(base_url('sales/postsales/suratjalan'));
+        }
+
+    }
+
+    function addSuratJalan()
+    {
+        /* Penambahan Squence */
+        $data['title']="Input Surat Jalan";
+        $dtlbranch=$this->m_global->q_branch()->getRowArray();
+        $branch=$dtlbranch['branch'];
+        /* CODE UNTUK VERSI*/
+        $nama=trim($this->session->get('nama'));
+        $kodemenu='I.S.B.3'; $versirelease='I.S.B.3/01'; $releasedate=date('2025-04-12 00:00:00');
+        $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
+        $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
+        $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
+        $data['kodemenu']=$kodemenu; $data['version']=$versidb;
+        $data['nama']=$nama; $data['version']=$versidb;
+        /* END CODE UNTUK VERSI */
+
+
+        $paramerror=" and userid='$nama' and modul='I.S.B.3'";
+        $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
+        $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
+        if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
+        if(isset($dtlerror['nomorakhir1'])) { $nomorakhir1=trim($dtlerror['nomorakhir1']); } else { $nomorakhir1='';  }
+        if(isset($dtlerror['errorcode'])) { $errorcode=trim($dtlerror['errorcode']); } else { $errorcode='';  }
+
+        if($count_err>0 and $errordesc<>''){
+            if ($dtlerror['errorcode']==0){
+                $data['message']="<div class='alert alert-info'>DATA SUCCESSFULLY PROCESSED $nomorakhir1 </div>";
+            } else {
+                $data['message']="<div class='alert alert-info'>$errordesc</div>";
+            }
+
+        }else {
+            if ($errorcode=='0'){
+                $data['message']="<div class='alert alert-info'>DATA SUCCESSFULLY PROCESSED $nomorakhir1 </div>";
+            } else {
+                $data['message']="";
+            }
+
+        }
+
+        $param = " and trim(inputby)='$nama'";
+        $data['mst'] = $this->m_postsales->q_suratjalan_master_temp($param)->getRowArray();
+        $logindate = trim($this->session->get('logindate'));
+
+        $data['typeform'] = 'INPUT';
+        $data['userlogin'] = $nama;
+        $param = " and trim(inputby)='$nama'";
+        $data['dtldata'] = $this->m_postsales->q_suratjalan_master_temp($param)->getRowArray();
+        $logindate  = trim($this->session->get('logindate'));
+        $ts    = strtotime($logindate);
+
+        $pterror = " and userid='$nama'";
+        $this->m_trxerror->q_deltrxerror($pterror);
+        return $this->template->render('sales/postsales/v_add_suratjalan',$data);
+    }
+
+
+   public function getBranchInfoSuratJalan()
+    {
+        $idbranch = trim($this->request->getGet('idbranch'));
+
+        $row = $this->db->table('sc_mst.branchjob')
+            ->select('nmbranch')
+            ->where('idbranch', $idbranch)
+            ->get()
+            ->getRowArray();
+
+        if (!$row) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Cabang tidak ditemukan'
+            ]);
+        }
+
+        // mapping nmbranch → kode suffix
+        $map = [
+            'PT JATIM TAMAN STEEL MFG' => 'PT',
+            'PLANT I'                 => 'PA',
+            'PLANT II'                => 'PB',
+        ];
+
+        $kodeSuffix = $map[trim($row['nmbranch'])] ?? '';
+
+        if ($kodeSuffix === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Mapping cabang belum diset'
+            ]);
+        }
+
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray(); // Ini mengembalikan array of objects/arrays
+
+        // Karena hanya 1 row, ambil index ke-0
+        $prefix = trim($konfigurasiUmum[0]['suratjalan']) ?? '';
+        $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
+        $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
+
+        $logindate = $this->session->get('logindate'); // dd-mm-yyyy
+        $infix = date('ym', strtotime($logindate));
+
+        return $this->response->setJSON([
+            'success'      => true,
+            'kode_suffix'  => $kodeSuffix,
+            'infix'        => $infix,
+            'logindate'     => $logindate,
+            'prefix'        => $prefix,
+            'konfigurasi_umum' => $konfigurasiUmum,
+            'currcode'      => $currcode,
+            'idtax'         => $idtax,
+        ]);
+    }
+
+    public function getNextSuffixSuratJalan()
+    {
+        $prefix      = trim($this->request->getGet('prefix'));
+        $infix       = trim($this->request->getGet('infix'));
+        $kodeSuffix  = trim($this->request->getGet('kode_suffix'));
+
+        $like = $prefix . '/' . $infix . '/' . $kodeSuffix;
+
+        $row = $this->db->table('sc_trx.suratjalan')
+            ->select('docno')
+            ->like('docno', $like, 'after')
+            ->orderBy('docno', 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRowArray();
+
+        if ($row) {
+            $parts = explode('/', $row['docno']);
+            $last  = substr($parts[2], 2); // ambil angka setelah PT/PA/PB
+            $next  = str_pad(((int)$last) + 1, 4, '0', STR_PAD_LEFT);
+        } else {
+            $next = '0001';
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'suffix'  => $kodeSuffix . $next
+        ]);
+    }
+
+    public function initSuratJalanHeader()
+    {
+        $nama = trim($this->session->get('nama'));
+
+        $docno      = strtoupper($this->request->getPost('docno'));
+        $docdate    = $this->request->getPost('docdate');
+        $cabang     = $this->request->getPost('cabang');
+        $pemohon    = strtoupper($this->request->getPost('pemohon'));
+        // $estpakai   = $this->request->getPost('estpakai');
+        // $keterangan = strtoupper($this->request->getPost('keterangan'));
+
+        if (!$docno || !$docdate || !$cabang) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Header belum lengkap'
+            ]);
+        }
+
+        $builder = $this->db->table('sc_tmp.suratjalan');
+        $exists = $builder->where('docno', $docno)->countAllResults();
+
+        // HEADER SUDAH ADA → TIDAK PERLU RELOAD
+        if ($exists > 0) {
+            return $this->response->setJSON([
+                'success' => true,
+                'reload'  => false
+            ]);
+        }
+
+        // HEADER BARU → INSERT
+        $builder->insert([
+            'docno'      => $docno,
+            'docdate'    => $docdate,
+            'cabang'     => $cabang,
+            'pemohon'    => $pemohon,
+            // 'estpakai'   => $estpakai,
+            'status'     => 'E',
+            // 'keterangan' => $keterangan,
+            'inputby'    => $nama,
+            'inputdate'  => date('Y-m-d H:i:s')
+        ]);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'reload'  => true   // ⬅ PENTING
+        ]);
+    }
+
+
+
+    public function saveSuratJalanDetail()
+    {
+        $nama   = trim($this->session->get('nama'));
+        $docno  = strtoupper(trim($this->request->getPost('docno')));
+        $docnodo = strtoupper(trim($this->request->getPost('docnodo')));
+        $idurut = $this->request->getPost('idurut'); // HAPUS strtoupper, biarkan apa adanya
+        
+        // Tambahkan mode untuk membedakan add/edit dengan lebih jelas
+        // $mode = $this->request->getPost('mode'); // 'add' atau 'edit'
+
+        if (!$docno || !$docnodo) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'No. Jurnal tidak boleh kosong'
+            ]);
+        }
+
+        $db = $this->db;
+        $db->transStart();
+
+        $builderSO = $db->table('sc_trx.salesorder');
+        $soData = $builderSO
+            ->select('currcode, kurs, idtax, isinclusive')
+            ->where('docno', $docnodo)
+            ->get()
+            ->getRowArray();
+
+        // Jika data SO tidak ditemukan, beri response error
+        if (!$soData) {
+            $db->transRollback();
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => "Data SO dengan nomor {$docnodo} tidak ditemukan"
+            ]);
+        }
+
+
+        // =====================================================
+        // CEK / INSERT HEADER
+        // =====================================================
+        $builderHeader = $db->table('sc_tmp.suratjalan');
+
+        $exists = $builderHeader
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->countAllResults();
+
+        $reload = false;
+        // Untuk pengambilan data dari POST
+        
+        if ($exists == 0) {
+
+            $builderHeader->insert([
+                'docno'     => $docno,
+                'cabang'     => $this->request->getPost('cabang'),
+                'docdate'   => date('Y-m-d', strtotime(trim($this->request->getPost('docdate')))),
+                // 'delivdate'   => date('Y-m-d', strtotime(trim($this->request->getPost('delivdate')))),
+                // 'jthtempo'     => $this->request->getPost('jthtempo'),
+                // 'isinclusive'     => $isinclusive,
+                // 'isopenprice'     => $isopenprice,
+                
+                'kdcustomer'    => strtoupper($this->request->getPost('kdcustomer')),
+                'alamatcustomer'    => strtoupper($this->request->getPost('alamatcustomer')),
+                'kdcustomerdeliv'    => strtoupper($this->request->getPost('kdcustomerdeliv')),
+                'alamatcustomerdeliv'    => strtoupper($this->request->getPost('alamatcustomerdeliv')),
+                // 'alamatkirim'    => strtoupper($this->request->getPost('alamatkirim')),
+                // 'idtax'    => strtoupper($this->request->getPost('idtax')),
+                'kdsalesman'    => ($this->request->getPost('kdsalesman')),
+                // 'gradecustomer'    => ($this->request->getPost('gradecustomer')),
+                // 'carabayar'    => strtoupper($this->request->getPost('carabayar')),
+                // 'pocust'    => strtoupper($this->request->getPost('pocust')),
+                // 'currcode'    => strtoupper($this->request->getPost('currcode')),
+                // 'kurs'    => ($this->request->getPost('kurs')),
+                'keterangan'    => strtoupper($this->request->getPost('keterangan')),
+                // 'pocust'    => strtoupper($this->request->getPost('pocust')),
+                // 'nodp'    => strtoupper($this->request->getPost('nodp')),
+                'status'    => 'E',
+                'inputby'   => $nama,
+                'inputdate' => date('Y-m-d H:i:s')
+            ]);
+
+            $reload = true;
+        }
+
+        $builderDetail = $db->table('sc_tmp.suratjalan_dtl');
+        $insertCount = 0;
+        $message = '';
+
+        // CEK MODE: ADD atau EDIT
+        if (!empty($idurut)) {            
+
+            $uniqueid = $this->request->getPost('uniqueid');
+            // =====================================================
+            // MODE EDIT - UPDATE DATA
+            // =====================================================
+            $qty         = $this->request->getPost('qty');
+            // $qtybonus    = $this->request->getPost('qtybonus') ?: 0;
+            // $volitem   = $this->request->getPost('volitem') ?: 0;
+            // $biaya   = $this->request->getPost('biaya') ?: 0;
+            // $biaya2   = $this->request->getPost('biaya2') ?: 0;
+            $idgudang = strtoupper($this->request->getPost('idgudang'));
+
+            $builderDetail->where('uniqueid', $uniqueid)->update([
+                'qty'          => $qty,
+                // 'qtybonus'     => $qtybonus,
+                // 'harga'        => $harga,
+                // 'multidisc'    => $multidisc,
+                // 'nilai'        => $nilai,
+                // 'nilaikonversi' => $nilaikonversi,
+                // 'nilaipajak' => $nilaipajak,
+                // 'idtax' => $idtax,
+                // 'kurs' => $kurs,
+                // 'currcode' => $poData['currcode'] ?? '',
+                // 'volitem'      => $volitem,
+
+                // 'biaya'      => $biaya,
+                // 'biaya2'      => $biaya2,
+                // 'idprincipal'      => $idprincipal,
+                'idgudang'      => $idgudang,
+                // 'idspec'      => $idspec,
+
+                'updateby'     => $nama,
+                'updatedate'   => date('Y-m-d H:i:s')
+            ]);
+
+
+
+            
+            
+            $message = 'Data berhasil diupdate';
+            
+        } else {
+            // =====================================================
+            // MODE ADD - INSERT DATA DARI PP
+            // =====================================================
+            $soDetails = $db->query("
+                SELECT 
+                    docno,
+                    idbarang,
+                    uniqueid,
+                    nmbarang,
+                    unit,
+                    qty,
+                    qtysj,
+                    idgudang,
+                    qtydo
+                FROM sc_trx.salesorder_dtl
+                WHERE TRIM(docno) = ?
+            ", [$docnodo])->getResult();
+
+            if (empty($soDetails)) {
+                $db->transRollback();   
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Data SO tidak ditemukan'
+                ]);
+            }
+
+            foreach ($soDetails as $row) {
+                $qtySJSaatIni = 0;
+            
+                $existingSJ = $db->query("
+                    SELECT qty 
+                    FROM sc_tmp.suratjalan_dtl 
+                    WHERE
+                    uniqueid = ?
+                ", [$row->uniqueid])->getRow();
+                
+                if ($existingSJ) {
+                    $qtySJSaatIni = $existingSJ->qty;
+                }
+
+                $sisaQty = $row->qty - ($row->qtysj - $qtySJSaatIni);
+                if ($sisaQty <= 0) continue;
+
+                $duplicate = $builderDetail
+                    ->where('docno', $docno)
+                    ->where('uniqueid', $row->uniqueid)
+                    ->countAllResults();
+
+                if ($duplicate == 0) {
+                    $builderDetail->insert([
+                        'docno'         => $docno,
+                        'docnodo'       => $docnodo,
+                        'idbarang'      => $row->idbarang,
+                        'uniqueid'      => $row->uniqueid,
+                        'nmbarang'      => $row->nmbarang,
+                        'unit'          => $row->unit,
+                        'qty'           => $sisaQty,
+                        // 'idprincipal'   => $row->idprincipal,
+                        'idgudang'      => $row->idgudang,
+                        // 'idspec'        => $row->idspec,
+                        // 'harga'         => $row->harga, // Default 0 untuk new insert
+                        // 'multidisc'     =>  $row->multidisc, // Default 0 untuk new insert
+                        // 'nilaipajak'    => $nilaipajakRow,
+                        // 'nilaikonversi' => $nilaikonversiRow,
+                        // 'currcode'      => $row->currcode,
+                        // 'kurs'          => $row->kurs,
+                        // 'idtax'         => $row->idtax,
+                        // 'nilai'         => $sisaQty * $row->harga, // Default 0 untuk new insert
+                        // 'description' => $row->description,
+                        'inputby'       => $nama,
+                        'inputdate'     => date('Y-m-d H:i:s')
+                    ]);
+
+                    $insertCount++;
+                }
+            }
+            
+            $message = $insertCount > 0 
+                        ? "$insertCount item berhasil ditambahkan"
+                        : "Semua item sudah ada sebelumnya";
+        }
+
+
+        $db->transComplete();
+
+        return $this->response->setJSON([
+            'success' => true,
+            'reload'  => $reload,
+            'message' => $message
+        ]);
+    }
+
+
+    public function updateStatusSuratJalan()
+    {
+        $docno = $this->request->getPost('docno');
+        $status = $this->request->getPost('status');
+        if (!$docno || !$status) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Parameter tidak lengkap'
+            ]);
+        }
+
+        $db = \Config\Database::connect();
+        $builder = $db->table('sc_trx.suratjalan');
+        $builder->where('docno', $docno);
+        /*tambahan sultan*/
+        $info = array('status' => $status);
+        $update = $builder->update($info);
+
+        $action = '';
+        switch ($status) {
+            case 'A': $action = 'A'; break;  // APPROVED → 1 huruf
+            case 'F': $action = 'R'; break;  // REJECT → 1 huruf (R)
+            case 'C': $action = 'C'; break;  // CANCEL → 1 huruf
+            default:
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Status tidak valid'
+                ]);
+        }
+
+        if ($update) {
+            // ===============================
+            // LOG MENGGUNAKAN FUNGSI HELPER
+            // ===============================
+            $this->m_global->insertlogtrans(
+                $docno,
+                $action,           // A / R / C (1 huruf)
+                'I.S',             // kode module dari menuprg
+                'I.S.B.3'          // kode menu untuk PENJUALAN
+            );
+
+            return $this->response->setJSON(['success' => true]);
+        } else {
+            return $this->response->setJSON(['success' => false, 'message' => 'Gagal update status']);
+        }
+    }
+
+
+
+    function updateSuratJalan()
+    {
+        $nama = trim($this->session->get('nama'));
+        $docno = hex2bin($this->request->getGet('id'));
+        $param = " and coalesce(docno,'')='$docno'";
+        $dtl = $this->m_postsales->q_suratjalan_master($param)->getRowArray();
+        $status = trim($dtl['status']);
+
+        if ($status === 'F' || $status === 'P') {
+            // Update hanya status di tabel sc_trx.standart_usage_mst
+            $info = array(
+                'status' => 'E',
+            );
+            $builder = $this->db->table('sc_trx.suratjalan');
+            $builder->where('trim(docno)', $docno);
+            $builder->update($info);
+
+            // Redirect ke halaman addStdUsage
+            return redirect()->to(base_url('sales/postsales/addSuratJalan'));
+        } else {
+            // Jika status bukan 'F', redirect ke halaman mrpgroup
+            return redirect()->to(base_url('sales/postsales/suratjalan'));
+        }
+    }
+
+    function showing_suratjalantrx(){
+        $nama=trim($this->session->get('nama'));
+        $docno = trim($this->request->getGet('docno')); // Ambil parameter docno dari Ajax
+
+        $param = " and docno='$docno'";
+        $data = $this->m_postsales->q_suratjalan_master($param);
+        $output = array(
+            'status' => true,
+            'total_count' => $data->getNumRows(),
+            'items' => $data->getResult(),
+            'incomplete_getResults' => false,
+        );
+        echo $this->fiky_encryption->jDatatable($output);
+    }
+
+    function showing_suratjalantemp(){
+        $docno = trim($this->request->getGet('docno')); // ambil dari GET
+        $nama=trim($this->session->get('nama'));
+        $param = " and docno='$docno'";
+        $data = $this->m_postsales->q_suratjalan_master_temp($param);
+        $output = array(
+            'status' => true,
+            'total_count' => $data->getNumRows(),
+            'items' => $data->getResult(),
+            'incomplete_getResults' => false,
+        );
+        echo $this->fiky_encryption->jDatatable($output);
+    }
+
+    function showing_suratjalan_dtl($id){
+        $nama = trim($this->session->get('nama'));
+        $data = $this->m_postsales->q_suratjalan_dtl_temp(" and docno='$nama' and idurut='$id'")->getRow();
+        echo json_encode($data);
+    }
+
+
+
+    public function get_suratjalan_detail()
+    {
+        $id = $this->request->getGet('id');
+
+        $row = $this->db->table('sc_tmp.suratjalan_dtl')
+            ->where('uniqueid', $id)
+            ->get()
+            ->getRowArray();
+
+        if (!$row) {
+            return $this->response->setJSON([
+                'status' => false,
+                'message' => 'Data tidak ditemukan'
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'status' => true,
+            'data'   => $row
+        ]);
+    }
+
+    public function delete_suratjalan_detail()
+    {
+        $request = service('request');
+        $db      = \Config\Database::connect();
+        $builder = $db->table('sc_tmp.suratjalan_dtl');
+        $nama    = trim($this->session->get('nama'));
+
+        $ids = $request->getPost('ids');
+
+        if (empty($ids)) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Parameter ids tidak boleh kosong'
+            ]);
+        }
+
+        if (!is_array($ids)) {
+            $ids = [$ids];
+        }
+
+        $db->transBegin();
+
+        try {
+
+            // ======================================
+            // AMBIL DOCNO DARI DETAIL
+            // ======================================
+            $rows = $builder
+                ->select('docno')
+                ->whereIn('uniqueid', $ids)
+                ->get()
+                ->getResultArray();
+
+            if (empty($rows)) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Data tidak ditemukan'
+                ]);
+            }
+
+
+            // ======================================
+            // DELETE DETAIL
+            // ======================================
+            $builder
+                ->whereIn('uniqueid', $ids)
+                ->delete();
+
+            if ($db->affectedRows() === 0) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Data tidak ditemukan'
+                ]);
+            }
+
+            
+            $db->transCommit();
+
+            return $this->response->setJSON([
+                'status'  => true,
+                'message' => 'Data DO Detail berhasil dihapus'
+            ]);
+
+        } catch (\Throwable $e) {
+
+            $db->transRollback();
+
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    function list_tmp_suratjalan_dtl(){
+        $docno = trim($this->request->getPost('docno')); // ambil dari POST
+        $list = $this->m_postsales->get_t_suratjalan_dtl_temp_view($docno);
+        $data = array();
+        $no = $_POST['start'];
+        foreach ($list as $lm) {
+            $no++;
+            $row = array();
+            // $row[] = $no;
+            $row[] = $lm->uniqueid;
+            //item
+            // $row[] = $lm->docnosj;
+            $row[] = $lm->docnodo;
+            $row[] = $lm->idbarang;
+            $row[] = $lm->nmbarang;
+            // $row[] = $lm->idprincipal;
+            $row[] = $lm->idgudang;
+            // $row[] = $lm->idspec;
+            $row[] = $lm->unit;
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->harga, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 0, '.', ',') . '% </div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 0, '.', ',') . '</div>';
+            // $row[] = $lm->description;
+            // $row[] = $lm->descriptionpp;
+            $data[] = $row;
+        }
+
+        $output = array(
+            "draw" => $_POST['draw'],
+            "recordsTotal" => $this->m_postsales->t_suratjalan_dtl_temp_view_count_all($docno),
+            "recordsFiltered" => $this->m_postsales->t_suratjalan_dtl_temp_view_count_filtered($docno),
+            "data" => $data,
+        );
+        echo $this->fiky_encryption->jDatatable($output);
+    }
+
+    function list_trx_suratjalan_dtl(){
+        $docno = trim($this->request->getPost('docno')); // ambil dari POST
+        $list = $this->m_postsales->get_t_suratjalan_dtl_view($docno);
+        $data = array();
+        $no = $_POST['start'];
+        foreach ($list as $lm) {
+            $no++;
+            $row = array();
+            // $row[] = $no;
+            $row[] = $lm->idurut;
+            //item
+            // $row[] = $lm->docnosj;
+            $row[] = $lm->docnodo;
+            $row[] = $lm->idbarang;
+            $row[] = $lm->nmbarang;
+            // $row[] = $lm->idprincipal;
+            $row[] = $lm->idgudang;
+            // $row[] = $lm->idspec;
+            $row[] = $lm->unit;
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->harga, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 0, '.', ',') . '</div>';
+            // $row[] = $lm->description;
+            // $row[] = $lm->descriptionpp;
+            $data[] = $row;   
+            
+        }
+
+        $output = array(
+            "draw" => $_POST['draw'],
+            "recordsTotal" => $this->m_postsales->t_suratjalan_dtl_view_count_all($docno),
+            "recordsFiltered" => $this->m_postsales->t_suratjalan_dtl_view_count_filtered($docno),
+            "data" => $data,
+        );
+        echo $this->fiky_encryption->jDatatable($output);
+    }
+
+
+    function finalEntrySuratJalan(){
+        $nama = trim($this->session->get('nama'));
+        // $loccode = trim($this->session->get('loccode'));
+        $param = " and coalesce(inputby,'')='$nama'";
+        $paramdtl = " AND COALESCE(inputby, '') = '$nama' AND (COALESCE(unit, '') = ''  OR qty = '0.00' OR qty = '0' OR COALESCE(nmbarang, '') = '') ";
+        $paramdtl2 = " and coalesce(inputby,'')='$nama'";
+
+        $header = $this->m_postsales->q_suratjalan_master_temp($param);
+        $status = trim($header->getRowArray()['status']);
+        $cek = $this->m_postsales->q_suratjalan_dtl_temp($paramdtl);
+        $cek2 = $this->m_postsales->q_suratjalan_dtl_temp($paramdtl2);
+
+
+        $builder = $this->db->table('sc_tmp.suratjalan');
+
+        //INSERT TRX ERROR
+        $builder_trxerror = $this->db->table('sc_mst.trxerror');
+        $builder_trxerror->where('userid', $nama);
+        $builder_trxerror->where('modul', 'I.S.B.3');
+        $builder_trxerror->delete();
+
+
+        if (($status==='E' and $cek->getNumRows() > 0) or ($cek2->getNumRows() <= '0'))
+        {
+            $infotrxerror = array(
+                'userid' => $nama,
+                'errorcode' => 3,
+                'nomorakhir1' => $cek->getNumRows(),
+                'nomorakhir2' => $cek2->getNumRows(),
+                'modul' => 'I.S.B.3',
+            );
+            $builder_trxerror->insert($infotrxerror);
+
+            return redirect()->to(base_url('/sales/postsales/addSuratJalan'));
+        } else {
+            // Ambil dari request POST
+            // $pemohon = strtoupper(trim($this->request->getPost('pemohon')));
+            // $docdate   = trim($this->request->getPost('docdate'));
+            // $senddate   = trim($this->request->getPost('senddate'));
+            // $jthtempo   = trim($this->request->getPost('jthtempo'));
+            $kdcustomer   = trim($this->request->getPost('kdcustomer'));
+            $alamatcustomer   = trim($this->request->getPost('alamatcustomer'));
+            // $gradecustomer   = trim($this->request->getPost('gradecustomer'));
+            $kdcustomerdeliv   = trim($this->request->getPost('kdcustomerdeliv'));
+            $alamatcustomerdeliv   = trim($this->request->getPost('alamatcustomerdeliv'));
+            // $alamatkirim   = trim($this->request->getPost('alamatkirim'));
+            // $keterangan   = trim($this->request->getPost('keterangan'));
+            // $currcode   = trim($this->request->getPost('currcode'));
+            $salesman   = trim($this->request->getPost('kdsalesman'));
+            // $kurs   = trim($this->request->getPost('kurs'));
+            // $isinclusive   = trim($this->request->getPost('isinclusive'));
+            // $idtax   = trim($this->request->getPost('idtax'));
+            $keterangan   = trim($this->request->getPost('keterangan'));
+            // $carabayar   = trim($this->request->getPost('carabayar'));
+            // $pocust   = trim($this->request->getPost('pocust'));
+            // $isinclusive = $this->request->getPost('isinclusive') ? 'YES' : 'NO';
+            // $isopenprice = $this->request->getPost('isopenprice') ? 'YES' : 'NO';
+
+
+            
+            // **BERSIHKAN FORMAT KURS**
+            // $kurs = trim($this->request->getPost('kurs'));
+            // $kurs_clean = 0;
+            // if (!empty($kurs)) {
+            //     $kurs_clean = str_replace(',', '', $kurs);
+            //     // $kurs_clean = str_replace('.', '.', $kurs_clean);
+            //     // $kurs_clean = floatval($kurs_clean);
+            // }
+
+             // Convert expdate ke format YYYY-MM-DD
+            // $docdateph = null;
+            // if (!empty($docdate)) {
+            //     $docdateph = date('Y-m-d', strtotime($docdate));
+            // }
+
+            // $delivdateph = null;
+            // if (!empty($delivdate)) {
+            //     $delivdateph = date('Y-m-d', strtotime($delivdate));
+            // }
+
+            // Update data header dulu sebelum set status F
+            $updateHeader = [
+                // 'docdate'        => $docdateph,
+                // 'delivdate'       => $delivdateph,
+                // 'jthtempo'       => $jthtempo,
+                'kdcustomer'     => strtoupper($kdcustomer),
+                'alamatcustomer' => strtoupper($alamatcustomer),
+                // 'gradecustomer' => strtoupper($gradecustomer),
+                'kdcustomerdeliv'     => strtoupper($kdcustomerdeliv),
+                'alamatcustomerdeliv' => strtoupper($alamatcustomerdeliv),
+                // 'alamatkirim'    => strtoupper($alamatkirim),
+                'keterangan'     => strtoupper($keterangan),
+                // 'currcode'       => $currcode,
+                'kdsalesman'       => $salesman,
+                // 'kurs'           => $kurs_clean,
+                // 'isinclusive'    => strtoupper($isinclusive),
+                // 'isopenprice'    => strtoupper($isopenprice),
+                // 'idtax'          => strtoupper($idtax),
+                // 'pocust'         => strtoupper($pocust),
+                // 'carabayar'         => strtoupper($carabayar),
+                // 'pemohon'       => $pemohon (jika masih diperlukan nanti bisa ditambahkan)
+            ];
+
+            $builder->where('inputby', $nama);
+            $builder->update($updateHeader);
+
+            $info = array(
+                'status' => 'F'
+            );
+            $builder->where('inputby',$nama);
+            if ($builder->update($info)) {
+                $paramerror=" and userid='$nama' and modul='I.S.B.3'";
+                $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
+                $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
+
+                // $docno = trim(bin2hex(trim($dtlerror['nomorakhir1'])));
+
+                return redirect()->to(base_url('/sales/postsales/suratjalan'));
+            } else {
+                $infotrxerror = array(
+                    'userid' => $nama,
+                    'errorcode' => 3,
+                    'nomorakhir1' => $cek->getNumRows(),
+                    'nomorakhir2' => $cek2->getNumRows(),
+                    'modul' => 'I.S.B.3',
+                );
+                $builder_trxerror->insert($infotrxerror);
+                return redirect()->to(base_url('/sales/postsales/addSuratJalan'));
+            }
+
+
+
+        }
+
+    }
+
+
+    function show_suratjalan(){
+        $module = 'I.S';
+        $menu = 'I.S.B.3';
+        $table = "sc_trx.suratjalan";
+        $nama = trim($this->session->get('nama'));
+        $docno = $this->request->getGet('docno');  // Mengambil 'docno' dari URL
+        //$docdate = $this->request->getPost('docdate');
+        // $idlocation = $this->request->getPost('idlocation');
+        // $idgroup = $this->request->getPost('idgroup');
+        // $formheader = $this->request->getPost('formheader');
+        $nama = trim($this->session->get('nama'));
+        // $docno = hex2bin($this->request->getGet('docno'));
+        $docno = hex2bin($docno);
+        $builder = $this->db->table('sc_trx.suratjalan');
+
+    //    $builder = $builder
+    //         ->where('docno', $docno)
+    //         ->update([
+    //             'status'=> 'P',
+    //             'printby' => $nama,
+    //             'printdate' => date('Y-m-d H:i:s')
+    //         ]);
+
+        
+        $enc_docno = $this->fiky_encryption->sealed($docno);
+        
+        //$enc_docdate= $this->fiky_encryption->sealed($docdate);
+        // $enc_idlocation = $this->fiky_encryption->sealed($idlocation);
+        // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
+        // $enc_formheader = $this->fiky_encryption->sealed($formheader);
+
+        $title = " Report Surat Jalan";
+
+        //$datajson =  base_url("manufactur/production/api_pp/?enc_idbarang=$enc_idbarang&enc_docdate=$enc_docdate&enc_idlocation=$enc_idlocation&enc_idgroup=$enc_idgroup") ;
+        $datajson =  base_url("sales/postsales/api_suratjalan/?enc_docno=$enc_docno") ;
+
+        // if($formheader==="HEADER"){
+            $datamrt =  base_url("assets/mrt/report_suratjalan.mrt") ;
+        // } else {
+        //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
+        // }
+
+        return $this->fiky_report->render($datajson,$datamrt,$title,$nama,$module,$table,$docno,$menu);
+    }
+
+    function api_suratjalan(){
+        $nama = trim($this->session->get('nama'));
+
+        $dtlbranch = $this->m_global->q_master_branch()->getRowArray();
+        $branch = strtoupper(trim($dtlbranch['branch']));
+        $docno=trim($this->fiky_encryption->unseal($this->request->getGet('enc_docno')));
+        //$docdate=trim($this->fiky_encryption->unseal($this->request->getGet('enc_docdate')));
+        // $idlocation=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idlocation')));
+        // $idgroup=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idgroup')));
+        //$docno=trim($this->request->getGet('enc_docno'));
+
+       // $ddate = explode(' - ',$docdate);
+       // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
+       // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
+
+        if (empty($docno) or $docno==='') {
+            $param_brg = "";
+        } else {
+            $param_brg = " and docno='$docno'";
+        }
+
+        // //idgroup
+        // if (!empty($idgroup)) {
+        //     $param_group=" and idgroup='$idgroup'";
+        // } else {  $param_group=""; }
+
+
+        $databranch = $this->m_global->q_master_branch();
+        $param=" and docno='$docno'";
+        $datamst = $this->m_postsales->q_suratjalan_master($param);
+        $datadtl = $this->m_postsales->q_suratjalan_dtl($param);
+        $tampungdtl = $datamst->getResult();
+        $detail = $tampungdtl[0] ?? null;        
+        if ($detail) {
+
+            $tujuan = isset($detail->tujuan) ? trim($detail->tujuan) : '';
+        
+            // Tambahkan properti baru isPindah
+            $detail->isPindah = false; // Default value
+            if ($tujuan === 'pindah') {
+                $detail->isPindah = true;
+            }
+
+             // Tambahkan properti baru isPembuangan
+             $detail->isPembuangan = false; // Default value
+             if ($tujuan === 'pembuangan') {
+                 $detail->isPembuangan = true;
+             }
+
+            // Tambahkan properti baru isPinjam
+            $detail->isPinjam = false; // Default value
+            if ($tujuan === 'pinjam') {
+                $detail->isPinjam = true;
+            }
+
+            $isreturn = isset($detail->isreturn) ? trim($detail->isreturn) : '';
+             // Tambahkan properti baru iskembali
+             $detail->iskembali = false; // Default value
+             if ($isreturn === 'kembali') {
+                 $detail->iskembali = true;
+             }
+
+             $detail->istidakkembali = false; // Default value
+             if ($isreturn === 'tidak_kembali') {
+                 $detail->istidakkembali = true;
+             }
+
+             $jenisbarang = isset($detail->jenisbarang) ? trim($detail->jenisbarang) : '';
+              // Tambahkan properti baru isAset
+              $detail->isAset = false; // Default value
+              if ($jenisbarang === 'aset') {
+                  $detail->isAset = true;
+              }
+
+              // Tambahkan properti baru isPersediaan
+              $detail->isPersediaan = false; // Default value
+              if ($jenisbarang === 'persediaan') {
+                  $detail->isPersediaan = true;
+              }
+
+              // Tambahkan properti baru isLainlain
+              $detail->isLainlain = false; // Default value
+              if ($jenisbarang === 'lainlain') {
+                  $detail->isLainlain = true;
+              }
+        }
+
+        header("Content-Type: text/json");
+        return json_encode(
+            array(
+
+                'info' => array([
+                    //'date1' => date('d-m-Y',strtotime($tgl1)),
+                    //'date2' => date('d-m-Y',strtotime($tgl2)),
+                    'date1' => date('d-m-Y'),
+                    'date2' => date('d-m-Y'),
+                    'datenow' => date('d-m-Y'),
+                    'userid' => $nama,
+                    'param' => $param,
+
+                    ]
+                ),
+                'branch' => $databranch->getResult(),
+                'master' => $datamst->getResult(),
+                'detail' => $datadtl->getResult(),
+            ), JSON_PRETTY_PRINT);
+    }
+
+
+
+    // =================================== PENJUALAN ===========================================
+
+
+     public function penjualan()
+    {
+        $data['title']="Penjualan";
+        $dtlbranch=$this->m_global->q_branch()->getRowArray();
+        $branch=$dtlbranch['branch'];
+        /* CODE UNTUK VERSI*/
+        $nama=trim($this->session->get('nama'));
+        $kodemenu='I.S.B.4'; $versirelease='I.S.B.4/01'; $releasedate=date('2025-04-12 00:00:00');
+        $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
+        $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
+        $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
+        $data['kodemenu']=$kodemenu; $data['version']=$versidb;
+        /* END CODE UNTUK VERSI */
+
+        $paramerror=" and userid='$nama' and modul='I.S.B.4'";
+        $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
+        $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
+        if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
+        if(isset($dtlerror['nomorakhir1'])) { $nomorakhir1=trim($dtlerror['nomorakhir1']); } else { $nomorakhir1='';  }
+        if(isset($dtlerror['errorcode'])) { $errorcode=trim($dtlerror['errorcode']); } else { $errorcode='';  }
+
+        if($count_err>0 and $errordesc<>''){
+            if ($dtlerror['errorcode']==0){
+                $data['message']="<div class='alert alert-info'>DATA SUCCESSFULLY PROCESSED $nomorakhir1 </div>";
+            } else {
+                $data['message']="<div class='alert alert-info'>$errordesc</div>";
+            }
+
+        }else {
+            if ($errorcode=='0'){
+                $data['message']="<div class='alert alert-info'>DATA SUCCESSFULLY PROCESSED $nomorakhir1 </div>";
+            } else {
+                $data['message']="";
+            }
+
+        }
+        /* Item Entry Master Check */
+        $param = " and coalesce(inputby,'')='$nama'";
+        $dtl = $this->m_postsales->q_penjualan_master_temp($param);
+        $logindate = trim($this->session->get('logindate'));
+
+        if ($dtl->getNumRows()>0) {
+            $title = "WARNING !!!";
+            $urlclear = base_url('sales/postsales/clearEntryPenjualan');
+            $urlnext = base_url('sales/postsales/addPenjualan');
+            $body = " Entry not finished found....!!!";
+            $data['showUnfinish'] = $this->m_trxerror->unfinish($nama, $urlclear, $urlnext, $title, $body);
+        } else { $data['showUnfinish'] = '' ; }
+
+        $kmenu = 'I.S.B.4';
+        $role = trim($this->session->get('roleid'));
+        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
+        //auto insert unit
+        $pterror = " and userid='$nama'";
+        $this->m_trxerror->q_deltrxerror($pterror);
+        return $this->template->render('sales/postsales/v_list_penjualan',$data);
+    }
+
+    function detailPenjualan()
+    {
+        /* Penambahan Squence */
+        $data['title']="Detail Penjualan";
+        $dtlbranch=$this->m_global->q_branch()->getRowArray();
+        $branch=$dtlbranch['branch'];
+        /* CODE UNTUK VERSI*/
+        $nama=trim($this->session->get('nama'));
+
+        $docno = $this->request->getGet('docno');
+        if (empty($docno)) {
+            return redirect()->to(base_url('sales/postsales/penjualan'));
+        }
+        $kodemenu='I.S.B.4'; $versirelease='I.S.B.4/01'; $releasedate=date('2025-04-12 00:00:00');
+        $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
+        $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
+        $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
+        $data['kodemenu']=$kodemenu; $data['version']=$versidb;
+        $data['nama']=$nama; $data['version']=$versidb;
+        /* END CODE UNTUK VERSI */
+
+        $paramerror=" and userid='$nama' and modul='I.S.B.4'";
+        $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
+        $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
+        if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
+        if(isset($dtlerror['nomorakhir1'])) { $nomorakhir1=trim($dtlerror['nomorakhir1']); } else { $nomorakhir1='';  }
+        if(isset($dtlerror['errorcode'])) { $errorcode=trim($dtlerror['errorcode']); } else { $errorcode='';  }
+
+        if($count_err>0 and $errordesc){
+            if ($dtlerror['errorcode']==0){
+                $data['message']="<div class='alert alert-info'>DATA SUKSES DIPROSES $nomorakhir1 </div>";
+            } else {
+                $data['message']="<div class='alert alert-info'>$errordesc</div>";
+            }
+
+        }else {
+            if ($errorcode=='0'){
+                $data['message']="<div class='alert alert-info'>DATA SUKSES DIPROSES $nomorakhir1 </div>";
+            } else {
+                $data['message']="";
+            }
+
+        }
+
+        $decoded_docno = hex2bin($docno); // Decode docno yang dikirim dalam bentuk hex
+        $param = " and coalesce(docno,'') = '$decoded_docno'";
+        $pterror = " and userid='$nama'";
+        $this->m_trxerror->q_deltrxerror($pterror);
+        $data['typeform'] = 'DETAIL';
+        $data['userlogin'] = $nama;
+        $data['docnoParam'] = $decoded_docno;
         $data['dtldata'] = $this->m_postsales->q_penjualan_master($param)->getRowArray();
         return $this->template->render('sales/postsales/v_detail_penjualan',$data);
     }
@@ -3186,7 +6739,7 @@ class PostSales extends BaseController
         $no = $_POST['start'];
 
 
-        $kmenu = 'I.S.B.2';
+        $kmenu = 'I.S.B.4';
         $nama=trim($this->session->get('nama'));
         $role=trim($this->session->get('roleid'));
 
@@ -3389,7 +6942,7 @@ class PostSales extends BaseController
         $no = $_POST['start'];
 
 
-        $kmenu = 'I.S.B.2';
+        $kmenu = 'I.S.B.4';
         $nama=trim($this->session->get('nama'));
         $role=trim($this->session->get('roleid'));
 
@@ -3589,6 +7142,9 @@ class PostSales extends BaseController
         $nama=trim($this->session->get('nama'));
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_postsales->q_penjualan_master_temp($param);
+        if(empty($dtl->getRowArray())){
+            return redirect()->to(base_url('sales/postsales/penjualan'));
+        }
         // if(isEmpty($dtl->getRowArray()['status'])){
         //     return redirect()->to(base_url('sales/postsales/pp'));
         // }
@@ -3631,7 +7187,7 @@ class PostSales extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.S.B.2'; $versirelease='I.S.B.2/01'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.S.B.4'; $versirelease='I.S.B.4/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -3640,7 +7196,7 @@ class PostSales extends BaseController
         /* END CODE UNTUK VERSI */
 
 
-        $paramerror=" and userid='$nama' and modul='I.S.B.2'";
+        $paramerror=" and userid='$nama' and modul='I.S.B.4'";
         $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
         $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
         if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
@@ -3713,13 +7269,28 @@ class PostSales extends BaseController
             ]);
         }
 
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray(); // Ini mengembalikan array of objects/arrays
+
+        // Karena hanya 1 row, ambil index ke-0
+        $prefix = trim($konfigurasiUmum[0]['penjualan']) ?? '';
+        $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
+        $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
+
         $logindate = $this->session->get('logindate'); // dd-mm-yyyy
         $infix = date('ym', strtotime($logindate));
 
         return $this->response->setJSON([
             'success'      => true,
             'kode_suffix'  => $kodeSuffix,
-            'infix'        => $infix
+            'infix'        => $infix,
+            'logindate'     => $logindate,
+            'prefix'        => $prefix,
+            'konfigurasi_umum' => $konfigurasiUmum,
+            'currcode'      => $currcode,
+            'idtax'         => $idtax,
         ]);
     }
 
@@ -3803,34 +7374,417 @@ class PostSales extends BaseController
 
 
 
+    // public function savePenjualanDetail()
+    // {
+    //     $nama   = trim($this->session->get('nama'));
+    //     $docno  = strtoupper(trim($this->request->getPost('docno')));
+    //     $docnoso = strtoupper(trim($this->request->getPost('docnoso')));
+    //     $docnosj = strtoupper(trim($this->request->getPost('docnosj')));
+
+    //     $idurut = $this->request->getPost('idurut'); // HAPUS strtoupper, biarkan apa adanya
+        
+    //     // Tambahkan mode untuk membedakan add/edit dengan lebih jelas
+    //     // $mode = $this->request->getPost('mode'); // 'add' atau 'edit'
+
+    //     if (!$docno) {
+    //         return $this->response->setJSON([
+    //             'success' => false,
+    //             'message' => 'No. Jurnal tidak boleh kosong'
+    //         ]);
+    //     }
+
+    //     // Harus salah satu: SO atau SJ (XOR)
+    //     if (($docnoso && $docnosj) || (!$docnoso && !$docnosj)) {
+    //         return $this->response->setJSON([
+    //             'success' => false,
+    //             'message' => 'Pilih salah satu: No. SO atau No. SJ (tidak boleh keduanya / kosong keduanya)'
+    //         ]);
+    //     }
+
+    //     $isFromSJ = !empty($docnosj);
+
+
+
+    //     $db = $this->db;
+    //     $db->transStart();
+
+    //     $builderSO = $db->table('sc_trx.salesorder');
+    //     $soData = $builderSO
+    //         ->select('currcode, kurs, idtax, isinclusive')
+    //         ->where('docno', $docnoso)
+    //         ->get()
+    //         ->getRowArray();
+
+    //     // Jika data SO tidak ditemukan, beri response error
+    //     if (!$soData) {
+    //         $db->transRollback();
+    //         return $this->response->setJSON([
+    //             'success' => false,
+    //             'message' => "Data SO dengan nomor {$docnoso} tidak ditemukan"
+    //         ]);
+    //     }
+
+
+    //     // =====================================================
+    //     // CEK / INSERT HEADER
+    //     // =====================================================
+    //     $builderHeader = $db->table('sc_tmp.penjualan');
+
+    //     $exists = $builderHeader
+    //         ->where('docno', $docno)
+    //         ->where('inputby', $nama)
+    //         ->countAllResults();
+
+    //     $reload = false;
+    //     // Untuk pengambilan data dari POST
+        
+    //     if ($exists == 0) {
+    //         $isinclusive = strtoupper(trim(
+    //             $this->request->getPost('isinclusive') 
+    //             ?? $dataprocess->isinclusive 
+    //             ?? 'NO'
+    //         ));
+
+    //         $isinclusive = ($isinclusive === 'YES') ? 'YES' : 'NO';
+
+    //         $isopenprice = strtoupper(trim(
+    //             $this->request->getPost('isopenprice') 
+    //             ?? $dataprocess->isopenprice 
+    //             ?? 'NO'
+    //         ));
+
+    //         $isopenprice = ($isopenprice === 'YES') ? 'YES' : 'NO';
+
+    //         $builderHeader->insert([
+    //             'docno'     => $docno,
+    //             'cabang'     => $this->request->getPost('cabang'),
+    //             'docdate'   => date('Y-m-d', strtotime(trim($this->request->getPost('docdate')))),
+    //             // 'delivdate'   => date('Y-m-d', strtotime(trim($this->request->getPost('delivdate')))),
+    //             'jthtempo'     => $this->request->getPost('jthtempo'),
+    //             'isinclusive'     => $isinclusive,
+    //             'isopenprice'     => $isopenprice,
+                
+    //             'kdcustomer'    => strtoupper($this->request->getPost('kdcustomer')),
+    //             'alamatcustomer'    => strtoupper($this->request->getPost('alamatcustomer')),
+    //             'kdcustomerdeliv'    => strtoupper($this->request->getPost('kdcustomerdeliv')),
+    //             'alamatcustomerdeliv'    => strtoupper($this->request->getPost('alamatcustomerdeliv')),
+    //             // 'alamatkirim'    => strtoupper($this->request->getPost('alamatkirim')),
+    //             'idtax'    => strtoupper($this->request->getPost('idtax')),
+    //             'kdsalesman'    => ($this->request->getPost('kdsalesman')),
+    //             'gradecustomer'    => ($this->request->getPost('gradecustomer')),
+    //             'carabayar'    => strtoupper($this->request->getPost('carabayar')),
+    //             // 'pocust'    => strtoupper($this->request->getPost('pocust')),
+    //             'currcode'    => strtoupper($this->request->getPost('currcode')),
+    //             'kurs'    => ($this->request->getPost('kurs')),
+    //             'keterangan'    => strtoupper($this->request->getPost('keterangan')),
+    //             // 'pocust'    => strtoupper($this->request->getPost('pocust')),
+    //             // 'nodp'    => strtoupper($this->request->getPost('nodp')),
+    //             'status'    => 'E',
+    //             'inputby'   => $nama,
+    //             'inputdate' => date('Y-m-d H:i:s')
+    //         ]);
+
+    //         $reload = true;
+    //     }
+
+    //     $builderDetail = $db->table('sc_tmp.penjualan_dtl');
+    //     $insertCount = 0;
+    //     $message = '';
+
+    //     // CEK MODE: ADD atau EDIT
+    //     if (!empty($idurut)) {            
+
+    //         $uniqueid = $this->request->getPost('uniqueid');
+    //         // =====================================================
+    //         // MODE EDIT - UPDATE DATA
+    //         // =====================================================
+    //         $qty         = $this->request->getPost('qty');
+    //         // $qtybonus    = $this->request->getPost('qtybonus') ?: 0;
+    //         $harga       = $this->request->getPost('harga') ?: 0;
+    //         $multidisc   = $this->request->getPost('multidisc') ?: 0;
+    //         // $volitem   = $this->request->getPost('volitem') ?: 0;
+    //         // $biaya   = $this->request->getPost('biaya') ?: 0;
+    //         // $biaya2   = $this->request->getPost('biaya2') ?: 0;
+    //         $nilai       = $this->request->getPost('nilai') ?: 0;
+    //         $description = strtoupper($this->request->getPost('description'));
+    //         $idprincipal = strtoupper($this->request->getPost('idprincipal'));
+    //         $idgudang = strtoupper($this->request->getPost('idgudang'));
+    //         $idspec = strtoupper($this->request->getPost('idspec'));
+
+    //         $nilai = $qty * $harga;
+    //         $h = $db->table('sc_tmp.penjualan')
+    //             ->select('kurs,idtax')
+    //             ->where('docno', $docno)
+    //             ->get()
+    //             ->getRowArray();
+
+    //         $kurs = $h['kurs'] ?? 1;
+    //         $idtax = $h['idtax'] ?? 'NON';
+    //         $nilaikonversi = $nilai * $kurs;
+    //         $nilaipajak = 0;
+
+    //         if (!empty($idtax) && trim($idtax) !== 'NON' && $nilai > 0) {
+    //             $taxDetails = $db->table('sc_mst.tax_dtl')
+    //                 ->select('percentation')
+    //                 ->where('idtax', $idtax)
+    //                 ->get()
+    //                 ->getResultArray();
+
+    //             $totalPersen = array_sum(array_column($taxDetails, 'percentation'));
+    //             // $nilaipajak = $nilai + ($nilai * $totalPersen / 100);
+    //             $nilaipajak = $nilai * $totalPersen / 100;
+    //         }
+
+    //         $builderDetail->where('uniqueid', $uniqueid)->update([
+    //             'qty'          => $qty,
+    //             // 'qtybonus'     => $qtybonus,
+    //             'harga'        => $harga,
+    //             'multidisc'    => $multidisc,
+    //             'nilai'        => $nilai,
+    //             'nilaikonversi' => $nilaikonversi,
+    //             'nilaipajak' => $nilaipajak,
+    //             'idtax' => $idtax,
+    //             'kurs' => $kurs,
+    //             'currcode' => $poData['currcode'] ?? '',
+    //             // 'volitem'      => $volitem,
+
+    //             // 'biaya'      => $biaya,
+    //             // 'biaya2'      => $biaya2,
+    //             'idprincipal'      => $idprincipal,
+    //             'idgudang'      => $idgudang,
+    //             'idspec'      => $idspec,
+
+    //             'description' => $description,
+    //             'updateby'     => $nama,
+    //             'updatedate'   => date('Y-m-d H:i:s')
+    //         ]);
+
+
+
+            
+            
+    //         $message = 'Data berhasil diupdate';
+            
+    //     } else {
+    //         // =====================================================
+    //         // MODE ADD - INSERT DATA DARI PP
+    //         // =====================================================
+    //         $soDetails = $db->query("
+    //             SELECT 
+    //                 docno,
+    //                 idbarang,
+    //                 uniqueid,
+    //                 nmbarang,
+    //                 unit,
+    //                 qty,
+    //                 idprincipal,
+    //                 idgudang,
+    //                 idspec,
+    //                 nilaipajak,
+    //                 nilaikonversi,
+    //                 multidisc,
+    //                 qtypenjualan,
+    //                 harga,
+    //                 currcode,
+    //                 idtax,
+    //                 kurs,
+    //                 nilai
+    //             FROM sc_trx.salesorder_dtl
+    //             WHERE TRIM(docno) = ?
+    //         ", [$docnoso])->getResult();
+
+    //         if (empty($soDetails)) {
+    //             $db->transRollback();   
+    //             return $this->response->setJSON([
+    //                 'success' => false,
+    //                 'message' => 'Data SO tidak ditemukan'
+    //             ]);
+    //         }
+
+    //         foreach ($soDetails as $row) {
+    //             $sisaQty = $row->qty - ($row->qtypenjualan);
+    //             if ($sisaQty <= 0) continue;
+
+    //             $duplicate = $builderDetail
+    //                 ->where('docno', $docno)
+    //                 ->where('uniqueid', $row->uniqueid)
+    //                 ->countAllResults();
+
+    //             $nilaiRow = $row->qty * $row->harga;
+    //             $h = $db->table('sc_tmp.penjualan')
+    //                 ->select('kurs,idtax')
+    //                 ->where('docno', $docno)
+    //                 ->get()
+    //                 ->getRowArray();
+
+    //             $kurs = $h['kurs'] ?? 1;
+    //             $idtaxRow = $h['idtaxRow'] ?? 'NON';
+    //             $nilaikonversiRow = $nilaiRow * $kurs;
+    //             $nilaipajakRow = 0;
+
+    //             if (!empty($idtaxRow) && trim($idtaxRow) !== 'NON' && $nilaiRow > 0) {
+    //                 $taxDetails = $db->table('sc_mst.tax_dtl')
+    //                     ->select('percentation')
+    //                     ->where('idtax', $idtaxRow)
+    //                     ->get()
+    //                     ->getResultArray();
+
+    //                 $totalPersen = array_sum(array_column($taxDetails, 'percentation'));
+    //                 // $nilaipajakRow = $nilai + ($nilai * $totalPersen / 100);
+    //                 $nilaipajakRow = $nilaiRow * $totalPersen / 100;
+    //             }
+
+    //             if ($duplicate == 0) {
+    //                 $builderDetail->insert([
+    //                     'docno'         => $docno,
+    //                     'docnoso'       => $docnoso,
+    //                     'idbarang'      => $row->idbarang,
+    //                     'uniqueid'      => $row->uniqueid,
+    //                     'nmbarang'      => $row->nmbarang,
+    //                     'unit'          => $row->unit,
+    //                     'qty'           => $sisaQty,
+    //                     'idprincipal'   => $row->idprincipal,
+    //                     'idgudang'      => $row->idgudang,
+    //                     'idspec'        => $row->idspec,
+    //                     'harga'         => $row->harga, // Default 0 untuk new insert
+    //                     'multidisc'     =>  $row->multidisc, // Default 0 untuk new insert
+    //                     'nilaipajak'    => $nilaipajakRow,
+    //                     'nilaikonversi' => $nilaikonversiRow,
+    //                     'currcode'      => $row->currcode,
+    //                     'kurs'          => $row->kurs,
+    //                     'idtax'         => $row->idtax,
+    //                     'nilai'         => $sisaQty * $row->harga, // Default 0 untuk new insert
+    //                     // 'description' => $row->description,
+    //                     'inputby'       => $nama,
+    //                     'inputdate'     => date('Y-m-d H:i:s')
+    //                 ]);
+
+    //                 $insertCount++;
+    //             }
+    //         }
+            
+    //         $message = $insertCount > 0 
+    //                     ? "$insertCount item berhasil ditambahkan"
+    //                     : "Semua item sudah ada sebelumnya";
+    //     }
+
+    //     $penjualanHeader = $builderHeader->select('idtax')->where('docno', $docno)->get()->getRowArray();
+    //     $idtax = $penjualanHeader['idtax'] ?? '';
+        
+    //     // Hitung total DPP (sum nilai dari po_dtl)
+    //     $builderTotalDpp = $db->table('sc_tmp.penjualan_dtl');
+    //     $totalDpp = $builderTotalDpp->select('COALESCE(SUM(nilai), 0) as total_dpp')
+    //         ->where('docno', $docno)
+    //         ->get()
+    //         ->getRowArray();
+        
+    //     $dpp = $totalDpp['total_dpp'] ?? 0;
+        
+    //     // Hitung jumlah pajak berdasarkan idtax
+    //     $jumlahPajak = 0;
+        
+    //     if (!empty($idtax) && trim($idtax) !== 'NON'  && $dpp > 0) {
+    //         // Ambil detail tax dari sc_mst.tax_dtl
+    //         $builderTaxDtl = $db->table('sc_mst.tax_dtl');
+    //         $taxDetails = $builderTaxDtl->select('percentation')
+    //             ->where('idtax', $idtax)
+    //             ->get()
+    //             ->getResultArray();
+            
+    //         foreach ($taxDetails as $tax) {
+    //             $persentase = $tax['percentation'] ?? 0;
+    //             $jumlahPajak += $dpp * ($persentase / 100);
+    //         }
+    //     }
+        
+    //     // Hitung total (DPP + Jumlah Pajak)
+    //     $total = $dpp + $jumlahPajak;
+        
+    //     // Update header LPB
+    //     $builderHeader->where('docno', $docno)->update([
+    //         'dpp' => number_format($dpp, 2, '.', ''),
+    //         'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
+    //         'total' => number_format($total, 2, '.', ''),
+    //         'updateby' => $nama,
+    //         'updatedate' => date('Y-m-d H:i:s')
+    //     ]);
+
+    //     $db->transComplete();
+
+    //     return $this->response->setJSON([
+    //         'success' => true,
+    //         'reload'  => $reload,
+    //         'message' => $message
+    //     ]);
+    // }
+
     public function savePenjualanDetail()
     {
-        $nama   = trim($this->session->get('nama'));
-        $docno  = strtoupper(trim($this->request->getPost('docno')));
+        $nama    = trim($this->session->get('nama'));
+        $docno   = strtoupper(trim($this->request->getPost('docno')));
         $docnoso = strtoupper(trim($this->request->getPost('docnoso')));
-        $idurut = $this->request->getPost('idurut'); // HAPUS strtoupper, biarkan apa adanya
-        
-        // Tambahkan mode untuk membedakan add/edit dengan lebih jelas
-        // $mode = $this->request->getPost('mode'); // 'add' atau 'edit'
+        $docnosj = strtoupper(trim($this->request->getPost('docnosj')));
+        $idurut  = $this->request->getPost('idurut');
 
-        if (!$docno || !$docnoso) {
+        if (!$docno) {
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'No. Jurnal tidak boleh kosong'
             ]);
         }
 
+        // >>> BARU: XOR SO / SJ
+        if (($docnoso && $docnosj) || (!$docnoso && !$docnosj)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Pilih salah satu: No. SO atau No. SJ (tidak boleh keduanya / kosong keduanya)'
+            ]);
+        }
+
+        $isFromSJ = !empty($docnosj);
+
         $db = $this->db;
         $db->transStart();
 
-        $builderSO = $db->table('sc_trx.salesorder');
-        $soData = $builderSO
+        // =====================================================
+        // >>> BARU: VALIDASI SUMBER (SO atau SJ)
+        // =====================================================
+        if ($isFromSJ) {
+            // Cek SJ ada
+            $sjCek = $db->table('sc_trx.suratjalan')
+                ->select('docno')
+                ->where('docno', $docnosj)
+                ->get()
+                ->getRowArray();
+
+            if (!$sjCek) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => "Data SJ dengan nomor {$docnosj} tidak ditemukan"
+                ]);
+            }
+
+            // Ambil SO dari trace SJ -> DO -> SO
+            // suratjalan_dtl.docnodo -> deliveryorder_dtl -> docnoso
+            $soDariSj = $db->query("
+                SELECT DISTINCT d.docnoso
+                FROM sc_trx.suratjalan_dtl sj
+                JOIN sc_trx.deliveryorder_dtl d ON d.docno = sj.docnodo
+                WHERE TRIM(sj.docno) = ?
+                LIMIT 1
+            ", [$docnosj])->getRowArray();
+
+            $docnoso = $soDariSj['docnoso'] ?? '';
+        }
+
+        // Ambil header SO (untuk SO maupun SJ, ujungnya tetap SO)
+        $soData = $db->table('sc_trx.salesorder')
             ->select('currcode, kurs, idtax, isinclusive')
             ->where('docno', $docnoso)
             ->get()
             ->getRowArray();
 
-        // Jika data SO tidak ditemukan, beri response error
         if (!$soData) {
             $db->transRollback();
             return $this->response->setJSON([
@@ -3838,7 +7792,6 @@ class PostSales extends BaseController
                 'message' => "Data SO dengan nomor {$docnoso} tidak ditemukan"
             ]);
         }
-
 
         // =====================================================
         // CEK / INSERT HEADER
@@ -3851,52 +7804,41 @@ class PostSales extends BaseController
             ->countAllResults();
 
         $reload = false;
-        // Untuk pengambilan data dari POST
-        
+
         if ($exists == 0) {
             $isinclusive = strtoupper(trim(
-                $this->request->getPost('isinclusive') 
-                ?? $dataprocess->isinclusive 
+                $this->request->getPost('isinclusive')
                 ?? 'NO'
             ));
-
             $isinclusive = ($isinclusive === 'YES') ? 'YES' : 'NO';
 
             $isopenprice = strtoupper(trim(
-                $this->request->getPost('isopenprice') 
-                ?? $dataprocess->isopenprice 
+                $this->request->getPost('isopenprice')
                 ?? 'NO'
             ));
-
             $isopenprice = ($isopenprice === 'YES') ? 'YES' : 'NO';
 
             $builderHeader->insert([
-                'docno'     => $docno,
-                'cabang'     => $this->request->getPost('cabang'),
-                'docdate'   => date('Y-m-d', strtotime(trim($this->request->getPost('docdate')))),
-                // 'delivdate'   => date('Y-m-d', strtotime(trim($this->request->getPost('delivdate')))),
-                'jthtempo'     => $this->request->getPost('jthtempo'),
-                'isinclusive'     => $isinclusive,
-                'isopenprice'     => $isopenprice,
-                
-                'kdcustomer'    => strtoupper($this->request->getPost('kdcustomer')),
-                'alamatcustomer'    => strtoupper($this->request->getPost('alamatcustomer')),
-                'kdcustomerdeliv'    => strtoupper($this->request->getPost('kdcustomerdeliv')),
-                'alamatcustomerdeliv'    => strtoupper($this->request->getPost('alamatcustomerdeliv')),
-                // 'alamatkirim'    => strtoupper($this->request->getPost('alamatkirim')),
-                'idtax'    => strtoupper($this->request->getPost('idtax')),
-                'kdsalesman'    => ($this->request->getPost('kdsalesman')),
-                'gradecustomer'    => ($this->request->getPost('gradecustomer')),
-                'carabayar'    => strtoupper($this->request->getPost('carabayar')),
-                // 'pocust'    => strtoupper($this->request->getPost('pocust')),
-                'currcode'    => strtoupper($this->request->getPost('currcode')),
-                'kurs'    => ($this->request->getPost('kurs')),
-                'keterangan'    => strtoupper($this->request->getPost('keterangan')),
-                // 'pocust'    => strtoupper($this->request->getPost('pocust')),
-                // 'nodp'    => strtoupper($this->request->getPost('nodp')),
-                'status'    => 'E',
-                'inputby'   => $nama,
-                'inputdate' => date('Y-m-d H:i:s')
+                'docno'                 => $docno,
+                'cabang'                => $this->request->getPost('cabang'),
+                'docdate'               => date('Y-m-d', strtotime(trim($this->request->getPost('docdate')))),
+                'jthtempo'              => $this->request->getPost('jthtempo'),
+                'isinclusive'           => $isinclusive,
+                'isopenprice'           => $isopenprice,
+                'kdcustomer'            => strtoupper($this->request->getPost('kdcustomer')),
+                'alamatcustomer'        => strtoupper($this->request->getPost('alamatcustomer')),
+                'kdcustomerdeliv'       => strtoupper($this->request->getPost('kdcustomerdeliv')),
+                'alamatcustomerdeliv'   => strtoupper($this->request->getPost('alamatcustomerdeliv')),
+                'idtax'                 => strtoupper($this->request->getPost('idtax')),
+                'kdsalesman'            => $this->request->getPost('kdsalesman'),
+                'gradecustomer'         => $this->request->getPost('gradecustomer'),
+                'carabayar'             => strtoupper($this->request->getPost('carabayar')),
+                'currcode'              => strtoupper($this->request->getPost('currcode')),
+                'kurs'                  => $this->request->getPost('kurs'),
+                'keterangan'            => strtoupper($this->request->getPost('keterangan')),
+                'status'                => 'E',
+                'inputby'               => $nama,
+                'inputdate'             => date('Y-m-d H:i:s')
             ]);
 
             $reload = true;
@@ -3906,35 +7848,35 @@ class PostSales extends BaseController
         $insertCount = 0;
         $message = '';
 
-        // CEK MODE: ADD atau EDIT
-        if (!empty($idurut)) {            
+        // =====================================================
+        // MODE EDIT
+        // =====================================================
+        if (!empty($idurut)) {
 
             $uniqueid = $this->request->getPost('uniqueid');
-            // =====================================================
-            // MODE EDIT - UPDATE DATA
-            // =====================================================
+
             $qty         = $this->request->getPost('qty');
-            // $qtybonus    = $this->request->getPost('qtybonus') ?: 0;
             $harga       = $this->request->getPost('harga') ?: 0;
             $multidisc   = $this->request->getPost('multidisc') ?: 0;
-            // $volitem   = $this->request->getPost('volitem') ?: 0;
-            // $biaya   = $this->request->getPost('biaya') ?: 0;
-            // $biaya2   = $this->request->getPost('biaya2') ?: 0;
             $nilai       = $this->request->getPost('nilai') ?: 0;
             $description = strtoupper($this->request->getPost('description'));
             $idprincipal = strtoupper($this->request->getPost('idprincipal'));
-            $idgudang = strtoupper($this->request->getPost('idgudang'));
-            $idspec = strtoupper($this->request->getPost('idspec'));
+            $idgudang    = strtoupper($this->request->getPost('idgudang'));
+            $idspec      = strtoupper($this->request->getPost('idspec'));
 
             $nilai = $qty * $harga;
+
+            // >>> FIX: tambah currcode di select
             $h = $db->table('sc_tmp.penjualan')
-                ->select('kurs,idtax')
+                ->select('kurs, idtax, currcode')
                 ->where('docno', $docno)
                 ->get()
                 ->getRowArray();
 
-            $kurs = $h['kurs'] ?? 1;
-            $idtax = $h['idtax'] ?? 'NON';
+            $kurs     = $h['kurs'] ?? 1;
+            $idtax    = $h['idtax'] ?? 'NON';
+            $currcode = $h['currcode'] ?? '';
+
             $nilaikonversi = $nilai * $kurs;
             $nilaipajak = 0;
 
@@ -3946,94 +7888,163 @@ class PostSales extends BaseController
                     ->getResultArray();
 
                 $totalPersen = array_sum(array_column($taxDetails, 'percentation'));
-                // $nilaipajak = $nilai + ($nilai * $totalPersen / 100);
                 $nilaipajak = $nilai * $totalPersen / 100;
             }
 
             $builderDetail->where('uniqueid', $uniqueid)->update([
-                'qty'          => $qty,
-                // 'qtybonus'     => $qtybonus,
-                'harga'        => $harga,
-                'multidisc'    => $multidisc,
-                'nilai'        => $nilai,
+                'qty'           => $qty,
+                'harga'         => $harga,
+                'multidisc'     => $multidisc,
+                'nilai'         => $nilai,
                 'nilaikonversi' => $nilaikonversi,
-                'nilaipajak' => $nilaipajak,
-                'idtax' => $idtax,
-                'kurs' => $kurs,
-                'currcode' => $poData['currcode'] ?? '',
-                // 'volitem'      => $volitem,
-
-                // 'biaya'      => $biaya,
-                // 'biaya2'      => $biaya2,
-                'idprincipal'      => $idprincipal,
+                'nilaipajak'    => $nilaipajak,
+                'idtax'         => $idtax,
+                'kurs'          => $kurs,
+                'currcode'      => $currcode, // >>> FIX: dari $poData jadi $currcode
+                'idprincipal'   => $idprincipal,
                 'idgudang'      => $idgudang,
-                'idspec'      => $idspec,
-
-                'description' => $description,
-                'updateby'     => $nama,
-                'updatedate'   => date('Y-m-d H:i:s')
+                'idspec'        => $idspec,
+                'description'   => $description,
+                'updateby'      => $nama,
+                'updatedate'    => date('Y-m-d H:i:s')
             ]);
 
-
-
-            
-            
             $message = 'Data berhasil diupdate';
-            
+
         } else {
             // =====================================================
-            // MODE ADD - INSERT DATA DARI PP
+            // MODE ADD
             // =====================================================
-            $soDetails = $db->query("
-                SELECT 
-                    docno,
-                    idbarang,
-                    uniqueid,
-                    nmbarang,
-                    unit,
-                    qty,
-                    idprincipal,
-                    idgudang,
-                    idspec,
-                    nilaipajak,
-                    nilaikonversi,
-                    multidisc,
-                    qtypenjualan,
-                    harga,
-                    currcode,
-                    idtax,
-                    kurs,
-                    nilai
-                FROM sc_trx.salesorder_dtl
-                WHERE TRIM(docno) = ?
-            ", [$docnoso])->getResult();
+
+            if ($isFromSJ) {
+                // >>> dari SJ, trace ke SO via uniqueid
+                // Ambil qty dari SJ, field lain dari SO
+                $soDetails = $db->query("
+                    SELECT
+                        sj.docno,
+                        sj.idbarang,
+                        sj.uniqueid,
+                        sj.nmbarang,
+                        sj.unit,
+                        sj.qty,
+                        sj.idgudang,
+                        COALESCE(so.idprincipal, '')   AS idprincipal,
+                        COALESCE(so.idspec, '')        AS idspec,
+                        COALESCE(so.harga, 0)          AS harga,
+                        COALESCE(so.multidisc, 0)      AS multidisc,
+                        COALESCE(so.currcode, 'IDR')   AS currcode,
+                        COALESCE(so.idtax, 'NON')      AS idtax,
+                        COALESCE(so.kurs, 1)           AS kurs,
+                        COALESCE(so.nilaipajak, 0)     AS nilaipajak,
+                        COALESCE(so.nilaikonversi, 0)  AS nilaikonversi,
+                        sj.qtypenjualan,
+                        COALESCE(so.nilai, 0)          AS nilai
+                    FROM sc_trx.suratjalan_dtl sj
+                    LEFT JOIN sc_trx.salesorder_dtl so
+                        ON so.uniqueid = sj.uniqueid
+                    WHERE TRIM(sj.docno) = ?
+                ", [$docnosj])->getResult();
+            } else {
+                // SO - seperti semula
+                $soDetails = $db->query("
+                    SELECT
+                        docno,
+                        idbarang,
+                        uniqueid,
+                        nmbarang,
+                        unit,
+                        qty,
+                        idprincipal,
+                        idgudang,
+                        idspec,
+                        nilaipajak,
+                        nilaikonversi,
+                        multidisc,
+                        qtypenjualan,
+                        qtydo,
+                        harga,
+                        currcode,
+                        idtax,
+                        kurs,
+                        nilai
+                    FROM sc_trx.salesorder_dtl
+                    WHERE TRIM(docno) = ?
+                ", [$docnoso])->getResult();
+            }
 
             if (empty($soDetails)) {
-                $db->transRollback();   
+                $db->transRollback();
                 return $this->response->setJSON([
                     'success' => false,
-                    'message' => 'Data SO tidak ditemukan'
+                    'message' => $isFromSJ ? 'Data SJ tidak ditemukan' : 'Data SO tidak ditemukan'
                 ]);
             }
 
             foreach ($soDetails as $row) {
-                $sisaQty = $row->qty - ($row->qtypenjualan);
+
+                // =====================================================
+                // HITUNG SISA QTY - BEDA ANTARA SO DAN SJ
+                // =====================================================
+                if ($isFromSJ) {
+                    // Dari SJ:
+                    // sisaQty = qty - (qtypenjualan - qtypenjualanSaatIni)
+                    // qtypenjualanSaatIni = qty di sc_tmp.penjualan_dtl yang belum final
+                    $qtyPenjualanSaatIni = 0;
+
+                    $existingPenjualan = $db->query("
+                        SELECT COALESCE(SUM(qty), 0) AS qty
+                        FROM sc_tmp.penjualan_dtl
+                        WHERE uniqueid = ?
+                        AND docno <> ?
+                    ", [$row->uniqueid, $docno])->getRow();
+
+                    if ($existingPenjualan) {
+                        $qtyPenjualanSaatIni = $existingPenjualan->qty;
+                    }
+
+                    $sisaQty = $row->qty - ($row->qtypenjualan - $qtyPenjualanSaatIni);
+
+                } else {
+                    // Dari SO:
+                    // sisaQty = qty - (qtypenjualan + qtydo - qtyDOSaatIni)
+                    // qtyDOSaatIni = qty di sc_tmp.deliveryorder_dtl yang belum final
+                    $qtyDOSaatIni = 0;
+
+                    $existingDO = $db->query("
+                        SELECT COALESCE(SUM(qty), 0) AS qty
+                        FROM sc_tmp.deliveryorder_dtl
+                        WHERE uniqueid = ?
+                    ", [$row->uniqueid])->getRow();
+
+                    if ($existingDO) {
+                        $qtyDOSaatIni = $existingDO->qty;
+                    }
+
+                    $sisaQty = $row->qty - ($row->qtypenjualan + $row->qtydo - $qtyDOSaatIni);
+                }
+
                 if ($sisaQty <= 0) continue;
 
                 $duplicate = $builderDetail
                     ->where('docno', $docno)
                     ->where('uniqueid', $row->uniqueid)
+                    ->where($isFromSJ ? 'docnosj' : 'docnoso', $isFromSJ ? $docnosj : $docnoso)
                     ->countAllResults();
 
-                $nilaiRow = $row->qty * $row->harga;
+                // >>> FIX: nilaiRow pakai sisaQty biar konsisten
+                $nilaiRow = $sisaQty * $row->harga;
+
                 $h = $db->table('sc_tmp.penjualan')
-                    ->select('kurs,idtax')
+                    ->select('kurs, idtax')
                     ->where('docno', $docno)
                     ->get()
                     ->getRowArray();
 
                 $kurs = $h['kurs'] ?? 1;
-                $idtaxRow = $h['idtaxRow'] ?? 'NON';
+
+                // >>> FIX: idtaxRow salah, harusnya idtax
+                $idtaxRow = $h['idtax'] ?? 'NON';
+
                 $nilaikonversiRow = $nilaiRow * $kurs;
                 $nilaipajakRow = 0;
 
@@ -4045,14 +8056,15 @@ class PostSales extends BaseController
                         ->getResultArray();
 
                     $totalPersen = array_sum(array_column($taxDetails, 'percentation'));
-                    // $nilaipajakRow = $nilai + ($nilai * $totalPersen / 100);
                     $nilaipajakRow = $nilaiRow * $totalPersen / 100;
                 }
 
                 if ($duplicate == 0) {
                     $builderDetail->insert([
                         'docno'         => $docno,
-                        'docnoso'       => $docnoso,
+                        // >>> isi docnoso / docnosj sesuai sumber
+                        'docnoso'       => $isFromSJ ? null : $docnoso,
+                        'docnosj'       => $isFromSJ ? $docnosj : null,
                         'idbarang'      => $row->idbarang,
                         'uniqueid'      => $row->uniqueid,
                         'nmbarang'      => $row->nmbarang,
@@ -4061,15 +8073,14 @@ class PostSales extends BaseController
                         'idprincipal'   => $row->idprincipal,
                         'idgudang'      => $row->idgudang,
                         'idspec'        => $row->idspec,
-                        'harga'         => $row->harga, // Default 0 untuk new insert
-                        'multidisc'     =>  $row->multidisc, // Default 0 untuk new insert
+                        'harga'         => $row->harga,
+                        'multidisc'     => $row->multidisc,
                         'nilaipajak'    => $nilaipajakRow,
                         'nilaikonversi' => $nilaikonversiRow,
                         'currcode'      => $row->currcode,
                         'kurs'          => $row->kurs,
                         'idtax'         => $row->idtax,
-                        'nilai'         => $sisaQty * $row->harga, // Default 0 untuk new insert
-                        // 'description' => $row->description,
+                        'nilai'         => $sisaQty * $row->harga,
                         'inputby'       => $nama,
                         'inputdate'     => date('Y-m-d H:i:s')
                     ]);
@@ -4077,51 +8088,48 @@ class PostSales extends BaseController
                     $insertCount++;
                 }
             }
-            
-            $message = $insertCount > 0 
+
+            $message = $insertCount > 0
                         ? "$insertCount item berhasil ditambahkan"
                         : "Semua item sudah ada sebelumnya";
         }
 
+        // =====================================================
+        // HITUNG TOTAL
+        // =====================================================
         $penjualanHeader = $builderHeader->select('idtax')->where('docno', $docno)->get()->getRowArray();
         $idtax = $penjualanHeader['idtax'] ?? '';
-        
-        // Hitung total DPP (sum nilai dari po_dtl)
+
         $builderTotalDpp = $db->table('sc_tmp.penjualan_dtl');
         $totalDpp = $builderTotalDpp->select('COALESCE(SUM(nilai), 0) as total_dpp')
             ->where('docno', $docno)
             ->get()
             ->getRowArray();
-        
+
         $dpp = $totalDpp['total_dpp'] ?? 0;
-        
-        // Hitung jumlah pajak berdasarkan idtax
         $jumlahPajak = 0;
-        
-        if (!empty($idtax) && trim($idtax) !== 'NON'  && $dpp > 0) {
-            // Ambil detail tax dari sc_mst.tax_dtl
-            $builderTaxDtl = $db->table('sc_mst.tax_dtl');
-            $taxDetails = $builderTaxDtl->select('percentation')
+
+        if (!empty($idtax) && trim($idtax) !== 'NON' && $dpp > 0) {
+            $taxDetails = $db->table('sc_mst.tax_dtl')
+                ->select('percentation')
                 ->where('idtax', $idtax)
                 ->get()
                 ->getResultArray();
-            
+
             foreach ($taxDetails as $tax) {
                 $persentase = $tax['percentation'] ?? 0;
                 $jumlahPajak += $dpp * ($persentase / 100);
             }
         }
-        
-        // Hitung total (DPP + Jumlah Pajak)
+
         $total = $dpp + $jumlahPajak;
-        
-        // Update header LPB
+
         $builderHeader->where('docno', $docno)->update([
-            'dpp' => number_format($dpp, 2, '.', ''),
+            'dpp'         => number_format($dpp, 2, '.', ''),
             'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
-            'total' => number_format($total, 2, '.', ''),
-            'updateby' => $nama,
-            'updatedate' => date('Y-m-d H:i:s')
+            'total'       => number_format($total, 2, '.', ''),
+            'updateby'    => $nama,
+            'updatedate'  => date('Y-m-d H:i:s')
         ]);
 
         $db->transComplete();
@@ -4152,7 +8160,29 @@ class PostSales extends BaseController
         $info = array('status' => $status);
         $update = $builder->update($info);
 
+        $action = '';
+        switch ($status) {
+            case 'A': $action = 'A'; break;  // APPROVED → 1 huruf
+            case 'F': $action = 'R'; break;  // REJECT → 1 huruf (R)
+            case 'C': $action = 'C'; break;  // CANCEL → 1 huruf
+            default:
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Status tidak valid'
+                ]);
+        }
+
         if ($update) {
+            // ===============================
+            // LOG MENGGUNAKAN FUNGSI HELPER
+            // ===============================
+            $this->m_global->insertlogtrans(
+                $docno,
+                $action,           // A / R / C (1 huruf)
+                'I.S',             // kode module dari menuprg
+                'I.S.B.1'          // kode menu untuk PENJUALAN
+            );
+
             return $this->response->setJSON(['success' => true]);
         } else {
             return $this->response->setJSON(['success' => false, 'message' => 'Gagal update status']);
@@ -4228,7 +8258,7 @@ class PostSales extends BaseController
         $id = $this->request->getGet('id');
 
         $row = $this->db->table('sc_tmp.penjualan_dtl')
-            ->where('idurut', $id)
+            ->where('uniqueid', $id)
             ->get()
             ->getRowArray();
 
@@ -4274,7 +8304,7 @@ class PostSales extends BaseController
             // ======================================
             $rows = $builder
                 ->select('docno')
-                ->whereIn('idurut', $ids)
+                ->whereIn('uniqueid', $ids)
                 ->get()
                 ->getResultArray();
 
@@ -4304,7 +8334,7 @@ class PostSales extends BaseController
             // DELETE DETAIL
             // ======================================
             $builder
-                ->whereIn('idurut', $ids)
+                ->whereIn('uniqueid', $ids)
                 ->delete();
 
             if ($db->affectedRows() === 0) {
@@ -4393,7 +8423,7 @@ class PostSales extends BaseController
             $no++;
             $row = array();
             // $row[] = $no;
-            $row[] = $lm->idurut;
+            $row[] = $lm->uniqueid;
             //item
             $row[] = $lm->docnosj;
             $row[] = $lm->docnoso;
@@ -4486,7 +8516,7 @@ class PostSales extends BaseController
         //INSERT TRX ERROR
         $builder_trxerror = $this->db->table('sc_mst.trxerror');
         $builder_trxerror->where('userid', $nama);
-        $builder_trxerror->where('modul', 'I.S.B.2');
+        $builder_trxerror->where('modul', 'I.S.B.4');
         $builder_trxerror->delete();
 
 
@@ -4497,7 +8527,7 @@ class PostSales extends BaseController
                 'errorcode' => 3,
                 'nomorakhir1' => $cek->getNumRows(),
                 'nomorakhir2' => $cek2->getNumRows(),
-                'modul' => 'I.S.B.2',
+                'modul' => 'I.S.B.4',
             );
             $builder_trxerror->insert($infotrxerror);
 
@@ -4505,7 +8535,7 @@ class PostSales extends BaseController
         } else {
             // Ambil dari request POST
             // $pemohon = strtoupper(trim($this->request->getPost('pemohon')));
-            $docdate   = trim($this->request->getPost('docdate'));
+            // $docdate   = trim($this->request->getPost('docdate'));
             // $senddate   = trim($this->request->getPost('senddate'));
             $jthtempo   = trim($this->request->getPost('jthtempo'));
             $kdcustomer   = trim($this->request->getPost('kdcustomer'));
@@ -4538,19 +8568,19 @@ class PostSales extends BaseController
             }
 
              // Convert expdate ke format YYYY-MM-DD
-            $docdateph = null;
-            if (!empty($docdate)) {
-                $docdateph = date('Y-m-d', strtotime(str_replace('-', '/', $docdate)));
-            }
+            // $docdateph = null;
+            // if (!empty($docdate)) {
+            //     $docdateph = date('Y-m-d', strtotime($docdate));
+            // }
 
             // $delivdateph = null;
             // if (!empty($delivdate)) {
-            //     $delivdateph = date('Y-m-d', strtotime(str_replace('-', '/', $delivdate)));
+            //     $delivdateph = date('Y-m-d', strtotime($delivdate));
             // }
 
             // Update data header dulu sebelum set status F
             $updateHeader = [
-                'docdate'        => $docdateph,
+                // 'docdate'        => $docdateph,
                 // 'delivdate'       => $delivdateph,
                 'jthtempo'       => $jthtempo,
                 'kdcustomer'     => strtoupper($kdcustomer),
@@ -4579,7 +8609,7 @@ class PostSales extends BaseController
             );
             $builder->where('inputby',$nama);
             if ($builder->update($info)) {
-                $paramerror=" and userid='$nama' and modul='I.S.B.2'";
+                $paramerror=" and userid='$nama' and modul='I.S.B.4'";
                 $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
                 $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
 
@@ -4592,7 +8622,7 @@ class PostSales extends BaseController
                     'errorcode' => 3,
                     'nomorakhir1' => $cek->getNumRows(),
                     'nomorakhir2' => $cek2->getNumRows(),
-                    'modul' => 'I.S.B.2',
+                    'modul' => 'I.S.B.4',
                 );
                 $builder_trxerror->insert($infotrxerror);
                 return redirect()->to(base_url('/sales/postsales/addPenjualan'));
@@ -4606,6 +8636,9 @@ class PostSales extends BaseController
 
 
     function show_penjualan(){
+        $module = 'I.S';
+        $menu = 'I.S.B.4';
+        $table = "sc_trx.penjualan";
         $nama = trim($this->session->get('nama'));
         $docno = $this->request->getGet('docno');  // Mengambil 'docno' dari URL
         //$docdate = $this->request->getPost('docdate');
@@ -4617,13 +8650,13 @@ class PostSales extends BaseController
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.penjualan');
 
-       $builder = $builder
-            ->where('docno', $docno)
-            ->update([
-                'status'=> 'P',
-                'printby' => $nama,
-                'printdate' => date('Y-m-d H:i:s')
-            ]);
+    //    $builder = $builder
+    //         ->where('docno', $docno)
+    //         ->update([
+    //             'status'=> 'P',
+    //             'printby' => $nama,
+    //             'printdate' => date('Y-m-d H:i:s')
+    //         ]);
 
         
         $enc_docno = $this->fiky_encryption->sealed($docno);
@@ -4633,7 +8666,7 @@ class PostSales extends BaseController
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
         // $enc_formheader = $this->fiky_encryption->sealed($formheader);
 
-        $title = " Report Void Permintaan Pembelian";
+        $title = " Report Penjualan";
 
         //$datajson =  base_url("manufactur/production/api_pp/?enc_idbarang=$enc_idbarang&enc_docdate=$enc_docdate&enc_idlocation=$enc_idlocation&enc_idgroup=$enc_idgroup") ;
         $datajson =  base_url("sales/postsales/api_penjualan/?enc_docno=$enc_docno") ;
@@ -4644,7 +8677,7 @@ class PostSales extends BaseController
         //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
         // }
 
-        return $this->fiky_report->render($datajson,$datamrt,$title,$nama);
+        return $this->fiky_report->render($datajson,$datamrt,$title,$nama,$module,$table,$docno,$menu);
     }
 
     function api_penjualan(){
@@ -4778,14 +8811,14 @@ class PostSales extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.S.B.2'; $versirelease='I.S.B.2/01'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.S.B.5'; $versirelease='I.S.B.5/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
         $data['kodemenu']=$kodemenu; $data['version']=$versidb;
         /* END CODE UNTUK VERSI */
 
-        $paramerror=" and userid='$nama' and modul='I.S.B.2'";
+        $paramerror=" and userid='$nama' and modul='I.S.B.5'";
         $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
         $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
         if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
@@ -4839,7 +8872,7 @@ class PostSales extends BaseController
         if (empty($docno)) {
             return redirect()->to(base_url('sales/postsales/soi'));
         }
-        $kodemenu='I.S.B.2'; $versirelease='I.S.B.2/01'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.S.B.5'; $versirelease='I.S.B.5/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -4847,7 +8880,7 @@ class PostSales extends BaseController
         $data['nama']=$nama; $data['version']=$versidb;
         /* END CODE UNTUK VERSI */
 
-        $paramerror=" and userid='$nama' and modul='I.S.B.2'";
+        $paramerror=" and userid='$nama' and modul='I.S.B.5'";
         $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
         $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
         if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
@@ -5189,7 +9222,7 @@ class PostSales extends BaseController
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
         $nama=trim($this->session->get('nama'));
-        $kodemenu='I.S.B.2'; $versirelease='I.S.B.2/01'; $releasedate=date('2025-04-12 00:00:00');
+        $kodemenu='I.S.B.5'; $versirelease='I.S.B.5/01'; $releasedate=date('2025-04-12 00:00:00');
         $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
         $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
         $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
@@ -5198,7 +9231,7 @@ class PostSales extends BaseController
         /* END CODE UNTUK VERSI */
 
 
-        $paramerror=" and userid='$nama' and modul='I.S.B.2'";
+        $paramerror=" and userid='$nama' and modul='I.S.B.5'";
         $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
         $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
         if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
@@ -5755,7 +9788,7 @@ class PostSales extends BaseController
         //INSERT TRX ERROR
         $builder_trxerror = $this->db->table('sc_mst.trxerror');
         $builder_trxerror->where('userid', $nama);
-        $builder_trxerror->where('modul', 'I.S.B.2');
+        $builder_trxerror->where('modul', 'I.S.B.5');
         $builder_trxerror->delete();
 
 
@@ -5766,7 +9799,7 @@ class PostSales extends BaseController
                 'errorcode' => 3,
                 'nomorakhir1' => $cek->getNumRows(),
                 'nomorakhir2' => $cek2->getNumRows(),
-                'modul' => 'I.S.B.2',
+                'modul' => 'I.S.B.5',
             );
             $builder_trxerror->insert($infotrxerror);
 
@@ -5797,7 +9830,7 @@ class PostSales extends BaseController
             );
             $builder->where('inputby',$nama);
             if ($builder->update($info)) {
-                $paramerror=" and userid='$nama' and modul='I.S.B.2'";
+                $paramerror=" and userid='$nama' and modul='I.S.B.5'";
                 $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
                 $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
 
@@ -5814,7 +9847,7 @@ class PostSales extends BaseController
                     'errorcode' => 3,
                     'nomorakhir1' => $cek->getNumRows(),
                     'nomorakhir2' => $cek2->getNumRows(),
-                    'modul' => 'I.S.B.2',
+                    'modul' => 'I.S.B.5',
                 );
                 $builder_trxerror->insert($infotrxerror);
                 // return redirect()->to(base_url('/sales/postsales/addSOI'));
@@ -6011,7 +10044,7 @@ class PostSales extends BaseController
     public function getRolePOSOI()
     {
         $jobcode = trim($this->request->getGet('rolejob'));
-        $codemenu = 'I.S.B.2';
+        $codemenu = 'I.S.B.5';
         $logindate = trim($this->session->get('logindate')); // format: dd-mm-yyyy
 
         // Buat infix dari logindate

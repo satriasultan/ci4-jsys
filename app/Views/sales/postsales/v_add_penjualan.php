@@ -516,9 +516,15 @@
 
                 </div>
                 <div class="card-footer bg-light">
-                    <a href="<?= base_url('sales/postsales/penjualan') ?>"
+                    <!-- <a href="<?= base_url('sales/postsales/penjualan') ?>"
                         class="btn btn-default btn-lg">
                         <i class="fa fa-arrow-left mr-2"></i>
+                        Kembali
+                    </a> -->
+                    <a href="<?= base_url('sales/postsales/clearEntryPenjualan') ?>" 
+                        onclick="return confirm('Are you sure clear this entry?')" 
+                        class="btn btn-default float-left">
+                        <i class="fa fa-arrow-left"></i>
                         Kembali
                     </a>
                     <?php if ($typeform != 'DETAIL' && $dtldata != null): ?>
@@ -634,6 +640,7 @@
                     <input type="hidden" name="uniqueid" id="uniqueid">
                     <input type="hidden" name="docno" id="docno">
                     <input type="hidden" name="docnoso" id="docnoso">
+                    <input type="hidden" name="docnosj" id="docnosj">
                     <!-- <input type="hidden" name="status" id="status" value="P">-->
 
                     <!-- ROW 1 -->
@@ -812,13 +819,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#docdate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('DD-MM-YYYY'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'docdate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'docdate');
         });
@@ -832,13 +839,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#delivdate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('DD-MM-YYYY'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'delivdate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'delivdate');
         });

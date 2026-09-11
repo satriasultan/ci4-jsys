@@ -527,12 +527,12 @@ $('#rolejob').on('change', function () {
                                     startDate: startDate,
                                     minDate: startDate,
                                     maxDate: endDate,
-                                    locale: { format: 'YYYY-MM-DD' },
+                                    locale: { format: 'DD-MM-YYYY' },
                                     cancelLabel: 'Clear'
                                 });
                                 // rebind handlers jika perlu (apply/cancel)
                                 $el.on('apply.daterangepicker', function(ev, picker) {
-                                    $(this).val(picker.startDate.format('YYYY-MM-DD'));
+                                    $(this).val(picker.startDate.format('DD-MM-YYYY'));
                                 });
                                 $el.on('cancel.daterangepicker', function(ev, picker) {
                                     $(this).val('');
@@ -540,7 +540,7 @@ $('#rolejob').on('change', function () {
                             }
 
                             // isi input langsung (opsional)
-                            $el.val(startDate.format('YYYY-MM-DD'));
+                            $el.val(startDate.format('DD-MM-YYYY'));
                         }
                         // Jika tetap ingin punya 1 full docno juga:
                         $('#docno').val(res.prefix + '/'+ res.infix +'/' + res.suffix);
