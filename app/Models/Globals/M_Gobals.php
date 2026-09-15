@@ -300,7 +300,7 @@ group by docno order by docno asc");
             $docdateFormatted = date('Y-m-d', strtotime($docdate));
             $docdateFilter = " AND exchangedate <= '$docdateFormatted'::date";
         }
-        
+
         return $this->db->query("
             select 
                 a.*, 
@@ -444,7 +444,7 @@ group by docno order by docno asc");
             INNER JOIN sc_trx.salesorder_dtl so_dtl ON so.docno = so_dtl.docno 
             WHERE coalesce(trim(so.docno),'') != '' 
             AND (so_dtl.qty - coalesce(so_dtl.qtypenjualan, 0)) > 0                
-            AND (trim(so.status) = 'P' OR trim(so.status) = 'DO' OR trim(so.status) = 'PJO') 
+            AND (trim(so.status) = 'A')
                 $param
         ");
     }
@@ -479,8 +479,6 @@ group by docno order by docno asc");
                 $param
         ");
     }
-
-
     function q_bom($param){
         // return $this->db->query("select *, trim(docno) as id from sc_trx.salesorder where trim(status)='A' and coalesce(trim(docno),'')!='' $param ");
         return $this->db->query("

@@ -99,216 +99,517 @@ let skipRoleChange = false;
 
 //EDIT ITEM
 function documentReadable(){
-    // $("#loadMe").modal({
-    //     backdrop: "static", //remove ability to close modal with click
-    //     keyboard: false, //remove option to close with keyboard
-    //     show: false //Display loader!
-    // });
-    var docno = $('[name="docno"]').val()
+
+    var docno = $('[name="docno"]').val();
 
     $.ajax({
         type: 'GET',
         url: HOST_URL + 'arap/transaksi/showing_ndktrx',
-        data: { docno: docno },
+        data: {
+            docno: docno
+        },
         dataType: 'json',
+
         dataFilter: function(data) {
+
             var json = jQuery.parseJSON(data);
+
             json.status = json.dataTables.status;
             json.total_count = json.dataTables.total_count;
             json.items = json.dataTables.items;
             json.incomplete_results = json.dataTables.incomplete_results;
 
-            $('[name="docno"]').val(json.dataTables.items[0].docno).prop('readonly', true);
-            var docnoData = json.dataTables.items[0].docno.trim();
-            let prefixParts = docnoData.split('/'); // ["JTS", "PH", "25", "08"]
-            $('[name="prefix"]').val(prefixParts[0]).prop('readonly', true);
-            $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
-            $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
-            defaultInitialPO = prefixParts[2].substring(0, 2);
+            var item = json.dataTables.items[0];
+
+            if (!item) {
+                return JSON.stringify(json);
+            }
+
+            // =========================================================
+            // DOCNO
+            // =========================================================
+
+            $('[name="docno"]')
+                .val(item.docno)
+                .prop('readonly', true);
+
+            var docnoData = $.trim(item.docno || '');
+
+            var prefixParts = docnoData.split('/');
+
+            $('[name="prefix"]')
+                .val(prefixParts[0] || '')
+                .prop('readonly', true);
+
+            $('[name="infix"]')
+                .val(prefixParts[1] || '')
+                .prop('readonly', true);
+
+            $('[name="sufix"]')
+                .val(prefixParts[2] || '')
+                .prop('readonly', true);
+
+            if (prefixParts[2]) {
+                defaultInitialPO = prefixParts[2].substring(0, 2);
+            }
 
 
-            $.ajax({
-                type: 'GET',
-                url: HOST_URL + 'api/globalmodule/list_supplier_new' + '?var=' + json.dataTables.items[0].kdsupplier,
-                dataType: 'json',
-                delay: 250,
-            }).then(function (datax) {
-
-            // Tambahkan data alamat dan phone ke object
-                var supplierData = datax.items[0];
-                supplierData.alamat = json.dataTables.items[0].alamatsupplier;
-                // supplierData.phone = data.phone;
-                
-                // create the option dan simpan data lengkap
-                var option = new Option(supplierData.nmsupplier, supplierData.kdsupplier, true, true);
-                $(option).data('supplier-data', supplierData); // Simpan data lengkap
-                
-                $('[name="kdsupplier"]').append(option).trigger('change').prop('disabled',true);
-                
-                // Set alamat dan phone langsung
-                $("#alamatsupplier").val(json.dataTables.items[0].alamatsupplier).prop('readonly', true);
-                // $("#phone").val(data.phone).prop('readonly', true);
-            });
-
-            //$('[name="idgroup"]').val(json.dataTables.items[0].idgroup);
-            $.ajax({
-                type: 'GET',
-                url: HOST_URL + 'api/globalmodule/list_branchjob' + '?var=' + json.dataTables.items[0].cabang,
-                dataType: 'json',
-                delay: 250,
-            }).then(function (datax) {
-                // create the option and append to Select2
-                var option = new Option(datax.items[0].nmbranch, datax.items[0].idbranch, true, true);
-                $('[name="cabang"]').append(option).trigger('change').prop('disabled',true);
-
-                // manually trigger the `select2:select` event
-                $('[name="cabang"]').trigger({
-                    type: 'select2:select',
-                    params: {
-                        data: datax
-                    }
-                });
-            });
+            // =========================================================
+            // SUPPLIER
+            // =========================================================
 
             $.ajax({
                 type: 'GET',
-                url: HOST_URL + 'api/globalmodule/list_tax' + '?var=' + json.dataTables.items[0].idtax,
-                dataType: 'json',
-                delay: 250,
-            }).then(function (datax) {
-                // create the option and append to Select2
-                var option = new Option(datax.items[0].nmtax, datax.items[0].idtax, true, true);
-                $('[name="idtax"]').append(option).trigger('change').prop('disabled',true);
+                url: HOST_URL +
+                    'api/globalmodule/list_cust_and_supplier' +
+                    '?var=' + encodeURIComponent($.trim(item.kdsupplier || '')),
+                dataType: 'json'
+            }).then(function(datax) {
 
-                // manually trigger the `select2:select` event
-                $('[name="idtax"]').trigger({
-                    type: 'select2:select',
-                    params: {
-                        data: datax
-                    }
-                });
+                if (
+                    datax &&
+                    datax.items &&
+                    datax.items.length > 0
+                ) {
+
+                    var supplierData = datax.items[0];
+
+                    supplierData.alamat = item.alamatsupplier || '';
+
+                    var $supplier = $('#kdsupplier');
+
+                    // Bersihkan option lama
+                    $supplier.empty();
+
+                    // Buat option supplier
+                    var option = new Option(
+                        supplierData.nmsupplier,
+                        supplierData.kdsupplier,
+                        true,
+                        true
+                    );
+
+                    // Simpan data supplier
+                    $(option).data(
+                        'supplier-data',
+                        supplierData
+                    );
+
+                    // Masukkan ke Select2
+                    $supplier
+                        .append(option)
+                        .val(supplierData.kdsupplier)
+                        .trigger('change')
+                        .prop('disabled', true);
+
+                    // Isi alamat
+                    $('#alamatsupplier')
+                        .val(item.alamatsupplier || '')
+                        .prop('readonly', true);
+
+                } else {
+
+                    console.warn(
+                        'Supplier tidak ditemukan:',
+                        item.kdsupplier
+                    );
+
+                }
             });
+
+
+            // =========================================================
+            // CABANG
+            // =========================================================
 
             $.ajax({
                 type: 'GET',
-                url: HOST_URL + 'api/globalmodule/list_coa' + '?var=' + json.dataTables.items[0].perkiraanarap,
+                url: HOST_URL +
+                    'api/globalmodule/list_branchjob' +
+                    '?var=' + encodeURIComponent(item.cabang || ''),
                 dataType: 'json',
-                delay: 250,
-            }).then(function (datax) {
-                // create the option and append to Select2
-                var option = new Option(datax.items[0].idcoa, datax.items[0].nmcoa, true, true);
-                $('[name="perkiraanarap"]').append(option).trigger('change').prop('disabled',true);
+                delay: 250
 
-                // manually trigger the `select2:select` event
-                $('[name="perkiraanarap"]').trigger({
-                    type: 'select2:select',
-                    params: {
-                        data: datax
-                    }
-                });
+            }).then(function(datax) {
+
+                if (
+                    datax &&
+                    datax.items &&
+                    datax.items.length > 0
+                ) {
+
+                    var option = new Option(
+                        datax.items[0].nmbranch,
+                        datax.items[0].idbranch,
+                        true,
+                        true
+                    );
+
+                    $('[name="cabang"]')
+                        .append(option)
+                        .trigger('change')
+                        .prop('disabled', true);
+
+                    $('[name="cabang"]').trigger({
+                        type: 'select2:select',
+                        params: {
+                            data: datax
+                        }
+                    });
+                }
             });
+
+
+            // =========================================================
+            // TAX
+            // =========================================================
 
             $.ajax({
                 type: 'GET',
-                url: HOST_URL + 'api/globalmodule/list_salesman' + '?var=' + json.dataTables.items[0].kdsalesman,
+                url: HOST_URL +
+                    'api/globalmodule/list_tax' +
+                    '?var=' + encodeURIComponent(item.idtax || ''),
                 dataType: 'json',
-                delay: 250,
-            }).then(function (datax) {
-                // create the option and append to Select2
-                var option = new Option(datax.items[0].nmsalesman, datax.items[0].kdsalesman, true, true);
-                $('[name="kdsalesman"]').append(option).trigger('change').prop('disabled',true);
+                delay: 250
 
-                // manually trigger the `select2:select` event
-                $('[name="kdsalesman"]').trigger({
-                    type: 'select2:select',
-                    params: {
-                        data: datax
-                    }
-                });
+            }).then(function(datax) {
+
+                if (
+                    datax &&
+                    datax.items &&
+                    datax.items.length > 0
+                ) {
+
+                    var option = new Option(
+                        datax.items[0].nmtax,
+                        datax.items[0].idtax,
+                        true,
+                        true
+                    );
+
+                    $('[name="idtax"]')
+                        .append(option)
+                        .trigger('change')
+                        .prop('disabled', true);
+
+                    $('[name="idtax"]').trigger({
+                        type: 'select2:select',
+                        params: {
+                            data: datax
+                        }
+                    });
+                }
             });
+
+
+            // =========================================================
+            // COA ARAP
+            // =========================================================
 
             $.ajax({
                 type: 'GET',
-                url: HOST_URL + 'api/globalmodule/list_coa' + '?var=' + json.dataTables.items[0].perkiraanlawan,
+                url: HOST_URL +
+                    'api/globalmodule/list_coa' +
+                    '?var=' + encodeURIComponent(item.perkiraanarap || ''),
                 dataType: 'json',
-                delay: 250,
-            }).then(function (datax) {
-                // create the option and append to Select2
-                var option = new Option(datax.items[0].idcoa, datax.items[0].nmcoa, true, true);
-                $('[name="perkiraanlawan"]').append(option).trigger('change').prop('disabled',true);
+                delay: 250
 
-                // manually trigger the `select2:select` event
-                $('[name="perkiraanlawan"]').trigger({
-                    type: 'select2:select',
-                    params: {
-                        data: datax
-                    }
-                });
+            }).then(function(datax) {
+
+                if (
+                    datax &&
+                    datax.items &&
+                    datax.items.length > 0
+                ) {
+
+                    var option = new Option(
+                        datax.items[0].nmcoa,
+                        datax.items[0].idcoa,
+                        true,
+                        true
+                    );
+
+                    $('[name="perkiraanarap"]')
+                        .append(option)
+                        .trigger('change')
+                        .prop('disabled', true);
+
+                    $('[name="perkiraanarap"]').trigger({
+                        type: 'select2:select',
+                        params: {
+                            data: datax
+                        }
+                    });
+                }
             });
+
+
+            // =========================================================
+            // SALESMAN
+            // =========================================================
 
             $.ajax({
                 type: 'GET',
-                url: HOST_URL + 'api/globalmodule/list_currency' + '?var=' + json.dataTables.items[0].currcode,
+                url: HOST_URL +
+                    'api/globalmodule/list_salesman' +
+                    '?var=' + encodeURIComponent(item.kdsalesman || ''),
                 dataType: 'json',
-                delay: 250,
-            }).then(function (datax) {
-                // create the option and append to Select2
-                var currencyData = datax.items[0];
-                currencyData.kurs = json.dataTables.items[0].kurs;
-                // currencyData.phone = data.phone;
-                
-                // create the option dan simpan data lengkap
-                var option = new Option(currencyData.currname, currencyData.currcode, true, true);
-                $(option).data('currency-data', currencyData); // Simpan data lengkap
-                
-                $('[name="currcode"]').append(option).trigger('change').prop('disabled',true);
-                
-                // Set alamat dan phone langsung
-                setJtsValue('[name="kurs"]', convertToDbNumber(json.dataTables.items[0].kurs));
-                $('[name="kurs"]').prop('readonly', true);
-                // $("#phone").val(data.phone).prop('readonly', true);
+                delay: 250
+
+            }).then(function(datax) {
+
+                if (
+                    datax &&
+                    datax.items &&
+                    datax.items.length > 0
+                ) {
+
+                    var option = new Option(
+                        datax.items[0].nmsalesman,
+                        datax.items[0].kdsalesman,
+                        true,
+                        true
+                    );
+
+                    $('[name="kdsalesman"]')
+                        .append(option)
+                        .trigger('change')
+                        .prop('disabled', true);
+
+                    $('[name="kdsalesman"]').trigger({
+                        type: 'select2:select',
+                        params: {
+                            data: datax
+                        }
+                    });
+                }
             });
+
+
+            // =========================================================
+            // COA LAWAN
+            // =========================================================
+
+            $.ajax({
+                type: 'GET',
+                url: HOST_URL +
+                    'api/globalmodule/list_coa' +
+                    '?var=' + encodeURIComponent(item.perkiraanlawan || ''),
+                dataType: 'json',
+                delay: 250
+
+            }).then(function(datax) {
+
+                if (
+                    datax &&
+                    datax.items &&
+                    datax.items.length > 0
+                ) {
+
+                    var option = new Option(
+                        datax.items[0].nmcoa,
+                        datax.items[0].idcoa,
+                        true,
+                        true
+                    );
+
+                    $('[name="perkiraanlawan"]')
+                        .append(option)
+                        .trigger('change')
+                        .prop('disabled', true);
+
+                    $('[name="perkiraanlawan"]').trigger({
+                        type: 'select2:select',
+                        params: {
+                            data: datax
+                        }
+                    });
+                }
+            });
+
+
+            // =========================================================
+            // CURRENCY
+            // =========================================================
+
+            $.ajax({
+                type: 'GET',
+                url: HOST_URL +
+                    'api/globalmodule/list_currency' +
+                    '?var=' + encodeURIComponent(item.currcode || ''),
+                dataType: 'json',
+                delay: 250
+
+            }).then(function(datax) {
+
+                if (
+                    datax &&
+                    datax.items &&
+                    datax.items.length > 0
+                ) {
+
+                    var currencyData = datax.items[0];
+
+                    currencyData.kurs = item.kurs;
+
+                    var option = new Option(
+                        currencyData.currname,
+                        currencyData.currcode,
+                        true,
+                        true
+                    );
+
+                    $(option).data(
+                        'currency-data',
+                        currencyData
+                    );
+
+                    $('[name="currcode"]')
+                        .append(option)
+                        .trigger('change')
+                        .prop('disabled', true);
+
+                    setJtsValue(
+                        '[name="kurs"]',
+                        convertToDbNumber(item.kurs)
+                    );
+
+                    $('[name="kurs"]')
+                        .prop('readonly', true);
+                }
+            });
+
+
+            // =========================================================
+            // HEADER
+            // =========================================================
+
             skipRoleChange = true;
-            $('[name="docdate"]').val(json.dataTables.items[0].docdate).prop('disabled',true);
-            // $('[name="senddate"]').val(json.dataTables.items[0].senddate);
-            setJtsValue('[name="jthtempo"]', convertToDbNumber(json.dataTables.items[0].jthtempo));
-            // setJtsValue('[name="biayavol"]', convertToDbNumber(json.dataTables.items[0].biayavol));
-            // setJtsValue('[name="biayavol2"]', convertToDbNumber(json.dataTables.items[0].biayavol2));
-            setJtsValue('[name="kurs"]', convertToDbNumber(json.dataTables.items[0].kurs));
+
+            if (item.docdate) {
+                const dateValue = moment(item.docdate);
+
+                if (dateValue.isValid()) {
+                    $('[name="docdate"]').val(
+                        dateValue.format('DD-MM-YYYY')
+                    );
+                }
+            }
+
+            setJtsValue(
+                '[name="jthtempo"]',
+                convertToDbNumber(item.jthtempo)
+            );
+
+            $('[name="jthtempo"]')
+                .prop('disabled', true);
+
+            setJtsValue(
+                '[name="kurs"]',
+                convertToDbNumber(item.kurs)
+            );
+
+            // =========================================================
+            // INCLUSIVE TAX
+            // =========================================================
+
             $('[name="isinclusive"]').prop(
                 'checked',
-                $.trim((json.dataTables.items[0].isinclusive || '')).toUpperCase() === 'YES'
+                $.trim(
+                    (item.isinclusive || '')
+                ).toUpperCase() === 'YES'
             );
-            $('[name="isinclusive"]').val(json.dataTables.items[0].isinclusive).prop('disabled',true);
-            $('[name="jthtempo"]').val(json.dataTables.items[0].jthtempo).prop('disabled',true);
-            $('[name="alamatsupplier"]').val(json.dataTables.items[0].alamatsupplier).prop('readonly', true);
-            // $('[name="alamatkirim"]').val(json.dataTables.items[0].alamatkirim).prop('readonly', true);
-            // $('[name="isinclusive"]').val(json.dataTables.items[0].isinclusive).prop('readonly', true);
-            $('[name="keterangan"]').val(json.dataTables.items[0].keterangan).prop('readonly', true);
-            // $('[name="hpdate"]').val(json.dataTables.items[0].hpdate);
-            $('[name="dk"]').val(json.dataTables.items[0].dk.trim()).trigger('change').prop('disabled',true);
-            // $('[name="docnohp"]').val(json.dataTables.items[0].docnohp).prop('readonly',true);
-            $('[name="dpp"]').val(json.dataTables.items[0].dpp).prop('disabled',true);
 
-            setJtsValue('[name="dpp"]', convertToDbNumber(json.dataTables.items[0].dpp));
-            // setJtsValue('[name="jumlahpajak"]', convertToDbNumber(json.dataTables.items[0].jumlahpajak));
-            setJtsValue('[name="total"]', convertToDbNumber(json.dataTables.items[0].total));
-            // $('[name="estpakai"]').val(json.dataTables.items[0].estpakai);
-            
+            $('[name="isinclusive"]')
+                .val(item.isinclusive)
+                .prop('disabled', true);
 
-            // $('[name="keterangan"]').val(json.dataTables.items[0].keterangan);
-            //$('[name="chold"]').val(json.dataTables.items[0].chold.trim()).trigger('change');
 
-            //$('[name="idbarang"]').prop('readonly', true);
+            // =========================================================
+            // SUPPLIER ADDRESS
+            // =========================================================
+
+            $('[name="alamatsupplier"]')
+                .val(item.alamatsupplier || '')
+                .prop('readonly', true);
+
+
+            // =========================================================
+            // KETERANGAN
+            // =========================================================
+
+            $('[name="keterangan"]')
+                .val(item.keterangan || '')
+                .prop('readonly', true);
+
+
+            // =========================================================
+            // DK
+            // =========================================================
+
+            $('[name="dk"]')
+                .val($.trim(item.dk || ''))
+                .trigger('change')
+                .prop('disabled', true);
+
+
+            // =========================================================
+            // DPP
+            // =========================================================
+
+            setJtsValue(
+                '[name="dpp"]',
+                convertToDbNumber(item.dpp)
+            );
+
+            $('[name="dpp"]')
+                .prop('disabled', true);
+
+
+            // =========================================================
+            // JUMLAH PAJAK
+            // =========================================================
+
+            if (
+                item.jumlahpajak !== undefined &&
+                item.jumlahpajak !== null
+            ) {
+                setJtsValue(
+                    '[name="jumlahpajak"]',
+                    convertToDbNumber(item.jumlahpajak)
+                );
+            }
+
+
+            // =========================================================
+            // TOTAL
+            // =========================================================
+
+            setJtsValue(
+                '[name="total"]',
+                convertToDbNumber(item.total)
+            );
+
+
+            // =========================================================
+            // HIDE LOADING
+            // =========================================================
+
             $("#loadMe").modal("hide");
-
         },
+
         complete: function(){
             $("#loadMe").modal("hide");
         },
-        error: function (jqXHR, textStatus, errorThrown)
-        {
+
+        error: function(
+            jqXHR,
+            textStatus,
+            errorThrown
+        ){
             console.log("Failed To Loading Data");
+            console.log(errorThrown);
+
             $("#loadMe").modal("hide");
         }
     });
@@ -1546,12 +1847,12 @@ $('#cabang').on('change', function () {
                                 startDate: today,
                                 minDate: startDate,
                                 maxDate: endDate,
-                                locale: { format: 'YYYY-MM-DD' },
+                                locale: { format: 'dd-mm-yyyy' },
                                 cancelLabel: 'Clear'
                             });
                             // rebind handlers jika perlu (apply/cancel)
                             $el.on('apply.daterangepicker', function(ev, picker) {
-                                $(this).val(picker.startDate.format('YYYY-MM-DD'));
+                                $(this).val(picker.startDate.format('dd-mm-yyyy'));
                             });
                             $el.on('cancel.daterangepicker', function(ev, picker) {
                                 $(this).val('');
@@ -1559,7 +1860,7 @@ $('#cabang').on('change', function () {
                         }
 
                         // isi input langsung (opsional)
-                        $el.val(today.format('YYYY-MM-DD'));
+                        $el.val(today.format('dd-mm-yyyy'));
                     }
 
                     $('#docno').val(
@@ -1968,6 +2269,253 @@ $("#fjurnal").on("change", function () {
 });
 
 
+
+let tableLaporanJurnalNDK = null;
+
+$('#btnLaporanJurnal').on('click', function () {
+
+    let docno = $.trim($('#docno').val());
+
+    if (docno === '') {
+
+        Swal.fire({
+            icon: 'warning',
+            title: 'NDK belum dipilih',
+            text: 'Silahkan pilih atau buka transaksi NDK terlebih dahulu'
+        });
+
+        return;
+    }
+
+
+    $('#modalLaporanJurnalNDK').modal('show');
+
+
+    if ($.fn.DataTable.isDataTable('#tableLaporanJurnalNDK')) {
+
+        $('#tableLaporanJurnalNDK')
+            .DataTable()
+            .destroy();
+    }
+
+
+    $('#tableLaporanJurnalNDK tbody').html(`
+        <tr>
+            <td colspan="8" class="text-center">
+                <i class="fa fa-spinner fa-spin"></i>
+                Loading...
+            </td>
+        </tr>
+    `);
+
+
+    $.ajax({
+
+        url: HOST_URL +
+            'arap/transaksi/laporan_jurnal_transaksi_ndk',
+
+        type: 'POST',
+
+        dataType: 'json',
+
+        data: {
+            docno: docno
+        },
+
+        success: function (response) {
+
+            if (!response.status) {
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: response.messages
+                });
+
+                return;
+            }
+
+
+            tableLaporanJurnalNDK =
+                $('#tableLaporanJurnalNDK').DataTable({
+
+                    data: response.data,
+
+                    destroy: true,
+
+                    paging: false,
+
+                    searching: false,
+
+                    ordering: false,
+
+                    info: false,
+
+                    autoWidth: false,
+
+                    columns: [
+
+                        {
+                            data: null,
+
+                            render: function (
+                                data,
+                                type,
+                                row,
+                                meta
+                            ) {
+
+                                if (row.urutan == 1) {
+                                    return '';
+                                }
+
+                                return meta.row + 1;
+                            }
+                        },
+
+                        {
+                            data: 'trxdate',
+
+                            render: function (data) {
+
+                                return data || '';
+                            }
+                        },
+
+                        {
+                            data: 'docno',
+
+                            render: function (data) {
+
+                                return data || '';
+                            }
+                        },
+
+                        {
+                            data: 'nmsupplier',
+
+                            render: function (
+                                data,
+                                type,
+                                row
+                            ) {
+
+                                if (row.urutan == 1) {
+                                    return '';
+                                }
+
+                                return data || '';
+                            }
+                        },
+
+                        {
+                            data: 'idcoa',
+
+                            render: function (
+                                data,
+                                type,
+                                row
+                            ) {
+
+                                if (row.urutan == 1) {
+                                    return '';
+                                }
+
+                                return data || '';
+                            }
+                        },
+
+                        {
+                            data: 'nmcoa',
+
+                            render: function (
+                                data,
+                                type,
+                                row
+                            ) {
+
+                                if (row.urutan == 1) {
+
+                                    return `
+                                    <b style="font-size:16px">
+                                        TOTAL
+                                    </b>
+                                `;
+                                }
+
+                                return data || '';
+                            }
+                        },
+
+                        {
+                            data: 'debet',
+
+                            className: 'text-right',
+
+                            render: function (data) {
+
+                                return formatNumber(
+                                    data || 0
+                                );
+                            }
+                        },
+
+                        {
+                            data: 'kredit',
+
+                            className: 'text-right',
+
+                            render: function (data) {
+
+                                return formatNumber(
+                                    data || 0
+                                );
+                            }
+                        }
+
+                    ],
+
+                    createdRow: function (
+                        row,
+                        data
+                    ) {
+
+                        if (data.urutan == 1) {
+                            $(row).addClass('row-total');
+                        }
+
+                    }
+
+                });
+
+        },
+
+        error: function (xhr) {
+
+            console.error(
+                xhr.responseText
+            );
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Gagal mengambil laporan jurnal NDK'
+            });
+
+        }
+
+    });
+
+});
+
+function formatNumber(value)
+{
+    return parseFloat(value || 0)
+        .toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+}
 
 $(document).ready(function() {
     // Handle form submission event

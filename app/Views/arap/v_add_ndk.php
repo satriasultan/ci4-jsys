@@ -201,8 +201,8 @@
                                                 <label for="dk">Debit/Kredit</label>
                                                 <select name="dk" id="dk" class="form-control" required>
                                                     <option value="">-- Pilih --</option>
-                                                    <option value="DEBIT">Debit</option>
-                                                    <option value="KREDIT">Kredit</option>
+                                                    <option value="D">D</option>
+                                                    <option value="K">K</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -213,10 +213,13 @@
                                                 <label for="jthtempo">Jatuh Tempo</label>
                                                 <div class="input-group">
                                                     <input type="text"
-                                                        name="jthtempo"
-                                                        id="jthtempo"
-                                                        class="form-control ratakanan jtsseparator"
-                                                        placeholder="0.00">
+                                                           name="jthtempo"
+                                                           id="jthtempo"
+                                                           class="form-control ratakanan jtsseparator"
+                                                           placeholder="0"
+                                                           maxlength="2"
+                                                           inputmode="numeric"
+                                                           pattern="[0-9]{1,2}">
                                                     <div class="input-group-append">
                                                         <span class="input-group-text">hari</span>
                                                     </div>
@@ -241,6 +244,11 @@
                                             <div class="form-group">
                                                 <label for="kdsupplier">Kepada</label>
                                                 <select name="kdsupplier" id="kdsupplier" class="form-control select2" required></select>
+
+                                                <input type="hidden"
+                                                       name="nmsupplier"
+                                                       id="nmsupplier"
+                                                      >
                                             </div>
                                         </div>
                                         <div class="col-md-12">
@@ -407,289 +415,6 @@
 
 
 
-<!-- ================= MODAL TAX DETAIL ================= -->
-<div class="modal fade" id="modalDetailLPB" tabindex="-1" role="dialog" aria-labelledby="modalDetailLPBLabel" aria-hidden="true">
-    <div class="modal-dialog modal-md" role="document">
-        <div class="modal-content">
-
-            <!-- HEADER -->
-            <div class="modal-header bg-primary">
-                <h5 class="modal-title" id="modalDetailLPBLabel">
-                    </i> Input Item Detail
-                </h5>
-                <button type="button" class="close text-white" data-bs-dismiss="modal">
-                    <span>&times;</span>
-                </button>
-            </div>
-
-            <!-- FORM -->
-            <form id="formLPBDetail">
-                <div class="modal-body">
-
-                    <!-- hidden -->
-                    <input type="hidden" name="idurut" id="idurut">
-                    <input type="hidden" name="docno" id="docno">
-                    <!-- <input type="hidden" name="status" id="status" value="P">
-                    <input type="hidden" name="chold" id="chold" value="NO"> -->
-
-                    <!-- ROW 1 -->
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="form-group">
-                                <label>PO</label>
-                                <select name="docnopo" id="docnopo"
-                                        class="form-control select2"
-                                        style="width:100%"></select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- FOOTER -->
-                <div class="modal-footer bg-light">
-                    <button type="button"
-                            class="btn btn-secondary"
-                            data-bs-dismiss="modal"
-                            onclick="$('#modalDetailLPB').modal('hide')">
-                        <i class="fa fa-times"></i> Batal
-                    </button>
-
-                    <button type="button"
-                            class="btn btn-primary"
-                            onclick="saveLPBDetail()">
-                        <i class="fa fa-save"></i> Simpan
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-
-<div class="modal fade" id="modalUpdateLPB" tabindex="-1" role="dialog" aria-labelledby="modalUpdateLPBLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document">
-        <div class="modal-content">
-
-            <!-- HEADER -->
-            <div class="modal-header bg-primary">
-                <h5 class="modal-title" id="modalUpdateLPBLabel">
-                    </i> Edit Item Detail
-                </h5>
-                <button type="button" class="close text-white" data-bs-dismiss="modal">
-                    <span>&times;</span>
-                </button>
-            </div>
-
-            <!-- FORM -->
-            <form id="formLPBUpdate">
-                <div class="modal-body">
-
-                    <!-- hidden -->
-                    <input type="hidden" name="idurut" id="idurut">
-                    <input type="hidden" name="uniqueid" id="uniqueid">
-                    <input type="hidden" name="docno" id="docno">
-                    <!-- <input type="hidden" name="status" id="status" value="P">
-                    <input type="hidden" name="chold" id="chold" value="NO"> -->
-
-                    <!-- ROW 1 -->
-                    <div class="row">
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label>PO</label>
-                                <input name="docnopomodal" id="docnopomodal"
-                                        class="form-control"
-                                        style="width:100%" readonly>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label>ID Barang</label>
-                                <input name="idbarang" id="idbarang"
-                                        class="form-control"
-                                        style="width:100%" readonly>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Nama Barang</label>
-                                <input type="text"
-                                        name="nmbarang"
-                                        id="nmbarang"
-                                        class="form-control"
-                                        placeholder="Nama Barang"
-                                        style="text-transform:uppercase" readonly>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Principal</label>
-                                <select name="idprincipal" id="idprincipal"
-                                        class="form-control select2"
-                                        style="width:100%"></select>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Gudang</label>
-                                <select name="idgudang" id="idgudang"
-                                        class="form-control select2"
-                                        style="width:100%"></select>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Spec</label>
-                                <input name="idspec" id="idspec"
-                                        class="form-control"
-                                        style="width:100%; text-transform: uppercase;">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ROW 2 -->
-                    <div class="row">
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Satuan</label>
-                                <input name="unit" id="unit"
-                                        class="form-control select2"
-                                        style="width:100%" readonly>
-                            </div>
-                        </div>
-
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Quantity</label>
-                                <input type="text"
-                                        name="qty"
-                                        id="qty"
-                                        class="form-control jtsseparator ratakanan"
-                                        placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Bonus Quantity</label>
-                                <input type="text"
-                                        name="qtybonus"
-                                        id="qtybonus"
-                                        class="form-control jtsseparator ratakanan"
-                                        placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Harga</label>
-                                <input type="text"
-                                        name="harga"
-                                        id="harga"
-                                        class="form-control jtsseparator ratakanan"
-                                        placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Multi Disc (%)</label>
-                                <input type="text"
-                                        name="multidisc"
-                                        id="multidisc"
-                                        class="form-control jtsseparator ratakanan"
-                                        placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Vol/Item</label>
-                                <input type="text"
-                                        name="volitem"
-                                        id="volitem"
-                                        class="form-control jtsseparator ratakanan"
-                                        
-                                        placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Biaya 1</label>
-                                <input type="text"
-                                        name="biaya"
-                                        id="biaya"
-                                        class="form-control jtsseparator ratakanan"
-                                        
-                                        placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Biaya 2</label>
-                                <input type="text"
-                                        name="biaya2"
-                                        id="biaya2"
-                                        class="form-control jtsseparator ratakanan"
-                                        
-                                        placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Nilai</label>
-                                <input type="text"
-                                        name="nilai"
-                                        id="nilai"
-                                        class="form-control jtsseparator ratakanan"
-                                        readonly
-                                        placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label>Keterangan PO</label>
-                                <textarea type="text"
-                                        name="descriptionpo"
-                                        rows="4"
-                                        style="text-transform: uppercase;"
-                                        id="descriptionpo"
-                                        class="form-control" readonly></textarea>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label>Keterangan PP</label>
-                                <textarea type="text"
-                                        name="descriptionpp"
-                                        rows="4"
-                                        style="text-transform: uppercase;"
-                                        id="descriptionpp"
-                                        class="form-control" readonly></textarea>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- FOOTER -->
-                <div class="modal-footer bg-light">
-                    <button type="button"
-                            class="btn btn-secondary"
-                            data-bs-dismiss="modal"
-                            onclick="$('#modalUpdateLPB').modal('hide')">
-                        <i class="fa fa-times"></i> Batal
-                    </button>
-
-                    <button type="button"
-                            class="btn btn-primary"
-                            onclick="saveLPBDetail()">
-                        <i class="fa fa-save"></i> Simpan
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-
 
 <script type="application/javascript" src="<?= base_url('assets/pagejs/arap/ndk.js') ?>"></script>
 <script type="text/javascript">
@@ -712,32 +437,36 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#docdate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
-            // jika butuh validasi bootstrapValidator:
-            // $('#formInputTransfers').bootstrapValidator('updateStatus', 'docdate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'docdate');
+            const dateStr = picker.startDate.format('DD-MM-YYYY');
+            $(this).val(dateStr);
+
+            // Update estpakai berdasarkan docdate baru
+            const prefix = $('#prefix').val() || 'JI';
+            setupEstpakai(prefix);
         });
         $('#docdate').on('cancel.daterangepicker', function(ev, picker) {
             $(this).val('');
         });
 
 
+
         $('#hpdate').daterangepicker({
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#hpdate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('DD-MM-YYYY'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'hpdate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'hpdate');
         });

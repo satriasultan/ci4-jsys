@@ -1,5 +1,11 @@
 <?php
-
+/*
+ * UNTUK PERKIRAAN COA NDK LEVEL 5
+ *
+ *
+ *
+ *
+ * */
 
 namespace App\Controllers\Arap;
 
@@ -110,7 +116,7 @@ class Arap extends BaseController
 
         }
 
-        $decoded_docno = hex2bin($docno); // Decode docno yang dikirim dalam bentuk hex
+       $decoded_docno = hex2bin($docno); // Decode docno yang dikirim dalam bentuk hex
         $param = " and coalesce(docno,'') = '$decoded_docno'";
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
@@ -229,7 +235,7 @@ class Arap extends BaseController
             
             // $row[] = $lm->kdsupplier;
             $row[] = date(
-                'd/m/Y',
+                'd-m-Y',
                 strtotime(trim($lm->docdate))
             );
             $row[] = $lm->kdsupplier;
@@ -246,7 +252,7 @@ class Arap extends BaseController
                 $date = new \DateTime(trim($lm->docdate));
                 $date->modify("+{$jthtempo} days");
 
-                $jatuhTemndk = $date->format('d/m/Y');
+                $jatuhTemndk = $date->format('d-m-Y');
 
             } else {
                 $jatuhTemndk = '';
@@ -1002,177 +1008,436 @@ class Arap extends BaseController
     }
 
 
-    function finalEntryNDK(){
+    public function finalEntryNDK()
+    {
         $nama = trim($this->session->get('nama'));
-        // $loccode = trim($this->session->get('loccode'));
-        // $param = " and coalesce(inputby,'')='$nama'";
-        $docno  = strtoupper(trim($this->request->getPost('docno')));
 
-        // $header = $this->m_arap->q_ndk_master_temp($param);
-        // $status = trim($header->getRowArray()['status']);
-        // $cek = $this->m_arap->q_ndk_dtl_temp($paramdtl);
-        // $cek2 = $this->m_arap->q_ndk_dtl_temp($paramdtl2);
+        // =========================================================
+        // AMBIL POST
+        // =========================================================
+        $docno = strtoupper(trim(
+            $this->request->getPost('docno')
+        ));
+
+        $cabang = strtoupper(trim(
+            $this->request->getPost('cabang')
+        ));
+
+        $idtax = strtoupper(trim(
+            $this->request->getPost('idtax')
+        ));
+
+        $nmsupplier= strtoupper(trim(
+            $this->request->getPost('nmsupplier')
+        ));
+
+        $isinclusive = $this->request->getPost('isinclusive')
+            ? 'YES'
+            : 'NO';
 
 
-        $builder = $this->db->table('sc_tmp.ndk');
-
-        //INSERT TRX ERROR
-        $builder_trxerror = $this->db->table('sc_mst.trxerror');
-        $builder_trxerror->where('userid', $nama);
-        $builder_trxerror->where('modul', 'I.L.A.1');
-        $builder_trxerror->delete();
+        // =========================================================
+        // BUILDER
+        // =========================================================
+        $builderHeader = $this->db->table('sc_tmp.ndk');
+        $builderTrxError = $this->db->table('sc_mst.trxerror');
 
 
-        // if (($status==='E' and $cek->getNumRows() > 0) or ($cek2->getNumRows() <= '0'))
-        if (empty($docno))
-        {
-            $infotrxerror = array(
-                'userid' => $nama,
-                'errorcode' => 3,
-                'nomorakhir1' => $cek->getNumRows(),
-                'nomorakhir2' => $cek2->getNumRows(),
-                'modul' => 'I.L.A.1',
+        // =========================================================
+        // HAPUS ERROR SEBELUMNYA
+        // =========================================================
+        $builderTrxError
+            ->where('userid', $nama)
+            ->where('modul', 'I.L.A.1')
+            ->delete();
+
+
+        // =========================================================
+        // VALIDASI DOCNO
+        // =========================================================
+        if ($docno === '') {
+
+            $builderTrxError->insert([
+                'userid'      => $nama,
+                'errorcode'   => 3,
+                'nomorakhir1' => 0,
+                'nomorakhir2' => 0,
+                'modul'       => 'I.L.A.1',
+            ]);
+
+            return redirect()->to(
+                base_url('/arap/transaksi/addNDK')
             );
-            $builder_trxerror->insert($infotrxerror);
+        }
 
-            return redirect()->to(base_url('/arap/transaksi/addNDK'));
-        } else {
-            $db = $this->db;
-            $db->transStart();
-            $builderHeader = $db->table('sc_tmp.ndk');
 
-            $cekData = $builderHeader
-                ->where('docno', $docno)
-                ->where('inputby', $nama)
-                ->get()
-                ->getRowArray();
+        // =========================================================
+        // AMBIL NILAI
+        // =========================================================
+        $kurs = trim(
+            $this->request->getPost('kurs')
+        );
 
-            $isinclusive = $this->request->getPost('isinclusive') ? 'YES' : 'NO';
+        $dpp = trim(
+            $this->request->getPost('dpp')
+        );
 
-            $kurs = trim($this->request->getPost('kurs'));
-            $kurs_clean = 0;
-            if (!empty($kurs)) {
-                $kurs_clean = str_replace(',', '', $kurs);
-                // $kurs_clean = str_replace('.', '.', $kurs_clean);
-                // $kurs_clean = floatval($kurs_clean);
+        $total = trim(
+            $this->request->getPost('total')
+        );
+
+
+        // =========================================================
+        // NORMALISASI ANGKA
+        // =========================================================
+        $kursClean = (float) str_replace(
+            ',',
+            '',
+            $kurs ?: '0'
+        );
+
+        $dppClean = (float) str_replace(
+            ',',
+            '',
+            $dpp ?: '0'
+        );
+
+        $totalClean = (float) str_replace(
+            ',',
+            '',
+            $total ?: '0'
+        );
+
+
+        // =========================================================
+        // VALIDASI DPP
+        // TIDAK BOLEH 0 / NEGATIF
+        // =========================================================
+        if ($dppClean <= 0) {
+
+            $builderTrxError->insert([
+                'userid'      => $nama,
+                'errorcode'   => 3,
+                'nomorakhir1' => 0,
+                'nomorakhir2' => 0,
+                'modul'       => 'I.L.A.1',
+            ]);
+
+            return redirect()
+                ->to(base_url('/arap/transaksi/addNDK'))
+                ->with(
+                    'error',
+                    'Nilai transaksi harus lebih besar dari 0.'
+                );
+        }
+
+
+        // =========================================================
+        // KURS
+        // IDR = 1
+        // =========================================================
+        if ($kursClean <= 0) {
+            $kursClean = 1;
+        }
+
+
+        // =========================================================
+        // TOTAL
+        // =========================================================
+        if ($totalClean <= 0) {
+
+            $totalClean = $dppClean;
+        }
+
+
+        // =========================================================
+        // JUMLAH PAJAK
+        // =========================================================
+        $jumlahPajak = $totalClean - $dppClean;
+
+        if ($jumlahPajak < 0) {
+            $jumlahPajak = 0;
+        }
+
+
+        // =========================================================
+        // TANGGAL
+        // FORMAT FORM : DD-MM-YYYY
+        // =========================================================
+        $docdate = trim(
+            $this->request->getPost('docdate')
+        );
+
+        $docdateph = null;
+
+        if ($docdate !== '') {
+
+            $dateObj = \DateTime::createFromFormat(
+                'd-m-Y',
+                $docdate
+            );
+
+            if ($dateObj !== false) {
+
+                $docdateph = $dateObj->format('Y-m-d');
+
+            } else {
+
+                $builderTrxError->insert([
+                    'userid'      => $nama,
+                    'errorcode'   => 3,
+                    'nomorakhir1' => 0,
+                    'nomorakhir2' => 0,
+                    'modul'       => 'I.L.A.1',
+                ]);
+
+                return redirect()
+                    ->to(base_url('/arap/transaksi/addNDK'))
+                    ->with(
+                        'error',
+                        'Format tanggal tidak valid.'
+                    );
             }
+        }
 
-            $dpp = trim($this->request->getPost('dpp'));
-            $dpp_clean = 0;
-            if (!empty($dpp)) {
-                $dpp_clean = str_replace(',', '', $dpp);
-                // $dpp_clean = str_replace('.', '.', $dpp_clean);
-                // $dpp_clean = floatval($dpp_clean);
-            }
 
-            $total = trim($this->request->getPost('total'));
-            $total_clean = 0;
-            if (!empty($total)) {
-                $total_clean = str_replace(',', '', $total);
-                // $total_clean = str_replace('.', '.', $total_clean);
-                // $total_clean = floatval($total_clean);
-            }
+        // =========================================================
+        // DATA HEADER
+        // =========================================================
+        $data = [
 
-            $docdate   = trim($this->request->getPost('docdate'));
-            $docdateph = null;
-            if (!empty($docdate)) {
-                $docdateph = date('Y-m-d', strtotime(str_replace('-', '/', $docdate)));
-            }
+            'docno'          => $docno,
 
-            $idtax = strtoupper($this->request->getPost('idtax'));
-            $isinclusivecoba = strtoupper($this->request->getPost('isinclusive'));
-            $cabang = strtoupper($this->request->getPost('cabang'));
-            $anu = '';
-            // $hpdate   = trim($this->request->getPost('hpdate'));
-            // $hpdateph = null;
-            // if (!empty($hpdate)) {
-            //     $hpdateph = date('Y-m-d', strtotime(str_replace('-', '/', $hpdate)));
-            // }
+            'cabang'         => $cabang,
 
-            $data = [
-                'docno'     => $docno,
-                // 'docnohp'     => strtoupper($this->request->getPost('docnohp')),
-                'cabang'    => $this->request->getPost('cabang'),
-                'docdate'   => $docdateph,
-                // 'hpdate'   => $hpdateph,
-                // 'senddate'  => date('Y-m-d', strtotime(trim($this->request->getPost('senddate')))),
-                'jthtempo'  => $this->request->getPost('jthtempo'),
-                'isinclusive'   => $isinclusive,
-                'kdsalesman'=> strtoupper($this->request->getPost('kdsalesman')),
-                'kdsupplier'=> strtoupper($this->request->getPost('kdsupplier')),
-                'alamatsupplier'=> strtoupper($this->request->getPost('alamatsupplier')),
-                // 'alamatkirim'=> strtoupper($this->request->getPost('alamatkirim')),
-                'idtax'     => strtoupper($this->request->getPost('idtax')),
-                'currcode'  => strtoupper($this->request->getPost('currcode')),
-                'kurs'      => $kurs_clean,
-                'dpp'      => $dpp_clean,
-                'total'      => $total_clean,
-                'jumlahpajak'=> $total_clean - $dpp_clean,
-                'nilai'     => $total_clean * $kurs_clean,
-                'dk'     => strtoupper($this->request->getPost('dk')),
-                // 'docnohp'   => strtoupper($this->request->getPost('docnohp')),
-                'perkiraanarap' => strtoupper($this->request->getPost('perkiraanarap')),
-                'perkiraanlawan'=> strtoupper($this->request->getPost('perkiraanlawan')),
-                'keterangan'=> strtoupper($this->request->getPost('keterangan')),
-                'status'    => 'E'
-            ];
+            'docdate'        => $docdateph,
 
+            'jthtempo' => (float) str_replace(
+                ',',
+                '',
+                $this->request->getPost('jthtempo') ?: '0'
+            ),
+            'isinclusive'    => $isinclusive,
+
+            'kdsalesman'     => strtoupper(
+                trim(
+                    $this->request->getPost('kdsalesman')
+                )
+            ),
+
+            'kdsupplier'     => strtoupper(
+                trim(
+                    $this->request->getPost('kdsupplier')
+                )
+            ),
+
+            'nmsupplier'     => strtoupper(
+                trim(
+                    $this->request->getPost('nmsupplier')
+                )
+            ),
+
+            'alamatsupplier' => strtoupper(
+                trim(
+                    $this->request->getPost('alamatsupplier')
+                )
+            ),
+
+            'idtax'          => $idtax,
+
+            'currcode'       => strtoupper(
+                trim(
+                    $this->request->getPost('currcode')
+                )
+            ),
+
+            'kurs'           => $kursClean,
+
+            'dpp'            => $dppClean,
+
+            'jumlahpajak'    => $jumlahPajak,
+
+            'total'          => $totalClean,
+
+            'nilai'          => $totalClean * $kursClean,
+
+            'dk'             => strtoupper(
+                trim(
+                    $this->request->getPost('dk')
+                )
+            ),
+
+            'perkiraanarap'  => strtoupper(
+                trim(
+                    $this->request->getPost('perkiraanarap')
+                )
+            ),
+
+            'perkiraanlawan' => strtoupper(
+                trim(
+                    $this->request->getPost('perkiraanlawan')
+                )
+            ),
+
+            'keterangan'     => strtoupper(
+                trim(
+                    $this->request->getPost('keterangan')
+                )
+            ),
+
+            'status'         => 'E'
+        ];
+
+
+        // =========================================================
+        // CEK DATA HEADER
+        // =========================================================
+        $cekData = $builderHeader
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->get()
+            ->getRowArray();
+
+
+        // =========================================================
+        // MULAI TRANSACTION
+        // =========================================================
+        $this->db->transBegin();
+
+
+        try {
+
+            // =====================================================
+            // UPDATE EXISTING
+            // =====================================================
             if ($cekData) {
-                $data['updateby'] = $nama;
-                $data['updatedate'] = date('Y-m-d H:i:s');
 
-                $builderHeader
+                $data['updateby'] = $nama;
+                $data['updatedate'] = date(
+                    'Y-m-d H:i:s'
+                );
+
+
+                $updateHeader = $builderHeader
                     ->where('docno', $docno)
                     ->where('inputby', $nama)
                     ->update($data);
 
-                $db->transComplete(); 
 
-            } else {
+                if (!$updateHeader) {
+
+                    throw new \Exception(
+                        'Gagal update header NDK.'
+                    );
+                }
+
+            }
+
+            // =====================================================
+            // INSERT NEW
+            // =====================================================
+            else {
+
                 $data['inputby'] = $nama;
-                $data['inputdate'] = date('Y-m-d H:i:s');
 
-                // $builderHeader->insert($data);
-                $result = $builderHeader->insert($data);
-
-                $db->transComplete(); 
-
-                // if (!$result) {
-                //     print_r($builderHeader->error());
-                //     die();
-                // }
-            }
-            
-            
-
-            $info = array(
-                'status' => 'F'
-            );
-            $builder->where('inputby',$nama);
-            if ($builder->update($info)) {
-                $paramerror=" and userid='$nama' and modul='I.L.A.1'";
-                $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
-                $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
-
-                // $docno = trim(bin2hex(trim($dtlerror['nomorakhir1'])));
-
-                return redirect()->to(base_url('/arap/transaksi/ndk'));
-            } else {
-                $infotrxerror = array(
-                    'userid' => $nama,
-                    'errorcode' => 3,
-                    'nomorakhir1' => $cek->getNumRows(),
-                    'nomorakhir2' => $cek2->getNumRows(),
-                    'modul' => 'I.L.A.1',
+                $data['inputdate'] = date(
+                    'Y-m-d H:i:s'
                 );
-                $builder_trxerror->insert($infotrxerror);
-                return redirect()->to(base_url('/arap/transaksi/addNDK'));
+
+
+                $insertHeader = $builderHeader
+                    ->insert($data);
+
+
+                if (!$insertHeader) {
+
+                    throw new \Exception(
+                        'Gagal insert header NDK.'
+                    );
+                }
             }
 
 
+            // =====================================================
+            // FINAL STATUS
+            // =====================================================
+            $updateStatus = $builderHeader
+                ->where('inputby', $nama)
+                ->update([
+                    'status' => 'F'
+                ]);
 
+
+            if (!$updateStatus) {
+
+                throw new \Exception(
+                    'Gagal mengubah status NDK menjadi F.'
+                );
+            }
+
+
+            // =====================================================
+            // CEK TRANSACTION
+            // =====================================================
+            if ($this->db->transStatus() === false) {
+
+                throw new \Exception(
+                    'Database transaction gagal.'
+                );
+            }
+
+
+            // =====================================================
+            // COMMIT
+            // =====================================================
+            $this->db->transCommit();
+
+
+            // =====================================================
+            // SUCCESS
+            // =====================================================
+            return redirect()->to(
+                base_url('/arap/transaksi/ndk')
+            );
+
+
+        } catch (\Throwable $e) {
+
+            // =====================================================
+            // ROLLBACK
+            // =====================================================
+            $this->db->transRollback();
+
+
+            // =====================================================
+            // LOG ERROR
+            // =====================================================
+            log_message(
+                'error',
+                'FINAL ENTRY NDK ERROR: ' .
+                $e->getMessage()
+            );
+
+
+            // =====================================================
+            // SIMPAN ERROR TRANSAKSI
+            // =====================================================
+            $builderTrxError->insert([
+                'userid'      => $nama,
+                'errorcode'   => 3,
+                'nomorakhir1' => 0,
+                'nomorakhir2' => 0,
+                'modul'       => 'I.L.A.1',
+            ]);
+
+
+            return redirect()
+                ->to(base_url('/arap/transaksi/addNDK'))
+                ->with(
+                    'error',
+                    'Gagal menyimpan transaksi NDK.'
+                );
         }
-
     }
     
     public function finalEntryNDK_DP()
@@ -1238,7 +1503,7 @@ class Arap extends BaseController
 
         $docdate   = trim($this->request->getPost('docdate'));
         $senddate  = trim($this->request->getPost('senddate'));
-        $jthtempo  = trim($this->request->getPost('jthtempo'));
+        $jthtempo = $this->cleanNumber($this->request->getPost('jthtempo'));
         $kdsupplier = trim($this->request->getPost('kdsupplier'));
         $alamatsupplier = trim($this->request->getPost('alamatsupplier'));
         $alamatkirim = trim($this->request->getPost('alamatkirim'));
@@ -1257,7 +1522,7 @@ class Arap extends BaseController
         ==========================
         */
 
-        $kurs = trim($this->request->getPost('kurs'));
+        $kurs     = $this->cleanNumber($this->request->getPost('kurs'));
         $kurs_clean = !empty($kurs) ? str_replace(',', '', $kurs) : 0;
 
         /*
@@ -1790,4 +2055,35 @@ class Arap extends BaseController
         );
         echo $this->fiky_encryption->jDatatable($output);
     }
+
+    public function laporan_jurnal_transaksi_ndk()
+    {
+        $docno = trim($this->request->getPost('docno'));
+
+        if ($docno === '') {
+            return $this->response->setJSON([
+                'status'   => false,
+                'messages' => 'Doc No NDK tidak ditemukan',
+                'data'     => []
+            ]);
+        }
+
+        $params = $this->db->escape($docno);
+
+        $params = "
+        AND (
+            TRIM(jd.ref_docno) = {$params}
+            OR TRIM(jh.docno) = {$params}
+        )
+    ";
+
+        $query = $this->m_arap->q_laporan_jurnal_transaksi_ndk($params);
+
+        return $this->response->setJSON([
+            'status'   => true,
+            'messages' => 'OK',
+            'data'     => $query->getResultArray()
+        ]);
+    }
+
 }

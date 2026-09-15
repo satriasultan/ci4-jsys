@@ -284,11 +284,17 @@
 
                     <div class="float-right d-flex align-items-center gap-2">
                         <button type="button"
+                                class="btn btn-warning btn-lg action-btn"
+                                data-bs-toggle="tooltip"
+                                title="Reload data per supplier"
+                                onclick="loadPerSupplier()">
+                            <i class="fa fa-repeat"></i></button>
+                        <button type="button"
                                 class="btn btn-success btn-lg action-btn"
                                 data-bs-toggle="tooltip"
                                 title="Input Data"
                                 onclick="btnInputDetail()">
-                            <i class="fa fa-plus"></i>
+                            <i class="fa fa-plug"></i>
                         </button>
 
                         <!-- <button type="button"
@@ -558,15 +564,18 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#docdate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
-            // jika butuh validasi bootstrapValidator:
-            // $('#formInputTransfers').bootstrapValidator('updateStatus', 'docdate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'docdate');
+            const dateStr = picker.startDate.format('DD-MM-YYYY');
+            $(this).val(dateStr);
+
+            // Update estpakai berdasarkan docdate baru
+            const prefix = $('#prefix').val() || 'JI';
+            setupEstpakai(prefix);
         });
         $('#docdate').on('cancel.daterangepicker', function(ev, picker) {
             $(this).val('');
@@ -578,13 +587,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#senddate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('DD-MM-YYYY'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'senddate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'senddate');
         });

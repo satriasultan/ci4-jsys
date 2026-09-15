@@ -182,6 +182,10 @@ $routes->group('/arap/transaksi', ["namespace" => "App\Controllers\Arap"], funct
     $routes->add("get_ndk_detail(:any)", "Arap::get_ndk_detail$1");
     $routes->add("delete_ndk_detail", "Arap::delete_ndk_detail");
 
+
+    $routes->add("loadPerSupplier", "Arap::loadPerSupplier");
+    $routes->add("laporan_jurnal_transaksi_ndk", "Arap::laporan_jurnal_transaksi_ndk");
+
 });
 
 
@@ -640,7 +644,6 @@ $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], f
 
 
 
-//POST SALES
 $routes->group('/sales/postsales', ["namespace" => "App\Controllers\Sales"], function ($routes) {
 
     $routes->add('salesorder', 'PostSales::salesorder');
@@ -709,7 +712,7 @@ $routes->group('/sales/postsales', ["namespace" => "App\Controllers\Sales"], fun
 
 
 
-    
+
     $routes->add('suratjalan', 'PostSales::suratjalan');
     $routes->add('list_suratjalan', 'PostSales::list_suratjalan');
     $routes->add('list_suratjalan_apprv', 'PostSales::list_suratjalan_apprv');
@@ -1169,7 +1172,6 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
     $routes->add('globalmodule/list_so', 'Globalmodule::list_so');
     $routes->add('globalmodule/list_do', 'Globalmodule::list_do');
     $routes->add('globalmodule/list_sj', 'Globalmodule::list_sj');
-
     $routes->add('globalmodule/list_bom', 'Globalmodule::list_bom');
     $routes->add('globalmodule/list_woe', 'Globalmodule::list_woe');
     $routes->add('globalmodule/list_wo', 'Globalmodule::list_wo');

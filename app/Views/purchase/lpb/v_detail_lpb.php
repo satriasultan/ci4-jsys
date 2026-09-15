@@ -1002,6 +1002,68 @@
 
 </div>
 
+
+<!-- Modal Laporan Jurnal Transaksi NDK -->
+<div class="modal fade"
+     id="modalLaporanJurnalNDK"
+     tabindex="-1"
+     aria-labelledby="modalLaporanJurnalNDKLabel"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalLaporanJurnalNDKLabel">
+                    <i class="fa fa-book"></i>
+                    Laporan Jurnal Transaksi NDK
+                </h5>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close">
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+                <div class="table-responsive">
+                    <table id="tableLaporanJurnalNDK"
+                           class="table table-bordered table-striped table-hover w-100">
+
+                        <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Tanggal</th>
+                            <th>Doc No</th>
+                            <th>Supplier</th>
+                            <th>COA</th>
+                            <th>Nama Perkiraan</th>
+                            <th class="text-end">Debet</th>
+                            <th class="text-end">Kredit</th>
+                        </tr>
+                        </thead>
+
+                        <tbody>
+                        </tbody>
+
+                    </table>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Close
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
 <script type="application/javascript" src="<?= base_url('assets/pagejs/purchase/lpb_detail.js') ?>"></script>
 <script type="text/javascript">
     $(function() {

@@ -5007,96 +5007,117 @@ class Finance extends BaseController
 
         // =====================================================
         // AMBIL DATA PEMBELIAN
+        /*
+         *
+         * SELECT p.docno, p.nilaikonversi, p.nilaipajak, p.nilaikonversi + p.nilaipajak AS bb, p.keterangan, j.idcoa, j.kredit, 'D' as dk
+FROM (
+    SELECT TRIM(a.docno) AS docno, SUM(a.nilaikonversi) AS nilaikonversi, SUM(a.nilaipajak) AS nilaipajak, CONCAT_WS(' / ', MAX(TRIM(a.nmbarang)), MAX(TRIM(a.descriptionpo)), MAX(TRIM(b.nmsupplier)), MAX(TRIM(b.keterangan))) AS keterangan
+    FROM sc_trx.lpb_dtl a
+    LEFT JOIN sc_trx.lpb b ON TRIM(a.docno) = TRIM(b.docno)
+    WHERE TRIM(b.kdsupplier) = 'S-1234'
+    GROUP BY TRIM(a.docno)
+) p
+LEFT JOIN (
+    SELECT TRIM(ref_docno) AS docno, MAX(idcoa) AS idcoa, MAX(kredit) AS kredit
+    FROM sc_trx.jurnal_dt
+    WHERE COALESCE(kredit,0) != 0
+    AND TRIM(ref_doctype) = 'GR'
+    GROUP BY TRIM(ref_docno)
+) j ON j.docno = p.docno
+ORDER BY p.docno;
+*/
         // =====================================================
 
         $pembelian = $db->query("
-            SELECT 
-                'PEMBELIAN' AS sourcetype,
-                trim(p.docno) AS docref,
-                p.docdate,
-                p.kdsupplier AS kodepartner,
+    SELECT 
+        'PEMBELIAN' AS sourcetype,
+        TRIM(p.docno) AS docref,
+        p.docdate,
+        TRIM(p.kdsupplier) AS kodepartner,
+        (
+            COALESCE(p.total, 0) -
+            COALESCE(
                 (
-                    p.total -
-                    COALESCE(
-                        (
-                            SELECT SUM(pkbd.nilai)
-                            FROM sc_trx.pengeluarankb_dtl pkbd
-                            WHERE trim(pkbd.nobukti) = trim(p.docno)
-                            AND trim(pkbd.status) = 'F'
-                        ),
-                        0
-                    )
-                ) AS nilaitotal,
-                p.cabang,
-                p.keterangan
-            FROM sc_trx.lpb p
-            WHERE trim(p.kdsupplier) = ?
-            AND trim(coalesce(p.currcode,'')) = ?
-            AND trim(coalesce(p.status,'')) = 'F'
-            AND (
-                p.total -
-                COALESCE(
-                    (
-                        SELECT SUM(pkbd.nilai)
-                        FROM sc_trx.pengeluarankb_dtl pkbd
-                        WHERE trim(pkbd.nobukti) = trim(p.docno)
-                        AND trim(pkbd.status) = 'F'
-                    ),
-                    0
-                )
-            ) > 0
+                    SELECT SUM(COALESCE(pkbd.nilai, 0))
+                    FROM sc_trx.pengeluarankb_dtl pkbd
+                    WHERE TRIM(pkbd.nobukti) = TRIM(p.docno)
+                    AND TRIM(COALESCE(pkbd.status, '')) = 'F'
+                ),
+                0
+            )
+        ) AS nilaitotal,
+        TRIM(p.cabang) AS cabang,
+        p.keterangan
+    FROM sc_trx.lpb p
+    WHERE TRIM(COALESCE(p.kdsupplier, '')) = TRIM(?)
+    AND TRIM(COALESCE(p.currcode, '')) = TRIM(?)
+    AND TRIM(COALESCE(p.status, '')) = 'F'
+    AND (
+        COALESCE(p.total, 0) -
+        COALESCE(
+            (
+                SELECT SUM(COALESCE(pkbd.nilai, 0))
+                FROM sc_trx.pengeluarankb_dtl pkbd
+                WHERE TRIM(pkbd.nobukti) = TRIM(p.docno)
+                AND TRIM(COALESCE(pkbd.status, '')) = 'F'
+            ),
+            0
+        )
+    ) > 0
 
-            UNION ALL
+    UNION ALL
 
-            SELECT 
-                'NDK' AS sourcetype,
-                trim(n.docno) AS docref,
-                n.docdate,
-                n.kdsupplier AS kodepartner,
+    SELECT 
+        'NDK' AS sourcetype,
+        TRIM(n.docno) AS docref,
+        n.docdate,
+        TRIM(n.kdsupplier) AS kodepartner,
+        (
+            COALESCE(n.total, 0) -
+            COALESCE(
                 (
-                    n.total -
-                    COALESCE(
-                        (
-                            SELECT SUM(pkbd.nilai)
-                            FROM sc_trx.pengeluarankb_dtl pkbd
-                            WHERE trim(pkbd.nobukti) = trim(n.docno)
-                            AND trim(pkbd.status) = 'F'
-                        ),
-                        0
-                    )
-                ) AS nilaitotal,
-                n.cabang,
-                n.keterangan
-            FROM sc_trx.ndk n
-            WHERE trim(n.kdsupplier) = ?
-            AND trim(coalesce(n.currcode,'')) = ?
-            AND trim(coalesce(n.status,'')) = 'F'
-            AND (
-                n.total -
-                COALESCE(
-                    (
-                        SELECT SUM(pkbd.nilai)
-                        FROM sc_trx.pengeluarankb_dtl pkbd
-                        WHERE trim(pkbd.nobukti) = trim(n.docno)
-                        AND trim(pkbd.status) = 'F'
-                    ),
-                    0
-                )
-            ) > 0
+                    SELECT SUM(COALESCE(pkbd.nilai, 0))
+                    FROM sc_trx.pengeluarankb_dtl pkbd
+                    WHERE TRIM(pkbd.nobukti) = TRIM(n.docno)
+                    AND TRIM(COALESCE(pkbd.status, '')) = 'F'
+                ),
+                0
+            )
+        ) AS nilaitotal,
+        TRIM(n.cabang) AS cabang,
+        n.keterangan
+    FROM sc_trx.ndk n
+    WHERE TRIM(COALESCE(n.kdsupplier, '')) = TRIM(?)
+    AND TRIM(COALESCE(n.currcode, '')) = TRIM(?)
+    AND TRIM(COALESCE(n.status, '')) = 'F'
+    AND (
+        COALESCE(n.total, 0) -
+        COALESCE(
+            (
+                SELECT SUM(COALESCE(pkbd.nilai, 0))
+                FROM sc_trx.pengeluarankb_dtl pkbd
+                WHERE TRIM(pkbd.nobukti) = TRIM(n.docno)
+                AND TRIM(COALESCE(pkbd.status, '')) = 'F'
+            ),
+            0
+        )
+    ) > 0
 
-            ORDER BY docdate ASC
+    ORDER BY docdate ASC, docref ASC
 
-        ", [
+", [
 
-            // PEMBELIAN
+            // =====================================================
+            // PEMBELIAN / LPB
+            // =====================================================
+
             $kdsupplier,
             $currcode,
 
-            // // UMT
-            // $kdsupplier,
-            // $currcode,
-
+            // =====================================================
             // NDK
+            // =====================================================
+
             $kdsupplier,
             $currcode
 
@@ -6064,5 +6085,27 @@ class Finance extends BaseController
                 'master' => $datamst->getResult(),
                 'detail' => $detailRows,
             ), JSON_PRETTY_PRINT);
+    }
+
+
+
+    public function loadPerSupplier()
+    {
+        $kdsupplier = $this->request->getGet('kdsupplier');
+
+        if (empty($kdsupplier)) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Kode supplier tidak boleh kosong'
+            ]);
+        }
+
+        // proses/query berdasarkan supplier
+        $data = $this->m_arap->loadPerSupplier($kdsupplier);
+
+        return $this->response->setJSON([
+            'status' => true,
+            'data'   => $data
+        ]);
     }
 }

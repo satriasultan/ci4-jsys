@@ -1,12 +1,3 @@
-/*
- * Created by PhpStorm.
- *  * User: FIKY-PC
- *  * Date: 12/2/20, 2:32 PM
- *  * Last Modified: 12/2/20, 2:32 PM.
- *  Developed By: Fiky Ashariza Powered By PhpStorm
- *  Copyright© 2020 .All rights reserved.
- *
- */
 
 
 var save_method; //for save method string
@@ -179,7 +170,7 @@ function documentReadable(){
                 // $("#phone").val(data.phone).prop('readonly', true);
             });
             skipRoleChange = true;
-            $('[name="docdate"]').val(json.dataTables.items[0].docdate).prop('readonly',true);
+            $('[name="docdate"]').val(moment(json.dataTables.items[0].docdate).format('DD-MM-YYYY')).prop('readonly',true);
             // $('[name="senddate"]').val(json.dataTables.items[0].senddate);
             // setJtsValue('[name="jthtempo"]', convertToDbNumber(json.dataTables.items[0].jthtempo));
             // setJtsValue('[name="kurs"]', convertToDbNumber(json.dataTables.items[0].kurs));
@@ -1096,6 +1087,7 @@ function savePengeluaranKBDetail() {
     });
 }
 
+
 function btnInputDetail() {
 
     // let cabang = $('#cabang').val();
@@ -1196,50 +1188,7 @@ $("#kdsupplier").select2({
             return;
         }
 
-        $.ajax({
-            url: HOST_URL + 'ka/finance/getPembelianSup',
-            type: 'POST',
-            dataType: 'json',
-            data: {
-                docno      : $('#docno').val(),
-                cabang     : $('#cabang').val(),
-                docdate    : $('#docdate').val(),
-                currcode   : $('#currcode').val(),
-                kurs       : kursConvert,
-                kdsupplier : selectedData.kdsupplier,
-                alamatsupplier : $("#alamatsupplier").val()
-            },
-            success: function(res){
 
-                if(res.success){
-                    Swal.fire({
-                        icon: 'success',
-                        text: 'Data jurnal dari supplier berhasil dimuat',
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
-
-                    if (res.reload === true) {
-                        setTimeout(function () {
-                            window.location.reload();
-                        }, 1000);
-                        return;
-                    }
-                    documentReadable()
-                    reload_table_pengeluarankb_dtl();
-
-
-                }else{
-
-                    Swal.fire({
-                        icon: 'error',
-                        text: res.message
-                    });
-
-                }
-
-            }
-        });
         // $("#phone").val(selectedData.phone || '').prop('disabled', true);
     }
 });
@@ -1267,86 +1216,462 @@ let currentKodeSuffix = '';
 let skipRoleChange = false;
 
 $('#cabang').on('change', function () {
-    if (skipRoleChange) return; // skip
+
+    if (skipRoleChange) return;
 
     let idbranch = $(this).val();
 
-    if(idbranch){
+    if (idbranch) {
+
         $.ajax({
-                url: HOST_URL + '/ka/finance/getBranchInfoPengeluaranKB',
-                method: 'GET',
-                data: { idbranch: idbranch },
-                dataType: 'json',
-                success: function (res) {
-                    if (!res.success) {
-                        Swal.fire('Error', res.message, 'warning');
-                        return;
-                    }
 
-                    currentKodeSuffix = res.kode_suffix; // PT / PA / PB
-                    $('#infix').val(res.infix);          // YYMM
-                    $('#prefix').val('BKK');             // default
-                    $('#sufix').val(currentKodeSuffix + '0001');
-                    defaultInitialPP = currentKodeSuffix
-                    var infix = (res.infix || '').toString();
-                    if (infix.length === 4) {
-                        $('#docdate').prop('disabled', false);
-                        var yy = infix.substring(0,2);
-                        var mm = infix.substring(2,4);
-                        var year = 2000 + parseInt(yy,10);
-                        var month = parseInt(mm,10) - 1; // moment month index
+            url: HOST_URL + '/ka/finance/getBranchInfoPengeluaranKB',
 
-                        var today = moment();
+            method: 'GET',
 
-                        var startDate = moment([year, month, 1]);
-                        var endDate = moment(startDate).endOf('month');
+            data: {
+                idbranch: idbranch
+            },
 
-                        var $el = $('#docdate');
-                        var drp = $el.data('daterangepicker');
+            dataType: 'json',
 
-                        if (drp) {
-                            // update limits & selected date
-                            drp.minDate = startDate;
-                            drp.maxDate = endDate;
-                            drp.setStartDate(startDate);
-                            drp.setEndDate(startDate);
-                        } else {
-                            // fallback: (re)initialize with limits
-                            $el.daterangepicker({
-                                autoUpdateInput: false,
-                                singleDatePicker: true,
-                                showDropdowns: true,
-                                startDate: today,
-                                minDate: startDate,
-                                maxDate: endDate,
-                                locale: { format: 'YYYY-MM-DD' },
-                                cancelLabel: 'Clear'
-                            });
-                            // rebind handlers jika perlu (apply/cancel)
-                            $el.on('apply.daterangepicker', function(ev, picker) {
-                                $(this).val(picker.startDate.format('YYYY-MM-DD'));
-                            });
-                            $el.on('cancel.daterangepicker', function(ev, picker) {
-                                $(this).val('');
-                            });
+            success: function (res) {
+
+                if (!res.success) {
+
+                    Swal.fire(
+                        'Error',
+                        res.message,
+                        'warning'
+                    );
+
+                    return;
+                }
+
+
+                // =====================================================
+                // DATA BRANCH
+                // =====================================================
+
+                currentKodeSuffix = res.kode_suffix;
+
+                $('#infix').val(res.infix);
+
+                // PREFIX KHUSUS PENGELUARAN KB
+                $('#prefix').val('BKK');
+
+                $('#sufix').val(
+                    currentKodeSuffix + '0001'
+                );
+
+                defaultInitialPP = currentKodeSuffix;
+
+
+                // =====================================================
+                // FORCE DEFAULT CURRENCY IDR
+                // =====================================================
+
+                var defaultCurrcode = 'IDR';
+
+
+                $.ajax({
+
+                    type: 'GET',
+
+                    url:
+                        HOST_URL +
+                        'api/globalmodule/list_currency?var=' +
+                        encodeURIComponent(defaultCurrcode),
+
+                    dataType: 'json',
+
+                    success: function (datax) {
+
+                        // =============================================
+                        // VALIDASI CURRENCY
+                        // =============================================
+
+                        if (
+                            !datax ||
+                            !datax.items ||
+                            datax.items.length === 0
+                        ) {
+
+                            console.warn(
+                                'Currency IDR tidak ditemukan'
+                            );
+
+                            return;
                         }
 
-                        // isi input langsung (opsional)
-                        $el.val(today.format('YYYY-MM-DD'));
+
+                        // =============================================
+                        // DATA CURRENCY
+                        // =============================================
+
+                        var currencyData = datax.items[0];
+
+
+                        // FORCE KURS IDR = 1
+
+                        currencyData.kurs = 1;
+
+
+                        // =============================================
+                        // HAPUS CURRENCY SEBELUMNYA
+                        // =============================================
+
+                        $('[name="currcode"]')
+                            .empty();
+
+
+                        // =============================================
+                        // CREATE OPTION
+                        // =============================================
+
+                        var option = new Option(
+
+                            currencyData.currname,
+
+                            currencyData.currcode,
+
+                            true,
+
+                            true
+
+                        );
+
+
+                        // Simpan data lengkap currency
+
+                        $(option).data(
+                            'currency-data',
+                            currencyData
+                        );
+
+
+                        // =============================================
+                        // SELECT IDR
+                        // =============================================
+
+                        $('[name="currcode"]')
+                            .append(option)
+                            .val(currencyData.currcode)
+                            .trigger('change');
+
+
+                        // =============================================
+                        // FORCE KURS = 1
+                        // =============================================
+
+                        setJtsValue(
+                            '[name="kurs"]',
+                            1
+                        );
+
+
+                        // =============================================
+                        // KURS READONLY
+                        // =============================================
+
+                        $('[name="kurs"]')
+                            .prop('readonly', true);
+
+                    },
+
+                    error: function (xhr) {
+
+                        console.error(
+                            'Gagal load Currency IDR:',
+                            xhr.responseText
+                        );
+
                     }
 
-                    $('#docno').val(
-                        'BKK/' + res.infix + '/' + currentKodeSuffix + '0001'
-                    );
-                    $('#kdsupplier').prop('disabled', false);
+                });
 
-                    // reset supplier lama
-                    $('#kdsupplier').val(null).trigger('change');
-                    $('#alamatsupplier').val('');
+
+                // =====================================================
+                // KONFIGURASI UMUM
+                // =====================================================
+
+                var config = null;
+
+
+                if (
+                    Array.isArray(res.konfigurasi_umum) &&
+                    res.konfigurasi_umum.length > 0
+                ) {
+
+                    config = res.konfigurasi_umum[0];
+
                 }
-            });
+
+
+                // =====================================================
+                // AUTO SELECT TAX
+                // =====================================================
+
+                if (config) {
+
+                    var idtax = $.trim(
+                        config.idtax || ''
+                    );
+
+
+                    if (idtax !== '') {
+
+                        loadDefaultTax(idtax);
+
+                    }
+
+                }
+
+
+                // =====================================================
+                // DATE RANGE BERDASARKAN INFIX
+                // =====================================================
+
+                var infix =
+                    (res.infix || '').toString();
+
+
+                if (infix.length === 4) {
+
+                    $('#docdate').prop(
+                        'disabled',
+                        false
+                    );
+
+
+                    var yy =
+                        infix.substring(0, 2);
+
+
+                    var mm =
+                        infix.substring(2, 4);
+
+
+                    var year =
+                        2000 + parseInt(yy, 10);
+
+
+                    var month =
+                        parseInt(mm, 10) - 1;
+
+
+                    var today =
+                        moment();
+
+
+                    var startDate =
+                        moment([
+                            year,
+                            month,
+                            1
+                        ]);
+
+
+                    var endDate =
+                        moment(startDate)
+                            .endOf('month');
+
+
+                    var $el =
+                        $('#docdate');
+
+
+                    var drp =
+                        $el.data(
+                            'daterangepicker'
+                        );
+
+
+                    // =============================================
+                    // UPDATE DATERANGEPICKER
+                    // =============================================
+
+                    if (drp) {
+
+                        drp.minDate =
+                            startDate;
+
+                        drp.maxDate =
+                            endDate;
+
+                        drp.setStartDate(
+                            startDate
+                        );
+
+                        drp.setEndDate(
+                            startDate
+                        );
+
+                    } else {
+
+                        // =============================================
+                        // FALLBACK INITIALIZE
+                        // =============================================
+
+                        $el.daterangepicker({
+
+                            autoUpdateInput: false,
+
+                            singleDatePicker: true,
+
+                            showDropdowns: true,
+
+                            startDate:
+                            startDate,
+
+                            minDate:
+                            startDate,
+
+                            maxDate:
+                            endDate,
+
+                            locale: {
+                                format: 'DD-MM-YYYY'
+                            },
+
+                            cancelLabel: 'Clear'
+
+                        });
+
+
+                        // =============================================
+                        // APPLY DATE
+                        // =============================================
+
+                        $el.off(
+                            'apply.daterangepicker'
+                        );
+
+                        $el.on(
+                            'apply.daterangepicker',
+                            function (ev, picker) {
+
+                                $(this).val(
+                                    picker.startDate
+                                        .format('DD-MM-YYYY')
+                                );
+
+                            }
+                        );
+
+
+                        // =============================================
+                        // CANCEL DATE
+                        // =============================================
+
+                        $el.off(
+                            'cancel.daterangepicker'
+                        );
+
+                        $el.on(
+                            'cancel.daterangepicker',
+                            function () {
+
+                                $(this).val('');
+
+                            }
+                        );
+
+                    }
+
+
+                    // =============================================
+                    // SET TANGGAL DEFAULT
+                    // =============================================
+
+                    if (
+                        today.isSameOrAfter(startDate) &&
+                        today.isSameOrBefore(endDate)
+                    ) {
+
+                        $el.val(
+                            today.format(
+                                'DD-MM-YYYY'
+                            )
+                        );
+
+                    } else {
+
+                        $el.val(
+                            startDate.format(
+                                'DD-MM-YYYY'
+                            )
+                        );
+
+                    }
+
+                }
+
+
+                // =====================================================
+                // GENERATE DOCNO
+                // =====================================================
+
+                $('#docno').val(
+
+                    'BKK/' +
+                    res.infix +
+                    '/' +
+                    currentKodeSuffix +
+                    '0001'
+
+                );
+
+
+                // =====================================================
+                // ENABLE SUPPLIER
+                // =====================================================
+
+                $('#kdsupplier')
+                    .prop('disabled', false);
+
+
+                // =====================================================
+                // RESET SUPPLIER
+                // =====================================================
+
+                $('#kdsupplier')
+                    .val(null)
+                    .trigger('change');
+
+
+                // =====================================================
+                // RESET ALAMAT SUPPLIER
+                // =====================================================
+
+                $('#alamatsupplier').val('');
+
+
+            },
+
+
+            // =========================================================
+            // AJAX ERROR
+            // =========================================================
+
+            error: function (xhr) {
+
+                console.error(
+                    xhr.responseText
+                );
+
+                Swal.fire(
+                    'Error',
+                    'Gagal mengambil informasi cabang',
+                    'error'
+                );
+
+            }
+
+        });
+
     }
-    
+
 });
 
 
@@ -1531,6 +1856,63 @@ $("#fjurnal").on("change", function () {
 });
 
 
+function loadPerSupplier() {
+/*TEST*/
+    console.log('=== loadPerSupplier DIJALANKAN ===');
+
+    let kdsupplier = $('#kdsupplier').val();
+
+    console.log('kdsupplier =', kdsupplier);
+
+    if (!kdsupplier) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Supplier',
+            text: 'Supplier belum dipilih.'
+        });
+        return;
+    }
+
+    $.ajax({
+        url: HOST_URL + 'arap/transaksi/loadPerSupplier',
+        type: 'GET',
+        dataType: 'json',
+        data: {
+           // kdsupplier: kdsupplier,
+            docno      : $('#docno').val(),
+            cabang     : $('#cabang').val(),
+            docdate    : $('#docdate').val(),
+            currcode   : $('#currcode').val(),
+            kurs       : kursConvert,
+            kdsupplier : selectedData.kdsupplier,
+            alamatsupplier : $("#alamatsupplier").val()
+        },
+
+        beforeSend: function () {
+            console.log('=== AJAX DIKIRIM ===');
+            console.log('URL:', HOST_URL + 'arap/transaksi/loadPerSupplier');
+            console.log('PARAMETER:', {
+                kdsupplier: kdsupplier
+            });
+        },
+
+        success: function (response) {
+
+            console.log('=== AJAX SUCCESS ===');
+            console.log(response);
+
+        },
+
+        error: function (xhr, status, error) {
+
+            console.log('=== AJAX ERROR ===');
+            console.log('status:', status);
+            console.log('error:', error);
+            console.log('response:', xhr.responseText);
+
+        }
+    });
+}
 
 $(document).ready(function() {
     // Handle form submission event
@@ -1576,6 +1958,7 @@ $(document).ready(function() {
         documentReadable();
     // }
     $("#loadMe").modal("hide");
+
 
 
 

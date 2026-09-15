@@ -2098,6 +2098,7 @@ class Globalmodule extends BaseController
         //$perpage = $perpage < 1 ? $count : $perpage;
         $page = $this->request->getPost('_page_');
         $pg = trim($this->request->getPost('_paramglobal_'));
+        $paramglobal_bantuan = trim($this->request->getPost('_parameterx_'));
         $page = intval($page);
         $limit = $perpage * $page;
 
@@ -2120,7 +2121,14 @@ class Globalmodule extends BaseController
             $paramglobal2= "";
         }
 
-        $param=" and (idcoa like '%$search%' $paramglobal $paramglobal1 $paramglobal2 ) or (upper(nmcoa) like '%$search%' $paramglobal $paramglobal1 $paramglobal2 ) order by level asc";
+        if (!empty($paramglobal_bantuan) or $paramglobal_bantuan!=='') {
+            $paramglobal_b= " $paramglobal_bantuan";
+        } else {
+            $paramglobal_b= "";
+        }
+
+
+        $param=" and (idcoa like '%$search%' $paramglobal $paramglobal1 $paramglobal2 $paramglobal_b ) or (upper(nmcoa) like '%$search%' $paramglobal $paramglobal1 $paramglobal2 $paramglobal_b ) order by level asc";
         //$param="";
         // $getResult = $this->m_skperingatan->q_mst_karyawan()->getResult();
         $getResult = $this->m_global->q_coa($param)->getResult();
@@ -2139,7 +2147,7 @@ class Globalmodule extends BaseController
 
 
 
-        function list_currency(){
+    function list_currency(){
         $branch = $this->session->get('branch');
         $idbu = $this->session->get('idbu');
         $param_c="";
@@ -2977,8 +2985,6 @@ class Globalmodule extends BaseController
         );
 
     }
-
-
     
     function list_bom(){
         $branch = $this->session->get('branch');

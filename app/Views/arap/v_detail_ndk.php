@@ -1,5 +1,5 @@
 <style>
-    
+
     .section-block {
         background-color: #e8e8e8;
         border-left: 4px solid #007bff;
@@ -8,10 +8,10 @@
         border-radius: 6px;
         margin-bottom: 30px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-                    box-shadow 0.4s ease, 
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                    box-shadow 0.4s ease,
                     border-color 0.4s ease;
-        
+
         transform: scale(1);
         will-change: transform;
     }
@@ -121,7 +121,7 @@
                                             </div>
                                         </div>
 
-                                        
+
                                     </div>
 
                                     <div class="row">
@@ -153,12 +153,12 @@
                                                         id="sufix"
                                                         class="form-control ms-1"
                                                         readonly>
-                                                        
+
                                                 </div>
                                             </div>
                                         </div>
                                         <input type="hidden" name="docno" class="form-control col-sm-12" id="docno" maxlength="20"     value="<?= isset($dtldata['docno']) ? esc(trim($dtldata['docno'])) : '' ?>" style="text-transform: uppercase;" readonly>
-                                        
+
                                     </div>
                                     <div class="row">
                                         <div class="col-md-6">
@@ -173,7 +173,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                
+
 
                             </div>
                             <hr>
@@ -201,8 +201,8 @@
                                                 <label for="dk">Debit/Kredit</label>
                                                 <select name="dk" id="dk" class="form-control" required>
                                                     <option value="">-- Pilih --</option>
-                                                    <option value="DEBIT">Debit</option>
-                                                    <option value="KREDIT">Kredit</option>
+                                                    <option value="D">D</option>
+                                                    <option value="K">K</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -320,9 +320,9 @@
                                             <div class="form-group">
                                                 <!-- Radio untuk Interngroup -->
                                                 <div class="form-check">
-                                                    <input class="form-check-input" 
-                                                        type="checkbox" 
-                                                        name="isinclusive" 
+                                                    <input class="form-check-input"
+                                                        type="checkbox"
+                                                        name="isinclusive"
                                                         id="isinclusive"
                                                         <?= isset($data['isinclusive']) && $data['isinclusive'] === 'YES' ? 'checked' : '' ?>>
                                                     <label class="form-check-label" for="isinclusive">
@@ -378,13 +378,23 @@
 
             <div class="card mt-3 card-primary">
                 <div class="card-footer bg-light">
+
                     <a href="<?= base_url('arap/transaksi/ndk') ?>"
-                        class="btn btn-default btn-lg">
+                       class="btn btn-default btn-lg">
                         <i class="fa fa-arrow-left mr-2"></i>
                         Kembali
                     </a>
+
+                    <?php if (!empty($dtldata['docno'])): ?>
+                        <button type="button"
+                                id="btnLaporanJurnal"
+                                class="btn btn-primary">
+                            <i class="fa fa-book"></i> Laporan Jurnal Transaksi
+                        </button>
+                    <?php endif; ?>
+
                 </div>
-                
+
             </div>
         </div>
     </form>
@@ -399,290 +409,80 @@
 
 
 
+<!-- ================= MODAL LAPORAN JURNAL NDK ================= -->
+<div class="modal fade"
+     id="modalLaporanJurnalNDK"
+     tabindex="-1"
+     role="dialog"
+     aria-labelledby="modalLaporanJurnalNDKLabel"
+     aria-hidden="true">
 
-<!-- ================= MODAL TAX DETAIL ================= -->
-<div class="modal fade" id="modalDetailLPB" tabindex="-1" role="dialog" aria-labelledby="modalDetailLPBLabel" aria-hidden="true">
-    <div class="modal-dialog modal-md" role="document">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable"
+         role="document">
+
         <div class="modal-content">
 
             <!-- HEADER -->
             <div class="modal-header bg-primary">
-                <h5 class="modal-title" id="modalDetailLPBLabel">
-                    </i> Input Item Detail
+                <h5 class="modal-title" id="modalLaporanJurnalNDKLabel">
+                    <i class="fa fa-book"></i>
+                    Laporan Jurnal Transaksi NDK
                 </h5>
-                <button type="button" class="close text-white" data-bs-dismiss="modal">
+
+                <button type="button"
+                        class="close text-white"
+                        data-bs-dismiss="modal"
+                        aria-label="Close">
                     <span>&times;</span>
                 </button>
             </div>
 
-            <!-- FORM -->
-            <form id="formLPBDetail">
-                <div class="modal-body">
+            <!-- BODY -->
+            <div class="modal-body">
 
-                    <!-- hidden -->
-                    <input type="hidden" name="idurut" id="idurut">
-                    <input type="hidden" name="docno" id="docno">
-                    <!-- <input type="hidden" name="status" id="status" value="P">
-                    <input type="hidden" name="chold" id="chold" value="NO"> -->
+                <div class="table-responsive">
 
-                    <!-- ROW 1 -->
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="form-group">
-                                <label>PO</label>
-                                <select name="docnopo" id="docnopo"
-                                        class="form-control select2"
-                                        style="width:100%"></select>
-                            </div>
-                        </div>
-                    </div>
+                    <table id="tableLaporanJurnalNDK"
+                           class="table table-bordered table-striped table-hover w-100">
+
+                        <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Tanggal</th>
+                            <th>Doc No</th>
+                            <th>Supplier</th>
+                            <th>COA</th>
+                            <th>Nama Perkiraan</th>
+                            <th class="text-right">Debet</th>
+                            <th class="text-right">Kredit</th>
+                        </tr>
+                        </thead>
+
+                        <tbody>
+                        </tbody>
+
+                    </table>
+
                 </div>
 
-                <!-- FOOTER -->
-                <div class="modal-footer bg-light">
-                    <button type="button"
-                            class="btn btn-secondary"
-                            data-bs-dismiss="modal"
-                            onclick="$('#modalDetailLPB').modal('hide')">
-                        <i class="fa fa-times"></i> Batal
-                    </button>
-
-                    <button type="button"
-                            class="btn btn-primary"
-                            onclick="saveLPBDetail()">
-                        <i class="fa fa-save"></i> Simpan
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-
-<div class="modal fade" id="modalUpdateLPB" tabindex="-1" role="dialog" aria-labelledby="modalUpdateLPBLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document">
-        <div class="modal-content">
-
-            <!-- HEADER -->
-            <div class="modal-header bg-primary">
-                <h5 class="modal-title" id="modalUpdateLPBLabel">
-                    </i> Edit Item Detail
-                </h5>
-                <button type="button" class="close text-white" data-bs-dismiss="modal">
-                    <span>&times;</span>
-                </button>
             </div>
 
-            <!-- FORM -->
-            <form id="formLPBUpdate">
-                <div class="modal-body">
+            <!-- FOOTER -->
+            <div class="modal-footer bg-light">
 
-                    <!-- hidden -->
-                    <input type="hidden" name="idurut" id="idurut">
-                    <input type="hidden" name="uniqueid" id="uniqueid">
-                    <input type="hidden" name="docno" id="docno">
-                    <!-- <input type="hidden" name="status" id="status" value="P">
-                    <input type="hidden" name="chold" id="chold" value="NO"> -->
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                        onclick="$('#modalLaporanJurnalNDK').modal('hide')">
+                    <i class="fa fa-times"></i>
+                    Close
+                </button>
 
-                    <!-- ROW 1 -->
-                    <div class="row">
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label>PO</label>
-                                <input name="docnopomodal" id="docnopomodal"
-                                        class="form-control"
-                                        style="width:100%" readonly>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label>ID Barang</label>
-                                <input name="idbarang" id="idbarang"
-                                        class="form-control"
-                                        style="width:100%" readonly>
-                            </div>
-                        </div>
+            </div>
 
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Nama Barang</label>
-                                <input type="text"
-                                        name="nmbarang"
-                                        id="nmbarang"
-                                        class="form-control"
-                                        placeholder="Nama Barang"
-                                        style="text-transform:uppercase" readonly>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Principal</label>
-                                <select name="idprincipal" id="idprincipal"
-                                        class="form-control select2"
-                                        style="width:100%"></select>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Gudang</label>
-                                <select name="idgudang" id="idgudang"
-                                        class="form-control select2"
-                                        style="width:100%"></select>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Spec</label>
-                                <input name="idspec" id="idspec"
-                                        class="form-control"
-                                        style="width:100%; text-transform: uppercase;">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ROW 2 -->
-                    <div class="row">
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Satuan</label>
-                                <input name="unit" id="unit"
-                                        class="form-control select2"
-                                        style="width:100%" readonly>
-                            </div>
-                        </div>
-
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Quantity</label>
-                                <input type="text"
-                                        name="qty"
-                                        id="qty"
-                                        class="form-control jtsseparator ratakanan"
-                                        placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Bonus Quantity</label>
-                                <input type="text"
-                                        name="qtybonus"
-                                        id="qtybonus"
-                                        class="form-control jtsseparator ratakanan"
-                                        placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Harga</label>
-                                <input type="text"
-                                        name="harga"
-                                        id="harga"
-                                        class="form-control jtsseparator ratakanan"
-                                        placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Multi Disc (%)</label>
-                                <input type="text"
-                                        name="multidisc"
-                                        id="multidisc"
-                                        class="form-control jtsseparator ratakanan"
-                                        placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Vol/Item</label>
-                                <input type="text"
-                                        name="volitem"
-                                        id="volitem"
-                                        class="form-control jtsseparator ratakanan"
-                                        
-                                        placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Biaya 1</label>
-                                <input type="text"
-                                        name="biaya"
-                                        id="biaya"
-                                        class="form-control jtsseparator ratakanan"
-                                        
-                                        placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Biaya 2</label>
-                                <input type="text"
-                                        name="biaya2"
-                                        id="biaya2"
-                                        class="form-control jtsseparator ratakanan"
-                                        
-                                        placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Nilai</label>
-                                <input type="text"
-                                        name="nilai"
-                                        id="nilai"
-                                        class="form-control jtsseparator ratakanan"
-                                        readonly
-                                        placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label>Keterangan PO</label>
-                                <textarea type="text"
-                                        name="descriptionpo"
-                                        rows="4"
-                                        style="text-transform: uppercase;"
-                                        id="descriptionpo"
-                                        class="form-control" readonly></textarea>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label>Keterangan PP</label>
-                                <textarea type="text"
-                                        name="descriptionpp"
-                                        rows="4"
-                                        style="text-transform: uppercase;"
-                                        id="descriptionpp"
-                                        class="form-control" readonly></textarea>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- FOOTER -->
-                <div class="modal-footer bg-light">
-                    <button type="button"
-                            class="btn btn-secondary"
-                            data-bs-dismiss="modal"
-                            onclick="$('#modalUpdateLPB').modal('hide')">
-                        <i class="fa fa-times"></i> Batal
-                    </button>
-
-                    <button type="button"
-                            class="btn btn-primary"
-                            onclick="saveLPBDetail()">
-                        <i class="fa fa-save"></i> Simpan
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
 </div>
-
-
 
 <script type="application/javascript" src="<?= base_url('assets/pagejs/arap/ndk_detail.js') ?>"></script>
 <script type="text/javascript">
@@ -705,13 +505,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'dd-mm-yyyy' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#docdate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('dd-mm-yyyy'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'docdate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'docdate');
         });
@@ -724,13 +524,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'dd-mm-yyyy' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#hpdate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('dd-mm-yyyy'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'hpdate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'hpdate');
         });
@@ -744,13 +544,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'dd-mm-yyyy' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#senddate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('dd-mm-yyyy'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'senddate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'senddate');
         });
@@ -759,7 +559,7 @@
         });
 
 
-        
+
         $('#periodemulai').daterangepicker({
             autoUpdateInput: false,
             singleDatePicker: true,
@@ -777,7 +577,7 @@
             $(this).val('');
         });
 
-        
+
         $('#periodeakhir').daterangepicker({
             autoUpdateInput: false,
             singleDatePicker: true,
@@ -795,7 +595,7 @@
             $(this).val('');
         });
 
-        
+
 
     });
 

@@ -306,9 +306,9 @@
             </select>
         </div>
 
-        <div class="recaptcha-box">
-            <div class="g-recaptcha" data-sitekey="<?= $recaptha_sitekey ?>"></div>
-        </div>
+<!--        <div class="recaptcha-box">-->
+<!--            <div class="g-recaptcha" data-sitekey="--><?php //= $recaptha_sitekey ?><!--"></div>-->
+<!--        </div>-->
 
         <span style="color:#ffaaaa;"><?php echo $session->getFlashdata('message');?></span>
 

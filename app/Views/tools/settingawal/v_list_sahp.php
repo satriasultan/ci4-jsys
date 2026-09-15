@@ -24,8 +24,8 @@
 <?php echo $message;?>
 <?php echo $showUnfinish; ?>
 <div class="row">
-	<div class="col-sm-12">
-		<div class="card">
+    <div class="col-sm-12">
+        <div class="card">
             <div class="card-header">
                 <div class="btn-group">
                     <button type="button" class="btn btn-primary btn-sm dropdown-toggle dropdown-icon" data-bs-toggle="dropdown"><?php echo 'Menu'; ?>
@@ -34,7 +34,7 @@
                         <?php if (isset($dtl_akses['a_input']) && trim($dtl_akses['a_input']) === 't'): ?>
                             <a class="dropdown-item" href="<?= base_url('tools/settingawal/addSAHP') ?>"><i class="fa fa-plus"></i><?php echo '   Input'; ?> </a>
                         <?php endif; ?>
-                            <!-- <a class="dropdown-item disabled" data-bs-toggle="modal" data-bs-target="#filter"  href="#"><i class="fa fa-filter"></i><?php echo '   Filter'; ?></a> -->
+                        <!-- <a class="dropdown-item disabled" data-bs-toggle="modal" data-bs-target="#filter"  href="#"><i class="fa fa-filter"></i><?php echo '   Filter'; ?></a> -->
                         <a class="dropdown-item" href="#"  onclick="reload_tablePOTrx()"><i class="fa fa-refresh"></i><?php echo '    Reload'; ?> </a>
                     </div>
                 </div>
@@ -62,29 +62,29 @@
                 </li>
             </ul> -->
 
-			<div class="card-body">
+            <div class="card-body">
                 <div class="row">
                     <div class="col-md-12">
                         <div class="table-responsive"  style='overflow-x:auto;'>
                             <table id="tablesaldoawalhpTrx" class="table table-bordered table-striped"  style="width:100%;" cellspacing="0">
                                 <thead class="text-center">
-                                    <tr>
-                                        <th style="min-width:10px; text-align:center; vertical-align:middle;">No.</th>
-                                        <th style="min-width:10px; text-align:center; vertical-align:middle;">Action</th>
-                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Kode</th>
-                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Sub Account</th>
-                                        <th style="min-width:80px; text-align:center; vertical-align:middle;">Alamat</th>
-                                        <th style="min-width:50px; text-align:center; vertical-align:middle;">Kota</th>
-                                        <th style="min-width:150px; text-align:center; vertical-align:middle;">Jurnal</th>
-                                        <th style="min-width:150px; text-align:center; vertical-align:middle;">Tanggal</th>
-                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Tgl JT</th>
-                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Cur</th>
-                                        <!-- <th style="min-width:100px; text-align:center; vertical-align:middle;">Tanggal Kirim</th> -->
-                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Pajak</th>
-                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">DK</th>
-                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Nilai</th>
-                                        <th style="min-width:400px; text-align:center; vertical-align:middle;">Remark</th>
-                                    </tr>
+                                <tr>
+                                    <th style="min-width:10px; text-align:center; vertical-align:middle;">No.</th>
+                                    <th style="min-width:10px; text-align:center; vertical-align:middle;">Action</th>
+                                    <th style="min-width:100px; text-align:center; vertical-align:middle;">Kode</th>
+                                    <th style="min-width:100px; text-align:center; vertical-align:middle;">Sub Account</th>
+                                    <th style="min-width:80px; text-align:center; vertical-align:middle;">Alamat</th>
+                                    <th style="min-width:50px; text-align:center; vertical-align:middle;">Kota</th>
+                                    <th style="min-width:150px; text-align:center; vertical-align:middle;">Jurnal</th>
+                                    <th style="min-width:150px; text-align:center; vertical-align:middle;">Tanggal</th>
+                                    <th style="min-width:100px; text-align:center; vertical-align:middle;">Tgl JT</th>
+                                    <th style="min-width:100px; text-align:center; vertical-align:middle;">Cur</th>
+                                    <!-- <th style="min-width:100px; text-align:center; vertical-align:middle;">Tanggal Kirim</th> -->
+                                    <th style="min-width:100px; text-align:center; vertical-align:middle;">Pajak</th>
+                                    <th style="min-width:100px; text-align:center; vertical-align:middle;">DK</th>
+                                    <th style="min-width:100px; text-align:center; vertical-align:middle;">Nilai</th>
+                                    <th style="min-width:400px; text-align:center; vertical-align:middle;">Remark</th>
+                                </tr>
                                 </thead>
                                 <tbody>
                                 </tbody>
@@ -92,9 +92,9 @@
                         </div>
                     </div>
                 </div>
-			</div><!-- /.card-body -->
-		</div><!-- /.card -->
-	</div>
+            </div><!-- /.card-body -->
+        </div><!-- /.card -->
+    </div>
 </div>
 
 

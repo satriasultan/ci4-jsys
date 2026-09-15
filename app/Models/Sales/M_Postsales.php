@@ -156,7 +156,7 @@ class M_Postsales extends Model
         return $query->getResult();
     }
 
-    
+
 
 
     function t_salesorder_dtl_view_count_filtered($docnoParam)
@@ -315,11 +315,11 @@ class M_Postsales extends Model
 
         $builder = $this->db->table($this->t_front_salesorder_view);
         // $builder->join(
-        //     "(SELECT DISTINCT ON (kdtrx) kdtrx, uraian 
-        //     FROM sc_mst.trxtype 
-        //     WHERE jenistrx = 'I.P.A.2' 
-        //     ORDER BY kdtrx, uraian DESC) AS trx", 
-        //     "COALESCE(x.status, '') = COALESCE(trx.kdtrx, '')", 
+        //     "(SELECT DISTINCT ON (kdtrx) kdtrx, uraian
+        //     FROM sc_mst.trxtype
+        //     WHERE jenistrx = 'I.P.A.2'
+        //     ORDER BY kdtrx, uraian DESC) AS trx",
+        //     "COALESCE(x.status, '') = COALESCE(trx.kdtrx, '')",
         //     "left"
         // );
         $builder->select("x.*");
@@ -335,7 +335,7 @@ class M_Postsales extends Model
             }
         }
 
-        
+
         $status_filter = $this->request->getPost('status_filter');
         if (!empty($status_filter) && $status_filter !== 'ALL') {
             $builder->where('trim(x.status)', $status_filter);
@@ -420,7 +420,7 @@ class M_Postsales extends Model
 
 
 
-    
+
     var $t_front_salesorder_apprv_view = "(select a.*, 
     c.alamat_kantor as alamatcust,
     c.nmcustomer as nmcust,
@@ -446,11 +446,11 @@ class M_Postsales extends Model
 
         $builder = $this->db->table($this->t_front_salesorder_apprv_view);
         // $builder->join(
-        //     "(SELECT DISTINCT ON (kdtrx) kdtrx, uraian 
-        //     FROM sc_mst.trxtype 
-        //     WHERE jenistrx = 'I.P.A.2' 
-        //     ORDER BY kdtrx, uraian DESC) AS trx", 
-        //     "COALESCE(x.status, '') = COALESCE(trx.kdtrx, '')", 
+        //     "(SELECT DISTINCT ON (kdtrx) kdtrx, uraian
+        //     FROM sc_mst.trxtype
+        //     WHERE jenistrx = 'I.P.A.2'
+        //     ORDER BY kdtrx, uraian DESC) AS trx",
+        //     "COALESCE(x.status, '') = COALESCE(trx.kdtrx, '')",
         //     "left"
         // );
         $builder->select("x.*");
@@ -675,7 +675,7 @@ class M_Postsales extends Model
         return $query->getResult();
     }
 
-    
+
 
 
     function t_deliveryorder_dtl_view_count_filtered($docnoParam)
@@ -839,11 +839,11 @@ class M_Postsales extends Model
 
         $builder = $this->db->table($this->t_front_deliveryorder_view);
         // $builder->join(
-        //     "(SELECT DISTINCT ON (kdtrx) kdtrx, uraian 
-        //     FROM sc_mst.trxtype 
-        //     WHERE jenistrx = 'I.P.A.2' 
-        //     ORDER BY kdtrx, uraian DESC) AS trx", 
-        //     "COALESCE(x.status, '') = COALESCE(trx.kdtrx, '')", 
+        //     "(SELECT DISTINCT ON (kdtrx) kdtrx, uraian
+        //     FROM sc_mst.trxtype
+        //     WHERE jenistrx = 'I.P.A.2'
+        //     ORDER BY kdtrx, uraian DESC) AS trx",
+        //     "COALESCE(x.status, '') = COALESCE(trx.kdtrx, '')",
         //     "left"
         // );
         $builder->select("x.*");
@@ -926,7 +926,7 @@ class M_Postsales extends Model
 
 
 
-    
+
     var $t_front_deliveryorder_apprv_view = "(select a.*, 
     c.alamat_kantor as alamatcust,
     c.nmcustomer as nmcust,
@@ -952,11 +952,11 @@ class M_Postsales extends Model
 
         $builder = $this->db->table($this->t_front_deliveryorder_apprv_view);
         // $builder->join(
-        //     "(SELECT DISTINCT ON (kdtrx) kdtrx, uraian 
-        //     FROM sc_mst.trxtype 
-        //     WHERE jenistrx = 'I.P.A.2' 
-        //     ORDER BY kdtrx, uraian DESC) AS trx", 
-        //     "COALESCE(x.status, '') = COALESCE(trx.kdtrx, '')", 
+        //     "(SELECT DISTINCT ON (kdtrx) kdtrx, uraian
+        //     FROM sc_mst.trxtype
+        //     WHERE jenistrx = 'I.P.A.2'
+        //     ORDER BY kdtrx, uraian DESC) AS trx",
+        //     "COALESCE(x.status, '') = COALESCE(trx.kdtrx, '')",
         //     "left"
         // );
         $builder->select("x.*");
@@ -1057,7 +1057,7 @@ class M_Postsales extends Model
 
 
 
-    
+
 
     /* UNTUK LIST DEPAN WO*/
     /* TRX WO*/
@@ -1203,7 +1203,7 @@ class M_Postsales extends Model
         return $query->getResult();
     }
 
-    
+
 
 
     function t_suratjalan_dtl_view_count_filtered($docnoParam)
@@ -1367,11 +1367,11 @@ class M_Postsales extends Model
 
         $builder = $this->db->table($this->t_front_suratjalan_view);
         // $builder->join(
-        //     "(SELECT DISTINCT ON (kdtrx) kdtrx, uraian 
-        //     FROM sc_mst.trxtype 
-        //     WHERE jenistrx = 'I.P.A.2' 
-        //     ORDER BY kdtrx, uraian DESC) AS trx", 
-        //     "COALESCE(x.status, '') = COALESCE(trx.kdtrx, '')", 
+        //     "(SELECT DISTINCT ON (kdtrx) kdtrx, uraian
+        //     FROM sc_mst.trxtype
+        //     WHERE jenistrx = 'I.P.A.2'
+        //     ORDER BY kdtrx, uraian DESC) AS trx",
+        //     "COALESCE(x.status, '') = COALESCE(trx.kdtrx, '')",
         //     "left"
         // );
         $builder->select("x.*");
@@ -1454,7 +1454,7 @@ class M_Postsales extends Model
 
 
 
-    
+
     var $t_front_suratjalan_apprv_view = "(select a.*, 
     c.alamat_kantor as alamatcust,
     c.nmcustomer as nmcust,
@@ -1480,11 +1480,11 @@ class M_Postsales extends Model
 
         $builder = $this->db->table($this->t_front_suratjalan_apprv_view);
         // $builder->join(
-        //     "(SELECT DISTINCT ON (kdtrx) kdtrx, uraian 
-        //     FROM sc_mst.trxtype 
-        //     WHERE jenistrx = 'I.P.A.2' 
-        //     ORDER BY kdtrx, uraian DESC) AS trx", 
-        //     "COALESCE(x.status, '') = COALESCE(trx.kdtrx, '')", 
+        //     "(SELECT DISTINCT ON (kdtrx) kdtrx, uraian
+        //     FROM sc_mst.trxtype
+        //     WHERE jenistrx = 'I.P.A.2'
+        //     ORDER BY kdtrx, uraian DESC) AS trx",
+        //     "COALESCE(x.status, '') = COALESCE(trx.kdtrx, '')",
         //     "left"
         // );
         $builder->select("x.*");
@@ -1570,7 +1570,7 @@ class M_Postsales extends Model
 
 
 
-    
+
     /* UNTUK LIST DEPAN WO*/
     /* TRX WO*/
     var $t_penjualan_view = "sc_trx.penjualan";
@@ -1715,7 +1715,7 @@ class M_Postsales extends Model
         return $query->getResult();
     }
 
-    
+
 
 
     function t_penjualan_dtl_view_count_filtered($docnoParam)
@@ -1966,7 +1966,7 @@ class M_Postsales extends Model
 
 
 
-    
+
     var $t_front_penjualan_apprv_view = "(select a.*, 
     c.alamat_kantor as alamatcust,
     c.nmcustomer as nmcust,
@@ -2238,7 +2238,7 @@ class M_Postsales extends Model
         return $query->getResult();
     }
 
-    
+
 
 
     function t_salesorderexternal_dtl_view_count_filtered($docnoParam)
@@ -2412,8 +2412,8 @@ class M_Postsales extends Model
             "(SELECT DISTINCT ON (kdtrx) kdtrx, uraian 
             FROM sc_mst.trxtype 
             WHERE jenistrx = 'I.S.B.1' 
-            ORDER BY kdtrx, uraian DESC) AS trx", 
-            "COALESCE(x.salesorderexternal_status, '') = COALESCE(trx.kdtrx, '')", 
+            ORDER BY kdtrx, uraian DESC) AS trx",
+            "COALESCE(x.salesorderexternal_status, '') = COALESCE(trx.kdtrx, '')",
             "left"
         );
         $builder->select("x.*, trx.uraian AS status_desc");
@@ -2683,7 +2683,7 @@ class M_Postsales extends Model
         return $query->getResult();
     }
 
-    
+
 
 
     function t_soi_dtl_view_count_filtered($docnoParam)
@@ -2850,8 +2850,8 @@ class M_Postsales extends Model
             "(SELECT DISTINCT ON (kdtrx) kdtrx, uraian 
             FROM sc_mst.trxtype 
             WHERE jenistrx = 'I.S.B.2' 
-            ORDER BY kdtrx, uraian DESC) AS trx", 
-            "COALESCE(x.soi_status, '') = COALESCE(trx.kdtrx, '')", 
+            ORDER BY kdtrx, uraian DESC) AS trx",
+            "COALESCE(x.soi_status, '') = COALESCE(trx.kdtrx, '')",
             "left"
         );
         $builder->select("x.*, trx.uraian AS status_desc");
