@@ -2092,3 +2092,47 @@ $$;
 -- );
 -- Contoh:
 -- SELECT sc_trx.sp_delete_lpb('LPB/2609/PA0001', 'USERNAME');
+
+
+
+
+-- FUNCTION: sc_trx.sp_unpost_by_doc(character varying, character varying)
+
+-- DROP FUNCTION IF EXISTS sc_trx.sp_unpost_by_doc(character varying, character varying);
+
+CREATE OR REPLACE FUNCTION sc_trx.sp_unpost_by_doc(
+	p_docno character varying,
+	p_doctype character varying)
+    RETURNS void
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+AS $BODY$
+BEGIN
+
+    -- DELETE DETAIL
+    DELETE FROM sc_trx.jurnal_dt
+    WHERE jurnal_id IN (
+        SELECT id FROM sc_trx.jurnal_hd
+        WHERE TRIM(docno)=TRIM(p_docno)
+          AND TRIM(doctype)=TRIM(p_doctype)
+    );
+
+    -- DELETE HEADER
+    DELETE FROM sc_trx.jurnal_hd
+    WHERE TRIM(docno)=TRIM(p_docno)
+      AND TRIM(doctype)=TRIM(p_doctype);
+
+    -- RESET STKBLC
+    UPDATE sc_trx.stkblc
+    SET is_posted = FALSE,
+        posted_at = NULL
+    WHERE TRIM(docno)=TRIM(p_docno)
+      AND TRIM(doctype)=TRIM(p_doctype);
+
+END;
+$BODY$;
+
+ALTER FUNCTION sc_trx.sp_unpost_by_doc(character varying, character varying)
+    OWNER TO postgres;
+
