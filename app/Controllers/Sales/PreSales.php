@@ -8,7 +8,7 @@ use function PHPUnit\Framework\isEmpty;
 
 class PreSales extends BaseController
 {
-    
+
     public function taskmanagement()
     {
         $data['title']="Task Management";
@@ -47,7 +47,7 @@ class PreSales extends BaseController
         }
         //auto insert unit
         $pterror = " and userid='$nama'";
-          //BAWA INI PENTING SEKALI DI SETIAP MENU
+        //BAWA INI PENTING SEKALI DI SETIAP MENU
         $kmenu = 'I.S.A.1';
         $role = trim($this->session->get('roleid'));
         $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
@@ -60,7 +60,7 @@ class PreSales extends BaseController
         $kmenu = 'I.S.A.1';
         $role = trim($this->session->get('roleid'));
         $nama = trim($this->session->get('nama'));
-        
+
         $datadtl['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
         $dataanu['userinfo'] = $this->m_user->getUser(" and username='$nama'")->getRowArray();
         $bagian = trim($this->session->get('bagian'));
@@ -227,15 +227,15 @@ class PreSales extends BaseController
         ];
 
         $db->table('sc_trx.tasksales')->insert($data);
-            
+
         // Ambil kembali id yang baru saja dibuat
         $task = $db->table('sc_trx.tasksales')
-                ->select('id')
-                ->where('inputby', $nama)
-                ->orderBy('inputdate', 'DESC')
-                ->limit(1)
-                ->get()
-                ->getRow();
+            ->select('id')
+            ->where('inputby', $nama)
+            ->orderBy('inputdate', 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRow();
 
         $taskCode = $task->id ?? null;
 
@@ -340,7 +340,7 @@ class PreSales extends BaseController
 
     //PENAWARAN HARGA
 
-    
+
     public function offering()
     {
         $data['title']="Penawaran Harga";
@@ -504,8 +504,8 @@ class PreSales extends BaseController
                                         id="menu1" type="button" data-bs-toggle="dropdown" autocomplete="off" aria-expanded="false">
                                         <i class="fa fa-bars"></i><span class="caret"></span>
                                     </button>
-                                    <div class="dropdown-menu" role="menu">' . 
-                                    $updateBtn . $printBtn . $deleteBtn . $detailBtn . '</div>
+                                    <div class="dropdown-menu" role="menu">' .
+                    $updateBtn . $printBtn . $deleteBtn . $detailBtn . '</div>
                                 </div>';
             } else {
                 // Jika bukan CETAK/PRINT atau CANCEL, hanya tampilkan tombol Detail
@@ -517,8 +517,8 @@ class PreSales extends BaseController
                                     <div class="dropdown-menu" role="menu">' . $detailBtn . '</div>
                                 </div>';
             }
-                                
-            
+
+
 
             // $dropdownMenu .= $deleteBtn . '</div></div>';
 
@@ -532,7 +532,7 @@ class PreSales extends BaseController
             $row[] = $lm->phone;
             $row[] = $lm->fax;
             $row[] = $lm->up;
-            
+
             // $row[] = $lm->status_desc ?? $lm->status;
             $status = $lm->status_desc ?? $lm->status;
             $badgeClass = 'badge-secondary'; // Default
@@ -613,9 +613,9 @@ class PreSales extends BaseController
                 echo json_encode($result);
             }
         } else {
-                // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                // echo json_encode($result);
-                return redirect()->to(base_url('sales/presales/offering'));
+            // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+            // echo json_encode($result);
+            return redirect()->to(base_url('sales/presales/offering'));
         }
 
     }
@@ -731,12 +731,12 @@ class PreSales extends BaseController
         //     return redirect()->to(base_url('sales/presales/addOffering'))
         //         ->with('error', 'Return date is required when selecting "Kembali".');
         // }
-    
+
         // if ($jenisbarang === 'lainlain' && empty($baranglain)) {
         //     return redirect()->to(base_url('sales/presales/addOffering'))
         //         ->with('error', 'Other goods description is required when selecting "Lain-lain".');
         // }
-    
+
 
         if (empty($countx)) {
             $info = array (
@@ -814,11 +814,11 @@ class PreSales extends BaseController
         $loccode = trim($this->session->get('loccode'));
         $inputby = $nama;
         $inputdate = date('Y-m-d H:i:s');
-    
+
         // Ambil body request dalam bentuk JSON
         $request_body = file_get_contents('php://input');
         $data = json_decode($request_body);
-    
+
         // Validasi apakah request memiliki key yang benar
         if (!isset($data->key) || $data->key !== '1203jD0j120dkjjKODNOoimdi)D(J)Jmjid0sjd0ijme09wjei0kjisdjfDSojiodksOjO') {
             return $this->response->setJSON([
@@ -826,14 +826,14 @@ class PreSales extends BaseController
                 'message' => 'Invalid Request Key!'
             ]);
         }
-    
+
         // Ambil data dari body JSON
         $dataprocess = $data->body;
         $idunit = isset($dataprocess->idunit) ? trim($dataprocess->idunit) : null;
         $namabarang = isset($dataprocess->namabarang) ? trim($dataprocess->namabarang) : null;
         $qty = isset($dataprocess->qty) ? trim($dataprocess->qty) : null;
         $description = isset($dataprocess->description) ? trim($dataprocess->description) : null;
-    
+
         // Validasi data tidak boleh kosong
         if (empty($idunit) || empty($namabarang) || empty($qty) || empty($description)) {
             return $this->response->setJSON([
@@ -841,7 +841,7 @@ class PreSales extends BaseController
                 'message' => 'Please fill all required fields (Unit, Item Name, Qty, Description).'
             ]);
         }
-    
+
         // Data untuk disimpan ke database
         $data_insert = [
             'docno' => $inputby,
@@ -853,11 +853,11 @@ class PreSales extends BaseController
             'inputdate' => $inputdate,
             'status' => 'I'
         ];
-    
+
         // Insert ke database
         $builder = $this->db->table('sc_tmp.offeringdtl'); // Sesuaikan dengan tabel Anda
         $insert = $builder->insert($data_insert);
-    
+
         // Cek apakah berhasil insert
         if ($insert) {
             return $this->response->setJSON([
@@ -878,7 +878,7 @@ class PreSales extends BaseController
         $nama = trim($this->session->get('nama'));
         $inputby = $nama;
         $inputdate = date('Y-m-d H:i:s');
-         // Ambil body request dalam bentuk JSON
+        // Ambil body request dalam bentuk JSON
         $request_body = file_get_contents('php://input');
         $data = json_decode($request_body);
 
@@ -889,8 +889,8 @@ class PreSales extends BaseController
                 'message' => 'Invalid Request Key!'
             ]);
         }
-    
-          // Ambil docno dari body
+
+        // Ambil docno dari body
         $docno = isset($data->body->docno) ? trim($data->body->docno) : '';
 
         if ($docno === '') {
@@ -907,11 +907,11 @@ class PreSales extends BaseController
             // 'exchange' => 
             'status' => 'I' // Status awal Insert
         ];
-    
+
         // Insert ke database
         $builder = $this->db->table('sc_tmp.offeringdtl');
         $insert = $builder->insert($data_insert);
-    
+
         // Cek apakah berhasil insert
         if ($insert) {
             return $this->response->setJSON([
@@ -926,8 +926,8 @@ class PreSales extends BaseController
             ]);
         }
     }
-    
-    
+
+
 
 
     public function update_detail_offering()
@@ -955,7 +955,7 @@ class PreSales extends BaseController
                 $price = $update['price'] ?? 0;
                 $usdmt = $update['usdmt'] ?? 0;
                 $exchange = $update['exchange'] ?? 0;
-                
+
                 $description = strtoupper($update['description']) ?? '';
 
                 if (empty($idurut)) {
@@ -1044,9 +1044,9 @@ class PreSales extends BaseController
             $row[] = '<select disabled class="idbarang-dropdown" style="width: 100%; height: 20px!important; font-size: 12px;" data-id="' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '">
                 <option value="" disabled>-- Choose --</option>
                 <option value="' . htmlspecialchars($lm->idbarang, ENT_QUOTES, 'UTF-8') . '">'
-                    . htmlspecialchars($lm->idbarang, ENT_QUOTES, 'UTF-8') . 
-                    ' <i class="fa fa-circle text-success" style="font-size:8px;"></i> ' . 
-                    htmlspecialchars($lm->nmbarang, ENT_QUOTES, 'UTF-8') . 
+                . htmlspecialchars($lm->idbarang, ENT_QUOTES, 'UTF-8') .
+                ' <i class="fa fa-circle text-success" style="font-size:8px;"></i> ' .
+                htmlspecialchars($lm->nmbarang, ENT_QUOTES, 'UTF-8') .
                 '</option>
             </select>';
 
@@ -1057,9 +1057,9 @@ class PreSales extends BaseController
             </select>';
             //qty
             $row[] = '<input class="form-control ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;" type="text" id="qty_'.$lm->idurut.'" name="qty_'.$lm->idurut.'" value="'.number_format($lm->qty, 2, ',', '.').'" disabled  min="0">';
-            
+
             //price
-           // Price dengan Rp sejajar
+            // Price dengan Rp sejajar
             $row[] = '
             <div style="display:flex; align-items:center;">
                 <span style="margin-right:4px; font-size:12px;font-weight:bold">Rp</span>
@@ -1071,7 +1071,7 @@ class PreSales extends BaseController
                     value="'.number_format($lm->price, 2, ',', '.').'" 
                     disabled min="0">
             </div>';
-            
+
             //exchange
             $row[] = '
             <div style="display:flex; align-items:center;">
@@ -1095,8 +1095,8 @@ class PreSales extends BaseController
                     name="usdmt_'.$lm->idurut.'" 
                     value="'.number_format($lm->usdmt, 2, ',', '.').'" 
                     disabled min="0">
-            </div>';    
-            
+            </div>';
+
             //description
             $row[] = '<input class="form-control "   style="text-transform: uppercase;margin:0px; background-color:#d6d5d5;width: 100%" type="text" id="description_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" name="description_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($lm->description, ENT_QUOTES, 'UTF-8') . '" disabled >';
 
@@ -1113,7 +1113,7 @@ class PreSales extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-        function list_t_offering_dtltrx(){
+    function list_t_offering_dtltrx(){
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_presales->get_t_offering_dtl_view($docno);
         $data = array();
@@ -1127,9 +1127,9 @@ class PreSales extends BaseController
             $row[] = '<select disabled class="idbarang-dropdown" style="width: 100%; height: 20px!important; font-size: 12px;" data-id="' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '">
                 <option value="" disabled>-- Choose --</option>
                 <option value="' . htmlspecialchars($lm->idbarang, ENT_QUOTES, 'UTF-8') . '">'
-                    . htmlspecialchars($lm->idbarang, ENT_QUOTES, 'UTF-8') . 
-                    ' <i class="fa fa-circle text-success" style="font-size:8px;"></i> ' . 
-                    htmlspecialchars($lm->nmbarang, ENT_QUOTES, 'UTF-8') . 
+                . htmlspecialchars($lm->idbarang, ENT_QUOTES, 'UTF-8') .
+                ' <i class="fa fa-circle text-success" style="font-size:8px;"></i> ' .
+                htmlspecialchars($lm->nmbarang, ENT_QUOTES, 'UTF-8') .
                 '</option>
             </select>';
 
@@ -1140,9 +1140,9 @@ class PreSales extends BaseController
             </select>';
             //qty
             $row[] = '<input class="form-control ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;" type="text" id="qty_'.$lm->idurut.'" name="qty_'.$lm->idurut.'" value="'.number_format($lm->qty, 2, ',', '.').'" disabled  min="0">';
-            
+
             //price
-           // Price dengan Rp sejajar
+            // Price dengan Rp sejajar
             $row[] = '
             <div style="display:flex; align-items:center;">
                 <span style="margin-right:4px; font-size:12px;font-weight:bold">Rp</span>
@@ -1154,7 +1154,7 @@ class PreSales extends BaseController
                     value="'.number_format($lm->price, 2, ',', '.').'" 
                     disabled min="0">
             </div>';
-            
+
             //exchange
             $row[] = '
             <div style="display:flex; align-items:center;">
@@ -1178,8 +1178,8 @@ class PreSales extends BaseController
                     name="usdmt_'.$lm->idurut.'" 
                     value="'.number_format($lm->usdmt, 2, ',', '.').'" 
                     disabled min="0">
-            </div>';    
-            
+            </div>';
+
             //description
             $row[] = '<input class="form-control "   style="text-transform: uppercase;margin:0px; background-color:#d6d5d5;width: 100%" type="text" id="description_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" name="description_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($lm->description, ENT_QUOTES, 'UTF-8') . '" disabled >';
 
@@ -1295,7 +1295,7 @@ class PreSales extends BaseController
         $nama = trim($this->session->get('nama'));
         $docno = hex2bin($this->request->getGet('id'));
         $builder = $this->db->table('sc_trx.offering');
-                
+
         // Update status menjadi 'C'
         $iupdate = array('status' => 'C');
         $builder->where('docno', $docno);
@@ -1304,7 +1304,7 @@ class PreSales extends BaseController
             // $builder->where('docno', $docno); 
             // $builder->where('status', 'C');
             // $builder->delete();
-            
+
             // // Menghapus data dari offeringdtl
             // $this->db->table('sc_trx.offeringdtl')
             //         ->where('docno', $docno)
@@ -1323,7 +1323,7 @@ class PreSales extends BaseController
         $id = $this->request->getPost('id'); // Ambil array ID
         $nama = trim($this->session->get('nama'));
         $docno = $this->request->getPost('docno'); // Ambil docno yang dikirim dari AJAX
-        
+
         if (empty($id) || empty($docno)) {
             echo json_encode(['status' => false, 'messages' => 'Missing Parameters']);
             return;
@@ -1371,17 +1371,17 @@ class PreSales extends BaseController
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.offering');
 
-    //    $builder = $builder
-    //         ->where('docno', $docno)
-    //         ->update([
-    //             'status'=> 'P',
-    //             'printby' => $nama,
-    //             'printdate' => date('Y-m-d H:i:s')
-    //         ]);
+        //    $builder = $builder
+        //         ->where('docno', $docno)
+        //         ->update([
+        //             'status'=> 'P',
+        //             'printby' => $nama,
+        //             'printdate' => date('Y-m-d H:i:s')
+        //         ]);
 
-        
+
         $enc_docno = $this->fiky_encryption->sealed($docno);
-        
+
         //$enc_docdate= $this->fiky_encryption->sealed($docdate);
         // $enc_idlocation = $this->fiky_encryption->sealed($idlocation);
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
@@ -1393,7 +1393,7 @@ class PreSales extends BaseController
         $datajson =  base_url("sales/presales/api_offering/?enc_docno=$enc_docno") ;
 
         // if($formheader==="HEADER"){
-            $datamrt =  base_url("assets/mrt/report_offering.mrt") ;
+        $datamrt =  base_url("assets/mrt/report_offering.mrt") ;
         // } else {
         //     $datamrt =  base_url("assets/mrt/report_offering_non_header.mrt") ;
         // }
@@ -1412,9 +1412,9 @@ class PreSales extends BaseController
         // $idgroup=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idgroup')));
         //$docno=trim($this->request->getGet('enc_docno'));
 
-       // $ddate = explode(' - ',$docdate);
-       // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
-       // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
+        // $ddate = explode(' - ',$docdate);
+        // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
+        // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
 
         if (empty($docno) or $docno==='') {
             $param_brg = "";
@@ -1433,22 +1433,22 @@ class PreSales extends BaseController
         $datamst = $this->m_presales->q_offering_master($param);
         $datadtl = $this->m_presales->q_offering_dtl($param);
         $tampungdtl = $datamst->getResult();
-        $detail = $tampungdtl[0] ?? null;        
+        $detail = $tampungdtl[0] ?? null;
         if ($detail) {
 
             $tujuan = isset($detail->tujuan) ? trim($detail->tujuan) : '';
-        
+
             // Tambahkan properti baru isPindah
             $detail->isPindah = false; // Default value
             if ($tujuan === 'pindah') {
                 $detail->isPindah = true;
             }
 
-             // Tambahkan properti baru isPembuangan
-             $detail->isPembuangan = false; // Default value
-             if ($tujuan === 'pembuangan') {
-                 $detail->isPembuangan = true;
-             }
+            // Tambahkan properti baru isPembuangan
+            $detail->isPembuangan = false; // Default value
+            if ($tujuan === 'pembuangan') {
+                $detail->isPembuangan = true;
+            }
 
             // Tambahkan properti baru isPinjam
             $detail->isPinjam = false; // Default value
@@ -1457,35 +1457,35 @@ class PreSales extends BaseController
             }
 
             $isreturn = isset($detail->isreturn) ? trim($detail->isreturn) : '';
-             // Tambahkan properti baru iskembali
-             $detail->iskembali = false; // Default value
-             if ($isreturn === 'kembali') {
-                 $detail->iskembali = true;
-             }
+            // Tambahkan properti baru iskembali
+            $detail->iskembali = false; // Default value
+            if ($isreturn === 'kembali') {
+                $detail->iskembali = true;
+            }
 
-             $detail->istidakkembali = false; // Default value
-             if ($isreturn === 'tidak_kembali') {
-                 $detail->istidakkembali = true;
-             }
+            $detail->istidakkembali = false; // Default value
+            if ($isreturn === 'tidak_kembali') {
+                $detail->istidakkembali = true;
+            }
 
-             $jenisbarang = isset($detail->jenisbarang) ? trim($detail->jenisbarang) : '';
-              // Tambahkan properti baru isAset
-              $detail->isAset = false; // Default value
-              if ($jenisbarang === 'aset') {
-                  $detail->isAset = true;
-              }
+            $jenisbarang = isset($detail->jenisbarang) ? trim($detail->jenisbarang) : '';
+            // Tambahkan properti baru isAset
+            $detail->isAset = false; // Default value
+            if ($jenisbarang === 'aset') {
+                $detail->isAset = true;
+            }
 
-              // Tambahkan properti baru isPersediaan
-              $detail->isPersediaan = false; // Default value
-              if ($jenisbarang === 'persediaan') {
-                  $detail->isPersediaan = true;
-              }
+            // Tambahkan properti baru isPersediaan
+            $detail->isPersediaan = false; // Default value
+            if ($jenisbarang === 'persediaan') {
+                $detail->isPersediaan = true;
+            }
 
-              // Tambahkan properti baru isLainlain
-              $detail->isLainlain = false; // Default value
-              if ($jenisbarang === 'lainlain') {
-                  $detail->isLainlain = true;
-              }
+            // Tambahkan properti baru isLainlain
+            $detail->isLainlain = false; // Default value
+            if ($jenisbarang === 'lainlain') {
+                $detail->isLainlain = true;
+            }
         }
 
         header("Content-Type: text/json");
@@ -1501,7 +1501,7 @@ class PreSales extends BaseController
                     'userid' => $nama,
                     'param' => $param,
 
-                    ]
+                ]
                 ),
                 'branch' => $databranch->getResult(),
                 'master' => $datamst->getResult(),
@@ -1563,31 +1563,31 @@ class PreSales extends BaseController
     }
 
 
-/*
+    /*
 
 
 
-SECTION PROFORMA INVOICE
+    SECTION PROFORMA INVOICE
 
-SECTION PROFORMA INVOICE
+    SECTION PROFORMA INVOICE
 
-SECTION PROFORMA INVOICE
+    SECTION PROFORMA INVOICE
 
-SECTION PROFORMA INVOICE
+    SECTION PROFORMA INVOICE
 
-SECTION PROFORMA INVOICE
+    SECTION PROFORMA INVOICE
 
-SECTION PROFORMA INVOICE
+    SECTION PROFORMA INVOICE
 
-SECTION PROFORMA INVOICE
+    SECTION PROFORMA INVOICE
 
-SECTION PROFORMA INVOICE
-
-
-    */
+    SECTION PROFORMA INVOICE
 
 
-    
+        */
+
+
+
     public function proforma()
     {
         $data['title']="Proforma Invoice & Invoicing";
@@ -1751,8 +1751,8 @@ SECTION PROFORMA INVOICE
                                         id="menu1" type="button" data-bs-toggle="dropdown" autocomplete="off" aria-expanded="false">
                                         <i class="fa fa-bars"></i><span class="caret"></span>
                                     </button>
-                                    <div class="dropdown-menu" role="menu">' . 
-                                    $updateBtn . $printBtn . $deleteBtn . $detailBtn . '</div>
+                                    <div class="dropdown-menu" role="menu">' .
+                    $updateBtn . $printBtn . $deleteBtn . $detailBtn . '</div>
                                 </div>';
             } else {
                 // Jika bukan CETAK/PRINT atau CANCEL, hanya tampilkan tombol Detail
@@ -1764,8 +1764,8 @@ SECTION PROFORMA INVOICE
                                     <div class="dropdown-menu" role="menu">' . $detailBtn . '</div>
                                 </div>';
             }
-                                
-            
+
+
 
             // $dropdownMenu .= $deleteBtn . '</div></div>';
 
@@ -1780,7 +1780,7 @@ SECTION PROFORMA INVOICE
             $row[] = $lm->phone;
             $row[] = $lm->fax;
             // $row[] = $lm->up;
-            
+
             // $row[] = $lm->status_desc ?? $lm->status;
             $status = $lm->status_desc ?? $lm->status;
             $badgeClass = 'badge-secondary'; // Default
@@ -1861,8 +1861,8 @@ SECTION PROFORMA INVOICE
                 echo json_encode($result);
             }
         } else {
-                $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                echo json_encode($result);
+            $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+            echo json_encode($result);
         }
 
     }
@@ -1990,12 +1990,12 @@ SECTION PROFORMA INVOICE
         //     return redirect()->to(base_url('sales/presales/addProforma'))
         //         ->with('error', 'Return date is required when selecting "Kembali".');
         // }
-    
+
         // if ($jenisbarang === 'lainlain' && empty($baranglain)) {
         //     return redirect()->to(base_url('sales/presales/addProforma'))
         //         ->with('error', 'Other goods description is required when selecting "Lain-lain".');
         // }
-    
+
 
         if (empty($countx)) {
             $info = array (
@@ -2005,7 +2005,7 @@ SECTION PROFORMA INVOICE
                 // 'docdate' => date('Y-m-d'),
                 'docdate' => $docdate,
                 // 'dateout' => $dateout,
-                'cust' => $cust, 
+                'cust' => $cust,
 
                 'pono' => $pono,
                 'podate' => $podate,
@@ -2085,11 +2085,11 @@ SECTION PROFORMA INVOICE
         $loccode = trim($this->session->get('loccode'));
         $inputby = $nama;
         $inputdate = date('Y-m-d H:i:s');
-    
+
         // Ambil body request dalam bentuk JSON
         $request_body = file_get_contents('php://input');
         $data = json_decode($request_body);
-    
+
         // Validasi apakah request memiliki key yang benar
         if (!isset($data->key) || $data->key !== '1203jD0j120dkjjKODNOoimdi)D(J)Jmjid0sjd0ijme09wjei0kjisdjfDSojiodksOjO') {
             return $this->response->setJSON([
@@ -2097,14 +2097,14 @@ SECTION PROFORMA INVOICE
                 'message' => 'Invalid Request Key!'
             ]);
         }
-    
+
         // Ambil data dari body JSON
         $dataprocess = $data->body;
         $idunit = isset($dataprocess->idunit) ? trim($dataprocess->idunit) : null;
         $namabarang = isset($dataprocess->namabarang) ? trim($dataprocess->namabarang) : null;
         $qty = isset($dataprocess->qty) ? trim($dataprocess->qty) : null;
         $description = isset($dataprocess->description) ? trim($dataprocess->description) : null;
-    
+
         // Validasi data tidak boleh kosong
         if (empty($idunit) || empty($namabarang) || empty($qty) || empty($description)) {
             return $this->response->setJSON([
@@ -2112,7 +2112,7 @@ SECTION PROFORMA INVOICE
                 'message' => 'Please fill all required fields (Unit, Item Name, Qty, Description).'
             ]);
         }
-    
+
         // Data untuk disimpan ke database
         $data_insert = [
             'docno' => $inputby,
@@ -2124,11 +2124,11 @@ SECTION PROFORMA INVOICE
             'inputdate' => $inputdate,
             'status' => 'I'
         ];
-    
+
         // Insert ke database
         $builder = $this->db->table('sc_tmp.proformadtl'); // Sesuaikan dengan tabel Anda
         $insert = $builder->insert($data_insert);
-    
+
         // Cek apakah berhasil insert
         if ($insert) {
             return $this->response->setJSON([
@@ -2149,7 +2149,7 @@ SECTION PROFORMA INVOICE
         $nama = trim($this->session->get('nama'));
         $inputby = $nama;
         $inputdate = date('Y-m-d H:i:s');
-         // Ambil body request dalam bentuk JSON
+        // Ambil body request dalam bentuk JSON
         $request_body = file_get_contents('php://input');
         $data = json_decode($request_body);
 
@@ -2160,8 +2160,8 @@ SECTION PROFORMA INVOICE
                 'message' => 'Invalid Request Key!'
             ]);
         }
-    
-          // Ambil docno dari body
+
+        // Ambil docno dari body
         $docno = isset($data->body->docno) ? trim($data->body->docno) : '';
 
         if ($docno === '') {
@@ -2178,11 +2178,11 @@ SECTION PROFORMA INVOICE
             // 'exchange' => 
             'status' => 'I' // Status awal Insert
         ];
-    
+
         // Insert ke database
         $builder = $this->db->table('sc_tmp.proformadtl');
         $insert = $builder->insert($data_insert);
-    
+
         // Cek apakah berhasil insert
         if ($insert) {
             return $this->response->setJSON([
@@ -2197,8 +2197,8 @@ SECTION PROFORMA INVOICE
             ]);
         }
     }
-    
-    
+
+
 
 
     public function update_detail_proforma()
@@ -2226,7 +2226,7 @@ SECTION PROFORMA INVOICE
                 $price = $update['price'] ?? 0;
                 $amount = $update['amount'] ?? 0;
                 // $exchange = $update['exchange'] ?? 0;
-                
+
                 // $description = strtoupper($update['description']) ?? '';
 
                 if (empty($idurut)) {
@@ -2315,9 +2315,9 @@ SECTION PROFORMA INVOICE
             $row[] = '<select disabled class="idbarang-dropdown" style="width: 100%; height: 20px!important; font-size: 12px;" data-id="' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '">
                 <option value="" disabled>-- Choose --</option>
                 <option value="' . htmlspecialchars($lm->idbarang, ENT_QUOTES, 'UTF-8') . '">'
-                    . htmlspecialchars($lm->idbarang, ENT_QUOTES, 'UTF-8') . 
-                    ' <i class="fa fa-circle text-success" style="font-size:8px;"></i> ' . 
-                    htmlspecialchars($lm->nmbarang, ENT_QUOTES, 'UTF-8') . 
+                . htmlspecialchars($lm->idbarang, ENT_QUOTES, 'UTF-8') .
+                ' <i class="fa fa-circle text-success" style="font-size:8px;"></i> ' .
+                htmlspecialchars($lm->nmbarang, ENT_QUOTES, 'UTF-8') .
                 '</option>
             </select>';
 
@@ -2328,9 +2328,9 @@ SECTION PROFORMA INVOICE
             <option value="' . htmlspecialchars($lm->unit, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($lm->unit, ENT_QUOTES, 'UTF-8') . '</option>
             </select>';
             //qty
-            
+
             //price
-           // Price dengan Rp sejajar
+            // Price dengan Rp sejajar
             $row[] = '
             <div style="display:flex; align-items:center;">
                 <span style="margin-right:4px; font-size:12px;font-weight:bold">Rp</span>
@@ -2342,7 +2342,7 @@ SECTION PROFORMA INVOICE
                     value="'.number_format($lm->price, 2, '.', ',').'" 
                     disabled min="0">
             </div>';
-            
+
             //exchange
             $row[] = '
             <div style="display:flex; align-items:center;">
@@ -2367,7 +2367,7 @@ SECTION PROFORMA INVOICE
             //         value="'.number_format($lm->usdmt, 2, ',', '.').'" 
             //         disabled min="0">
             // </div>';    
-            
+
             //description
             $row[] = '<input class="form-control "   style="text-transform: uppercase;margin:0px; background-color:#d6d5d5;width: 100%" type="text" id="description_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" name="description_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($lm->description, ENT_QUOTES, 'UTF-8') . '" disabled >';
 
@@ -2384,7 +2384,7 @@ SECTION PROFORMA INVOICE
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-        function list_t_proforma_dtltrx(){
+    function list_t_proforma_dtltrx(){
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_presales->get_t_proforma_dtl_view($docno);
         $data = array();
@@ -2398,9 +2398,9 @@ SECTION PROFORMA INVOICE
             $row[] = '<select disabled class="idbarang-dropdown" style="width: 100%; height: 20px!important; font-size: 12px;" data-id="' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '">
                 <option value="" disabled>-- Choose --</option>
                 <option value="' . htmlspecialchars($lm->idbarang, ENT_QUOTES, 'UTF-8') . '">'
-                    . htmlspecialchars($lm->idbarang, ENT_QUOTES, 'UTF-8') . 
-                    ' <i class="fa fa-circle text-success" style="font-size:8px;"></i> ' . 
-                    htmlspecialchars($lm->nmbarang, ENT_QUOTES, 'UTF-8') . 
+                . htmlspecialchars($lm->idbarang, ENT_QUOTES, 'UTF-8') .
+                ' <i class="fa fa-circle text-success" style="font-size:8px;"></i> ' .
+                htmlspecialchars($lm->nmbarang, ENT_QUOTES, 'UTF-8') .
                 '</option>
             </select>';
 
@@ -2411,9 +2411,9 @@ SECTION PROFORMA INVOICE
             <option value="' . htmlspecialchars($lm->unit, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($lm->unit, ENT_QUOTES, 'UTF-8') . '</option>
             </select>';
             //qty
-            
+
             //price
-           // Price dengan Rp sejajar
+            // Price dengan Rp sejajar
             $row[] = '
             <div style="display:flex; align-items:center;">
                 <span style="margin-right:4px; font-size:12px;font-weight:bold">Rp</span>
@@ -2425,7 +2425,7 @@ SECTION PROFORMA INVOICE
                     value="'.number_format($lm->price, 2, '.', ',').'" 
                     disabled min="0">
             </div>';
-            
+
             //exchange
             $row[] = '
             <div style="display:flex; align-items:center;">
@@ -2450,7 +2450,7 @@ SECTION PROFORMA INVOICE
             //         value="'.number_format($lm->usdmt, 2, ',', '.').'" 
             //         disabled min="0">
             // </div>';    
-            
+
             //description
             $row[] = '<input class="form-control "   style="text-transform: uppercase;margin:0px; background-color:#d6d5d5;width: 100%" type="text" id="description_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" name="description_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($lm->description, ENT_QUOTES, 'UTF-8') . '" disabled >';
 
@@ -2549,7 +2549,7 @@ SECTION PROFORMA INVOICE
                 // 'pengiriman' => $pengiriman,
                 // 'expdate'    => $expdate,
                 // 'ketentuan'  => $ketentuan,
-                
+
                 'grosssales'         => $grosssales,
                 'downpayment'         => $downpayment,
                 'netsales'         => $netsales,
@@ -2566,7 +2566,7 @@ SECTION PROFORMA INVOICE
                 'accno'      => $accno,
                 'accname'      => $accname,
                 'swiftcode'      => $swiftcode,
-                
+
 
 
 
@@ -2617,7 +2617,7 @@ SECTION PROFORMA INVOICE
         $nama = trim($this->session->get('nama'));
         $docno = hex2bin($this->request->getGet('id'));
         $builder = $this->db->table('sc_trx.proforma');
-                
+
         // Update status menjadi 'C'
         $iupdate = array('status' => 'C');
         $builder->where('docno', $docno);
@@ -2626,7 +2626,7 @@ SECTION PROFORMA INVOICE
             // $builder->where('docno', $docno); 
             // $builder->where('status', 'C');
             // $builder->delete();
-            
+
             // // Menghapus data dari proformadtl
             // $this->db->table('sc_trx.proformadtl')
             //         ->where('docno', $docno)
@@ -2645,7 +2645,7 @@ SECTION PROFORMA INVOICE
         $id = $this->request->getPost('id'); // Ambil array ID
         $nama = trim($this->session->get('nama'));
         $docno = $this->request->getPost('docno'); // Ambil docno yang dikirim dari AJAX
-        
+
         if (empty($id) || empty($docno)) {
             echo json_encode(['status' => false, 'messages' => 'Missing Parameters']);
             return;
@@ -2692,17 +2692,17 @@ SECTION PROFORMA INVOICE
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.proforma');
 
-    //    $builder = $builder
-    //         ->where('docno', $docno)
-    //         ->update([
-    //             'status'=> 'P',
-    //             'printby' => $nama,
-    //             'printdate' => date('Y-m-d H:i:s')
-    //         ]);
+        //    $builder = $builder
+        //         ->where('docno', $docno)
+        //         ->update([
+        //             'status'=> 'P',
+        //             'printby' => $nama,
+        //             'printdate' => date('Y-m-d H:i:s')
+        //         ]);
 
-        
+
         $enc_docno = $this->fiky_encryption->sealed($docno);
-        
+
         //$enc_docdate= $this->fiky_encryption->sealed($docdate);
         // $enc_idlocation = $this->fiky_encryption->sealed($idlocation);
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
@@ -2714,7 +2714,7 @@ SECTION PROFORMA INVOICE
         $datajson =  base_url("sales/presales/api_proforma/?enc_docno=$enc_docno") ;
 
         // if($formheader==="HEADER"){
-            $datamrt =  base_url("assets/mrt/invoice.mrt") ;
+        $datamrt =  base_url("assets/mrt/invoice.mrt") ;
         // } else {
         //     $datamrt =  base_url("assets/mrt/report_proforma_non_header.mrt") ;
         // }
@@ -2733,9 +2733,9 @@ SECTION PROFORMA INVOICE
         // $idgroup=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idgroup')));
         //$docno=trim($this->request->getGet('enc_docno'));
 
-       // $ddate = explode(' - ',$docdate);
-       // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
-       // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
+        // $ddate = explode(' - ',$docdate);
+        // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
+        // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
 
         if (empty($docno) or $docno==='') {
             $param_brg = "";
@@ -2755,7 +2755,7 @@ SECTION PROFORMA INVOICE
         $datadtl = $this->m_presales->q_view_print_proforma_dtl($param,$nama);
         // $datadtl = $this->m_presales->q_proforma_dtl($param);
         $tampungdtl = $datamst->getResult();
-        $detail = $tampungdtl[0] ?? null;        
+        $detail = $tampungdtl[0] ?? null;
         if ($detail) {
 
             $tujuan = isset($detail->tujuan) ? trim($detail->tujuan) : '';
@@ -2777,7 +2777,7 @@ SECTION PROFORMA INVOICE
                     'userid' => $nama,
                     'param' => $param,
 
-                    ]
+                ]
                 ),
                 'branch' => $databranch->getResult(),
                 'master' => $datamst->getResult(),
@@ -2823,16 +2823,16 @@ SECTION PROFORMA INVOICE
 
         $builder = $this->db->table('sc_trx.proforma');
         $builder->select("docno");
-        $builder->like('docno', $pattern, 'after'); 
+        $builder->like('docno', $pattern, 'after');
         $builder->orderBy('docno', 'ASC');
-        
+
         $result = $builder->get()->getResultArray();
 
         $newSeq = '0001'; // Default
 
         if (!empty($result)) {
             $existingSequences = [];
-            
+
             // Ekstrak sequence number dari setiap docno
             foreach ($result as $row) {
                 $parts = explode('/', $row['docno']);
@@ -2844,7 +2844,7 @@ SECTION PROFORMA INVOICE
             // --- LOGIKA BARU: Cari gap ATAU lanjutkan dari max ---
             $maxSeq = max($existingSequences);
             $newSeq = $maxSeq + 1; // Default: lanjut dari max
-            
+
             // Cari gap dari 1 sampai maxSeq
             for ($i = 1; $i <= $maxSeq; $i++) {
                 if (!in_array($i, $existingSequences)) {
@@ -2852,7 +2852,7 @@ SECTION PROFORMA INVOICE
                     break;
                 }
             }
-            
+
             $newSeq = str_pad($newSeq, 4, '0', STR_PAD_LEFT);
         }
 

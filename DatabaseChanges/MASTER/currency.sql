@@ -117,48 +117,286 @@ add column createddate TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 add column updateby CHARACTER(20),
 add column updatedate TIMESTAMP WITHOUT TIME ZONE
 
+ALTER TABLE sc_mst.currency
+ADD CONSTRAINT currency_currcode_unique
+UNIQUE (currcode);
 
 /* nilai coa persediaan*/
-UPDATE sc_mst.currency
-SET
-    -- ========================
+BEGIN;
+
+-- =========================================================
+-- CLEAN EXISTING MASTER
+-- =========================================================
+
+DELETE FROM sc_mst.exchangerate;
+DELETE FROM sc_mst.currency;
+
+
+-- =========================================================
+-- INSERT MASTER CURRENCY + COA
+-- =========================================================
+
+INSERT INTO sc_mst.currency
+(
+    currcode,
+    currname,
+    createdby,
+
     -- PEMBELIAN
-    -- ========================
-    phutang = '213102',        -- Hutang Dagang DN-BHN Penolong
-    pum = '117101',            -- UM Pembelian
-    pbonus = '5116',           -- Potongan Pembelian
-    hutangac = '213101',       -- Hutang Antar Cabang
-    hutangbiaya1 = '216101',   -- Hutang Lain
-    hutangbiaya2 = '216101',   -- Hutang Lain
+    phutang,
+    pum,
+    pbonus,
+    hutangac,
+    hutangbiaya1,
+    hutangbiaya2,
 
-    -- ========================
     -- PENJUALAN
-    -- ========================
-    ppiutang = '113101',       -- Piutang Dagang
-    pumjual = '218101',        -- UM Penjualan
-    ppendapatan = '411101',    -- Pendapatan
-    pretur = '431101',         -- Retur Penjualan
-    pdisc = '421101',          -- Discount Penjualan
-    pbonusjual = '421101',     -- Bonus Penjualan
-    ptunai = '111103',         -- Kas
-    piutangac = '113101',      -- Piutang Antar Cabang
-    pendapatanac = '411101',   -- Pendapatan Antar Cabang
-    pps = '711101',            -- Pendapatan Service
+    ppiutang,
+    pumjual,
+    ppendapatan,
+    pretur,
+    pdisc,
+    pbonusjual,
+    ptunai,
+    piutangac,
+    pendapatanac,
+    pps,
 
-    -- ========================
-    -- AUDIT
-    -- ========================
-    updateby = 'SYSTEM',
-    updatedate = NOW()
+    createddate,
+    updateby,
+    updatedate
+)
+VALUES
 
-WHERE currcode = 'IDR';
+-- =========================================================
+-- IDR
+-- =========================================================
+(
+    'IDR',
+    'RUPIAH',
+    'SYSTEM',
 
-UPDATE sc_mst.currency
-SET
-    phutang = '213201',      -- hutang USD
-    ppiutang = '113201',     -- piutang USD
-    ppendapatan = '411201',  -- revenue USD
-    ptunai = '111101',
-    updateby = 'SYSTEM',
-    updatedate = NOW()
-WHERE currcode = 'USD';
+    -- PEMBELIAN
+    '213102',
+    '117101',
+    '5116',
+    '213101',
+    '216101',
+    '216101',
+
+    -- PENJUALAN
+    '113101',
+    '218101',
+    '411101',
+    '431101',
+    '421101',
+    '421101',
+    '111103',
+    '113101',
+    '411101',
+    '441101',
+
+    NOW(),
+    'SYSTEM',
+    NOW()
+),
+
+-- =========================================================
+-- USD
+-- =========================================================
+(
+    'USD',
+    'UNITED STATES DOLLAR (LUAR NEGERI)',
+    'SYSTEM',
+
+    -- PEMBELIAN
+    '213201',
+    '117102',
+    '5116',
+    '213201',
+    '213201',
+    '213201',
+
+    -- PENJUALAN
+    '113201',
+    '218102',
+    '411201',
+    '431201',
+    '421201',
+    '421201',
+    '111103',
+    '113201',
+    '441101',
+    '441101',
+
+    NOW(),
+    'SYSTEM',
+    NOW()
+),
+
+-- =========================================================
+-- EUR
+-- =========================================================
+(
+    'EUR',
+    'EURO (LUAR NEGERI)',
+    'SYSTEM',
+
+    -- PEMBELIAN
+    '213201',
+    '117202',
+    '5116',
+    '213201',
+    '213201',
+    '213201',
+
+    -- PENJUALAN
+    '113201',
+    '218102',
+    '411201',
+    '431201',
+    '421201',
+    '441101',
+    '111103',
+    '113201',
+    '441101',
+    '441101',
+
+    NOW(),
+    'SYSTEM',
+    NOW()
+),
+
+-- =========================================================
+-- AUD
+-- =========================================================
+(
+    'AUD',
+    'AUSTRALIA DOLLAR (LUAR NEGERI)',
+    'SYSTEM',
+
+    -- PEMBELIAN
+    '213102',
+    '117102',
+    '5116',
+    '213102',
+    '213102',
+    '213102',
+
+    -- PENJUALAN
+    '113102',
+    '218102',
+    '411101',
+    '431102',
+    '421102',
+    '441101',
+    '111103',
+    '113102',
+    '441101',
+    '441101',
+
+    NOW(),
+    'SYSTEM',
+    NOW()
+),
+
+-- =========================================================
+-- SGD
+-- =========================================================
+(
+    'SGD',
+    'SINGAPORE DOLLAR (LUAR NEGERI)',
+    'SYSTEM',
+
+    -- PEMBELIAN
+    '213201',
+    '117202',
+    '5116',
+    '213201',
+    '213201',
+    '213201',
+
+    -- PENJUALAN
+    '113201',
+    '218102',
+    '411201',
+    '431201',
+    '421201',
+    '421201',
+    '111103',
+    '113201',
+    '441101',
+    '441101',
+
+    NOW(),
+    'SYSTEM',
+    NOW()
+),
+
+-- =========================================================
+-- RMB
+-- =========================================================
+(
+    'RMB',
+    'CHINESE YUAN (LUAR NEGERI)',
+    'SYSTEM',
+
+    -- PEMBELIAN
+    '213201',
+    '117202',
+    '5116',
+    '213201',
+    '213201',
+    '213201',
+
+    -- PENJUALAN
+    '113201',
+    '218102',
+    '411201',
+    '431201',
+    '421201',
+    '421201',
+    '111103',
+    '113201',
+    '411101',
+    '441101',
+
+    NOW(),
+    'SYSTEM',
+    NOW()
+),
+
+-- =========================================================
+-- YEN
+-- =========================================================
+(
+    'YEN',
+    'YEN JEPANG (LUAR NEGERI)',
+    'SYSTEM',
+
+    -- PEMBELIAN
+    '213201',
+    '117102',
+    '5116',
+    '213201',
+    '213201',
+    '213201',
+
+    -- PENJUALAN
+    '113201',
+    '218102',
+    '411201',
+    '431201',
+    '421201',
+    '421201',
+    '111103',
+    '113201',
+    '441101',
+    '441101',
+
+    NOW(),
+    'SYSTEM',
+    NOW()
+);
+
+COMMIT;

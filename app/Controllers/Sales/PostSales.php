@@ -11,7 +11,7 @@ class PostSales extends BaseController
 
     //Sales Order External
 
-    
+
     public function salesorderexternal()
     {
         $data['title']="Sales Order External";
@@ -175,8 +175,8 @@ class PostSales extends BaseController
                                         id="menu1" type="button" data-bs-toggle="dropdown" autocomplete="off" aria-expanded="false">
                                         <i class="fa fa-bars"></i><span class="caret"></span>
                                     </button>
-                                    <div class="dropdown-menu" role="menu">' . 
-                                    $updateBtn . $printBtn . $deleteBtn . $detailBtn . '</div>
+                                    <div class="dropdown-menu" role="menu">' .
+                    $updateBtn . $printBtn . $deleteBtn . $detailBtn . '</div>
                                 </div>';
             } else {
                 // Jika bukan CETAK/PRINT atau CANCEL, hanya tampilkan tombol Detail
@@ -188,8 +188,8 @@ class PostSales extends BaseController
                                     <div class="dropdown-menu" role="menu">' . $detailBtn . '</div>
                                 </div>';
             }
-                                
-            
+
+
 
             // $dropdownMenu .= $deleteBtn . '</div></div>';
 
@@ -203,7 +203,7 @@ class PostSales extends BaseController
             $row[] = $lm->phone;
             $row[] = $lm->fax;
             $row[] = $lm->pic;
-            
+
             // $row[] = $lm->status_desc ?? $lm->status;
             $status = $lm->status_desc ?? $lm->status;
             $badgeClass = 'badge-secondary'; // Default
@@ -272,9 +272,9 @@ class PostSales extends BaseController
                 echo json_encode($result);
             }
         } else {
-                // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                // echo json_encode($result);
-                return redirect()->to(base_url('sales/postsales/salesorderexternal'));
+            // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+            // echo json_encode($result);
+            return redirect()->to(base_url('sales/postsales/salesorderexternal'));
         }
 
     }
@@ -396,12 +396,12 @@ class PostSales extends BaseController
         //     return redirect()->to(base_url('sales/postsales/addSalesOrderExternal'))
         //         ->with('error', 'Return date is required when selecting "Kembali".');
         // }
-    
+
         // if ($jenisbarang === 'lainlain' && empty($baranglain)) {
         //     return redirect()->to(base_url('sales/postsales/addSalesOrderExternal'))
         //         ->with('error', 'Other goods description is required when selecting "Lain-lain".');
         // }
-    
+
 
         if (empty($countx)) {
             $info = array (
@@ -484,11 +484,11 @@ class PostSales extends BaseController
         $loccode = trim($this->session->get('loccode'));
         $inputby = $nama;
         $inputdate = date('Y-m-d H:i:s');
-    
+
         // Ambil body request dalam bentuk JSON
         $request_body = file_get_contents('php://input');
         $data = json_decode($request_body);
-    
+
         // Validasi apakah request memiliki key yang benar
         if (!isset($data->key) || $data->key !== '1203jD0j120dkjjKODNOoimdi)D(J)Jmjid0sjd0ijme09wjei0kjisdjfDSojiodksOjO') {
             return $this->response->setJSON([
@@ -496,14 +496,14 @@ class PostSales extends BaseController
                 'message' => 'Invalid Request Key!'
             ]);
         }
-    
+
         // Ambil data dari body JSON
         $dataprocess = $data->body;
         $idunit = isset($dataprocess->idunit) ? trim($dataprocess->idunit) : null;
         $namabarang = isset($dataprocess->namabarang) ? trim($dataprocess->namabarang) : null;
         $qty = isset($dataprocess->qty) ? trim($dataprocess->qty) : null;
         $description = isset($dataprocess->description) ? trim($dataprocess->description) : null;
-    
+
         // Validasi data tidak boleh kosong
         if (empty($idunit) || empty($namabarang) || empty($qty) || empty($description)) {
             return $this->response->setJSON([
@@ -511,7 +511,7 @@ class PostSales extends BaseController
                 'message' => 'Please fill all required fields (Unit, Item Name, Qty, Description).'
             ]);
         }
-    
+
         // Data untuk disimpan ke database
         $data_insert = [
             'docno' => $inputby,
@@ -523,11 +523,11 @@ class PostSales extends BaseController
             'inputdate' => $inputdate,
             'status' => 'I'
         ];
-    
+
         // Insert ke database
         $builder = $this->db->table('sc_tmp.salesorderexternaldtl'); // Sesuaikan dengan tabel Anda
         $insert = $builder->insert($data_insert);
-    
+
         // Cek apakah berhasil insert
         if ($insert) {
             return $this->response->setJSON([
@@ -548,7 +548,7 @@ class PostSales extends BaseController
         $nama = trim($this->session->get('nama'));
         $inputby = $nama;
         $inputdate = date('Y-m-d H:i:s');
-         // Ambil body request dalam bentuk JSON
+        // Ambil body request dalam bentuk JSON
         $request_body = file_get_contents('php://input');
         $data = json_decode($request_body);
 
@@ -559,8 +559,8 @@ class PostSales extends BaseController
                 'message' => 'Invalid Request Key!'
             ]);
         }
-    
-          // Ambil docno dari body
+
+        // Ambil docno dari body
         $docno = isset($data->body->docno) ? trim($data->body->docno) : '';
 
         if ($docno === '') {
@@ -577,11 +577,11 @@ class PostSales extends BaseController
             // 'exchange' => 
             'status' => 'I' // Status awal Insert
         ];
-    
+
         // Insert ke database
         $builder = $this->db->table('sc_tmp.salesorderexternaldtl');
         $insert = $builder->insert($data_insert);
-    
+
         // Cek apakah berhasil insert
         if ($insert) {
             return $this->response->setJSON([
@@ -596,8 +596,8 @@ class PostSales extends BaseController
             ]);
         }
     }
-    
-    
+
+
 
 
     public function update_detail_salesorderexternal()
@@ -627,16 +627,16 @@ class PostSales extends BaseController
                 $specno = $update['specno'] ?? '';
                 $ordernumbermsr = $update['ordernumbermsr'] ?? '';
                 $etd = $update['etd'] ? date('Y-m-d',strtotime($update['etd'])) : '';
-                
+
                 $qty = $update['qty'] ?? 0;
                 $price = $update['price'] ?? 0;
                 $amount = $update['amount'] ?? 0;
                 $totaldelivery = $update['totaldelivery'] ?? 0;
                 $balanceorder = $update['balanceorder'] ?? 0;
-                
+
                 $usdmt = $update['usdmt'] ?? 0;
                 $exchange = $update['exchange'] ?? 0;
-                
+
                 $description = strtoupper($update['description']) ?? '';
 
                 if (empty($idurut)) {
@@ -737,23 +737,23 @@ class PostSales extends BaseController
             $row[] = '<select disabled class="idbarang-dropdown" style="width: 100%; height: 20px!important; font-size: 12px;" data-id="' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '">
                 <option value="" disabled>-- Choose --</option>
                 <option value="' . htmlspecialchars($lm->idbarang, ENT_QUOTES, 'UTF-8') . '" selected>'
-                    . htmlspecialchars($lm->nmbarang, ENT_QUOTES, 'UTF-8') . 
+                . htmlspecialchars($lm->nmbarang, ENT_QUOTES, 'UTF-8') .
                 '</option>
             </select>';
 
 
-             //grade
+            //grade
             $row[] = '<input class="form-control " maxlength="100"  style="text-transform: uppercase;margin:0px; background-color:#d6d5d5;width: 100%" type="text" id="grade_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" name="grade_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($lm->grade, ENT_QUOTES, 'UTF-8') . '" disabled >';
-            
+
             //size
             $row[] = '<input class="form-control " maxlength="100"  style="text-transform: uppercase;margin:0px; background-color:#d6d5d5;width: 100%" type="text" id="size_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" name="size_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($lm->size, ENT_QUOTES, 'UTF-8') . '" disabled >';
 
             //cutlength
             $row[] = '<input class="form-control " maxlength="100"  style="text-transform: uppercase;margin:0px; background-color:#d6d5d5;width: 100%" type="text" id="cutlength_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" name="cutlength_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($lm->cutlength, ENT_QUOTES, 'UTF-8') . '" disabled >';
 
-             //qty
+            //qty
             $row[] = '<input class="form-control ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;" type="text" id="qty_'.$lm->idurut.'" name="qty_'.$lm->idurut.'" value="'.number_format($lm->qty, 2, ',', '.').'" disabled  min="0">';
-            
+
             //unit
             $row[] = '<select disabled class="unit-dropdown" style="width: 100%; height: 20px!important; font-size: 12px; " data-id="' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '">
                 <option value="" disabled>-- Choose --</option>
@@ -772,8 +772,8 @@ class PostSales extends BaseController
                     name="usdmt_'.$lm->idurut.'" 
                     value="'.number_format($lm->usdmt, 2, ',', '.').'" 
                     disabled min="0">
-            </div>';    
-            
+            </div>';
+
 
             //price
             // Price dengan Rp sejajar
@@ -788,7 +788,7 @@ class PostSales extends BaseController
                     value="'.number_format($lm->price, 2, ',', '.').'" 
                     disabled min="0">
                     </div>';
-                    
+
             //exchange
             $row[] = '
                 <div style="display:flex; align-items:center;">
@@ -828,12 +828,12 @@ class PostSales extends BaseController
             //specno
             $row[] = '<input class="form-control " maxlength="150"  style="text-transform: uppercase;margin:0px; background-color:#d6d5d5;width: 100%" type="text" id="specno_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" name="specno_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($lm->specno, ENT_QUOTES, 'UTF-8') . '" disabled >';
 
-              //totaldelivery
+            //totaldelivery
             $row[] = '<input class="form-control ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;" type="text" id="totaldelivery_'.$lm->idurut.'" name="totaldelivery_'.$lm->idurut.'" value="'.number_format($lm->totaldelivery, 2, ',', '.').'" disabled  min="0">';
-            
-              //balanceorder
+
+            //balanceorder
             $row[] = '<input class="form-control ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;" type="text" id="balanceorder_'.$lm->idurut.'" name="balanceorder_'.$lm->idurut.'" value="'.number_format($lm->balanceorder, 2, ',', '.').'" disabled  min="0">';
-            
+
             $row[] = '';
 
 
@@ -849,7 +849,7 @@ class PostSales extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-        function list_t_salesorderexternal_dtltrx(){
+    function list_t_salesorderexternal_dtltrx(){
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_postsales->get_t_salesorderexternal_dtl_view($docno);
         $data = array();
@@ -863,23 +863,23 @@ class PostSales extends BaseController
             $row[] = '<select disabled class="idbarang-dropdown" style="width: 100%; height: 20px!important; font-size: 12px;" data-id="' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '">
                 <option value="" disabled>-- Choose --</option>
                 <option value="' . htmlspecialchars($lm->idbarang, ENT_QUOTES, 'UTF-8') . '" selected>'
-                    . htmlspecialchars($lm->nmbarang, ENT_QUOTES, 'UTF-8') . 
+                . htmlspecialchars($lm->nmbarang, ENT_QUOTES, 'UTF-8') .
                 '</option>
             </select>';
 
 
-             //grade
+            //grade
             $row[] = '<input class="form-control " maxlength="100"  style="text-transform: uppercase;margin:0px; background-color:#d6d5d5;width: 100%" type="text" id="grade_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" name="grade_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($lm->grade, ENT_QUOTES, 'UTF-8') . '" disabled >';
-            
+
             //size
             $row[] = '<input class="form-control " maxlength="100"  style="text-transform: uppercase;margin:0px; background-color:#d6d5d5;width: 100%" type="text" id="size_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" name="size_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($lm->size, ENT_QUOTES, 'UTF-8') . '" disabled >';
 
             //cutlength
             $row[] = '<input class="form-control " maxlength="100"  style="text-transform: uppercase;margin:0px; background-color:#d6d5d5;width: 100%" type="text" id="cutlength_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" name="cutlength_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($lm->cutlength, ENT_QUOTES, 'UTF-8') . '" disabled >';
 
-             //qty
+            //qty
             $row[] = '<input class="form-control ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;" type="text" id="qty_'.$lm->idurut.'" name="qty_'.$lm->idurut.'" value="'.number_format($lm->qty, 2, ',', '.').'" disabled  min="0">';
-            
+
             //unit
             $row[] = '<select disabled class="unit-dropdown" style="width: 100%; height: 20px!important; font-size: 12px; " data-id="' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '">
                 <option value="" disabled>-- Choose --</option>
@@ -898,8 +898,8 @@ class PostSales extends BaseController
                     name="usdmt_'.$lm->idurut.'" 
                     value="'.number_format($lm->usdmt, 2, ',', '.').'" 
                     disabled min="0">
-            </div>';    
-            
+            </div>';
+
 
             //price
             // Price dengan Rp sejajar
@@ -914,7 +914,7 @@ class PostSales extends BaseController
                     value="'.number_format($lm->price, 2, ',', '.').'" 
                     disabled min="0">
                     </div>';
-                    
+
             //exchange
             $row[] = '
                 <div style="display:flex; align-items:center;">
@@ -954,12 +954,12 @@ class PostSales extends BaseController
             //specno
             $row[] = '<input class="form-control " maxlength="150"  style="text-transform: uppercase;margin:0px; background-color:#d6d5d5;width: 100%" type="text" id="specno_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" name="specno_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($lm->specno, ENT_QUOTES, 'UTF-8') . '" disabled >';
 
-              //totaldelivery
+            //totaldelivery
             $row[] = '<input class="form-control ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;" type="text" id="totaldelivery_'.$lm->idurut.'" name="totaldelivery_'.$lm->idurut.'" value="'.number_format($lm->totaldelivery, 2, ',', '.').'" disabled  min="0">';
-            
-              //balanceorder
+
+            //balanceorder
             $row[] = '<input class="form-control ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;" type="text" id="balanceorder_'.$lm->idurut.'" name="balanceorder_'.$lm->idurut.'" value="'.number_format($lm->balanceorder, 2, ',', '.').'" disabled  min="0">';
-            
+
             $row[] = '';
 
 
@@ -1130,7 +1130,7 @@ class PostSales extends BaseController
         $nama = trim($this->session->get('nama'));
         $docno = hex2bin($this->request->getGet('id'));
         $builder = $this->db->table('sc_trx.salesorderexternal');
-                
+
         // Update status menjadi 'C'
         $iupdate = array('status' => 'C');
         $builder->where('docno', $docno);
@@ -1139,7 +1139,7 @@ class PostSales extends BaseController
             // $builder->where('docno', $docno); 
             // $builder->where('status', 'C');
             // $builder->delete();
-            
+
             // // Menghapus data dari salesorderexternaldtl
             // $this->db->table('sc_trx.salesorderexternaldtl')
             //         ->where('docno', $docno)
@@ -1158,7 +1158,7 @@ class PostSales extends BaseController
         $id = $this->request->getPost('id'); // Ambil array ID
         $nama = trim($this->session->get('nama'));
         $docno = $this->request->getPost('docno'); // Ambil docno yang dikirim dari AJAX
-        
+
         if (empty($id) || empty($docno)) {
             echo json_encode(['status' => false, 'messages' => 'Missing Parameters']);
             return;
@@ -1203,7 +1203,7 @@ class PostSales extends BaseController
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.salesorderexternal');
 
-       $builder = $builder
+        $builder = $builder
             ->where('docno', $docno)
             ->update([
                 'status'=> 'P',
@@ -1211,9 +1211,9 @@ class PostSales extends BaseController
                 'printdate' => date('Y-m-d H:i:s')
             ]);
 
-        
+
         $enc_docno = $this->fiky_encryption->sealed($docno);
-        
+
         //$enc_docdate= $this->fiky_encryption->sealed($docdate);
         // $enc_idlocation = $this->fiky_encryption->sealed($idlocation);
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
@@ -1225,7 +1225,7 @@ class PostSales extends BaseController
         $datajson =  base_url("sales/postsales/api_salesorderexternal/?enc_docno=$enc_docno") ;
 
         // if($formheader==="HEADER"){
-            $datamrt =  base_url("assets/mrt/report_salesorderexternal.mrt") ;
+        $datamrt =  base_url("assets/mrt/report_salesorderexternal.mrt") ;
         // } else {
         //     $datamrt =  base_url("assets/mrt/report_salesorderexternal_non_header.mrt") ;
         // }
@@ -1244,9 +1244,9 @@ class PostSales extends BaseController
         // $idgroup=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idgroup')));
         //$docno=trim($this->request->getGet('enc_docno'));
 
-       // $ddate = explode(' - ',$docdate);
-       // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
-       // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
+        // $ddate = explode(' - ',$docdate);
+        // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
+        // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
 
         if (empty($docno) or $docno==='') {
             $param_brg = "";
@@ -1265,11 +1265,11 @@ class PostSales extends BaseController
         $datamst = $this->m_postsales->q_salesorderexternal_master($param);
         $datadtl = $this->m_postsales->q_salesorderexternal_dtl($param);
         $tampungdtl = $datamst->getResult();
-        $detail = $tampungdtl[0] ?? null;        
+        $detail = $tampungdtl[0] ?? null;
         if ($detail) {
 
             $tujuan = isset($detail->tujuan) ? trim($detail->tujuan) : '';
-        
+
             // // Tambahkan properti baru isPindah
             // $detail->isPindah = false; // Default value
             // if ($tujuan === 'pindah') {
@@ -1333,7 +1333,7 @@ class PostSales extends BaseController
                     'userid' => $nama,
                     'param' => $param,
 
-                    ]
+                ]
                 ),
                 'branch' => $databranch->getResult(),
                 'master' => $datamst->getResult(),
@@ -1356,7 +1356,7 @@ class PostSales extends BaseController
         }
 
         // Mapping prefix default
-        $prefixMap = [  
+        $prefixMap = [
             'JTS'  => 'JTS-SO',
             'MSMI' => 'MSMI-SO',
             'MSMJ' => 'MSM-SO'
@@ -1422,11 +1422,11 @@ class PostSales extends BaseController
 
 
 
-    
+
     // =================================== SALES ORDER ===========================================
 
 
-     public function salesorder()
+    public function salesorder()
     {
         $data['title']="Sales Order";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
@@ -1477,7 +1477,7 @@ class PostSales extends BaseController
 
         $kmenu = 'I.S.B.1';
         $role = trim($this->session->get('roleid'));
-        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
+        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
         //auto insert unit
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
@@ -1566,7 +1566,7 @@ class PostSales extends BaseController
             $docno  = trim($lm->docno);
             $docnoHex = bin2hex($docno);
 
-            
+
             $updateBtn = '';
             $detailBtn = '';
             $printBtn  = '';
@@ -1579,7 +1579,7 @@ class PostSales extends BaseController
             // =========================
 
             if ($canUpdate && trim($lm->inputby) == $nama && empty($lm->printby) &&
-                empty($lm->printdate) && 
+                empty($lm->printdate) &&
                 trim($status) == 'FINAL USER'
             ) {
                 $updateBtn = '
@@ -1591,8 +1591,8 @@ class PostSales extends BaseController
             }
 
             if($canView){
-                $detailBtn = 
-                '<a class="dropdown-item" 
+                $detailBtn =
+                    '<a class="dropdown-item" 
                     style="background-color:#3badf6;" 
                     href="' . base_url('sales/postsales/detailSalesOrder') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'View Detail Sales Order : ' . $docno . '\')">
@@ -1611,7 +1611,7 @@ class PostSales extends BaseController
             }
 
             if ($canDelete && trim($lm->inputby) == $nama && empty($lm->printby) &&
-                empty($lm->printdate) && 
+                empty($lm->printdate) &&
                 trim($status) == 'FINAL USER'
             ) {
                 $cancelBtn =  '<a class="dropdown-item bg-danger" href="#" onclick="setToCancel(\'' . trim($lm->docno) . '\');">
@@ -1629,7 +1629,7 @@ class PostSales extends BaseController
                     <i class="fa fa-times-circle"></i> Disapprove</a>';
             }
 
-            
+
 
 
             $menuContent = '';
@@ -1740,13 +1740,13 @@ class PostSales extends BaseController
             }
 
             $row[] = $jatuhTempo;
-            
+
             $row[] = $lm->nmsalesman;
             $row[] = $lm->pocust;
             $row[] = $lm->keterangan;
 
             $row[] = $lm->nmbranch;
-            
+
 
             $data[] = $row;
         }
@@ -1760,7 +1760,7 @@ class PostSales extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-    
+
     function list_salesorder_apprv(){
         $list = $this->m_postsales->get_t_front_salesorder_apprv_view();
         $data = array();
@@ -1787,7 +1787,7 @@ class PostSales extends BaseController
             $docno  = trim($lm->docno);
             $docnoHex = bin2hex($docno);
 
-            
+
             $updateBtn = '';
             $detailBtn = '';
             $printBtn  = '';
@@ -1808,8 +1808,8 @@ class PostSales extends BaseController
             }
 
             if($canView){
-                $detailBtn = 
-                '<a class="dropdown-item" 
+                $detailBtn =
+                    '<a class="dropdown-item" 
                     style="background-color:#3badf6;" 
                     href="' . base_url('sales/postsales/detailSalesOrder') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'View Detail Sales Order : ' . $docno . '\')">
@@ -1829,7 +1829,7 @@ class PostSales extends BaseController
 
 
             if (trim($status) !== 'APPROVED' && trim($status) !== 'REVISION/EDITING') {
-                    $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
+                $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
                         <i class="fa fa-check-circle"></i> Approve</a>';
             }
 
@@ -1938,13 +1938,13 @@ class PostSales extends BaseController
             }
 
             $row[] = $jatuhTempo;
-            
+
             $row[] = $lm->nmsalesman;
             $row[] = $lm->pocust;
             $row[] = $lm->keterangan;
 
             $row[] = $lm->nmbranch;
-            
+
 
             $data[] = $row;
         }
@@ -1993,9 +1993,9 @@ class PostSales extends BaseController
                 echo json_encode($result);
             }
         } else {
-                // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                // echo json_encode($result);
-                return redirect()->to(base_url('sales/postsales/salesorder'));
+            // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+            // echo json_encode($result);
+            return redirect()->to(base_url('sales/postsales/salesorder'));
         }
 
     }
@@ -2057,7 +2057,7 @@ class PostSales extends BaseController
     }
 
 
-   public function getBranchInfoSalesOrder()
+    public function getBranchInfoSalesOrder()
     {
         $idbranch = trim($this->request->getGet('idbranch'));
 
@@ -2202,7 +2202,7 @@ class PostSales extends BaseController
         $docno  = strtoupper(trim($this->request->getPost('docno')));
         // $docnopo = strtoupper(trim($this->request->getPost('docnopo')));
         $idurut = $this->request->getPost('idurut'); // HAPUS strtoupper, biarkan apa adanya
-        
+
         // Tambahkan mode untuk membedakan add/edit dengan lebih jelas
         // $mode = $this->request->getPost('mode'); // 'add' atau 'edit'
 
@@ -2228,19 +2228,19 @@ class PostSales extends BaseController
 
         $reload = false;
         // Untuk pengambilan data dari POST
-        
+
         if ($exists == 0) {
             $isinclusive = strtoupper(trim(
-                $this->request->getPost('isinclusive') 
-                ?? $dataprocess->isinclusive 
+                $this->request->getPost('isinclusive')
+                ?? $dataprocess->isinclusive
                 ?? 'NO'
             ));
 
             $isinclusive = ($isinclusive === 'YES') ? 'YES' : 'NO';
 
             $isopenprice = strtoupper(trim(
-                $this->request->getPost('isopenprice') 
-                ?? $dataprocess->isopenprice 
+                $this->request->getPost('isopenprice')
+                ?? $dataprocess->isopenprice
                 ?? 'NO'
             ));
 
@@ -2254,7 +2254,7 @@ class PostSales extends BaseController
                 'jthtempo'     => $this->request->getPost('jthtempo'),
                 'isinclusive'     => $isinclusive,
                 'isopenprice'     => $isopenprice,
-                
+
                 'kdcustomer'    => strtoupper($this->request->getPost('kdcustomer')),
                 'alamatcustomer'    => strtoupper($this->request->getPost('alamatcustomer')),
                 // 'alamatkirim'    => strtoupper($this->request->getPost('alamatkirim')),
@@ -2302,10 +2302,10 @@ class PostSales extends BaseController
             $soHeader = $builderHeader->select('kurs, idtax')->where('docno', $docno)->get()->getRowArray();
             $kurs = $soHeader['kurs'] ?? 0;
             $idtax = $soHeader['idtax'] ?? '';
-            
+
             // Hitung nilaikonversi = nilai * kurs
             $nilaikonversi = $nilai * $kurs;
-            
+
             // Hitung nilaipajak berdasarkan idtax
             $nilaipajak = 0;
             if (!empty($idtax) && trim($idtax) !== 'NON' && $nilai > 0) {
@@ -2315,13 +2315,13 @@ class PostSales extends BaseController
                     ->where('idtax', $idtax)
                     ->get()
                     ->getResultArray();
-                
+
                 $totalPersentase = 0;
                 foreach ($taxDetails as $tax) {
                     $persentase = $tax['percentation'] ?? 0;
                     $totalPersentase += $persentase;
                 }
-                
+
                 // Hitung nilaipajak = nilai + (nilai * totalPersentase / 100)
                 // $nilaipajak = $nilai + ($nilai * $totalPersentase / 100);
                 $nilaipajak = $nilai * $totalPersentase / 100;
@@ -2357,10 +2357,10 @@ class PostSales extends BaseController
 
 
 
-            
-            
+
+
             $message = 'Data berhasil diupdate';
-            
+
         } else {
 
             // =====================================================
@@ -2377,16 +2377,16 @@ class PostSales extends BaseController
             $idprincipal = strtoupper($this->request->getPost('idprincipal'));
             $idgudang = strtoupper($this->request->getPost('idgudang'));
             $idspec = strtoupper($this->request->getPost('idspec'));
-            
-            
+
+
             // Ambil kurs dari header SO
             $soHeader = $builderHeader->select('kurs, idtax')->where('docno', $docno)->get()->getRowArray();
             $kurs = $soHeader['kurs'] ?? 0;
             $idtax = $soHeader['idtax'] ?? '';
-            
+
             // Hitung nilaikonversi = nilai * kurs
             $nilaikonversi = $nilai * $kurs;
-            
+
             // Hitung nilaipajak berdasarkan idtax
             $nilaipajak = 0;
             if (!empty($idtax) && trim($idtax) !== 'NON' && $nilai > 0) {
@@ -2396,13 +2396,13 @@ class PostSales extends BaseController
                     ->where('idtax', $idtax)
                     ->get()
                     ->getResultArray();
-                
+
                 $totalPersentase = 0;
                 foreach ($taxDetails as $tax) {
                     $persentase = $tax['percentation'] ?? 0;
                     $totalPersentase += $persentase;
                 }
-                
+
                 // Hitung nilaipajak = nilai + (nilai * totalPersentase / 100)
                 // $nilaipajak = $nilai + ($nilai * $totalPersentase / 100);
                 $nilaipajak = $nilai * $totalPersentase / 100;
@@ -2411,14 +2411,14 @@ class PostSales extends BaseController
                 // Jika NON pajak, nilaipajak sama dengan nilai
                 $nilaipajak = $nilai;
             }
-            
+
 
 
             $inputdate = date('Y-m-d H:i:s');
-            $rawUnique = $nmbarang 
-            . '|' . $docno 
-            . '|' . $nama
-            . '|' . $inputdate;
+            $rawUnique = $nmbarang
+                . '|' . $docno
+                . '|' . $nama
+                . '|' . $inputdate;
 
             $uniqueid  = hash('sha256', $rawUnique);
 
@@ -2447,29 +2447,29 @@ class PostSales extends BaseController
                 'inputdate'   => date('Y-m-d H:i:s'),
                 'uniqueid'    => $uniqueid
             ]);
-            
+
             $message = "item berhasil ditambahkan";
         }
 
         $salesorderHeader = $builderHeader->select('idtax')
-        ->where('docno', $docno)
-        ->where('inputby', $nama)
-        ->get()->getRowArray();
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->get()->getRowArray();
 
         $idtax = $salesorderHeader['idtax'] ?? '';
-        
+
         // Hitung total DPP (sum nilai dari po_dtl)
         $builderTotalDpp = $db->table('sc_tmp.salesorder_dtl');
         $totalDpp = $builderTotalDpp->select('COALESCE(SUM(nilai), 0) as total_dpp')
             ->where('docno', $docno)
             ->get()
             ->getRowArray();
-        
+
         $dpp = $totalDpp['total_dpp'] ?? 0;
-        
+
         // Hitung jumlah pajak berdasarkan idtax
         $jumlahPajak = 0;
-        
+
         if (!empty($idtax) && trim($idtax) !== 'NON'  && $dpp > 0) {
             // Ambil detail tax dari sc_mst.tax_dtl
             $builderTaxDtl = $db->table('sc_mst.tax_dtl');
@@ -2477,16 +2477,16 @@ class PostSales extends BaseController
                 ->where('idtax', $idtax)
                 ->get()
                 ->getResultArray();
-            
+
             foreach ($taxDetails as $tax) {
                 $persentase = $tax['percentation'] ?? 0;
                 $jumlahPajak += $dpp * ($persentase / 100);
             }
         }
-        
+
         // Hitung total (DPP + Jumlah Pajak)
         $total = $dpp + $jumlahPajak;
-        
+
         // Update header SalesOrder
         $builderHeader->where('docno', $docno)->where('inputby', $nama)->update([
             'dpp' => number_format($dpp, 2, '.', ''),
@@ -2846,8 +2846,8 @@ class PostSales extends BaseController
             $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 0, '.', ',') . '</div>';
             $row[] = $lm->bomdesc;
             // $row[] = $lm->descriptionpp;
-            $data[] = $row;   
-            
+            $data[] = $row;
+
         }
 
         $output = array(
@@ -2918,7 +2918,7 @@ class PostSales extends BaseController
             $isopenprice = $this->request->getPost('isopenprice') ? 'YES' : 'NO';
 
 
-            
+
             // **BERSIHKAN FORMAT KURS**
             $kurs = trim($this->request->getPost('kurs'));
             $kurs_clean = 0;
@@ -2928,7 +2928,7 @@ class PostSales extends BaseController
                 // $kurs_clean = floatval($kurs_clean);
             }
 
-             // Convert expdate ke format YYYY-MM-DD
+            // Convert expdate ke format YYYY-MM-DD
             // $docdateph = null;
             // if (!empty($docdate)) {
             //     $docdateph = date('Y-m-d', strtotime($docdate));
@@ -3010,17 +3010,17 @@ class PostSales extends BaseController
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.salesorder');
 
-    //    $builder = $builder
-    //         ->where('docno', $docno)
-    //         ->update([
-    //             'status'=> 'P',
-    //             'printby' => $nama,
-    //             'printdate' => date('Y-m-d H:i:s')
-    //         ]);
+        //    $builder = $builder
+        //         ->where('docno', $docno)
+        //         ->update([
+        //             'status'=> 'P',
+        //             'printby' => $nama,
+        //             'printdate' => date('Y-m-d H:i:s')
+        //         ]);
 
-        
+
         $enc_docno = $this->fiky_encryption->sealed($docno);
-        
+
         //$enc_docdate= $this->fiky_encryption->sealed($docdate);
         // $enc_idlocation = $this->fiky_encryption->sealed($idlocation);
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
@@ -3032,7 +3032,7 @@ class PostSales extends BaseController
         $datajson =  base_url("sales/postsales/api_salesorder/?enc_docno=$enc_docno") ;
 
         // if($formheader==="HEADER"){
-            $datamrt =  base_url("assets/mrt/report_salesorder.mrt") ;
+        $datamrt =  base_url("assets/mrt/report_salesorder.mrt") ;
         // } else {
         //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
         // }
@@ -3051,9 +3051,9 @@ class PostSales extends BaseController
         // $idgroup=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idgroup')));
         //$docno=trim($this->request->getGet('enc_docno'));
 
-       // $ddate = explode(' - ',$docdate);
-       // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
-       // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
+        // $ddate = explode(' - ',$docdate);
+        // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
+        // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
 
         if (empty($docno) or $docno==='') {
             $param_brg = "";
@@ -3072,7 +3072,7 @@ class PostSales extends BaseController
         $datamst = $this->m_postsales->q_salesorder_master($param);
         $datadtl = $this->m_postsales->q_salesorder_dtl($param);
         $tampungdtl = $datamst->getResult();
-        $detail = $tampungdtl[0] ?? null;        
+        $detail = $tampungdtl[0] ?? null;
         if ($detail) {
 
             $kdcustomer = trim($detail->kdcustomer);
@@ -3103,7 +3103,7 @@ class PostSales extends BaseController
                     'userid' => $nama,
                     'param' => $param,
 
-                    ]
+                ]
                 ),
                 'branch' => $databranch->getResult(),
                 'master' => $datamst->getResult(),
@@ -3117,7 +3117,7 @@ class PostSales extends BaseController
     // =================================== DELIVERY ORDER ===========================================
 
 
-     public function deliveryorder()
+    public function deliveryorder()
     {
         $data['title']="Delivery Order";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
@@ -3168,7 +3168,7 @@ class PostSales extends BaseController
 
         $kmenu = 'I.S.B.2';
         $role = trim($this->session->get('roleid'));
-        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
+        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
         //auto insert unit
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
@@ -3257,7 +3257,7 @@ class PostSales extends BaseController
             $docno  = trim($lm->docno);
             $docnoHex = bin2hex($docno);
 
-            
+
             $updateBtn = '';
             $detailBtn = '';
             $printBtn  = '';
@@ -3270,7 +3270,7 @@ class PostSales extends BaseController
             // =========================
 
             if ($canUpdate && trim($lm->inputby) == $nama && empty($lm->printby) &&
-                empty($lm->printdate) && 
+                empty($lm->printdate) &&
                 trim($status) == 'FINAL USER'
             ){
                 $updateBtn = '
@@ -3282,8 +3282,8 @@ class PostSales extends BaseController
             }
 
             if($canView){
-                $detailBtn = 
-                '<a class="dropdown-item" 
+                $detailBtn =
+                    '<a class="dropdown-item" 
                     style="background-color:#3badf6;" 
                     href="' . base_url('sales/postsales/detailDeliveryOrder') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'View Detail DeliveryOrder : ' . $docno . '\')">
@@ -3302,7 +3302,7 @@ class PostSales extends BaseController
             }
 
             if ($canDelete && trim($lm->inputby) == $nama && empty($lm->printby) &&
-                empty($lm->printdate) && 
+                empty($lm->printdate) &&
                 trim($status) == 'FINAL USER'
             ) {
                 $cancelBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToCancel(\'' . trim($lm->docno) . '\');">
@@ -3434,13 +3434,13 @@ class PostSales extends BaseController
             // }
 
             // $row[] = $jatuhTempo;
-            
+
             $row[] = $lm->nmsalesman;
             // $row[] = $lm->pocust;
             $row[] = $lm->keterangan;
 
             $row[] = $lm->nmbranch;
-            
+
 
             $data[] = $row;
         }
@@ -3454,7 +3454,7 @@ class PostSales extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-    
+
     function list_deliveryorder_apprv(){
         $list = $this->m_postsales->get_t_front_deliveryorder_apprv_view();
         $data = array();
@@ -3481,7 +3481,7 @@ class PostSales extends BaseController
             $docno  = trim($lm->docno);
             $docnoHex = bin2hex($docno);
 
-            
+
             $updateBtn = '';
             $detailBtn = '';
             $printBtn  = '';
@@ -3502,8 +3502,8 @@ class PostSales extends BaseController
             }
 
             if($canView){
-                $detailBtn = 
-                '<a class="dropdown-item" 
+                $detailBtn =
+                    '<a class="dropdown-item" 
                     style="background-color:#3badf6;" 
                     href="' . base_url('sales/postsales/detailDeliveryOrder') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'View Detail DeliveryOrder : ' . $docno . '\')">
@@ -3523,7 +3523,7 @@ class PostSales extends BaseController
 
 
             if (trim($status) !== 'APPROVED' && trim($status) !== 'REVISION/EDITING') {
-                    $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
+                $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
                         <i class="fa fa-check-circle"></i> Approve</a>';
             }
 
@@ -3636,13 +3636,13 @@ class PostSales extends BaseController
             }
 
             $row[] = $jatuhTempo;
-            
+
             $row[] = $lm->nmsalesman;
             // $row[] = $lm->pocust;
             $row[] = $lm->keterangan;
 
             $row[] = $lm->nmbranch;
-            
+
 
             $data[] = $row;
         }
@@ -3691,9 +3691,9 @@ class PostSales extends BaseController
                 echo json_encode($result);
             }
         } else {
-                // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                // echo json_encode($result);
-                return redirect()->to(base_url('sales/postsales/deliveryorder'));
+            // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+            // echo json_encode($result);
+            return redirect()->to(base_url('sales/postsales/deliveryorder'));
         }
 
     }
@@ -3755,7 +3755,7 @@ class PostSales extends BaseController
     }
 
 
-   public function getBranchInfoDeliveryOrder()
+    public function getBranchInfoDeliveryOrder()
     {
         $idbranch = trim($this->request->getGet('idbranch'));
 
@@ -3899,7 +3899,7 @@ class PostSales extends BaseController
         $docno  = strtoupper(trim($this->request->getPost('docno')));
         $docnoso = strtoupper(trim($this->request->getPost('docnoso')));
         $idurut = $this->request->getPost('idurut'); // HAPUS strtoupper, biarkan apa adanya
-        
+
         // Tambahkan mode untuk membedakan add/edit dengan lebih jelas
         // $mode = $this->request->getPost('mode'); // 'add' atau 'edit'
 
@@ -3942,7 +3942,7 @@ class PostSales extends BaseController
 
         $reload = false;
         // Untuk pengambilan data dari POST
-        
+
         if ($exists == 0) {
 
             $builderHeader->insert([
@@ -3953,7 +3953,7 @@ class PostSales extends BaseController
                 // 'jthtempo'     => $this->request->getPost('jthtempo'),
                 // 'isinclusive'     => $isinclusive,
                 // 'isopenprice'     => $isopenprice,
-                
+
                 'kdcustomer'    => strtoupper($this->request->getPost('kdcustomer')),
                 'alamatcustomer'    => strtoupper($this->request->getPost('alamatcustomer')),
                 'kdcustomerdeliv'    => strtoupper($this->request->getPost('kdcustomerdeliv')),
@@ -3982,7 +3982,7 @@ class PostSales extends BaseController
         $message = '';
 
         // CEK MODE: ADD atau EDIT
-        if (!empty($idurut)) {            
+        if (!empty($idurut)) {
 
             $uniqueid = $this->request->getPost('uniqueid');
             // =====================================================
@@ -4020,10 +4020,10 @@ class PostSales extends BaseController
 
 
 
-            
-            
+
+
             $message = 'Data berhasil diupdate';
-            
+
         } else {
             // =====================================================
             // MODE ADD - INSERT DATA DARI PP
@@ -4044,7 +4044,7 @@ class PostSales extends BaseController
             ", [$docnoso])->getResult();
 
             if (empty($soDetails)) {
-                $db->transRollback();   
+                $db->transRollback();
                 return $this->response->setJSON([
                     'success' => false,
                     'message' => 'Data SO tidak ditemukan'
@@ -4053,14 +4053,14 @@ class PostSales extends BaseController
 
             foreach ($soDetails as $row) {
                 $qtyDOSaatIni = 0;
-            
+
                 $existingDO = $db->query("
                     SELECT qty 
                     FROM sc_tmp.deliveryorder_dtl 
                     WHERE
                     uniqueid = ?
                 ", [$row->uniqueid])->getRow();
-                
+
                 if ($existingDO) {
                     $qtyDOSaatIni = $existingDO->qty;
                 }
@@ -4101,10 +4101,10 @@ class PostSales extends BaseController
                     $insertCount++;
                 }
             }
-            
-            $message = $insertCount > 0 
-                        ? "$insertCount item berhasil ditambahkan"
-                        : "Semua item sudah ada sebelumnya";
+
+            $message = $insertCount > 0
+                ? "$insertCount item berhasil ditambahkan"
+                : "Semua item sudah ada sebelumnya";
         }
 
 
@@ -4308,7 +4308,7 @@ class PostSales extends BaseController
                 ]);
             }
 
-            
+
             $db->transCommit();
 
             return $this->response->setJSON([
@@ -4397,8 +4397,8 @@ class PostSales extends BaseController
             // $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 0, '.', ',') . '</div>';
             // $row[] = $lm->description;
             // $row[] = $lm->descriptionpp;
-            $data[] = $row;   
-            
+            $data[] = $row;
+
         }
 
         $output = array(
@@ -4797,7 +4797,7 @@ class PostSales extends BaseController
             // $isopenprice = $this->request->getPost('isopenprice') ? 'YES' : 'NO';
 
 
-            
+
             // **BERSIHKAN FORMAT KURS**
             // $kurs = trim($this->request->getPost('kurs'));
             // $kurs_clean = 0;
@@ -4807,7 +4807,7 @@ class PostSales extends BaseController
             //     // $kurs_clean = floatval($kurs_clean);
             // }
 
-             // Convert expdate ke format YYYY-MM-DD
+            // Convert expdate ke format YYYY-MM-DD
             // $docdateph = null;
             // if (!empty($docdate)) {
             //     $docdateph = date('Y-m-d', strtotime($docdate));
@@ -4890,17 +4890,17 @@ class PostSales extends BaseController
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.deliveryorder');
 
-    //    $builder = $builder
-    //         ->where('docno', $docno)
-    //         ->update([
-    //             'status'=> 'P',
-    //             'printby' => $nama,
-    //             'printdate' => date('Y-m-d H:i:s')
-    //         ]);
+        //    $builder = $builder
+        //         ->where('docno', $docno)
+        //         ->update([
+        //             'status'=> 'P',
+        //             'printby' => $nama,
+        //             'printdate' => date('Y-m-d H:i:s')
+        //         ]);
 
-        
+
         $enc_docno = $this->fiky_encryption->sealed($docno);
-        
+
         //$enc_docdate= $this->fiky_encryption->sealed($docdate);
         // $enc_idlocation = $this->fiky_encryption->sealed($idlocation);
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
@@ -4912,7 +4912,7 @@ class PostSales extends BaseController
         $datajson =  base_url("sales/postsales/api_deliveryorder/?enc_docno=$enc_docno") ;
 
         // if($formheader==="HEADER"){
-            $datamrt =  base_url("assets/mrt/report_deliveryorder.mrt") ;
+        $datamrt =  base_url("assets/mrt/report_deliveryorder.mrt") ;
         // } else {
         //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
         // }
@@ -4931,9 +4931,9 @@ class PostSales extends BaseController
         // $idgroup=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idgroup')));
         //$docno=trim($this->request->getGet('enc_docno'));
 
-       // $ddate = explode(' - ',$docdate);
-       // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
-       // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
+        // $ddate = explode(' - ',$docdate);
+        // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
+        // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
 
         if (empty($docno) or $docno==='') {
             $param_brg = "";
@@ -4952,22 +4952,22 @@ class PostSales extends BaseController
         $datamst = $this->m_postsales->q_deliveryorder_master($param);
         $datadtl = $this->m_postsales->q_deliveryorder_dtl($param);
         $tampungdtl = $datamst->getResult();
-        $detail = $tampungdtl[0] ?? null;        
+        $detail = $tampungdtl[0] ?? null;
         if ($detail) {
 
             $tujuan = isset($detail->tujuan) ? trim($detail->tujuan) : '';
-        
+
             // Tambahkan properti baru isPindah
             $detail->isPindah = false; // Default value
             if ($tujuan === 'pindah') {
                 $detail->isPindah = true;
             }
 
-             // Tambahkan properti baru isPembuangan
-             $detail->isPembuangan = false; // Default value
-             if ($tujuan === 'pembuangan') {
-                 $detail->isPembuangan = true;
-             }
+            // Tambahkan properti baru isPembuangan
+            $detail->isPembuangan = false; // Default value
+            if ($tujuan === 'pembuangan') {
+                $detail->isPembuangan = true;
+            }
 
             // Tambahkan properti baru isPinjam
             $detail->isPinjam = false; // Default value
@@ -4976,35 +4976,35 @@ class PostSales extends BaseController
             }
 
             $isreturn = isset($detail->isreturn) ? trim($detail->isreturn) : '';
-             // Tambahkan properti baru iskembali
-             $detail->iskembali = false; // Default value
-             if ($isreturn === 'kembali') {
-                 $detail->iskembali = true;
-             }
+            // Tambahkan properti baru iskembali
+            $detail->iskembali = false; // Default value
+            if ($isreturn === 'kembali') {
+                $detail->iskembali = true;
+            }
 
-             $detail->istidakkembali = false; // Default value
-             if ($isreturn === 'tidak_kembali') {
-                 $detail->istidakkembali = true;
-             }
+            $detail->istidakkembali = false; // Default value
+            if ($isreturn === 'tidak_kembali') {
+                $detail->istidakkembali = true;
+            }
 
-             $jenisbarang = isset($detail->jenisbarang) ? trim($detail->jenisbarang) : '';
-              // Tambahkan properti baru isAset
-              $detail->isAset = false; // Default value
-              if ($jenisbarang === 'aset') {
-                  $detail->isAset = true;
-              }
+            $jenisbarang = isset($detail->jenisbarang) ? trim($detail->jenisbarang) : '';
+            // Tambahkan properti baru isAset
+            $detail->isAset = false; // Default value
+            if ($jenisbarang === 'aset') {
+                $detail->isAset = true;
+            }
 
-              // Tambahkan properti baru isPersediaan
-              $detail->isPersediaan = false; // Default value
-              if ($jenisbarang === 'persediaan') {
-                  $detail->isPersediaan = true;
-              }
+            // Tambahkan properti baru isPersediaan
+            $detail->isPersediaan = false; // Default value
+            if ($jenisbarang === 'persediaan') {
+                $detail->isPersediaan = true;
+            }
 
-              // Tambahkan properti baru isLainlain
-              $detail->isLainlain = false; // Default value
-              if ($jenisbarang === 'lainlain') {
-                  $detail->isLainlain = true;
-              }
+            // Tambahkan properti baru isLainlain
+            $detail->isLainlain = false; // Default value
+            if ($jenisbarang === 'lainlain') {
+                $detail->isLainlain = true;
+            }
         }
 
         header("Content-Type: text/json");
@@ -5020,7 +5020,7 @@ class PostSales extends BaseController
                     'userid' => $nama,
                     'param' => $param,
 
-                    ]
+                ]
                 ),
                 'branch' => $databranch->getResult(),
                 'master' => $datamst->getResult(),
@@ -5036,11 +5036,11 @@ class PostSales extends BaseController
 
 
 
-    
+
     // =================================== SURAT JALAN ===========================================
 
 
-     public function suratjalan()
+    public function suratjalan()
     {
         $data['title']="Surat Jalan";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
@@ -5091,7 +5091,7 @@ class PostSales extends BaseController
 
         $kmenu = 'I.S.B.3';
         $role = trim($this->session->get('roleid'));
-        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
+        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
         //auto insert unit
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
@@ -5180,7 +5180,7 @@ class PostSales extends BaseController
             $docno  = trim($lm->docno);
             $docnoHex = bin2hex($docno);
 
-            
+
             $updateBtn = '';
             $detailBtn = '';
             $printBtn  = '';
@@ -5193,7 +5193,7 @@ class PostSales extends BaseController
             // =========================
 
             if ($canUpdate && trim($lm->inputby) == $nama && empty($lm->printby) &&
-                empty($lm->printdate) && 
+                empty($lm->printdate) &&
                 trim($status) == 'FINAL USER'
             ){
                 $updateBtn = '
@@ -5205,8 +5205,8 @@ class PostSales extends BaseController
             }
 
             if($canView){
-                $detailBtn = 
-                '<a class="dropdown-item" 
+                $detailBtn =
+                    '<a class="dropdown-item" 
                     style="background-color:#3badf6;" 
                     href="' . base_url('sales/postsales/detailSuratJalan') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'View Detail SuratJalan : ' . $docno . '\')">
@@ -5225,7 +5225,7 @@ class PostSales extends BaseController
             }
 
             if ($canDelete && trim($lm->inputby) == $nama && empty($lm->printby) &&
-                empty($lm->printdate) && 
+                empty($lm->printdate) &&
                 trim($status) == 'FINAL USER'
             ) {
                 $cancelBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToCancel(\'' . trim($lm->docno) . '\');">
@@ -5348,13 +5348,13 @@ class PostSales extends BaseController
             // }
 
             // $row[] = $jatuhTempo;
-            
+
             $row[] = $lm->nmsalesman;
             // $row[] = $lm->pocust;
             $row[] = $lm->keterangan;
 
             $row[] = $lm->nmbranch;
-            
+
 
             $data[] = $row;
         }
@@ -5368,7 +5368,7 @@ class PostSales extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-    
+
     function list_suratjalan_apprv(){
         $list = $this->m_postsales->get_t_front_suratjalan_apprv_view();
         $data = array();
@@ -5395,7 +5395,7 @@ class PostSales extends BaseController
             $docno  = trim($lm->docno);
             $docnoHex = bin2hex($docno);
 
-            
+
             $updateBtn = '';
             $detailBtn = '';
             $printBtn  = '';
@@ -5416,8 +5416,8 @@ class PostSales extends BaseController
             }
 
             if($canView){
-                $detailBtn = 
-                '<a class="dropdown-item" 
+                $detailBtn =
+                    '<a class="dropdown-item" 
                     style="background-color:#3badf6;" 
                     href="' . base_url('sales/postsales/detailSuratJalan') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'View Detail SuratJalan : ' . $docno . '\')">
@@ -5437,7 +5437,7 @@ class PostSales extends BaseController
 
 
             if (trim($status) !== 'APPROVED' && trim($status) !== 'REVISION/EDITING') {
-                    $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
+                $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
                         <i class="fa fa-check-circle"></i> Approve</a>';
             }
 
@@ -5550,13 +5550,13 @@ class PostSales extends BaseController
             }
 
             $row[] = $jatuhTempo;
-            
+
             $row[] = $lm->nmsalesman;
             // $row[] = $lm->pocust;
             $row[] = $lm->keterangan;
 
             $row[] = $lm->nmbranch;
-            
+
 
             $data[] = $row;
         }
@@ -5605,9 +5605,9 @@ class PostSales extends BaseController
                 echo json_encode($result);
             }
         } else {
-                // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                // echo json_encode($result);
-                return redirect()->to(base_url('sales/postsales/suratjalan'));
+            // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+            // echo json_encode($result);
+            return redirect()->to(base_url('sales/postsales/suratjalan'));
         }
 
     }
@@ -5669,7 +5669,7 @@ class PostSales extends BaseController
     }
 
 
-   public function getBranchInfoSuratJalan()
+    public function getBranchInfoSuratJalan()
     {
         $idbranch = trim($this->request->getGet('idbranch'));
 
@@ -5813,7 +5813,7 @@ class PostSales extends BaseController
         $docno  = strtoupper(trim($this->request->getPost('docno')));
         $docnodo = strtoupper(trim($this->request->getPost('docnodo')));
         $idurut = $this->request->getPost('idurut'); // HAPUS strtoupper, biarkan apa adanya
-        
+
         // Tambahkan mode untuk membedakan add/edit dengan lebih jelas
         // $mode = $this->request->getPost('mode'); // 'add' atau 'edit'
 
@@ -5856,7 +5856,7 @@ class PostSales extends BaseController
 
         $reload = false;
         // Untuk pengambilan data dari POST
-        
+
         if ($exists == 0) {
 
             $builderHeader->insert([
@@ -5867,7 +5867,7 @@ class PostSales extends BaseController
                 // 'jthtempo'     => $this->request->getPost('jthtempo'),
                 // 'isinclusive'     => $isinclusive,
                 // 'isopenprice'     => $isopenprice,
-                
+
                 'kdcustomer'    => strtoupper($this->request->getPost('kdcustomer')),
                 'alamatcustomer'    => strtoupper($this->request->getPost('alamatcustomer')),
                 'kdcustomerdeliv'    => strtoupper($this->request->getPost('kdcustomerdeliv')),
@@ -5896,7 +5896,7 @@ class PostSales extends BaseController
         $message = '';
 
         // CEK MODE: ADD atau EDIT
-        if (!empty($idurut)) {            
+        if (!empty($idurut)) {
 
             $uniqueid = $this->request->getPost('uniqueid');
             // =====================================================
@@ -5934,10 +5934,10 @@ class PostSales extends BaseController
 
 
 
-            
-            
+
+
             $message = 'Data berhasil diupdate';
-            
+
         } else {
             // =====================================================
             // MODE ADD - INSERT DATA DARI PP
@@ -5958,7 +5958,7 @@ class PostSales extends BaseController
             ", [$docnodo])->getResult();
 
             if (empty($soDetails)) {
-                $db->transRollback();   
+                $db->transRollback();
                 return $this->response->setJSON([
                     'success' => false,
                     'message' => 'Data SO tidak ditemukan'
@@ -5967,14 +5967,14 @@ class PostSales extends BaseController
 
             foreach ($soDetails as $row) {
                 $qtySJSaatIni = 0;
-            
+
                 $existingSJ = $db->query("
                     SELECT qty 
                     FROM sc_tmp.suratjalan_dtl 
                     WHERE
                     uniqueid = ?
                 ", [$row->uniqueid])->getRow();
-                
+
                 if ($existingSJ) {
                     $qtySJSaatIni = $existingSJ->qty;
                 }
@@ -6015,10 +6015,10 @@ class PostSales extends BaseController
                     $insertCount++;
                 }
             }
-            
-            $message = $insertCount > 0 
-                        ? "$insertCount item berhasil ditambahkan"
-                        : "Semua item sudah ada sebelumnya";
+
+            $message = $insertCount > 0
+                ? "$insertCount item berhasil ditambahkan"
+                : "Semua item sudah ada sebelumnya";
         }
 
 
@@ -6222,7 +6222,7 @@ class PostSales extends BaseController
                 ]);
             }
 
-            
+
             $db->transCommit();
 
             return $this->response->setJSON([
@@ -6311,8 +6311,8 @@ class PostSales extends BaseController
             // $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 0, '.', ',') . '</div>';
             // $row[] = $lm->description;
             // $row[] = $lm->descriptionpp;
-            $data[] = $row;   
-            
+            $data[] = $row;
+
         }
 
         $output = array(
@@ -6384,7 +6384,7 @@ class PostSales extends BaseController
             // $isopenprice = $this->request->getPost('isopenprice') ? 'YES' : 'NO';
 
 
-            
+
             // **BERSIHKAN FORMAT KURS**
             // $kurs = trim($this->request->getPost('kurs'));
             // $kurs_clean = 0;
@@ -6394,7 +6394,7 @@ class PostSales extends BaseController
             //     // $kurs_clean = floatval($kurs_clean);
             // }
 
-             // Convert expdate ke format YYYY-MM-DD
+            // Convert expdate ke format YYYY-MM-DD
             // $docdateph = null;
             // if (!empty($docdate)) {
             //     $docdateph = date('Y-m-d', strtotime($docdate));
@@ -6477,17 +6477,17 @@ class PostSales extends BaseController
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.suratjalan');
 
-    //    $builder = $builder
-    //         ->where('docno', $docno)
-    //         ->update([
-    //             'status'=> 'P',
-    //             'printby' => $nama,
-    //             'printdate' => date('Y-m-d H:i:s')
-    //         ]);
+        //    $builder = $builder
+        //         ->where('docno', $docno)
+        //         ->update([
+        //             'status'=> 'P',
+        //             'printby' => $nama,
+        //             'printdate' => date('Y-m-d H:i:s')
+        //         ]);
 
-        
+
         $enc_docno = $this->fiky_encryption->sealed($docno);
-        
+
         //$enc_docdate= $this->fiky_encryption->sealed($docdate);
         // $enc_idlocation = $this->fiky_encryption->sealed($idlocation);
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
@@ -6499,7 +6499,7 @@ class PostSales extends BaseController
         $datajson =  base_url("sales/postsales/api_suratjalan/?enc_docno=$enc_docno") ;
 
         // if($formheader==="HEADER"){
-            $datamrt =  base_url("assets/mrt/report_suratjalan.mrt") ;
+        $datamrt =  base_url("assets/mrt/report_suratjalan.mrt") ;
         // } else {
         //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
         // }
@@ -6518,9 +6518,9 @@ class PostSales extends BaseController
         // $idgroup=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idgroup')));
         //$docno=trim($this->request->getGet('enc_docno'));
 
-       // $ddate = explode(' - ',$docdate);
-       // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
-       // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
+        // $ddate = explode(' - ',$docdate);
+        // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
+        // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
 
         if (empty($docno) or $docno==='') {
             $param_brg = "";
@@ -6539,22 +6539,22 @@ class PostSales extends BaseController
         $datamst = $this->m_postsales->q_suratjalan_master($param);
         $datadtl = $this->m_postsales->q_suratjalan_dtl($param);
         $tampungdtl = $datamst->getResult();
-        $detail = $tampungdtl[0] ?? null;        
+        $detail = $tampungdtl[0] ?? null;
         if ($detail) {
 
             $tujuan = isset($detail->tujuan) ? trim($detail->tujuan) : '';
-        
+
             // Tambahkan properti baru isPindah
             $detail->isPindah = false; // Default value
             if ($tujuan === 'pindah') {
                 $detail->isPindah = true;
             }
 
-             // Tambahkan properti baru isPembuangan
-             $detail->isPembuangan = false; // Default value
-             if ($tujuan === 'pembuangan') {
-                 $detail->isPembuangan = true;
-             }
+            // Tambahkan properti baru isPembuangan
+            $detail->isPembuangan = false; // Default value
+            if ($tujuan === 'pembuangan') {
+                $detail->isPembuangan = true;
+            }
 
             // Tambahkan properti baru isPinjam
             $detail->isPinjam = false; // Default value
@@ -6563,35 +6563,35 @@ class PostSales extends BaseController
             }
 
             $isreturn = isset($detail->isreturn) ? trim($detail->isreturn) : '';
-             // Tambahkan properti baru iskembali
-             $detail->iskembali = false; // Default value
-             if ($isreturn === 'kembali') {
-                 $detail->iskembali = true;
-             }
+            // Tambahkan properti baru iskembali
+            $detail->iskembali = false; // Default value
+            if ($isreturn === 'kembali') {
+                $detail->iskembali = true;
+            }
 
-             $detail->istidakkembali = false; // Default value
-             if ($isreturn === 'tidak_kembali') {
-                 $detail->istidakkembali = true;
-             }
+            $detail->istidakkembali = false; // Default value
+            if ($isreturn === 'tidak_kembali') {
+                $detail->istidakkembali = true;
+            }
 
-             $jenisbarang = isset($detail->jenisbarang) ? trim($detail->jenisbarang) : '';
-              // Tambahkan properti baru isAset
-              $detail->isAset = false; // Default value
-              if ($jenisbarang === 'aset') {
-                  $detail->isAset = true;
-              }
+            $jenisbarang = isset($detail->jenisbarang) ? trim($detail->jenisbarang) : '';
+            // Tambahkan properti baru isAset
+            $detail->isAset = false; // Default value
+            if ($jenisbarang === 'aset') {
+                $detail->isAset = true;
+            }
 
-              // Tambahkan properti baru isPersediaan
-              $detail->isPersediaan = false; // Default value
-              if ($jenisbarang === 'persediaan') {
-                  $detail->isPersediaan = true;
-              }
+            // Tambahkan properti baru isPersediaan
+            $detail->isPersediaan = false; // Default value
+            if ($jenisbarang === 'persediaan') {
+                $detail->isPersediaan = true;
+            }
 
-              // Tambahkan properti baru isLainlain
-              $detail->isLainlain = false; // Default value
-              if ($jenisbarang === 'lainlain') {
-                  $detail->isLainlain = true;
-              }
+            // Tambahkan properti baru isLainlain
+            $detail->isLainlain = false; // Default value
+            if ($jenisbarang === 'lainlain') {
+                $detail->isLainlain = true;
+            }
         }
 
         header("Content-Type: text/json");
@@ -6607,7 +6607,7 @@ class PostSales extends BaseController
                     'userid' => $nama,
                     'param' => $param,
 
-                    ]
+                ]
                 ),
                 'branch' => $databranch->getResult(),
                 'master' => $datamst->getResult(),
@@ -6620,7 +6620,7 @@ class PostSales extends BaseController
     // =================================== PENJUALAN ===========================================
 
 
-     public function penjualan()
+    public function penjualan()
     {
         $data['title']="Penjualan";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
@@ -6671,7 +6671,7 @@ class PostSales extends BaseController
 
         $kmenu = 'I.S.B.4';
         $role = trim($this->session->get('roleid'));
-        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
+        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
         //auto insert unit
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
@@ -6760,7 +6760,7 @@ class PostSales extends BaseController
             $docno  = trim($lm->docno);
             $docnoHex = bin2hex($docno);
 
-            
+
             $updateBtn = '';
             $detailBtn = '';
             $printBtn  = '';
@@ -6781,8 +6781,8 @@ class PostSales extends BaseController
             }
 
             if($canView){
-                $detailBtn = 
-                '<a class="dropdown-item" 
+                $detailBtn =
+                    '<a class="dropdown-item" 
                     style="background-color:#3badf6;" 
                     href="' . base_url('sales/postsales/detailPenjualan') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'View Detail Penjualan : ' . $docno . '\')">
@@ -6915,13 +6915,13 @@ class PostSales extends BaseController
             }
 
             $row[] = $jatuhTempo;
-            
+
             $row[] = $lm->nmsalesman;
             // $row[] = $lm->pocust;
             $row[] = $lm->keterangan;
 
             $row[] = $lm->nmbranch;
-            
+
 
             $data[] = $row;
         }
@@ -6935,7 +6935,7 @@ class PostSales extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-    
+
     function list_penjualan_apprv(){
         $list = $this->m_postsales->get_t_front_penjualan_apprv_view();
         $data = array();
@@ -6962,7 +6962,7 @@ class PostSales extends BaseController
             $docno  = trim($lm->docno);
             $docnoHex = bin2hex($docno);
 
-            
+
             $updateBtn = '';
             $detailBtn = '';
             $printBtn  = '';
@@ -6983,8 +6983,8 @@ class PostSales extends BaseController
             }
 
             if($canView){
-                $detailBtn = 
-                '<a class="dropdown-item" 
+                $detailBtn =
+                    '<a class="dropdown-item" 
                     style="background-color:#3badf6;" 
                     href="' . base_url('sales/postsales/detailPenjualan') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'View Detail Penjualan : ' . $docno . '\')">
@@ -7004,7 +7004,7 @@ class PostSales extends BaseController
 
 
             if (trim($status) !== 'APPROVED' && trim($status) !== 'REVISION/EDITING') {
-                    $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
+                $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
                         <i class="fa fa-check-circle"></i> Approve</a>';
             }
 
@@ -7117,13 +7117,13 @@ class PostSales extends BaseController
             }
 
             $row[] = $jatuhTempo;
-            
+
             $row[] = $lm->nmsalesman;
             // $row[] = $lm->pocust;
             $row[] = $lm->keterangan;
 
             $row[] = $lm->nmbranch;
-            
+
 
             $data[] = $row;
         }
@@ -7172,9 +7172,9 @@ class PostSales extends BaseController
                 echo json_encode($result);
             }
         } else {
-                // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                // echo json_encode($result);
-                return redirect()->to(base_url('sales/postsales/penjualan'));
+            // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+            // echo json_encode($result);
+            return redirect()->to(base_url('sales/postsales/penjualan'));
         }
 
     }
@@ -7236,7 +7236,7 @@ class PostSales extends BaseController
     }
 
 
-   public function getBranchInfoPenjualan()
+    public function getBranchInfoPenjualan()
     {
         $idbranch = trim($this->request->getGet('idbranch'));
 
@@ -7382,7 +7382,7 @@ class PostSales extends BaseController
     //     $docnosj = strtoupper(trim($this->request->getPost('docnosj')));
 
     //     $idurut = $this->request->getPost('idurut'); // HAPUS strtoupper, biarkan apa adanya
-        
+
     //     // Tambahkan mode untuk membedakan add/edit dengan lebih jelas
     //     // $mode = $this->request->getPost('mode'); // 'add' atau 'edit'
 
@@ -7437,19 +7437,19 @@ class PostSales extends BaseController
 
     //     $reload = false;
     //     // Untuk pengambilan data dari POST
-        
+
     //     if ($exists == 0) {
     //         $isinclusive = strtoupper(trim(
-    //             $this->request->getPost('isinclusive') 
-    //             ?? $dataprocess->isinclusive 
+    //             $this->request->getPost('isinclusive')
+    //             ?? $dataprocess->isinclusive
     //             ?? 'NO'
     //         ));
 
     //         $isinclusive = ($isinclusive === 'YES') ? 'YES' : 'NO';
 
     //         $isopenprice = strtoupper(trim(
-    //             $this->request->getPost('isopenprice') 
-    //             ?? $dataprocess->isopenprice 
+    //             $this->request->getPost('isopenprice')
+    //             ?? $dataprocess->isopenprice
     //             ?? 'NO'
     //         ));
 
@@ -7463,7 +7463,7 @@ class PostSales extends BaseController
     //             'jthtempo'     => $this->request->getPost('jthtempo'),
     //             'isinclusive'     => $isinclusive,
     //             'isopenprice'     => $isopenprice,
-                
+
     //             'kdcustomer'    => strtoupper($this->request->getPost('kdcustomer')),
     //             'alamatcustomer'    => strtoupper($this->request->getPost('alamatcustomer')),
     //             'kdcustomerdeliv'    => strtoupper($this->request->getPost('kdcustomerdeliv')),
@@ -7492,7 +7492,7 @@ class PostSales extends BaseController
     //     $message = '';
 
     //     // CEK MODE: ADD atau EDIT
-    //     if (!empty($idurut)) {            
+    //     if (!empty($idurut)) {
 
     //         $uniqueid = $this->request->getPost('uniqueid');
     //         // =====================================================
@@ -7561,16 +7561,16 @@ class PostSales extends BaseController
 
 
 
-            
-            
+
+
     //         $message = 'Data berhasil diupdate';
-            
+
     //     } else {
     //         // =====================================================
     //         // MODE ADD - INSERT DATA DARI PP
     //         // =====================================================
     //         $soDetails = $db->query("
-    //             SELECT 
+    //             SELECT
     //                 docno,
     //                 idbarang,
     //                 uniqueid,
@@ -7594,7 +7594,7 @@ class PostSales extends BaseController
     //         ", [$docnoso])->getResult();
 
     //         if (empty($soDetails)) {
-    //             $db->transRollback();   
+    //             $db->transRollback();
     //             return $this->response->setJSON([
     //                 'success' => false,
     //                 'message' => 'Data SO tidak ditemukan'
@@ -7662,27 +7662,27 @@ class PostSales extends BaseController
     //                 $insertCount++;
     //             }
     //         }
-            
-    //         $message = $insertCount > 0 
+
+    //         $message = $insertCount > 0
     //                     ? "$insertCount item berhasil ditambahkan"
     //                     : "Semua item sudah ada sebelumnya";
     //     }
 
     //     $penjualanHeader = $builderHeader->select('idtax')->where('docno', $docno)->get()->getRowArray();
     //     $idtax = $penjualanHeader['idtax'] ?? '';
-        
+
     //     // Hitung total DPP (sum nilai dari po_dtl)
     //     $builderTotalDpp = $db->table('sc_tmp.penjualan_dtl');
     //     $totalDpp = $builderTotalDpp->select('COALESCE(SUM(nilai), 0) as total_dpp')
     //         ->where('docno', $docno)
     //         ->get()
     //         ->getRowArray();
-        
+
     //     $dpp = $totalDpp['total_dpp'] ?? 0;
-        
+
     //     // Hitung jumlah pajak berdasarkan idtax
     //     $jumlahPajak = 0;
-        
+
     //     if (!empty($idtax) && trim($idtax) !== 'NON'  && $dpp > 0) {
     //         // Ambil detail tax dari sc_mst.tax_dtl
     //         $builderTaxDtl = $db->table('sc_mst.tax_dtl');
@@ -7690,16 +7690,16 @@ class PostSales extends BaseController
     //             ->where('idtax', $idtax)
     //             ->get()
     //             ->getResultArray();
-            
+
     //         foreach ($taxDetails as $tax) {
     //             $persentase = $tax['percentation'] ?? 0;
     //             $jumlahPajak += $dpp * ($persentase / 100);
     //         }
     //     }
-        
+
     //     // Hitung total (DPP + Jumlah Pajak)
     //     $total = $dpp + $jumlahPajak;
-        
+
     //     // Update header LPB
     //     $builderHeader->where('docno', $docno)->update([
     //         'dpp' => number_format($dpp, 2, '.', ''),
@@ -8090,8 +8090,8 @@ class PostSales extends BaseController
             }
 
             $message = $insertCount > 0
-                        ? "$insertCount item berhasil ditambahkan"
-                        : "Semua item sudah ada sebelumnya";
+                ? "$insertCount item berhasil ditambahkan"
+                : "Semua item sudah ada sebelumnya";
         }
 
         // =====================================================
@@ -8484,8 +8484,8 @@ class PostSales extends BaseController
             $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 0, '.', ',') . '</div>';
             $row[] = $lm->description;
             // $row[] = $lm->descriptionpp;
-            $data[] = $row;   
-            
+            $data[] = $row;
+
         }
 
         $output = array(
@@ -8557,7 +8557,7 @@ class PostSales extends BaseController
             $isopenprice = $this->request->getPost('isopenprice') ? 'YES' : 'NO';
 
 
-            
+
             // **BERSIHKAN FORMAT KURS**
             $kurs = trim($this->request->getPost('kurs'));
             $kurs_clean = 0;
@@ -8567,7 +8567,7 @@ class PostSales extends BaseController
                 // $kurs_clean = floatval($kurs_clean);
             }
 
-             // Convert expdate ke format YYYY-MM-DD
+            // Convert expdate ke format YYYY-MM-DD
             // $docdateph = null;
             // if (!empty($docdate)) {
             //     $docdateph = date('Y-m-d', strtotime($docdate));
@@ -8650,17 +8650,17 @@ class PostSales extends BaseController
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.penjualan');
 
-    //    $builder = $builder
-    //         ->where('docno', $docno)
-    //         ->update([
-    //             'status'=> 'P',
-    //             'printby' => $nama,
-    //             'printdate' => date('Y-m-d H:i:s')
-    //         ]);
+        //    $builder = $builder
+        //         ->where('docno', $docno)
+        //         ->update([
+        //             'status'=> 'P',
+        //             'printby' => $nama,
+        //             'printdate' => date('Y-m-d H:i:s')
+        //         ]);
 
-        
+
         $enc_docno = $this->fiky_encryption->sealed($docno);
-        
+
         //$enc_docdate= $this->fiky_encryption->sealed($docdate);
         // $enc_idlocation = $this->fiky_encryption->sealed($idlocation);
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
@@ -8672,7 +8672,7 @@ class PostSales extends BaseController
         $datajson =  base_url("sales/postsales/api_penjualan/?enc_docno=$enc_docno") ;
 
         // if($formheader==="HEADER"){
-            $datamrt =  base_url("assets/mrt/report_penjualan.mrt") ;
+        $datamrt =  base_url("assets/mrt/report_penjualan.mrt") ;
         // } else {
         //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
         // }
@@ -8691,9 +8691,9 @@ class PostSales extends BaseController
         // $idgroup=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idgroup')));
         //$docno=trim($this->request->getGet('enc_docno'));
 
-       // $ddate = explode(' - ',$docdate);
-       // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
-       // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
+        // $ddate = explode(' - ',$docdate);
+        // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
+        // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
 
         if (empty($docno) or $docno==='') {
             $param_brg = "";
@@ -8712,22 +8712,22 @@ class PostSales extends BaseController
         $datamst = $this->m_postsales->q_penjualan_master($param);
         $datadtl = $this->m_postsales->q_penjualan_dtl($param);
         $tampungdtl = $datamst->getResult();
-        $detail = $tampungdtl[0] ?? null;        
+        $detail = $tampungdtl[0] ?? null;
         if ($detail) {
 
             $tujuan = isset($detail->tujuan) ? trim($detail->tujuan) : '';
-        
+
             // Tambahkan properti baru isPindah
             $detail->isPindah = false; // Default value
             if ($tujuan === 'pindah') {
                 $detail->isPindah = true;
             }
 
-             // Tambahkan properti baru isPembuangan
-             $detail->isPembuangan = false; // Default value
-             if ($tujuan === 'pembuangan') {
-                 $detail->isPembuangan = true;
-             }
+            // Tambahkan properti baru isPembuangan
+            $detail->isPembuangan = false; // Default value
+            if ($tujuan === 'pembuangan') {
+                $detail->isPembuangan = true;
+            }
 
             // Tambahkan properti baru isPinjam
             $detail->isPinjam = false; // Default value
@@ -8736,35 +8736,35 @@ class PostSales extends BaseController
             }
 
             $isreturn = isset($detail->isreturn) ? trim($detail->isreturn) : '';
-             // Tambahkan properti baru iskembali
-             $detail->iskembali = false; // Default value
-             if ($isreturn === 'kembali') {
-                 $detail->iskembali = true;
-             }
+            // Tambahkan properti baru iskembali
+            $detail->iskembali = false; // Default value
+            if ($isreturn === 'kembali') {
+                $detail->iskembali = true;
+            }
 
-             $detail->istidakkembali = false; // Default value
-             if ($isreturn === 'tidak_kembali') {
-                 $detail->istidakkembali = true;
-             }
+            $detail->istidakkembali = false; // Default value
+            if ($isreturn === 'tidak_kembali') {
+                $detail->istidakkembali = true;
+            }
 
-             $jenisbarang = isset($detail->jenisbarang) ? trim($detail->jenisbarang) : '';
-              // Tambahkan properti baru isAset
-              $detail->isAset = false; // Default value
-              if ($jenisbarang === 'aset') {
-                  $detail->isAset = true;
-              }
+            $jenisbarang = isset($detail->jenisbarang) ? trim($detail->jenisbarang) : '';
+            // Tambahkan properti baru isAset
+            $detail->isAset = false; // Default value
+            if ($jenisbarang === 'aset') {
+                $detail->isAset = true;
+            }
 
-              // Tambahkan properti baru isPersediaan
-              $detail->isPersediaan = false; // Default value
-              if ($jenisbarang === 'persediaan') {
-                  $detail->isPersediaan = true;
-              }
+            // Tambahkan properti baru isPersediaan
+            $detail->isPersediaan = false; // Default value
+            if ($jenisbarang === 'persediaan') {
+                $detail->isPersediaan = true;
+            }
 
-              // Tambahkan properti baru isLainlain
-              $detail->isLainlain = false; // Default value
-              if ($jenisbarang === 'lainlain') {
-                  $detail->isLainlain = true;
-              }
+            // Tambahkan properti baru isLainlain
+            $detail->isLainlain = false; // Default value
+            if ($jenisbarang === 'lainlain') {
+                $detail->isLainlain = true;
+            }
         }
 
         header("Content-Type: text/json");
@@ -8780,7 +8780,7 @@ class PostSales extends BaseController
                     'userid' => $nama,
                     'param' => $param,
 
-                    ]
+                ]
                 ),
                 'branch' => $databranch->getResult(),
                 'master' => $datamst->getResult(),
@@ -8803,7 +8803,7 @@ class PostSales extends BaseController
     // SURAT ORDER INTERNAL
     // SURAT ORDER INTERNAL
 
-    
+
     public function soi()
     {
         $data['title']="Surat Order Internal";
@@ -8925,7 +8925,7 @@ class PostSales extends BaseController
             //                     <div class="dropdown-menu" role="menu">
             //                         <a style="background-color: #3badf6;"class="dropdown-item" href=' . "'" . base_url('sales/postsales/soi/updateSOI') . '/' . '?id=' . bin2hex(trim($lm->docno)) . '&docno=' . bin2hex(trim($lm->docno)) . "'" . ' onclick="return confirm(' . "'" . 'Update This soi : ' . trim($lm->docno) . "'" . ')"><i class="fa fa-bars"></i> Update Surat Order Internal </a>
             //                         <a style="background-color: #00ff8e;" class="dropdown-item" href=' . "'" . base_url('sales/postsales/soi/show_soi') . '/' . '?id=' . bin2hex(trim($lm->docno)) . '&docno=' . bin2hex(trim($lm->docno)) . "'" . ' onclick="return confirm(' . "'" . 'Print This Data Detail : ' . trim($lm->docno) . "'" . ')"><i class="fa fa-eye"></i> Print Surat Order Internal </a>
-            //                         <a style="background-color: red;" class="dropdown-item" href=' . "'" . base_url('sales/postsales/soi/deleteSOI') . '/' . '?id=' . bin2hex(trim($lm->docno)) . '&docno=' . bin2hex(trim($lm->docno)) . "'" . ' onclick="return confirm(' . "'" . 'Remove this soi : ' . trim($lm->docno) . "'" . ')"><i class="fa fa-trash"></i> Delete Surat Order Internal </a>                      
+            //                         <a style="background-color: red;" class="dropdown-item" href=' . "'" . base_url('sales/postsales/soi/deleteSOI') . '/' . '?id=' . bin2hex(trim($lm->docno)) . '&docno=' . bin2hex(trim($lm->docno)) . "'" . ' onclick="return confirm(' . "'" . 'Remove this soi : ' . trim($lm->docno) . "'" . ')"><i class="fa fa-trash"></i> Delete Surat Order Internal </a>
             //                     </div>
             //             </div>
             // ';
@@ -8967,8 +8967,8 @@ class PostSales extends BaseController
                                         id="menu1" type="button" data-bs-toggle="dropdown" autocomplete="off" aria-expanded="false">
                                         <i class="fa fa-bars"></i><span class="caret"></span>
                                     </button>
-                                    <div class="dropdown-menu" role="menu">' . 
-                                    $updateBtn . $printBtn . $deleteBtn . $detailBtn . '</div>
+                                    <div class="dropdown-menu" role="menu">' .
+                    $updateBtn . $printBtn . $deleteBtn . $detailBtn . '</div>
                                 </div>';
             } else {
                 // Jika bukan CETAK/PRINT atau CANCEL, hanya tampilkan tombol Detail
@@ -8980,8 +8980,8 @@ class PostSales extends BaseController
                                     <div class="dropdown-menu" role="menu">' . $detailBtn . '</div>
                                 </div>';
             }
-                                
-            
+
+
 
             // $dropdownMenu .= $deleteBtn . '</div></div>';
 
@@ -8996,7 +8996,7 @@ class PostSales extends BaseController
             $row[] = $lm->revno;
             $row[] = $lm->description;
             // $row[] = $lm->pic;
-            
+
             // $row[] = $lm->status_desc ?? $lm->status;
             $status = $lm->status_desc ?? $lm->status;
             $badgeClass = 'badge-secondary'; // Default
@@ -9080,7 +9080,7 @@ class PostSales extends BaseController
         $builderUpdateSOI = $db->table('sc_tmp.soi');
         $builderUpdateSOI->where('inputby', $nama); // WHERE condition sama
         $builderUpdateSOI->where('docno', $docnoSOI); // Tambahan condition untuk lebih aman
-        
+
         $dataUpdateSOI = [
             'po' => $po, // Simpan PO ke kolom yang sesuai
             'cust' => $cust, // Simpan Cust ke kolom yang sesuai
@@ -9207,9 +9207,9 @@ class PostSales extends BaseController
                 echo json_encode($result);
             }
         } else {
-                // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                // echo json_encode($result);
-                return redirect()->to(base_url('sales/postsales/soi'));
+            // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+            // echo json_encode($result);
+            return redirect()->to(base_url('sales/postsales/soi'));
         }
 
     }
@@ -9327,12 +9327,12 @@ class PostSales extends BaseController
         //     return redirect()->to(base_url('sales/postsales/addSOI'))
         //         ->with('error', 'Return date is required when selecting "Kembali".');
         // }
-    
+
         // if ($jenisbarang === 'lainlain' && empty($baranglain)) {
         //     return redirect()->to(base_url('sales/postsales/addSOI'))
         //         ->with('error', 'Other goods description is required when selecting "Lain-lain".');
         // }
-    
+
 
         if (empty($countx)) {
             $info = array (
@@ -9415,11 +9415,11 @@ class PostSales extends BaseController
         $loccode = trim($this->session->get('loccode'));
         $inputby = $nama;
         $inputdate = date('Y-m-d H:i:s');
-    
+
         // Ambil body request dalam bentuk JSON
         $request_body = file_get_contents('php://input');
         $data = json_decode($request_body);
-    
+
         // Validasi apakah request memiliki key yang benar
         if (!isset($data->key) || $data->key !== '1203jD0j120dkjjKODNOoimdi)D(J)Jmjid0sjd0ijme09wjei0kjisdjfDSojiodksOjO') {
             return $this->response->setJSON([
@@ -9427,14 +9427,14 @@ class PostSales extends BaseController
                 'message' => 'Invalid Request Key!'
             ]);
         }
-    
+
         // Ambil data dari body JSON
         $dataprocess = $data->body;
         $idunit = isset($dataprocess->idunit) ? trim($dataprocess->idunit) : null;
         $namabarang = isset($dataprocess->namabarang) ? trim($dataprocess->namabarang) : null;
         $qty = isset($dataprocess->qty) ? trim($dataprocess->qty) : null;
         $description = isset($dataprocess->description) ? trim($dataprocess->description) : null;
-    
+
         // Validasi data tidak boleh kosong
         if (empty($idunit) || empty($namabarang) || empty($qty) || empty($description)) {
             return $this->response->setJSON([
@@ -9442,7 +9442,7 @@ class PostSales extends BaseController
                 'message' => 'Please fill all required fields (Unit, Item Name, Qty, Description).'
             ]);
         }
-    
+
         // Data untuk disimpan ke database
         $data_insert = [
             'docno' => $inputby,
@@ -9454,11 +9454,11 @@ class PostSales extends BaseController
             'inputdate' => $inputdate,
             'status' => 'I'
         ];
-    
+
         // Insert ke database
         $builder = $this->db->table('sc_tmp.soidtl'); // Sesuaikan dengan tabel Anda
         $insert = $builder->insert($data_insert);
-    
+
         // Cek apakah berhasil insert
         if ($insert) {
             return $this->response->setJSON([
@@ -9479,7 +9479,7 @@ class PostSales extends BaseController
         $nama = trim($this->session->get('nama'));
         $inputby = $nama;
         $inputdate = date('Y-m-d H:i:s');
-         // Ambil body request dalam bentuk JSON
+        // Ambil body request dalam bentuk JSON
         $request_body = file_get_contents('php://input');
         $data = json_decode($request_body);
 
@@ -9490,8 +9490,8 @@ class PostSales extends BaseController
                 'message' => 'Invalid Request Key!'
             ]);
         }
-    
-          // Ambil docno dari body
+
+        // Ambil docno dari body
         $docno = isset($data->body->docno) ? trim($data->body->docno) : '';
 
         if ($docno === '') {
@@ -9505,14 +9505,14 @@ class PostSales extends BaseController
             'docno' => $docno,
             'inputby' => $inputby,
             'inputdate' => $inputdate,
-            // 'exchange' => 
+            // 'exchange' =>
             'status' => 'I' // Status awal Insert
         ];
-    
+
         // Insert ke database
         $builder = $this->db->table('sc_tmp.soidtl');
         $insert = $builder->insert($data_insert);
-    
+
         // Cek apakah berhasil insert
         if ($insert) {
             return $this->response->setJSON([
@@ -9527,8 +9527,8 @@ class PostSales extends BaseController
             ]);
         }
     }
-    
-    
+
+
 
 
     public function update_detail_soi()
@@ -9558,16 +9558,16 @@ class PostSales extends BaseController
                 $specno = $update['specno'] ?? '';
                 $ordernumbermsr = $update['ordernumbermsr'] ?? '';
                 $etd = $update['etd'] ? date('Y-m-d',strtotime($update['etd'])) : '';
-                
+
                 $qty = $update['qty'] ?? 0;
                 $price = $update['price'] ?? 0;
                 $amount = $update['amount'] ?? 0;
                 $totaldelivery = $update['totaldelivery'] ?? 0;
                 $balanceorder = $update['balanceorder'] ?? 0;
-                
+
                 $usdmt = $update['usdmt'] ?? 0;
                 $exchange = $update['exchange'] ?? 0;
-                
+
                 $description = strtoupper($update['description']) ?? '';
 
                 if (empty($idurut)) {
@@ -9651,23 +9651,23 @@ class PostSales extends BaseController
             $row[] = '<select disabled class="idbarang-dropdown" style="width: 100%; height: 20px!important; font-size: 12px;" data-id="' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '">
                 <option value="" disabled>-- Choose --</option>
                 <option value="' . htmlspecialchars($lm->idbarang, ENT_QUOTES, 'UTF-8') . '" selected>'
-                    . htmlspecialchars($lm->nmbarang, ENT_QUOTES, 'UTF-8') . 
+                . htmlspecialchars($lm->nmbarang, ENT_QUOTES, 'UTF-8') .
                 '</option>
             </select>';
 
 
-             //grade
+            //grade
             $row[] = '<input class="form-control " maxlength="100"  style="text-transform: uppercase;margin:0px; background-color:#d6d5d5;width: 100%" type="text" id="grade_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" name="grade_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($lm->grade, ENT_QUOTES, 'UTF-8') . '" disabled >';
-            
+
             //size
             $row[] = '<input class="form-control " maxlength="100"  style="text-transform: uppercase;margin:0px; background-color:#d6d5d5;width: 100%" type="text" id="size_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" name="size_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($lm->size, ENT_QUOTES, 'UTF-8') . '" disabled >';
 
             //cutlength
             $row[] = '<input class="form-control " maxlength="100"  style="text-transform: uppercase;margin:0px; background-color:#d6d5d5;width: 100%" type="text" id="cutlength_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" name="cutlength_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($lm->cutlength, ENT_QUOTES, 'UTF-8') . '" disabled >';
 
-             //qty
+            //qty
             $row[] = '<input class="form-control ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;" type="text" id="qty_'.$lm->idurut.'" name="qty_'.$lm->idurut.'" value="'.number_format($lm->qty, 2, ',', '.').'" disabled  min="0">';
-            
+
             //unit
             $row[] = '<select disabled class="unit-dropdown" style="width: 100%; height: 20px!important; font-size: 12px; " data-id="' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '">
                 <option value="" disabled>-- Choose --</option>
@@ -9691,7 +9691,7 @@ class PostSales extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-        function list_t_soi_dtltrx(){
+    function list_t_soi_dtltrx(){
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_postsales->get_t_soi_dtl_view($docno);
         $data = array();
@@ -9705,17 +9705,17 @@ class PostSales extends BaseController
             $row[] = '<select disabled class="idbarang-dropdown" style="width: 100%; height: 20px!important; font-size: 12px;" data-id="' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '">
                 <option value="" disabled>-- Choose --</option>
                 <option value="' . htmlspecialchars($lm->idbarang, ENT_QUOTES, 'UTF-8') . '" selected>'
-                    . htmlspecialchars($lm->nmbarang, ENT_QUOTES, 'UTF-8') . 
+                . htmlspecialchars($lm->nmbarang, ENT_QUOTES, 'UTF-8') .
                 '</option>
             </select>';
 
 
-            
+
             //qty
             $row[] = '<input class="form-control ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;" type="text" id="qty_'.$lm->idurut.'" name="qty_'.$lm->idurut.'" value="'.number_format($lm->qty, 2, ',', '.').'" disabled  min="0">';
-            
+
             //price
-           // Price dengan Rp sejajar
+            // Price dengan Rp sejajar
             $row[] = '
             <div style="display:flex; align-items:center;">
                 <span style="margin-right:4px; font-size:12px;font-weight:bold">Rp</span>
@@ -9727,7 +9727,7 @@ class PostSales extends BaseController
                     value="'.number_format($lm->price, 2, ',', '.').'" 
                     disabled min="0">
             </div>';
-            
+
             //exchange
             $row[] = '
             <div style="display:flex; align-items:center;">
@@ -9751,8 +9751,8 @@ class PostSales extends BaseController
                     name="usdmt_'.$lm->idurut.'" 
                     value="'.number_format($lm->usdmt, 2, ',', '.').'" 
                     disabled min="0">
-            </div>';    
-            
+            </div>';
+
             //description
             $row[] = '<input class="form-control "   style="text-transform: uppercase;margin:0px; background-color:#d6d5d5;width: 100%" type="text" id="description_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" name="description_' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($lm->description, ENT_QUOTES, 'UTF-8') . '" disabled >';
 
@@ -9867,16 +9867,16 @@ class PostSales extends BaseController
         $nama = trim($this->session->get('nama'));
         $docno = hex2bin($this->request->getGet('id'));
         $builder = $this->db->table('sc_trx.soi');
-                
+
         // Update status menjadi 'C'
         $iupdate = array('status' => 'C');
         $builder->where('docno', $docno);
         if ($builder->update($iupdate)) {
             // // Hapus data dari tabel soi dan soidtl sesuai docno dan status 'C'
-            // $builder->where('docno', $docno); 
+            // $builder->where('docno', $docno);
             // $builder->where('status', 'C');
             // $builder->delete();
-            
+
             // // Menghapus data dari soidtl
             // $this->db->table('sc_trx.soidtl')
             //         ->where('docno', $docno)
@@ -9895,7 +9895,7 @@ class PostSales extends BaseController
         $id = $this->request->getPost('id'); // Ambil array ID
         $nama = trim($this->session->get('nama'));
         $docno = $this->request->getPost('docno'); // Ambil docno yang dikirim dari AJAX
-        
+
         if (empty($id) || empty($docno)) {
             echo json_encode(['status' => false, 'messages' => 'Missing Parameters']);
             return;
@@ -9940,7 +9940,7 @@ class PostSales extends BaseController
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.soi');
 
-       $builder = $builder
+        $builder = $builder
             ->where('docno', $docno)
             ->update([
                 'status'=> 'P',
@@ -9948,9 +9948,9 @@ class PostSales extends BaseController
                 'printdate' => date('Y-m-d H:i:s')
             ]);
 
-        
+
         $enc_docno = $this->fiky_encryption->sealed($docno);
-        
+
         //$enc_docdate= $this->fiky_encryption->sealed($docdate);
         // $enc_idlocation = $this->fiky_encryption->sealed($idlocation);
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
@@ -9962,7 +9962,7 @@ class PostSales extends BaseController
         $datajson =  base_url("sales/postsales/api_soi/?enc_docno=$enc_docno") ;
 
         // if($formheader==="HEADER"){
-            $datamrt =  base_url("assets/mrt/soi.mrt") ;
+        $datamrt =  base_url("assets/mrt/soi.mrt") ;
         // } else {
         //     $datamrt =  base_url("assets/mrt/soi_non_header.mrt") ;
         // }
@@ -9981,9 +9981,9 @@ class PostSales extends BaseController
         // $idgroup=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idgroup')));
         //$docno=trim($this->request->getGet('enc_docno'));
 
-       // $ddate = explode(' - ',$docdate);
-       // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
-       // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
+        // $ddate = explode(' - ',$docdate);
+        // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
+        // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
 
         if (empty($docno) or $docno==='') {
             $param_brg = "";
@@ -10003,11 +10003,11 @@ class PostSales extends BaseController
         $datadtl = $this->m_postsales->q_view_print_soi_dtl($param,$nama);
         // $datadtl = $this->m_postsales->q_soi_dtl($param);
         $tampungdtl = $datamst->getResult();
-        $detail = $tampungdtl[0] ?? null;        
+        $detail = $tampungdtl[0] ?? null;
         if ($detail) {
             // $tujuan = isset($detail->tujuan) ? trim($detail->tujuan) : '';
-            $detail->docno = trim($detail->docno);            
-             // === Hitung TOTAL QTY dari datadtl ===
+            $detail->docno = trim($detail->docno);
+            // === Hitung TOTAL QTY dari datadtl ===
             $sumQty = 0;
 
             foreach ($datadtl->getResult() as $row) {
@@ -10032,7 +10032,7 @@ class PostSales extends BaseController
                     'userid' => $nama,
                     'param' => $param,
 
-                    ]
+                ]
                 ),
                 'branch' => $databranch->getResult(),
                 'master' => $datamst->getResult(),
@@ -10055,7 +10055,7 @@ class PostSales extends BaseController
         }
 
         // Mapping prefix default
-        $prefixMap = [  
+        $prefixMap = [
             'JTS'  => 'JTS-SOI',
             'MSMI' => 'MSMI-SOI',
             'MSMJ' => 'MSM-SOI'

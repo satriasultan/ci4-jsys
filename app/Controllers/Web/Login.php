@@ -111,80 +111,80 @@ order by msession);");
         }
 
 
-        // ==========================================
-        // RECAPTCHA
-        // ==========================================
-
-        if ($recaptchaResponse === '') {
-
-            return $this->response->setJSON([
-                'status'   => false,
-                'messages' => 'Silakan verifikasi reCAPTCHA terlebih dahulu.',
-                'result'   => 'error'
-            ]);
-        }
-
-        $secret = $myconfig->recaptha_secret;
-
-        $credential = [
-            'secret'   => $secret,
-            'response' => $recaptchaResponse,
-            'remoteip' => $ip
-        ];
-
-        $verify = curl_init();
-
-        curl_setopt_array($verify, [
-            CURLOPT_URL            => 'https://www.google.com/recaptcha/api/siteverify',
-            CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => http_build_query($credential),
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CONNECTTIMEOUT => 10,
-            CURLOPT_TIMEOUT        => 15,
-            CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_SSL_VERIFYHOST => 2
-        ]);
-
-        $response = curl_exec($verify);
-
-        $curlError = curl_error($verify);
-
-        curl_close($verify);
-
-
-        // ==========================================
-        // RECAPTCHA CURL ERROR
-        // ==========================================
-
-        if ($response === false || $response === '' || $curlError !== '') {
-
-            log_message(
-                'error',
-                'reCAPTCHA CURL Error: ' . $curlError
-            );
-
-            return $this->response->setJSON([
-                'status'   => false,
-                'messages' => 'Verifikasi reCAPTCHA gagal. Silakan coba lagi.',
-                'result'   => 'error'
-            ]);
-        }
-
-
-        // ==========================================
-        // RECAPTCHA RESPONSE
-        // ==========================================
-
-        $status = json_decode($response, true);
-
-        if (!is_array($status) || empty($status['success'])) {
-
-            return $this->response->setJSON([
-                'status'   => false,
-                'messages' => 'Verifikasi reCAPTCHA tidak valid.',
-                'result'   => 'error'
-            ]);
-        }
+//        // ==========================================
+//        // RECAPTCHA
+//        // ==========================================
+//
+//        if ($recaptchaResponse === '') {
+//
+//            return $this->response->setJSON([
+//                'status'   => false,
+//                'messages' => 'Silakan verifikasi reCAPTCHA terlebih dahulu.',
+//                'result'   => 'error'
+//            ]);
+//        }
+//
+//        $secret = $myconfig->recaptha_secret;
+//
+//        $credential = [
+//            'secret'   => $secret,
+//            'response' => $recaptchaResponse,
+//            'remoteip' => $ip
+//        ];
+//
+//        $verify = curl_init();
+//
+//        curl_setopt_array($verify, [
+//            CURLOPT_URL            => 'https://www.google.com/recaptcha/api/siteverify',
+//            CURLOPT_POST           => true,
+//            CURLOPT_POSTFIELDS     => http_build_query($credential),
+//            CURLOPT_RETURNTRANSFER => true,
+//            CURLOPT_CONNECTTIMEOUT => 10,
+//            CURLOPT_TIMEOUT        => 15,
+//            CURLOPT_SSL_VERIFYPEER => true,
+//            CURLOPT_SSL_VERIFYHOST => 2
+//        ]);
+//
+//        $response = curl_exec($verify);
+//
+//        $curlError = curl_error($verify);
+//
+//        curl_close($verify);
+//
+//
+//        // ==========================================
+//        // RECAPTCHA CURL ERROR
+//        // ==========================================
+//
+//        if ($response === false || $response === '' || $curlError !== '') {
+//
+//            log_message(
+//                'error',
+//                'reCAPTCHA CURL Error: ' . $curlError
+//            );
+//
+//            return $this->response->setJSON([
+//                'status'   => false,
+//                'messages' => 'Verifikasi reCAPTCHA gagal. Silakan coba lagi.',
+//                'result'   => 'error'
+//            ]);
+//        }
+//
+//
+//        // ==========================================
+//        // RECAPTCHA RESPONSE
+//        // ==========================================
+//
+//        $status = json_decode($response, true);
+//
+//        if (!is_array($status) || empty($status['success'])) {
+//
+//            return $this->response->setJSON([
+//                'status'   => false,
+//                'messages' => 'Verifikasi reCAPTCHA tidak valid.',
+//                'result'   => 'error'
+//            ]);
+//        }
 
 
         // ==========================================
