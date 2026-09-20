@@ -443,6 +443,112 @@ CREATE INDEX IF NOT EXISTS idx_jurnal_dt_idcoa
 
 
 /* ============================================================
+   DUPLICATE BUSINESS KEY
+   ============================================================
+
+   Hard rule:
+       tidak boleh ada jurnal_dt lain dengan kombinasi identik:
+
+       idcoa
+       debet
+       kredit
+       ref_docno
+       ref_doctype
+       source_uniqueid
+       keterangan
+
+   journal_id sengaja tidak termasuk.
+   ============================================================ */
+
+/*
+   PostgreSQL menolak jsonb_build_array() pada index expression
+   karena function tersebut tidak IMMUTABLE.
+
+   Gunakan composite UNIQUE INDEX langsung.
+   PostgreSQL 15+ mendukung NULLS NOT DISTINCT, sehingga NULL
+   juga dianggap sama dan tetap tidak boleh duplicate.
+*/
+CREATE UNIQUE INDEX IF NOT EXISTS uq_jurnal_dt_business_duplicate
+ON sc_trx.jurnal_dt
+(
+    idcoa,
+    debet,
+    kredit,
+    ref_docno,
+    ref_doctype,
+    source_uniqueid,
+    keterangan
+)
+NULLS NOT DISTINCT;
+
+
+/* ============================================================
+   DUPLICATE INSERT PROTECTION
+   ============================================================ */
+
+CREATE OR REPLACE FUNCTION sc_trx.fn_prevent_duplicate_jurnal_dt()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_existing_id     BIGINT;
+    v_existing_jurnal BIGINT;
+BEGIN
+
+    SELECT
+        jd.id,
+        jd.jurnal_id
+    INTO
+        v_existing_id,
+        v_existing_jurnal
+    FROM sc_trx.jurnal_dt jd
+    WHERE jd.id IS DISTINCT FROM NEW.id
+      AND COALESCE(BTRIM(jd.idcoa), '') =
+          COALESCE(BTRIM(NEW.idcoa), '')
+      AND COALESCE(jd.debet, 0) =
+          COALESCE(NEW.debet, 0)
+      AND COALESCE(jd.kredit, 0) =
+          COALESCE(NEW.kredit, 0)
+      AND COALESCE(jd.ref_docno, '') =
+          COALESCE(NEW.ref_docno, '')
+      AND COALESCE(jd.ref_doctype, '') =
+          COALESCE(NEW.ref_doctype, '')
+      AND COALESCE(jd.source_uniqueid, '') =
+          COALESCE(NEW.source_uniqueid, '')
+      AND COALESCE(jd.keterangan, '') =
+          COALESCE(NEW.keterangan, '')
+    ORDER BY jd.id
+    LIMIT 1;
+
+    IF v_existing_id IS NOT NULL THEN
+
+        RAISE EXCEPTION
+            'DUPLICATE JURNAL DETAIL DITOLAK. Existing jurnal_dt.id=%, jurnal_id=%. '
+            'Kombinasi idcoa, debet, kredit, ref_docno, ref_doctype, '
+            'source_uniqueid, keterangan sudah ada.',
+            v_existing_id,
+            v_existing_jurnal
+            USING ERRCODE = '23505';
+
+    END IF;
+
+    RETURN NEW;
+
+END;
+$$;
+
+
+DROP TRIGGER IF EXISTS trg_prevent_duplicate_jurnal_dt
+ON sc_trx.jurnal_dt;
+
+CREATE TRIGGER trg_prevent_duplicate_jurnal_dt
+BEFORE INSERT
+ON sc_trx.jurnal_dt
+FOR EACH ROW
+EXECUTE FUNCTION sc_trx.fn_prevent_duplicate_jurnal_dt();
+
+
+/* ============================================================
    7. VALIDASI COA
 
    COA harus terdaftar di sc_mst.coa.
@@ -702,7 +808,35 @@ EXECUTE FUNCTION sc_trx.fn_sync_jurnal_hd();
 
 
 /* ============================================================
+   DUPLICATE AUDIT
+   ============================================================ */
+
+SELECT
+    idcoa,
+    debet,
+    kredit,
+    ref_docno,
+    ref_doctype,
+    source_uniqueid,
+    keterangan,
+    MIN(id) AS first_jurnal_dt_id,
+    COUNT(*) AS duplicate_count
+FROM sc_trx.jurnal_dt
+GROUP BY
+    idcoa,
+    debet,
+    kredit,
+    ref_docno,
+    ref_doctype,
+    source_uniqueid,
+    keterangan
+HAVING COUNT(*) > 1
+ORDER BY duplicate_count DESC, first_jurnal_dt_id;
+
+
+/* ============================================================
    HASIL AKHIR
+
 
    transaction_dt
         |
@@ -727,3 +861,179 @@ EXECUTE FUNCTION sc_trx.fn_sync_jurnal_hd();
 
    TAHAP 10 hanya menangani detail jurnal dan integritasnya.
    ============================================================ */
+
+
+
+
+
+
+
+
+
+
+/*
+============================================================================
+PATCH JOURNAL_DT DUPLICATE PROTECTION V2
+============================================================================
+
+MASALAH V1:
+    jsonb_build_array() digunakan dalam index expression.
+    PostgreSQL mensyaratkan expression index menggunakan function
+    IMMUTABLE, sedangkan jsonb_build_array() tidak memenuhi syarat.
+
+SOLUSI:
+    Composite UNIQUE INDEX langsung pada 7 kolom.
+
+HARD RULE:
+    Duplicate ditolak bila:
+        idcoa
+        debet
+        kredit
+        ref_docno
+        ref_doctype
+        source_uniqueid
+        keterangan
+    semuanya sama.
+
+NULLS NOT DISTINCT:
+    NULL dianggap sama dengan NULL, sehingga tetap tidak boleh
+    duplicate.
+
+CATATAN:
+    Karena data test sebelumnya sudah banyak duplicate, lakukan
+    RESET TOTAL DATA TRANSAKSI terlebih dahulu jika index gagal
+    karena duplicate existing.
+============================================================================
+*/
+
+BEGIN;
+
+
+/* ------------------------------------------------------------
+   DROP index V1 bila sempat berhasil dibuat
+   ------------------------------------------------------------ */
+DROP INDEX IF EXISTS sc_trx.uq_jurnal_dt_business_duplicate;
+
+
+/* ------------------------------------------------------------
+   CEK DUPLICATE EXISTING
+   ------------------------------------------------------------ */
+DO $$
+DECLARE
+    v_duplicate_groups INTEGER;
+BEGIN
+
+    SELECT COUNT(*)
+    INTO v_duplicate_groups
+    FROM
+    (
+        SELECT
+            idcoa,
+            debet,
+            kredit,
+            ref_docno,
+            ref_doctype,
+            source_uniqueid,
+            keterangan
+        FROM sc_trx.jurnal_dt
+        GROUP BY
+            idcoa,
+            debet,
+            kredit,
+            ref_docno,
+            ref_doctype,
+            source_uniqueid,
+            keterangan
+        HAVING COUNT(*) > 1
+    ) x;
+
+    IF v_duplicate_groups > 0 THEN
+        RAISE EXCEPTION
+            'PATCH GAGAL: masih ada % kelompok duplicate jurnal_dt. '
+            'Jalankan RESET TOTAL DATA TRANSAKSI terlebih dahulu.',
+            v_duplicate_groups;
+    END IF;
+
+END;
+$$;
+
+
+/* ------------------------------------------------------------
+   UNIQUE INDEX FINAL
+   ------------------------------------------------------------ */
+CREATE UNIQUE INDEX uq_jurnal_dt_business_duplicate
+ON sc_trx.jurnal_dt
+(
+    idcoa,
+    debet,
+    kredit,
+    ref_docno,
+    ref_doctype,
+    source_uniqueid,
+    keterangan
+)
+NULLS NOT DISTINCT;
+
+
+/* ------------------------------------------------------------
+   TRIGGER PESAN DUPLICATE
+   ------------------------------------------------------------ */
+CREATE OR REPLACE FUNCTION sc_trx.fn_prevent_duplicate_jurnal_dt()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_existing_id     BIGINT;
+    v_existing_jurnal BIGINT;
+BEGIN
+
+    SELECT
+        jd.id,
+        jd.jurnal_id
+    INTO
+        v_existing_id,
+        v_existing_jurnal
+    FROM sc_trx.jurnal_dt jd
+    WHERE jd.id IS DISTINCT FROM NEW.id
+      AND jd.idcoa         IS NOT DISTINCT FROM NEW.idcoa
+      AND jd.debet         IS NOT DISTINCT FROM NEW.debet
+      AND jd.kredit        IS NOT DISTINCT FROM NEW.kredit
+      AND jd.ref_docno     IS NOT DISTINCT FROM NEW.ref_docno
+      AND jd.ref_doctype   IS NOT DISTINCT FROM NEW.ref_doctype
+      AND jd.source_uniqueid IS NOT DISTINCT FROM NEW.source_uniqueid
+      AND jd.keterangan    IS NOT DISTINCT FROM NEW.keterangan
+    ORDER BY jd.id
+    LIMIT 1;
+
+    IF v_existing_id IS NOT NULL THEN
+
+        RAISE EXCEPTION
+            'DUPLICATE JURNAL DETAIL DITOLAK. Existing jurnal_dt.id=%, jurnal_id=%. '
+            'Kombinasi idcoa, debet, kredit, ref_docno, ref_doctype, '
+            'source_uniqueid, keterangan sudah ada.',
+            v_existing_id,
+            v_existing_jurnal
+            USING ERRCODE = '23505';
+
+    END IF;
+
+    RETURN NEW;
+
+END;
+$$;
+
+
+/* ------------------------------------------------------------
+   TRIGGER
+   ------------------------------------------------------------ */
+DROP TRIGGER IF EXISTS trg_prevent_duplicate_jurnal_dt
+ON sc_trx.jurnal_dt;
+
+CREATE TRIGGER trg_prevent_duplicate_jurnal_dt
+BEFORE INSERT
+ON sc_trx.jurnal_dt
+FOR EACH ROW
+EXECUTE FUNCTION sc_trx.fn_prevent_duplicate_jurnal_dt();
+
+
+COMMIT;

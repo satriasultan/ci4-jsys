@@ -40,9 +40,14 @@
       bukan menebak ulang dari dokumen.
 
    8. transaction_dt.idcoa = COA utama / primary COA.
+      Untuk transaksi manual accounting:
+         idcoa          = perkiraan asal
+         counter_idcoa  = perkiraan lawan
+         debet_kredit   = arah perkiraan asal (D/K)
+
       Satu baris transaction_dt tidak dipakai untuk menampung
       seluruh COA jurnal. Multi-account journal dibuat pada
-      tahap jurnal berikutnya dari journal_type_coa.
+      tahap posting berikutnya.
 
    9. TIDAK menghapus transaction_dt saat script dijalankan ulang.
       Data existing dipertahankan.
@@ -205,6 +210,11 @@ CREATE TABLE sc_trx.transaction_dt
 
     /* PRIMARY ACCOUNT / PRIMARY COA */
     idcoa VARCHAR(20) DEFAULT '',
+
+    /* MANUAL ACCOUNTING */
+    counter_idcoa VARCHAR(20) DEFAULT '',
+    debet_kredit CHAR(1) DEFAULT 'D',
+
     debet NUMERIC(18,2) DEFAULT 0,
     kredit NUMERIC(18,2) DEFAULT 0,
 
@@ -266,6 +276,9 @@ CREATE TABLE sc_trx.transaction_dt
             )
         ),
 
+    CONSTRAINT ck_transaction_dt_manual_dc
+        CHECK (debet_kredit IN ('D','K')),
+
     CONSTRAINT ck_transaction_dt_isinclusive
         CHECK (isinclusive IN ('YES','NO')),
 
@@ -320,6 +333,14 @@ BEGIN
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='sc_trx' AND table_name='transaction_dt' AND column_name='stock_key') THEN
         ALTER TABLE sc_trx.transaction_dt ADD COLUMN stock_key CHAR(32);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='sc_trx' AND table_name='transaction_dt' AND column_name='counter_idcoa') THEN
+        ALTER TABLE sc_trx.transaction_dt ADD COLUMN counter_idcoa VARCHAR(20) DEFAULT '';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='sc_trx' AND table_name='transaction_dt' AND column_name='debet_kredit') THEN
+        ALTER TABLE sc_trx.transaction_dt ADD COLUMN debet_kredit CHAR(1) DEFAULT 'D';
     END IF;
 END;
 $$;
@@ -400,6 +421,19 @@ BEGIN
         ALTER TABLE sc_trx.transaction_dt
             ADD CONSTRAINT ck_transaction_dt_asset_effect
             CHECK (asset_effect IN ('IN','OUT','INOUT','NONE'));
+    END IF;
+
+    IF NOT EXISTS
+    (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'sc_trx.transaction_dt'::regclass
+          AND conname = 'ck_transaction_dt_manual_dc'
+    )
+    THEN
+        ALTER TABLE sc_trx.transaction_dt
+            ADD CONSTRAINT ck_transaction_dt_manual_dc
+            CHECK (debet_kredit IN ('D','K'));
     END IF;
 
 END;
@@ -843,6 +877,59 @@ BEGIN
     END IF;
 
 
+    /*
+    -----------------------------------------------------------------------
+    MANUAL ACCOUNTING
+    -----------------------------------------------------------------------
+    COA utama berasal dari input transaction_dt.idcoa.
+    Resolver tidak menggantinya dengan COA operational master.
+    -----------------------------------------------------------------------
+    */
+    IF TRIM(p_journal_type) IN
+    (
+        'JVGENL',
+        'UMTITP',
+        'NDKAPD',
+        'NDKAPK',
+        'NDKARD',
+        'NDKARK',
+        'GIROIN',
+        'GIROUT',
+        'FXREAL',
+        'FXUNRL',
+        'ARWOFF',
+        'APWOFF',
+        'BADPRV',
+        'BADREV',
+        'UNEARN',
+        'UNEREL',
+        'PAYROL'
+    )
+    THEN
+
+        v_result_coa :=
+            NULLIF(BTRIM(COALESCE(p_current_idcoa,'')), '');
+
+        IF v_result_coa IS NOT NULL
+           AND NOT EXISTS
+           (
+               SELECT 1
+               FROM sc_mst.coa c
+               WHERE BTRIM(c.idcoa::TEXT)
+                     = BTRIM(v_result_coa)
+           )
+        THEN
+            RAISE EXCEPTION
+                'COA input % untuk journal_type % tidak ditemukan di sc_mst.coa',
+                v_result_coa,
+                TRIM(p_journal_type);
+        END IF;
+
+        RETURN v_result_coa;
+
+    END IF;
+
+
     /* --------------------------------------------------------
        2. LOAD MASTER BARANG
        -------------------------------------------------------- */
@@ -1240,6 +1327,10 @@ DECLARE
     /* COA */
     v_coa                 VARCHAR(20);
 
+    /* MANUAL ACCOUNTING */
+    v_is_manual           BOOLEAN := FALSE;
+    v_tax_manual_flow     TEXT;
+
 
 BEGIN
 
@@ -1273,24 +1364,56 @@ BEGIN
 
 
     /* ========================================================
+       MANUAL ACCOUNTING
+       ======================================================== */
+
+    v_is_manual :=
+        TRIM(NEW.journal_type) IN
+        (
+            'JVGENL',
+            'UMTITP',
+            'NDKAPD',
+            'NDKAPK',
+            'NDKARD',
+            'NDKARK',
+            'GIROIN',
+            'GIROUT',
+            'FXREAL',
+            'FXUNRL',
+            'ARWOFF',
+            'APWOFF',
+            'BADPRV',
+            'BADREV',
+            'UNEARN',
+            'UNEREL',
+            'PAYROL'
+        );
+
+
+    /* ========================================================
        2. VALIDATE TYPE IN / OUT
        ======================================================== */
 
-    IF v_direction = 'IN'
-       AND NEW.type_in_out <> 'IN'
+    IF NOT v_is_manual
     THEN
 
-        RAISE EXCEPTION
-            'Journal type % hanya boleh type_in_out IN',
-            TRIM(NEW.journal_type);
+        IF v_direction = 'IN'
+           AND NEW.type_in_out <> 'IN'
+        THEN
 
-    ELSIF v_direction = 'OUT'
-          AND NEW.type_in_out <> 'OUT'
-    THEN
+            RAISE EXCEPTION
+                'Journal type % hanya boleh type_in_out IN',
+                TRIM(NEW.journal_type);
 
-        RAISE EXCEPTION
-            'Journal type % hanya boleh type_in_out OUT',
-            TRIM(NEW.journal_type);
+        ELSIF v_direction = 'OUT'
+              AND NEW.type_in_out <> 'OUT'
+        THEN
+
+            RAISE EXCEPTION
+                'Journal type % hanya boleh type_in_out OUT',
+                TRIM(NEW.journal_type);
+
+        END IF;
 
     END IF;
 
@@ -1342,14 +1465,27 @@ BEGIN
           NON
        ======================================================== */
 
-    v_effective_tax :=
-        COALESCE
-        (
-            NULLIF(BTRIM(COALESCE(NEW.idtax,'')), ''),
-            v_item_idtax,
-            v_cfg_idtax,
-            'NON'
-        );
+    IF v_is_manual
+    THEN
+
+        v_effective_tax :=
+            COALESCE(
+                NULLIF(BTRIM(COALESCE(NEW.idtax,'')), ''),
+                'NON'
+            );
+
+    ELSE
+
+        v_effective_tax :=
+            COALESCE
+            (
+                NULLIF(BTRIM(COALESCE(NEW.idtax,'')), ''),
+                v_item_idtax,
+                v_cfg_idtax,
+                'NON'
+            );
+
+    END IF;
 
     NEW.idtax := BTRIM(v_effective_tax);
 
@@ -1375,8 +1511,135 @@ BEGIN
     END IF;
 
 
+    /*
+       Tax flow khusus manual NDK:
+         NDKAPD / NDKAPK -> INPUT
+         NDKARD / NDKARK -> OUTPUT
+
+       Untuk JVGENL / UMTITP / GIRO / FX / adjustment generic,
+       tax master hanya disimpan di transaction_dt. Pemilihan tax
+       account detail dilakukan pada posting accounting setelah
+       context jurnal tersedia.
+    */
+    v_tax_manual_flow :=
+        CASE
+            WHEN TRIM(NEW.journal_type) IN ('NDKAPD','NDKAPK')
+                THEN 'INPUT'
+            WHEN TRIM(NEW.journal_type) IN ('NDKARD','NDKARK')
+                THEN 'OUTPUT'
+            ELSE 'NONE'
+        END;
+
+
     /* ========================================================
-       7. EFFECTIVE ACCOUNTING POSTING POINT
+       7. MANUAL ACCOUNTING ROUTING
+       ======================================================== */
+
+    IF v_is_manual
+    THEN
+
+        NEW.module            := COALESCE(v_module, 'ACCOUNTING');
+        NEW.direction         := COALESCE(v_direction, 'INOUT');
+        NEW.stock_effect      := 'NONE';
+        NEW.accounting_effect := 'YES';
+        NEW.asset_effect      := 'NONE';
+
+
+        /*
+           Debit/Kredit pada manual accounting berasal dari input
+           dan menentukan arah Perkiraan Asal.
+        */
+
+        IF TRIM(NEW.journal_type) IN
+           ('NDKAPD','NDKARD','GIROIN')
+        THEN
+            NEW.debet_kredit := 'D';
+
+        ELSIF TRIM(NEW.journal_type) IN
+              ('NDKAPK','NDKARK','GIROUT')
+        THEN
+            NEW.debet_kredit := 'K';
+
+        ELSIF NEW.debet_kredit NOT IN ('D','K')
+        THEN
+            NEW.debet_kredit := 'D';
+        END IF;
+
+
+        /*
+           type_in_out hanya untuk kompatibilitas schema lama.
+           Manual accounting tetap stock NONE.
+        */
+        IF NEW.debet_kredit = 'D'
+        THEN
+            NEW.type_in_out := 'IN';
+        ELSE
+            NEW.type_in_out := 'OUT';
+        END IF;
+
+
+        IF NULLIF(BTRIM(COALESCE(NEW.idcoa,'')), '') IS NULL
+        THEN
+            RAISE EXCEPTION
+                'Perkiraan Asal (idcoa) wajib diisi untuk journal_type %',
+                TRIM(NEW.journal_type);
+        END IF;
+
+
+        IF NULLIF(BTRIM(COALESCE(NEW.counter_idcoa,'')), '') IS NULL
+        THEN
+            RAISE EXCEPTION
+                'Perkiraan Lawan (counter_idcoa) wajib diisi untuk journal_type %',
+                TRIM(NEW.journal_type);
+        END IF;
+
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM sc_mst.coa c
+            WHERE BTRIM(c.idcoa::TEXT)
+                  = BTRIM(NEW.idcoa::TEXT)
+        )
+        THEN
+            RAISE EXCEPTION
+                'COA Perkiraan Asal % tidak ditemukan pada sc_mst.coa',
+                TRIM(NEW.idcoa);
+        END IF;
+
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM sc_mst.coa c
+            WHERE BTRIM(c.idcoa::TEXT)
+                  = BTRIM(NEW.counter_idcoa::TEXT)
+        )
+        THEN
+            RAISE EXCEPTION
+                'COA Perkiraan Lawan % tidak ditemukan pada sc_mst.coa',
+                TRIM(NEW.counter_idcoa);
+        END IF;
+
+
+        /* Summary side of the origin account. */
+        IF COALESCE(NEW.total,0) > 0
+        THEN
+            IF NEW.debet_kredit = 'D'
+            THEN
+                NEW.debet  := NEW.total;
+                NEW.kredit := 0;
+            ELSE
+                NEW.debet  := 0;
+                NEW.kredit := NEW.total;
+            END IF;
+        END IF;
+
+    END IF;
+
+
+    /* ========================================================
+       8. EFFECTIVE ACCOUNTING POSTING POINT
 
        Dokumen berikut bukan titik accounting:
           PURCHS
@@ -1393,21 +1656,26 @@ BEGIN
        Ini menjaga agar jurnal tidak double.
        ======================================================== */
 
-    IF TRIM(NEW.journal_type) IN
-       ('PURCHS','PURRET','DELIVR','DELRET')
+    IF NOT v_is_manual
     THEN
 
-        NEW.accounting_effect := 'NO';
+        IF TRIM(NEW.journal_type) IN
+           ('PURCHS','PURRET','DELIVR','DELRET')
+        THEN
 
-    ELSE
+            NEW.accounting_effect := 'NO';
 
-        NEW.accounting_effect := v_master_accounting;
+        ELSE
+
+            NEW.accounting_effect := v_master_accounting;
+
+        END IF;
 
     END IF;
 
 
     /* ========================================================
-       8. EFFECTIVE STOCK POSTING
+       9. EFFECTIVE STOCK POSTING
 
        RULE JASA:
            JSA tidak masuk stock.
@@ -1422,11 +1690,14 @@ BEGIN
            gunakan stock_effect dari master.
        ======================================================== */
 
-    v_effective_stock := v_master_stock;
+    IF NOT v_is_manual
+    THEN
+
+        v_effective_stock := v_master_stock;
 
 
-    IF TRIM(NEW.journal_type) IN
-       ('PURCHS','PURRET','SALESX','SALRET')
+        IF TRIM(NEW.journal_type) IN
+           ('PURCHS','PURRET','SALESX','SALRET')
     THEN
 
         v_effective_stock := 'NONE';
@@ -1444,25 +1715,36 @@ BEGIN
     END IF;
 
 
-    /* JASA TIDAK PERNAH masuk stock */
+        /* JASA TIDAK PERNAH masuk stock */
 
-    IF UPPER(COALESCE(v_idgroup,'')) = 'JSA'
-       AND v_effective_stock <> 'NONE'
-    THEN
+        IF UPPER(COALESCE(v_idgroup,'')) = 'JSA'
+           AND v_effective_stock <> 'NONE'
+        THEN
 
-        v_effective_stock := 'NONE';
+            v_effective_stock := 'NONE';
+
+        END IF;
+
+
+        NEW.module       := COALESCE(v_module, '');
+        NEW.direction    := COALESCE(v_direction, '');
+        NEW.stock_effect := COALESCE(v_effective_stock, 'NONE');
+        NEW.asset_effect := COALESCE(v_master_asset, 'NONE');
+
+    ELSE
+
+        /* Manual accounting route is fixed. */
+        NEW.module       := COALESCE(v_module, 'ACCOUNTING');
+        NEW.direction    := COALESCE(v_direction, 'INOUT');
+        NEW.stock_effect := 'NONE';
+        NEW.accounting_effect := 'YES';
+        NEW.asset_effect := 'NONE';
 
     END IF;
 
 
-    NEW.module       := COALESCE(v_module, '');
-    NEW.direction    := COALESCE(v_direction, '');
-    NEW.stock_effect := COALESCE(v_effective_stock, 'NONE');
-    NEW.asset_effect := COALESCE(v_master_asset, 'NONE');
-
-
     /* ========================================================
-       9. STOCK IDENTITY
+       10. STOCK IDENTITY
 
        Hanya dibentuk jika transaksi benar-benar menuju stock.
        ======================================================== */
@@ -1550,21 +1832,26 @@ BEGIN
            source idcoa
        ======================================================== */
 
-    v_coa :=
-        sc_trx.fn_resolve_transaction_coa
-        (
-            NEW.journal_type,
-            NEW.idbarang,
-            NEW.currcode,
-            NEW.idtax,
-            NEW.type_in_out,
-            NEW.idcoa
-        );
-
-
-    IF NULLIF(BTRIM(COALESCE(v_coa,'')), '') IS NOT NULL
+    IF NOT v_is_manual
     THEN
-        NEW.idcoa := BTRIM(v_coa);
+
+        v_coa :=
+            sc_trx.fn_resolve_transaction_coa
+            (
+                NEW.journal_type,
+                NEW.idbarang,
+                NEW.currcode,
+                NEW.idtax,
+                NEW.type_in_out,
+                NEW.idcoa
+            );
+
+
+        IF NULLIF(BTRIM(COALESCE(v_coa,'')), '') IS NOT NULL
+        THEN
+            NEW.idcoa := BTRIM(v_coa);
+        END IF;
+
     END IF;
 
 
@@ -1608,79 +1895,108 @@ BEGIN
 
     /* ========================================================
        12. VALIDATE TAX DETAIL COA
+       ========================================================
 
-       Jika transaksi memiliki pajak > 0, semua komponen pajak
-       aktif harus mempunyai akun pajak.
+       PURCHASE:
+           prk_masukan
 
-       BBB11:
-           PPH22 -> 116103 / 214103
-           PPN   -> 116106 / 214116
+       SALES:
+           prk_keluaran
 
-       GRN = INPUT
-       SALES = OUTPUT
+       Manual NDK:
+           NDKAP* -> prk_masukan
+           NDKAR* -> prk_keluaran
+
+       Manual generic selain NDK:
+           tax master tetap valid, detail tax account akan digunakan
+           pada posting jika context tax sudah ditentukan.
        ======================================================== */
 
     IF COALESCE(NEW.pajak,0) > 0
        AND NEW.idtax <> 'NON'
     THEN
 
-        SELECT COUNT(*)
-        INTO v_tax_count
-        FROM sc_trx.fn_get_transaction_tax_accounts
-        (
-            NEW.idtax,
-            NEW.journal_type
-        );
+        IF v_tax_manual_flow = 'INPUT'
+           OR UPPER(COALESCE(v_module,'')) = 'PURCHASE'
+        THEN
+
+            SELECT COUNT(*)
+            INTO v_tax_count
+            FROM sc_mst.tax_dtl d
+            WHERE TRIM(d.idtax) = TRIM(NEW.idtax)
+              AND d.status = 'P'
+              AND NULLIF(TRIM(d.prk_masukan),'') IS NOT NULL;
 
 
-        SELECT COUNT(*)
-        INTO v_tax_missing_coa
-        FROM sc_mst.tax_dtl d
-        WHERE TRIM(d.idtax) = TRIM(NEW.idtax)
-          AND d.status = 'P'
-          AND
-          (
-              (
-                  UPPER(TRIM(v_module)) = 'PURCHASE'
-                  AND NULLIF(TRIM(d.prk_masukan),'') IS NULL
-              )
-              OR
-              (
-                  UPPER(TRIM(v_module)) = 'SALES'
-                  AND NULLIF(TRIM(d.prk_keluaran),'') IS NULL
-              )
-          );
+            SELECT COUNT(*)
+            INTO v_tax_missing_coa
+            FROM sc_mst.tax_dtl d
+            WHERE TRIM(d.idtax) = TRIM(NEW.idtax)
+              AND d.status = 'P'
+              AND NULLIF(TRIM(d.prk_masukan),'') IS NULL;
 
 
-        SELECT COUNT(*)
-        INTO v_tax_invalid_coa
-        FROM sc_mst.tax_dtl d
-        WHERE TRIM(d.idtax) = TRIM(NEW.idtax)
-          AND d.status = 'P'
-          AND
-          (
+            SELECT COUNT(*)
+            INTO v_tax_invalid_coa
+            FROM sc_mst.tax_dtl d
+            WHERE TRIM(d.idtax) = TRIM(NEW.idtax)
+              AND d.status = 'P'
+              AND NULLIF(TRIM(d.prk_masukan),'') IS NOT NULL
+              AND NOT EXISTS
               (
-                  UPPER(TRIM(v_module)) = 'PURCHASE'
-                  AND NULLIF(TRIM(d.prk_masukan),'') IS NOT NULL
-                  AND NOT EXISTS
-                  (
-                      SELECT 1
-                      FROM sc_mst.coa c
-                      WHERE BTRIM(c.idcoa::TEXT) = BTRIM(d.prk_masukan::TEXT)
-                  )
-              )
-              OR
+                  SELECT 1
+                  FROM sc_mst.coa c
+                  WHERE BTRIM(c.idcoa::TEXT)
+                        = BTRIM(d.prk_masukan::TEXT)
+              );
+
+
+        ELSIF v_tax_manual_flow = 'OUTPUT'
+              OR UPPER(COALESCE(v_module,'')) = 'SALES'
+        THEN
+
+            SELECT COUNT(*)
+            INTO v_tax_count
+            FROM sc_mst.tax_dtl d
+            WHERE TRIM(d.idtax) = TRIM(NEW.idtax)
+              AND d.status = 'P'
+              AND NULLIF(TRIM(d.prk_keluaran),'') IS NOT NULL;
+
+
+            SELECT COUNT(*)
+            INTO v_tax_missing_coa
+            FROM sc_mst.tax_dtl d
+            WHERE TRIM(d.idtax) = TRIM(NEW.idtax)
+              AND d.status = 'P'
+              AND NULLIF(TRIM(d.prk_keluaran),'') IS NULL;
+
+
+            SELECT COUNT(*)
+            INTO v_tax_invalid_coa
+            FROM sc_mst.tax_dtl d
+            WHERE TRIM(d.idtax) = TRIM(NEW.idtax)
+              AND d.status = 'P'
+              AND NULLIF(TRIM(d.prk_keluaran),'') IS NOT NULL
+              AND NOT EXISTS
               (
-                  UPPER(TRIM(v_module)) = 'SALES'
-                  AND NULLIF(TRIM(d.prk_keluaran),'') IS NOT NULL
-                  AND NOT EXISTS
-                  (
-                      SELECT 1
-                      FROM sc_mst.coa c
-                      WHERE BTRIM(c.idcoa::TEXT) = BTRIM(d.prk_keluaran::TEXT)
-                  )
-              )
-          );
+                  SELECT 1
+                  FROM sc_mst.coa c
+                  WHERE BTRIM(c.idcoa::TEXT)
+                        = BTRIM(d.prk_keluaran::TEXT)
+              );
+
+        ELSE
+
+            /*
+               Generic manual accounting:
+               tax master sudah divalidasi.
+               Jangan memaksa memilih input/output tax tanpa context.
+            */
+            v_tax_count       := 1;
+            v_tax_missing_coa := 0;
+            v_tax_invalid_coa := 0;
+
+        END IF;
 
 
         IF v_tax_count = 0
@@ -1695,18 +2011,17 @@ BEGIN
         IF v_tax_missing_coa > 0
         THEN
             RAISE EXCEPTION
-                'Tax % mempunyai detail tanpa COA pajak lengkap untuk module %',
+                'Tax % mempunyai detail tanpa COA pajak lengkap untuk journal_type %',
                 TRIM(NEW.idtax),
-                TRIM(v_module);
+                TRIM(NEW.journal_type);
         END IF;
 
 
         IF v_tax_invalid_coa > 0
         THEN
             RAISE EXCEPTION
-                'Tax % mempunyai COA pajak yang tidak terdaftar pada sc_mst.coa untuk module %',
-                TRIM(NEW.idtax),
-                TRIM(v_module);
+                'Tax % mempunyai COA pajak yang tidak terdaftar pada sc_mst.coa',
+                TRIM(NEW.idtax);
         END IF;
 
     END IF;
@@ -2193,6 +2508,45 @@ EXECUTE FUNCTION sc_trx.fn_validate_transaction_type();
 
 
    ============================================================ */
+
+
+
+/*
+===========================================================================
+MANUAL ACCOUNTING TRANSACTION SHAPE
+===========================================================================
+
+JVGENL / UMTITP / NDKAPD / NDKAPK / NDKARD / NDKARK
+GIROIN / GIROUT / FXREAL / FXUNRL
+ARWOFF / APWOFF / BADPRV / BADREV
+UNEARN / UNEREL / PAYROL
+
+Input:
+    idcoa          = Perkiraan Asal
+    counter_idcoa  = Perkiraan Lawan
+    debet_kredit   = D / K
+    idtax          = Tax pilihan
+    nilai/dpp/pajak/total = nilai transaksi
+
+Contoh:
+    idcoa          = 213102
+    counter_idcoa  = 511101
+    debet_kredit   = D
+    total          = 3.000.000
+
+Hasil TAHAP 16:
+    DEBIT   213102  3.000.000
+    CREDIT  511101  3.000.000
+
+NDK:
+    NDKAPD / NDKAPK -> tax input
+    NDKARD / NDKARK -> tax output
+
+Stock:
+    selalu NONE.
+===========================================================================
+*/
+
 
 
 /* ============================================================
