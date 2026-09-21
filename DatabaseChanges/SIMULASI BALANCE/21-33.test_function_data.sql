@@ -1,7 +1,7 @@
 /* ============================================================================
    JSYS ACCOUNTING / ERP
    TAHAP 21 - 27 : FINAL CLEAN READ-ONLY AUDIT
-   PLUS ADDITIONAL TESTS UNTUK ARSITEKTUR TAHAP 06 - 19
+   TAHAP 28 - 33 : ADDITIONAL TEST FUNCTION / DATA
    ============================================================================
 
    SIFAT SCRIPT:
@@ -36,161 +36,12 @@
        TAHAP 30 : Accounting COST source
        TAHAP 31 : JSA stock exclusion
        TAHAP 32 : Accounting trigger order
-       TAHAP 33 : Reversal idempotency / status integrity
+       TAHAP 33 : Cancellation / status integrity
 
    CATATAN:
        Hasil query yang menemukan anomaly TIDAK menghentikan script.
        Script audit hanya membaca dan menampilkan data yang perlu ditinjau.
    ============================================================================ */
-
-
-/* ============================================================================
-   TAHAP 20
-   OBJECT DAN TRIGGER INTI
-   ============================================================================ */
-
-DO $$
-DECLARE
-    v_missing TEXT := '';
-    v_found   INTEGER;
-BEGIN
-
-    /* TABLE */
-    IF to_regclass('sc_trx.transaction_dt') IS NULL THEN
-        v_missing := v_missing || E'\n- sc_trx.transaction_dt';
-    END IF;
-
-    IF to_regclass('sc_trx.transaction_hd') IS NULL THEN
-        v_missing := v_missing || E'\n- sc_trx.transaction_hd';
-    END IF;
-
-    IF to_regclass('sc_trx.stkblc') IS NULL THEN
-        v_missing := v_missing || E'\n- sc_trx.stkblc';
-    END IF;
-
-    IF to_regclass('sc_trx.stkblc_avgcost') IS NULL THEN
-        v_missing := v_missing || E'\n- sc_trx.stkblc_avgcost';
-    END IF;
-
-    IF to_regclass('sc_trx.assetblc') IS NULL THEN
-        v_missing := v_missing || E'\n- sc_trx.assetblc';
-    END IF;
-
-    IF to_regclass('sc_trx.jurnal_hd') IS NULL THEN
-        v_missing := v_missing || E'\n- sc_trx.jurnal_hd';
-    END IF;
-
-    IF to_regclass('sc_trx.jurnal_dt') IS NULL THEN
-        v_missing := v_missing || E'\n- sc_trx.jurnal_dt';
-    END IF;
-
-    IF to_regclass('sc_mst.journal_type') IS NULL THEN
-        v_missing := v_missing || E'\n- sc_mst.journal_type';
-    END IF;
-
-    IF to_regclass('sc_mst.journal_type_coa') IS NULL THEN
-        v_missing := v_missing || E'\n- sc_mst.journal_type_coa';
-    END IF;
-
-    IF to_regclass('sc_mst.coa') IS NULL THEN
-        v_missing := v_missing || E'\n- sc_mst.coa';
-    END IF;
-
-    IF to_regclass('sc_mst.tax_dtl') IS NULL THEN
-        v_missing := v_missing || E'\n- sc_mst.tax_dtl';
-    END IF;
-
-
-    /* ACCOUNTING FUNCTIONS */
-    IF to_regprocedure(
-        'sc_trx.fn_post_accounting_transaction(text)'
-    ) IS NULL THEN
-        v_missing := v_missing
-            || E'\n- fn_post_accounting_transaction(text)';
-    END IF;
-
-    IF to_regprocedure(
-        'sc_trx.fn_reverse_accounting_transaction(text)'
-    ) IS NULL THEN
-        v_missing := v_missing
-            || E'\n- fn_reverse_accounting_transaction(text)';
-    END IF;
-
-    IF to_regprocedure(
-        'sc_trx.fn_recalculate_transaction_hd(text)'
-    ) IS NULL THEN
-        v_missing := v_missing
-            || E'\n- fn_recalculate_transaction_hd(text)';
-    END IF;
-
-    IF to_regprocedure(
-        'sc_trx.fn_transaction_accounting()'
-    ) IS NULL THEN
-        v_missing := v_missing
-            || E'\n- fn_transaction_accounting()';
-    END IF;
-
-
-    IF v_missing <> '' THEN
-        RAISE EXCEPTION
-            'TAHAP 20 GAGAL. Object inti belum tersedia:%',
-            v_missing;
-    END IF;
-
-
-    RAISE NOTICE
-        'TAHAP 20 OK : object inti tersedia';
-
-
-    /* TRIGGER transaction_dt */
-    SELECT COUNT(*)
-    INTO v_found
-    FROM pg_trigger
-    WHERE tgrelid = 'sc_trx.transaction_dt'::regclass
-      AND NOT tgisinternal
-      AND tgname IN
-      (
-          'trg_01_transaction_prepare',
-          'trg_02_transaction_type',
-          'trg_transaction_stock',
-          'trg_transaction_asset',
-          'trg_zz_transaction_accounting'
-      );
-
-    IF v_found < 5 THEN
-        RAISE NOTICE
-            'TAHAP 20 NOTICE : trigger transaction_dt ditemukan % dari 5 trigger utama',
-            v_found;
-    ELSE
-        RAISE NOTICE
-            'TAHAP 20 OK : trigger transaction_dt lengkap';
-    END IF;
-
-
-    /* TRIGGER jurnal_dt */
-    SELECT COUNT(*)
-    INTO v_found
-    FROM pg_trigger
-    WHERE tgrelid = 'sc_trx.jurnal_dt'::regclass
-      AND NOT tgisinternal
-      AND tgname IN
-      (
-          'trg_validate_jurnal_coa',
-          'trg_validate_jurnal_detail_status',
-          'trg_sync_jurnal_hd'
-      );
-
-    IF v_found < 3 THEN
-        RAISE NOTICE
-            'TAHAP 20 NOTICE : trigger jurnal_dt ditemukan % dari 3 trigger utama',
-            v_found;
-    ELSE
-        RAISE NOTICE
-            'TAHAP 20 OK : trigger jurnal_dt lengkap';
-    END IF;
-
-END;
-$$;
 
 
 /* ============================================================================
@@ -346,13 +197,14 @@ LEFT JOIN sc_trx.jurnal_hd jh
             OR jh.source_uniqueid = td.source_uniqueid
           )
       AND jh.uniqueid NOT LIKE 'JRNL-REV-%'
+      AND jh.status IN ('DRAFT','POSTED')
 WHERE COALESCE(td.accounting_effect,'NO') = 'YES'
   AND td.uniqueid IS NOT NULL
   AND jh.id IS NULL
 ORDER BY td.docdate, td.id;
 
 
-/* Transaction bertax tetapi belum mempunyai detail TAX */
+/* Transaction bertax tetapi belum mempunyai detail TAX pada ACTIVE journal */
 SELECT
     td.uniqueid,
     td.docno,
@@ -363,6 +215,17 @@ SELECT
 FROM sc_trx.transaction_dt td
 WHERE COALESCE(td.accounting_effect,'NO') = 'YES'
   AND COALESCE(td.pajak,0) > 0
+  AND EXISTS
+  (
+      SELECT 1
+      FROM sc_trx.jurnal_hd jh
+      WHERE (
+                jh.source_uniqueid = td.uniqueid
+                OR jh.source_uniqueid = td.source_uniqueid
+            )
+        AND jh.uniqueid NOT LIKE 'JRNL-REV-%'
+        AND jh.status IN ('DRAFT','POSTED')
+  )
   AND NOT EXISTS
   (
       SELECT 1
@@ -374,10 +237,11 @@ WHERE COALESCE(td.accounting_effect,'NO') = 'YES'
                 OR jh.source_uniqueid = td.source_uniqueid
             )
         AND jh.uniqueid NOT LIKE 'JRNL-REV-%'
+        AND jh.status IN ('DRAFT','POSTED')
+        AND jd.status IN ('DRAFT','POSTED')
         AND UPPER(BTRIM(COALESCE(jd.account_role,''))) = 'TAX'
   )
 ORDER BY td.docdate, td.id;
-
 
 DO $$
 BEGIN
@@ -527,7 +391,7 @@ $$;
    ============================================================================ */
 
 
-/* Jurnal normal tanpa transaction_dt */
+/* ACTIVE journal normal tanpa transaction_dt */
 SELECT
     jh.id,
     jh.uniqueid,
@@ -541,44 +405,28 @@ LEFT JOIN sc_trx.transaction_dt td
        ON td.uniqueid = jh.source_uniqueid
        OR td.source_uniqueid = jh.source_uniqueid
 WHERE jh.uniqueid NOT LIKE 'JRNL-REV-%'
+  AND jh.status IN ('DRAFT','POSTED')
   AND td.uniqueid IS NULL
 ORDER BY jh.trxdate, jh.id;
 
 
-/* Reversal tanpa journal original */
-SELECT
-    rev.id,
-    rev.uniqueid,
-    rev.source_uniqueid,
-    rev.docno,
-    rev.journal_type,
-    rev.status
-FROM sc_trx.jurnal_hd rev
-WHERE rev.uniqueid LIKE 'JRNL-REV-%'
-  AND NOT EXISTS
-  (
-      SELECT 1
-      FROM sc_trx.jurnal_hd orig
-      WHERE orig.uniqueid <> rev.uniqueid
-        AND orig.source_uniqueid = rev.source_uniqueid
-        AND orig.uniqueid NOT LIKE 'JRNL-REV-%'
-  )
-ORDER BY rev.id;
-
-
-/* Detail source trace */
+/* Detail source trace untuk ACTIVE journal */
 SELECT
     jd.jurnal_id,
     jd.source_uniqueid,
     COUNT(*) AS detail_count
 FROM sc_trx.jurnal_dt jd
+JOIN sc_trx.jurnal_hd jh
+  ON jh.id = jd.jurnal_id
 LEFT JOIN sc_trx.transaction_dt td
        ON td.uniqueid = jd.source_uniqueid
        OR td.source_uniqueid = jd.source_uniqueid
-WHERE td.uniqueid IS NULL
+WHERE jh.uniqueid NOT LIKE 'JRNL-REV-%'
+  AND jh.status IN ('DRAFT','POSTED')
+  AND jd.status IN ('DRAFT','POSTED')
+  AND td.uniqueid IS NULL
 GROUP BY jd.jurnal_id, jd.source_uniqueid
 ORDER BY jd.jurnal_id;
-
 
 DO $$
 BEGIN
@@ -612,7 +460,7 @@ WHERE COALESCE(debet,0) < 0
 ORDER BY docdate, id;
 
 
-/* direction mismatch */
+/* direction mismatch untuk journal operational non-manual */
 SELECT
     td.uniqueid,
     td.docno,
@@ -622,12 +470,32 @@ SELECT
 FROM sc_trx.transaction_dt td
 JOIN sc_mst.journal_type jt
   ON jt.journal_type = td.journal_type
-WHERE (jt.direction = 'IN'
-       AND td.type_in_out <> 'IN')
-   OR (jt.direction = 'OUT'
-       AND td.type_in_out <> 'OUT')
+WHERE TRIM(td.journal_type::TEXT) NOT IN
+      (
+          'JVGENL',
+          'UMTITP',
+          'NDKAPD',
+          'NDKAPK',
+          'NDKARD',
+          'NDKARK',
+          'GIROIN',
+          'GIROUT',
+          'FXREAL',
+          'FXUNRL',
+          'ARWOFF',
+          'APWOFF',
+          'BADPRV',
+          'BADREV',
+          'UNEARN',
+          'UNEREL',
+          'PAYROL'
+      )
+  AND (
+        (jt.direction = 'IN'  AND td.type_in_out <> 'IN')
+        OR
+        (jt.direction = 'OUT' AND td.type_in_out <> 'OUT')
+      )
 ORDER BY td.docdate, td.id;
-
 
 /* transaction routing snapshot berbeda dari master saat ini */
 SELECT
@@ -856,6 +724,7 @@ DECLARE
     v_stock_invalid   BIGINT;
     v_journal_invalid BIGINT;
     v_header_invalid  BIGINT;
+    v_cancel_invalid  BIGINT;
 BEGIN
 
     SELECT COUNT(*)
@@ -916,12 +785,24 @@ BEGIN
      AND th.ref_doctype IS NOT DISTINCT FROM x.ref_doctype
     WHERE th.docno IS NULL;
 
+    SELECT COUNT(*)
+    INTO v_cancel_invalid
+    FROM sc_trx.jurnal_hd jh
+    WHERE jh.status = 'CANCELLED'
+      AND EXISTS
+      (
+          SELECT 1
+          FROM sc_trx.jurnal_dt jd
+          WHERE jd.jurnal_id = jh.id
+            AND jd.status IN ('DRAFT','POSTED')
+      );
+
 
     RAISE NOTICE
         '============================================================';
 
     RAISE NOTICE
-        'TAHAP 20 s/d 27 : READ-ONLY AUDIT';
+        'TAHAP 21 s/d 27 : READ-ONLY AUDIT';
 
     RAISE NOTICE
         'transaction_dt invalid  : %',
@@ -940,12 +821,17 @@ BEGIN
         v_header_invalid;
 
     RAISE NOTICE
+        'CANCELLED journal invalid : %',
+        v_cancel_invalid;
+
+    RAISE NOTICE
         '============================================================';
 
     IF v_tx_invalid = 0
        AND v_stock_invalid = 0
        AND v_journal_invalid = 0
        AND v_header_invalid = 0
+       AND v_cancel_invalid = 0
     THEN
         RAISE NOTICE
             'STATUS : INTEGRITY CHECK UTAMA OK';
@@ -965,32 +851,13 @@ $$;
    MANUAL ACCOUNTING MAPPING
    ============================================================================
 
-   Manual journal:
-       JVGENL
-       UMTITP
-       NDKAPD
-       NDKAPK
-       NDKARD
-       NDKARK
-       GIROIN
-       GIROUT
-       FXREAL
-       FXUNRL
-       ARWOFF
-       APWOFF
-       BADPRV
-       BADREV
-       UNEARN
-       UNEREL
-       PAYROL
+   Rule:
+       JVGENL     -> idcoa + debet_kredit wajib.
+                     counter_idcoa TIDAK wajib karena satu dokumen
+                     dapat mempunyai banyak line COA.
+       Manual lain -> idcoa + counter_idcoa + debet_kredit wajib.
 
-   Untuk manual accounting:
-       transaction_dt.idcoa
-       transaction_dt.counter_idcoa
-       transaction_dt.debet_kredit
-
-   Audit:
-       role ACCOUNT dan COUNTER_ACCOUNT harus tersedia.
+   Audit ini hanya membaca data existing.
    ============================================================================ */
 
 WITH manual_types AS
@@ -1040,7 +907,7 @@ GROUP BY
 ORDER BY mt.journal_type;
 
 
-/* Manual transaction yang COA asal/lawan kosong */
+/* Manual transaction yang COA wajib masih kosong */
 SELECT
     td.uniqueid,
     td.docno,
@@ -1071,8 +938,11 @@ WHERE TRIM(td.journal_type::TEXT) IN
       )
   AND (
         NULLIF(BTRIM(COALESCE(td.idcoa,'')), '') IS NULL
-        OR
-        NULLIF(BTRIM(COALESCE(td.counter_idcoa,'')), '') IS NULL
+        OR NULLIF(BTRIM(COALESCE(td.debet_kredit,'')), '') IS NULL
+        OR (
+             TRIM(td.journal_type::TEXT) <> 'JVGENL'
+             AND NULLIF(BTRIM(COALESCE(td.counter_idcoa,'')), '') IS NULL
+           )
       )
 ORDER BY td.docdate, td.id;
 
@@ -1080,7 +950,7 @@ ORDER BY td.docdate, td.id;
 DO $$
 BEGIN
     RAISE NOTICE
-        'TAHAP 28 selesai : manual accounting mapping diperiksa';
+        'TAHAP 28 selesai : manual mapping diperiksa (JVGENL counter optional)';
 END;
 $$;
 
@@ -1140,8 +1010,10 @@ LEFT JOIN sc_trx.jurnal_hd jh
             OR jh.source_uniqueid = td.source_uniqueid
           )
       AND jh.uniqueid NOT LIKE 'JRNL-REV-%'
+      AND jh.status IN ('DRAFT','POSTED')
 LEFT JOIN sc_trx.jurnal_dt jd
        ON jd.jurnal_id = jh.id
+      AND jd.status IN ('DRAFT','POSTED')
       AND UPPER(BTRIM(COALESCE(jd.account_role,''))) = 'TAX'
 WHERE COALESCE(td.pajak,0) > 0
   AND COALESCE(td.accounting_effect,'NO') = 'YES'
@@ -1214,6 +1086,17 @@ tx AS
     JOIN cost_mapping cm
       ON cm.journal_type = BTRIM(td.journal_type::TEXT)
     WHERE COALESCE(td.accounting_effect,'NO') = 'YES'
+      AND EXISTS
+      (
+          SELECT 1
+          FROM sc_trx.jurnal_hd jh
+          WHERE (
+                    jh.source_uniqueid = td.uniqueid
+                    OR jh.source_uniqueid = td.source_uniqueid
+                )
+            AND jh.uniqueid NOT LIKE 'JRNL-REV-%'
+            AND jh.status IN ('DRAFT','POSTED')
+      )
 ),
 cost_source AS
 (
@@ -1288,8 +1171,10 @@ JOIN sc_trx.jurnal_hd jh
         OR jh.source_uniqueid = td.source_uniqueid
      )
  AND jh.uniqueid NOT LIKE 'JRNL-REV-%'
+ AND jh.status IN ('DRAFT','POSTED')
 JOIN sc_trx.jurnal_dt jd
   ON jd.jurnal_id = jh.id
+ AND jd.status IN ('DRAFT','POSTED')
 WHERE COALESCE(td.accounting_effect,'NO') = 'YES'
 GROUP BY
     td.uniqueid,
@@ -1460,65 +1345,131 @@ $$;
 
 /* ============================================================================
    TAHAP 33
-   REVERSAL IDEMPOTENCY / STATUS INTEGRITY
+   CANCELLATION / STATUS INTEGRITY
+   ============================================================================
+
+   Final cancellation model:
+       DRAFT  -> CANCELLED
+       POSTED -> CANCELLED
+       detail mengikuti status header
+       delete/replace normal TIDAK membuat JVREVS baru
+       nominal journal CANCELLED tetap dipertahankan untuk audit
    ============================================================================ */
 
 
-/* Satu original journal seharusnya tidak mempunyai lebih dari satu reversal */
+/* CANCELLED header tidak boleh mempunyai detail aktif */
 SELECT
-    rev.source_uniqueid,
-    COUNT(*) AS reversal_count,
-    STRING_AGG(rev.uniqueid, ', ' ORDER BY rev.id) AS reversal_uniqueids
-FROM sc_trx.jurnal_hd rev
-WHERE rev.uniqueid LIKE 'JRNL-REV-%'
-GROUP BY rev.source_uniqueid
+    jh.id,
+    jh.uniqueid,
+    jh.source_uniqueid,
+    jh.docno,
+    jh.journal_type,
+    jh.status,
+    COUNT(*) FILTER (
+        WHERE jd.status IN ('DRAFT','POSTED')
+    ) AS active_detail_count
+FROM sc_trx.jurnal_hd jh
+JOIN sc_trx.jurnal_dt jd
+  ON jd.jurnal_id = jh.id
+WHERE jh.status = 'CANCELLED'
+GROUP BY
+    jh.id,
+    jh.uniqueid,
+    jh.source_uniqueid,
+    jh.docno,
+    jh.journal_type,
+    jh.status
+HAVING COUNT(*) FILTER (
+           WHERE jd.status IN ('DRAFT','POSTED')
+       ) > 0
+ORDER BY jh.id;
+
+
+/* Header dan detail harus mempunyai status yang sama */
+SELECT
+    jh.id AS jurnal_id,
+    jh.uniqueid,
+    jh.status AS header_status,
+    jd.status AS detail_status,
+    COUNT(*) AS mismatch_count
+FROM sc_trx.jurnal_hd jh
+JOIN sc_trx.jurnal_dt jd
+  ON jd.jurnal_id = jh.id
+WHERE COALESCE(jh.status,'') IS DISTINCT FROM COALESCE(jd.status,'')
+GROUP BY
+    jh.id,
+    jh.uniqueid,
+    jh.status,
+    jd.status
+ORDER BY jh.id;
+
+
+/* POSTED header wajib balance dan seluruh detail POSTED */
+SELECT
+    jh.id,
+    jh.uniqueid,
+    jh.docno,
+    jh.journal_type,
+    jh.status,
+    jh.total_debet,
+    jh.total_kredit,
+    jh.balance,
+    COUNT(jd.id) AS detail_count,
+    COUNT(*) FILTER (
+        WHERE jd.status <> 'POSTED'
+    ) AS non_posted_detail_count
+FROM sc_trx.jurnal_hd jh
+LEFT JOIN sc_trx.jurnal_dt jd
+  ON jd.jurnal_id = jh.id
+WHERE jh.status = 'POSTED'
+GROUP BY
+    jh.id,
+    jh.uniqueid,
+    jh.docno,
+    jh.journal_type,
+    jh.status,
+    jh.total_debet,
+    jh.total_kredit,
+    jh.balance
+HAVING ABS(COALESCE(jh.balance,0)) > 0.01
+    OR COUNT(jd.id) = 0
+    OR COUNT(*) FILTER (
+           WHERE jd.status <> 'POSTED'
+       ) > 0
+ORDER BY jh.id;
+
+
+/* Satu source transaction tidak boleh mempunyai >1 ACTIVE POSTED normal journal */
+SELECT
+    jh.source_uniqueid,
+    COUNT(*) AS active_posted_journal_count,
+    STRING_AGG(jh.uniqueid, ', ' ORDER BY jh.id) AS journal_uniqueids
+FROM sc_trx.jurnal_hd jh
+WHERE jh.uniqueid NOT LIKE 'JRNL-REV-%'
+  AND jh.status = 'POSTED'
+  AND jh.source_uniqueid IS NOT NULL
+GROUP BY jh.source_uniqueid
 HAVING COUNT(*) > 1
-ORDER BY rev.source_uniqueid;
+ORDER BY jh.source_uniqueid;
 
 
-/* Reversal POSTED harus balance */
+/* Legacy JRNL-REV-* hanya informational; bukan syarat cancellation */
 SELECT
-    rev.id,
-    rev.uniqueid,
-    rev.source_uniqueid,
-    rev.total_debet,
-    rev.total_kredit,
-    rev.balance,
-    rev.status
-FROM sc_trx.jurnal_hd rev
-WHERE rev.uniqueid LIKE 'JRNL-REV-%'
-  AND (
-        rev.status <> 'POSTED'
-        OR ABS(COALESCE(rev.balance,0)) > 0.01
-      )
-ORDER BY rev.id;
-
-
-/* Original yang sudah REVERSED seharusnya mempunyai reversal */
-SELECT
-    orig.id,
-    orig.uniqueid,
-    orig.source_uniqueid,
-    orig.docno,
-    orig.journal_type,
-    orig.status
-FROM sc_trx.jurnal_hd orig
-WHERE orig.status = 'REVERSED'
-  AND orig.uniqueid NOT LIKE 'JRNL-REV-%'
-  AND NOT EXISTS
-  (
-      SELECT 1
-      FROM sc_trx.jurnal_hd rev
-      WHERE rev.uniqueid LIKE 'JRNL-REV-%'
-        AND rev.source_uniqueid = orig.source_uniqueid
-  )
-ORDER BY orig.id;
+    jh.id,
+    jh.uniqueid,
+    jh.source_uniqueid,
+    jh.docno,
+    jh.journal_type,
+    jh.status
+FROM sc_trx.jurnal_hd jh
+WHERE jh.uniqueid LIKE 'JRNL-REV-%'
+ORDER BY jh.id;
 
 
 DO $$
 BEGIN
     RAISE NOTICE
-        'TAHAP 33 selesai : reversal idempotency dan status integrity diperiksa';
+        'TAHAP 33 selesai : cancellation dan status integrity diperiksa';
 END;
 $$;
 
@@ -1530,7 +1481,7 @@ $$;
 DO $$
 BEGIN
     RAISE NOTICE '============================================================';
-    RAISE NOTICE 'TAHAP 21 - 27 FINAL CLEAN + TEST TAMBAHAN 28 - 33 SELESAI';
+    RAISE NOTICE 'TAHAP 21 - 33 FINAL TEST FUNCTION / DATA SELESAI';
     RAISE NOTICE 'SCRIPT 100%% READ-ONLY';
     RAISE NOTICE 'Tidak ada INSERT / UPDATE / DELETE / REBUILD / POST';
     RAISE NOTICE '============================================================';

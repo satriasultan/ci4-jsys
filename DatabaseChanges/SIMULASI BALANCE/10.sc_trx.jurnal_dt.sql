@@ -1,10 +1,11 @@
 /* ============================================================
    TAHAP 10
-   GENERAL LEDGER DETAIL : sc_trx.jurnal_dt
+   ACCOUNTING JOURNAL DETAIL : sc_trx.jurnal_dt
 
    FOKUS:
    - detail COA jurnal
    - debit / credit
+   - status jurnal detail
    - source tracing
    - currency snapshot
    - integrity terhadap jurnal_hd
@@ -30,6 +31,7 @@ CREATE TABLE IF NOT EXISTS sc_trx.jurnal_dt
 (
     id                  BIGSERIAL NOT NULL,
     jurnal_id           BIGINT NOT NULL,
+    journal_type        CHAR(6) NOT NULL DEFAULT '',
     source_uniqueid     TEXT NOT NULL DEFAULT '',
     source_line_no      INT,
     seq                 INT NOT NULL DEFAULT 1,
@@ -44,6 +46,7 @@ CREATE TABLE IF NOT EXISTS sc_trx.jurnal_dt
 
     ref_docno           VARCHAR(50) NOT NULL DEFAULT '',
     ref_doctype         VARCHAR(20) NOT NULL DEFAULT '',
+    status              VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
 
     keterangan          TEXT NOT NULL DEFAULT '',
 
@@ -81,6 +84,15 @@ BEGIN
           AND column_name='jurnal_id'
     ) THEN
         ALTER TABLE sc_trx.jurnal_dt ADD COLUMN jurnal_id BIGINT;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema='sc_trx' AND table_name='jurnal_dt'
+          AND column_name='journal_type'
+    ) THEN
+        ALTER TABLE sc_trx.jurnal_dt
+            ADD COLUMN journal_type CHAR(6) NOT NULL DEFAULT '';
     END IF;
 
     IF NOT EXISTS (
@@ -166,6 +178,14 @@ BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_schema='sc_trx' AND table_name='jurnal_dt'
+          AND column_name='status'
+    ) THEN
+        ALTER TABLE sc_trx.jurnal_dt ADD COLUMN status VARCHAR(20) DEFAULT 'DRAFT';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema='sc_trx' AND table_name='jurnal_dt'
           AND column_name='keterangan'
     ) THEN
         ALTER TABLE sc_trx.jurnal_dt ADD COLUMN keterangan TEXT DEFAULT '';
@@ -229,6 +249,20 @@ $$;
    Hanya mengisi NULL pada kolom yang memang punya default logis.
    ============================================================ */
 
+/* =========================================================================
+   BACKFILL journal_type DARI jurnal_hd
+   ========================================================================= */
+UPDATE sc_trx.jurnal_dt jd
+SET journal_type = jh.journal_type
+FROM sc_trx.jurnal_hd jh
+WHERE jh.id = jd.jurnal_id
+  AND (jd.journal_type IS NULL OR BTRIM(jd.journal_type::TEXT) = '');
+
+UPDATE sc_trx.jurnal_dt
+SET journal_type = BTRIM(journal_type::TEXT)
+WHERE journal_type IS NOT NULL;
+
+
 UPDATE sc_trx.jurnal_dt
 SET
     source_uniqueid = COALESCE(source_uniqueid, ''),
@@ -240,6 +274,7 @@ SET
     kredit          = COALESCE(kredit, 0),
     ref_docno       = COALESCE(ref_docno, ''),
     ref_doctype     = COALESCE(ref_doctype, ''),
+    status          = COALESCE(status, 'DRAFT'),
     keterangan      = COALESCE(keterangan, ''),
     currcode        = COALESCE(currcode, ''),
     kurs            = COALESCE(kurs, 1),
@@ -254,10 +289,60 @@ WHERE
     OR kredit IS NULL
     OR ref_docno IS NULL
     OR ref_doctype IS NULL
+    OR status IS NULL
     OR keterangan IS NULL
     OR currcode IS NULL
     OR kurs IS NULL
     OR createddate IS NULL;
+
+
+/* ============================================================
+   2A. SINKRONISASI STATUS DETAIL DENGAN HEADER
+   ============================================================ */
+
+DO $$
+BEGIN
+    IF to_regclass('sc_trx.jurnal_hd') IS NOT NULL THEN
+        UPDATE sc_trx.jurnal_dt jd
+        SET status = COALESCE(jh.status, 'DRAFT')
+        FROM sc_trx.jurnal_hd jh
+        WHERE jh.id = jd.jurnal_id
+          AND jd.status IS DISTINCT FROM COALESCE(jh.status, 'DRAFT');
+    END IF;
+
+    ALTER TABLE sc_trx.jurnal_dt
+        ALTER COLUMN status SET DEFAULT 'DRAFT';
+
+    ALTER TABLE sc_trx.jurnal_dt
+        ALTER COLUMN status SET NOT NULL;
+END
+$$;
+
+
+/* ============================================================
+   2B. STATUS CONSTRAINT
+   ============================================================ */
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conrelid='sc_trx.jurnal_dt'::regclass
+          AND conname='chk_jurnal_dt_status'
+    ) THEN
+        IF NOT EXISTS (
+            SELECT 1 FROM sc_trx.jurnal_dt
+            WHERE status NOT IN ('DRAFT','POSTED','REVERSED','CANCELLED')
+        ) THEN
+            ALTER TABLE sc_trx.jurnal_dt
+                ADD CONSTRAINT chk_jurnal_dt_status
+                CHECK (status IN ('DRAFT','POSTED','REVERSED','CANCELLED'));
+        ELSE
+            RAISE NOTICE 'CHECK status jurnal_dt dilewati karena ada data legacy tidak valid.';
+        END IF;
+    END IF;
+END
+$$;
 
 
 /* ============================================================
@@ -326,6 +411,47 @@ BEGIN
     END IF;
 END
 $$;
+
+
+/* ============================================================
+   4A. FK journal_type -> sc_mst.journal_type
+   ============================================================ */
+
+DO $$
+DECLARE
+    v_invalid BIGINT;
+BEGIN
+    SELECT COUNT(*)
+    INTO v_invalid
+    FROM sc_trx.jurnal_dt jd
+    LEFT JOIN sc_mst.journal_type jt
+      ON jt.journal_type = jd.journal_type
+    WHERE NULLIF(BTRIM(jd.journal_type::TEXT), '') IS NULL
+       OR jt.journal_type IS NULL;
+
+    IF v_invalid > 0 THEN
+        RAISE NOTICE
+            'FK jurnal_dt.journal_type dilewati karena % baris kosong/tidak terdaftar.',
+            v_invalid;
+    ELSE
+        IF NOT EXISTS (
+            SELECT 1
+            FROM pg_constraint
+            WHERE conrelid = 'sc_trx.jurnal_dt'::regclass
+              AND conname = 'fk_jurnal_dt_journal_type'
+        ) THEN
+            ALTER TABLE sc_trx.jurnal_dt
+                ADD CONSTRAINT fk_jurnal_dt_journal_type
+                FOREIGN KEY (journal_type)
+                REFERENCES sc_mst.journal_type(journal_type);
+        END IF;
+    END IF;
+END
+$$;
+
+
+CREATE INDEX IF NOT EXISTS idx_jurnal_dt_journal_type
+    ON sc_trx.jurnal_dt(journal_type);
 
 
 /* ============================================================
@@ -461,14 +587,18 @@ CREATE INDEX IF NOT EXISTS idx_jurnal_dt_idcoa
    ============================================================ */
 
 /*
-   PostgreSQL menolak jsonb_build_array() pada index expression
-   karena function tersebut tidak IMMUTABLE.
+   DUPLICATE PROTECTION FINAL
 
-   Gunakan composite UNIQUE INDEX langsung.
-   PostgreSQL 15+ mendukung NULLS NOT DISTINCT, sehingga NULL
-   juga dianggap sama dan tetap tidak boleh duplicate.
+   Hanya detail ACTIVE yang dicegah duplicate:
+       DRAFT / POSTED
+
+   Detail CANCELLED / REVERSED tetap menjadi histori dan
+   boleh mempunyai kombinasi yang sama jika transaksi baru
+   memang dibuat lagi setelah transaksi lama dibatalkan.
 */
-CREATE UNIQUE INDEX IF NOT EXISTS uq_jurnal_dt_business_duplicate
+DROP INDEX IF EXISTS sc_trx.uq_jurnal_dt_business_duplicate;
+
+CREATE UNIQUE INDEX uq_jurnal_dt_business_duplicate
 ON sc_trx.jurnal_dt
 (
     idcoa,
@@ -479,7 +609,8 @@ ON sc_trx.jurnal_dt
     source_uniqueid,
     keterangan
 )
-NULLS NOT DISTINCT;
+NULLS NOT DISTINCT
+WHERE status IN ('DRAFT','POSTED');
 
 
 /* ============================================================
@@ -503,6 +634,8 @@ BEGIN
         v_existing_jurnal
     FROM sc_trx.jurnal_dt jd
     WHERE jd.id IS DISTINCT FROM NEW.id
+      AND jd.status IN ('DRAFT','POSTED')
+      AND COALESCE(BTRIM(COALESCE(NEW.status, 'DRAFT')), 'DRAFT') IN ('DRAFT','POSTED')
       AND COALESCE(BTRIM(jd.idcoa), '') =
           COALESCE(BTRIM(NEW.idcoa), '')
       AND COALESCE(jd.debet, 0) =
@@ -593,11 +726,21 @@ AS $$
 DECLARE
     v_status_old VARCHAR(20);
     v_status_new VARCHAR(20);
+    v_sync BOOLEAN := COALESCE(
+        current_setting('sc_trx.journal_status_sync', true),
+        '0'
+    ) = '1';
 BEGIN
-    IF TG_OP = 'INSERT' THEN
+    /*
+       System status sync digunakan saat jurnal_hd mengubah status
+       lalu meneruskan status yang sama ke jurnal_dt.
+    */
+    IF v_sync THEN
+        RETURN COALESCE(NEW, OLD);
+    END IF;
 
-        SELECT status
-          INTO v_status_new
+    IF TG_OP = 'INSERT' THEN
+        SELECT status INTO v_status_new
         FROM sc_trx.jurnal_hd
         WHERE id = NEW.jurnal_id;
 
@@ -614,14 +757,17 @@ BEGIN
                 v_status_new;
         END IF;
 
+        IF NEW.status IS DISTINCT FROM 'DRAFT' THEN
+            RAISE EXCEPTION
+                'Jurnal detail baru harus berstatus DRAFT. Status=%',
+                NEW.status;
+        END IF;
+
         RETURN NEW;
     END IF;
 
-
     IF TG_OP = 'UPDATE' THEN
-
-        SELECT status
-          INTO v_status_old
+        SELECT status INTO v_status_old
         FROM sc_trx.jurnal_hd
         WHERE id = OLD.jurnal_id;
 
@@ -631,6 +777,10 @@ BEGIN
                 OLD.jurnal_id;
         END IF;
 
+        /*
+           Detail POSTED/REVERSED/CANCELLED tidak boleh diubah secara manual.
+           Perubahan status dilakukan oleh sync header.
+        */
         IF v_status_old <> 'DRAFT' THEN
             RAISE EXCEPTION
                 'Jurnal detail % tidak dapat diubah. Status header OLD = %',
@@ -638,11 +788,8 @@ BEGIN
                 v_status_old;
         END IF;
 
-
         IF NEW.jurnal_id <> OLD.jurnal_id THEN
-
-            SELECT status
-              INTO v_status_new
+            SELECT status INTO v_status_new
             FROM sc_trx.jurnal_hd
             WHERE id = NEW.jurnal_id;
 
@@ -663,11 +810,8 @@ BEGIN
         RETURN NEW;
     END IF;
 
-
     IF TG_OP = 'DELETE' THEN
-
-        SELECT status
-          INTO v_status_old
+        SELECT status INTO v_status_old
         FROM sc_trx.jurnal_hd
         WHERE id = OLD.jurnal_id;
 
@@ -687,14 +831,52 @@ BEGIN
         RETURN OLD;
     END IF;
 
+    RETURN COALESCE(NEW, OLD);
+END;
+$$;
+
+
+/* ============================================================
+   9. HEADER STATUS -> DETAIL STATUS SYNC
+
+   jurnal_hd = source of truth untuk status jurnal.
+   Status detail mengikuti status header.
+   ============================================================ */
+
+CREATE OR REPLACE FUNCTION sc_trx.fn_sync_jurnal_dt_status()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    PERFORM set_config('sc_trx.journal_status_sync', '1', true);
+
+    UPDATE sc_trx.jurnal_dt
+    SET
+        status = NEW.status,
+        updateddate = CURRENT_TIMESTAMP
+    WHERE jurnal_id = NEW.id
+      AND status IS DISTINCT FROM NEW.status;
+
+    PERFORM set_config('sc_trx.journal_status_sync', '0', true);
 
     RETURN NEW;
 END;
 $$;
 
 
+DROP TRIGGER IF EXISTS trg_sync_jurnal_dt_status
+ON sc_trx.jurnal_hd;
+
+CREATE TRIGGER trg_sync_jurnal_dt_status
+AFTER UPDATE OF status
+ON sc_trx.jurnal_hd
+FOR EACH ROW
+WHEN (OLD.status IS DISTINCT FROM NEW.status)
+EXECUTE FUNCTION sc_trx.fn_sync_jurnal_dt_status();
+
+
 /* ============================================================
-   9. SYNC TOTAL jurnal_hd
+   10. SYNC TOTAL jurnal_hd
 
    Tidak bergantung lagi pada function TAHAP 09.
    Langsung hitung dari jurnal_dt.
@@ -766,7 +948,7 @@ $$;
 
 
 /* ============================================================
-   10. TRIGGER VALIDASI COA
+   11. TRIGGER VALIDASI COA
    ============================================================ */
 
 DROP TRIGGER IF EXISTS trg_validate_jurnal_coa
@@ -780,7 +962,7 @@ EXECUTE FUNCTION sc_trx.fn_validate_jurnal_coa();
 
 
 /* ============================================================
-   11. TRIGGER VALIDASI STATUS HEADER
+   12. TRIGGER VALIDASI STATUS HEADER
    ============================================================ */
 
 DROP TRIGGER IF EXISTS trg_validate_jurnal_detail_status
@@ -794,7 +976,7 @@ EXECUTE FUNCTION sc_trx.fn_validate_jurnal_detail_status();
 
 
 /* ============================================================
-   12. TRIGGER SYNC HEADER
+   13. TRIGGER SYNC HEADER
    ============================================================ */
 
 DROP TRIGGER IF EXISTS trg_sync_jurnal_hd
@@ -854,6 +1036,7 @@ ORDER BY duplicate_count DESC, first_jurnal_dt_id;
         +-- value_source
         +-- debet
         +-- kredit
+        +-- status
         +-- source_uniqueid
         |
         v
@@ -863,177 +1046,21 @@ ORDER BY duplicate_count DESC, first_jurnal_dt_id;
    ============================================================ */
 
 
+/* ============================================================
+   FINAL VERIFICATION JOURNAL TYPE
+   ============================================================ */
 
+SELECT
+    journal_type,
+    COUNT(*) AS row_count
+FROM sc_trx.jurnal_dt
+GROUP BY journal_type
+ORDER BY journal_type;
 
-
-
-
-
-
-
-/*
-============================================================================
-PATCH JOURNAL_DT DUPLICATE PROTECTION V2
-============================================================================
-
-MASALAH V1:
-    jsonb_build_array() digunakan dalam index expression.
-    PostgreSQL mensyaratkan expression index menggunakan function
-    IMMUTABLE, sedangkan jsonb_build_array() tidak memenuhi syarat.
-
-SOLUSI:
-    Composite UNIQUE INDEX langsung pada 7 kolom.
-
-HARD RULE:
-    Duplicate ditolak bila:
-        idcoa
-        debet
-        kredit
-        ref_docno
-        ref_doctype
-        source_uniqueid
-        keterangan
-    semuanya sama.
-
-NULLS NOT DISTINCT:
-    NULL dianggap sama dengan NULL, sehingga tetap tidak boleh
-    duplicate.
-
-CATATAN:
-    Karena data test sebelumnya sudah banyak duplicate, lakukan
-    RESET TOTAL DATA TRANSAKSI terlebih dahulu jika index gagal
-    karena duplicate existing.
-============================================================================
-*/
-
-BEGIN;
-
-
-/* ------------------------------------------------------------
-   DROP index V1 bila sempat berhasil dibuat
-   ------------------------------------------------------------ */
-DROP INDEX IF EXISTS sc_trx.uq_jurnal_dt_business_duplicate;
-
-
-/* ------------------------------------------------------------
-   CEK DUPLICATE EXISTING
-   ------------------------------------------------------------ */
-DO $$
-DECLARE
-    v_duplicate_groups INTEGER;
-BEGIN
-
-    SELECT COUNT(*)
-    INTO v_duplicate_groups
-    FROM
-    (
-        SELECT
-            idcoa,
-            debet,
-            kredit,
-            ref_docno,
-            ref_doctype,
-            source_uniqueid,
-            keterangan
-        FROM sc_trx.jurnal_dt
-        GROUP BY
-            idcoa,
-            debet,
-            kredit,
-            ref_docno,
-            ref_doctype,
-            source_uniqueid,
-            keterangan
-        HAVING COUNT(*) > 1
-    ) x;
-
-    IF v_duplicate_groups > 0 THEN
-        RAISE EXCEPTION
-            'PATCH GAGAL: masih ada % kelompok duplicate jurnal_dt. '
-            'Jalankan RESET TOTAL DATA TRANSAKSI terlebih dahulu.',
-            v_duplicate_groups;
-    END IF;
-
-END;
-$$;
-
-
-/* ------------------------------------------------------------
-   UNIQUE INDEX FINAL
-   ------------------------------------------------------------ */
-CREATE UNIQUE INDEX uq_jurnal_dt_business_duplicate
-ON sc_trx.jurnal_dt
-(
-    idcoa,
-    debet,
-    kredit,
-    ref_docno,
-    ref_doctype,
-    source_uniqueid,
-    keterangan
-)
-NULLS NOT DISTINCT;
-
-
-/* ------------------------------------------------------------
-   TRIGGER PESAN DUPLICATE
-   ------------------------------------------------------------ */
-CREATE OR REPLACE FUNCTION sc_trx.fn_prevent_duplicate_jurnal_dt()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    v_existing_id     BIGINT;
-    v_existing_jurnal BIGINT;
-BEGIN
-
-    SELECT
-        jd.id,
-        jd.jurnal_id
-    INTO
-        v_existing_id,
-        v_existing_jurnal
-    FROM sc_trx.jurnal_dt jd
-    WHERE jd.id IS DISTINCT FROM NEW.id
-      AND jd.idcoa         IS NOT DISTINCT FROM NEW.idcoa
-      AND jd.debet         IS NOT DISTINCT FROM NEW.debet
-      AND jd.kredit        IS NOT DISTINCT FROM NEW.kredit
-      AND jd.ref_docno     IS NOT DISTINCT FROM NEW.ref_docno
-      AND jd.ref_doctype   IS NOT DISTINCT FROM NEW.ref_doctype
-      AND jd.source_uniqueid IS NOT DISTINCT FROM NEW.source_uniqueid
-      AND jd.keterangan    IS NOT DISTINCT FROM NEW.keterangan
-    ORDER BY jd.id
-    LIMIT 1;
-
-    IF v_existing_id IS NOT NULL THEN
-
-        RAISE EXCEPTION
-            'DUPLICATE JURNAL DETAIL DITOLAK. Existing jurnal_dt.id=%, jurnal_id=%. '
-            'Kombinasi idcoa, debet, kredit, ref_docno, ref_doctype, '
-            'source_uniqueid, keterangan sudah ada.',
-            v_existing_id,
-            v_existing_jurnal
-            USING ERRCODE = '23505';
-
-    END IF;
-
-    RETURN NEW;
-
-END;
-$$;
-
-
-/* ------------------------------------------------------------
-   TRIGGER
-   ------------------------------------------------------------ */
-DROP TRIGGER IF EXISTS trg_prevent_duplicate_jurnal_dt
-ON sc_trx.jurnal_dt;
-
-CREATE TRIGGER trg_prevent_duplicate_jurnal_dt
-BEFORE INSERT
-ON sc_trx.jurnal_dt
-FOR EACH ROW
-EXECUTE FUNCTION sc_trx.fn_prevent_duplicate_jurnal_dt();
-
-
-COMMIT;
+SELECT
+    COUNT(*) AS invalid_journal_type
+FROM sc_trx.jurnal_dt jd
+LEFT JOIN sc_mst.journal_type jt
+       ON jt.journal_type = jd.journal_type
+WHERE NULLIF(BTRIM(jd.journal_type::TEXT), '') IS NULL
+   OR jt.journal_type IS NULL;

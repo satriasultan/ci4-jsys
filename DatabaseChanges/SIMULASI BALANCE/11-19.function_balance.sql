@@ -1,6 +1,6 @@
 /* ============================================================================
    JSYS ERP / ACCOUNTING
-   TAHAP 11 - 19 : FINAL CLEAN
+   TAHAP 11 - 19 : FINAL RECOMPILE REV11
    ============================================================================
 
    TAHAP 06  : transaction_dt -> stkblc
@@ -10,7 +10,7 @@
    TAHAP 10  : jurnal_dt
 
    SCRIPT INI HANYA MENANGANI:
-       TAHAP 15 : reverse accounting
+       TAHAP 15 : cancel accounting (status-based)
        TAHAP 16 : generate / post accounting
        TAHAP 17 : recalculate transaction_hd
        TAHAP 18 : trigger accounting
@@ -78,6 +78,28 @@ BEGIN
             'TAHAP 10 belum tersedia: sc_trx.jurnal_dt tidak ditemukan.';
     END IF;
 
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'sc_trx'
+          AND table_name = 'jurnal_dt'
+          AND column_name = 'journal_type'
+    ) THEN
+        RAISE EXCEPTION
+            'TAHAP 10 belum patched: sc_trx.jurnal_dt.journal_type tidak ditemukan.';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'sc_trx'
+          AND table_name = 'jurnal_dt'
+          AND column_name = 'status'
+    ) THEN
+        RAISE EXCEPTION
+            'TAHAP 10 belum patched: sc_trx.jurnal_dt.status tidak ditemukan.';
+    END IF;
+
     IF to_regclass('sc_mst.journal_type') IS NULL THEN
         RAISE EXCEPTION
             'sc_mst.journal_type tidak ditemukan.';
@@ -111,290 +133,65 @@ $$;
 
 /* ============================================================================
    TAHAP 15
-   REVERSE ACCOUNTING
+   CANCEL ACCOUNTING SAAT TRANSACTION DIHAPUS / DIGANTI
    ============================================================================
 
-   DRAFT:
-       detail dihapus
-       header -> CANCELLED
+   ATURAN FINAL:
+       DRAFT  -> CANCELLED
+       POSTED -> CANCELLED
 
-   POSTED:
-       buat jurnal reversal baru
-       detail DEBET/KREDIT dibalik
-       reversal -> POSTED
-       original -> REVERSED
+   Tidak membuat jurnal reversal otomatis dan tidak membuat JVREVS.
+   Tidak membalik debit / kredit.
+   jurnal_hd dan jurnal_dt tetap disimpan sebagai audit trail.
 
-   Jurnal POSTED tidak dihapus secara fisik.
-   Reversal uniqueid deterministic -> aman dipanggil ulang.
+   GL aktif hanya membaca status POSTED.
+
+   STOCK dan ASSET TIDAK diubah di tahap ini.
    ============================================================================ */
 
-CREATE OR REPLACE FUNCTION sc_trx.fn_reverse_accounting_transaction(
+CREATE OR REPLACE FUNCTION sc_trx.fn_cancel_accounting_transaction(
     p_transaction_uniqueid TEXT
 )
 RETURNS VOID
 LANGUAGE plpgsql
 AS $$
 DECLARE
-    r           RECORD;
-    d           RECORD;
-    v_rev_id    BIGINT;
-    v_rev_uid   TEXT;
-    v_rev_type  CHAR(6);
-    v_total_d   NUMERIC(18,2);
-    v_total_k   NUMERIC(18,2);
+    r RECORD;
 BEGIN
-
     IF NULLIF(BTRIM(p_transaction_uniqueid), '') IS NULL THEN
         RETURN;
     END IF;
 
     FOR r IN
-        SELECT jh.*
+        SELECT jh.id
         FROM sc_trx.jurnal_hd jh
         WHERE jh.source_uniqueid = p_transaction_uniqueid
           AND jh.uniqueid NOT LIKE 'JRNL-REV-%'
-          AND jh.status IN ('DRAFT', 'POSTED')
+          AND jh.status IN ('DRAFT','POSTED')
         ORDER BY jh.id
     LOOP
-
-        /* --------------------------------------------------------
-           DRAFT -> CANCELLED
-           -------------------------------------------------------- */
-
-        IF r.status = 'DRAFT' THEN
-
-            DELETE FROM sc_trx.jurnal_dt
-            WHERE jurnal_id = r.id;
-
-            UPDATE sc_trx.jurnal_hd
-            SET status = 'CANCELLED',
-                updateddate = CURRENT_TIMESTAMP
-            WHERE id = r.id;
-
-            CONTINUE;
-
-        END IF;
-
-
-        /* --------------------------------------------------------
-           POSTED wajib mempunyai detail
-           -------------------------------------------------------- */
-
-        IF NOT EXISTS (
-            SELECT 1
-            FROM sc_trx.jurnal_dt jd
-            WHERE jd.jurnal_id = r.id
-        ) THEN
-            RAISE EXCEPTION
-                'Jurnal POSTED % tidak mempunyai detail jurnal.',
-                r.id;
-        END IF;
-
-
-        /* --------------------------------------------------------
-           ID REVERSAL DETERMINISTIC
-           -------------------------------------------------------- */
-
-        v_rev_uid :=
-            'JRNL-REV-' || md5(r.uniqueid || '|REV');
-
-
-        SELECT id
-        INTO v_rev_id
-        FROM sc_trx.jurnal_hd
-        WHERE uniqueid = v_rev_uid
-        LIMIT 1;
-
-
-        IF v_rev_id IS NULL THEN
-
-            SELECT
-                CASE
-                    WHEN EXISTS (
-                        SELECT 1
-                        FROM sc_mst.journal_type
-                        WHERE journal_type = 'JVREVS'
-                    )
-                    THEN 'JVREVS'::CHAR(6)
-                    ELSE r.journal_type
-                END
-            INTO v_rev_type;
-
-
-            INSERT INTO sc_trx.jurnal_hd
-            (
-                uniqueid,
-                source_uniqueid,
-                docno,
-                doctype,
-                journal_type,
-                trxdate,
-                type_in_out,
-                ref_docno,
-                ref_doctype,
-                idbranch,
-                cabang,
-                module,
-                accounting_effect,
-                currcode,
-                kurs,
-                total_debet,
-                total_kredit,
-                balance,
-                status,
-                keterangan,
-                createdby,
-                createddate
-            )
-            VALUES
-            (
-                v_rev_uid,
-                r.source_uniqueid,
-                r.docno,
-                r.doctype,
-                v_rev_type,
-                r.trxdate,
-                r.type_in_out,
-                r.docno,
-                r.doctype,
-                r.idbranch,
-                r.cabang,
-                COALESCE(NULLIF(BTRIM(r.module), ''), 'ACCOUNTING'),
-                COALESCE(NULLIF(BTRIM(r.accounting_effect), ''), 'YES'),
-                r.currcode,
-                COALESCE(r.kurs, 1),
-                0,
-                0,
-                0,
-                'DRAFT',
-                'REVERSAL JURNAL ' || r.uniqueid,
-                'SYSTEM',
-                CURRENT_TIMESTAMP
-            )
-            RETURNING id
-            INTO v_rev_id;
-
-        ELSE
-
-            SELECT status
-            INTO r.status
-            FROM sc_trx.jurnal_hd
-            WHERE id = v_rev_id;
-
-            IF r.status = 'POSTED' THEN
-
-                UPDATE sc_trx.jurnal_hd
-                SET status = 'REVERSED',
-                    updateddate = CURRENT_TIMESTAMP
-                WHERE id = r.id;
-
-                CONTINUE;
-
-            ELSIF r.status <> 'DRAFT' THEN
-
-                RAISE EXCEPTION
-                    'Status reversal jurnal % tidak valid: %',
-                    v_rev_uid,
-                    r.status;
-
-            END IF;
-
-            DELETE FROM sc_trx.jurnal_dt
-            WHERE jurnal_id = v_rev_id;
-
-        END IF;
-
-
-        /* --------------------------------------------------------
-           COPY DETAIL DENGAN DEBET / KREDIT DIBALIK
-           -------------------------------------------------------- */
-
-        FOR d IN
-            SELECT jd.*
-            FROM sc_trx.jurnal_dt jd
-            WHERE jd.jurnal_id = r.id
-            ORDER BY jd.seq, jd.id
-        LOOP
-
-            INSERT INTO sc_trx.jurnal_dt
-            (
-                jurnal_id,
-                source_uniqueid,
-                source_line_no,
-                seq,
-                account_role,
-                value_source,
-                idcoa,
-                debet,
-                kredit,
-                ref_docno,
-                ref_doctype,
-                keterangan,
-                currcode,
-                kurs,
-                createdby,
-                createddate
-            )
-            VALUES
-            (
-                v_rev_id,
-                r.source_uniqueid,
-                d.source_line_no,
-                d.seq,
-                d.account_role,
-                d.value_source,
-                d.idcoa,
-                COALESCE(d.kredit, 0),
-                COALESCE(d.debet, 0),
-                d.ref_docno,
-                d.ref_doctype,
-                'REVERSAL: ' || COALESCE(d.keterangan, ''),
-                d.currcode,
-                COALESCE(d.kurs, 1),
-                'SYSTEM',
-                CURRENT_TIMESTAMP
-            );
-
-        END LOOP;
-
-
-        /* --------------------------------------------------------
-           VALIDATE REVERSAL BALANCE
-           -------------------------------------------------------- */
-
-        SELECT
-            COALESCE(SUM(debet), 0),
-            COALESCE(SUM(kredit), 0)
-        INTO v_total_d, v_total_k
-        FROM sc_trx.jurnal_dt
-        WHERE jurnal_id = v_rev_id;
-
-
-        IF ABS(v_total_d - v_total_k) > 0.01 THEN
-            RAISE EXCEPTION
-                'Jurnal reversal % tidak balance. Debet=%, Kredit=%',
-                v_rev_uid,
-                v_total_d,
-                v_total_k;
-        END IF;
-
-
         UPDATE sc_trx.jurnal_hd
-        SET total_debet  = v_total_d,
-            total_kredit = v_total_k,
-            balance      = ROUND(v_total_d - v_total_k, 2),
-            status       = 'POSTED',
-            updateddate  = CURRENT_TIMESTAMP
-        WHERE id = v_rev_id;
-
-
-        UPDATE sc_trx.jurnal_hd
-        SET status = 'REVERSED',
+        SET
+            status = 'CANCELLED',
+            updatedby = 'SYSTEM',
             updateddate = CURRENT_TIMESTAMP
         WHERE id = r.id;
-
     END LOOP;
+END;
+$$;
 
+
+/* Compatibility wrapper. */
+CREATE OR REPLACE FUNCTION sc_trx.fn_reverse_accounting_transaction(
+    p_transaction_uniqueid TEXT
+)
+RETURNS VOID
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    PERFORM sc_trx.fn_cancel_accounting_transaction(
+        p_transaction_uniqueid
+    );
 END;
 $$;
 
@@ -788,10 +585,17 @@ $$;
 
 
 /* ============================================================================
-   REVERSE JVGENL DOCUMENT
+   CANCEL JVGENL DOCUMENT
+   ============================================================================
+
+   DELETE / UPDATE source JVGENL:
+       jurnal_hd = CANCELLED
+       jurnal_dt = mengikuti status header
+
+   Tidak membuat journal JVREVS.
    ============================================================================ */
 
-CREATE OR REPLACE FUNCTION sc_trx.fn_reverse_jvgenl_document(
+CREATE OR REPLACE FUNCTION sc_trx.fn_cancel_jvgenl_document(
     p_docno     TEXT,
     p_doctype   TEXT,
     p_idbranch  TEXT
@@ -800,270 +604,49 @@ RETURNS VOID
 LANGUAGE plpgsql
 AS $$
 DECLARE
-    r           RECORD;
-    d           RECORD;
-    v_rev_id    BIGINT;
-    v_rev_uid   TEXT;
-    v_rev_type  CHAR(6);
-    v_total_d   NUMERIC(18,2);
-    v_total_k   NUMERIC(18,2);
+    r RECORD;
 BEGIN
-
     IF NULLIF(BTRIM(p_docno), '') IS NULL THEN
         RETURN;
     END IF;
 
-
-    /*
-       Semua normal JVGENL untuk dokumen ini dibalik.
-       Ini sekaligus membersihkan legacy posting per-line
-       saat dokumen lama akan dibangun ulang.
-    */
     FOR r IN
-        SELECT jh.*
+        SELECT jh.id
         FROM sc_trx.jurnal_hd jh
         WHERE BTRIM(jh.docno::TEXT) = BTRIM(p_docno)
           AND BTRIM(jh.doctype::TEXT) = BTRIM(COALESCE(p_doctype, ''))
           AND BTRIM(jh.journal_type::TEXT) = 'JVGENL'
           AND BTRIM(jh.idbranch::TEXT) = BTRIM(COALESCE(p_idbranch, ''))
           AND jh.uniqueid NOT LIKE 'JRNL-REV-%'
-          AND jh.status IN ('DRAFT', 'POSTED')
+          AND jh.status IN ('DRAFT','POSTED')
         ORDER BY jh.id
     LOOP
-
-        IF r.status = 'DRAFT' THEN
-
-            DELETE FROM sc_trx.jurnal_dt
-            WHERE jurnal_id = r.id;
-
-            UPDATE sc_trx.jurnal_hd
-            SET
-                total_debet = 0,
-                total_kredit = 0,
-                balance = 0,
-                status = 'CANCELLED',
-                updateddate = CURRENT_TIMESTAMP
-            WHERE id = r.id;
-
-            CONTINUE;
-
-        END IF;
-
-
-        IF NOT EXISTS
-        (
-            SELECT 1
-            FROM sc_trx.jurnal_dt jd
-            WHERE jd.jurnal_id = r.id
-        )
-        THEN
-            RAISE EXCEPTION
-                'JVGENL journal % POSTED tetapi tidak mempunyai detail.',
-                r.id;
-        END IF;
-
-
-        v_rev_uid :=
-            'JRNL-REV-' || md5(r.uniqueid || '|REV');
-
-
-        SELECT id
-        INTO v_rev_id
-        FROM sc_trx.jurnal_hd
-        WHERE uniqueid = v_rev_uid
-        LIMIT 1;
-
-
-        IF v_rev_id IS NULL THEN
-
-            SELECT
-                CASE
-                    WHEN EXISTS
-                    (
-                        SELECT 1
-                        FROM sc_mst.journal_type
-                        WHERE journal_type = 'JVREVS'
-                    )
-                    THEN 'JVREVS'::CHAR(6)
-                    ELSE 'JVGENL'::CHAR(6)
-                END
-            INTO v_rev_type;
-
-
-            INSERT INTO sc_trx.jurnal_hd
-            (
-                uniqueid,
-                source_uniqueid,
-                docno,
-                doctype,
-                journal_type,
-                trxdate,
-                type_in_out,
-                ref_docno,
-                ref_doctype,
-                idbranch,
-                cabang,
-                module,
-                accounting_effect,
-                currcode,
-                kurs,
-                total_debet,
-                total_kredit,
-                balance,
-                status,
-                keterangan,
-                createdby,
-                createddate
-            )
-            VALUES
-            (
-                v_rev_uid,
-                r.source_uniqueid,
-                r.docno,
-                r.doctype,
-                v_rev_type,
-                r.trxdate,
-                r.type_in_out,
-                r.docno,
-                r.doctype,
-                r.idbranch,
-                r.cabang,
-                'ACCOUNTING',
-                'YES',
-                r.currcode,
-                COALESCE(r.kurs, 1),
-                0,
-                0,
-                0,
-                'DRAFT',
-                'REVERSAL JVGENL ' || r.docno,
-                'SYSTEM',
-                CURRENT_TIMESTAMP
-            )
-            RETURNING id INTO v_rev_id;
-
-        ELSE
-
-            DECLARE
-                v_existing_rev_status VARCHAR(20);
-            BEGIN
-
-                SELECT status
-                INTO v_existing_rev_status
-                FROM sc_trx.jurnal_hd
-                WHERE id = v_rev_id;
-
-                IF v_existing_rev_status = 'POSTED' THEN
-
-                    UPDATE sc_trx.jurnal_hd
-                    SET
-                        status = 'REVERSED',
-                        updateddate = CURRENT_TIMESTAMP
-                    WHERE id = r.id;
-
-                    CONTINUE;
-
-                ELSIF v_existing_rev_status <> 'DRAFT' THEN
-
-                    RAISE EXCEPTION
-                        'Status reversal JVGENL % tidak valid: %',
-                        v_rev_uid,
-                        v_existing_rev_status;
-
-                END IF;
-
-                DELETE FROM sc_trx.jurnal_dt
-                WHERE jurnal_id = v_rev_id;
-
-            END;
-
-        END IF;
-
-
-        FOR d IN
-            SELECT jd.*
-            FROM sc_trx.jurnal_dt jd
-            WHERE jd.jurnal_id = r.id
-            ORDER BY jd.seq, jd.id
-        LOOP
-
-            INSERT INTO sc_trx.jurnal_dt
-            (
-                jurnal_id,
-                source_uniqueid,
-                source_line_no,
-                seq,
-                account_role,
-                value_source,
-                idcoa,
-                debet,
-                kredit,
-                ref_docno,
-                ref_doctype,
-                keterangan,
-                currcode,
-                kurs,
-                createdby,
-                createddate
-            )
-            VALUES
-            (
-                v_rev_id,
-                d.source_uniqueid,
-                d.source_line_no,
-                d.seq,
-                d.account_role,
-                d.value_source,
-                d.idcoa,
-                COALESCE(d.kredit, 0),
-                COALESCE(d.debet, 0),
-                r.docno,
-                r.doctype,
-                'REVERSAL: ' || COALESCE(d.keterangan, ''),
-                d.currcode,
-                COALESCE(d.kurs, 1),
-                'SYSTEM',
-                CURRENT_TIMESTAMP
-            );
-
-        END LOOP;
-
-
-        SELECT
-            COALESCE(SUM(debet), 0),
-            COALESCE(SUM(kredit), 0)
-        INTO v_total_d, v_total_k
-        FROM sc_trx.jurnal_dt
-        WHERE jurnal_id = v_rev_id;
-
-
-        IF ABS(v_total_d - v_total_k) > 0.01 THEN
-            RAISE EXCEPTION
-                'Reversal JVGENL % tidak balance. Debet=%, Kredit=%',
-                v_rev_uid,
-                v_total_d,
-                v_total_k;
-        END IF;
-
-
         UPDATE sc_trx.jurnal_hd
         SET
-            total_debet = v_total_d,
-            total_kredit = v_total_k,
-            balance = ROUND(v_total_d - v_total_k, 2),
-            status = 'POSTED',
-            updateddate = CURRENT_TIMESTAMP
-        WHERE id = v_rev_id;
-
-
-        UPDATE sc_trx.jurnal_hd
-        SET
-            status = 'REVERSED',
+            status = 'CANCELLED',
+            updatedby = 'SYSTEM',
             updateddate = CURRENT_TIMESTAMP
         WHERE id = r.id;
-
     END LOOP;
+END;
+$$;
 
+
+/* Compatibility wrapper. */
+CREATE OR REPLACE FUNCTION sc_trx.fn_reverse_jvgenl_document(
+    p_docno     TEXT,
+    p_doctype   TEXT,
+    p_idbranch  TEXT
+)
+RETURNS VOID
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    PERFORM sc_trx.fn_cancel_jvgenl_document(
+        p_docno,
+        p_doctype,
+        p_idbranch
+    );
 END;
 $$;
 
@@ -1307,9 +890,11 @@ BEGIN
         END IF;
 
 
-        INSERT INTO sc_trx.jurnal_dt
+                INSERT INTO sc_trx.jurnal_dt
         (
             jurnal_id,
+            journal_type,
+            status,
             source_uniqueid,
             source_line_no,
             seq,
@@ -1329,6 +914,8 @@ BEGIN
         VALUES
         (
             v_jurnal_id,
+            'JVGENL'::CHAR(6),
+            'DRAFT',
             r.uniqueid,
             r.line_no,
             v_seq,
@@ -1862,8 +1449,10 @@ BEGIN
                     IF v_value > 0 THEN
 
                         INSERT INTO sc_trx.jurnal_dt
-                        (
+        (
                             jurnal_id,
+            journal_type,
+            status,
                             source_uniqueid,
                             source_line_no,
                             seq,
@@ -1880,9 +1469,11 @@ BEGIN
                             createdby,
                             createddate
                         )
-                        VALUES
-                        (
+        VALUES
+        (
                             v_jurnal_id,
+                            t.journal_type,
+                            'DRAFT',
                             t.uniqueid,
                             t.line_no,
                             m.seq,
@@ -2032,9 +1623,11 @@ BEGIN
         END IF;
 
 
-        INSERT INTO sc_trx.jurnal_dt
+                INSERT INTO sc_trx.jurnal_dt
         (
             jurnal_id,
+            journal_type,
+            status,
             source_uniqueid,
             source_line_no,
             seq,
@@ -2054,6 +1647,8 @@ BEGIN
         VALUES
         (
             v_jurnal_id,
+            t.journal_type,
+            'DRAFT',
             t.uniqueid,
             t.line_no,
             m.seq,
@@ -2440,6 +2035,103 @@ FOR EACH ROW
 EXECUTE FUNCTION sc_trx.fn_transaction_accounting();
 
 
+
+/* ============================================================
+   TAHAP 18 -ADD
+   DELETE DOWNSTREAM STOCK PROTECTION
+   ============================================================ */
+
+CREATE OR REPLACE FUNCTION sc_trx.fn_block_delete_downstream_stock()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_source_stk_id    BIGINT;
+    v_downstream_count INTEGER;
+    v_downstream_doc   TEXT;
+BEGIN
+
+    /* Hanya transaksi yang mempunyai efek stock */
+    IF COALESCE(BTRIM(OLD.stock_effect), 'NONE')
+       NOT IN ('IN','OUT','INOUT')
+    THEN
+        RETURN OLD;
+    END IF;
+
+
+    /* Cari stock ledger transaksi yang akan dihapus */
+    SELECT sb.id
+    INTO v_source_stk_id
+    FROM sc_trx.stkblc sb
+    WHERE sb.uniqueid = OLD.uniqueid
+    ORDER BY sb.id
+    LIMIT 1;
+
+
+    /* Tidak ada stkblc = tidak ada stock yang perlu dilindungi */
+    IF v_source_stk_id IS NULL THEN
+        RETURN OLD;
+    END IF;
+
+
+    /* Cari downstream stock */
+    SELECT
+        COUNT(*),
+        MIN(x.docno)
+    INTO
+        v_downstream_count,
+        v_downstream_doc
+    FROM sc_trx.stkblc x
+    WHERE x.stock_uniqueid = OLD.stock_uniqueid
+      AND x.uniqueid <> OLD.uniqueid
+
+      /* Dokumen yang sama bukan downstream */
+      AND NOT (
+          x.docno IS NOT DISTINCT FROM OLD.docno
+          AND x.doctype IS NOT DISTINCT FROM OLD.doctype
+      )
+
+      AND (
+          x.docdate > OLD.docdate
+          OR (
+              x.docdate = OLD.docdate
+              AND x.id > v_source_stk_id
+          )
+      );
+
+
+    /* BLOCK DELETE */
+    IF v_downstream_count > 0 THEN
+
+        RAISE EXCEPTION
+            'DELETE BLOCKED: transaksi % mempunyai % downstream stock transaction. Downstream: %.',
+            BTRIM(COALESCE(OLD.docno::TEXT, '')),
+            v_downstream_count,
+            BTRIM(COALESCE(v_downstream_doc, ''));
+
+    END IF;
+
+
+    RETURN OLD;
+
+END;
+$$;
+
+
+/* ============================================================
+   TRIGGER
+   ============================================================ */
+
+DROP TRIGGER IF EXISTS trg_block_delete_downstream_stock
+ON sc_trx.transaction_dt;
+
+CREATE TRIGGER trg_block_delete_downstream_stock
+BEFORE DELETE
+ON sc_trx.transaction_dt
+FOR EACH ROW
+EXECUTE FUNCTION sc_trx.fn_block_delete_downstream_stock();
+
+
 /* ============================================================================
    TAHAP 19
    VALIDATION
@@ -2508,6 +2200,19 @@ ORDER BY jh.id DESC
 LIMIT 50;
 
 
+SELECT
+    column_name,
+    data_type,
+    character_maximum_length,
+    is_nullable,
+    column_default
+FROM information_schema.columns
+WHERE table_schema = 'sc_trx'
+  AND table_name = 'jurnal_dt'
+  AND column_name IN ('journal_type', 'status')
+ORDER BY ordinal_position;
+
+
 /* ============================================================================
    HASIL AKHIR
    ============================================================================
@@ -2529,12 +2234,12 @@ LIMIT 50;
           +--> TAHAP 17 transaction_hd
 
    UPDATE:
-       reverse accounting OLD
+       cancel accounting OLD
        -> post accounting NEW
        -> recalculate transaction_hd
 
    DELETE:
-       reverse accounting
+       cancel accounting
        -> recalculate transaction_hd
 
    TAHAP 11 - 14:

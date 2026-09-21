@@ -88,6 +88,7 @@ BEGIN;
 DO $$
 DECLARE
     r RECORD;
+    v_ndk_count INTEGER := 0;
 BEGIN
     FOR r IN
         SELECT id
@@ -129,7 +130,11 @@ BEGIN
                 'TX-QRELSX-001-OUT', MD5('TX-QRELSX-001-OUT'),
                 'TX-QRELSX-001-IN', MD5('TX-QRELSX-001-IN'),
                 'TX-BRNTRF-TEST-OUT', MD5('TX-BRNTRF-TEST-OUT'),
-                'TX-BRNTRF-TEST-IN', MD5('TX-BRNTRF-TEST-IN')
+                'TX-BRNTRF-TEST-IN', MD5('TX-BRNTRF-TEST-IN'),
+                'TX-PURCHS-001', MD5('TX-PURCHS-001'),
+                'TX-GRNRET-001', MD5('TX-GRNRET-001'),
+                'TX-DELIVR-001', MD5('TX-DELIVR-001'),
+                'TX-DELRET-001', MD5('TX-DELRET-001')
             ]::TEXT[]
         )
         ORDER BY id DESC
@@ -139,6 +144,52 @@ BEGIN
     END LOOP;
 END;
 $$;
+
+
+/* ============================================================
+   GROUP 01
+   PURCHASE ORDER
+
+   PURCHS
+   IN
+
+   PURCHS hanya mewakili dokumen purchase/order.
+   Routing yang diuji:
+       stock_effect      = NONE
+       accounting_effect = NO
+   ============================================================ */
+
+INSERT INTO sc_trx.transaction_dt
+(
+    uniqueid, source_uniqueid, docno, doctype, journal_type, line_no,
+    docdate, idbranch, cabang, type_in_out,
+    ref_docno, ref_doctype,
+    source_table, source_id, source_line_id,
+    kdsupplier, nsupplier,
+    idbarang, namabarang, idunit, idarea, warehouse, bin, batch, lotno,
+    qty, harga, bruto, discount, nilai, dpp, pajak, total,
+    idtax, isinclusive, currcode, kurs, createdby
+)
+VALUES
+(
+    MD5('TX-PURCHS-001'),
+    MD5('PURCHS-TEST-001-DTL-001'),
+    'PURCHS-TEST-001',
+    'PURCHASE_ORDER',
+    'PURCHS',
+    1,
+    CURRENT_DATE,
+    'JTS',
+    'JTS1',
+    'IN',
+    '', '',
+    'test_purchase_order', 1000, 1,
+    'SUP001', 'SUPPLIER TEST',
+    'BRG001', 'BARANG TEST', 'KG', 'AREA01', 'WH01', 'A01',
+    'BATCH001', 'LOT001',
+    20, 10000, 200000, 0, 200000, 200000, 22000, 222000,
+    'PPN11', 'NO', 'IDR', 1, 'TEST'
+);
 
 
 /* ============================================================
@@ -253,7 +304,12 @@ VALUES
    PURRET
    OUT
 
-   Barang yang sudah diterima dikembalikan ke supplier.
+   PURRET = dokumen return/request purchase.
+   Routing master:
+       stock_effect      = NONE
+       accounting_effect = NO
+
+   Actual goods return diuji menggunakan GRNRET.
    ============================================================ */
 
 INSERT INTO sc_trx.transaction_dt
@@ -337,6 +393,53 @@ VALUES
     'IDR',
     1,
     'TEST'
+);
+
+
+/* ============================================================
+   GROUP 01
+   GOODS RECEIPT RETURN
+
+   GRNRET
+   OUT
+
+   Actual barang dikembalikan ke supplier.
+   Routing yang diuji:
+       stock_effect      = OUT
+       accounting_effect = YES
+   ============================================================ */
+
+INSERT INTO sc_trx.transaction_dt
+(
+    uniqueid, source_uniqueid, docno, doctype, journal_type, line_no,
+    docdate, idbranch, cabang, type_in_out,
+    ref_docno, ref_doctype,
+    source_table, source_id, source_line_id,
+    kdsupplier, nsupplier,
+    idbarang, namabarang, idunit, idarea, warehouse, bin, batch, lotno,
+    qty, harga, bruto, discount, nilai, dpp, pajak, total,
+    idtax, isinclusive, currcode, kurs, createdby
+)
+VALUES
+(
+    MD5('TX-GRNRET-001'),
+    MD5('GRNRET-TEST-001-DTL-001'),
+    'GRNRET-TEST-001',
+    'GRN_RETURN',
+    'GRNRET',
+    1,
+    CURRENT_DATE,
+    'JTS',
+    'JTS1',
+    'OUT',
+    'GRN-TEST-001',
+    'GRN',
+    'test_grn_return', 2002, 1,
+    'SUP001', 'SUPPLIER TEST',
+    'BRG001', 'BARANG TEST', 'KG', 'AREA01', 'WH01', 'A01',
+    'BATCH001', 'LOT001',
+    5, 10000, 50000, 0, 50000, 50000, 5500, 55500,
+    'PPN11', 'NO', 'IDR', 1, 'TEST'
 );
 
 
@@ -429,6 +532,96 @@ VALUES
     'IDR',
     1,
     'TEST'
+);
+
+
+/* ============================================================
+   GROUP 02
+   DELIVERY
+
+   DELIVR
+   OUT
+
+   Delivery hanya menggerakkan stock.
+   Tidak membuat journal accounting.
+   ============================================================ */
+
+INSERT INTO sc_trx.transaction_dt
+(
+    uniqueid, source_uniqueid, docno, doctype, journal_type, line_no,
+    docdate, idbranch, cabang, type_in_out,
+    ref_docno, ref_doctype,
+    source_table, source_id, source_line_id,
+    kdcustomer, ncustomer,
+    idbarang, namabarang, idunit, idarea, warehouse, bin, batch, lotno,
+    qty, harga, bruto, discount, nilai, dpp, pajak, total,
+    idtax, isinclusive, currcode, kurs, createdby
+)
+VALUES
+(
+    MD5('TX-DELIVR-001'),
+    MD5('DELIVR-TEST-001-DTL-001'),
+    'DELIVR-TEST-001',
+    'DELIVERY',
+    'DELIVR',
+    1,
+    CURRENT_DATE,
+    'JTS',
+    'JTS1',
+    'OUT',
+    'SALES-TEST-001',
+    'SALES',
+    'test_delivery', 3002, 1,
+    'CUS001', 'CUSTOMER TEST',
+    'BRG001', 'BARANG TEST', 'KG', 'AREA01', 'WH01', 'A01',
+    'BATCH001', 'LOT001',
+    5, 15000, 75000, 0, 75000, 75000, 8250, 83250,
+    'PPN11', 'NO', 'IDR', 1, 'TEST'
+);
+
+
+/* ============================================================
+   GROUP 02
+   DELIVERY RETURN
+
+   DELRET
+   IN
+
+   Return delivery mengembalikan stock,
+   tanpa journal accounting.
+   ============================================================ */
+
+INSERT INTO sc_trx.transaction_dt
+(
+    uniqueid, source_uniqueid, docno, doctype, journal_type, line_no,
+    docdate, idbranch, cabang, type_in_out,
+    ref_docno, ref_doctype,
+    source_table, source_id, source_line_id,
+    kdcustomer, ncustomer,
+    idbarang, namabarang, idunit, idarea, warehouse, bin, batch, lotno,
+    qty, harga, bruto, discount, nilai, dpp, pajak, total,
+    idtax, isinclusive, currcode, kurs, createdby
+)
+VALUES
+(
+    MD5('TX-DELRET-001'),
+    MD5('DELRET-TEST-001-DTL-001'),
+    'DELRET-TEST-001',
+    'DELIVERY_RETURN',
+    'DELRET',
+    1,
+    CURRENT_DATE,
+    'JTS',
+    'JTS1',
+    'IN',
+    'DELIVR-TEST-001',
+    'DELIVERY',
+    'test_delivery_return', 4002, 1,
+    'CUS001', 'CUSTOMER TEST',
+    'BRG001', 'BARANG TEST', 'KG', 'AREA01', 'WH01', 'A01',
+    'BATCH001', 'LOT001',
+    2, 15000, 30000, 0, 30000, 30000, 3300, 33300,
+    'PPN11', 'NO', 'IDR', 1, 'TEST'
 );
 
 
@@ -2485,6 +2678,31 @@ LEFT JOIN sc_trx.jurnal_hd jh
       OR jh.uniqueid = td.source_uniqueid
 WHERE td.uniqueid = MD5('TX-JOURNAL-UPD-001');
 
+/* ------------------------------------------------------------
+   STATUS JOURNAL SETELAH UPDATE
+   ------------------------------------------------------------
+   Model final:
+       journal lama  = CANCELLED
+       journal baru  = POSTED
+   Tidak membuat JRNL-REV untuk update biasa.
+   ------------------------------------------------------------ */
+
+SELECT
+    jh.docno,
+    jh.journal_type,
+    jh.status,
+    COUNT(jd.id) AS detail_count,
+    COALESCE(SUM(jd.debet),0) AS detail_debet,
+    COALESCE(SUM(jd.kredit),0) AS detail_kredit,
+    COALESCE(SUM(jd.debet),0) - COALESCE(SUM(jd.kredit),0) AS detail_balance
+FROM sc_trx.jurnal_hd jh
+LEFT JOIN sc_trx.jurnal_dt jd
+       ON jd.jurnal_id = jh.id
+WHERE jh.source_uniqueid = MD5('TX-JOURNAL-UPD-001')
+  AND jh.uniqueid NOT LIKE 'JRNL-REV-%'
+GROUP BY jh.id, jh.docno, jh.journal_type, jh.status
+ORDER BY jh.id;
+
 /* ============================================================
    SAMPLE JURNAL PERKIRAAN / GENERAL JOURNAL
    ============================================================
@@ -2725,7 +2943,7 @@ VALUES
 
 
 /* ------------------------------------------------------------
-   VALIDASI JAVGENL DOCUMENT + DETAIL
+   VALIDASI JVGENL DOCUMENT + DETAIL
    ------------------------------------------------------------ */
 
 SELECT
@@ -3106,7 +3324,7 @@ VALUES
           ORDER BY jd.id
           LIMIT 1)
     ),
-    'D',
+    'K',
     'TEST'
 );
 
@@ -3248,7 +3466,7 @@ VALUES
           ORDER BY jd.id
           LIMIT 1)
     ),
-    'D',
+    'K',
     'TEST'
 );
 
@@ -3511,6 +3729,119 @@ BEGIN
 END;
 $$;
 
+
+/* ============================================================
+   ASSERTION NDK DEBIT / CREDIT
+   ============================================================
+   Ekspektasi manual accounting:
+       NDKAPD = ACCOUNT AP D
+       NDKAPK = ACCOUNT AP K
+       NDKARD = ACCOUNT AR D
+       NDKARK = ACCOUNT AR K
+
+   COUNTER_ACCOUNT selalu kebalikan dari ACCOUNT.
+   ============================================================ */
+
+DO $$
+DECLARE
+    r RECORD;
+    v_ndk_count INTEGER := 0;
+BEGIN
+    FOR r IN
+        SELECT
+            td.docno,
+            td.journal_type,
+            td.debet_kredit,
+            td.idcoa AS source_coa,
+            td.counter_idcoa AS counter_coa,
+            SUM(COALESCE(jd.debet,0)) FILTER (
+                WHERE BTRIM(jd.idcoa::TEXT) = BTRIM(td.idcoa::TEXT)
+            ) AS source_debet,
+            SUM(COALESCE(jd.kredit,0)) FILTER (
+                WHERE BTRIM(jd.idcoa::TEXT) = BTRIM(td.idcoa::TEXT)
+            ) AS source_kredit,
+            SUM(COALESCE(jd.debet,0)) FILTER (
+                WHERE BTRIM(jd.idcoa::TEXT) = BTRIM(td.counter_idcoa::TEXT)
+            ) AS counter_debet,
+            SUM(COALESCE(jd.kredit,0)) FILTER (
+                WHERE BTRIM(jd.idcoa::TEXT) = BTRIM(td.counter_idcoa::TEXT)
+            ) AS counter_kredit
+        FROM sc_trx.transaction_dt td
+        JOIN sc_trx.jurnal_hd jh
+          ON jh.source_uniqueid = td.uniqueid
+         AND jh.uniqueid NOT LIKE 'JRNL-REV-%'
+         AND jh.status = 'POSTED'
+        JOIN sc_trx.jurnal_dt jd
+          ON jd.jurnal_id = jh.id
+        WHERE td.journal_type IN ('NDKAPD','NDKAPK','NDKARD','NDKARK')
+        GROUP BY
+            td.docno,
+            td.journal_type,
+            td.debet_kredit,
+            td.idcoa,
+            td.counter_idcoa
+        ORDER BY td.docno
+    LOOP
+
+        IF (
+            r.journal_type IN ('NDKAPD','NDKARD')
+            AND BTRIM(COALESCE(r.debet_kredit,'')) <> 'D'
+        )
+        OR (
+            r.journal_type IN ('NDKAPK','NDKARK')
+            AND BTRIM(COALESCE(r.debet_kredit,'')) <> 'K'
+        )
+        THEN
+            RAISE EXCEPTION
+                'TEST NDK GAGAL: arah debet_kredit salah untuk % = %',
+                r.docno,
+                r.debet_kredit;
+        END IF;
+
+        IF BTRIM(COALESCE(r.debet_kredit,'')) = 'D' THEN
+            IF COALESCE(r.source_debet,0) <= 0
+               OR COALESCE(r.source_kredit,0) <> 0
+               OR COALESCE(r.counter_kredit,0) <= 0
+               OR COALESCE(r.counter_debet,0) <> 0
+            THEN
+                RAISE EXCEPTION
+                    'TEST NDK GAGAL: D/K jurnal tidak sesuai pada %',
+                    r.docno;
+            END IF;
+        ELSE
+            IF COALESCE(r.source_kredit,0) <= 0
+               OR COALESCE(r.source_debet,0) <> 0
+               OR COALESCE(r.counter_debet,0) <= 0
+               OR COALESCE(r.counter_kredit,0) <> 0
+            THEN
+                RAISE EXCEPTION
+                    'TEST NDK GAGAL: D/K jurnal tidak sesuai pada %',
+                    r.docno;
+            END IF;
+        END IF;
+
+        v_ndk_count := v_ndk_count + 1;
+    END LOOP;
+
+    IF v_ndk_count <> 4 THEN
+        RAISE EXCEPTION
+            'TEST NDK GAGAL: expected 4 POSTED journal NDK, actual %',
+            v_ndk_count;
+    END IF;
+
+    RAISE NOTICE
+        'TEST NDK OK: 4 journal NDK, arah ACCOUNT / COUNTER_ACCOUNT sesuai D/K.';
+END;
+$$;
+
+
+/* ============================================================
+   CATATAN TEST DELETE
+   ------------------------------------------------------------
+   Test DELETE / CANCELLED dilakukan manual setelah data test
+   terlihat di database. Tidak ada SAVEPOINT / ROLLBACK test
+   cancellation di dalam script ini.
+   ============================================================ */
 
 COMMIT;
 

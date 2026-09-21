@@ -1568,9 +1568,21 @@ BEGIN
 
         /*
            type_in_out hanya untuk kompatibilitas schema lama.
-           Manual accounting tetap stock NONE.
+
+           JVGENL:
+               satu docno dapat memiliki beberapa line D/K.
+               Semua line harus tetap berada dalam satu
+               transaction_hd, sehingga JVGENL selalu memakai
+               type_in_out = IN sebagai compatibility value.
+
+           Manual selain JVGENL:
+               D -> IN
+               K -> OUT
         */
-        IF NEW.debet_kredit = 'D'
+        IF TRIM(NEW.journal_type) = 'JVGENL'
+        THEN
+            NEW.type_in_out := 'IN';
+        ELSIF NEW.debet_kredit = 'D'
         THEN
             NEW.type_in_out := 'IN';
         ELSE
@@ -1578,6 +1590,7 @@ BEGIN
         END IF;
 
 
+        /* Perkiraan Asal selalu wajib. */
         IF NULLIF(BTRIM(COALESCE(NEW.idcoa,'')), '') IS NULL
         THEN
             RAISE EXCEPTION
@@ -1586,7 +1599,15 @@ BEGIN
         END IF;
 
 
-        IF NULLIF(BTRIM(COALESCE(NEW.counter_idcoa,'')), '') IS NULL
+        /*
+           JVGENL adalah document-level multi-line journal.
+           counter_idcoa tidak wajib per line.
+
+           Manual accounting lain tetap wajib memiliki
+           counter_idcoa.
+        */
+        IF TRIM(NEW.journal_type) <> 'JVGENL'
+           AND NULLIF(BTRIM(COALESCE(NEW.counter_idcoa,'')), '') IS NULL
         THEN
             RAISE EXCEPTION
                 'Perkiraan Lawan (counter_idcoa) wajib diisi untuk journal_type %',
@@ -1608,13 +1629,17 @@ BEGIN
         END IF;
 
 
-        IF NOT EXISTS
-        (
-            SELECT 1
-            FROM sc_mst.coa c
-            WHERE BTRIM(c.idcoa::TEXT)
-                  = BTRIM(NEW.counter_idcoa::TEXT)
-        )
+        /*
+           Jika counter_idcoa diisi pada JVGENL, tetap validasi.
+        */
+        IF NULLIF(BTRIM(COALESCE(NEW.counter_idcoa,'')), '') IS NOT NULL
+           AND NOT EXISTS
+           (
+               SELECT 1
+               FROM sc_mst.coa c
+               WHERE BTRIM(c.idcoa::TEXT)
+                     = BTRIM(NEW.counter_idcoa::TEXT)
+           )
         THEN
             RAISE EXCEPTION
                 'COA Perkiraan Lawan % tidak ditemukan pada sc_mst.coa',
@@ -2528,7 +2553,7 @@ Input:
     idtax          = Tax pilihan
     nilai/dpp/pajak/total = nilai transaksi
 
-Contoh:
+Contoh manual pair:
     idcoa          = 213102
     counter_idcoa  = 511101
     debet_kredit   = D
@@ -2537,6 +2562,12 @@ Contoh:
 Hasil TAHAP 16:
     DEBIT   213102  3.000.000
     CREDIT  511101  3.000.000
+
+Contoh JVGENL:
+    setiap line transaction_dt berisi satu COA
+    + debet_kredit.
+    counter_idcoa tidak wajib.
+    beberapa line dengan docno sama menjadi satu jurnal_hd.
 
 NDK:
     NDKAPD / NDKAPK -> tax input
