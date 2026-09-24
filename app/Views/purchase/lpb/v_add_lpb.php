@@ -1,5 +1,5 @@
 <style>
-    
+
     .section-block {
         background-color: #e8e8e8;
         border-left: 4px solid #007bff;
@@ -8,10 +8,10 @@
         border-radius: 6px;
         margin-bottom: 30px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-                    box-shadow 0.4s ease, 
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                    box-shadow 0.4s ease,
                     border-color 0.4s ease;
-        
+
         transform: scale(1);
         will-change: transform;
     }
@@ -121,7 +121,7 @@
                                             </div>
                                         </div>
 
-                                        
+
                                     </div>
 
                                     <div class="row">
@@ -152,15 +152,15 @@
                                                         name="sufix"
                                                         id="sufix"
                                                         class="form-control ms-1"
-                                                        readonly>
-                                                        
+                                                        >
+
                                                     </div>
                                                 </div>
                                             </div>
                                             <input type="hidden" name="docno" class="form-control col-sm-12" id="docno" maxlength="20"     value="<?= isset($dtldata['docno']) ? esc(trim($dtldata['docno'])) : '' ?>" style="text-transform: uppercase;" readonly>
-                                            
+
                                     </div>
-                                        
+
                                 </div>
 
                                 <!-- RIGHT COLUMN -->
@@ -259,7 +259,7 @@
                                                     <label for="currcode" class="form-label">Mata Uang</label>
                                                     <select name="currcode"
                                                             id="currcode"
-                                                            class="form-select select2" disabled
+                                                            class="form-select select2"
                                                             required>
                                                     </select>
                                                 </div>
@@ -272,7 +272,7 @@
                                                         name="kurs"
                                                         id="kurs"
                                                         class="form-control ratakanan jtsseparator"
-                                                        placeholder="Nilai tukar akan muncul disini" readonly
+                                                        placeholder="Nilai tukar akan muncul disini"
                                                         >
                                                 </div>
                                             </div>
@@ -291,17 +291,17 @@
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label for="idtax">Pajak</label>
-                                                <select name="idtax" id="idtax" disabled class="form-control select2" required></select>
+                                                <select name="idtax" id="idtax" class="form-control select2" ></select>
                                             </div>
                                         </div>
                                         <div class="col-md-3" style="margin-top: 30px;">
                                             <div class="form-group">
                                                 <!-- Radio untuk Interngroup -->
                                                 <div class="form-check">
-                                                    <input class="form-check-input" 
-                                                        type="checkbox" 
+                                                    <input class="form-check-input"
+                                                        type="checkbox"
                                                         disabled
-                                                        name="isinclusive" 
+                                                        name="isinclusive"
                                                         id="isinclusive"
                                                         <?= isset($data['isinclusive']) && $data['isinclusive'] === 'YES' ? 'checked' : '' ?>>
                                                     <label class="form-check-label" for="isinclusive">
@@ -448,7 +448,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="col-md-12 ">
                                     <div class="col-md-4" style="float: right;">
                                         <div class="form-group mb-2">
@@ -467,7 +467,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="col-md-12 ">
                                     <div class="col-md-4" style="float: right;">
                                         <div class="form-group mb-3">
@@ -487,11 +487,11 @@
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- <div class="col-md-12">
                                     <div class="form-group text-end">
                                         <button type="button" class="btn btn-lg btn-primary text-white" title="Down Payment">
-                                            <i class="fa fa-money"></i> 
+                                            <i class="fa fa-money"></i>
                                         </button>
                                     </div>
                                 </div> -->
@@ -507,8 +507,8 @@
                         <i class="fa fa-arrow-left mr-2"></i>
                         Kembali
                     </a> -->
-                    <a href="<?= base_url('purchase/trans/clearEntryLPB') ?>" 
-                        onclick="return confirm('Are you sure clear this entry?')" 
+                    <a href="<?= base_url('purchase/trans/clearEntryLPB') ?>"
+                        onclick="return confirm('Are you sure clear this entry?')"
                         class="btn btn-default float-left btn-lg">
                         <i class="fa fa-arrow-left"></i>
                         Back
@@ -532,7 +532,7 @@
                         </button>
                     <?php endif; ?>
                 </div>
-                
+
             </div>
         </div>
     </form>
@@ -591,7 +591,7 @@
                     <button type="button"
                             class="btn btn-primary"
                             onclick="saveLPBDetail()">
-                        <i class="fa fa-save"></i> Simpan
+                        <i class="fa fa-save"></i> Process
                     </button>
                     <button type="button"
                             class="btn btn-secondary"
@@ -600,7 +600,7 @@
                         <i class="fa fa-times"></i> Batal
                     </button>
 
-                    
+
                 </div>
             </form>
         </div>
@@ -841,7 +841,7 @@
                                         rows="4"
                                         style="text-transform: uppercase;"
                                         id="descriptionpo"
-                                        class="form-control" readonly></textarea>
+                                        class="form-control"></textarea>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -1026,7 +1026,7 @@
         });
 
 
-        
+
         $('#periodemulai').daterangepicker({
             autoUpdateInput: false,
             singleDatePicker: true,
@@ -1044,7 +1044,7 @@
             $(this).val('');
         });
 
-        
+
         $('#periodeakhir').daterangepicker({
             autoUpdateInput: false,
             singleDatePicker: true,
@@ -1062,7 +1062,7 @@
             $(this).val('');
         });
 
-        
+
 
     });
 

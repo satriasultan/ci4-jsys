@@ -155,6 +155,7 @@ INSERT INTO sc_mst.menuprg (
 ('JTS', 6, 'I.L', 'AR/AP', '', '', 'U', 'false', 'fa-book', '#', 'LEFT', 'NO'),
 ('JTS', 1, 'I.L.A', 'TRANSAKSI', 'I.L', '', 'S', 'false', 'fa-list', '#', 'LEFT', 'NO'),
 ('JTS', 1, 'I.L.A.1', 'NOTA DEBIT / KREDIT', 'I.L', 'I.L.A', 'P', 'false', 'fa-tasks', 'arap/transaksi/ndk', 'LEFT', 'NO'),
+('JTS', 2, 'I.L.A.2', 'TANDA TERIMA', 'I.L', 'I.L.A', 'P', 'false', 'fa-tasks', 'arap/transaksi/tterima', 'LEFT', 'NO'), --menu baru 
 ('JTS', 2, 'I.L.B', 'LAPORAN', 'I.L', '', 'S', 'false', 'fa-file-text', '#', 'LEFT', 'NO'),
 ('JTS', 1, 'I.L.B.1', 'LAP. NOTA DEBIT & KREDIT', 'I.L', 'I.L.B', 'P', 'false', 'fa-tasks', 'arap/report/lapndk', 'LEFT', 'NO'),
 -- ('JTS', 2, 'I.L.A.2', 'SALDO AWAL HUTANG/PIUTANG', 'I.L', 'I.L.A', 'P', 'false', 'fa-handshake-o', 'arap/settingawal/saldoawalhp', 'LEFT', 'NO'),

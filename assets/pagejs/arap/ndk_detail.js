@@ -145,7 +145,7 @@ function documentReadable(){
                 .val(prefixParts[1] || '')
                 .prop('readonly', true);
 
-            $('[name="sufix"]')
+            $('[name="suffix"]')
                 .val(prefixParts[2] || '')
                 .prop('readonly', true);
 
@@ -1539,7 +1539,7 @@ function saveNDKDetail() {
         // formData.append('estpakai', $('#estpakai').val());
 
         // docno gabungan (lebih aman pakai hidden header)
-        formData.set('docno', $('#prefix').val() + '/' + $('#infix').val() + '/' + $('#sufix').val());
+        formData.set('docno', $('#prefix').val() + '/' + $('#infix').val() + '/' + $('#suffix').val());
         // convert qty ke numeric DB
         let qty = $('#qty').val();
         let qtybonus = $('#qtybonus').val();
@@ -1813,7 +1813,7 @@ $('#cabang').on('change', function () {
                     currentKodeSuffix = res.kode_suffix; // PT / PA / PB
                     $('#infix').val(res.infix);          // YYMM
                     $('#prefix').val('NTD');             // default
-                    $('#sufix').val(currentKodeSuffix + '0001');
+                    $('#suffix').val(currentKodeSuffix + '0001');
                     defaultInitialPO = currentKodeSuffix
 
                     var infix = (res.infix || '').toString();
@@ -1894,7 +1894,7 @@ $('#prefix').on('blur', function () {
                 return;
             }
 
-            $('#sufix').val(res.suffix);
+            $('#suffix').val(res.suffix);
             $('#docno').val(
                 prefix + '/' + infix + '/' + res.suffix
             );
@@ -1933,7 +1933,7 @@ $('#dk').on('change', function () {
                 return;
             }
 
-            $('#sufix').val(res.suffix);
+            $('#suffix').val(res.suffix);
             $('#docno').val(
                 prefix + '/' + infix + '/' + res.suffix
             );
@@ -1948,7 +1948,7 @@ function generateDocnoJurnal() {
     let jenis = $('#dk').val();
     // let tanggal = $('#hpdate').val();
     let infix = $('#infix').val();
-    let sufix = $('#sufix').val();
+    let suffix = $('#suffix').val();
 
     // PREFIX
     let prefix = '';
@@ -1968,10 +1968,10 @@ function generateDocnoJurnal() {
     // }
 
     // FINAL DOCNO
-    if (prefix && infix && sufix) {
-        let docno = prefix + '/' + infix + '/' + sufix;
+    if (prefix && infix && suffix) {
+        let docno = prefix + '/' + infix + '/' + suffix;
         $('#prefix').val(prefix);
-        $('#sufix').val(sufix);
+        $('#suffix').val(suffix);
         $('#infix').val(infix);
         $('#docno').val(docno);
     }
@@ -1981,7 +1981,7 @@ $('#dk').on('change', function () {
     generateDocnoJurnal();
 });
 
-$('#sufix').on('keyup', function () {
+$('#suffix').on('keyup', function () {
     generateDocnoJurnal();
 });
 
@@ -2437,10 +2437,10 @@ $('#btnLaporanJurnal').on('click', function () {
                                 if (row.urutan == 1) {
 
                                     return `
-                                    <b style="font-size:16px">
-                                        TOTAL
-                                    </b>
-                                `;
+                    <b style="font-size:16px">
+                        TOTAL
+                    </b>
+                `;
                                 }
 
                                 return data || '';
@@ -2471,7 +2471,9 @@ $('#btnLaporanJurnal').on('click', function () {
                                     data || 0
                                 );
                             }
-                        }
+                        },
+
+
 
                     ],
 
@@ -2515,6 +2517,181 @@ function formatNumber(value)
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         });
+}
+
+
+// =====================================================
+// CANCEL DOKUMEN NDK
+// =====================================================
+
+function cancelNDK() {
+
+    let docno = $.trim(
+        $('#docno').val() || ''
+    );
+
+
+    if (!docno) {
+
+        Swal.fire({
+            icon: 'warning',
+            title: 'Dokumen tidak ditemukan',
+            text: 'No. Bukti NDK tidak tersedia.'
+        });
+
+        return;
+    }
+
+
+    // =================================================
+    // KONFIRMASI
+    // =================================================
+
+    Swal.fire({
+
+        icon: 'warning',
+
+        title: 'Cancel Dokumen NDK?',
+
+        html:
+            'Dokumen <b>' +
+            docno +
+            '</b> akan dibatalkan.<br><br>' +
+
+            'Status dokumen akan menjadi <b>dibatalkan</b> ' +
+            'dan jurnal yang terdaftar akan dihapus.',
+
+        showCancelButton: true,
+
+        confirmButtonText:
+            '<i class="fa fa-ban"></i> Ya, Cancel',
+
+        cancelButtonText:
+            '<i class="fa fa-times"></i> Tidak',
+
+        confirmButtonColor: '#dc3545',
+
+        cancelButtonColor: '#6c757d',
+
+        reverseButtons: true
+
+    }).then(function (result) {
+
+        if (!result.isConfirmed) {
+
+            return;
+
+        }
+
+
+        // =============================================
+        // LOADING
+        // =============================================
+
+        Swal.fire({
+
+            title: 'Memproses...',
+
+            text: 'Membatalkan dokumen NDK',
+
+            allowOutsideClick: false,
+
+            allowEscapeKey: false,
+
+            didOpen: function () {
+
+                Swal.showLoading();
+
+            }
+
+        });
+
+
+        // =============================================
+        // AJAX CANCEL
+        // =============================================
+
+        $.ajax({
+
+            url:
+                HOST_URL +
+                'arap/transaksi/cancelNDK',
+
+            type: 'POST',
+
+            dataType: 'json',
+
+            data: {
+
+                docno: docno
+
+            },
+
+            success: function (res) {
+
+                if (!res || !res.success) {
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Cancel Gagal',
+                        text: res && res.message
+                            ? res.message
+                            : 'Dokumen NDK gagal dibatalkan.'
+                    });
+
+                    return;
+                }
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Cancel Berhasil',
+                    html:
+                        'Dokumen <b>' +
+                        docno +
+                        '</b> berhasil dibatalkan.<br>' +
+                        'Status dokumen: <b>C</b>',
+
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#198754'
+
+                }).then(function (result) {
+
+                    if (result.isConfirmed) {
+
+                        window.location.href =
+                            HOST_URL + 'arap/transaksi/ndk';
+
+                    }
+
+                });
+
+            },
+
+            error: function (xhr) {
+
+                console.error(
+                    'Cancel NDK Error:',
+                    xhr.responseText
+                );
+
+
+                Swal.fire({
+
+                    icon: 'error',
+
+                    title: 'Error',
+
+                    text:
+                        'Terjadi kesalahan saat membatalkan dokumen NDK.'
+
+                });
+
+            }
+
+        });
+
+    });
+
 }
 
 $(document).ready(function() {

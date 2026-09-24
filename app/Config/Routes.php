@@ -169,6 +169,7 @@ $routes->group('/arap/transaksi', ["namespace" => "App\Controllers\Arap"], funct
 
     $routes->add('save_ndk_detail', 'Arap::save_ndk_detail');
     $routes->get('updateNDK(:any)', 'Arap::updateNDK$1');
+    $routes->post('cancelNDK', 'Arap::cancelNDK');
 
     $routes->add('deleteNDKDtl', 'Arap::deleteNDKDtl');
     $routes->add('show_ndk', 'Arap::show_ndk');
@@ -301,8 +302,10 @@ $routes->group('/ka/finance', ["namespace" => "App\Controllers\Finance"], functi
     $routes->add('pengeluarankb', 'Finance::pengeluarankb');
     $routes->add('list_pengeluarankb', 'Finance::list_pengeluarankb');
     $routes->add('list_pengeluarankb_apprv', 'Finance::list_pengeluarankb_apprv');
+    $routes->add('loadPerSupplier', 'Finance::loadPerSupplier');
 
-    $routes->add('getPembelianSup', 'Finance::getPembelianSup');
+
+    //$routes->add('getPembelianSup', 'Finance::getPembelianSup');
     $routes->add('addPengeluaranKB', 'Finance::addPengeluaranKB');
     $routes->add('detailPengeluaranKB', 'Finance::detailPengeluaranKB');
     $routes->add('list_tmp_pengeluarankb_dtl', 'Finance::list_tmp_pengeluarankb_dtl');

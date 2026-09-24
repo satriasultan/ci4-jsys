@@ -207,7 +207,7 @@ function documentReadable() {
                 .val(prefixParts[1] || '')
                 .prop('readonly', true);
 
-            $('[name="sufix"]')
+            $('[name="suffix"]')
                 .val(prefixParts[2] || '')
                 .prop('readonly', true);
 
@@ -1208,7 +1208,7 @@ $("#idtax").select2({
     templateResult: formatTax, // omitted for brevity, see the source of this page
     templateSelection: formatTaxSelection // omitted for brevity, see the source of this page
 }).on("select2:select", function (e) {
-    
+
     hitungPajak();
 
 }).on("select2:clear", function (e) {
@@ -1569,15 +1569,15 @@ function reload_table_ndk_dtl()
 
 function setSelect2Ajax(selector, value, text) {
     if (!value) return;
-    
+
     var $select = $(selector);
-    
+
     // Cek apakah option sudah ada
     if (!$select.find('option[value="' + value + '"]').length) {
         var option = new Option(text || value, value, true, true);
         $select.append(option);
     }
-    
+
     // Set value
     $select.val(value).trigger('change');
 }
@@ -1590,19 +1590,19 @@ $(document).on('input', '.form-control', function () {
         let qty = parseFloat($('#qty').val().replace(/,/g, '')) || 0;
         let harga = parseFloat($('#harga').val().replace(/,/g, '')) || 0;
         let multidisc = parseFloat($('#multidisc').val().replace(/,/g, '')) || 0;
-        
+
         // Hitung nilai awal (qty * harga)
         let nilaiAwal = qty * harga;
-        
+
         // Hitung diskon
         let diskon = (nilaiAwal * multidisc) / 100;
-        
+
         // Hitung nilai akhir setelah diskon
         let nilaiAkhir = nilaiAwal - diskon;
-        
+
         // Format ke en-US: separator ribuan = koma, desimal = titik
         $('#nilai').val(nilaiAkhir.toLocaleString('en-US', {
-            minimumFractionDigits: 2, 
+            minimumFractionDigits: 2,
             maximumFractionDigits: 2
         }));
     }
@@ -1890,10 +1890,11 @@ $('#cabang').on('change', function () {
 
                 // PREFIX KHUSUS NDK
                 $('#prefix').val('NTD');
-
-                $('#sufix').val(
-                    currentKodeSuffix + '0001'
-                );
+                loadNextSuffixNDK();
+                //digantikan loadNextSuffixNDK
+                // $('#suffix').val(
+                //     currentKodeSuffix + '0001'
+                // );
 
                 defaultInitialPO = currentKodeSuffix;
 
@@ -2305,11 +2306,14 @@ $('#cabang').on('change', function () {
 });
 
 
-$('#prefix').on('blur', function () {
-    let prefix = $(this).val().toUpperCase();
-    let infix  = $('#infix').val();
+function loadNextSuffixNDK() {
 
-    if (!prefix || !infix || !currentKodeSuffix) return;
+    let prefix = $.trim($('#prefix').val()).toUpperCase();
+    let infix = $.trim($('#infix').val());
+
+    if (!prefix || !infix || !currentKodeSuffix) {
+        return;
+    }
 
     $.ajax({
         url: HOST_URL + 'arap/transaksi/getNextSuffixNDK',
@@ -2320,21 +2324,52 @@ $('#prefix').on('blur', function () {
             kode_suffix: currentKodeSuffix
         },
         dataType: 'json',
+        cache: false,
+
         success: function (res) {
+
             if (!res.success) {
-                Swal.fire('Error', res.message, 'warning');
+
+                Swal.fire(
+                    'Error',
+                    res.message,
+                    'warning'
+                );
+
                 return;
             }
 
-            $('#sufix').val(res.suffix);
-            $('#docno').val(
-                prefix + '/' + infix + '/' + res.suffix
+            let suffix = $.trim(
+                res.suffix || ''
             );
+
+            $('#suffix')
+                .val(suffix)
+                .trigger('change');
+
+            $('#docno').val(
+                prefix +
+                '/' +
+                infix +
+                '/' +
+                suffix
+            );
+        },
+
+        error: function (xhr) {
+
+            console.error(
+                'getNextSuffixNDK:',
+                xhr.responseText
+            );
+
         }
     });
+}
+
+$('#prefix').on('blur', function () {
+    loadNextSuffixNDK();
 });
-
-
 
 $('#dk').on('change', function () {
     let jenis = $(this).val().toUpperCase();
@@ -2365,7 +2400,7 @@ $('#dk').on('change', function () {
                 return;
             }
 
-            $('#sufix').val(res.suffix);
+            $('#suffix').val(res.suffix);
             $('#docno').val(
                 prefix + '/' + infix + '/' + res.suffix
             );
@@ -2380,7 +2415,7 @@ function generateDocnoJurnal() {
     let jenis = $('#dk').val();
     // let tanggal = $('#hpdate').val();
     let infix = $('#infix').val();
-    let sufix = $('#sufix').val();
+    let suffix = $('#suffix').val();
 
     // PREFIX
     let prefix = '';
@@ -2400,10 +2435,10 @@ function generateDocnoJurnal() {
     // }
 
     // FINAL DOCNO
-    if (prefix && infix && sufix) {
-        let docno = prefix + '/' + infix + '/' + sufix;
+    if (prefix && infix && suffix) {
+        let docno = prefix + '/' + infix + '/' + suffix;
         $('#prefix').val(prefix);
-        $('#sufix').val(sufix);
+        $('#suffix').val(suffix);
         $('#infix').val(infix);
         $('#docno').val(docno);
     }
@@ -2413,11 +2448,17 @@ $('#dk').on('change', function () {
     generateDocnoJurnal();
 });
 
-$('#sufix').on('keyup', function () {
+$('#suffix').on('keyup', function () {
     generateDocnoJurnal();
 });
 
-
+function cleanSuffix(value) {
+    return String(value || '')
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '')
+        .substring(0, 6);
+}
 $("#perkiraanarap").select2({
         
         placeholder: "Pilih Perkiraan",

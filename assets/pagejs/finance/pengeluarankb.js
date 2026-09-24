@@ -1857,10 +1857,10 @@ $("#fjurnal").on("change", function () {
 
 
 function loadPerSupplier() {
-/*TEST*/
+
     console.log('=== loadPerSupplier DIJALANKAN ===');
 
-    let kdsupplier = $('#kdsupplier').val();
+    let kdsupplier = $.trim($('#kdsupplier').val());
 
     console.log('kdsupplier =', kdsupplier);
 
@@ -1877,20 +1877,20 @@ function loadPerSupplier() {
         url: HOST_URL + 'arap/transaksi/loadPerSupplier',
         type: 'GET',
         dataType: 'json',
+
         data: {
-           // kdsupplier: kdsupplier,
-            docno      : $('#docno').val(),
-            cabang     : $('#cabang').val(),
-            docdate    : $('#docdate').val(),
-            currcode   : $('#currcode').val(),
-            kurs       : kursConvert,
-            kdsupplier : selectedData.kdsupplier,
-            alamatsupplier : $("#alamatsupplier").val()
+            kdsupplier: kdsupplier
         },
 
         beforeSend: function () {
+
             console.log('=== AJAX DIKIRIM ===');
-            console.log('URL:', HOST_URL + 'arap/transaksi/loadPerSupplier');
+
+            console.log(
+                'URL:',
+                HOST_URL + 'arap/transaksi/loadPerSupplier'
+            );
+
             console.log('PARAMETER:', {
                 kdsupplier: kdsupplier
             });
@@ -1899,8 +1899,22 @@ function loadPerSupplier() {
         success: function (response) {
 
             console.log('=== AJAX SUCCESS ===');
-            console.log(response);
+            console.log('Response:', response);
 
+            if (!response.status) {
+
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Supplier',
+                    text: response.message || 'Data supplier tidak ditemukan.'
+                });
+
+                return;
+            }
+
+            console.log('Data Supplier:', response.data);
+
+            // proses data di sini
         },
 
         error: function (xhr, status, error) {

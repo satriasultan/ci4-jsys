@@ -6101,7 +6101,7 @@ ORDER BY p.docno;
         }
 
         // proses/query berdasarkan supplier
-        $data = $this->m_arap->loadPerSupplier($kdsupplier);
+        $data = $this->m_finance->loadPerSupplier($kdsupplier);
 
         return $this->response->setJSON([
             'status' => true,

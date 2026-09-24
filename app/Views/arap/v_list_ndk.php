@@ -73,19 +73,20 @@
                                         <th style="min-width:10px; text-align:center; vertical-align:middle;">Action</th>
                                         <th style="min-width:100px; text-align:center; vertical-align:middle;">Kode</th>
                                         <th style="min-width:150px; text-align:center; vertical-align:middle;">Tanggal</th>
-                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Kode Sub Account</th>
-                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Sub Account</th>
+                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Kode Contact</th>
+                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Contact</th>
                                         <th style="min-width:80px; text-align:center; vertical-align:middle;">Alamat</th>
                                         <th style="min-width:50px; text-align:center; vertical-align:middle;">Kota</th>
                                         <!-- <th style="min-width:150px; text-align:center; vertical-align:middle;">Jurnal</th> -->
-                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Cur</th>
+                                        <th style="min-width:10px; text-align:center; vertical-align:middle;">Cur</th>
                                         <th style="min-width:100px; text-align:center; vertical-align:middle;">Tgl JT</th>
                                         <!-- <th style="min-width:100px; text-align:center; vertical-align:middle;">Tanggal Kirim</th> -->
                                         <th style="min-width:100px; text-align:center; vertical-align:middle;">Salesman</th>
-                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">DK</th>
+                                        <th style="min-width:10px; text-align:center; vertical-align:middle;">DK</th>
                                         <th style="min-width:100px; text-align:center; vertical-align:middle;">Nilai</th>
                                         <th style="min-width:400px; text-align:center; vertical-align:middle;">Remark</th>
                                         <th style="min-width:100px; text-align:center; vertical-align:middle;">Cost Center</th>
+                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>

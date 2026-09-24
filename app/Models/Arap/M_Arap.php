@@ -440,75 +440,84 @@ class M_Arap extends Model
     function q_laporan_jurnal_transaksi_ndk($params = '')
     {
         return $this->db->query("
-    WITH data_jurnal AS (
-    SELECT
-        jd.id,
-        jd.jurnal_id,
-        TRIM(jd.idcoa) AS idcoa,
-        TRIM(coa.nmcoa) AS nmcoa,
-        jd.debet,
-        jd.kredit,
-        TRIM(jd.ref_docno) AS ref_docno,
-        TRIM(jd.ref_doctype) AS ref_doctype,
-        TRIM(jh.docno) AS docno,
-        TRIM(jh.doctype) AS doctype,
-        jh.trxdate,
-        TRIM(ndk.kdsupplier) AS kdsupplier,
-        TRIM(ndk.nmsupplier) AS nmsupplier
-    FROM sc_trx.jurnal_dt jd
-    INNER JOIN sc_trx.jurnal_hd jh
-        ON jh.id = jd.jurnal_id
-    LEFT JOIN sc_mst.coa coa
-        ON TRIM(coa.idcoa) = TRIM(jd.idcoa)
-    LEFT JOIN sc_trx.ndk ndk
-        ON TRIM(ndk.docno) = TRIM(jd.ref_docno)
-        AND TRIM(jd.ref_doctype) = 'NDK'
-    WHERE 1=1
-    $params
-)
-
-SELECT
-    id,
-    jurnal_id,
-    idcoa,
-    nmcoa,
-    debet,
-    kredit,
-    ref_docno,
-    ref_doctype,
-    docno,
-    doctype,
-    trxdate,
-    kdsupplier,
-    nmsupplier,
-    0 AS urutan
-FROM data_jurnal
-
-UNION ALL
-
-SELECT
-    NULL::BIGINT AS id,
-    NULL::BIGINT AS jurnal_id,
-    NULL::VARCHAR AS idcoa,
-    'TOTAL'::VARCHAR AS nmcoa,
-    COALESCE(SUM(debet), 0) AS debet,
-    COALESCE(SUM(kredit), 0) AS kredit,
-    NULL::VARCHAR AS ref_docno,
-    NULL::VARCHAR AS ref_doctype,
-    NULL::VARCHAR AS docno,
-    NULL::VARCHAR AS doctype,
-    NULL::DATE AS trxdate,
-    NULL::VARCHAR AS kdsupplier,
-    NULL::VARCHAR AS nmsupplier,
-    1 AS urutan
-FROM data_jurnal
-
-ORDER BY
-    urutan,
-    trxdate DESC NULLS LAST,
-    jurnal_id,
-    id;
-    ");
+                        WITH data_jurnal AS (
+                            SELECT
+                                jd.id,
+                                jd.jurnal_id,
+                                TRIM(jd.idcoa) AS idcoa,
+                                TRIM(coa.nmcoa) AS nmcoa,
+                                jd.debet,
+                                jd.kredit,
+                                TRIM(jd.ref_docno) AS ref_docno,
+                                TRIM(jd.ref_doctype) AS ref_doctype,
+                                TRIM(jh.docno) AS docno,
+                                TRIM(jh.doctype) AS doctype,
+                                jh.trxdate,
+                                TRIM(ndk.kdsupplier) AS kdsupplier,
+                                TRIM(ndk.nmsupplier) AS nmsupplier,
+                                TRIM(jd.status) AS status
+                            FROM sc_trx.jurnal_dt jd
+                        
+                            INNER JOIN sc_trx.jurnal_hd jh
+                                ON jh.id = jd.jurnal_id
+                        
+                            LEFT JOIN sc_mst.coa coa
+                                ON TRIM(coa.idcoa) = TRIM(jd.idcoa)
+                        
+                            LEFT JOIN sc_trx.ndk ndk
+                                ON TRIM(ndk.docno) = TRIM(jd.ref_docno)
+                                AND TRIM(jd.ref_doctype) = 'NDK'
+                        
+                            WHERE 1=1
+                                AND TRIM(jd.status) = 'POSTED'
+                        
+                                $params
+                        )
+                        
+                        SELECT
+                            id,
+                            jurnal_id,
+                            idcoa,
+                            nmcoa,
+                            debet,
+                            kredit,
+                            ref_docno,
+                            ref_doctype,
+                            docno,
+                            doctype,
+                            trxdate,
+                            kdsupplier,
+                            nmsupplier,
+                            status,
+                            0 AS urutan
+                        FROM data_jurnal
+                        
+                        UNION ALL
+                        
+                        SELECT
+                            NULL::BIGINT AS id,
+                            NULL::BIGINT AS jurnal_id,
+                            NULL::VARCHAR AS idcoa,
+                            'TOTAL'::VARCHAR AS nmcoa,
+                            COALESCE(SUM(debet), 0) AS debet,
+                            COALESCE(SUM(kredit), 0) AS kredit,
+                            NULL::VARCHAR AS ref_docno,
+                            NULL::VARCHAR AS ref_doctype,
+                            NULL::VARCHAR AS docno,
+                            NULL::VARCHAR AS doctype,
+                            NULL::DATE AS trxdate,
+                            NULL::VARCHAR AS kdsupplier,
+                            NULL::VARCHAR AS nmsupplier,
+                            'POSTED'::VARCHAR AS status,
+                            1 AS urutan
+                        FROM data_jurnal
+                        
+                        ORDER BY
+                            urutan,
+                            trxdate DESC NULLS LAST,
+                            jurnal_id,
+                            id
+                        ");
     }
 
 }

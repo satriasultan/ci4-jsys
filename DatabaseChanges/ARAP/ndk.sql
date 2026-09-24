@@ -104,9 +104,6 @@ ALTER TABLE IF EXISTS sc_trx.ndk
 
 
 
--- FUNCTION: sc_tmp.tr_ndk_finalize()
-
--- DROP FUNCTION IF EXISTS sc_tmp.tr_ndk_finalize();
 CREATE OR REPLACE FUNCTION sc_tmp.tr_ndk_finalize()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -131,21 +128,13 @@ BEGIN
        AND NEW.status = 'F'
        AND COALESCE(NEW.docnotmp, '') = '' THEN
 
-        /* --------------------------------------------------------
-           NORMALISASI
-           -------------------------------------------------------- */
-
         v_docno   := RTRIM(NEW.docno);
         v_inputby := NEW.inputby;
         v_idurut  := NEW.idurut;
 
-
-        /* --------------------------------------------------------
-           CEK APAKAH TRANSAKSI INI SUDAH PERNAH DIFINALKAN
-
-           Menggunakan idurut + inputby.
-           Jika sudah ada di trx, jangan membuat NDK kedua.
-           -------------------------------------------------------- */
+        /* ========================================================
+           CEK APAKAH SUDAH PERNAH DIFINALKAN
+           ======================================================== */
 
         IF EXISTS (
             SELECT 1
@@ -155,7 +144,6 @@ BEGIN
                   TRIM(COALESCE(v_inputby, ''))
         ) THEN
 
-            /* TMP tetap dibersihkan */
             DELETE FROM sc_tmp.ndk
             WHERE TRIM(docno) = TRIM(OLD.docno)
               AND idurut = v_idurut;
@@ -164,31 +152,15 @@ BEGIN
         END IF;
 
 
-        /* --------------------------------------------------------
-           AMBIL BASE DOCNO
-
-           Contoh:
-           05M/2601/PA0001 -> 05M/2601/PA
-           PPB/2601/PT0025 -> PPB/2601/PT
-           -------------------------------------------------------- */
+        /* ========================================================
+           GENERATE DOCNO
+           ======================================================== */
 
         v_base_docno := regexp_replace(v_docno, '[0-9]+$', '');
-
-
-        /* --------------------------------------------------------
-           ADVISORY LOCK
-
-           Mencegah dua finalize bersamaan mendapatkan nomor sama.
-           -------------------------------------------------------- */
 
         v_lock_key := hashtext(v_base_docno);
 
         PERFORM pg_advisory_xact_lock(v_lock_key);
-
-
-        /* --------------------------------------------------------
-           GENERATE DOCNO
-           -------------------------------------------------------- */
 
         v_new_docno := v_docno;
 
@@ -200,23 +172,21 @@ BEGIN
                 WHERE TRIM(docno) = TRIM(v_new_docno)
             );
 
-
             v_num := regexp_replace(
                 v_new_docno,
                 '.*?([0-9]+)$',
                 '\1'
             );
 
-
             IF COALESCE(v_num, '') = '' THEN
+
                 RAISE EXCEPTION
                     'Format DOCNO NDK tidak valid: %',
                     v_new_docno;
+
             END IF;
 
-
             v_num_int := v_num::INTEGER + 1;
-
 
             v_new_docno :=
                 v_base_docno ||
@@ -228,17 +198,12 @@ BEGIN
 
         END LOOP;
 
-
-        /* --------------------------------------------------------
-           DOCNO FINAL
-           -------------------------------------------------------- */
-
         v_docno := v_new_docno;
 
 
-        /* --------------------------------------------------------
-           INSERT HEADER KE TRANSAKSI
-           -------------------------------------------------------- */
+        /* ========================================================
+           INSERT HEADER BARU
+           ======================================================== */
 
         INSERT INTO sc_trx.ndk
         (
@@ -309,9 +274,9 @@ BEGIN
           AND idurut = v_idurut;
 
 
-        /* --------------------------------------------------------
+        /* ========================================================
            CLEANUP TMP
-           -------------------------------------------------------- */
+           ======================================================== */
 
         DELETE FROM sc_tmp.ndk
         WHERE TRIM(docno) = TRIM(OLD.docno)
@@ -321,88 +286,145 @@ BEGIN
 
 
     /* ============================================================
-       DOCNOTMP FLOW
+       EDIT FINAL
+       E -> F + DOCNOTMP
+
+       DOCNOTMP = DOCNO EXISTING
+       TIDAK BOLEH MEMBUAT DOCNO BARU
        ============================================================ */
 
     ELSIF OLD.status = 'E'
        AND NEW.status = 'F'
        AND COALESCE(NEW.docnotmp, '') <> '' THEN
 
-        /* Hapus transaksi lama */
-        DELETE FROM sc_trx.ndk
-        WHERE TRIM(docno) = TRIM(NEW.docnotmp);
+        /* ========================================================
+           JIKA DOKUMEN EXISTING ADA
+           UPDATE, BUKAN DELETE + INSERT
+           ======================================================== */
+
+        IF EXISTS (
+            SELECT 1
+            FROM sc_trx.ndk
+            WHERE TRIM(docno) = TRIM(NEW.docnotmp)
+        ) THEN
+
+            UPDATE sc_trx.ndk t
+            SET
+                idurut          = x.idurut,
+                cabang          = x.cabang,
+                docdate         = x.docdate,
+                pemohon         = x.pemohon,
+                kdsupplier      = x.kdsupplier,
+                nmsupplier      = x.nmsupplier,
+                alamatsupplier  = x.alamatsupplier,
+                kdsalesman      = x.kdsalesman,
+                jthtempo        = x.jthtempo,
+                isinclusive     = x.isinclusive,
+                dk              = x.dk,
+                perkiraanarap   = x.perkiraanarap,
+                perkiraanlawan  = x.perkiraanlawan,
+                nilai           = x.nilai,
+                idtax           = x.idtax,
+                currcode        = x.currcode,
+                kurs            = x.kurs,
+                dpp             = x.dpp,
+                jumlahpajak     = x.jumlahpajak,
+                total           = x.total,
+                keterangan      = x.keterangan,
+                status          = 'F',
+                inputby         = x.inputby,
+                inputdate       = x.inputdate,
+                updateby        = x.updateby,
+                updatedate      = x.updatedate,
+                printby         = x.printby,
+                printdate       = x.printdate,
+                docnotmp        = NEW.docnotmp
+            FROM sc_tmp.ndk x
+            WHERE TRIM(x.docno) = TRIM(NEW.docno)
+              AND TRIM(t.docno) = TRIM(NEW.docnotmp);
 
 
-        /* Insert transaksi baru */
-        INSERT INTO sc_trx.ndk
-        (
-            idurut,
-            docno,
-            cabang,
-            docdate,
-            pemohon,
-            kdsupplier,
-            nmsupplier,
-            alamatsupplier,
-            kdsalesman,
-            jthtempo,
-            isinclusive,
-            dk,
-            perkiraanarap,
-            perkiraanlawan,
-            nilai,
-            idtax,
-            currcode,
-            kurs,
-            dpp,
-            jumlahpajak,
-            total,
-            keterangan,
-            status,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            printby,
-            printdate,
-            docnotmp
-        )
-        SELECT
-            idurut,
-            NEW.docnotmp,
-            cabang,
-            docdate,
-            pemohon,
-            kdsupplier,
-            nmsupplier,
-            alamatsupplier,
-            kdsalesman,
-            jthtempo,
-            isinclusive,
-            dk,
-            perkiraanarap,
-            perkiraanlawan,
-            nilai,
-            idtax,
-            currcode,
-            kurs,
-            dpp,
-            jumlahpajak,
-            total,
-            keterangan,
-            'F',
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            printby,
-            printdate,
-            docnotmp
-        FROM sc_tmp.ndk
-        WHERE TRIM(docno) = TRIM(NEW.docno);
+        ELSE
+
+            /* ====================================================
+               DOKUMEN BELUM ADA
+               BARU BOLEH INSERT
+               ==================================================== */
+
+            INSERT INTO sc_trx.ndk
+            (
+                idurut,
+                docno,
+                cabang,
+                docdate,
+                pemohon,
+                kdsupplier,
+                nmsupplier,
+                alamatsupplier,
+                kdsalesman,
+                jthtempo,
+                isinclusive,
+                dk,
+                perkiraanarap,
+                perkiraanlawan,
+                nilai,
+                idtax,
+                currcode,
+                kurs,
+                dpp,
+                jumlahpajak,
+                total,
+                keterangan,
+                status,
+                inputby,
+                inputdate,
+                updateby,
+                updatedate,
+                printby,
+                printdate,
+                docnotmp
+            )
+            SELECT
+                idurut,
+                NEW.docnotmp,
+                cabang,
+                docdate,
+                pemohon,
+                kdsupplier,
+                nmsupplier,
+                alamatsupplier,
+                kdsalesman,
+                jthtempo,
+                isinclusive,
+                dk,
+                perkiraanarap,
+                perkiraanlawan,
+                nilai,
+                idtax,
+                currcode,
+                kurs,
+                dpp,
+                jumlahpajak,
+                total,
+                keterangan,
+                'F',
+                inputby,
+                inputdate,
+                updateby,
+                updatedate,
+                printby,
+                printdate,
+                NEW.docnotmp
+            FROM sc_tmp.ndk
+            WHERE TRIM(docno) = TRIM(NEW.docno);
+
+        END IF;
 
 
-        /* Cleanup */
+        /* ========================================================
+           CLEANUP TMP
+           ======================================================== */
+
         DELETE FROM sc_tmp.ndk
         WHERE TRIM(docno) = TRIM(NEW.docno);
 
@@ -430,7 +452,6 @@ BEGIN
 
         END IF;
 
-
         DELETE FROM sc_tmp.ndk
         WHERE TRIM(docno) = TRIM(NEW.docno);
 
@@ -442,29 +463,1053 @@ BEGIN
 END;
 $BODY$;
 
+
 DROP TRIGGER IF EXISTS tr_ndk_finalize
 ON sc_tmp.ndk;
 
-CREATE OR REPLACE TRIGGER tr_ndk_finalize
-    AFTER UPDATE ON sc_tmp.ndk
-    FOR EACH ROW
-    EXECUTE FUNCTION sc_tmp.tr_ndk_finalize();
+CREATE TRIGGER tr_ndk_finalize
+AFTER UPDATE
+ON sc_tmp.ndk
+FOR EACH ROW
+EXECUTE FUNCTION sc_tmp.tr_ndk_finalize();
 
 
 
 
+/* ============================================================
+   NDK -> TRANSACTION_DT
+   FULL FINAL TRIGGER
+   ============================================================
+
+   FLOW:
+
+   INSERT NDK status F
+       |
+       +--> transaction_dt
+              |
+              +--> TAHAP 18
+              +--> TAHAP 16
+              +--> jurnal_hd / jurnal_dt
+
+   UPDATE NDK
+       |
+       +--> F -> E
+       |      |
+       |      +--> COPY ke sc_tmp.ndk
+       |      +--> DELETE transaction_dt NDK
+       |
+       +--> E -> F
+       |      |
+       |      +--> UPDATE / INSERT transaction_dt
+       |
+       +--> F -> F
+              |
+              +--> UPDATE transaction_dt
+
+   DELETE NDK
+       |
+       +--> DELETE transaction_dt
+       |
+       +--> engine transaction_dt menangani accounting
+
+   ============================================================
+   JOURNAL TYPE:
+
+       Supplier + D = NDKAPD
+       Supplier + K = NDKAPK
+
+       Customer + D = NDKARD
+       Customer + K = NDKARK
+
+   STOCK:
+       NONE
+
+   ACCOUNTING:
+       YES
+
+   ASSET:
+       NONE
+
+   UNIQUEID:
+       Jika source NDK memiliki iduniq -> gunakan iduniq
+       Jika tidak -> MD5('NDK-TD|' || docno)
+
+   UPDATE:
+       berdasarkan DOCNO
+
+   IMPORTANT:
+       Tidak memanggil sp_sync_ndk_journal().
+       Accounting dibuat oleh transaction_dt engine.
+   ============================================================ */
 
 
+/* ============================================================
+   1. FUNCTION NDK -> TRANSACTION_DT
+   ============================================================ */
 
--- DROP FUNCTION IF EXISTS sc_trx.tr_ndk();
+CREATE OR REPLACE FUNCTION sc_trx.fn_sync_ndk_to_transaction_dt(
+    p_docno VARCHAR(30)
+)
+RETURNS VOID
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    n                   RECORD;
+
+    v_docno             TEXT;
+    v_uniqueid          TEXT;
+    v_source_uniqueid   TEXT;
+
+    v_journal_type      CHAR(6);
+    v_type_in_out       CHAR(3);
+    v_dk                CHAR(1);
+
+    v_user              VARCHAR(50);
+
+    v_existing_id       BIGINT;
+    v_existing_uniqueid TEXT;
+
+    v_iduniq_source     TEXT;
+
+    v_customer_code     TEXT := '';
+    v_customer_name     TEXT := '';
+
+BEGIN
+
+    /* ========================================================
+       1. LOAD NDK
+       ======================================================== */
+
+    SELECT *
+    INTO n
+    FROM sc_trx.ndk
+    WHERE BTRIM(docno::TEXT) = BTRIM(p_docno::TEXT)
+    LIMIT 1;
+
+    IF NOT FOUND THEN
+        RETURN;
+    END IF;
+
+    v_docno :=
+        BTRIM(COALESCE(n.docno::TEXT, ''));
+
+    IF v_docno = '' THEN
+        RETURN;
+    END IF;
+
+
+    /* ========================================================
+       2. STATUS
+       HANYA FINAL YANG MASUK TRANSACTION_DT
+       ======================================================== */
+
+    IF BTRIM(COALESCE(n.status::TEXT, '')) <> 'F' THEN
+        RETURN;
+    END IF;
+
+
+    /* ========================================================
+       3. DK
+       ======================================================== */
+
+    v_dk :=
+        UPPER(
+            BTRIM(
+                COALESCE(n.dk::TEXT, '')
+            )
+        );
+
+    IF v_dk NOT IN ('D','K') THEN
+
+        RAISE EXCEPTION
+            'NDK % gagal: DK harus D atau K. Nilai=%',
+            v_docno,
+            v_dk;
+
+    END IF;
+
+
+    /* ========================================================
+       4. JOURNAL TYPE
+
+       SUPPLIER
+           D -> NDKAPD
+           K -> NDKAPK
+
+       CUSTOMER
+           D -> NDKARD
+           K -> NDKARK
+       ======================================================== */
+
+    IF NULLIF(
+        BTRIM(
+            COALESCE(
+                n.kdsupplier::TEXT,
+                ''
+            )
+        ),
+        ''
+    ) IS NOT NULL
+    THEN
+
+        IF v_dk = 'D' THEN
+            v_journal_type := 'NDKAPD';
+        ELSE
+            v_journal_type := 'NDKAPK';
+        END IF;
+
+    ELSE
+
+        IF v_dk = 'D' THEN
+            v_journal_type := 'NDKARD';
+        ELSE
+            v_journal_type := 'NDKARK';
+        END IF;
+
+    END IF;
+
+
+    /* ========================================================
+       5. VALIDASI JOURNAL TYPE MASTER
+       ======================================================== */
+
+    IF NOT EXISTS
+    (
+        SELECT 1
+        FROM sc_mst.journal_type jt
+        WHERE BTRIM(jt.journal_type::TEXT)
+              = BTRIM(v_journal_type::TEXT)
+    )
+    THEN
+
+        RAISE EXCEPTION
+            'Journal type % tidak ditemukan di sc_mst.journal_type.',
+            v_journal_type;
+
+    END IF;
+
+
+    /* ========================================================
+       6. TYPE IN / OUT
+
+       D -> IN
+       K -> OUT
+
+       Karena transaction_dt membutuhkan type_in_out.
+       Stock tetap NONE.
+       ======================================================== */
+
+    v_type_in_out :=
+        CASE
+            WHEN v_dk = 'D' THEN 'IN'
+            ELSE 'OUT'
+        END;
+
+
+    /* ========================================================
+       7. USER
+       ======================================================== */
+
+    v_user :=
+        COALESCE
+        (
+            NULLIF(
+                BTRIM(
+                    COALESCE(
+                        n.updateby::TEXT,
+                        ''
+                    )
+                ),
+                ''
+            ),
+
+            NULLIF(
+                BTRIM(
+                    COALESCE(
+                        n.inputby::TEXT,
+                        ''
+                    )
+                ),
+                ''
+            ),
+
+            CURRENT_USER
+        );
+
+
+    /* ========================================================
+       8. IDUNIQ SOURCE
+
+       Jika sc_trx.ndk di database Anda mempunyai field iduniq,
+       akan dipakai.
+
+       Jika belum ada, hasil NULL dan memakai deterministic ID.
+       ======================================================== */
+
+    v_iduniq_source :=
+        NULLIF
+        (
+            BTRIM(
+                COALESCE(
+                    TO_JSONB(n)->>'iduniq',
+                    ''
+                )
+            ),
+            ''
+        );
+
+
+    /* ========================================================
+       9. UNIQUEID TRANSACTION_DT
+
+       Jika iduniq source ada:
+           gunakan iduniq
+
+       Jika tidak:
+           MD5('NDK-TD|' || docno)
+       ======================================================== */
+
+    IF v_iduniq_source IS NOT NULL THEN
+
+        v_uniqueid :=
+            v_iduniq_source;
+
+    ELSE
+
+        v_uniqueid :=
+            MD5(
+                'NDK-TD|' ||
+                v_docno
+            );
+
+    END IF;
+
+
+    /* ========================================================
+       10. SOURCE UNIQUEID
+
+       Tetap deterministic berdasarkan DOCNO
+       bila source iduniq tidak ada.
+       ======================================================== */
+
+    v_source_uniqueid :=
+        COALESCE
+        (
+            v_iduniq_source,
+
+            MD5(
+                'NDK|' ||
+                v_docno
+            )
+        );
+
+
+    /* ========================================================
+       11. CUSTOMER
+
+       Referensi sc_trx.ndk lama belum mempunyai kdcustomer /
+       ncustomer secara eksplisit.
+
+       Bila kolom tersebut tersedia di schema aktual,
+       TO_JSONB akan membacanya.
+       ======================================================== */
+
+    v_customer_code :=
+        COALESCE
+        (
+            NULLIF(
+                BTRIM(
+                    COALESCE(
+                        TO_JSONB(n)->>'kdcustomer',
+                        ''
+                    )
+                ),
+                ''
+            ),
+            ''
+        );
+
+    v_customer_name :=
+        COALESCE
+        (
+            NULLIF(
+                BTRIM(
+                    COALESCE(
+                        TO_JSONB(n)->>'ncustomer',
+                        ''
+                    )
+                ),
+                ''
+            ),
+            ''
+        );
+
+
+    /* ========================================================
+       12. VALIDASI COA ACCOUNT
+       ======================================================== */
+
+    IF NULLIF(
+        BTRIM(
+            COALESCE(
+                n.perkiraanarap::TEXT,
+                ''
+            )
+        ),
+        ''
+    ) IS NULL
+    THEN
+
+        RAISE EXCEPTION
+            'NDK % gagal: perkiraanarap kosong.',
+            v_docno;
+
+    END IF;
+
+
+    IF NULLIF(
+        BTRIM(
+            COALESCE(
+                n.perkiraanlawan::TEXT,
+                ''
+            )
+        ),
+        ''
+    ) IS NULL
+    THEN
+
+        RAISE EXCEPTION
+            'NDK % gagal: perkiraanlawan kosong.',
+            v_docno;
+
+    END IF;
+
+
+    /* ACCOUNT / AR / AP */
+    IF NOT EXISTS
+    (
+        SELECT 1
+        FROM sc_mst.coa c
+        WHERE BTRIM(c.idcoa::TEXT)
+              =
+              BTRIM(n.perkiraanarap::TEXT)
+    )
+    THEN
+
+        RAISE EXCEPTION
+            'COA AR/AP % tidak ditemukan untuk NDK %.',
+            BTRIM(n.perkiraanarap::TEXT),
+            v_docno;
+
+    END IF;
+
+
+    /* COUNTER ACCOUNT */
+    IF NOT EXISTS
+    (
+        SELECT 1
+        FROM sc_mst.coa c
+        WHERE BTRIM(c.idcoa::TEXT)
+              =
+              BTRIM(n.perkiraanlawan::TEXT)
+    )
+    THEN
+
+        RAISE EXCEPTION
+            'COA lawan % tidak ditemukan untuk NDK %.',
+            BTRIM(n.perkiraanlawan::TEXT),
+            v_docno;
+
+    END IF;
+
+
+    /* ========================================================
+       13. CARI TRANSACTION EXISTING BERDASARKAN DOCNO
+
+       IMPORTANT:
+       Jika sudah ada, UNIQUEID EXISTING dipertahankan.
+       Ini menjaga source identity tetap stabil untuk accounting.
+       ======================================================== */
+
+    SELECT
+        td.id,
+        td.uniqueid
+    INTO
+        v_existing_id,
+        v_existing_uniqueid
+    FROM sc_trx.transaction_dt td
+    WHERE BTRIM(td.docno::TEXT)
+            = v_docno
+      AND BTRIM(td.doctype::TEXT)
+            = 'NDK'
+      AND BTRIM(td.journal_type::TEXT) IN
+          (
+              'NDKAPD',
+              'NDKAPK',
+              'NDKARD',
+              'NDKARK'
+          )
+    ORDER BY td.id
+    LIMIT 1;
+
+
+    IF v_existing_id IS NOT NULL THEN
+
+        v_uniqueid :=
+            COALESCE(
+                NULLIF(
+                    BTRIM(v_existing_uniqueid),
+                    ''
+                ),
+                v_uniqueid
+            );
+
+    END IF;
+
+
+    /* ========================================================
+       14. UPDATE EXISTING TRANSACTION
+       BERDASARKAN DOCNO
+       ======================================================== */
+
+    IF v_existing_id IS NOT NULL THEN
+
+        UPDATE sc_trx.transaction_dt
+        SET
+            uniqueid =
+                v_uniqueid,
+
+            source_uniqueid =
+                v_source_uniqueid,
+
+            doctype =
+                'NDK',
+
+            journal_type =
+                v_journal_type,
+
+            line_no =
+                1,
+
+            docdate =
+                n.docdate,
+
+            idbranch =
+                COALESCE(
+                    BTRIM(
+                        COALESCE(
+                            n.cabang::TEXT,
+                            ''
+                        )
+                    ),
+                    ''
+                ),
+
+            cabang =
+                COALESCE(
+                    BTRIM(
+                        COALESCE(
+                            n.cabang::TEXT,
+                            ''
+                        )
+                    ),
+                    ''
+                ),
+
+            type_in_out =
+                v_type_in_out,
+
+            ref_docno =
+                '',
+
+            ref_doctype =
+                '',
+
+            source_table =
+                'sc_trx.ndk',
+
+            source_id =
+                n.idurut,
+
+            source_line_id =
+                1,
+
+            kdcustomer =
+                v_customer_code,
+
+            ncustomer =
+                v_customer_name,
+
+            kdsupplier =
+                COALESCE(
+                    BTRIM(
+                        COALESCE(
+                            n.kdsupplier::TEXT,
+                            ''
+                        )
+                    ),
+                    ''
+                ),
+
+            nsupplier =
+                COALESCE(
+                    BTRIM(
+                        COALESCE(
+                            n.nmsupplier::TEXT,
+                            ''
+                        )
+                    ),
+                    ''
+                ),
+
+            /*
+               NDK accounting only
+               */
+            idbarang =
+                '',
+
+            namabarang =
+                '',
+
+            idunit =
+                '',
+
+            idarea =
+                '',
+
+            warehouse =
+                '',
+
+            bin =
+                '',
+
+            batch =
+                '',
+
+            lotno =
+                '',
+
+            qty =
+                0,
+
+            harga =
+                0,
+
+            bruto =
+                ROUND(
+                    COALESCE(
+                        n.nilai,
+                        0
+                    ),
+                    2
+                ),
+
+            discount =
+                0,
+
+            nilai =
+                ROUND(
+                    COALESCE(
+                        n.nilai,
+                        0
+                    ),
+                    2
+                ),
+
+            dpp =
+                ROUND(
+                    COALESCE(
+                        n.dpp,
+                        0
+                    ),
+                    2
+                ),
+
+            pajak =
+                ROUND(
+                    COALESCE(
+                        n.jumlahpajak,
+                        0
+                    ),
+                    2
+                ),
+
+            total =
+                ROUND(
+                    COALESCE(
+                        n.total,
+                        0
+                    ),
+                    2
+                ),
+
+            idtax =
+                COALESCE(
+                    NULLIF(
+                        BTRIM(
+                            COALESCE(
+                                n.idtax::TEXT,
+                                ''
+                            )
+                        ),
+                        ''
+                    ),
+                    'NON'
+                ),
+
+            isinclusive =
+                COALESCE(
+                    NULLIF(
+                        BTRIM(
+                            COALESCE(
+                                n.isinclusive::TEXT,
+                                ''
+                            )
+                        ),
+                        ''
+                    ),
+                    'NO'
+                ),
+
+            currcode =
+                COALESCE(
+                    NULLIF(
+                        BTRIM(
+                            COALESCE(
+                                n.currcode::TEXT,
+                                ''
+                            )
+                        ),
+                        ''
+                    ),
+                    'IDR'
+                ),
+
+            kurs =
+                COALESCE(
+                    n.kurs,
+                    1
+                ),
+
+            idcoa =
+                BTRIM(
+                    n.perkiraanarap::TEXT
+                ),
+
+            counter_idcoa =
+                BTRIM(
+                    n.perkiraanlawan::TEXT
+                ),
+
+            debet_kredit =
+                v_dk,
+
+            module =
+                'ACCOUNTING',
+
+            direction =
+                'INOUT',
+
+            stock_effect =
+                'NONE',
+
+            accounting_effect =
+                'YES',
+
+            asset_effect =
+                'NONE',
+
+            keterangan =
+                COALESCE(
+                    n.keterangan,
+                    ''
+                ),
+
+            updatedby =
+                v_user,
+
+            updateddate =
+                CURRENT_TIMESTAMP
+
+        WHERE id = v_existing_id;
+
+
+    /* ========================================================
+       15. INSERT BARU
+       ======================================================== */
+
+    ELSE
+
+        INSERT INTO sc_trx.transaction_dt
+        (
+            uniqueid,
+            source_uniqueid,
+
+            docno,
+            doctype,
+            journal_type,
+            line_no,
+            docdate,
+
+            idbranch,
+            cabang,
+
+            type_in_out,
+
+            ref_docno,
+            ref_doctype,
+
+            source_table,
+            source_id,
+            source_line_id,
+
+            kdcustomer,
+            ncustomer,
+
+            kdsupplier,
+            nsupplier,
+
+            idbarang,
+            namabarang,
+            idunit,
+
+            idarea,
+            warehouse,
+            bin,
+
+            batch,
+            lotno,
+
+            qty,
+            harga,
+            bruto,
+            discount,
+            nilai,
+            dpp,
+            pajak,
+            total,
+
+            idtax,
+            isinclusive,
+
+            currcode,
+            kurs,
+
+            idcoa,
+            counter_idcoa,
+            debet_kredit,
+
+            module,
+            direction,
+            stock_effect,
+            accounting_effect,
+            asset_effect,
+
+            keterangan,
+
+            createdby,
+            createddate
+        )
+        VALUES
+        (
+            v_uniqueid,
+            v_source_uniqueid,
+
+            v_docno,
+            'NDK',
+            v_journal_type,
+            1,
+            n.docdate,
+
+            COALESCE(
+                BTRIM(
+                    COALESCE(
+                        n.cabang::TEXT,
+                        ''
+                    )
+                ),
+                ''
+            ),
+
+            COALESCE(
+                BTRIM(
+                    COALESCE(
+                        n.cabang::TEXT,
+                        ''
+                    )
+                ),
+                ''
+            ),
+
+            v_type_in_out,
+
+            '',
+            '',
+
+            'sc_trx.ndk',
+            n.idurut,
+            1,
+
+            v_customer_code,
+            v_customer_name,
+
+            COALESCE(
+                BTRIM(
+                    COALESCE(
+                        n.kdsupplier::TEXT,
+                        ''
+                    )
+                ),
+                ''
+            ),
+
+            COALESCE(
+                BTRIM(
+                    COALESCE(
+                        n.nmsupplier::TEXT,
+                        ''
+                    )
+                ),
+                ''
+            ),
+
+            '',
+            '',
+            '',
+
+            '',
+            '',
+            '',
+
+            '',
+            '',
+
+            0,
+            0,
+
+            ROUND(
+                COALESCE(
+                    n.nilai,
+                    0
+                ),
+                2
+            ),
+
+            0,
+
+            ROUND(
+                COALESCE(
+                    n.nilai,
+                    0
+                ),
+                2
+            ),
+
+            ROUND(
+                COALESCE(
+                    n.dpp,
+                    0
+                ),
+                2
+            ),
+
+            ROUND(
+                COALESCE(
+                    n.jumlahpajak,
+                    0
+                ),
+                2
+            ),
+
+            ROUND(
+                COALESCE(
+                    n.total,
+                    0
+                ),
+                2
+            ),
+
+            COALESCE(
+                NULLIF(
+                    BTRIM(
+                        COALESCE(
+                            n.idtax::TEXT,
+                            ''
+                        )
+                    ),
+                    ''
+                ),
+                'NON'
+            ),
+
+            COALESCE(
+                NULLIF(
+                    BTRIM(
+                        COALESCE(
+                            n.isinclusive::TEXT,
+                            ''
+                        )
+                    ),
+                    ''
+                ),
+                'NO'
+            ),
+
+            COALESCE(
+                NULLIF(
+                    BTRIM(
+                        COALESCE(
+                            n.currcode::TEXT,
+                            ''
+                        )
+                    ),
+                    ''
+                ),
+                'IDR'
+            ),
+
+            COALESCE(
+                n.kurs,
+                1
+            ),
+
+            BTRIM(
+                n.perkiraanarap::TEXT
+            ),
+
+            BTRIM(
+                n.perkiraanlawan::TEXT
+            ),
+
+            v_dk,
+
+            'ACCOUNTING',
+            'INOUT',
+            'NONE',
+            'YES',
+            'NONE',
+
+            COALESCE(
+                n.keterangan,
+                ''
+            ),
+
+            v_user,
+            COALESCE(
+                n.inputdate,
+                CURRENT_TIMESTAMP
+            )
+        );
+
+    END IF;
+
+END;
+$$;
 
 CREATE OR REPLACE FUNCTION sc_trx.tr_ndk()
-RETURNS trigger
+RETURNS TRIGGER
 LANGUAGE plpgsql
-AS $BODY$
-DECLARE
-    v_docno VARCHAR(50);
-    v_user VARCHAR(50);
+AS $$
 BEGIN
 
     /* ============================================================
@@ -473,18 +1518,21 @@ BEGIN
 
     IF TG_OP = 'INSERT' THEN
 
-        v_docno := TRIM(NEW.docno);
+        IF BTRIM(
+            COALESCE(
+                NEW.status::TEXT,
+                ''
+            )
+        ) = 'F'
+        THEN
 
-        v_user := COALESCE(
-            NULLIF(TRIM(NEW.updateby), ''),
-            NULLIF(TRIM(NEW.inputby), ''),
-            CURRENT_USER
-        );
+            PERFORM sc_trx.fn_sync_ndk_to_transaction_dt(
+                BTRIM(
+                    NEW.docno::TEXT
+                )
+            );
 
-        PERFORM sc_trx.sp_sync_ndk_journal(
-            v_docno,
-            v_user
-        );
+        END IF;
 
         RETURN NEW;
 
@@ -497,55 +1545,185 @@ BEGIN
 
     IF TG_OP = 'UPDATE' THEN
 
-        v_docno := TRIM(NEW.docno);
-
-        v_user := COALESCE(
-            NULLIF(TRIM(NEW.updateby), ''),
-            NULLIF(TRIM(NEW.inputby), ''),
-            CURRENT_USER
-        );
-
-
         /* ========================================================
-           F → E
-           COPY KE TEMPORARY
+           F -> E
+
+           MASUK MODE EDIT
+
+           Tetap COPY ke TMP.
+           JANGAN DELETE transaction_dt.
+
+           transaction_dt akan tetap mempertahankan identity.
+           Nanti E -> F akan UPDATE transaction_dt existing.
            ======================================================== */
 
-        IF TRIM(COALESCE(OLD.status, '')) = 'F'
-           AND TRIM(COALESCE(NEW.status, '')) = 'E' THEN
+        IF BTRIM(
+               COALESCE(
+                   OLD.status::TEXT,
+                   ''
+               )
+           ) = 'F'
+
+           AND
+
+           BTRIM(
+               COALESCE(
+                   NEW.status::TEXT,
+                   ''
+               )
+           ) = 'E'
+        THEN
 
             INSERT INTO sc_tmp.ndk
             (
-                idurut, docno, cabang, docdate, pemohon, kdsupplier,
-                nmsupplier, alamatsupplier, kdsalesman, jthtempo,
-                isinclusive, dk, perkiraanarap, perkiraanlawan, nilai,
-                idtax, currcode, kurs, dpp,
-                jumlahpajak, total,
-                keterangan, status, inputby, inputdate, updateby, updatedate,
-                printby, printdate, docnotmp
+                idurut,
+                docno,
+                cabang,
+                docdate,
+                pemohon,
+                kdsupplier,
+                nmsupplier,
+                alamatsupplier,
+                kdsalesman,
+                jthtempo,
+                isinclusive,
+                dk,
+                perkiraanarap,
+                perkiraanlawan,
+                nilai,
+                idtax,
+                currcode,
+                kurs,
+                dpp,
+                jumlahpajak,
+                total,
+                keterangan,
+                status,
+                inputby,
+                inputdate,
+                updateby,
+                updatedate,
+                printby,
+                printdate,
+                docnotmp
             )
             SELECT
-                idurut, NEW.docno, cabang, docdate, pemohon, kdsupplier,
-                nmsupplier, alamatsupplier, kdsalesman, jthtempo,
-                isinclusive, dk, perkiraanarap, perkiraanlawan, nilai,
-                idtax, currcode, kurs, dpp,
-                jumlahpajak, total,
-                keterangan, status, inputby, inputdate, updateby, updatedate,
-                printby, printdate, NEW.docno
+                idurut,
+                NEW.docno,
+                cabang,
+                docdate,
+                pemohon,
+                kdsupplier,
+                nmsupplier,
+                alamatsupplier,
+                kdsalesman,
+                jthtempo,
+                isinclusive,
+                dk,
+                perkiraanarap,
+                perkiraanlawan,
+                nilai,
+                idtax,
+                currcode,
+                kurs,
+                dpp,
+                jumlahpajak,
+                total,
+                keterangan,
+                NEW.status,
+                inputby,
+                inputdate,
+                updateby,
+                updatedate,
+                printby,
+                printdate,
+                NEW.docno
             FROM sc_trx.ndk
-            WHERE TRIM(docno) = TRIM(NEW.docno);
+            WHERE BTRIM(docno)
+                    = BTRIM(NEW.docno);
+
+            /*
+             * PENTING:
+             * Tidak ada DELETE transaction_dt di sini.
+             *
+             * transaction_dt tetap ada sebagai identity
+             * dari dokumen lama.
+             */
+
+            RETURN NEW;
 
         END IF;
 
 
         /* ========================================================
-           SEMUA UPDATE DISINKRONKAN KE JURNAL
+           E -> F
+           F -> F
+           FINAL UPDATE
            ======================================================== */
 
-        PERFORM sc_trx.sp_sync_ndk_journal(
-            v_docno,
-            v_user
-        );
+        IF BTRIM(
+               COALESCE(
+                   NEW.status::TEXT,
+                   ''
+               )
+           ) = 'F'
+        THEN
+
+            PERFORM sc_trx.fn_sync_ndk_to_transaction_dt(
+                BTRIM(
+                    NEW.docno::TEXT
+                )
+            );
+
+            RETURN NEW;
+
+        END IF;
+
+
+        /* ========================================================
+           E -> E
+
+           Tidak ada posting.
+           ======================================================== */
+
+        IF BTRIM(
+               COALESCE(
+                   NEW.status::TEXT,
+                   ''
+               )
+           ) = 'E'
+        THEN
+
+            RETURN NEW;
+
+        END IF;
+
+
+        /* ========================================================
+           CANCEL
+           ======================================================== */
+
+        IF BTRIM(
+               COALESCE(
+                   NEW.status::TEXT,
+                   ''
+               )
+           ) = 'C'
+        THEN
+
+            DELETE FROM sc_trx.transaction_dt
+            WHERE BTRIM(docno::TEXT)
+                    = BTRIM(NEW.docno::TEXT)
+
+              AND BTRIM(journal_type::TEXT) IN
+                  (
+                      'NDKAPD',
+                      'NDKAPK',
+                      'NDKARD',
+                      'NDKARK'
+                  );
+
+        END IF;
 
         RETURN NEW;
 
@@ -558,18 +1736,17 @@ BEGIN
 
     IF TG_OP = 'DELETE' THEN
 
-        v_docno := TRIM(OLD.docno);
+        DELETE FROM sc_trx.transaction_dt
+        WHERE BTRIM(docno::TEXT)
+                = BTRIM(OLD.docno::TEXT)
 
-        v_user := COALESCE(
-            NULLIF(TRIM(OLD.updateby), ''),
-            NULLIF(TRIM(OLD.inputby), ''),
-            CURRENT_USER
-        );
-
-        PERFORM sc_trx.sp_sync_ndk_journal(
-            v_docno,
-            v_user
-        );
+          AND BTRIM(journal_type::TEXT) IN
+              (
+                  'NDKAPD',
+                  'NDKAPK',
+                  'NDKARD',
+                  'NDKARK'
+              );
 
         RETURN OLD;
 
@@ -579,538 +1756,18 @@ BEGIN
     RETURN NULL;
 
 END;
-$BODY$;
+$$;
+
 
 ALTER FUNCTION sc_trx.tr_ndk()
 OWNER TO postgres;
 
+
 DROP TRIGGER IF EXISTS tr_ndk
 ON sc_trx.ndk;
 
-CREATE or REPLACE TRIGGER  tr_ndk
+CREATE TRIGGER tr_ndk
 AFTER INSERT OR UPDATE OR DELETE
 ON sc_trx.ndk
 FOR EACH ROW
 EXECUTE FUNCTION sc_trx.tr_ndk();
-
-
-
-
-
-/* REPOSTING NDK */
-
-/* ============================================================
-   REPOSTING NDK
-   DK = K : Supplier
-           PPN Masukan  -> tax_dtl.prk_masukan
-
-   DK = D : Customer
-           PPN Keluaran -> tax_dtl.prk_keluaran
-   ============================================================ */
-
-CREATE OR REPLACE FUNCTION sc_trx.sp_sync_ndk_journal(
-    p_docno VARCHAR,
-    p_user VARCHAR DEFAULT CURRENT_USER
-)
-RETURNS VOID
-LANGUAGE plpgsql
-AS $BODY$
-DECLARE
-    v_ndk RECORD;
-    v_tax RECORD;
-    v_jurnal_id BIGINT;
-    v_total_debet NUMERIC(18,2) := 0;
-    v_total_kredit NUMERIC(18,2) := 0;
-    v_nilai_netto NUMERIC(18,2) := 0;
-BEGIN
-
-    /* ============================================================
-       VALIDASI DOCNO
-       ============================================================ */
-
-    IF COALESCE(TRIM(p_docno), '') = '' THEN
-        RETURN;
-    END IF;
-
-
-    /* ============================================================
-       1. HAPUS JURNAL LAMA
-
-       Digunakan untuk:
-       - UPDATE nilai
-       - UPDATE DPP
-       - UPDATE PPN
-       - UPDATE idtax
-       - UPDATE perkiraan
-       - F -> E
-       - F -> C
-       - DELETE NDK
-       ============================================================ */
-
-    DELETE FROM sc_trx.jurnal_dt
-    WHERE TRIM(ref_docno) = TRIM(p_docno)
-      AND TRIM(ref_doctype) = 'NDK';
-
-
-    DELETE FROM sc_trx.jurnal_hd
-    WHERE TRIM(docno) = TRIM(p_docno)
-      AND TRIM(doctype) = 'NDK';
-
-
-    /* ============================================================
-       2. AMBIL NDK TERBARU
-       ============================================================ */
-
-    SELECT TRIM(n.docno) AS docno,
-           n.docdate AS docdate,
-           TRIM(n.dk) AS dk,
-           TRIM(n.idtax) AS idtax,
-           TRIM(n.perkiraanarap) AS perkiraanarap,
-           TRIM(n.perkiraanlawan) AS perkiraanlawan,
-           COALESCE(n.nilai, 0) AS nilai,
-           COALESCE(n.dpp, 0) AS dpp,
-           COALESCE(n.jumlahpajak, 0) AS jumlahpajak,
-           COALESCE(n.total, 0) AS total,
-           TRIM(n.currcode) AS currcode,
-           COALESCE(n.kurs, 1) AS kurs,
-           TRIM(n.kdsupplier) AS kdsupplier,
-           TRIM(n.nmsupplier) AS nmsupplier,
-           n.keterangan,
-           TRIM(n.status) AS status
-    INTO v_ndk
-    FROM sc_trx.ndk n
-    WHERE TRIM(n.docno) = TRIM(p_docno)
-    LIMIT 1;
-
-
-    /* ============================================================
-       3. KALAU NDK SUDAH TIDAK ADA
-
-       Kemungkinan DELETE.
-       Jurnal lama sudah dihapus pada STEP 1.
-       ============================================================ */
-
-    IF NOT FOUND THEN
-        RETURN;
-    END IF;
-
-
-    /* ============================================================
-       4. HANYA STATUS F YANG MASUK JURNAL
-
-       E = Editing
-       F = Final
-       C = Cancel
-       P = Printed / flow lainnya
-       ============================================================ */
-
-    IF COALESCE(TRIM(v_ndk.status), '') <> 'F' THEN
-        RETURN;
-    END IF;
-
-
-    /* ============================================================
-       5. VALIDASI PERKIRAAN
-       ============================================================ */
-
-    IF COALESCE(TRIM(v_ndk.perkiraanarap), '') = '' THEN
-        RAISE EXCEPTION
-            'Perkiraan AR/AP belum diisi untuk NDK %',
-            v_ndk.docno;
-    END IF;
-
-
-    IF COALESCE(TRIM(v_ndk.perkiraanlawan), '') = '' THEN
-        RAISE EXCEPTION
-            'Perkiraan lawan belum diisi untuk NDK %',
-            v_ndk.docno;
-    END IF;
-
-
-    IF COALESCE(v_ndk.total, 0) <= 0 THEN
-        RAISE EXCEPTION
-            'Total NDK % harus lebih besar dari 0',
-            v_ndk.docno;
-    END IF;
-
-
-    /* ============================================================
-       6. AMBIL SETTING TAX
-
-       PPN:
-       - prk_masukan  -> Supplier
-       - prk_keluaran -> Customer
-
-       Berdasarkan:
-       - idtax
-       - idgrouptax = PPN
-       ============================================================ */
-
-    SELECT TRIM(td.idtax) AS idtax,
-           TRIM(td.idgrouptax) AS idgrouptax,
-           TRIM(td.prk_masukan) AS prk_masukan,
-           TRIM(td.prk_keluaran) AS prk_keluaran,
-           COALESCE(td.percentation, 0) AS percentation
-    INTO v_tax
-    FROM sc_mst.tax_dtl td
-    WHERE TRIM(td.idtax) = COALESCE(TRIM(v_ndk.idtax), '')
-      AND TRIM(td.idgrouptax) = 'PPN'
-      AND TRIM(COALESCE(td.status, '')) = 'P'
-      AND TRIM(COALESCE(td.chold, 'NO')) = 'NO'
-    ORDER BY td.id
-    LIMIT 1;
-
-
-    /* ============================================================
-       7. HITUNG NILAI NETTO
-
-       Contoh:
-
-       TOTAL          3.300.000
-       JUMLAHPAJAK      330.000
-       -------------------------
-       NILAI NETTO    3.000.000
-       ============================================================ */
-
-    v_nilai_netto :=
-        ROUND(
-            GREATEST(
-                COALESCE(v_ndk.total, 0)
-                - COALESCE(v_ndk.jumlahpajak, 0),
-                0
-            ),
-            2
-        );
-
-
-    /* ============================================================
-       8. VALIDASI TAX JIKA ADA PAJAK
-       ============================================================ */
-
-    IF COALESCE(v_ndk.jumlahpajak, 0) > 0 THEN
-
-        IF v_tax.idtax IS NULL THEN
-            RAISE EXCEPTION
-                'Setting PPN untuk idtax % belum ditemukan pada NDK %',
-                COALESCE(v_ndk.idtax, ''),
-                v_ndk.docno;
-        END IF;
-
-    END IF;
-
-
-    /* ============================================================
-       9. BUAT HEADER JURNAL
-       ============================================================ */
-
-    INSERT INTO sc_trx.jurnal_hd
-    (
-        docno,
-        doctype,
-        trxdate,
-        total_debet,
-        total_kredit,
-        status,
-        createdby,
-        createddate
-    )
-    VALUES
-    (
-        v_ndk.docno,
-        'NDK',
-        v_ndk.docdate,
-        0,
-        0,
-        'P',
-        COALESCE(NULLIF(TRIM(p_user), ''), CURRENT_USER),
-        NOW()
-    )
-    RETURNING id INTO v_jurnal_id;
-
-
-    /* ============================================================
-       10. NOTA KREDIT / SUPPLIER
-
-       DK = K
-
-       TANPA PAJAK:
-       Perkiraan Lawan     D
-       AR/AP               K
-
-       DENGAN PPN:
-       Perkiraan Lawan     D = TOTAL - PPN
-       PPN Masukan         D = PPN
-       AR/AP               K = TOTAL
-
-       Contoh:
-
-       111311    D    3.000.000
-       116106    D      330.000
-       213102    K    3.300.000
-       ============================================================ */
-
-    IF UPPER(COALESCE(TRIM(v_ndk.dk), '')) = 'K' THEN
-
-        /* --------------------------------------------------------
-           10.1 PERKIRAAN LAWAN
-           -------------------------------------------------------- */
-
-        INSERT INTO sc_trx.jurnal_dt
-        (
-            jurnal_id,
-            idcoa,
-            debet,
-            kredit,
-            ref_docno,
-            ref_doctype
-        )
-        VALUES
-        (
-            v_jurnal_id,
-            v_ndk.perkiraanlawan,
-            CASE
-                WHEN COALESCE(v_ndk.jumlahpajak, 0) > 0
-                THEN v_nilai_netto
-                ELSE v_ndk.total
-            END,
-            0,
-            v_ndk.docno,
-            'NDK'
-        );
-
-
-        /* --------------------------------------------------------
-           10.2 PPN MASUKAN
-
-           Supplier menggunakan prk_masukan
-           -------------------------------------------------------- */
-
-        IF COALESCE(v_ndk.jumlahpajak, 0) > 0 THEN
-
-            IF COALESCE(TRIM(v_tax.prk_masukan), '') = '' THEN
-                RAISE EXCEPTION
-                    'Perkiraan PPN Masukan belum disetting untuk tax % pada NDK %',
-                    COALESCE(v_ndk.idtax, ''),
-                    v_ndk.docno;
-            END IF;
-
-
-            INSERT INTO sc_trx.jurnal_dt
-            (
-                jurnal_id,
-                idcoa,
-                debet,
-                kredit,
-                ref_docno,
-                ref_doctype
-            )
-            VALUES
-            (
-                v_jurnal_id,
-                v_tax.prk_masukan,
-                v_ndk.jumlahpajak,
-                0,
-                v_ndk.docno,
-                'NDK'
-            );
-
-        END IF;
-
-
-        /* --------------------------------------------------------
-           10.3 AR/AP
-
-           Supplier -> Hutang Dagang
-           Nilainya TOTAL
-           -------------------------------------------------------- */
-
-        INSERT INTO sc_trx.jurnal_dt
-        (
-            jurnal_id,
-            idcoa,
-            debet,
-            kredit,
-            ref_docno,
-            ref_doctype
-        )
-        VALUES
-        (
-            v_jurnal_id,
-            v_ndk.perkiraanarap,
-            0,
-            v_ndk.total,
-            v_ndk.docno,
-            'NDK'
-        );
-
-
-    /* ============================================================
-       11. NOTA DEBIT / CUSTOMER
-
-       DK = D
-
-       TANPA PAJAK:
-       AR/AP               D
-       Perkiraan Lawan     K
-
-       DENGAN PPN:
-       AR/AP               D = TOTAL
-       PPN Keluaran        K = PPN
-       Perkiraan Lawan     K = TOTAL - PPN
-
-       Contoh:
-
-       213102    D    3.300.000
-       214116    K      330.000
-       411xxx    K    3.000.000
-       ============================================================ */
-
-    ELSIF UPPER(COALESCE(TRIM(v_ndk.dk), '')) = 'D' THEN
-
-        /* --------------------------------------------------------
-           11.1 AR/AP
-
-           Customer -> Piutang
-           Nilainya TOTAL
-           -------------------------------------------------------- */
-
-        INSERT INTO sc_trx.jurnal_dt
-        (
-            jurnal_id,
-            idcoa,
-            debet,
-            kredit,
-            ref_docno,
-            ref_doctype
-        )
-        VALUES
-        (
-            v_jurnal_id,
-            v_ndk.perkiraanarap,
-            v_ndk.total,
-            0,
-            v_ndk.docno,
-            'NDK'
-        );
-
-
-        /* --------------------------------------------------------
-           11.2 PPN KELUARAN
-
-           Customer menggunakan prk_keluaran
-           -------------------------------------------------------- */
-
-        IF COALESCE(v_ndk.jumlahpajak, 0) > 0 THEN
-
-            IF COALESCE(TRIM(v_tax.prk_keluaran), '') = '' THEN
-                RAISE EXCEPTION
-                    'Perkiraan PPN Keluaran belum disetting untuk tax % pada NDK %',
-                    COALESCE(v_ndk.idtax, ''),
-                    v_ndk.docno;
-            END IF;
-
-
-            INSERT INTO sc_trx.jurnal_dt
-            (
-                jurnal_id,
-                idcoa,
-                debet,
-                kredit,
-                ref_docno,
-                ref_doctype
-            )
-            VALUES
-            (
-                v_jurnal_id,
-                v_tax.prk_keluaran,
-                0,
-                v_ndk.jumlahpajak,
-                v_ndk.docno,
-                'NDK'
-            );
-
-        END IF;
-
-
-        /* --------------------------------------------------------
-           11.3 PERKIRAAN LAWAN
-
-           Jika ada PPN:
-           TOTAL - PPN
-
-           Jika tidak ada PPN:
-           TOTAL
-           -------------------------------------------------------- */
-
-        INSERT INTO sc_trx.jurnal_dt
-        (
-            jurnal_id,
-            idcoa,
-            debet,
-            kredit,
-            ref_docno,
-            ref_doctype
-        )
-        VALUES
-        (
-            v_jurnal_id,
-            v_ndk.perkiraanlawan,
-            0,
-            CASE
-                WHEN COALESCE(v_ndk.jumlahpajak, 0) > 0
-                THEN v_nilai_netto
-                ELSE v_ndk.total
-            END,
-            v_ndk.docno,
-            'NDK'
-        );
-
-
-    ELSE
-
-        /* ========================================================
-           DK HARUS D ATAU K
-           ======================================================== */
-
-        RAISE EXCEPTION
-            'DK NDK % harus D atau K. Nilai saat ini: %',
-            v_ndk.docno,
-            v_ndk.dk;
-
-    END IF;
-
-
-    /* ============================================================
-       12. VALIDASI BALANCE
-       ============================================================ */
-
-    SELECT COALESCE(SUM(debet), 0),
-           COALESCE(SUM(kredit), 0)
-    INTO v_total_debet, v_total_kredit
-    FROM sc_trx.jurnal_dt
-    WHERE jurnal_id = v_jurnal_id;
-
-
-    IF ROUND(v_total_debet, 2) <> ROUND(v_total_kredit, 2) THEN
-
-        RAISE EXCEPTION
-            'JURNAL NDK TIDAK BALANCE. DOCNO: %, DEBET: %, KREDIT: %',
-            v_ndk.docno,
-            v_total_debet,
-            v_total_kredit;
-
-    END IF;
-
-
-    /* ============================================================
-       13. UPDATE TOTAL HEADER
-       ============================================================ */
-
-    UPDATE sc_trx.jurnal_hd
-    SET total_debet = v_total_debet,
-        total_kredit = v_total_kredit
-    WHERE id = v_jurnal_id;
-
-
-END;
-$BODY$;

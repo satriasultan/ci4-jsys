@@ -634,7 +634,7 @@ class Persediaan extends BaseController
                     <a class="dropdown-item" 
                     style="background-color:#3badf6;" 
                     href="' . base_url('persediaan/trans/detailSpkTransfers') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'View Detail PP : ' . $docno . '\')">
+                    onclick="return confirm(\'View Detail SPK : ' . $docno . '\')">
                         <i class="fa fa-eye"></i> Detail 
                     </a>';
             }
@@ -644,7 +644,7 @@ class Persediaan extends BaseController
                     <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
                     href="' . base_url('persediaan/trans/show_pp') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Print PP : ' . $docno . '\')">
+                    onclick="return confirm(\'Print SPK : ' . $docno . '\')">
                         <i class="fa fa-print"></i> Print 
                     </a>';
             }

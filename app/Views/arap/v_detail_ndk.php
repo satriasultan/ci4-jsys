@@ -386,11 +386,28 @@
                     </a>
 
                     <?php if (!empty($dtldata['docno'])): ?>
+
                         <button type="button"
                                 id="btnLaporanJurnal"
                                 class="btn btn-primary">
-                            <i class="fa fa-book"></i> Laporan Jurnal Transaksi
+                            <i class="fa fa-book"></i>
+                            Laporan Jurnal Transaksi
                         </button>
+
+                        <?php
+
+                        if ((trim($dtldata['status']) ?? '') !== 'C'): ?>
+
+                            <button type="button"
+                                    id="btnCancelNDK"
+                                    class="btn btn-danger ms-1"
+                                    onclick="cancelNDK()">
+                                <i class="fa fa-ban"></i>
+                                Cancel Dokumen
+                            </button>
+
+                        <?php endif; ?>
+
                     <?php endif; ?>
 
                 </div>
@@ -406,7 +423,6 @@
     </div>
     <!--/.col (right) -->
 </div>
-
 
 
 <!-- ================= MODAL LAPORAN JURNAL NDK ================= -->
@@ -455,6 +471,7 @@
                             <th>Nama Perkiraan</th>
                             <th class="text-right">Debet</th>
                             <th class="text-right">Kredit</th>
+<!--                            <th>Status</th>-->
                         </tr>
                         </thead>
 

@@ -151,8 +151,8 @@ class Arap extends BaseController
 
             $docno  = trim($lm->docno);
             $docnoHex = bin2hex($docno);
+            $status = trim($lm->status);
 
-            
             $updateBtn = '';
             $detailBtn = '';
             // $printBtn  = '';
@@ -163,13 +163,16 @@ class Arap extends BaseController
             // Build button by access
             // =========================
 
-            if ($canUpdate) {
+            if (
+                $canUpdate &&
+                !in_array(strtoupper(trim($status)), ['C', 'CANCELED'])
+            ) {
                 $updateBtn = '
-                <a class="dropdown-item bg-warning" 
-                    href="' . base_url('arap/transaksi/updateNDK') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Update This Nota Debit / Kredit : ' . $docno . '\')">
-                    <i class="fa fa-edit"></i> Update Nota Debit / Kredit 
-                </a>';
+    <a class="dropdown-item bg-warning" 
+        href="' . base_url('arap/transaksi/updateNDK') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+        onclick="return confirm(\'Update This Nota Debit / Kredit : ' . $docno . '\')">
+        <i class="fa fa-edit"></i> Update Nota Debit / Kredit 
+    </a>';
             }
 
             if($canView){
@@ -265,8 +268,46 @@ class Arap extends BaseController
             $row[] = '<div class="ratakanan">'. number_format($lm->total, 2, '.', ',') . '</div>';
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
-            
+            // =========================
+// STATUS
+// =========================
+            // =========================
+// STATUS
+// =========================
+            $status = strtoupper(trim($lm->status));
 
+            if ($status === 'C') {
+
+                $statusHtml = '
+        <div class="text-center">
+            <span style="font-size:12px"
+                  class="badge badge-danger w-100">
+                CANCEL
+            </span>
+        </div>';
+
+            } elseif ($status === 'F') {
+
+                $statusHtml = '
+        <div class="text-center">
+            <span style="font-size:12px"
+                  class="badge badge-primary w-100">
+                FINAL USER
+            </span>
+        </div>';
+
+            } else {
+
+                $statusHtml = '
+        <div class="text-center">
+            <span style="font-size:12px"
+                  class="badge badge-secondary w-100">
+                ' . htmlspecialchars(trim($lm->status ?? '')) . '
+            </span>
+        </div>';
+            }
+
+            $row[] = $statusHtml;
             $data[] = $row;
         }
 
@@ -1015,9 +1056,62 @@ class Arap extends BaseController
         // =========================================================
         // AMBIL POST
         // =========================================================
-        $docno = strtoupper(trim(
-            $this->request->getPost('docno')
+//        $docno = strtoupper(trim(
+//            $this->request->getPost('docno')
+//        ));
+
+        // =========================================================
+// AMBIL POST DOCNO
+// DOCNO = PREFIX / INFIX / SUFFIX
+// =========================================================
+
+        $prefix = strtoupper(trim(
+            $this->request->getPost('prefix')
         ));
+
+        $infix = strtoupper(trim(
+            $this->request->getPost('infix')
+        ));
+
+        $suffix = strtoupper(trim(
+            $this->request->getPost('suffix')
+        ));
+
+        $docno = '';
+
+        if ($prefix !== '' && $infix !== '' && $suffix !== '') {
+
+            $docno =
+                $prefix . '/' .
+                $infix . '/' .
+                $suffix;
+
+        } else {
+            $builderTrxError = $this->db->table('sc_mst.trxerror');
+
+
+            // =========================================================
+            // HAPUS ERROR SEBELUMNYA
+            // =========================================================
+            $builderTrxError
+                ->where('userid', $nama)
+                ->where('modul', 'I.L.A.1')
+                ->delete();
+            $builderTrxError->insert([
+                'userid'      => $nama,
+                'errorcode'   => 3,
+                'nomorakhir1' => 0,
+                'nomorakhir2' => 0,
+                'modul'       => 'I.L.A.1',
+            ]);
+
+            return redirect()
+                ->to(base_url('/arap/transaksi/addNDK'))
+                ->with(
+                    'error',
+                    'Prefix, Infix, dan Suffix wajib diisi.'
+                );
+        }
 
         $cabang = strtoupper(trim(
             $this->request->getPost('cabang')
@@ -2086,4 +2180,111 @@ class Arap extends BaseController
         ]);
     }
 
+
+    public function cancelNDK()
+    {
+        $docno = trim(
+            $this->request->getPost('docno')
+        );
+
+        if ($docno === '') {
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Docno NDK tidak boleh kosong.'
+            ]);
+        }
+
+
+        $db = \Config\Database::connect();
+
+
+        try {
+
+            $db->transBegin();
+
+
+            // =====================================================
+            // CEK DOKUMEN NDK
+            // =====================================================
+
+            $ndk = $db->table('sc_trx.ndk')
+                ->where('docno', $docno)
+                ->get()
+                ->getRow();
+
+
+            if (!$ndk) {
+
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Dokumen NDK tidak ditemukan.'
+                ]);
+            }
+
+
+            // =====================================================
+            // UPDATE STATUS NDK = C
+            // =====================================================
+
+            $db->table('sc_trx.ndk')
+                ->where('docno', $docno)
+                ->update([
+                    'status' => 'C'
+                ]);
+
+
+            // =====================================================
+            // HAPUS transaction_dt DETAIL
+            // =====================================================
+
+            $db->table('sc_trx.transaction_dt')
+                ->where('docno', $docno)
+                ->delete();
+
+
+            // =====================================================
+            // CEK TRANSACTION
+            // =====================================================
+
+            if ($db->transStatus() === false) {
+
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Cancel NDK gagal.'
+                ]);
+            }
+
+
+            $db->transCommit();
+
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Dokumen NDK berhasil dibatalkan.',
+                'docno'   => $docno
+            ]);
+
+
+        } catch (\Throwable $e) {
+
+            $db->transRollback();
+
+            log_message(
+                'error',
+                'Cancel NDK Error: ' .
+                $e->getMessage()
+            );
+
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
 }
