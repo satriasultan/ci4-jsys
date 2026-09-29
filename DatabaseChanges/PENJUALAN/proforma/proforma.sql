@@ -1,160 +1,277 @@
--- SEQUENCE: sc_tmp.proforma_idurut_seq
+BEGIN;
 
--- DROP SEQUENCE IF EXISTS sc_tmp.proforma_idurut_seq;
+-- =========================================================
+-- DROP OBJECT LAMA
+-- =========================================================
 
-CREATE SEQUENCE IF NOT EXISTS sc_tmp.proforma_idurut_seq
+DROP TABLE IF EXISTS sc_tmp.proforma CASCADE;
+DROP TABLE IF EXISTS sc_trx.proforma CASCADE;
+
+DROP SEQUENCE IF EXISTS sc_tmp.proforma_idurut_seq CASCADE;
+DROP SEQUENCE IF EXISTS sc_trx.proforma_idurut_seq CASCADE;
+
+
+-- =========================================================
+-- SEQUENCE : SC_TMP.PROFORMA
+-- =========================================================
+
+CREATE SEQUENCE sc_tmp.proforma_idurut_seq
     INCREMENT 1
     START 1
     MINVALUE 1
     MAXVALUE 2147483647
     CACHE 1;
 
+ALTER SEQUENCE sc_tmp.proforma_idurut_seq
+    OWNER TO postgres;
 
--- Table: sc_tmp.proforma
 
--- DROP TABLE IF EXISTS sc_tmp.proforma;
+-- =========================================================
+-- TABLE : SC_TMP.PROFORMA
+-- =========================================================
 
-CREATE TABLE IF NOT EXISTS sc_tmp.proforma
+CREATE TABLE sc_tmp.proforma
 (
-    idurut serial NOT NULL,
-    docno character(30) COLLATE pg_catalog."default" NOT NULL,
-    rolejob character(10) COLLATE pg_catalog."default",
-    docdate character(20) COLLATE pg_catalog."default",
-    pono character (30 ) COLLATE pg_catalog."default",
-    podate character(20) COLLATE pg_catalog."default",
-    jnsinvoice character(20) COLLATE pg_catalog."default",
-    cust character(100) COLLATE pg_catalog."default",
-    address text COLLATE pg_catalog."default",
-    phone character varying(50) COLLATE pg_catalog."default",
-    fax character varying(50) COLLATE pg_catalog."default",
-    facrisk text COLLATE pg_catalog."default",
-    shipper text COLLATE pg_catalog."default",
-    consignee text COLLATE pg_catalog."default",
-    shippingmark text COLLATE pg_catalog."default",
-    notifyparty text COLLATE pg_catalog."default",
-    paymentmethod character varying(50) COLLATE pg_catalog."default",
-    bank character varying(50) COLLATE pg_catalog."default",
-    grosssales numeric(18,2),
-    downpayment numeric(18,2),
-    netsales numeric(18,2),
-    taxbasis numeric(18,2),
-    vat numeric(18,2),
-    pph22 numeric(18,2),
-    ttlprice numeric(18,2),
-    nmbank character(100),
-	alamatbank TEXT,
-	kodeposbank character(100),
-	accname character(100),
-	accno TEXT,
-	swiftcode character(50),
-    description text COLLATE pg_catalog."default",
-    
-    brand character(50) COLLATE pg_catalog."default",
-    size text COLLATE pg_catalog."default",
-    qty character(100) COLLATE pg_catalog."default",
-    pembayaran text COLLATE pg_catalog."default",
-    pengiriman text COLLATE pg_catalog."default",
-    expdate character(20) COLLATE pg_catalog."default",
-    ketentuan text COLLATE pg_catalog."default",
-    status character(6) COLLATE pg_catalog."default",
-    inputby character varying(50) COLLATE pg_catalog."default",
-    inputdate timestamp without time zone,
-    updateby character varying(50) COLLATE pg_catalog."default",
-    updatedate timestamp without time zone,
-    printby character varying(50) COLLATE pg_catalog."default",
-    printdate timestamp without time zone,
-    docnotmp character(30) COLLATE pg_catalog."default",
-    CONSTRAINT pk_tmp_proforma PRIMARY KEY (idurut, docno)
-)
+    idurut integer NOT NULL
+        DEFAULT nextval('sc_tmp.proforma_idurut_seq'::regclass),
 
+    docno character(30) NOT NULL,
+
+    rolejob character(10),
+
+    docdate character(20),
+
+    pono character(30),
+
+    podate character(20),
+
+    jnsinvoice character(20),
+
+    cust character(100),
+
+    address text,
+
+    phone character varying(50),
+
+    fax character varying(50),
+
+    facrisk text,
+
+    shipper text,
+
+    consignee text,
+
+    shippingmark text,
+
+    notifyparty text,
+
+    paymentmethod character varying(50),
+
+    bank character varying(50),
+
+    grosssales numeric(18,2),
+
+    downpayment numeric(18,2),
+
+    netsales numeric(18,2),
+
+    taxbasis numeric(18,2),
+
+    vat numeric(18,2),
+
+    pph22 numeric(18,2),
+
+    ttlprice numeric(18,2),
+
+    nmbank character(100),
+
+    alamatbank text,
+
+    kodeposbank character(100),
+
+    accname character(100),
+
+    accno text,
+
+    swiftcode character(50),
+
+    description text,
+
+    brand character(50),
+
+    size text,
+
+    qty character(100),
+
+    pembayaran text,
+
+    pengiriman text,
+
+    expdate character(20),
+
+    ketentuan text,
+
+    status character(6),
+
+    inputby character varying(50),
+
+    inputdate timestamp without time zone,
+
+    updateby character varying(50),
+
+    updatedate timestamp without time zone,
+
+    printby character varying(50),
+
+    printdate timestamp without time zone,
+
+    docnotmp character(30),
+
+    CONSTRAINT pk_tmp_proforma
+        PRIMARY KEY (idurut, docno)
+)
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS sc_tmp.proforma
-    OWNER to postgres;
+ALTER TABLE sc_tmp.proforma
+    OWNER TO postgres;
 
 ALTER SEQUENCE sc_tmp.proforma_idurut_seq
     OWNED BY sc_tmp.proforma.idurut;
 
-ALTER SEQUENCE sc_tmp.proforma_idurut_seq
-    OWNER TO postgres;
 
+-- =========================================================
+-- SEQUENCE : SC_TRX.PROFORMA
+-- =========================================================
 
-    -- SEQUENCE: sc_trx.proforma_idurut_seq
-
--- DROP SEQUENCE IF EXISTS sc_trx.proforma_idurut_seq;
-
-CREATE SEQUENCE IF NOT EXISTS sc_trx.proforma_idurut_seq
+CREATE SEQUENCE sc_trx.proforma_idurut_seq
     INCREMENT 1
     START 1
     MINVALUE 1
     MAXVALUE 2147483647
     CACHE 1;
 
--- Table: sc_trx.proforma
+ALTER SEQUENCE sc_trx.proforma_idurut_seq
+    OWNER TO postgres;
 
--- DROP TABLE IF EXISTS sc_trx.proforma;
 
-CREATE TABLE IF NOT EXISTS sc_trx.proforma
+-- =========================================================
+-- TABLE : SC_TRX.PROFORMA
+-- =========================================================
+
+CREATE TABLE sc_trx.proforma
 (
-    idurut serial NOT NULL,
-    docno character(30) COLLATE pg_catalog."default" NOT NULL,
-    rolejob character(10) COLLATE pg_catalog."default",
-    docdate character(20) COLLATE pg_catalog."default",
-    pono character (30 ) COLLATE pg_catalog."default",
-    podate character(20) COLLATE pg_catalog."default",
-    jnsinvoice character(20) COLLATE pg_catalog."default",
-    cust character(100) COLLATE pg_catalog."default",
-    address text COLLATE pg_catalog."default",
-    phone character varying(50) COLLATE pg_catalog."default",
-    fax character varying(50) COLLATE pg_catalog."default",
-    facrisk text COLLATE pg_catalog."default",
-    shipper text COLLATE pg_catalog."default",
-    consignee text COLLATE pg_catalog."default",
-    shippingmark text COLLATE pg_catalog."default",
-    notifyparty text COLLATE pg_catalog."default",
-    paymentmethod character varying(50) COLLATE pg_catalog."default",
-    bank character varying(50) COLLATE pg_catalog."default",
+    idurut integer NOT NULL
+        DEFAULT nextval('sc_trx.proforma_idurut_seq'::regclass),
+
+    docno character(30) NOT NULL,
+
+    rolejob character(10),
+
+    docdate character(20),
+
+    pono character(30),
+
+    podate character(20),
+
+    jnsinvoice character(20),
+
+    cust character(100),
+
+    address text,
+
+    phone character varying(50),
+
+    fax character varying(50),
+
+    facrisk text,
+
+    shipper text,
+
+    consignee text,
+
+    shippingmark text,
+
+    notifyparty text,
+
+    paymentmethod character varying(50),
+
+    bank character varying(50),
+
     grosssales numeric(18,2),
+
     downpayment numeric(18,2),
+
     netsales numeric(18,2),
+
     taxbasis numeric(18,2),
+
     vat numeric(18,2),
+
     pph22 numeric(18,2),
+
     ttlprice numeric(18,2),
+
     nmbank character(100),
-	alamatbank TEXT,
-	kodeposbank character(100),
-	accname character(100),
-	accno TEXT,
-	swiftcode character(50).
-    description text COLLATE pg_catalog."default",
-    brand character(50) COLLATE pg_catalog."default",
-    size text COLLATE pg_catalog."default",
-    qty character(100) COLLATE pg_catalog."default",
-    pembayaran text COLLATE pg_catalog."default",
-    pengiriman text COLLATE pg_catalog."default",
-    expdate character(20) COLLATE pg_catalog."default",
-    ketentuan text COLLATE pg_catalog."default",
-    status character(6) COLLATE pg_catalog."default",
-    inputby character varying(50) COLLATE pg_catalog."default",
+
+    alamatbank text,
+
+    kodeposbank character(100),
+
+    accname character(100),
+
+    accno text,
+
+    swiftcode character(50),
+
+    description text,
+
+    brand character(50),
+
+    size text,
+
+    qty character(100),
+
+    pembayaran text,
+
+    pengiriman text,
+
+    expdate character(20),
+
+    ketentuan text,
+
+    status character(6),
+
+    inputby character varying(50),
+
     inputdate timestamp without time zone,
-    updateby character varying(50) COLLATE pg_catalog."default",
+
+    updateby character varying(50),
+
     updatedate timestamp without time zone,
-    printby character varying(50) COLLATE pg_catalog."default",
+
+    printby character varying(50),
+
     printdate timestamp without time zone,
-    docnotmp character(30) COLLATE pg_catalog."default",
 
-    CONSTRAINT proforma_pkey PRIMARY KEY (docno),
-    CONSTRAINT proforma_idurut_key UNIQUE (idurut)
+    docnotmp character(30),
+
+    CONSTRAINT proforma_pkey
+        PRIMARY KEY (docno),
+
+    CONSTRAINT proforma_idurut_key
+        UNIQUE (idurut)
 )
-
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS sc_trx.proforma
-    OWNER to postgres;
+ALTER TABLE sc_trx.proforma
+    OWNER TO postgres;
 
 ALTER SEQUENCE sc_trx.proforma_idurut_seq
     OWNED BY sc_trx.proforma.idurut;
 
-ALTER SEQUENCE sc_trx.proforma_idurut_seq
-    OWNER TO postgres;
+
+-- =========================================================
+-- SELESAI
+-- =========================================================
+
+COMMIT;

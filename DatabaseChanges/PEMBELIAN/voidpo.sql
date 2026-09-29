@@ -1,3 +1,4 @@
+BEGIN;
 
 -- JALANKAN INI DULU
 DROP TABLE IF EXISTS sc_tmp.voidpo;
@@ -13,7 +14,7 @@ CREATE TABLE IF NOT EXISTS sc_tmp.voidpo
 (
     idurut serial NOT NULL,
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
-    docdate character(20) COLLATE pg_catalog."default",
+    docdate DATE,
     -- senddate character(20) COLLATE pg_catalog."default",
     cabang character (30 ) COLLATE pg_catalog."default",    
     pemohon character(100) COLLATE pg_catalog."default",
@@ -38,8 +39,9 @@ CREATE TABLE IF NOT EXISTS sc_tmp.voidpo
     updatedate timestamp without time zone,
     printby character varying(50) COLLATE pg_catalog."default",
     printdate timestamp without time zone,
+    printcount integer,
     docnotmp character(30) COLLATE pg_catalog."default",
-    CONSTRAINT pk_tmp_voidpo PRIMARY KEY (docno)
+    CONSTRAINT pk_tmp_voidpo PRIMARY KEY (idurut, docno)
 )
 
 TABLESPACE pg_default;
@@ -55,7 +57,7 @@ CREATE TABLE IF NOT EXISTS sc_trx.voidpo
 (
     idurut serial NOT NULL,
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
-    docdate character(20) COLLATE pg_catalog."default",
+    docdate DATE,
     -- senddate character(20) COLLATE pg_catalog."default",
     cabang character (30 ) COLLATE pg_catalog."default",    
     pemohon character(100) COLLATE pg_catalog."default",
@@ -80,6 +82,7 @@ CREATE TABLE IF NOT EXISTS sc_trx.voidpo
     updatedate timestamp without time zone,
     printby character varying(50) COLLATE pg_catalog."default",
     printdate timestamp without time zone,
+    printcount integer,
     docnotmp character(30) COLLATE pg_catalog."default",
     CONSTRAINT pk_trx_voidpo PRIMARY KEY (docno)
 )
@@ -97,6 +100,7 @@ CREATE TABLE IF NOT EXISTS sc_tmp.voidpo_dtl
     docno CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
     -- docnopp CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
     docnopo CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
+    capexno CHARACTER(30),
     uniqueid VARCHAR(64),
     idbarang CHARACTER(20) COLLATE pg_catalog."default",
     nmbarang CHARACTER(150) COLLATE pg_catalog."default",
@@ -113,7 +117,12 @@ CREATE TABLE IF NOT EXISTS sc_tmp.voidpo_dtl
     inputdate TIMESTAMP WITHOUT TIME ZONE,
     updateby CHARACTER VARYING(50) COLLATE pg_catalog."default",
     updatedate TIMESTAMP WITHOUT TIME ZONE,
-    docnotmp character(30)
+    docnotmp character(30),
+    idtax character(20),
+    currcode character(3),
+    kurs numeric(18,2),
+    nilaikonversi numeric(18,2),
+    nilaipajak numeric(18,2)
 )
 TABLESPACE pg_default;
 
@@ -129,6 +138,7 @@ CREATE TABLE IF NOT EXISTS sc_trx.voidpo_dtl
     docno CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
     -- docnopp CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
     docnopo CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
+    capexno CHARACTER(30),
     uniqueid VARCHAR(64),
     idbarang CHARACTER(20) COLLATE pg_catalog."default",
     nmbarang CHARACTER(150) COLLATE pg_catalog."default",
@@ -145,7 +155,12 @@ CREATE TABLE IF NOT EXISTS sc_trx.voidpo_dtl
     inputdate TIMESTAMP WITHOUT TIME ZONE,
     updateby CHARACTER VARYING(50) COLLATE pg_catalog."default",
     updatedate TIMESTAMP WITHOUT TIME ZONE,
-    docnotmp character(30)
+    docnotmp character(30),
+    idtax character(20),
+    currcode character(3),
+    kurs numeric(18,2),
+    nilaikonversi numeric(18,2),
+    nilaipajak numeric(18,2)
 )
 TABLESPACE pg_default;
 
@@ -684,52 +699,12 @@ CREATE OR REPLACE TRIGGER tr_voidpo
 
 
 
--- Tambahkan kolom di sc_trx.voidpo_dtl
-ALTER TABLE sc_trx.voidpo_dtl 
-ADD COLUMN idtax character(20),
-ADD COLUMN currcode character(3),
-ADD COLUMN kurs numeric(18,2),
-ADD COLUMN nilaikonversi numeric(18,2),
-ADD COLUMN nilaipajak numeric(18,2);
-
-
--- Tambahkan kolom di sc_tmp.voidpo_dtl
-ALTER TABLE sc_tmp.voidpo_dtl 
-ADD COLUMN idtax character(20),
-ADD COLUMN currcode character(3),
-ADD COLUMN kurs numeric(18,2),
-ADD COLUMN nilaikonversi numeric(18,2),
-ADD COLUMN nilaipajak numeric(18,2);
 
 
 
 
 
--- =========== TAMBAHAN 24/8/26 ====================
-ALTER TABLE sc_tmp.voidpo_dtl
-ADD COLUMN capexno character(30)
 
-ALTER TABLE sc_trx.voidpo_dtl
-ADD COLUMN capexno character(30)
-
-
-
--- docdate
-ALTER TABLE sc_trx.voidpo
-ALTER COLUMN docdate TYPE DATE
-USING TRIM(docdate)::DATE;
-ALTER TABLE sc_tmp.voidpo
-ALTER COLUMN docdate TYPE DATE
-USING TRIM(docdate)::DATE;
-
-
--- printcount
-ALTER TABLE sc_tmp.voidpo
-ADD COLUMN printcount integer
-ALTER TABLE sc_trx.voidpo
-ADD COLUMN printcount integer
-
--- ==================== END OFTAMBAHAN 24/8/26  ====================
 
 
 
@@ -786,35 +761,4 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
-
-
-
-
-BEGIN;
-
--- ================================================
--- VOIDPO
--- ================================================
-ALTER TABLE sc_tmp.voidpo DROP CONSTRAINT pk_tmp_voidpo;
-ALTER TABLE sc_tmp.voidpo ADD CONSTRAINT pk_tmp_voidpo PRIMARY KEY (idurut, docno);
-
--- ================================================
--- LPB
--- ================================================
-ALTER TABLE sc_tmp.lpb DROP CONSTRAINT pk_tmp_lpb;
-ALTER TABLE sc_tmp.lpb ADD CONSTRAINT pk_tmp_lpb PRIMARY KEY (idurut, docno);
-
--- ================================================
--- RETURBELI
--- ================================================
-ALTER TABLE sc_tmp.returbeli DROP CONSTRAINT pk_tmp_returbeli;
-ALTER TABLE sc_tmp.returbeli ADD CONSTRAINT pk_tmp_returbeli PRIMARY KEY (idurut, docno);
-
--- ================================================
--- SALESORDER
--- ================================================
-ALTER TABLE sc_tmp.salesorder DROP CONSTRAINT pk_tmp_salesorder;
-ALTER TABLE sc_tmp.salesorder ADD CONSTRAINT pk_tmp_salesorder PRIMARY KEY (idurut, docno);
-
--- ================================================
+COMMIT;

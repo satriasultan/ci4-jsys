@@ -9,7 +9,7 @@
 
 CREATE TABLE IF NOT EXISTS sc_tmp.offering
 (
-    idurut integer NOT NULL DEFAULT nextval('sc_tmp.offering_idurut_seq'::regclass),
+    idurut bigserial,
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
     rolejob character(10) COLLATE pg_catalog."default",
     cust character(100) COLLATE pg_catalog."default",
@@ -53,7 +53,7 @@ ALTER TABLE IF EXISTS sc_tmp.offering
 
 CREATE TABLE IF NOT EXISTS sc_trx.offering
 (
-    idurut integer NOT NULL DEFAULT nextval('sc_trx.offering_idurut_seq'::regclass),
+    idurut bigserial,
     rolejob character(10) COLLATE pg_catalog."default",
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
     cust character(100) COLLATE pg_catalog."default",
@@ -93,7 +93,7 @@ ALTER TABLE IF EXISTS sc_trx.offering
 
 CREATE TABLE IF NOT EXISTS sc_tmp.offeringdtl
 (
-    idurut SERIAL PRIMARY KEY,
+    idurut BIGSERIAL PRIMARY KEY,
     docno CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
     idbarang CHARACTER(20) COLLATE pg_catalog."default",
     nmbarang CHARACTER(150) COLLATE pg_catalog."default",
@@ -118,7 +118,7 @@ ALTER TABLE IF EXISTS sc_tmp.offeringdtl
 
 CREATE TABLE IF NOT EXISTS sc_trx.offeringdtl
 (
-    idurut SERIAL PRIMARY KEY,
+    idurut BIGSERIAL PRIMARY KEY,
     docno CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
     idbarang CHARACTER(20) COLLATE pg_catalog."default",
     nmbarang CHARACTER(150) COLLATE pg_catalog."default",

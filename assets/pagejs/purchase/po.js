@@ -838,6 +838,7 @@ function btnUpdateDetail(){
                 $('#docnoppmodal').val(res.data.docnopp);
                 $('#idbarang').val(res.data.idbarang);
                 $('#nmbarang').val(res.data.nmbarang);
+                $('#capexno').val(res.data.capexno);
                 $('#multidisctype')
                     .val(
                         $.trim(res.data.multidisctype || 'NILAI')

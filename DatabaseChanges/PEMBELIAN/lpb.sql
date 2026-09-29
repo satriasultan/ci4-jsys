@@ -1,13 +1,10 @@
+-- ONE-RUN TRANSACTION SCRIPT
+BEGIN;
 
 -- JALANKAN INI DULU
-DROP TABLE IF EXISTS sc_trx.lpb;
-DROP TABLE IF EXISTS sc_tmp.lpb;
-DROP TABLE IF EXISTS sc_tmp.lpb_dtl;
-DROP TABLE IF EXISTS sc_trx.lpb_dtl;
-
-
-
-
+DROP TABLE IF EXISTS sc_trx.lpb_dtl CASCADE;
+DROP TABLE IF EXISTS sc_trx.lpb CASCADE;
+DROP TABLE IF EXISTS sc_tmp.lpb_dtl CASCADE;
 DROP TABLE IF EXISTS sc_tmp.lpb CASCADE;
 
 CREATE TABLE sc_tmp.lpb
@@ -52,6 +49,7 @@ CREATE TABLE sc_tmp.lpb
 
     printby         VARCHAR(50),
     printdate       TIMESTAMP WITHOUT TIME ZONE,
+    printcount      INTEGER,
 
     docnotmp        CHARACTER(30),
 
@@ -111,6 +109,7 @@ CREATE TABLE sc_trx.lpb
 
     printby         VARCHAR(50),
     printdate       TIMESTAMP WITHOUT TIME ZONE,
+    printcount      INTEGER,
 
     docnotmp        CHARACTER(30),
 
@@ -171,9 +170,10 @@ CREATE TABLE sc_tmp.lpb_dtl
     updatedate      TIMESTAMP WITHOUT TIME ZONE,
 
     docnotmp        CHARACTER(30),
+    capexno         CHARACTER(30),
 
     -- =========================================
-    -- KOLOM YANG SEBELUMNYA DITAMBAHKAN ALTER
+    -- KOLOM TAMBAHAN YANG SEBELUMNYA DITAMBAHKAN ALTER
     -- =========================================
 
     doctype         CHARACTER(10) DEFAULT 'GR',
@@ -185,7 +185,10 @@ CREATE TABLE sc_tmp.lpb_dtl
     nilaikonversi   NUMERIC(18,2),
     nilaipajak      NUMERIC(18,2),
 
-    qtyretur        NUMERIC(18,2) DEFAULT 0
+    qtyretur        NUMERIC(18,2) DEFAULT 0,
+    idhistory_price CHAR(30),
+    multidisctype   CHAR(30),
+    totaldiscount   NUMERIC(18,2)
 
 )
 TABLESPACE pg_default;
@@ -241,9 +244,10 @@ CREATE TABLE sc_trx.lpb_dtl
     updatedate      TIMESTAMP WITHOUT TIME ZONE,
 
     docnotmp        CHARACTER(30),
+    capexno         CHARACTER(30),
 
     -- =========================================
-    -- KOLOM YANG SEBELUMNYA DITAMBAHKAN ALTER
+    -- KOLOM TAMBAHAN YANG SEBELUMNYA DITAMBAHKAN ALTER
     -- =========================================
 
     doctype         CHARACTER(10) DEFAULT 'GR',
@@ -255,7 +259,10 @@ CREATE TABLE sc_trx.lpb_dtl
     nilaikonversi   NUMERIC(18,2),
     nilaipajak      NUMERIC(18,2),
 
-    qtyretur        NUMERIC(18,2) DEFAULT 0
+    qtyretur        NUMERIC(18,2) DEFAULT 0,
+    idhistory_price CHAR(30),
+    multidisctype   CHAR(30),
+    totaldiscount   NUMERIC(18,2)
 
 )
 TABLESPACE pg_default;
@@ -644,7 +651,7 @@ $BODY$;
 
 
 
-CREATE TRIGGER tr_lpb_finalize
+CREATE OR REPLACE TRIGGER tr_lpb_finalize
     AFTER UPDATE ON sc_tmp.lpb
     FOR EACH ROW
     EXECUTE FUNCTION sc_tmp.tr_lpb_finalize();
@@ -819,43 +826,21 @@ CREATE OR REPLACE TRIGGER tr_lpb
 
 
 -- =========== TAMBAHAN 24/8/26 ====================
-ALTER TABLE sc_tmp.lpb_dtl
-ADD COLUMN capexno character(30)
+-- Kolom capexno dan printcount sudah dimasukkan langsung ke CREATE TABLE
+-- agar seluruh script dapat dijalankan satu kali tanpa ALTER berulang.
 
-ALTER TABLE sc_trx.lpb_dtl
-ADD COLUMN capexno character(30)
+-- docdate sudah bertipe DATE sejak CREATE TABLE.
+-- Tidak diperlukan ALTER COLUMN TYPE lagi.
 
-
-
--- docdate
-ALTER TABLE sc_trx.lpb
-ALTER COLUMN docdate TYPE DATE
-USING TRIM(docdate)::DATE;
-ALTER TABLE sc_tmp.lpb
-ALTER COLUMN docdate TYPE DATE
-USING TRIM(docdate)::DATE;
-
-
-
--- printcount
-ALTER TABLE sc_tmp.lpb
-ADD COLUMN printcount integer
-ALTER TABLE sc_trx.lpb
-ADD COLUMN printcount integer
+-- printcount sudah dimasukkan langsung ke CREATE TABLE.
 
 -- ==================== END OFTAMBAHAN 24/8/26  ====================
 
 
 --TAMBAHN MULTIDISCOUNT----
-alter table sc_tmp.lpb_dtl
-add column idhistory_price char(30),
-add column multidisctype char(30),
-add column totaldiscount numeric(18,2);
-
-alter table sc_trx.lpb_dtl
-add column idhistory_price char(30),
-add column multidisctype char(30),
-add column totaldiscount numeric(18,2);
+-- Kolom idhistory_price, multidisctype, dan totaldiscount sudah
+-- dimasukkan langsung ke CREATE TABLE agar tidak terjadi duplicate
+-- column / missing semicolon saat script dijalankan satu kali.
 
 --,idhistory_price,multidisctype,totaldiscount
 
@@ -1238,3 +1223,4 @@ $BODY$;
 ALTER FUNCTION sc_trx.sp_unpost_by_doc(character varying, character varying)
     OWNER TO postgres;
 
+COMMIT;

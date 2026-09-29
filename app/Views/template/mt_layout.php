@@ -107,7 +107,7 @@ use App\Libraries\Fiky_encryption;
         }
 
         #app-zoom .modal {
-            zoom: 1.333; 
+            zoom: 1.333;
         }
 
         /*paksa global colour*/
@@ -522,69 +522,69 @@ use App\Libraries\Fiky_encryption;
 
 <body class="horizontal-nav skin-megna fixed-layout">
 <div id="app-zoom">
-<!-- ============================================================== -->
-<!-- Preloader - style you can find in spinners.css -->
-<!-- ============================================================== -->
-<div class="preloader">
-    <div class="loader">
-        <div class="loader__figure"></div>
-        <p class="loader__label">PT.Jatim Taman Steel.Mfg</p>
+    <!-- ============================================================== -->
+    <!-- Preloader - style you can find in spinners.css -->
+    <!-- ============================================================== -->
+    <div class="preloader">
+        <div class="loader">
+            <div class="loader__figure"></div>
+            <p class="loader__label">PT.Jatim Taman Steel.Mfg</p>
+        </div>
     </div>
-</div>
-<!-- ============================================================== -->
-<!-- Main wrapper - style you can find in pages.scss -->
-<!-- ============================================================== -->
-<div id="main-wrapper">
     <!-- ============================================================== -->
-    <!-- Topbar header - style you can find in pages.scss -->
+    <!-- Main wrapper - style you can find in pages.scss -->
     <!-- ============================================================== -->
-    <?php echo $_header;?>
-    <!-- ============================================================== -->
-    <!-- End Topbar header -->
-    <!-- ============================================================== -->
-    <!-- ============================================================== -->
-    <!-- Left Sidebar - style you can find in sidebar.scss  -->
-    <!-- ============================================================== -->
-    <?php echo $_sidebar;?>
+    <div id="main-wrapper">
+        <!-- ============================================================== -->
+        <!-- Topbar header - style you can find in pages.scss -->
+        <!-- ============================================================== -->
+        <?php echo $_header;?>
+        <!-- ============================================================== -->
+        <!-- End Topbar header -->
+        <!-- ============================================================== -->
+        <!-- ============================================================== -->
+        <!-- Left Sidebar - style you can find in sidebar.scss  -->
+        <!-- ============================================================== -->
+        <?php echo $_sidebar;?>
 
-    <!-- ============================================================== -->
-    <!-- End Left Sidebar - style you can find in sidebar.scss  -->
-    <!-- ============================================================== -->
-    <!-- ============================================================== -->
-    <!-- Page wrapper  -->
-    <!-- ============================================================== -->
-    <div class="page-wrapper">
         <!-- ============================================================== -->
-        <!-- Container fluid  -->
+        <!-- End Left Sidebar - style you can find in sidebar.scss  -->
         <!-- ============================================================== -->
-        <div class="container-fluid">
-            <?php echo $_content;?>
+        <!-- ============================================================== -->
+        <!-- Page wrapper  -->
+        <!-- ============================================================== -->
+        <div class="page-wrapper">
+            <!-- ============================================================== -->
+            <!-- Container fluid  -->
+            <!-- ============================================================== -->
+            <div class="container-fluid">
+                <?php echo $_content;?>
+            </div>
+            <!-- ============================================================== -->
+            <!-- End Container fluid  -->
+            <!-- ============================================================== -->
         </div>
         <!-- ============================================================== -->
-        <!-- End Container fluid  -->
+        <!-- End Page wrapper  -->
+        <!-- ============================================================== -->
+        <!-- ============================================================== -->
+        <!-- footer -->
+        <!-- ============================================================== -->
+        <footer class="footer">
+            Copyright © 2026  IT
+            <a href="https://www.jts.co.id">PT. Jatim Taman Steel.MFG</a>
+            2026
+        </footer>
+        <!-- ============================================================== -->
+        <!-- End footer -->
         <!-- ============================================================== -->
     </div>
     <!-- ============================================================== -->
-    <!-- End Page wrapper  -->
+    <!-- End Wrapper -->
     <!-- ============================================================== -->
     <!-- ============================================================== -->
-    <!-- footer -->
+    <!-- All Jquery -->
     <!-- ============================================================== -->
-    <footer class="footer">
-        Copyright © 2026  IT
-        <a href="https://www.jts.co.id">PT. Jatim Taman Steel.MFG</a>
-        2026
-    </footer>
-    <!-- ============================================================== -->
-    <!-- End footer -->
-    <!-- ============================================================== -->
-</div>
-<!-- ============================================================== -->
-<!-- End Wrapper -->
-<!-- ============================================================== -->
-<!-- ============================================================== -->
-<!-- All Jquery -->
-<!-- ============================================================== -->
 
     <!--end app zoom-->
 </div>
@@ -603,35 +603,35 @@ use App\Libraries\Fiky_encryption;
     //]]>
 </script>
 <script>
-// Flag & info periode dari server
-window.PERIODE_TUTUP = <?= !empty($periodeTutup) ? 'true' : 'false' ?>;
-window.PERIODE_INFO  = {
-    periode    : <?= json_encode($periodeInfo['periode']    ?? '') ?>,
-    keterangan : <?= json_encode($periodeInfo['keterangan'] ?? '') ?>
-};
+    // Flag & info periode dari server
+    window.PERIODE_TUTUP = <?= !empty($periodeTutup) ? 'true' : 'false' ?>;
+    window.PERIODE_INFO  = {
+        periode    : <?= json_encode($periodeInfo['periode']    ?? '') ?>,
+        keterangan : <?= json_encode($periodeInfo['keterangan'] ?? '') ?>
+    };
 
-/**
- * Guard universal. Panggil di onclick link/button manapun.
- * @returns {boolean} true = lanjut, false = blokir
- */
-function guardPeriodeTutup(e) {
-    if (!window.PERIODE_TUTUP) return true;
+    /**
+     * Guard universal. Panggil di onclick link/button manapun.
+     * @returns {boolean} true = lanjut, false = blokir
+     */
+    function guardPeriodeTutup(e) {
+        if (!window.PERIODE_TUTUP) return true;
 
-    if (e) e.preventDefault();
+        if (e) e.preventDefault();
 
-    Swal.fire({
-        icon: 'error',
-        title: 'PERIODE TUTUP',
-        html: 'Periode <b>' + window.PERIODE_INFO.periode + '</b> sudah <b>TUTUP</b>.<br>' +
-              'Keterangan: ' + window.PERIODE_INFO.keterangan + '<br><br>' +
-              'Anda tidak dapat melakukan transaksi pada periode ini.',
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-        confirmButtonText: 'Mengerti',
-        confirmButtonColor: '#d33'
-    });
-    return false;
-}
+        Swal.fire({
+            icon: 'error',
+            title: 'PERIODE TUTUP',
+            html: 'Periode <b>' + window.PERIODE_INFO.periode + '</b> sudah <b>TUTUP</b>.<br>' +
+                'Keterangan: ' + window.PERIODE_INFO.keterangan + '<br><br>' +
+                'Anda tidak dapat melakukan transaksi pada periode ini.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            confirmButtonText: 'Mengerti',
+            confirmButtonColor: '#d33'
+        });
+        return false;
+    }
 </script>
 <!-- END SCRIPT HELPER -->
 <script>

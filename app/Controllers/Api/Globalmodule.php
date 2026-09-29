@@ -7,10 +7,14 @@ use App\Controllers\BaseController;
 class Globalmodule extends BaseController
 {
 
-    function index()
-    {
-        echo json_encode(ARRAY('cok' => 'ASUW','cik'=>'Jembut')) ;
-    }
+    function index() {
+			echo json_encode([
+				'syahadat' => 'أَشْهَدُ أَنْ لَا إِلَٰهَ إِلَّا اللَّهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّهِ',
+				'tauhid' => 'لَا إِلَٰهَ إِلَّا اللَّهُ',
+				'sholawat' => 'اللَّهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ وَعَلَىٰ آلِ مُحَمَّدٍ',
+				'dzikir' => 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ، أَسْتَغْفِرُ اللَّهَ الْعَظِيمَ'
+			], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+		}
 
     function option_trxtype(){
 

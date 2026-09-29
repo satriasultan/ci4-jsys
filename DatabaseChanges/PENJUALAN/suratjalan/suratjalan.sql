@@ -1,8 +1,11 @@
+BEGIN;
 
 -- JALANKAN INI DULU
 
-DROP TABLE IF EXISTS sc_tmp.suratjalan_dtl
-DROP TABLE IF EXISTS sc_trx.suratjalan_dtl
+DROP TABLE IF EXISTS sc_tmp.suratjalan_dtl CASCADE;
+DROP TABLE IF EXISTS sc_trx.suratjalan_dtl CASCADE;
+DROP TABLE IF EXISTS sc_tmp.suratjalan CASCADE;
+DROP TABLE IF EXISTS sc_trx.suratjalan CASCADE;
 
 
 
@@ -511,12 +514,23 @@ BEGIN
 END;
 $BODY$;
 
+-- =========================================================
+-- TRIGGER: tr_suratjalan_finalize
+-- Function dibuat lebih dulu agar aman dalam 1 kali execute.
+-- =========================================================
 
+DROP TRIGGER IF EXISTS tr_suratjalan_finalize
+    ON sc_tmp.suratjalan;
 
 CREATE TRIGGER tr_suratjalan_finalize
     AFTER UPDATE ON sc_tmp.suratjalan
     FOR EACH ROW
     EXECUTE FUNCTION sc_tmp.tr_suratjalan_finalize();
+
+
+
+
+
 
 
 
@@ -694,8 +708,4 @@ CREATE OR REPLACE TRIGGER tr_suratjalan
     FOR EACH ROW
     EXECUTE FUNCTION sc_trx.tr_suratjalan();
 
-
-
-
-
-
+COMMIT;

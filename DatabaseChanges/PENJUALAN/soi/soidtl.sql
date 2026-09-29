@@ -1,69 +1,147 @@
-CREATE TABLE IF NOT EXISTS sc_tmp.soidtl
+BEGIN;
+
+-- =========================================================
+-- DROP TABLE LAMA
+-- =========================================================
+
+DROP TABLE IF EXISTS sc_tmp.soidtl CASCADE;
+DROP TABLE IF EXISTS sc_trx.soidtl CASCADE;
+
+
+-- =========================================================
+-- SC_TMP.SOIDTL
+-- =========================================================
+
+CREATE TABLE sc_tmp.soidtl
 (
-    idurut SERIAL PRIMARY KEY,
-    docno CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
-    idbarang CHARACTER(20) COLLATE pg_catalog."default",
-    cust CHARACTER(100) COLLATE pg_catalog."default",
-    nmbarang CHARACTER(150) COLLATE pg_catalog."default",
-    grade CHARACTER(100) COLLATE pg_catalog."default",
-    size CHARACTER(100) COLLATE pg_catalog."default",
-    cutlength CHARACTER(100) COLLATE pg_catalog."default",
+    idurut SERIAL NOT NULL,
+
+    docno CHARACTER(30) NOT NULL,
+
+    idbarang CHARACTER(20),
+
+    cust CHARACTER(100),
+
+    nmbarang CHARACTER(150),
+
+    grade CHARACTER(100),
+
+    size CHARACTER(100),
+
+    cutlength CHARACTER(100),
+
     qty NUMERIC(18,2),
-    unit CHARACTER(20) COLLATE pg_catalog."default",
+
+    unit CHARACTER(20),
+
     usdmt NUMERIC(18,2),
+
     price NUMERIC(18,2),
+
     exchange NUMERIC(18,2),
+
     amount NUMERIC(18,2),
-    etd character(20) COLLATE pg_catalog."default",
-    ordernumbermsr character(50) COLLATE pg_catalog."default",
-    specno character(150) COLLATE pg_catalog."default",
+
+    etd CHARACTER(20),
+
+    ordernumbermsr CHARACTER(50),
+
+    specno CHARACTER(150),
+
     totaldelivery NUMERIC(18,2),
+
     balanceorder NUMERIC(18,2),
-    description TEXT COLLATE pg_catalog."default",
-    status CHARACTER(6) COLLATE pg_catalog."default",
-    inputby CHARACTER VARYING(50) COLLATE pg_catalog."default",
+
+    description TEXT,
+
+    status CHARACTER(6),
+
+    inputby CHARACTER VARYING(50),
+
     inputdate TIMESTAMP WITHOUT TIME ZONE,
-    updateby CHARACTER VARYING(50) COLLATE pg_catalog."default",
+
+    updateby CHARACTER VARYING(50),
+
     updatedate TIMESTAMP WITHOUT TIME ZONE,
-    docnotmp character(30)
+
+    docnotmp CHARACTER(30),
+
+    CONSTRAINT soidtl_tmp_pkey
+        PRIMARY KEY (idurut)
 )
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS sc_tmp.soidtl
+
+ALTER TABLE sc_tmp.soidtl
     OWNER TO postgres;
 
 
+-- =========================================================
+-- SC_TRX.SOIDTL
+-- =========================================================
 
-CREATE TABLE IF NOT EXISTS sc_trx.soidtl
+CREATE TABLE sc_trx.soidtl
 (
-    idurut SERIAL PRIMARY KEY,
-    docno CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
-    idbarang CHARACTER(20) COLLATE pg_catalog."default",
-    cust CHARACTER(100) COLLATE pg_catalog."default",
-    nmbarang CHARACTER(150) COLLATE pg_catalog."default",
-    grade CHARACTER(100) COLLATE pg_catalog."default",
-    size CHARACTER(100) COLLATE pg_catalog."default",
-    cutlength CHARACTER(100) COLLATE pg_catalog."default",
+    idurut SERIAL NOT NULL,
+
+    docno CHARACTER(30) NOT NULL,
+
+    idbarang CHARACTER(20),
+
+    cust CHARACTER(100),
+
+    nmbarang CHARACTER(150),
+
+    grade CHARACTER(100),
+
+    size CHARACTER(100),
+
+    cutlength CHARACTER(100),
+
     qty NUMERIC(18,2),
-    unit CHARACTER(20) COLLATE pg_catalog."default",
+
+    unit CHARACTER(20),
+
     usdmt NUMERIC(18,2),
+
     price NUMERIC(18,2),
+
     exchange NUMERIC(18,2),
+
     amount NUMERIC(18,2),
-    etd character(20) COLLATE pg_catalog."default",
-    ordernumbermsr character(50) COLLATE pg_catalog."default",
-    specno character(150) COLLATE pg_catalog."default",
+
+    etd CHARACTER(20),
+
+    ordernumbermsr CHARACTER(50),
+
+    specno CHARACTER(150),
+
     totaldelivery NUMERIC(18,2),
+
     balanceorder NUMERIC(18,2),
-    description TEXT COLLATE pg_catalog."default",
-    status CHARACTER(6) COLLATE pg_catalog."default",
-    inputby CHARACTER VARYING(50) COLLATE pg_catalog."default",
+
+    description TEXT,
+
+    status CHARACTER(6),
+
+    inputby CHARACTER VARYING(50),
+
     inputdate TIMESTAMP WITHOUT TIME ZONE,
-    updateby CHARACTER VARYING(50) COLLATE pg_catalog."default",
+
+    updateby CHARACTER VARYING(50),
+
     updatedate TIMESTAMP WITHOUT TIME ZONE,
-    docnotmp character(30)
+
+    docnotmp CHARACTER(30),
+
+    CONSTRAINT soidtl_pkey
+        PRIMARY KEY (idurut)
 )
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS sc_trx.soidtl
+
+ALTER TABLE sc_trx.soidtl
     OWNER TO postgres;
+
+
+COMMIT;

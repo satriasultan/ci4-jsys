@@ -1,12 +1,28 @@
+-- ============================================================
+-- PP.SQL - ONE RUN INSTALL SCRIPT
+-- Semua object PP dibuat ulang dalam 1 transaction.
+-- Jika ada error, PostgreSQL akan melakukan ROLLBACK.
+-- ============================================================
 
-CREATE TABLE IF NOT EXISTS sc_tmp.pp
+BEGIN;
+
+-- ============================================================
+-- DROP OBJECT TABLE LAMA
+-- ============================================================
+
+DROP TABLE IF EXISTS sc_trx.pp_dtl CASCADE;
+DROP TABLE IF EXISTS sc_tmp.pp_dtl CASCADE;
+DROP TABLE IF EXISTS sc_trx.pp CASCADE;
+DROP TABLE IF EXISTS sc_tmp.pp CASCADE;
+
+CREATE TABLE sc_tmp.pp
 (
     idurut serial NOT NULL,
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
-    docdate character(20) COLLATE pg_catalog."default",
+    docdate DATE,
     cabang character (30 ) COLLATE pg_catalog."default",    
     pemohon character(100) COLLATE pg_catalog."default",
-    estpakai character(20) COLLATE pg_catalog."default",
+    estpakai DATE,
     status character(6) COLLATE pg_catalog."default",
     keterangan TEXT,
     inputby character varying(50) COLLATE pg_catalog."default",
@@ -15,6 +31,7 @@ CREATE TABLE IF NOT EXISTS sc_tmp.pp
     updatedate timestamp without time zone,
     printby character varying(50) COLLATE pg_catalog."default",
     printdate timestamp without time zone,
+    printcount INTEGER,
     docnotmp character(30) COLLATE pg_catalog."default",
     CONSTRAINT pk_tmp_pp PRIMARY KEY (idurut, docno)
 )
@@ -28,14 +45,14 @@ ALTER TABLE IF EXISTS sc_tmp.pp
 
 
 
-CREATE TABLE IF NOT EXISTS sc_trx.pp
+CREATE TABLE sc_trx.pp
 (
     idurut serial NOT NULL,
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
-    docdate character(20) COLLATE pg_catalog."default",
+    docdate DATE,
     cabang character (30 ) COLLATE pg_catalog."default",    
     pemohon character(100) COLLATE pg_catalog."default",
-    estpakai character(20) COLLATE pg_catalog."default",
+    estpakai DATE,
     status character(6) COLLATE pg_catalog."default",
     keterangan TEXT,
     inputby character varying(50) COLLATE pg_catalog."default",
@@ -44,6 +61,7 @@ CREATE TABLE IF NOT EXISTS sc_trx.pp
     updatedate timestamp without time zone,
     printby character varying(50) COLLATE pg_catalog."default",
     printdate timestamp without time zone,
+    printcount INTEGER,
     docnotmp character(30) COLLATE pg_catalog."default",
     CONSTRAINT pk_trx_pp PRIMARY KEY (idurut, docno)
 )
@@ -56,7 +74,7 @@ ALTER TABLE IF EXISTS sc_trx.pp
 
 
 
-CREATE TABLE IF NOT EXISTS sc_tmp.pp_dtl
+CREATE TABLE sc_tmp.pp_dtl
 (
     idurut SERIAL PRIMARY KEY,
     docno CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
@@ -70,7 +88,16 @@ CREATE TABLE IF NOT EXISTS sc_tmp.pp_dtl
     inputdate TIMESTAMP WITHOUT TIME ZONE,
     updateby CHARACTER VARYING(50) COLLATE pg_catalog."default",
     updatedate TIMESTAMP WITHOUT TIME ZONE,
-    docnotmp character(30)
+    docnotmp character(30),
+    uniqueid VARCHAR(64),
+    capexno CHARACTER(30),
+    idtax CHARACTER(20),
+    currcode CHARACTER(3),
+    kurs NUMERIC(18,2),
+    nilaikonversi NUMERIC(18,2),
+    nilaipajak NUMERIC(18,2),
+    qtypo NUMERIC(18,2) DEFAULT 0,
+    qtyvoid NUMERIC(18,2) DEFAULT 0
 )
 TABLESPACE pg_default;
 
@@ -79,7 +106,7 @@ ALTER TABLE IF EXISTS sc_tmp.pp_dtl
 
 
 
-CREATE TABLE IF NOT EXISTS sc_trx.pp_dtl
+CREATE TABLE sc_trx.pp_dtl
 (
     idurut SERIAL PRIMARY KEY,
     docno CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
@@ -93,7 +120,16 @@ CREATE TABLE IF NOT EXISTS sc_trx.pp_dtl
     inputdate TIMESTAMP WITHOUT TIME ZONE,
     updateby CHARACTER VARYING(50) COLLATE pg_catalog."default",
     updatedate TIMESTAMP WITHOUT TIME ZONE,
-    docnotmp character(30)
+    docnotmp character(30),
+    uniqueid VARCHAR(64),
+    capexno CHARACTER(30),
+    idtax CHARACTER(20),
+    currcode CHARACTER(3),
+    kurs NUMERIC(18,2),
+    nilaikonversi NUMERIC(18,2),
+    nilaipajak NUMERIC(18,2),
+    qtypo NUMERIC(18,2) DEFAULT 0,
+    qtyvoid NUMERIC(18,2) DEFAULT 0
 )
 TABLESPACE pg_default;
 
@@ -333,7 +369,7 @@ $BODY$;
 
 
 
-CREATE TRIGGER tr_pp_finalize
+CREATE OR REPLACE TRIGGER tr_pp_finalize
     AFTER UPDATE ON sc_tmp.pp
     FOR EACH ROW
     EXECUTE FUNCTION sc_tmp.tr_pp_finalize();
@@ -452,75 +488,8 @@ CREATE OR REPLACE TRIGGER tr_pp
     FOR EACH ROW
     EXECUTE FUNCTION sc_trx.tr_pp();
 
+-- ============================================================
+-- SELESAI
+-- ============================================================
 
-
-
-
-ALTER TABLE sc_tmp.pp_dtl
-ADD COLUMN uniqueid VARCHAR(64)
-
-ALTER TABLE sc_trx.pp_dtl
-ADD COLUMN uniqueid VARCHAR(64)
-
-
-
-
-
-
--- Tambahkan kolom di sc_trx.pp_dtl
-ALTER TABLE sc_trx.pp_dtl 
-ADD COLUMN idtax character(20),
-ADD COLUMN currcode character(3),
-ADD COLUMN kurs numeric(18,2),
-ADD COLUMN nilaikonversi numeric(18,2),
-ADD COLUMN nilaipajak numeric(18,2),
-ADD COLUMN IF NOT EXISTS qtypo numeric(18,2) DEFAULT 0,
-ADD COLUMN IF NOT EXISTS qtyvoid numeric(18,2) DEFAULT 0;
-
--- Tambahkan kolom di sc_tmp.pp_dtl
-ALTER TABLE sc_tmp.pp_dtl 
-ADD COLUMN idtax character(20),
-ADD COLUMN currcode character(3),
-ADD COLUMN kurs numeric(18,2),
-ADD COLUMN nilaikonversi numeric(18,2),
-ADD COLUMN nilaipajak numeric(18,2),
-ADD COLUMN IF NOT EXISTS qtypo numeric(18,2) DEFAULT 0,
-ADD COLUMN IF NOT EXISTS qtyvoid numeric(18,2) DEFAULT 0;
-
-
-
-
-
--- =========== TAMBAHAN 24/8/26 ====================
-ALTER TABLE sc_tmp.pp_dtl
-ADD COLUMN capexno character(30)
-
-ALTER TABLE sc_trx.pp_dtl
-ADD COLUMN capexno character(30)
-
-
-
--- docdate
-ALTER TABLE sc_trx.pp
-ALTER COLUMN docdate TYPE DATE
-USING TRIM(docdate)::DATE;
-ALTER TABLE sc_tmp.pp
-ALTER COLUMN docdate TYPE DATE
-USING TRIM(docdate)::DATE;
-
-
--- estpakai 
-ALTER TABLE sc_trx.pp
-ALTER COLUMN estpakai TYPE DATE
-USING TRIM(estpakai)::DATE;
-ALTER TABLE sc_tmp.pp
-ALTER COLUMN estpakai TYPE DATE
-USING TRIM(estpakai)::DATE;
-
--- printcount
-ALTER TABLE sc_tmp.pp
-ADD COLUMN printcount integer
-ALTER TABLE sc_trx.pp
-ADD COLUMN printcount integer
-
--- ==================== END OFTAMBAHAN 24/8/26  ====================
+COMMIT;
