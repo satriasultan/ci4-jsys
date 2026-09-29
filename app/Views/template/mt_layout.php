@@ -602,6 +602,37 @@ use App\Libraries\Fiky_encryption;
     var languageDatatable = function ()  { return { <?php echo $this->fiky_encryption->constant('datatable_language'); ?>  }  }
     //]]>
 </script>
+<script>
+// Flag & info periode dari server
+window.PERIODE_TUTUP = <?= !empty($periodeTutup) ? 'true' : 'false' ?>;
+window.PERIODE_INFO  = {
+    periode    : <?= json_encode($periodeInfo['periode']    ?? '') ?>,
+    keterangan : <?= json_encode($periodeInfo['keterangan'] ?? '') ?>
+};
+
+/**
+ * Guard universal. Panggil di onclick link/button manapun.
+ * @returns {boolean} true = lanjut, false = blokir
+ */
+function guardPeriodeTutup(e) {
+    if (!window.PERIODE_TUTUP) return true;
+
+    if (e) e.preventDefault();
+
+    Swal.fire({
+        icon: 'error',
+        title: 'PERIODE TUTUP',
+        html: 'Periode <b>' + window.PERIODE_INFO.periode + '</b> sudah <b>TUTUP</b>.<br>' +
+              'Keterangan: ' + window.PERIODE_INFO.keterangan + '<br><br>' +
+              'Anda tidak dapat melakukan transaksi pada periode ini.',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        confirmButtonText: 'Mengerti',
+        confirmButtonColor: '#d33'
+    });
+    return false;
+}
+</script>
 <!-- END SCRIPT HELPER -->
 <script>
     $(document).ready(function() {

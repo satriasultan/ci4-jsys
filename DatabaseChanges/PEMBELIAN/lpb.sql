@@ -302,17 +302,73 @@ BEGIN
         -- contoh:
         -- 05M/2601/PA0001 -> 05M/2601/PA
         -- PPB/2601/PT0025 -> PPB/2601/PT
+        /* ========================================================
+        CEK APAKAH SUDAH PERNAH DIFINALKAN
+        ======================================================== */
+
+        IF EXISTS (
+            SELECT 1
+            FROM sc_trx.lpb
+            WHERE idurut = v_idurut
+                AND TRIM(COALESCE(inputby, '')) =
+                    TRIM(COALESCE(v_inputby, ''))
+        ) THEN
+
+            DELETE FROM sc_tmp.lpb
+            WHERE TRIM(docno) = TRIM(OLD.docno)
+                AND idurut = v_idurut;
+
+            RETURN NEW;
+        END IF;
+
+
+        /* ========================================================
+        GENERATE DOCNO
+        ======================================================== */
+
         v_base_docno := regexp_replace(v_docno, '[0-9]+$', '');
 
-        -- ===============================
-        -- ADVISORY LOCK (ANTI RACE CONDITION)
-        -- ===============================
-        PERFORM pg_advisory_xact_lock(hashtext(v_base_docno));
+        v_lock_key := hashtext(v_base_docno);
 
-        -- ===============================
-        -- AUTO INCREMENT JIKA SUDAH ADA
-        -- ===============================
+        PERFORM pg_advisory_xact_lock(v_lock_key);
+
         v_new_docno := v_docno;
+
+        LOOP
+
+            EXIT WHEN NOT EXISTS (
+                SELECT 1
+                FROM sc_trx.lpb
+                WHERE TRIM(docno) = TRIM(v_new_docno)
+            );
+
+            v_num := regexp_replace(
+                v_new_docno,
+                '.*?([0-9]+)$',
+                '\1'
+            );
+
+            IF COALESCE(v_num, '') = '' THEN
+
+                RAISE EXCEPTION
+                    'Format DOCNO LPB tidak valid: %',
+                    v_new_docno;
+
+            END IF;
+
+            v_num_int := v_num::INTEGER + 1;
+
+            v_new_docno :=
+                v_base_docno ||
+                lpad(
+                    v_num_int::TEXT,
+                    length(v_num),
+                    '0'
+                );
+
+        END LOOP;
+
+        v_docno := v_new_docno;
 
         LOOP
             EXIT WHEN NOT EXISTS (
@@ -415,548 +471,7 @@ BEGIN
                 AND t.docnopo IS NOT NULL
                 AND t.docnopo <> ''
             );
-        /* NILAI PERSEDIAAN DAN NILAI COA */
- /* =========================================================
-   STKBLC LPB
-   SOURCE : sc_tmp.lpb + sc_tmp.lpb_dtl
-
-   MENYIMPAN SNAPSHOT:
-   - Currency
-   - Tax
-   - Inclusive / Exclusive
-   - DPP
-   - PPN
-   - Bruto
-   - COA Pajak
-========================================================= */
-
-PERFORM sc_trx.sp_unpost_by_doc(v_docno, 'GR');
-
-DELETE FROM sc_trx.stkblc
-WHERE TRIM(docno) = TRIM(v_docno)
-  AND TRIM(doctype) = 'GR';
-
-
-INSERT INTO sc_trx.stkblc
-(
-    idlocation,
-    idarea,
-    batch,
-    idbarang,
-
-    trxdate,
-    doctype,
-    docno,
-    docref,
-
-    qty_in,
-    qty_out,
-
-    pricelst_in,
-    pricelst_out,
-
-    currcode,
-    currvalue,
-
-    tax,
-    disc,
-    biaya,
-
-    hist,
-    ctype,
-
-    idgroup,
-    grouptype,
-
-    is_posted,
-    posted_at,
-
-    picby,
-    unit,
-    subunit,
-    description,
-
-    created_at,
-    created_by,
-    status,
-
-    uniqueid,
-
-    /* =============================================
-       TAX SNAPSHOT
-    ============================================= */
-
-    idtax,
-    tax_percent,
-    isinclusive,
-
-    nilai_dpp,
-    nilai_ppn,
-    nilai_bruto,
-
-    coa_tax_masukan,
-    coa_tax_keluaran
-)
-
-SELECT
-
-    /* =============================================
-       LOCATION
-    ============================================= */
-
-    TRIM(d.idgudang),
-
-    TRIM(d.idgudang) || '.0000',
-
-    COALESCE(TRIM(d.idspec), ''),
-
-    TRIM(d.idbarang),
-
-
-    /* =============================================
-       TRANSACTION
-    ============================================= */
-
-    CAST(h.docdate AS DATE) + NOW()::TIME,
-
-    'GR',
-
-    TRIM(v_docno),
-
-    TRIM(d.docnopo),
-
-
-    /* =============================================
-       QTY
-
-       NON STOCK tidak masuk inventory quantity
-    ============================================= */
-
-    CASE
-        WHEN TRIM(COALESCE(mb.grouptype, 'STOCK')) = 'NON STOCK'
-        THEN 0
-
-        ELSE
-            COALESCE(d.qty, 0)
-            + COALESCE(d.qtybonus, 0)
-    END,
-
-    0,
-
-
-    /* =============================================
-       PRICE
-    ============================================= */
-
-    COALESCE(d.harga, 0),
-
-    0,
-
-
-    /* =============================================
-       CURRENCY
-    ============================================= */
-
-    TRIM(COALESCE(d.currcode, h.currcode)),
-
-    COALESCE(
-        NULLIF(d.kurs, 0),
-        NULLIF(h.kurs, 0),
-        1
-    ),
-
-
-    /* =============================================
-       TAX PERCENT
-    ============================================= */
-
-    COALESCE(tx.percentation, 0),
-
-    /* DISCOUNT */
-    COALESCE(d.totaldiscount, 0),
-
-    /* BIAYA */
-    COALESCE(d.biaya, 0)
-    + COALESCE(d.biaya2, 0),
-
-
-    /* =============================================
-       HISTORY
-    ============================================= */
-
-    'LPB',
-
-
-    /* =============================================
-       CTYPE
-    ============================================= */
-
-    CASE
-        WHEN TRIM(COALESCE(mb.grouptype, 'STOCK')) = 'NON STOCK'
-        THEN 'NON'
-
-        ELSE 'IN'
-    END,
-
-
-    /* =============================================
-       GROUP BARANG
-    ============================================= */
-
-    mb.idgroup,
-
-    COALESCE(mb.grouptype, 'STOCK'),
-
-
-    /* =============================================
-       POSTING STATUS
-    ============================================= */
-
-    FALSE,
-
-    NULL,
-
-
-    /* =============================================
-       USER / UNIT
-    ============================================= */
-
-    h.inputby,
-
-    d.unit,
-
-    NULL,
-
-    COALESCE(
-        NULLIF(TRIM(d.descriptionpo), ''),
-        NULLIF(TRIM(d.descriptionpp), ''),
-        ''
-    ),
-
-
-    NOW(),
-
-    h.inputby,
-
-    'F',
-
-
-    /* =============================================
-       UNIQUE ID
-    ============================================= */
-
-    d.uniqueid,
-
-
-    /* =====================================================
-       TAX SNAPSHOT
-    ===================================================== */
-
-    NULLIF(TRIM(d.idtax), ''),
-
-    COALESCE(tx.percentation, 0),
-
-    CASE
-        WHEN UPPER(TRIM(COALESCE(h.isinclusive, 'NO'))) = 'YES'
-        THEN 'YES'
-        ELSE 'NO'
-    END,
-
-
-    /* =====================================================
-       NILAI DPP
-
-       PRIORITAS:
-       1. nilaikonversi dari LPB detail
-       2. qty × harga × kurs
-    ===================================================== */
-
-    CASE
-
-        /* ---------------------------------------------
-           TAX INCLUSIVE
-           Harga sudah termasuk pajak
-        --------------------------------------------- */
-
-        WHEN UPPER(TRIM(COALESCE(h.isinclusive, 'NO'))) = 'YES'
-         AND COALESCE(tx.percentation, 0) > 0
-
-        THEN
-
-            COALESCE(
-                d.nilaikonversi,
-
-                (
-                    COALESCE(d.qty, 0)
-                    * COALESCE(d.harga, 0)
-                    * COALESCE(
-                        NULLIF(d.kurs, 0),
-                        NULLIF(h.kurs, 0),
-                        1
-                    )
-                )
-            )
-            /
-            (
-                1 + COALESCE(tx.percentation, 0) / 100
-            )
-
-
-        /* ---------------------------------------------
-           TAX EXCLUSIVE
-        --------------------------------------------- */
-
-        ELSE
-
-            COALESCE(
-                d.nilaikonversi,
-
-                COALESCE(d.qty, 0)
-                * COALESCE(d.harga, 0)
-                * COALESCE(
-                    NULLIF(d.kurs, 0),
-                    NULLIF(h.kurs, 0),
-                    1
-                )
-            )
-
-    END,
-
-
-    /* =====================================================
-       NILAI PPN
-
-       PRIORITAS:
-       nilaipajak LPB detail
-
-       Jika belum ada:
-       DPP × percentage
-    ===================================================== */
-
-    COALESCE(
-
-        d.nilaipajak,
-
-        CASE
-
-            WHEN COALESCE(tx.percentation, 0) <= 0
-            THEN 0
-
-            WHEN UPPER(TRIM(COALESCE(h.isinclusive, 'NO'))) = 'YES'
-
-            THEN
-
-                (
-                    COALESCE(
-                        d.nilaikonversi,
-
-                        COALESCE(d.qty, 0)
-                        * COALESCE(d.harga, 0)
-                        * COALESCE(
-                            NULLIF(d.kurs, 0),
-                            NULLIF(h.kurs, 0),
-                            1
-                        )
-                    )
-                )
-
-                -
-
-                (
-                    COALESCE(
-                        d.nilaikonversi,
-
-                        COALESCE(d.qty, 0)
-                        * COALESCE(d.harga, 0)
-                        * COALESCE(
-                            NULLIF(d.kurs, 0),
-                            NULLIF(h.kurs, 0),
-                            1
-                        )
-                    )
-                    /
-                    (1 + COALESCE(tx.percentation, 0) / 100)
-                )
-
-            ELSE
-
-                (
-                    COALESCE(
-                        d.nilaikonversi,
-
-                        COALESCE(d.qty, 0)
-                        * COALESCE(d.harga, 0)
-                        * COALESCE(
-                            NULLIF(d.kurs, 0),
-                            NULLIF(h.kurs, 0),
-                            1
-                        )
-                    )
-                )
-                * COALESCE(tx.percentation, 0)
-                / 100
-
-        END
-
-    ),
-
-
-    /* =====================================================
-       NILAI BRUTO
-    ===================================================== */
-
-    CASE
-
-        /* TAX INCLUSIVE */
-        WHEN UPPER(TRIM(COALESCE(h.isinclusive, 'NO'))) = 'YES'
-
-        THEN
-
-            COALESCE(
-                d.nilaikonversi,
-
-                COALESCE(d.qty, 0)
-                * COALESCE(d.harga, 0)
-                * COALESCE(
-                    NULLIF(d.kurs, 0),
-                    NULLIF(h.kurs, 0),
-                    1
-                )
-            )
-
-
-        /* TAX EXCLUSIVE */
-        ELSE
-
-            COALESCE(
-                d.nilaikonversi,
-
-                COALESCE(d.qty, 0)
-                * COALESCE(d.harga, 0)
-                * COALESCE(
-                    NULLIF(d.kurs, 0),
-                    NULLIF(h.kurs, 0),
-                    1
-                )
-            )
-
-            +
-
-            COALESCE(d.nilaipajak, 0)
-
-    END,
-
-
-    /* =====================================================
-       COA PAJAK MASUKAN
-    ===================================================== */
-
-    NULLIF(TRIM(tx.prk_masukan), ''),
-
-
-    /* =====================================================
-       COA PAJAK KELUARAN
-    ===================================================== */
-
-    NULLIF(TRIM(tx.prk_keluaran), '')
-
-
-FROM sc_tmp.lpb h
-
-JOIN sc_tmp.lpb_dtl d
-
-    ON TRIM(d.docno) = TRIM(h.docno)
-
-
-LEFT JOIN sc_mst.mbarang mb
-
-    ON TRIM(mb.idbarang) = TRIM(d.idbarang)
-
-
-/* =====================================================
-   TAX DETAIL
-
-   LPB_DTL.idtax
-        ↓
-   sc_mst.tax_dtl.idtax
-===================================================== */
-
-LEFT JOIN sc_mst.tax_dtl tx
-
-    ON TRIM(tx.idtax) = TRIM(d.idtax)
-
-
-WHERE TRIM(h.docno) = TRIM(OLD.docno)
-
-  AND TRIM(h.inputby) = TRIM(v_inputby)
-
-
-ON CONFLICT
-(
-    docno,
-    idbarang,
-    idlocation,
-    batch,
-    uniqueid
-)
-
-DO UPDATE SET
-
-    trxdate            = EXCLUDED.trxdate,
-
-    docref             = EXCLUDED.docref,
-
-    qty_in             = EXCLUDED.qty_in,
-
-    pricelst_in        = EXCLUDED.pricelst_in,
-
-    currcode           = EXCLUDED.currcode,
-
-    currvalue          = EXCLUDED.currvalue,
-
-    tax                = EXCLUDED.tax,
-
-    disc               = EXCLUDED.disc,
-
-    biaya              = EXCLUDED.biaya,
-
-    ctype              = EXCLUDED.ctype,
-
-    idgroup            = EXCLUDED.idgroup,
-
-    grouptype          = EXCLUDED.grouptype,
-
-    unit               = EXCLUDED.unit,
-
-    description        = EXCLUDED.description,
-
-
-    /* TAX */
-
-    idtax              = EXCLUDED.idtax,
-
-    tax_percent        = EXCLUDED.tax_percent,
-
-    isinclusive        = EXCLUDED.isinclusive,
-
-    nilai_dpp          = EXCLUDED.nilai_dpp,
-
-    nilai_ppn          = EXCLUDED.nilai_ppn,
-
-    nilai_bruto        = EXCLUDED.nilai_bruto,
-
-    coa_tax_masukan    = EXCLUDED.coa_tax_masukan,
-
-    coa_tax_keluaran   = EXCLUDED.coa_tax_keluaran,
-
-
-    /* REPOST GL */
-
-    is_posted          = FALSE,
-
-    posted_at          = NULL;
-        /* END NILAI PERSEDIAAN DAN NILAI COA */	
-        PERFORM sc_trx.sp_post_gl(v_inputby);	
+        
 
 
         -- ===============================
@@ -1007,20 +522,8 @@ DO UPDATE SET
 
         DELETE FROM sc_trx.lpb WHERE docno = NEW.docnotmp;
         DELETE FROM sc_trx.lpb_dtl WHERE docno = NEW.docnotmp;
-
-        INSERT INTO sc_trx.lpb_dtl
-        (idurut, docno, docnopo, idbarang, capexno, uniqueid,  nmbarang,
-        idprincipal, idgudang, idspec, volitem, biaya, biaya2, unit, qty, 
-        harga, nilai, descriptionpo, descriptionpp, multidisc,
-        inputby, inputdate, status, updateby, updatedate, docnotmp,idtax,currcode,kurs,nilaikonversi,nilaipajak,qtyretur,idhistory_price,multidisctype,totaldiscount)
-        SELECT
-            idurut, NEW.docnotmp, docnopo, idbarang, capexno, uniqueid,  nmbarang,
-            idprincipal, idgudang, idspec, volitem, biaya, biaya2, unit, qty, 
-            harga, nilai, descriptionpo, descriptionpp, multidisc,
-            inputby, inputdate, status, updateby, updatedate, docnotmp,idtax,currcode,kurs,nilaikonversi,nilaipajak,qtyretur,idhistory_price,multidisctype,totaldiscount
-        FROM sc_tmp.lpb_dtl
-        WHERE rtrim(docno) = rtrim(NEW.docno);
-
+        
+        
         INSERT INTO sc_trx.lpb
         (idurut, docno, cabang, docdate, pemohon, kdsupplier,
         nmsupplier, alamatsupplier, jthtempo,
@@ -1039,6 +542,31 @@ DO UPDATE SET
             updateby, updatedate, printby, printdate, printcount, docnotmp
         FROM sc_tmp.lpb
         WHERE rtrim(docno) = rtrim(NEW.docno);
+
+        INSERT INTO sc_trx.lpb_dtl
+        (idurut, docno, docnopo, idbarang, capexno, uniqueid,  nmbarang,
+        idprincipal, idgudang, idspec, volitem, biaya, biaya2, unit, qty, 
+        harga, nilai, descriptionpo, descriptionpp, multidisc,
+        inputby, inputdate, status, updateby, updatedate, docnotmp,idtax,currcode,kurs,nilaikonversi,nilaipajak,qtyretur,idhistory_price,multidisctype,totaldiscount)
+        SELECT
+            idurut, NEW.docnotmp, docnopo, idbarang, capexno, uniqueid,  nmbarang,
+            idprincipal, idgudang, idspec, volitem, biaya, biaya2, unit, qty, 
+            harga, nilai, descriptionpo, descriptionpp, multidisc,
+            inputby, inputdate, status, updateby, updatedate, docnotmp,idtax,currcode,kurs,nilaikonversi,nilaipajak,qtyretur,idhistory_price,multidisctype,totaldiscount
+        FROM sc_tmp.lpb_dtl
+        WHERE rtrim(docno) = rtrim(NEW.docno);
+
+        -- DELETE TRANS DT YANG SUDAH TIDAK ADA DI LPB DTL
+        DELETE FROM sc_trx.transaction_dt td
+        WHERE rtrim(td.docno) = rtrim(NEW.docnotmp)
+        AND td.doctype IN ('GR', 'GRRET')
+        AND NOT EXISTS (
+            SELECT 1
+            FROM sc_trx.lpb_dtl d
+            WHERE rtrim(d.docno) = rtrim(NEW.docnotmp)
+                AND d.uniqueid = td.source_uniqueid
+        );
+
 
         UPDATE sc_trx.po_dtl ppd
         SET qtylpb = COALESCE(ppd.qtylpb, 0) + pod.qty_used
@@ -1079,433 +607,7 @@ DO UPDATE SET
                 AND t.docnopo <> ''
             );
 
-        /* NILAI PERSEDIAAN DAN NILAI COA */
-        -- =========================================
-        -- UPSERT STKBLC (SOURCE: sc_tmp)
-        -- =========================================
-        -- =========================================
-        -- UPSERT STKBLC (DOCNOTMP - sc_tmp)
-        -- =========================================
-        PERFORM sc_trx.sp_unpost_by_doc(NEW.docnotmp,'GR');
-        DELETE FROM sc_trx.stkblc WHERE docno = trim(NEW.docnotmp) and doctype='GR' ;
-        INSERT INTO sc_trx.stkblc ( 
-					idlocation, 
-					idarea, 
-					batch, 
-					idbarang, 
-					trxdate, 
-					doctype, 
-					docno, 
-					docref, 
-
-					qty_in, 
-					qty_out, 
-					qty_sld, 
-
-					pricelst_in, 
-					pricelst_out, 
-					pricelst_sld, 
-
-					currcode, 
-					currvalue, 
-
-					tax, 
-					disc, 
-					biaya, 
-
-					idgroup, 
-					grouptype, 
-
-					hist, 
-					ctype, 
-
-					/* ==========================================
-					   TAX SNAPSHOT
-					========================================== */
-					idtax,
-					tax_percent,
-					isinclusive,
-
-					nilai_dpp,
-					nilai_ppn,
-					nilai_bruto,
-
-					coa_tax_masukan,
-					coa_tax_keluaran,
-
-					/* ==========================================
-					   POSTING
-					========================================== */
-					is_posted, 
-					posted_at,
-
-					picby,
-					description,
-					created_at,
-					created_by,
-					status
-				) 
-
-				SELECT 
-
-					/* ==========================================
-					   LOCATION
-					========================================== */
-
-					d.idgudang, 
-
-					TRIM(d.idgudang) || '.0000', 
-
-					COALESCE(TRIM(d.idspec), ''), 
-
-					d.idbarang, 
-
-
-					/* ==========================================
-					   TRANSACTION
-					========================================== */
-
-					CAST(h.docdate AS DATE) + NOW()::TIME, 
-
-					'GR', 
-
-					d.docnotmp, 
-
-					d.docnopo, 
-
-
-					/* ==========================================
-					   QTY
-					========================================== */
-
-					CASE  
-						WHEN TRIM(COALESCE(mb.grouptype, 'STOCK')) = 'NON STOCK'
-							THEN 0 
-						ELSE
-							COALESCE(d.qty, 0)
-							+ COALESCE(d.qtybonus, 0)
-					END,
-
-					0,
-
-					0,
-
-
-					/* ==========================================
-					   PRICE
-					========================================== */
-
-					COALESCE(d.harga, 0),
-
-					0,
-
-					0,
-
-
-					/* ==========================================
-					   CURRENCY
-					========================================== */
-
-					h.currcode, 
-
-					COALESCE(h.kurs, 1),
-
-
-					/* ==========================================
-					   TAX / DISCOUNT / BIAYA
-					========================================== */
-
-					COALESCE(d.tax, 0),
-
-					COALESCE(d.disc, 0),
-
-					COALESCE(d.biaya, 0),
-
-
-					/* ==========================================
-					   GROUP
-					========================================== */
-
-					mb.idgroup, 
-
-					COALESCE(mb.grouptype, 'STOCK'), 
-
-
-					/* ==========================================
-					   HISTORY
-					========================================== */
-
-					'LPB', 
-
-
-					/* ==========================================
-					   CTYPE
-					========================================== */
-
-					CASE  
-						WHEN TRIM(COALESCE(mb.grouptype, 'STOCK')) = 'NON STOCK'
-							THEN 'NON' 
-						ELSE 'IN' 
-					END, 
-
-
-					/* ==========================================
-					   TAX SNAPSHOT
-					========================================== */
-
-					NULLIF(TRIM(d.idtax), ''),
-
-					COALESCE(d.tax_percent, 0),
-
-					CASE
-						WHEN UPPER(TRIM(COALESCE(d.isinclusive, 'NO'))) = 'YES'
-							THEN 'YES'
-						ELSE 'NO'
-					END,
-
-
-					/* ==========================================
-					   NILAI DPP
-
-					   PRIORITAS:
-					   nilai_dpp dari LPB detail
-					========================================== */
-
-					COALESCE(
-						d.nilai_dpp,
-
-						CASE
-							WHEN UPPER(TRIM(COALESCE(d.isinclusive, 'NO'))) = 'YES'
-							 AND COALESCE(d.tax_percent, 0) > 0
-							THEN
-								(
-									COALESCE(d.qty, 0)
-									* COALESCE(d.harga, 0)
-								)
-								/
-								(
-									1 + COALESCE(d.tax_percent, 0) / 100
-								)
-
-							ELSE
-								COALESCE(d.qty, 0)
-								* COALESCE(d.harga, 0)
-						END
-					)
-					* COALESCE(h.kurs, 1),
-
-
-					/* ==========================================
-					   NILAI PPN
-					========================================== */
-
-					COALESCE(
-						d.nilai_ppn,
-
-						CASE
-
-							WHEN NULLIF(TRIM(COALESCE(d.idtax, '')), '') IS NULL
-								THEN 0
-
-							WHEN UPPER(TRIM(COALESCE(d.isinclusive, 'NO'))) = 'YES'
-							 AND COALESCE(d.tax_percent, 0) > 0
-							THEN
-
-								(
-									COALESCE(d.qty, 0)
-									* COALESCE(d.harga, 0)
-								)
-
-								-
-
-								(
-									(
-										COALESCE(d.qty, 0)
-										* COALESCE(d.harga, 0)
-									)
-
-									/
-
-									(
-										1
-										+ COALESCE(d.tax_percent, 0) / 100
-									)
-								)
-
-							ELSE
-
-								(
-									COALESCE(d.qty, 0)
-									* COALESCE(d.harga, 0)
-								)
-
-								*
-								COALESCE(d.tax_percent, 0)
-								/ 100
-
-						END
-					)
-					* COALESCE(h.kurs, 1),
-
-
-					/* ==========================================
-					   NILAI BRUTO
-					========================================== */
-
-					COALESCE(
-						d.nilai_bruto,
-
-						CASE
-
-							/* TAX INCLUSIVE */
-							WHEN UPPER(TRIM(COALESCE(d.isinclusive, 'NO'))) = 'YES'
-							THEN
-								COALESCE(d.qty, 0)
-								* COALESCE(d.harga, 0)
-
-
-							/* TAX EXCLUSIVE */
-							ELSE
-
-								(
-									COALESCE(d.qty, 0)
-									* COALESCE(d.harga, 0)
-								)
-
-								+
-
-								(
-									(
-										COALESCE(d.qty, 0)
-										* COALESCE(d.harga, 0)
-									)
-
-									*
-									COALESCE(d.tax_percent, 0)
-									/ 100
-								)
-
-						END
-					)
-					* COALESCE(h.kurs, 1),
-
-
-					/* ==========================================
-					   COA TAX MASUKAN
-
-					   Dari LPB snapshot.
-					   Jika belum disimpan, sebaiknya ambil dari
-					   sc_mst.tax_dtl.
-					========================================== */
-
-					NULLIF(TRIM(d.coa_tax_masukan), ''),
-
-
-					/* ==========================================
-					   COA TAX KELUARAN
-					========================================== */
-
-					NULLIF(TRIM(d.coa_tax_keluaran), ''),
-
-
-					/* ==========================================
-					   POSTING
-					========================================== */
-
-					FALSE, 
-
-					NULL,
-
-
-					/* ==========================================
-					   AUDIT
-					========================================== */
-
-					h.inputby,
-
-					COALESCE(d.description, 'LPB'),
-
-					NOW(),
-
-					h.inputby,
-
-					'P'
-
-
-				FROM sc_tmp.lpb h
-
-				JOIN sc_tmp.lpb_dtl d 
-					ON RTRIM(d.docno) = RTRIM(h.docno) 
-
-				LEFT JOIN sc_mst.mbarang mb 
-					ON TRIM(mb.idbarang) = TRIM(d.idbarang) 
-
-
-				WHERE TRIM(h.docno) = TRIM(NEW.docno) 
-
-				AND TRIM(h.inputby) = TRIM(v_inputby) 
-
-
-				/* =====================================================
-				   UPSERT STKBLC
-				===================================================== */
-
-				ON CONFLICT (docno, idbarang, idlocation, batch) 
-
-				DO UPDATE SET 
-
-					/* QTY */
-					qty_in = EXCLUDED.qty_in, 
-					qty_out = EXCLUDED.qty_out, 
-
-
-					/* PRICE */
-					pricelst_in = EXCLUDED.pricelst_in, 
-
-
-					/* CURRENCY */
-					currcode = EXCLUDED.currcode, 
-					currvalue = EXCLUDED.currvalue, 
-
-
-					/* TAX */
-					tax = EXCLUDED.tax,
-					disc = EXCLUDED.disc,
-					biaya = EXCLUDED.biaya,
-
-					idtax = EXCLUDED.idtax,
-					tax_percent = EXCLUDED.tax_percent,
-					isinclusive = EXCLUDED.isinclusive,
-
-					nilai_dpp = EXCLUDED.nilai_dpp,
-					nilai_ppn = EXCLUDED.nilai_ppn,
-					nilai_bruto = EXCLUDED.nilai_bruto,
-
-					coa_tax_masukan = EXCLUDED.coa_tax_masukan,
-					coa_tax_keluaran = EXCLUDED.coa_tax_keluaran,
-
-
-					/* GROUP */
-					idgroup = EXCLUDED.idgroup, 
-					grouptype = EXCLUDED.grouptype, 
-
-
-					/* RESET GL POSTING */
-					is_posted = FALSE, 
-					posted_at = NULL,
-
-
-					/* AUDIT */
-					picby = EXCLUDED.picby,
-					description = EXCLUDED.description,
-					created_at = NOW(),
-					created_by = EXCLUDED.created_by;
-            
-            
-        /* END NILAI PERSEDIAAN DAN NILAI COA */
-        PERFORM sc_trx.sp_post_gl(v_inputby);
-
-         -- ===============================
+        -- ===============================
         -- LOG: INSERT HEADER LPB
         -- ===============================
         PERFORM sc_log.fn_log_transaction(

@@ -49,6 +49,18 @@ class Purchase extends BaseController
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_purchase->q_pp_master_temp($param);
         $logindate = trim($this->session->get('logindate'));
+        $periode   = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        $data['periodeTutup'] = false;
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            $data['periodeTutup'] = true;
+            $data['periodeInfo']  = [
+                'periode'    => trim($dtlPeriode['periode']),
+                'keterangan' => trim($dtlPeriode['keterangan']),
+            ];
+        }
+        /* ===================================================== */
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
@@ -166,7 +178,7 @@ class Purchase extends BaseController
                 $updateBtn = '
                     <a class="dropdown-item bg-warning" 
                     href="' . base_url('purchase/trans/updatePP') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Update This PP : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Update This PP : ' . $docno . '\')">
                         <i class="fa fa-edit"></i> Update Permintaan Pembelian 
                     </a>';
             }
@@ -194,7 +206,7 @@ class Purchase extends BaseController
                     <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
                     href="' . base_url('purchase/trans/show_pp') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Preview PP : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Preview PP : ' . $docno . '\')">
                         <i class="fa fa-print"></i> Preview Permintaan Pembelian 
                     </a>';
             }
@@ -618,6 +630,19 @@ class Purchase extends BaseController
         $data['mst'] = $this->m_purchase->q_pp_master_temp($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
 
+         /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('purchase/trans/pp'));
+        }
+        // =================================
+
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
         $param = " and trim(inputby)='$nama'";
@@ -669,13 +694,29 @@ class Purchase extends BaseController
             ]);
         }
 
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray(); // Ini mengembalikan array of objects/arrays
+
+
+        // Karena hanya 1 row, ambil index ke-0
+        $prefix = trim($konfigurasiUmum[0]['pp']) ?? '';
+        $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
+        $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
+
         $logindate = $this->session->get('logindate'); // dd-mm-yyyy
         $infix = date('ym', strtotime($logindate));
 
         return $this->response->setJSON([
             'success'      => true,
             'kode_suffix'  => $kodeSuffix,
-            'infix'        => $infix
+            'infix'        => $infix,
+            'logindate'     => $logindate,
+            'prefix'        => $prefix,
+            'konfigurasi_umum' => $konfigurasiUmum,
+            'currcode'      => $currcode,
+            'idtax'         => $idtax,
         ]);
     }
 
@@ -938,6 +979,20 @@ class Purchase extends BaseController
         $dtl = $this->m_purchase->q_pp_master($param)->getRowArray();
         $status = trim($dtl['status']);
 
+        $logindate = trim($this->session->get('logindate'));
+
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('purchase/trans/pp'));
+        }
+
         if ($status === 'F' || $status === 'P') {
             // Update hanya status di tabel sc_trx.standart_usage_mst
             $info = array(
@@ -973,7 +1028,7 @@ class Purchase extends BaseController
     function showing_pptemp(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno='$docno' and inputby='$nama'";
         $data = $this->m_purchase->q_pp_master_temp($param);
         $output = array(
             'status' => true,
@@ -1458,7 +1513,19 @@ class Purchase extends BaseController
         // $docno = hex2bin($this->request->getGet('docno'));
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.pp');
+        $logindate = trim($this->session->get('logindate'));
 
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('purchase/trans/pp'));
+        }
 //       $builder = $builder
 //            ->where('docno', $docno)
 //            ->update([
@@ -1598,6 +1665,18 @@ class Purchase extends BaseController
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_purchase->q_voidpp_master_temp($param);
         $logindate = trim($this->session->get('logindate'));
+        $periode   = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        $data['periodeTutup'] = false;
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            $data['periodeTutup'] = true;
+            $data['periodeInfo']  = [
+                'periode'    => trim($dtlPeriode['periode']),
+                'keterangan' => trim($dtlPeriode['keterangan']),
+            ];
+        }
+        /* ===================================================== */
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
@@ -1714,7 +1793,7 @@ class Purchase extends BaseController
                 $updateBtn = '
                 <a class="dropdown-item bg-warning" 
                     href="' . base_url('purchase/trans/updateVoidPP') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Update This Void PP : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Update This VoidPP : ' . $docno . '\')">
                     <i class="fa fa-edit"></i> Update Void Permintaan Pembelian 
                 </a>';
             }
@@ -1731,12 +1810,12 @@ class Purchase extends BaseController
 
             if($canPrint && (trim($status) == 'FINAL USER' || trim($status) == 'CETAK/PRINT')){
                 $printBtn = '
-                <a class="dropdown-item" 
+                    <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
                     href="' . base_url('purchase/trans/show_voidpp') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Preview Void PP : ' . $docno . '\')">
-                    <i class="fa fa-print"></i> Preview Void Permintaan Pembelian 
-                </a>';
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Preview PP : ' . $docno . '\')">
+                        <i class="fa fa-print"></i> Preview Permintaan Pembelian 
+                    </a>';
             }
 
 
@@ -1928,6 +2007,19 @@ class Purchase extends BaseController
         $data['mst'] = $this->m_purchase->q_voidpp_master_temp($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
 
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('purchase/trans/voidpp'));
+        }
+        // =================================
+
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
         $param = " and trim(inputby)='$nama'";
@@ -1974,13 +2066,30 @@ class Purchase extends BaseController
             ]);
         }
 
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray(); // Ini mengembalikan array of objects/arrays
+
+
+        // Karena hanya 1 row, ambil index ke-0
+        $prefix = trim($konfigurasiUmum[0]['voidpp']) ?? '';
+        $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
+        $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
+
+
         $logindate = $this->session->get('logindate'); // dd-mm-yyyy
         $infix = date('ym', strtotime($logindate));
 
         return $this->response->setJSON([
             'success'      => true,
             'kode_suffix'  => $kodeSuffix,
-            'infix'        => $infix
+            'infix'        => $infix,
+            'logindate'     => $logindate,
+            'prefix'        => $prefix,
+            'konfigurasi_umum' => $konfigurasiUmum,
+            'currcode'      => $currcode,
+            'idtax'         => $idtax,
         ]);
     }
 
@@ -2309,6 +2418,20 @@ class Purchase extends BaseController
         $param = " and coalesce(docno,'')='$docno'";
         $dtl = $this->m_purchase->q_voidpp_master($param)->getRowArray();
         $status = trim($dtl['status']);
+        
+        $logindate = trim($this->session->get('logindate'));
+
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('purchase/trans/voidpp'));
+        }
 
         if ($status === 'F' || $status === 'P') {
             // Update hanya status di tabel sc_trx.standart_usage_mst
@@ -2345,7 +2468,7 @@ class Purchase extends BaseController
     function showing_voidpptemp(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno='$docno' and inputby='$nama'";
         $data = $this->m_purchase->q_voidpp_master_temp($param);
         $output = array(
             'status' => true,
@@ -2604,7 +2727,19 @@ class Purchase extends BaseController
         // $docno = hex2bin($this->request->getGet('docno'));
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.voidpp');
+        $logindate = trim($this->session->get('logindate'));
 
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('purchase/trans/voidpp'));
+        }
     //    $builder = $builder
     //         ->where('docno', $docno)
     //         ->update([
@@ -2745,6 +2880,18 @@ class Purchase extends BaseController
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_purchase->q_po_master_temp($param);
         $logindate = trim($this->session->get('logindate'));
+        $periode   = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        $data['periodeTutup'] = false;
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            $data['periodeTutup'] = true;
+            $data['periodeInfo']  = [
+                'periode'    => trim($dtlPeriode['periode']),
+                'keterangan' => trim($dtlPeriode['keterangan']),
+            ];
+        }
+        /* ===================================================== */
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
@@ -2855,11 +3002,11 @@ class Purchase extends BaseController
             // Build button by access
             // =========================
 
-            if ($canUpdate &&  !in_array(trim($status), ['REVISION/EDITING', 'APPROVED','DITARIK LPB'])) {
+            if ($canUpdate && trim($lm->inputby) == $nama &&  !in_array(trim($status), ['REVISION/EDITING', 'APPROVED','DITARIK LPB'])) {
                 $updateBtn = '
                 <a class="dropdown-item bg-warning" 
                     href="' . base_url('purchase/trans/updatePO') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Update This PO : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Update This PO : ' . $docno . '\')">
                     <i class="fa fa-edit"></i> Update PO 
                 </a>';
             }
@@ -2883,7 +3030,7 @@ class Purchase extends BaseController
                 <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
                     href="' . base_url('purchase/trans/show_po') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Preview PO : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Preview PO : ' . $docno . '\')">
                     <i class="fa fa-print"></i> Print/Preview PO 
                 </a>';
             }
@@ -2925,7 +3072,7 @@ class Purchase extends BaseController
                 if ($canUpdate) $menuContent .= $updateBtn;
                 if ($canPrint)  $menuContent .= $printBtn;
                 if ($canView)   $menuContent .= $detailBtn;
-                if ($canApprove)   $menuContent .= $approveBtn;
+                // if ($canApprove)   $menuContent .= $approveBtn;
                 if ($canApprove)   $menuContent .= $disapproveBtn;
             }
 
@@ -2977,13 +3124,15 @@ class Purchase extends BaseController
                 case 'CETAK/PRINT':
                     $badgeClass = 'badge-success ';
                     break;
+                case 'DITARIK LPB':
+                    $badgeClass = 'badge-cetak ';
+                    break;
                 default:
                     $badgeClass = 'badge-primary'; // Default (primary) jika status tidak dikenali
                     break;
             }
 
-            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
-
+            
             $row[] = $lm->kdsupplier;
             $row[] = $lm->nmsupplier;
             $row[] = $lm->alamatsupplier;
@@ -3011,6 +3160,7 @@ class Purchase extends BaseController
 
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
+            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
             
 
             $data[] = $row;
@@ -3228,17 +3378,17 @@ class Purchase extends BaseController
 
             // Karena hanya FINAL USER yang boleh masuk,
             // langsung gunakan hak akses yang sama.
-            if ($canUpdate) {
-                $menuContent .= $updateBtn;
-            }
+            // if ($canUpdate) {
+            //     $menuContent .= $updateBtn;
+            // }
 
             if ($canView) {
                 $menuContent .= $detailBtn;
             }
 
-            if ($canPrint) {
-                $menuContent .= $printBtn;
-            }
+            // if ($canPrint) {
+            //     $menuContent .= $printBtn;
+            // }
 
             if ($canApprove) {
                 $menuContent .= $approveBtn;
@@ -3515,6 +3665,19 @@ class Purchase extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_purchase->q_po_master_temp($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
+        
+         /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('purchase/trans/po'));
+        }
+        // =================================
 
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
@@ -3534,29 +3697,21 @@ class Purchase extends BaseController
         // ==========================================
         // AMBIL ID BRANCH
         // ==========================================
-
-        $idbranch = trim(
-            (string) $this->request->getGet('idbranch')
-        );
-
+        $idbranch = trim((string) $this->request->getGet('idbranch'));
 
         // ==========================================
         // VALIDASI
         // ==========================================
-
         if ($idbranch === '') {
-
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Branch wajib dipilih.'
             ]);
         }
 
-
         // ==========================================
         // AMBIL DATA BRANCH
         // ==========================================
-
         $row = $this->db
             ->table('sc_mst.branchjob')
             ->select('idbranch, nmbranch')
@@ -3564,128 +3719,93 @@ class Purchase extends BaseController
             ->get()
             ->getRowArray();
 
-
         // ==========================================
         // CEK BRANCH
         // ==========================================
-
         if (!$row) {
-
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Cabang tidak ditemukan.'
             ]);
         }
 
-
         // ==========================================
         // MAPPING NAMA BRANCH
         // ==========================================
-
         $map = [
-
             'PT JATIM TAMAN STEEL MFG' => 'PT',
-
-            'PLANT I' => 'PA',
-
-            'PLANT II' => 'PB',
-
+            'PLANT I'                  => 'PA',
+            'PLANT II'                 => 'PB',
         ];
 
-
-        $nmbranch = trim(
-            (string) $row['nmbranch']
-        );
-
-
+        $nmbranch   = trim((string) $row['nmbranch']);
         $kodeSuffix = $map[$nmbranch] ?? '';
-
 
         // ==========================================
         // CEK MAPPING
         // ==========================================
-
         if ($kodeSuffix === '') {
-
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Mapping cabang belum diset.'
             ]);
         }
 
-
         // ==========================================
         // AMBIL KONFIGURASI
         // ==========================================
-
-//        $konfigurasi = $this->db
-//            ->table('sc_mst.konfigurasi')
-//            ->get()
-//            ->getResultArray();
-
+        // $konfigurasi = $this->db
+        //     ->table('sc_mst.konfigurasi')
+        //     ->get()
+        //     ->getResultArray();
 
         // ==========================================
         // AMBIL KONFIGURASI UMUM
         // ==========================================
-
         $konfigurasiUmum = $this->db
             ->table('sc_mst.konfigurasi_umum')
             ->get()
             ->getResultArray();
 
-
         // ==========================================
         // LOGIN DATE
         // ==========================================
-
-        $logindate = trim(
-            (string) $this->session->get('logindate')
-        );
-
+        $logindate = trim((string) $this->session->get('logindate'));
 
         // ==========================================
         // FORMAT INFIX
         // ==========================================
-
         $infix = '';
 
         if ($logindate !== '') {
-
-            $infix = date(
-                'ym',
-                strtotime($logindate)
-            );
-
+            $infix = date('ym', strtotime($logindate));
         }
 
+        // Karena hanya 1 row, ambil index ke-0
+        $prefix = trim($konfigurasiUmum[0]['po']) ?? '';
+        $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
+        $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
 
         // ==========================================
         // RESPONSE
         // ==========================================
-
         return $this->response->setJSON([
-
             'success' => true,
 
             // BRANCH
-            'idbranch' => trim($row['idbranch']),
-
-            'nmbranch' => $nmbranch,
-
+            'idbranch'    => trim($row['idbranch']),
+            'nmbranch'    => $nmbranch,
             'kode_suffix' => $kodeSuffix,
-
+            'infix'     => $infix,
 
             // PERIODE
             'logindate' => $logindate,
-
-            'infix' => $infix,
-
-
+            'prefix'        => $prefix,
+            'konfigurasi_umum' => $konfigurasiUmum,
+            'currcode'      => $currcode,
+            'idtax'         => $idtax,
             // KONFIGURASI
-            //'konfigurasi' => $konfigurasi,
-
-            'konfigurasi_umum' => $konfigurasiUmum
-
+            // 'konfigurasi' => $konfigurasi,
         ]);
     }
 
@@ -3860,9 +3980,54 @@ class Purchase extends BaseController
             $nilai       = $this->request->getPost('nilai') ?: 0;
             $descriptionpo = strtoupper($this->request->getPost('descriptionpo'));
 
+            // =====================================================
+            // VALIDASI QTY TERHADAP SISA QTY PP
+            // =====================================================
+            $ppDetail = $db->query("
+                SELECT
+                    qty,
+                    qtypo,
+                    qtyvoid,
+                    (qty - (qtypo + qtyvoid)) AS sisa_qty
+                FROM sc_trx.pp_dtl
+                WHERE TRIM(uniqueid) = ?
+            ", [$uniqueid])->getRow();
+
+            if (!$ppDetail) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Data PP tidak ditemukan'
+                ]);
+            }
+
+            // Hitung total qty dari semua PO untuk uniqueid ini, EXCEPT PO ini
+            $totalQtyPoLain = $db->table('sc_trx.po_dtl')
+                ->selectSum('qty', 'total')
+                ->where('uniqueid', $uniqueid)
+                ->where('docno !=', $docno)   // kecualikan PO ini
+                ->get()
+                ->getRowArray();
+
+            $qtyPoLain = $totalQtyPoLain['total'] ?? 0;
+
+            // Sisa tersedia = qty PP - qtyvoid - qtyPO lain
+            $sisaTersedia = $ppDetail->qty - $ppDetail->qtyvoid - $qtyPoLain;
+
+            if ($qty > $sisaTersedia) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Qty (' . $qty . ') melebihi sisa qty PP yang tersedia (' . $sisaTersedia . ')'
+                ]);
+            }
+
 
             // Ambil kurs dari header PO
-            $poHeader = $builderHeader->select('kurs, idtax')->where('docno', $docno)->get()->getRowArray();
+            $poHeader = $builderHeader->select('kurs, idtax')
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->get()->getRowArray();
             $kurs = $poHeader['kurs'] ?? 0;
             $idtax = $poHeader['idtax'] ?? '';
             
@@ -3926,13 +4091,16 @@ class Purchase extends BaseController
 
 
 
-            $poHeader = $builderHeader->select('idtax')->where('docno', $docno)->get()->getRowArray();
+            $poHeader = $builderHeader->select('idtax')
+            ->where('docno', $docno)
+            ->where('inputby', $nama)->get()->getRowArray();
             $idtax = $poHeader['idtax'] ?? '';
             
             // Hitung total DPP (sum nilai dari po_dtl)
             $builderTotalDpp = $db->table('sc_tmp.po_dtl');
             $totalDpp = $builderTotalDpp->select('COALESCE(SUM(nilai), 0) as total_dpp')
                 ->where('docno', $docno)
+                ->where('inputby', $nama)
                 ->get()
                 ->getRowArray();
             
@@ -3959,7 +4127,9 @@ class Purchase extends BaseController
             $total = $dpp + $jumlahPajak;
             
             // Update header PO
-            $builderHeader->where('docno', $docno)->update([
+            $builderHeader->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->update([
                 'dpp' => number_format($dpp, 2, '.', ''),
                 'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
                 'total' => number_format($total, 2, '.', ''),
@@ -4135,6 +4305,20 @@ class Purchase extends BaseController
         $dtl = $this->m_purchase->q_po_master($param)->getRowArray();
         $status = trim($dtl['status']);
 
+        $logindate = trim($this->session->get('logindate'));
+
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('purchase/trans/po'));
+        }
+
         if ($status === 'F' || $status === 'P') {
             // Update hanya status di tabel sc_trx.standart_usage_mst
             $info = array(
@@ -4170,7 +4354,7 @@ class Purchase extends BaseController
     function showing_potemp(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno='$docno' and inputby='$nama'";
         $data = $this->m_purchase->q_po_master_temp($param);
         $output = array(
             'status' => true,
@@ -4942,7 +5126,19 @@ class Purchase extends BaseController
         // $docno = hex2bin($this->request->getGet('docno'));
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.po');
+        $logindate = trim($this->session->get('logindate'));
 
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('purchase/trans/po'));
+        }
     //    $builder = $builder
     //         ->where('docno', $docno)
     //         ->update([
@@ -5174,6 +5370,18 @@ class Purchase extends BaseController
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_purchase->q_voidpo_master_temp($param);
         $logindate = trim($this->session->get('logindate'));
+        $periode   = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        $data['periodeTutup'] = false;
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            $data['periodeTutup'] = true;
+            $data['periodeInfo']  = [
+                'periode'    => trim($dtlPeriode['periode']),
+                'keterangan' => trim($dtlPeriode['keterangan']),
+            ];
+        }
+        /* ===================================================== */
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
@@ -5288,7 +5496,7 @@ class Purchase extends BaseController
                 $updateBtn = '
                 <a class="dropdown-item bg-warning" 
                     href="' . base_url('purchase/trans/updateVoidPO') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Update This Void PO : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Update This Void PO : ' . $docno . '\')">
                     <i class="fa fa-edit"></i> Update Void PO 
                 </a>';
             }
@@ -5308,7 +5516,7 @@ class Purchase extends BaseController
                 <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
                     href="' . base_url('purchase/trans/show_po') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Print Void PO : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Print Void PO : ' . $docno . '\')">
                     <i class="fa fa-print"></i> Print Void PO 
                 </a>';
             }
@@ -5398,15 +5606,14 @@ class Purchase extends BaseController
                     break;
             }
 
-            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
-
+            
             $row[] = $lm->kdsupplier;
             $row[] = $lm->nmsupplier;
             $row[] = $lm->alamatsupplier;
             $row[] = $lm->nmkota;
             $row[] = $lm->currcode;
             // $row[] = date(
-            //     'd-m-Y',
+                //     'd-m-Y',
             //     strtotime(trim($lm->senddate))
             // );
             $docdate  = trim($lm->docdate);
@@ -5424,9 +5631,10 @@ class Purchase extends BaseController
             }
 
             $row[] = $jatuhTempo;
-
+            
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
+            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
             
 
             $data[] = $row;
@@ -5483,7 +5691,7 @@ class Purchase extends BaseController
                 $updateBtn = '
                 <a class="dropdown-item bg-warning" 
                     href="' . base_url('purchase/trans/updateVoidPO') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Update This Void PO : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Update This Void PO : ' . $docno . '\')">
                     <i class="fa fa-edit"></i> Update Void PO 
                 </a>';
             }
@@ -5503,7 +5711,7 @@ class Purchase extends BaseController
                 <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
                     href="' . base_url('purchase/trans/show_voidpo') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Print Void PO : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Print Void PO : ' . $docno . '\')">
                     <i class="fa fa-print"></i> Print Void PO 
                 </a>';
             }
@@ -5719,6 +5927,19 @@ class Purchase extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_purchase->q_voidpo_master_temp($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
+        
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('purchase/trans/voidpo'));
+        }
+        // =================================
 
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
@@ -5766,13 +5987,29 @@ class Purchase extends BaseController
             ]);
         }
 
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray(); // Ini mengembalikan array of objects/arrays
+
+
+        // Karena hanya 1 row, ambil index ke-0
+        $prefix = trim($konfigurasiUmum[0]['voidpo']) ?? '';
+        $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
+        $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
+
         $logindate = $this->session->get('logindate'); // dd-mm-yyyy
         $infix = date('ym', strtotime($logindate));
 
         return $this->response->setJSON([
             'success'      => true,
             'kode_suffix'  => $kodeSuffix,
-            'infix'        => $infix
+            'infix'        => $infix,
+            'logindate'     => $logindate,
+            'prefix'        => $prefix,
+            'konfigurasi_umum' => $konfigurasiUmum,
+            'currcode'      => $currcode,
+            'idtax'         => $idtax,
         ]);
     }
 
@@ -5953,11 +6190,47 @@ class Purchase extends BaseController
             $harga       = $this->request->getPost('harga') ?: 0;
             // $multidisc   = $this->request->getPost('multidisc') ?: 0;
             $nilai       = $this->request->getPost('nilai') ?: 0;
-            $descriptionpo = strtoupper($this->request->getPost('descriptionpo'));
+            // $descriptionpo = strtoupper($this->request->getPost('descriptionpo'));
+
+            // =====================================================
+            // VALIDASI QTY TERHADAP SISA QTY PO (untuk VOID PO)
+            // =====================================================
+            $poDetail = $db->query("
+                SELECT
+                    qty,
+                    COALESCE(qtylpb, 0)  AS qtylpb,
+                    COALESCE(qtyvoid, 0) AS qtyvoid,
+                    (qty - COALESCE(qtylpb, 0) - COALESCE(qtyvoid, 0)) AS sisa_qty
+                FROM sc_trx.po_dtl
+                WHERE TRIM(uniqueid) = ?
+            ", [$uniqueid])->getRow();
+
+            if (!$poDetail) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Data PO tidak ditemukan'
+                ]);
+            }
+
+            // Sisa yang bisa di-void = sisa_qty dari PO
+            // (qtyvoid sudah realtime dari trigger Void PO final)
+            $sisaTersedia = $poDetail->sisa_qty;
+
+            if ($qty > $sisaTersedia) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Qty void (' . $qty . ') melebihi sisa qty PO yang bisa di-void (' . $sisaTersedia . ')'
+                ]);
+            }
 
 
              // Ambil kurs dari header PO
-            $voidpoHeader = $builderHeader->select('kurs, idtax')->where('docno', $docno)->get()->getRowArray();
+            $voidpoHeader = $builderHeader->select('kurs, idtax')
+            ->where('inputby', $nama)
+            ->where('docno', $docno)
+            ->get()->getRowArray();
             $kurs = $voidpoHeader['kurs'] ?? 0;
             $idtax = $voidpoHeader['idtax'] ?? '';
             
@@ -5988,7 +6261,10 @@ class Purchase extends BaseController
                 $nilaipajak = $nilai;
             }
 
-            $builderDetail->where('uniqueid', $uniqueid)->update([
+            $builderDetail
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->where('uniqueid', $uniqueid)->update([
                 'qty'          => $qty,
                 // 'qtybonus'     => $qtybonus,
                 'harga'        => $harga,
@@ -5996,7 +6272,7 @@ class Purchase extends BaseController
                 'nilai'        => $nilai,
                 'nilaikonversi' => $nilaikonversi,
                 'nilaipajak'   => $nilaipajak,    
-                'descriptionpo' => $descriptionpo,
+                // 'descriptionpo' => $descriptionpo,
                 'updateby'     => $nama,
                 'updatedate'   => date('Y-m-d H:i:s')
             ]);
@@ -6094,13 +6370,17 @@ class Purchase extends BaseController
                         : "Semua item sudah ada sebelumnya";
         }
 
-        $voidpoHeader = $builderHeader->select('idtax')->where('docno', $docno)->get()->getRowArray();
+        $voidpoHeader = $builderHeader->select('idtax')
+        ->where('docno', $docno)
+        ->where('inputby', $nama)
+        ->get()->getRowArray();
         $idtax = $voidpoHeader['idtax'] ?? '';
         
         // Hitung total DPP (sum nilai dari po_dtl)
         $builderTotalDpp = $db->table('sc_tmp.voidpo_dtl');
         $totalDpp = $builderTotalDpp->select('COALESCE(SUM(nilai), 0) as total_dpp')
             ->where('docno', $docno)
+            ->where('inputby', $nama)
             ->get()
             ->getRowArray();
         
@@ -6127,7 +6407,7 @@ class Purchase extends BaseController
         $total = $dpp + $jumlahPajak;
         
         // Update header Void PO
-        $builderHeader->where('docno', $docno)->update([
+        $builderHeader->where('docno', $docno)->where('inputby', $nama)->update([
             'dpp' => number_format($dpp, 2, '.', ''),
             'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
             'total' => number_format($total, 2, '.', ''),
@@ -6200,6 +6480,20 @@ class Purchase extends BaseController
         $param = " and coalesce(docno,'')='$docno'";
         $dtl = $this->m_purchase->q_voidpo_master($param)->getRowArray();
         $status = trim($dtl['status']);
+        
+        $logindate = trim($this->session->get('logindate'));
+
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('purchase/trans/voidpo'));
+        }
 
         if ($status === 'F' || $status === 'P') {
             // Update hanya status di tabel sc_trx.standart_usage_mst
@@ -6236,7 +6530,7 @@ class Purchase extends BaseController
     function showing_voidpotemp(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno='$docno' and inputby='$nama'";
         $data = $this->m_purchase->q_voidpo_master_temp($param);
         $output = array(
             'status' => true,
@@ -6626,7 +6920,19 @@ class Purchase extends BaseController
         // $docno = hex2bin($this->request->getGet('docno'));
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.voidpo');
+        $logindate = trim($this->session->get('logindate'));
 
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('purchase/trans/voidpo'));
+        }
         // $builder = $builder
         //     ->where('docno', $docno)
         //     ->update([
@@ -6762,6 +7068,18 @@ class Purchase extends BaseController
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_purchase->q_umb_master_temp($param);
         $logindate = trim($this->session->get('logindate'));
+        $periode   = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        $data['periodeTutup'] = false;
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            $data['periodeTutup'] = true;
+            $data['periodeInfo']  = [
+                'periode'    => trim($dtlPeriode['periode']),
+                'keterangan' => trim($dtlPeriode['keterangan']),
+            ];
+        }
+        /* ===================================================== */
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
@@ -6876,7 +7194,7 @@ class Purchase extends BaseController
                 $updateBtn = '
                 <a class="dropdown-item bg-warning" 
                     href="' . base_url('purchase/trans/updateUMB') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Update This Uang Muka Pembelian : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Update This Uang Muka Pembelian : ' . $docno . '\')">
                     <i class="fa fa-edit"></i> Update Uang Muka Pembelian 
                 </a>';
             }
@@ -6896,7 +7214,7 @@ class Purchase extends BaseController
                 <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
                     href="' . base_url('purchase/trans/show_po') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Print Uang Muka Pembelian : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Print Uang Muka Pembelian : ' . $docno . '\')">
                     <i class="fa fa-print"></i> Print Uang Muka Pembelian 
                 </a>';
             }
@@ -7116,6 +7434,19 @@ class Purchase extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_purchase->q_umb_master_temp($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
+        
+         /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('purchase/trans/umb'));
+        }
+        // =================================
 
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
@@ -7163,13 +7494,27 @@ class Purchase extends BaseController
             ]);
         }
 
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray();
+
         $logindate = $this->session->get('logindate'); // dd-mm-yyyy
         $infix = date('ym', strtotime($logindate));
+         // Karena hanya 1 row, ambil index ke-0
+        $prefix = trim($konfigurasiUmum[0]['po']) ?? '';
+        $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
+        $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
 
         return $this->response->setJSON([
             'success'      => true,
             'kode_suffix'  => $kodeSuffix,
-            'infix'        => $infix
+            'infix'        => $infix,
+            'logindate' => $logindate,
+            'prefix'        => $prefix,
+            'konfigurasi_umum' => $konfigurasiUmum,
+            'currcode'      => $currcode,
+            'idtax'         => $idtax
         ]);
     }
 
@@ -7447,7 +7792,10 @@ class Purchase extends BaseController
                         : "Semua item sudah ada sebelumnya";
         }
 
-        $umbHeader = $builderHeader->select('idtax')->where('docno', $docno)->get()->getRowArray();
+        $umbHeader = $builderHeader->select('idtax')
+        ->where('docno', $docno)
+        ->where('inputby', $nama)
+        ->get()->getRowArray();
         $idtax = $umbHeader['idtax'] ?? '';
         
         // Hitung total DPP (sum nilai dari po_dtl)
@@ -7480,7 +7828,9 @@ class Purchase extends BaseController
         $total = $dpp + $jumlahPajak;
         
         // Update header UMB
-        $builderHeader->where('docno', $docno)->update([
+        $builderHeader->where('docno', $docno)
+        ->where('inputby', $nama)
+        ->update([
             'dpp' => number_format($dpp, 2, '.', ''),
             'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
             'total' => number_format($total, 2, '.', ''),
@@ -7554,6 +7904,21 @@ class Purchase extends BaseController
         $dtl = $this->m_purchase->q_umb_master($param)->getRowArray();
         $status = trim($dtl['status']);
 
+        
+        $logindate = trim($this->session->get('logindate'));
+
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('purchase/trans/umb'));
+        }
+
         if ($status === 'F' || $status === 'P') {
             // Update hanya status di tabel sc_trx.standart_usage_mst
             $info = array(
@@ -7589,7 +7954,7 @@ class Purchase extends BaseController
     function showing_umbtemp(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno='$docno' and inputby = '$nama'";
         $data = $this->m_purchase->q_umb_master_temp($param);
         $output = array(
             'status' => true,
@@ -7753,7 +8118,19 @@ class Purchase extends BaseController
         // $docno = hex2bin($this->request->getGet('docno'));
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.umb');
+        $logindate = trim($this->session->get('logindate'));
 
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('purchase/trans/po'));
+        }
     //    $builder = $builder
     //         ->where('docno', $docno)
     //         ->update([
@@ -7936,12 +8313,23 @@ class Purchase extends BaseController
             } else {
                 $data['message']="";
             }
-
         }
-        /* Item Entry Master Check */
+         /* Item Entry Master Check */
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_purchase->q_lpb_master_temp($param);
         $logindate = trim($this->session->get('logindate'));
+        $periode   = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        $data['periodeTutup'] = false;
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            $data['periodeTutup'] = true;
+            $data['periodeInfo']  = [
+                'periode'    => trim($dtlPeriode['periode']),
+                'keterangan' => trim($dtlPeriode['keterangan']),
+            ];
+        }
+        /* ===================================================== */
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
@@ -8052,11 +8440,11 @@ class Purchase extends BaseController
             // Build button by access
             // =========================
 
-            if ($canUpdate && $status != "REVISION/EDITING" && $status != "APPROVED") {
+            if ($canUpdate  && trim($lm->inputby) == $nama && $status == "FINAL USER") {
                 $updateBtn = '
                 <a class="dropdown-item bg-warning" 
                     href="' . base_url('purchase/trans/updateLPB') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Update This Penerimaan Pembelian : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Update This Penerimaan Pembelian : ' . $docno . '\')">
                     <i class="fa fa-edit"></i> Update Penerimaan Pembelian 
                 </a>';
             }
@@ -8071,12 +8459,12 @@ class Purchase extends BaseController
                 </a>';
             }
 
-            if($canPrint){
+            if($canPrint && ($status == "FINAL USER" || $status == "CETAK/PRINT")){
                 $printBtn = '
                 <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
                     href="' . base_url('purchase/trans/show_lpb') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Preview Penerimaan Pembelian : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Preview Penerimaan Pembelian : ' . $docno . '\')">
                     <i class="fa fa-print"></i> Preview Penerimaan Pembelian 
                 </a>';
             }
@@ -8166,8 +8554,7 @@ class Purchase extends BaseController
                     break;
             }
 
-            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
-
+            
             $row[] = $lm->kdsupplier;
             $row[] = $lm->nmsupplier;
             $row[] = $lm->alamatsupplier;
@@ -8185,7 +8572,7 @@ class Purchase extends BaseController
                 $date = new \DateTime(trim($lm->docdate));
                 $date->modify("+{$jthtempo} days");
 
-                $jatuhTempo = $date->format('d/m/Y');
+                $jatuhTempo = $date->format('d-m-Y');
 
             } else {
                 $jatuhTempo = '';
@@ -8196,8 +8583,9 @@ class Purchase extends BaseController
             $row[] = $lm->keterangan;
             $row[] = $lm->nofaktur;
             $row[] = $lm->nosj;
-
+            
             $row[] = $lm->nmbranch;
+            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
             
 
             $data[] = $row;
@@ -8254,7 +8642,7 @@ class Purchase extends BaseController
                 $updateBtn = '
                 <a class="dropdown-item bg-warning" 
                     href="' . base_url('purchase/trans/updateLPB') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Update This LPB : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Update This LPB : ' . $docno . '\')">
                     <i class="fa fa-edit"></i> Update LPB 
                 </a>';
             }
@@ -8269,12 +8657,12 @@ class Purchase extends BaseController
                 </a>';
             }
 
-            if($canPrint){
+            if($canPrint && $status != "REVISION/EDITING"){
                 $printBtn = '
                 <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
                     href="' . base_url('purchase/trans/show_lpb') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Print LPB : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Print LPB : ' . $docno . '\')">
                     <i class="fa fa-print"></i> Print LPB 
                 </a>';
             }
@@ -8509,6 +8897,19 @@ class Purchase extends BaseController
         $data['mst'] = $this->m_purchase->q_lpb_master_temp($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
 
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('purchase/trans/lpb'));
+        }
+        // =================================
+
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
         $param = " and trim(inputby)='$nama'";
@@ -8522,7 +8923,7 @@ class Purchase extends BaseController
     }
 
 
-   public function getBranchInfoLPB()
+    public function getBranchInfoLPB()
     {
         $idbranch = trim($this->request->getGet('idbranch'));
 
@@ -8555,13 +8956,29 @@ class Purchase extends BaseController
             ]);
         }
 
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray(); // Ini mengembalikan array of objects/arrays
+
+
+        // Karena hanya 1 row, ambil index ke-0
+        $prefix = trim($konfigurasiUmum[0]['lpb']) ?? '';
+        $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
+        $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
+
         $logindate = $this->session->get('logindate'); // dd-mm-yyyy
         $infix = date('ym', strtotime($logindate));
 
         return $this->response->setJSON([
             'success'      => true,
             'kode_suffix'  => $kodeSuffix,
-            'infix'        => $infix
+            'infix'        => $infix,
+            'logindate'     => $logindate,
+            'prefix'        => $prefix,
+            'konfigurasi_umum' => $konfigurasiUmum,
+            'currcode'      => $currcode,
+            'idtax'         => $idtax,
         ]);
     }
 
@@ -8752,9 +9169,39 @@ class Purchase extends BaseController
             $idgudang = strtoupper($this->request->getPost('idgudang') ?? '');
             $idspec = strtoupper($this->request->getPost('idspec') ?? '');
 
+             // =====================================================
+            // VALIDASI QTY TERHADAP SISA QTY PO (untuk LPB)
+            // =====================================================
+            $poDetail = $db->query("
+                SELECT
+                    qty,
+                    COALESCE(qtylpb, 0)  AS qtylpb,
+                    COALESCE(qtyvoid, 0) AS qtyvoid,
+                    (qty - COALESCE(qtylpb, 0) - COALESCE(qtyvoid, 0)) AS sisa_qty
+                FROM sc_trx.po_dtl
+                WHERE TRIM(uniqueid) = ?
+            ", [$uniqueid])->getRow();
+
+            if (!$poDetail) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Data PO tidak ditemukan'
+                ]);
+            }
+
+            if ($qty > $poDetail->sisa_qty) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Qty Penerimaan (' . $qty . ') melebihi sisa qty PO yang bisa diterima (' . $poDetail->sisa_qty . ')'
+                ]);
+            }
+
             $h = $db->table('sc_tmp.lpb')
                 ->select('kurs,idtax')
                 ->where('docno', $docno)
+                ->where('inputby', $nama)
                 ->get()
                 ->getRowArray();
 
@@ -8778,6 +9225,8 @@ class Purchase extends BaseController
             }
             log_message('error', 'UNIQUEID: ' . $uniqueid);
             $db->table('sc_tmp.lpb_dtl')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
                 ->where('TRIM(uniqueid)', $uniqueid)
                 ->update([
                     'qty' => $qty,
@@ -8889,13 +9338,17 @@ class Purchase extends BaseController
         // ===============================
         // HITUNG TOTAL (AMAN)
         // ===============================
-        $lpbHeader = $builderHeader->select('idtax')->where('docno', $docno)->get()->getRowArray();
+        $lpbHeader = $builderHeader->select('idtax')
+        ->where('inputby', $nama)
+        ->where('docno', $docno)
+        ->get()->getRowArray();
         $idtax = $lpbHeader['idtax'] ?? '';
         
         // Hitung total DPP (sum nilai dari po_dtl)
         $builderTotalDpp = $db->table('sc_tmp.lpb_dtl');
         $totalDpp = $builderTotalDpp->select('COALESCE(SUM(nilai), 0) as total_dpp')
             ->where('docno', $docno)
+            ->where('inputby', $nama)
             ->get()
             ->getRowArray();
         
@@ -8922,7 +9375,7 @@ class Purchase extends BaseController
         $total = $dpp + $jumlahPajak;
         
         // Update header LPB
-        $builderHeader->where('docno', $docno)->update([
+        $builderHeader->where('docno', $docno)->where('inputby', $nama)->update([
             'dpp' => number_format($dpp, 2, '.', ''),
             'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
             'total' => number_format($total, 2, '.', ''),
@@ -8996,6 +9449,20 @@ class Purchase extends BaseController
         $dtl = $this->m_purchase->q_lpb_master($param)->getRowArray();
         $status = trim($dtl['status']);
 
+        $logindate = trim($this->session->get('logindate'));
+
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('purchase/trans/lpb'));
+        }
+
         if ($status === 'F' || $status === 'P') {
             // Update hanya status di tabel sc_trx.standart_usage_mst
             $info = array(
@@ -9031,7 +9498,7 @@ class Purchase extends BaseController
     function showing_lpbtemp(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno='$docno' and inputby = '$nama'";
         $data = $this->m_purchase->q_lpb_master_temp($param);
         $output = array(
             'status' => true,
@@ -9579,6 +10046,19 @@ class Purchase extends BaseController
         // $docno = hex2bin($this->request->getGet('docno'));
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.lpb');
+        $logindate = trim($this->session->get('logindate'));
+
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('purchase/trans/lpb'));
+        }
 
     //    $builder = $builder
     //         ->where('docno', $docno)
@@ -9761,6 +10241,18 @@ class Purchase extends BaseController
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_purchase->q_returbeli_master_temp($param);
         $logindate = trim($this->session->get('logindate'));
+        $periode   = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        $data['periodeTutup'] = false;
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            $data['periodeTutup'] = true;
+            $data['periodeInfo']  = [
+                'periode'    => trim($dtlPeriode['periode']),
+                'keterangan' => trim($dtlPeriode['keterangan']),
+            ];
+        }
+        /* ===================================================== */
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
@@ -9871,11 +10363,11 @@ class Purchase extends BaseController
             // Build button by access
             // =========================
 
-            if ($canUpdate && $status != "REVISION/EDITING" && $status != "APPROVED") {
+            if ($canUpdate && trim($lm->inputby) == $nama && $status != "REVISION/EDITING" && $status != "APPROVED") {
                 $updateBtn = '
                 <a class="dropdown-item bg-warning" 
                     href="' . base_url('purchase/trans/updateReturBeli') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Update This Retur Pembelian : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Update This Retur Pembelian : ' . $docno . '\')">
                     <i class="fa fa-edit"></i> Update Retur Pembelian 
                 </a>';
             }
@@ -9895,7 +10387,7 @@ class Purchase extends BaseController
                 <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
                     href="' . base_url('purchase/trans/show_po') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Print Retur Pembelian : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Print Retur Pembelian : ' . $docno . '\')">
                     <i class="fa fa-print"></i> Print Retur Pembelian 
                 </a>';
             }
@@ -9985,20 +10477,19 @@ class Purchase extends BaseController
                     break;
             }
 
-            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
-
+            
             $row[] = $lm->kdsupplier;
             $row[] = $lm->nmsupplier;
             $row[] = $lm->alamatsupplier;
             $row[] = $lm->nmkota;
             $row[] = $lm->currcode;
             // $row[] = date(
-            //     'd-m-Y',
-            //     strtotime(trim($lm->senddate))
-            // );
-            $docdate  = trim($lm->docdate);
-            $jthtempo = (int) $lm->jthtempo;
-
+                //     'd-m-Y',
+                //     strtotime(trim($lm->senddate))
+                // );
+                $docdate  = trim($lm->docdate);
+                $jthtempo = (int) $lm->jthtempo;
+                
             if (!empty($docdate)) {
 
                 $date = new \DateTime(trim($lm->docdate));
@@ -10015,8 +10506,9 @@ class Purchase extends BaseController
             $row[] = $lm->keterangan;
             // $row[] = $lm->nofaktur;
             // $row[] = $lm->nosj;
-
+            
             $row[] = $lm->nmbranch;
+            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
             
 
             $data[] = $row;
@@ -10073,7 +10565,7 @@ class Purchase extends BaseController
                 $updateBtn = '
                 <a class="dropdown-item bg-warning" 
                     href="' . base_url('purchase/trans/updateReturBeli') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Update This ReturBeli : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Update This ReturBeli : ' . $docno . '\')">
                     <i class="fa fa-edit"></i> Update ReturBeli 
                 </a>';
             }
@@ -10093,7 +10585,7 @@ class Purchase extends BaseController
                 <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
                     href="' . base_url('purchase/trans/show_returbeli') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Print ReturBeli : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Print ReturBeli : ' . $docno . '\')">
                     <i class="fa fa-print"></i> Print ReturBeli 
                 </a>';
             }
@@ -10307,6 +10799,20 @@ class Purchase extends BaseController
         $data['mst'] = $this->m_purchase->q_returbeli_master_temp($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
 
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('purchase/trans/returbeli'));
+        }
+        // =================================
+        
+
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
         $param = " and trim(inputby)='$nama'";
@@ -10353,13 +10859,29 @@ class Purchase extends BaseController
             ]);
         }
 
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray(); // Ini mengembalikan array of objects/arrays
+
+
+        // Karena hanya 1 row, ambil index ke-0
+        $prefix = trim($konfigurasiUmum[0]['returbeli']) ?? '';
+        $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
+        $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
+
         $logindate = $this->session->get('logindate'); // dd-mm-yyyy
         $infix = date('ym', strtotime($logindate));
 
         return $this->response->setJSON([
             'success'      => true,
             'kode_suffix'  => $kodeSuffix,
-            'infix'        => $infix
+            'infix'        => $infix,
+            'logindate'     => $logindate,
+            'prefix'        => $prefix,
+            'konfigurasi_umum' => $konfigurasiUmum,
+            'currcode'      => $currcode,
+            'idtax'         => $idtax,
         ]);
     }
 
@@ -10554,7 +11076,38 @@ class Purchase extends BaseController
             $idgudang = strtoupper($this->request->getPost('idgudang'));
             $idspec = strtoupper($this->request->getPost('idspec'));
 
-            $builderDetail->where('uniqueid', $uniqueid)->update([
+            // =====================================================
+            // VALIDASI QTY TERHADAP SISA QTY PO (untuk LPB)
+            // =====================================================
+            $lpbDetail = $db->query("
+                SELECT
+                    qty,
+                    COALESCE(qtyretur, 0)  AS qtyretur,
+                    (qty - COALESCE(qtyretur, 0)) AS sisa_qty
+                FROM sc_trx.lpb_dtl
+                WHERE TRIM(uniqueid) = ?
+            ", [$uniqueid])->getRow();
+
+            if (!$lpbDetail) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Data PO tidak ditemukan'
+                ]);
+            }
+
+            if ($qty > $lpbDetail->sisa_qty) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Qty Retur (' . $qty . ') melebihi sisa qty Penerimaan yang bisa diretur (' . $lpbDetail->sisa_qty . ')'
+                ]);
+            }
+
+            $builderDetail
+             ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->where('uniqueid', $uniqueid)->update([
                 'qty'          => $qty,
                 // 'qtybonus'     => $qtybonus,
                 'harga'        => $harga,
@@ -10674,13 +11227,16 @@ class Purchase extends BaseController
                         : "Semua item sudah ada sebelumnya";
         }
 
-        $returbeliHeader = $builderHeader->select('idtax')->where('docno', $docno)->get()->getRowArray();
+        $returbeliHeader = $builderHeader->select('idtax')
+        ->where('inputby', $nama)
+        ->where('docno', $docno)->get()->getRowArray();
         $idtax = $returbeliHeader['idtax'] ?? '';
         
         // Hitung total DPP (sum nilai dari po_dtl)
         $builderTotalDpp = $db->table('sc_tmp.returbeli_dtl');
         $totalDpp = $builderTotalDpp->select('COALESCE(SUM(nilai), 0) as total_dpp')
             ->where('docno', $docno)
+            ->where('inputby', $nama)
             ->get()
             ->getRowArray();
         
@@ -10707,7 +11263,9 @@ class Purchase extends BaseController
         $total = $dpp + $jumlahPajak;
         
         // Update header ReturBeli
-        $builderHeader->where('docno', $docno)->update([
+        $builderHeader->where('docno', $docno)
+        ->where('inputby', $nama)
+        ->update([
             'dpp' => number_format($dpp, 2, '.', ''),
             'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
             'total' => number_format($total, 2, '.', ''),
@@ -10780,6 +11338,20 @@ class Purchase extends BaseController
         $param = " and coalesce(docno,'')='$docno'";
         $dtl = $this->m_purchase->q_returbeli_master($param)->getRowArray();
         $status = trim($dtl['status']);
+        
+        $logindate = trim($this->session->get('logindate'));
+
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('purchase/trans/returbeli'));
+        }
 
         if ($status === 'F' || $status === 'P') {
             // Update hanya status di tabel sc_trx.standart_usage_mst
@@ -11219,7 +11791,19 @@ class Purchase extends BaseController
         // $docno = hex2bin($this->request->getGet('docno'));
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.returbeli');
+        $logindate = trim($this->session->get('logindate'));
 
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('purchase/trans/lpb'));
+        }
     //    $builder = $builder
     //         ->where('docno', $docno)
     //         ->update([

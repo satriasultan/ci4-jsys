@@ -1706,6 +1706,9 @@ class PostSales extends BaseController
                 case 'DIPROSES DO':
                     $badgeClass = 'badge-cetak ';
                     break;
+                case 'DIPROSES PENJUALAN':
+                    $badgeClass = 'badge-cetak ';
+                    break;
                 case 'CANCEL':
                     $badgeClass = 'badge-danger ';
                     break;
@@ -2256,6 +2259,7 @@ class PostSales extends BaseController
                 'isopenprice'     => $isopenprice,
 
                 'kdcustomer'    => strtoupper($this->request->getPost('kdcustomer')),
+                'nmcustomer'    => strtoupper($this->request->getPost('nmcustomer')),
                 'alamatcustomer'    => strtoupper($this->request->getPost('alamatcustomer')),
                 // 'alamatkirim'    => strtoupper($this->request->getPost('alamatkirim')),
                 'idtax'    => strtoupper($this->request->getPost('idtax')),
@@ -2502,6 +2506,86 @@ class PostSales extends BaseController
             'success' => true,
             'reload'  => $reload,
             'message' => $message
+        ]);
+    }
+
+
+    public function recalculate_tax_temp()
+    {
+        $db   = db_connect();
+        $nama = trim($this->session->get('nama'));
+        $idtax = strtoupper(trim($this->request->getPost('idtax')));
+
+        // Cek apakah sc_tmp.salesorder (header temp) ada
+        $builderHeader = $db->table('sc_tmp.salesorder');
+        $header = $builderHeader->where('inputby', $nama)->get()->getRowArray();
+
+        if (empty($header)) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Header temp belum ada, skip update detail.'
+            ]);
+        }
+
+        // Cek apakah sc_tmp.salesorder_dtl ada data
+        $builderDetail = $db->table('sc_tmp.salesorder_dtl');
+        $countDetail = $builderDetail->where('inputby', $nama)->countAllResults(false);
+
+        if ($countDetail <= 0) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Detail temp belum ada, skip update.'
+            ]);
+        }
+
+        // Ambil total persentase pajak dari sc_mst.tax_dtl
+        $totalPersentase = 0;
+        if (!empty($idtax) && $idtax !== 'NON') {
+            $taxDetails = $db->table('sc_mst.tax_dtl')
+                ->select('percentation')
+                ->where('idtax', $idtax)
+                ->get()
+                ->getResultArray();
+
+            foreach ($taxDetails as $tax) {
+                $totalPersentase += (float) ($tax['percentation'] ?? 0);
+            }
+        }
+
+        // Ambil semua detail milik user
+        $details = $builderDetail
+            ->select('uniqueid, nilai')
+            ->where('inputby', $nama)
+            ->get()
+            ->getResultArray();
+
+        // Update per baris
+        foreach ($details as $row) {
+            $nilai = (float) $row['nilai'];
+
+            if ($totalPersentase > 0 && $nilai > 0) {
+                $nilaipajak = $nilai * $totalPersentase / 100;
+            } else {
+                // NON pajak → nilaipajak = 0 (atau = nilai, tergantung bisnis)
+                $nilaipajak = 0;
+            }
+
+            $builderDetail
+                ->where('uniqueid', $row['uniqueid'])
+                ->where('inputby', $nama)
+                ->update([
+                    'idtax'      => $idtax,
+                    'nilaipajak' => $nilaipajak,
+                    'updateby'   => $nama,
+                    'updatedate' => date('Y-m-d H:i:s'),
+                ]);
+        }
+
+        return $this->response->setJSON([
+            'status'  => true,
+            'message' => "Update $countDetail baris berhasil.",
+            'count'   => $countDetail,
+            'percent' => $totalPersentase,
         ]);
     }
 
@@ -2901,13 +2985,28 @@ class PostSales extends BaseController
             $delivdate   = trim($this->request->getPost('delivdate'));
             // $senddate   = trim($this->request->getPost('senddate'));
             $jthtempo   = trim($this->request->getPost('jthtempo'));
-            $kdcustomer   = trim($this->request->getPost('kdcustomer'));
+            // $kdcustomer   = trim($this->request->getPost('kdcustomer'));
+            // $nmcustomer   = trim($this->request->getPost('nmcustomer'));
             $alamatcustomer   = trim($this->request->getPost('alamatcustomer'));
             $gradecustomer   = trim($this->request->getPost('gradecustomer'));
             // $alamatkirim   = trim($this->request->getPost('alamatkirim'));
             // $keterangan   = trim($this->request->getPost('keterangan'));
             $currcode   = trim($this->request->getPost('currcode'));
             $salesman   = trim($this->request->getPost('kdsalesman'));
+
+           $dpp         = $this->request->getPost('dpp');
+            $jumlahpajak = $this->request->getPost('jumlahpajak');
+            $total       = $this->request->getPost('total');
+
+            // Konversi: hapus koma ribuan, pertahankan titik desimal
+            $dpp_clean         = str_replace(',', '', $dpp);
+            $jumlahpajak_clean = str_replace(',', '', $jumlahpajak);
+            $total_clean       = str_replace(',', '', $total);
+
+            // Pastikan numeric (opsional tapi disarankan)
+            $dpp_clean         = floatval($dpp_clean);
+            $jumlahpajak_clean = floatval($jumlahpajak_clean);
+            $total_clean       = floatval($total_clean);
             // $kurs   = trim($this->request->getPost('kurs'));
             // $isinclusive   = trim($this->request->getPost('isinclusive'));
             $idtax   = trim($this->request->getPost('idtax'));
@@ -2944,10 +3043,15 @@ class PostSales extends BaseController
                 // 'docdate'        => $docdateph,
                 'delivdate'       => $delivdateph,
                 'jthtempo'       => $jthtempo,
-                'kdcustomer'     => strtoupper($kdcustomer),
+                // 'kdcustomer'     => strtoupper($kdcustomer),
+                // 'nmcustomer'     => strtoupper($nmcustomer),
                 'alamatcustomer' => strtoupper($alamatcustomer),
                 'gradecustomer' => strtoupper($gradecustomer),
                 // 'alamatkirim'    => strtoupper($alamatkirim),
+                'dpp'     => $dpp_clean,
+                'jumlahpajak'     => $jumlahpajak_clean,
+                'total'     => $total_clean,
+                
                 'keterangan'     => $keterangan,
                 'currcode'       => $currcode,
                 'kdsalesman'       => $salesman,
@@ -3291,11 +3395,11 @@ class PostSales extends BaseController
                 </a>';
             }
 
-            if ($canPrint && (trim($status) == 'APPROVED' || trim($status) == 'CETAK/PRINT')) {
+            if ($canPrint && (trim($status) == 'FINAL USER' || trim($status) == 'CETAK/PRINT')) {
                 $printBtn = '
                 <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
-                    href="' . base_url('sales/postsales/show_po') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    href="' . base_url('sales/postsales/show_deliveryorder') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'Print DeliveryOrder : ' . $docno . '\')">
                     <i class="fa fa-print"></i> Print DeliveryOrder 
                 </a>';
@@ -3391,7 +3495,7 @@ class PostSales extends BaseController
                     $badgeClass = 'badge-primary';
                     break;
                 case 'SJ FULL':
-                    $badgeClass = 'badge-success';
+                    $badgeClass = 'badge-cetak';
                     break;
                 case 'CETAK/PRINT':
                     $badgeClass = 'badge-success ';
@@ -5214,11 +5318,11 @@ class PostSales extends BaseController
                 </a>';
             }
 
-            if ($canPrint && (trim($status) == 'FINALUSER' || trim($status) == 'CETAK/PRINT')) {
+            if ($canPrint && (trim($status) == 'FINAL USER' || trim($status) == 'CETAK/PRINT')) {
                 $printBtn = '
                 <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
-                    href="' . base_url('sales/postsales/show_po') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    href="' . base_url('sales/postsales/show_suratjalan') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'Print SuratJalan : ' . $docno . '\')">
                     <i class="fa fa-print"></i> Print SuratJalan 
                 </a>';
@@ -6794,7 +6898,7 @@ class PostSales extends BaseController
                 $printBtn = '
                 <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
-                    href="' . base_url('sales/postsales/show_po') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    href="' . base_url('sales/postsales/show_penjualan') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'Print Penjualan : ' . $docno . '\')">
                     <i class="fa fa-print"></i> Print Penjualan 
                 </a>';
@@ -8538,7 +8642,7 @@ class PostSales extends BaseController
             // $docdate   = trim($this->request->getPost('docdate'));
             // $senddate   = trim($this->request->getPost('senddate'));
             $jthtempo   = trim($this->request->getPost('jthtempo'));
-            $kdcustomer   = trim($this->request->getPost('kdcustomer'));
+            // $kdcustomer   = trim($this->request->getPost('kdcustomer'));
             $alamatcustomer   = trim($this->request->getPost('alamatcustomer'));
             $gradecustomer   = trim($this->request->getPost('gradecustomer'));
             $kdcustomerdeliv   = trim($this->request->getPost('kdcustomerdeliv'));
@@ -8583,7 +8687,7 @@ class PostSales extends BaseController
                 // 'docdate'        => $docdateph,
                 // 'delivdate'       => $delivdateph,
                 'jthtempo'       => $jthtempo,
-                'kdcustomer'     => strtoupper($kdcustomer),
+                // 'kdcustomer'     => strtoupper($kdcustomer),
                 'alamatcustomer' => strtoupper($alamatcustomer),
                 'gradecustomer' => strtoupper($gradecustomer),
                 'kdcustomerdeliv'     => strtoupper($kdcustomerdeliv),
@@ -8790,7 +8894,59 @@ class PostSales extends BaseController
 
 
 
+    public function laporan_jurnal_transaksi_pjo()
+    {
+        try {
 
+            // =================================================
+            // GET DOCNO
+            // =================================================
+            $docno = trim($this->request->getPost('docno'));
+
+            // =================================================
+            // VALIDASI
+            // =================================================
+            if ($docno === '') {
+                return $this->response->setJSON([
+                    'status'   => false,
+                    'messages' => 'Doc No Penjualan tidak ditemukan',
+                    'data'     => []
+                ]);
+            }
+
+            // =================================================
+            // PARAMETER QUERY
+            // =================================================
+            $params = "AND TRIM(jh.docno) = " . $this->db->escape($docno);
+
+            // =================================================
+            // GET DATA
+            // =================================================
+            $query = $this->m_postsales->q_laporan_jurnal_transaksi($params);
+
+            $data = $query->getResultArray();
+
+            // =================================================
+            // RESPONSE
+            // =================================================
+            return $this->response->setJSON([
+                'status'   => true,
+                'messages' => 'Data berhasil diambil',
+                'data'     => $data
+            ]);
+
+        } catch (\Throwable $e) {
+
+            log_message('error', 'laporan_jurnal_transaksi_pjo: ' . $e->getMessage());
+
+            return $this->response->setJSON([
+                'status'   => false,
+                'messages' => $e->getMessage(),
+                'data'     => []
+            ]);
+
+        }
+    }
 
 
 

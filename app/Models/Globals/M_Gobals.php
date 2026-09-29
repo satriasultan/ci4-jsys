@@ -333,7 +333,7 @@ group by docno order by docno asc");
     }
 
     function q_customer_new($param){
-        return $this->db->query("select *, trim(kdcustomer) as id from sc_mst.customer where coalesce(trim(chold),'NO')!='YES' AND coalesce(trim(kdcustomer),'')!='' $param ");
+        return $this->db->query("select *, trim(kdcustomer) as id from sc_mst.customer where coalesce(trim(chold),'NO')!='YES' AND coalesce(trim(status),'')!='D' and coalesce(trim(kdcustomer),'')!='' $param ");
     }
 
     
@@ -354,7 +354,7 @@ group by docno order by docno asc");
     }
 
     function q_supplier_new($param){
-        return $this->db->query("select *, trim(kdsupplier) as id from sc_mst.mstsupplier where coalesce(trim(chold),'NO')!='YES' AND coalesce(trim(kdsupplier),'')!='' $param ");
+        return $this->db->query("select *, trim(kdsupplier) as id from sc_mst.mstsupplier where coalesce(trim(chold),'NO')!='YES' AND coalesce(trim(status),'')!='D' and coalesce(trim(kdsupplier),'')!='' $param ");
     }
     function q_cust_and_supplier($param)
     {
@@ -411,7 +411,7 @@ group by docno order by docno asc");
             INNER JOIN sc_trx.po_dtl ON po.docno = po_dtl.docno 
             WHERE coalesce(trim(po.docno),'') != '' 
                 AND (po_dtl.qty - (coalesce(po_dtl.qtylpb, 0) + coalesce(po_dtl.qtyvoid, 0))) > 0
-                AND (trim(po.status) = 'P')
+                AND (trim(po.status) = 'P' or trim(po.status) = 'LPB')
                 $param
         ");
     }
@@ -444,7 +444,7 @@ group by docno order by docno asc");
             INNER JOIN sc_trx.salesorder_dtl so_dtl ON so.docno = so_dtl.docno 
             WHERE coalesce(trim(so.docno),'') != '' 
             AND (so_dtl.qty - coalesce(so_dtl.qtypenjualan, 0)) > 0                
-            AND (trim(so.status) = 'A')
+            AND (trim(so.status) = 'P')
                 $param
         ");
     }

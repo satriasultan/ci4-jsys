@@ -448,6 +448,13 @@ class Suppliers extends BaseController
             $createddate = date('Y-m-d H:i:s');
             $builder = $this->db->table('sc_mst.mstsupplier');
             if ($type === 'INPUT') {
+                $param = " and trim(kdsupplier)='" . $kdsupplier . "'";
+                $cek = $this->m_supplier->q_mstsupplier($param)->getNumRows();
+                if ($cek > 0) {
+                    $getResult = array('status' => false, 'messages' => 'Kode Supplier sudah digunakan');
+                    echo json_encode($getResult);
+                    return;
+                }
                 $info = array(
                     'kdsupplier'         => $kdsupplier,
                     'nmsupplier'     => $nmsupplier,
@@ -514,7 +521,7 @@ class Suppliers extends BaseController
                 //check data ganda
                 if ($check > 0) {
                     $info = array(
-                    'kdsupplier'         => $kdsupplier,
+                    // 'kdsupplier'         => $kdsupplier,
                     'nmsupplier'     => $nmsupplier,
                     'chold' => $chold,
                     // 'deptpic'       => $deptpic,

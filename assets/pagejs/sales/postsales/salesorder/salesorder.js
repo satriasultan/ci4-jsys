@@ -224,7 +224,7 @@ function documentReadable(){
                 var option = new Option(customerData.nmcustomer, customerData.kdcustomer, true, true);
                 $(option).data('customer-data', customerData); // Simpan data lengkap
                 
-                $('[name="kdcustomer"]').append(option).trigger('change');
+                $('[name="kdcustomer"]').append(option).trigger('change').prop('disabled',true);
                 
                 // Set alamat dan phone langsung
                 $("#alamatcustomer").val(json.dataTables.items[0].alamatcustomer).prop('readonly', true);
@@ -367,7 +367,7 @@ $("#idbarang").select2({
     placeholder: "Choose Your Item List",
     allowClear: true,
     minimumInputLength: 2,
-    dropdownParent: $('#modalDetailSalesOrder'),
+    dropdownParent: $('#idbarang').parent(),
     width:'100%',
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_item',
@@ -421,6 +421,17 @@ $("#idbarang").select2({
     $('[name="nmbarang"]').val(data.nmbarang.trim()).prop("readonly", true);
     $('[name="unit"]').val(data.unit.trim()).prop("readonly", true);
     $("#batch").val(null).trigger('change');
+}).on('select2:open', function() {
+    setTimeout(function() {
+        // Naikkan z-index PARENT (select2-container), bukan dropdown-nya
+        $('.select2-container--open').css('z-index', 999999);
+    }, 0);
+})
+.on('select2:close', function() {
+    $(this).parent().css({
+        'z-index': '',
+        'position': ''
+    });
 });
 
 /* Format Group */
@@ -506,7 +517,8 @@ function formatPrincipalSelection(repo) {
 $("#idprincipal").select2({
     placeholder: "Ketik/Pilih Principal",
     allowClear: true,
-    // dropdownParent: $('#modalDetailSalesOrder'),
+    // dropdownParent: $('#modalDetailSalesOrder .modal-body'),
+    
     width: '100%',
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_principal',
@@ -545,6 +557,10 @@ $("#idprincipal").select2({
     // minimumInputLength: 1,
     templateResult: formatPrincipal, // omitted for brevity, see the source of this page
     templateSelection: formatPrincipalSelection // omitted for brevity, see the source of this page
+}).on('select2:open', function() {
+    $(this).parent().css('z-index', 9999);
+}).on('select2:close', function() {
+    $(this).parent().css('z-index', '');
 }).on('select2:select', function (e) {
 });
 
@@ -855,10 +871,75 @@ $("#idtax").select2({
     templateResult: formatTax, // omitted for brevity, see the source of this page
     templateSelection: formatTaxSelection // omitted for brevity, see the source of this page
 }).on("select2:select", function (e) {
-    // var data = e.params.data;
+
+    hitungPajak();
+
+}).on("select2:clear", function (e) {
+
+    hitungPajak();
 
 });
 
+
+
+
+function hitungPajak() {
+
+    let dpp = $('#dpp').val().replace(/,/g,'');
+    let idtax = $('#idtax').val();
+
+    if(!dpp) dpp = 0;
+
+    if(!idtax){
+        $('#jumlahpajak').val('0');
+        $('#total').val(dpp);
+        updateDetailTax(idtax);
+        return;
+    }
+
+    $.ajax({
+        url: HOST_URL + 'api/globalmodule/get_tax_percent',
+        type: 'POST',
+        data: {idtax:idtax},
+        dataType:'json',
+        success:function(res){
+
+            let percent = res.percent || 0;
+
+            let jumlahPajak = dpp * percent / 100;
+            let total = parseFloat(dpp) + jumlahPajak;
+
+            $('#jumlahpajak').val(jumlahPajak.toLocaleString());
+            $('#total').val(total.toLocaleString());
+            updateDetailTax(idtax);
+
+        }
+    });
+
+}
+
+
+
+function updateDetailTax(idtax) {
+    $.ajax({
+        url: HOST_URL + 'sales/postsales/recalculate_tax_temp',
+        type: 'POST',
+        data: { idtax: idtax },
+        dataType: 'json',
+        success: function(res) {
+            console.log('Update detail tax:', res);
+            if (res.status) {
+                // Reload tabel detail setelah update
+                if (typeof reload_table_salesorder_dtl === 'function') {
+                    reload_table_salesorder_dtl();
+                }
+            }
+        },
+        error: function(xhr) {
+            console.error('Gagal update detail tax:', xhr.responseText);
+        }
+    });
+}
 
 
 function setJtsValue(selector, value) {
@@ -1057,7 +1138,7 @@ function btnUpdateDetail(){
                 $('#docno').val(res.data.docno);
                 // $('#docnopomodal').val(res.data.docnopo);
                 $('#idbarang').val(res.data.idbarang).prop('disabled',true);
-                $('#idspec').val(res.data.idspec);
+                
                 $('#nmbarang').val(res.data.nmbarang);
                 $('#unit').val(res.data.unit);
                 setJtsValue('[name="qty"]', convertToDbNumber(res.data.qty));
@@ -1076,6 +1157,7 @@ function btnUpdateDetail(){
                 // $('#harga').val(res.data.harga);
                 // $('#multidisc').val(res.data.multidisc);
                 setSelect2Ajax('#idprincipal', res.data.idprincipal, res.data.idprincipal);
+                setSelect2Ajax('#idspec', res.data.idspec, res.data.idspec);
                 setSelect2Ajax('#idgudang', res.data.idgudang, res.data.idgudang);
                 setSelect2Ajax('#idbarang', res.data.idbarang, res.data.idbarang);
 
@@ -1280,12 +1362,24 @@ function saveSalesOrderDetail() {
 
         if (!result.isConfirmed) return;
 
+        let customerData = $('#kdcustomer').select2('data');
+
+        let kdcustomer = '';
+        let nmcustomer = '';
+
+        if (customerData && customerData.length > 0) {
+            kdcustomer = customerData[0].kdcustomer || customerData[0].id || '';
+            nmcustomer = customerData[0].nmcustomer || customerData[0].text || '';
+        }
+
         let formData = new FormData(document.getElementById('formSalesOrderDetail'));
         formData.append('docdate', $('#docdate').val());
         formData.append('cabang', $('#cabang').val());
         formData.append('delivdate', $('#delivdate').val());
         formData.append('jthtempo', convertToDbNumber($('#jthtempo').val()));
-        formData.append('kdcustomer', $('#kdcustomer').val());
+        formData.append('kdcustomer', kdcustomer);
+        formData.append('nmcustomer', nmcustomer);
+
         formData.append('kdsalesman', $('#kdsalesman').val());
         formData.append('isinclusive', $('#isinclusive').is(':checked') ? 'YES' : 'NO');
         formData.append('isopenprice', $('#isopenprice').is(':checked') ? 'YES' : 'NO');
@@ -1407,6 +1501,279 @@ function saveSalesOrderDetail() {
 
 
 
+function save_new_spec() {
+
+    // =============================================
+    // AMBIL DATA
+    // =============================================
+
+    const newbatch =
+        $.trim(
+            $('#newbatch').val() || ''
+        ).toUpperCase();
+
+
+    const idbarang =
+        $.trim(
+            $('[name="idbarang"]').val() || ''
+        );
+
+
+    // =============================================
+    // VALIDASI BATCH
+    // =============================================
+
+    if (newbatch === '') {
+        $('#newbatch').focus();
+        alert(
+            'Batch / Specification harus diisi.'
+        );
+        return;
+
+    }
+
+
+    // =============================================
+    // VALIDASI BARANG
+    // =============================================
+
+    if (idbarang === '') {
+        alert(
+            'Item Barang belum dipilih.'
+        );
+        return;
+    }
+
+
+    // =============================================
+    // DISABLE BUTTON AGAR TIDAK DOUBLE CLICK
+    // =============================================
+
+    $.ajax({
+        type: 'POST',
+        url:
+            HOST_URL +
+            'api/globalmodule/add_newbatch',
+        dataType: 'json',
+        data: {
+            idbarang: idbarang,
+            batch: newbatch
+        },
+
+
+        success: function (datax) {
+
+            if (datax.status) {
+
+                // =========================================
+                // MASUKKAN KE INPUT SPEC LPB
+                // =========================================
+
+                $('#idspec')
+                    .prop('disabled', false)
+                    .prop('readonly', false)
+                    .val(newbatch)
+                    .trigger('change');
+
+
+                // =========================================
+                // TUTUP MODAL NEW SPEC
+                // =========================================
+
+                const modalElement =
+                    document.getElementById(
+                        'modalNewSpec'
+                    );
+
+
+                const modalInstance =
+                    bootstrap.Modal.getInstance(
+                        modalElement
+                    );
+
+
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+
+
+                // =========================================
+                // FOCUS KEMBALI KE SPEC
+                // =========================================
+
+                setTimeout(function () {
+                    $('#idspec').focus();
+                }, 300);
+
+
+                // =========================================
+                // NOTIFIKASI
+                // =========================================
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil',
+                    text:
+                        datax.messages ||
+                        'Batch / Specification berhasil disimpan.'
+                });
+            } else {
+                alert(
+                    datax.messages ||
+                    'Gagal menyimpan Batch / Specification.'
+                );
+            }
+        },
+
+
+        error: function (xhr) {
+            console.error(
+                xhr.responseText
+            );
+            alert(
+                'Unable To Response Data'
+            );
+        }
+    });
+
+}
+$("#idspec").select2({
+    placeholder: "Silahkan pilih spek, click x untuk reset pilihan",
+    allowClear: true,
+    dropdownParent: $('#idspec').parent(),
+    width:'100%',
+    ajax: {
+        url: HOST_URL + 'api/globalmodule/list_batch_item',
+        type: 'POST',
+        dataType: 'json',
+        delay: 250,
+        data: function (params) {
+            return {
+                _search_: params.term,
+                _page_: params.page,
+                _draw_: true,
+                _start_: 1,
+                _perpage_: 30,
+                _paramglobal_: "",
+                _parameterx_: $('[name="idbarang"]').val(),
+                term: params.term
+
+            };
+
+        },
+
+
+        processResults: function (data, params) {
+            params.page = params.page || 1;
+
+            // =============================================
+            // PASTIKAN VALUE SELECT2 = BATCH
+            // =============================================
+
+            var results = $.map(
+                data.items || [],
+                function (item) {
+                    return {
+                        id: item.batch,      // VALUE YANG DISIMPAN
+                        text: item.batch,    // TEXT SELECT
+                        batch: item.batch
+                    };
+                }
+            );
+            return {
+                results: results,
+                pagination: {
+                    more:
+                        (params.page * 30) <
+                        (data.total_count || 0)
+                }
+            };
+        },
+        cache: false
+    },
+    escapeMarkup: function (markup) {
+        return markup;
+    },
+    templateResult: formatBatch,
+    templateSelection: formatBatchSelection
+
+}).on("select2:select", function (e) {
+    var data = e.params.data;
+    console.log(
+        'Batch dipilih:',
+        data.batch
+    );
+
+}).on('select2:open', function() {
+    setTimeout(function() {
+        // Naikkan z-index PARENT (select2-container), bukan dropdown-nya
+        $('.select2-container--open').css('z-index', 999999);
+    }, 0);
+})
+.on('select2:close', function() {
+    $(this).parent().css({
+        'z-index': '',
+        'position': ''
+    });
+});
+
+/* Format Group */
+function formatBatch(repo) {
+    if (repo.loading) return repo.text;
+    var markup ="<div class='select2-result-repository__description'>" + repo.batch +"</div>";
+    return markup;
+}
+function formatBatchSelection(repo) {
+    return repo.batch || repo.text;
+}
+
+
+function new_spec() {
+
+    // =============================================
+    // RESET INPUT
+    // =============================================
+
+    $('#newbatch')
+        .val('')
+        .prop('disabled', false)
+        .prop('readonly', false);
+
+
+    // =============================================
+    // OPEN MODAL BOOTSTRAP 5
+    // =============================================
+
+    const modalElement =
+        document.getElementById('modalNewSpec');
+
+
+    const modalNewSpec =
+        bootstrap.Modal.getOrCreateInstance(
+            modalElement
+        );
+
+
+    modalNewSpec.show();
+
+
+    // =============================================
+    // FOCUS INPUT
+    // =============================================
+
+    modalElement.addEventListener(
+        'shown.bs.modal',
+        function () {
+
+            $('#newbatch').focus();
+
+        },
+        {
+            once: true
+        }
+    );
+
+}
 
 
 var defaultInitialLocation = '';
@@ -1414,7 +1781,8 @@ $("#idgudang").select2({
     placeholder: " -- Pilih Gudang Asal -- ",
     allowClear: true,
     width: '100%',
-    dropdownParent: $('#modalDetailSalesOrder'),
+    dropdownParent: $('#idgudang').parent(),
+    
     // minimumInputLength: 2, // only start searching when the user has input 3 or more characters
     maximumSelectionLength: 1,
     multiple: false,
@@ -1468,6 +1836,10 @@ $("#idgudang").select2({
     templateSelection: formatLocationSelection // omitted for brevity, see the source of this page
 }).on("change", function () {
    /*Sementara TUtup Location */
+}).on('select2:open', function() {
+    $(this).parent().css('z-index', 9999);
+}).on('select2:close', function() {
+    $(this).parent().css('z-index', '');
 });
 /* Format Group */
 function formatLocation(repo) {
@@ -1496,7 +1868,8 @@ function formatPrincipalSelection(repo) {
 $("#idprincipal").select2({
     placeholder: "Ketik/Pilih Principal",
     allowClear: true,
-    dropdownParent: $('#modalDetailSalesOrder'),
+    dropdownParent: $('#idprincipal').parent(),
+    
     width: '100%',
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_principal',
@@ -1536,6 +1909,10 @@ $("#idprincipal").select2({
     templateResult: formatPrincipal, // omitted for brevity, see the source of this page
     templateSelection: formatPrincipalSelection // omitted for brevity, see the source of this page
 }).on('select2:select', function (e) {
+}).on('select2:open', function() {
+    $(this).parent().css('z-index', 9999);
+}).on('select2:close', function() {
+    $(this).parent().css('z-index', '');
 });
 
 function btnInputDetail() {

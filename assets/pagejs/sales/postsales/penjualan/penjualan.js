@@ -206,6 +206,7 @@ function documentReadable(){
             $('[name="prefix"]').val(prefixParts[0]).prop('readonly', true);
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
             $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
+            defaultInitialSO = prefixParts[2].substring(0, 2);
 
 
             $.ajax({
@@ -224,7 +225,7 @@ function documentReadable(){
                 var option = new Option(customerData.nmcustomer, customerData.kdcustomer, true, true);
                 $(option).data('customer-data', customerData); // Simpan data lengkap
                 
-                $('[name="kdcustomer"]').append(option).trigger('change');
+                $('[name="kdcustomer"]').append(option).trigger('change').prop('disabled',true);
                 defaultInitialCustSO = json.dataTables.items[0].kdcustomer
 
                 // Set alamat dan phone langsung
@@ -694,9 +695,9 @@ var defaultInitialSO = '';
 var defaultInitialCustSO = '';
 $("#docnoso").select2({
     placeholder: "Choose Your SO",
-    dropdownParent: $('#modalDetailPenjualan'),
+    dropdownParent: $('#modalDetailPenjualan .modal-body'),
     allowClear: true,
-    width:'100%',
+    width:'resolve',
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_so',
         type: 'POST',
@@ -755,11 +756,20 @@ $("#docnoso").select2({
 /* Format Group */
 function formatSO(repo) {
     if (repo.loading) return repo.text;
-    var markup ="<div class='select2-result-repository__description'>" + repo.docno +"   <i class='fa fa-circle-o'></i>   "+ repo.keterangan +"</div>";
-    return markup;
+
+    return (
+        "<div>" +
+            "<b style='font-weight:700'>" + (repo.docno || '') + "</b>" +
+            " <i class='fa fa-circle-o'></i> " +
+            (repo.kdcustomer || '') + " - " + (repo.nmcustomer || '') +
+            "<br>" + "Keterangan : "+ (repo.keterangan || '') +
+        "</div>"
+    );
 }
+
 function formatSOSelection(repo) {
-    return repo.keterangan || repo.text;
+    if (!repo.id) return repo.text;
+    return (repo.docno || '') + ' - ' + (repo.nmcustomer || '');
 }
 
 
@@ -768,9 +778,9 @@ var defaultInitialSJ = '';
 var defaultInitialCustSJ = '';
 $("#docnosj").select2({
     placeholder: "Choose Your SJ",
-    dropdownParent: $('#modalDetailPenjualan'),
+    dropdownParent: $('#modalDetailPenjualan .modal-body'),
     allowClear: true,
-    width:'100%',
+    width:'resolve',
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_sj',
         type: 'POST',
@@ -1157,6 +1167,7 @@ function btnUpdateDetail(){
                 // setJtsValue('[name="biaya2"]', convertToDbNumber(res.data.biaya2));
                 setJtsValue('[name="multidisc"]', convertToDbNumber(res.data.multidisc));
                 setJtsValue('[name="nilai"]', convertToDbNumber(res.data.nilai));
+                setSelect2Ajax('#idspec', res.data.idspec, res.data.idspec);
 
 
                 currentEditId = res.data.idurut;
@@ -1535,13 +1546,37 @@ function savePenjualanDetail() {
 
         if (!result.isConfirmed) return;
 
+        let customerData = $('#kdcustomer').select2('data');
+
+        let kdcustomer = '';
+        let nmcustomer = '';
+
+        if (customerData && customerData.length > 0) {
+            kdcustomer = customerData[0].kdcustomer || customerData[0].id || '';
+            nmcustomer = customerData[0].nmcustomer || customerData[0].text || '';
+        }
+
+        let customerdelivData = $('#kdcustomerdeliv').select2('data');
+
+        let kdcustomerdeliv = '';
+        let nmcustomerdeliv = '';
+
+        if (customerdelivData && customerdelivData.length > 0) {
+            kdcustomerdeliv = customerdelivData[0].kdcustomerdeliv || customerdelivData[0].id || '';
+            nmcustomerdeliv = customerdelivData[0].nmcustomerdeliv || customerdelivData[0].text || '';
+        }
+
         let formData = new FormData(document.getElementById('formPenjualanDetail'));
         formData.append('docdate', $('#docdate').val());
         formData.append('cabang', $('#cabang').val());
         // formData.append('delivdate', $('#delivdate').val());
         formData.append('jthtempo', convertToDbNumber($('#jthtempo').val()));
-        formData.append('kdcustomer', $('#kdcustomer').val());
-        formData.append('kdcustomerdeliv', $('#kdcustomerdeliv').val());
+        formData.append('kdcustomer', kdcustomer);
+        formData.append('nmcustomer', nmcustomer);
+
+         formData.append('kdcustomerdeliv', kdcustomerdeliv);
+        formData.append('nmcustomerdeliv', nmcustomerdeliv);
+        // formData.append('kdcustomerdeliv', $('#kdcustomerdeliv').val());
         formData.append('kdsalesman', $('#kdsalesman').val());
         formData.append('isinclusive', $('#isinclusive').is(':checked') ? 'YES' : 'NO');
         formData.append('isopenprice', $('#isopenprice').is(':checked') ? 'YES' : 'NO');
@@ -1739,6 +1774,23 @@ $("#idprincipal").select2({
 
 function btnInputDetail() {
 
+
+    let cabang = $('#cabang').val();
+    let kdcustomer = $('#kdcustomer').val();
+
+
+    if (!cabang || cabang.trim() === '') {
+        alert('Cabang harus dipilih terlebih dahulu');
+        $('#cabang').focus();
+        return; // stop proses
+    }
+
+    if (!kdcustomer || kdcustomer.trim() === '') {
+        alert('Customer harus dipilih terlebih dahulu');
+        $('#kdcustomer').focus();
+        return; // stop proses
+    }
+
     $('#formPenjualanDetail')[0].reset();
 
     
@@ -1906,6 +1958,7 @@ $('#cabang').on('change', function () {
                     var prefix = res.prefix;
                     $('#prefix').val(prefix);             // default
                     $('#sufix').val(currentKodeSuffix + '0001');
+                    defaultInitialSO = currentKodeSuffix;
 
                     var infix = (res.infix || '').toString();
                     if (infix.length === 4) {

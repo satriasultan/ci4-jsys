@@ -532,8 +532,9 @@ class Tax extends BaseController
         // ===============================
         if (
             empty($data['idtax']) ||
-            empty($data['idgrouptax']) ||
-            empty($data['kodepajak'])
+            empty($data['idgrouptax'])
+            // empty($data['idgrouptax']) ||
+            // empty($data['kodepajak'])
         ) {
             return $this->response->setJSON([
                 'status'  => false,

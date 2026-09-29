@@ -123,7 +123,7 @@ function documentReadable(){
             let prefixParts = docnoData.split('/'); // ["JTS", "PH", "25", "08"]
             $('[name="prefix"]').val(prefixParts[0]).prop('readonly', true);
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
-            $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
+            $('[name="suffix"]').val(prefixParts[2]).prop('readonly', true);
             defaultInitialPP = json.dataTables.items[0].cabang.trim() == '01' ? 'PT' : json.dataTables.items[0].cabang.trim() == '01.01' ? 'PA' : 'PB'
 
             //$('[name="idgroup"]').val(json.dataTables.items[0].idgroup);
@@ -239,7 +239,7 @@ function documentReadable(){
 var defaultInitialPP = '';
 $("#docnopp").select2({
     placeholder: "Choose Your PP",
-    dropdownParent: $('#modalDetailVoidPP'),
+    dropdownParent: $('#modalDetailVoidPP .modal-body'),
     allowClear: true,
     width:'100%',
     maximumSelectionLength: 1,
@@ -675,6 +675,8 @@ $('#btn-reset').click(function(){ //button reset event click
 
 
 function setToCancel(docno) {
+    if (!guardPeriodeTutup()) return;
+
     Swal.fire({
         title: 'Batalkan pembuatan Void PP?',
         text: "Pengajuan dokumen akan dibatalkan",
@@ -734,7 +736,7 @@ function saveVoidPPDetail() {
         // formData.append('keterangan', $('#keterangan').val());
 
         // docno gabungan (lebih aman pakai hidden header)
-        formData.set('docno', $('#prefix').val() + '/' + $('#infix').val() + '/' + $('#sufix').val());
+        formData.set('docno', $('#prefix').val() + '/' + $('#infix').val() + '/' + $('#suffix').val());
         let qty = $('#qty').val();
         formData.set('qty', convertToDbNumber(qty));
         formData.set('uniqueid', $('#uniqueid').val());
@@ -871,55 +873,60 @@ $('#cabang').on('change', function () {
 
                     currentKodeSuffix = res.kode_suffix; // PT / PA / PB
                     $('#infix').val(res.infix);          // YYMM
-                    $('#prefix').val('VPP');             // default
-                    $('#sufix').val(currentKodeSuffix + '0001');
+                    var prefix = res.prefix;
+                    $('#prefix').val(prefix);
+                    loadNextSuffixVoidPP()
                     defaultInitialPP = idbranch == '01' ? 'PT' : idbranch == '01.01' ? 'PA' : 'PB'
 
                     var infix = (res.infix || '').toString();
                     if (infix.length === 4) {
                         $('#docdate').prop('disabled', false);
-                        var yy = infix.substring(0,2);
-                        var mm = infix.substring(2,4);
-                        var year = 2000 + parseInt(yy,10);
-                        var month = parseInt(mm,10) - 1; // moment month index
+                        var yy = infix.substring(0, 2);
+                        var mm = infix.substring(2, 4);
+                        var year = 2000 + parseInt(yy, 10);
+                        var month = parseInt(mm, 10) - 1;
 
-                        var today = moment();
+                        // Default: logindate dari server, fallback ke hari ini
+                        var logindate = res.logindate ? moment(res.logindate, 'DD-MM-YYYY') : moment();
 
                         var startDate = moment([year, month, 1]);
                         var endDate = moment(startDate).endOf('month');
+
+                        // Kalau logindate di luar range, pakai startDate
+                        var selectedDate = logindate.isBetween(startDate, endDate, 'day', '[]')
+                            ? logindate
+                            : startDate;
 
                         var $el = $('#docdate');
                         var drp = $el.data('daterangepicker');
 
                         if (drp) {
-                            // update limits & selected date
                             drp.minDate = startDate;
                             drp.maxDate = endDate;
-                            drp.setStartDate(startDate);
-                            drp.setEndDate(startDate);
+                            drp.setStartDate(selectedDate);
+                            drp.setEndDate(selectedDate);
                         } else {
-                            // fallback: (re)initialize with limits
                             $el.daterangepicker({
                                 autoUpdateInput: false,
                                 singleDatePicker: true,
                                 showDropdowns: true,
-                                startDate: today,
+                                startDate: selectedDate,
                                 minDate: startDate,
                                 maxDate: endDate,
                                 locale: { format: 'DD-MM-YYYY' },
                                 cancelLabel: 'Clear'
                             });
-                            // rebind handlers jika perlu (apply/cancel)
-                            $el.on('apply.daterangepicker', function(ev, picker) {
+                            $el.on('apply.daterangepicker', function (ev, picker) {
                                 $(this).val(picker.startDate.format('DD-MM-YYYY'));
+                                $(this).trigger('change');
                             });
-                            $el.on('cancel.daterangepicker', function(ev, picker) {
+                            $el.on('cancel.daterangepicker', function (ev, picker) {
                                 $(this).val('');
+                                $(this).trigger('change');
                             });
                         }
 
-                        // isi input langsung (opsional)
-                        $el.val(today.format('DD-MM-YYYY'));
+                        $el.val(selectedDate.format('DD-MM-YYYY'));
                     }
 
                     $('#docno').val(
@@ -932,9 +939,10 @@ $('#cabang').on('change', function () {
 });
 
 
-$('#prefix').on('blur', function () {
-    let prefix = $(this).val().toUpperCase();
-    let infix  = $('#infix').val();
+function loadNextSuffixVoidPP() {
+    
+    let prefix = $.trim($('#prefix').val()).toUpperCase();
+    let infix = $.trim($('#infix').val());
 
     if (!prefix || !infix || !currentKodeSuffix) return;
 
@@ -947,21 +955,40 @@ $('#prefix').on('blur', function () {
             kode_suffix: currentKodeSuffix
         },
         dataType: 'json',
+        cache: false,
         success: function (res) {
             if (!res.success) {
                 Swal.fire('Error', res.message, 'warning');
                 return;
             }
 
-            $('#sufix').val(res.suffix);
+            let suffix = $.trim(
+                res.suffix || ''
+            );
+
+            $('#suffix')
+                .val(suffix)
+                .trigger('change');
+
             $('#docno').val(
                 prefix + '/' + infix + '/' + res.suffix
             );
         }
     });
+};
+
+
+$('#prefix').on('blur', function () {
+    loadNextSuffixVoidPP();
 });
 
-
+function cleanSuffix(value) {
+    return String(value || '')
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '')
+        .substring(0, 6);
+}
 
 
 var defaultInitialBranch = '';

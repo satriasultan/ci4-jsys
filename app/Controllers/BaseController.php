@@ -48,6 +48,7 @@ use App\Models\Tools\M_Tools;
 use App\Models\Arap\M_Arap;
 use App\Models\Pajak\M_Pajak;
 use App\Models\Finance\M_Finance;
+use App\Models\Report\M_Report;
 use App\Models\Sales\M_Sales;
 use App\Models\Sales\M_Presales;
 use App\Models\Sales\M_Postsales;
@@ -177,5 +178,6 @@ class BaseController extends Controller
         $this->m_pajak = new M_Pajak();
         $this->m_finance = new M_Finance();
         $this->m_production = new M_Production();
+        $this->m_report = new M_Report();
     }
 }

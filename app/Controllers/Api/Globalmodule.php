@@ -2291,7 +2291,7 @@ class Globalmodule extends BaseController
             $paramglobal2= "";
         }
 
-        $param=" and (kdcustomer like '%$search%' $paramglobal $paramglobal1 $paramglobal2 ) or (upper(nmcustomer) like '%$search%' $paramglobal $paramglobal1 $paramglobal2 ) order by kdcustomer asc";
+        $param=" and ((kdcustomer like '%$search%' $paramglobal $paramglobal1 $paramglobal2 ) or (upper(nmcustomer) like '%$search%' $paramglobal $paramglobal1 $paramglobal2 )) order by kdcustomer asc";
         //$param="";
         // $getResult = $this->m_skperingatan->q_mst_karyawan()->getResult();
         $getResult = $this->m_global->q_customer_new($param)->getResult();
@@ -2560,7 +2560,7 @@ class Globalmodule extends BaseController
             $paramglobal2= "";
         }
 
-        $param=" and (kdsupplier like '%$search%' $paramglobal $paramglobal1 $paramglobal2 ) or (upper(nmsupplier) like '%$search%' $paramglobal $paramglobal1 $paramglobal2 ) order by kdsupplier asc";
+        $param=" and ((kdsupplier like '%$search%' $paramglobal $paramglobal1 $paramglobal2 ) or (upper(nmsupplier) like '%$search%' $paramglobal $paramglobal1 $paramglobal2 )) order by kdsupplier asc";
         //$param="";
         // $getResult = $this->m_skperingatan->q_mst_karyawan()->getResult();
         $getResult = $this->m_global->q_supplier_new($param)->getResult();
@@ -2836,7 +2836,7 @@ class Globalmodule extends BaseController
         $limit = $perpage * $page;
 
         if (!empty($pg) or $pg!=='') {
-            $paramglobal = " and trim(coalesce(so.docno,'')) ='$pg'";
+            $paramglobal = " and substring(trim(so.docno) from '.*/([A-Z]{2})') = '$pg'";
         } else {
             $paramglobal = "";
         }

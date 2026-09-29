@@ -502,6 +502,13 @@ class Customer extends BaseController
             $createddate = date('Y-m-d H:i:s');
             $builder = $this->db->table('sc_mst.customer');
             if ($type === 'INPUT') {
+                $param = " and trim(kdcustomer)='" . $kdcustomer . "'";
+                $cek = $this->m_customer->q_mstcustomer($param)->getNumRows();
+                if ($cek > 0) {
+                    $getResult = array('status' => false, 'messages' => 'Kode Customer sudah digunakan');
+                    echo json_encode($getResult);
+                    return;
+                }
                 $info = [
                     'kdcustomer' => $kdcustomer,
                     'nmcustomer' => $nmcustomer,

@@ -448,7 +448,6 @@ $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], f
 
 
 
-
     $routes->add('voidpp', 'Purchase::voidpp');
     $routes->add('list_voidpp', 'Purchase::list_voidpp');
     $routes->add('addVoidPP', 'Purchase::addVoidPP');
@@ -777,7 +776,9 @@ $routes->group('/sales/postsales', ["namespace" => "App\Controllers\Sales"], fun
     $routes->add('savePenjualanDetail', 'PostSales::savePenjualanDetail');
     $routes->add("get_penjualan_detail(:any)", "PostSales::get_penjualan_detail$1");
     $routes->add("delete_penjualan_detail", "PostSales::delete_penjualan_detail");
-
+    $routes->add("recalculate_tax_temp", "PostSales::recalculate_tax_temp");
+    $routes->post(
+        'laporan_jurnal_transaksi_pjo', 'PostSales::laporan_jurnal_transaksi_pjo');
 
 
 
@@ -1557,6 +1558,32 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('cancel_bpnm_(:any)','Production::cancel_bpnm_$1');
 });
 
+
+
+
+$routes->group('/report/trans', ["namespace" => "App\Controllers\Report"], function ($routes) {
+    $routes->add('outspp', 'Report::outspp');
+    $routes->add('pphistory', 'Report::pphistory');
+    $routes->post('downloadLaporanPP',  'Report::downloadLaporanPP');
+    $routes->post('previewLaporanPP',  'Report::previewLaporanPP');
+
+
+    $routes->add('outspo', 'Report::outspo');
+    $routes->add('pohistory', 'Report::pohistory');
+    $routes->post('downloadLaporanPO',  'Report::downloadLaporanPO');
+    $routes->post('previewLaporanPO',  'Report::previewLaporanPO');
+
+
+    $routes->add('voidpo', 'Report::voidpo');
+    $routes->post('downloadLaporanVoidPO',  'Report::downloadLaporanVoidPO');
+    $routes->post('previewLaporanVoidPO',  'Report::previewLaporanVoidPO');
+
+    
+    $routes->add('pembelian', 'Report::lpb');
+    $routes->post('downloadLaporanLPB',  'Report::downloadLaporanLPB');
+    $routes->post('previewLaporanLPB',  'Report::previewLaporanLPB');
+
+});
 
 
 

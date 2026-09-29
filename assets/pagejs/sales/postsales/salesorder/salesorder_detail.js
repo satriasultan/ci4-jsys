@@ -230,8 +230,8 @@ function documentReadable(){
                 // $("#phone").val(data.phone).prop('readonly', true);
             });
             skipRoleChange = true;
-            $('[name="docdate"]').val(json.dataTables.items[0].docdate).prop('readonly',true);
-            $('[name="delivdate"]').val(json.dataTables.items[0].delivdate).prop('readonly',true);
+            $('[name="docdate"]').val(moment(json.dataTables.items[0].docdate).format('DD-MM-YYYY')).prop('disabled',true);
+            $('[name="delivdate"]').val(moment(json.dataTables.items[0].delivdate).format('DD-MM-YYYY')).prop('disabled',true);
             $('[name="gradecustomer"]').val(json.dataTables.items[0].gradecustomer).prop('readonly',true);
             setJtsValue('[name="jthtempo"]', convertToDbNumber(json.dataTables.items[0].jthtempo));
             // setJtsValue('[name="biayavol"]', convertToDbNumber(json.dataTables.items[0].biayavol));

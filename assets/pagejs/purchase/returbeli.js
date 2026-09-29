@@ -123,7 +123,7 @@ function documentReadable(){
             let prefixParts = docnoData.split('/'); // ["JTS", "PH", "25", "08"]
             $('[name="prefix"]').val(prefixParts[0]).prop('readonly', true);
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
-            $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
+            $('[name="suffix"]').val(prefixParts[2]).prop('readonly', true);
 
 
             $.ajax({
@@ -317,6 +317,7 @@ $("#idprincipal").select2({
 
 
 function setToApproved(docno) {
+    if (!guardPeriodeTutup()) return;
     Swal.fire({
         title: 'Set Retur Beli menjadi Approve?',
         text: "Status dokumen akan diubah menjadi Approve",
@@ -354,6 +355,7 @@ function setToApproved(docno) {
 }
 
 function setToDisapproved(docno) {
+    if (!guardPeriodeTutup()) return;
     Swal.fire({
         title: 'Set Retur Beli menjadi Disapprove?',
         text: "Status dokumen akan diubah menjadi Disapprove",
@@ -1101,7 +1103,7 @@ function saveReturBeliDetail() {
         // formData.append('estpakai', $('#estpakai').val());
 
         // docno gabungan (lebih aman pakai hidden header)
-        formData.set('docno', $('#prefix').val() + '/' + $('#infix').val() + '/' + $('#sufix').val());
+        formData.set('docno', $('#prefix').val() + '/' + $('#infix').val() + '/' + $('#suffix').val());
         // convert qty ke numeric DB
         let qty = $('#qty').val();
         // let qtybonus = $('#qtybonus').val();
@@ -1325,8 +1327,9 @@ $('#cabang').on('change', function () {
 
                     currentKodeSuffix = res.kode_suffix; // PT / PA / PB
                     $('#infix').val(res.infix);          // YYMM
-                    $('#prefix').val('RBL');             // default
-                    $('#sufix').val(currentKodeSuffix + '0001');
+                    var prefix = res.prefix;
+                    $('#prefix').val(prefix);             // default
+                    loadNextSuffixReturBeli()
 
                     var infix = (res.infix || '').toString();
                     if (infix.length === 4) {
@@ -1336,10 +1339,17 @@ $('#cabang').on('change', function () {
                         var year = 2000 + parseInt(yy,10);
                         var month = parseInt(mm,10) - 1; // moment month index
 
-                        var today = moment();
-
+                        // Gunakan logindate dari response sebagai default
+                        var logindate = res.logindate ? moment(res.logindate, 'DD-MM-YYYY') : moment();
+                        
+                        // Pastikan logindate dalam range bulan infix
                         var startDate = moment([year, month, 1]);
                         var endDate = moment(startDate).endOf('month');
+                        
+                        // Jika logindate dalam range, gunakan logindate,否则 gunakan startDate
+                        var selectedDate = logindate.isBetween(startDate, endDate, 'day', '[]') 
+                            ? logindate 
+                            : startDate;
 
                         var $el = $('#docdate');
                         var drp = $el.data('daterangepicker');
@@ -1348,36 +1358,109 @@ $('#cabang').on('change', function () {
                             // update limits & selected date
                             drp.minDate = startDate;
                             drp.maxDate = endDate;
-                            drp.setStartDate(startDate);
-                            drp.setEndDate(startDate);
+                            drp.setStartDate(selectedDate);
+                            drp.setEndDate(selectedDate);
                         } else {
                             // fallback: (re)initialize with limits
                             $el.daterangepicker({
                                 autoUpdateInput: false,
                                 singleDatePicker: true,
                                 showDropdowns: true,
-                                startDate: today,
+                                startDate: selectedDate,
                                 minDate: startDate,
                                 maxDate: endDate,
                                 locale: { format: 'DD-MM-YYYY' },
                                 cancelLabel: 'Clear'
                             });
-                            // rebind handlers jika perlu (apply/cancel)
+                            // rebind handlers
                             $el.on('apply.daterangepicker', function(ev, picker) {
                                 $(this).val(picker.startDate.format('DD-MM-YYYY'));
+                                // Trigger change untuk update kurs
+                                $(this).trigger('change');
                             });
                             $el.on('cancel.daterangepicker', function(ev, picker) {
                                 $(this).val('');
+                                // Trigger change untuk reset kurs
+                                $(this).trigger('change');
                             });
                         }
 
-                        // isi input langsung (opsional)
-                        $el.val(today.format('DD-MM-YYYY'));
+                        // isi input dengan selectedDate
+                        $el.val(selectedDate.format('DD-MM-YYYY'));
                     }
 
                     $('#docno').val(
-                        'RBL/' + res.infix + '/' + currentKodeSuffix + '0001'
+                        prefix + '/' + res.infix + '/' + currentKodeSuffix + '0001'
                     );
+
+                     // Ambil docdate dari field
+                    var docdate = $('#docdate').val() || '';
+                    
+                    // Load Currency dengan docdate
+                    if (res.currcode) {
+                        // Kosongkan Select2 terlebih dahulu
+                        $('[name="currcode"]').empty().trigger('change');
+                        
+                        // Panggil API dengan docdate
+                        var url = HOST_URL + 'api/globalmodule/list_currency' + '?var=' + res.currcode;
+                        if (docdate) {
+                            url += '&docdate=' + encodeURIComponent(docdate);
+                        }
+                        
+                        $.ajax({
+                            type: 'GET',
+                            url: url,
+                            dataType: 'json',
+                            delay: 250,
+                        }).then(function (datax) {
+                            if (datax.items && datax.items.length > 0) {
+                                // create the option and append to Select2
+                                var currencyData = datax.items[0];
+                                
+                                
+                                // create the option dan simpan data lengkap
+                                var option = new Option(currencyData.currname, currencyData.currcode, true, true);
+                                $(option).data('currency-data', currencyData); // Simpan data lengkap
+                                
+                                $('[name="currcode"]').append(option).trigger('change');
+                                
+                                // Set kurs
+                                setJtsValue('[name="kurs"]', convertToDbNumber(currencyData.kurs || 1));
+                                $('[name="kurs"]').prop('readonly', false);
+                            }
+                        }).fail(function() {
+                            console.error('Failed to load currency data');
+                        });
+                    }
+
+                    // Load Tax
+                    if (res.idtax) {
+                        // Kosongkan Select2 terlebih dahulu
+                        $('[name="idtax"]').empty().trigger('change');
+                        
+                        $.ajax({
+                            type: 'GET',
+                            url: HOST_URL + 'api/globalmodule/list_tax' + '?var=' + res.idtax,
+                            dataType: 'json',
+                            delay: 250,
+                        }).then(function (datax) {
+                            if (datax.items && datax.items.length > 0) {
+                                // create the option and append to Select2
+                                var option = new Option(datax.items[0].nmtax, datax.items[0].idtax, true, true);
+                                $('[name="idtax"]').append(option).trigger('change');
+
+                                // manually trigger the `select2:select` event
+                                $('[name="idtax"]').trigger({
+                                    type: 'select2:select',
+                                    params: {
+                                        data: datax
+                                    }
+                                });
+                            }
+                        }).fail(function() {
+                            console.error('Failed to load tax data');
+                        });
+                    }
                 }
             });
     }
@@ -1385,9 +1468,10 @@ $('#cabang').on('change', function () {
 });
 
 
-$('#prefix').on('blur', function () {
-    let prefix = $(this).val().toUpperCase();
-    let infix  = $('#infix').val();
+function loadNextSuffixReturBeli() {
+    
+    let prefix = $.trim($('#prefix').val()).toUpperCase();
+    let infix = $.trim($('#infix').val());
 
     if (!prefix || !infix || !currentKodeSuffix) return;
 
@@ -1406,13 +1490,34 @@ $('#prefix').on('blur', function () {
                 return;
             }
 
-            $('#sufix').val(res.suffix);
+            let suffix = $.trim(
+                res.suffix || ''
+            );
+
+            $('#suffix')
+                .val(suffix)
+                .trigger('change');
             $('#docno').val(
                 prefix + '/' + infix + '/' + res.suffix
             );
         }
     });
+};
+
+
+
+$('#prefix').on('blur', function () {
+    loadNextSuffixLPB();
 });
+
+
+function cleanSuffix(value) {
+    return String(value || '')
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '')
+        .substring(0, 6);
+}
 
 
 

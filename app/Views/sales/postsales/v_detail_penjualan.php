@@ -63,6 +63,167 @@
     }
 
 
+/* ACCOUNTING TOOLBAR */
+    .accounting-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        width: 100%;
+        padding: 8px 15px;
+
+        background: #f1f3f5;
+        border-bottom: 1px solid #cfd4da;
+
+        box-sizing: border-box;
+    }
+
+    .accounting-btn {
+        min-width: 230px;
+        height: 45px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+
+        border: none;
+        border-radius: 6px;
+
+        color: #ffffff;
+        font-size: 14px;
+        font-weight: bold;
+
+        cursor: pointer;
+
+        box-shadow: 0 2px 5px rgba(0,0,0,.20);
+
+        transition: all .2s ease;
+    }
+
+    /* ================================
+       LAPORAN JURNAL - BIRU
+    ================================ */
+    .btn-jurnal {
+        background: linear-gradient(135deg, #1976d2, #0d47a1);
+    }
+
+    .btn-jurnal:hover {
+        background: linear-gradient(135deg, #2196f3, #1565c0);
+        transform: translateY(-2px);
+    }
+
+    /* ================================
+       PEMBAYARAN - HIJAU
+    ================================ */
+    .btn-pembayaran {
+        background: linear-gradient(135deg, #28a745, #146c2e);
+    }
+
+    .btn-pembayaran:hover {
+        background: linear-gradient(135deg, #34c759, #198754);
+        transform: translateY(-2px);
+    }
+
+    .accounting-btn:active {
+        transform: translateY(1px);
+        box-shadow: 0 1px 2px rgba(0,0,0,.20);
+    }
+
+    .accounting-btn i {
+        font-size: 19px;
+    }
+
+
+    /*jurnal posting*/
+    /* =========================================
+   LAPORAN JURNAL - CORPORATE TABLE
+========================================= */
+
+    #modalLaporanJurnal .modal-content {
+        border-radius: 4px;
+        border: 1px solid #d6dce3;
+    }
+
+    #modalLaporanJurnal .modal-header {
+        padding: 12px 20px;
+    }
+
+    #modalLaporanJurnal .modal-title {
+        font-size: 16px;
+        color: #343a40;
+    }
+
+    /* =========================================
+       DATATABLE
+    ========================================= */
+
+    #tableLaporanJurnal {
+        border-collapse: collapse !important;
+        white-space: nowrap !important;
+    }
+
+    #tableLaporanJurnal thead th {
+        background: #46533a;
+        color: #ffffff;
+        font-size: 12px;
+        font-weight: 600;
+        vertical-align: middle;
+        white-space: nowrap !important;
+        border-color: #59664c;
+        padding: 9px 10px;
+    }
+
+    #tableLaporanJurnal tbody td {
+        font-size: 12px;
+        vertical-align: middle;
+        white-space: nowrap !important;
+        padding: 8px 10px;
+    }
+
+    /* Hover corporate */
+    #tableLaporanJurnal tbody tr:hover {
+        background-color: #f1f4f6 !important;
+    }
+
+    /* Nominal */
+    #tableLaporanJurnal td.text-right {
+        font-family: Consolas, "Courier New", monospace;
+        font-weight: 500;
+    }
+
+    /* TOTAL ROW */
+    #tableLaporanJurnal tbody tr.row-total td {
+        background-color: #eef1e9 !important;
+        font-weight: bold;
+        border-top: 2px solid #46533a !important;
+    }
+
+    /* =========================================
+       DATATABLE CONTROL
+    ========================================= */
+
+    #modalLaporanJurnal .dataTables_wrapper {
+        font-size: 12px;
+    }
+
+    #modalLaporanJurnal .dataTables_filter input {
+        border: 1px solid #ced4da;
+        border-radius: 3px;
+        height: 30px;
+        padding: 5px 10px;
+    }
+
+    #modalLaporanJurnal .dataTables_length select {
+        border: 1px solid #ced4da;
+        border-radius: 3px;
+        height: 30px;
+    }
+
+    /* Horizontal scroll */
+    #modalLaporanJurnal .dataTables_scrollBody {
+        border-bottom: 1px solid #dee2e6 !important;
+    }
 </style>
 <div class="content-header">
     <div class="container-fluid">
@@ -236,7 +397,7 @@
                                 </div>
                                 <div class="col-md-3">
                                     <div class="row">
-                                        <div class="col-md-6" >
+                                        <!-- <div class="col-md-6" >
                                             <div class="form-group">
                                                 <label for="gradecustomer">Grade Actual</label>
                                                 <input name="gradecustomer"
@@ -246,14 +407,14 @@
                                                     placeholder="Grade Actual" disabled
                                                     style="text-transform:uppercase;">
                                             </div>
-                                        </div>
-                                        <div class="col-md-6" style="margin-top: 27px;">
+                                        </div> -->
+                                        <!-- <div class="col-md-6" style="margin-top: 27px;">
                                             <div class="form-group">
                                                 <button type="button" class="btn btn-warning" title="Change Grade Temp.">
                                                     <i class="fa fa-edit"></i> Change Grade Temp.
                                                 </button>
                                             </div>
-                                        </div>
+                                        </div> -->
                                         <div class="row align-items-end">
                                             <div class="col-md-4">
                                                 <div class="mb-3">
@@ -501,7 +662,18 @@
         <!-- /.card -->
     <!--/.col (left) -->
     <!-- right column -->
-    <div class="col-md-6">
+    <div class="accounting-toolbar">
+
+        <button type="button"
+                id="btnLaporanJurnal"
+                class="btn btn-primary">
+            <i class="fa fa-book"></i> Laporan Jurnal Transaksi
+        </button>
+
+        <!-- <button class="accounting-btn btn-pembayaran" id="btnPembayaran">
+            <i class="fas fa-money-bill-wave"></i>
+            <span>Pembayaran</span>
+        </button> -->
 
     </div>
     <!--/.col (right) -->
@@ -753,7 +925,151 @@
 </div>
 
 
+<div class="modal fade"
+     id="modalLaporanJurnal"
+     tabindex="-1"
+     aria-labelledby="modalLaporanJurnalLabel"
+     aria-hidden="true">
 
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+
+        <div class="modal-content">
+
+            <!-- HEADER -->
+            <div class="modal-header">
+
+                <h5 class="modal-title" id="modalLaporanJurnalLabel">
+                    <i class="fa fa-book"></i>
+                    Laporan Jurnal Transaksi Penjualan
+                </h5>
+
+                <!-- BOOTSTRAP 5 CLOSE -->
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close">
+                </button>
+
+            </div>
+
+
+            <!-- BODY -->
+            <div class="modal-body">
+
+                <div class="table-responsive">
+
+                    <table id="tableLaporanJurnal"
+                           class="table table-bordered table-striped table-hover w-100">
+
+                        <thead>
+
+                        <tr>
+
+                            <th>No</th>
+                            <th>Tanggal</th>
+                            <th>Doc No</th>
+                            <th>Customer</th>
+
+                            <th>COA</th>
+                            <th>Nama Perkiraan</th>
+
+                            <th class="text-end">Debet</th>
+                            <th class="text-end">Kredit</th>
+
+                        </tr>
+
+                        </thead>
+
+                        <tbody></tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+
+            <!-- FOOTER -->
+            <div class="modal-footer">
+
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+
+                    Close
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- Modal Laporan Jurnal Transaksi NDK -->
+<div class="modal fade"
+     id="modalLaporanJurnalNDK"
+     tabindex="-1"
+     aria-labelledby="modalLaporanJurnalNDKLabel"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalLaporanJurnalNDKLabel">
+                    <i class="fa fa-book"></i>
+                    Laporan Jurnal Transaksi NDK
+                </h5>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close">
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+                <div class="table-responsive">
+                    <table id="tableLaporanJurnalNDK"
+                           class="table table-bordered table-striped table-hover w-100">
+
+                        <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Tanggal</th>
+                            <th>Doc No</th>
+                            <th>Customer</th>
+                            <th>COA</th>
+                            <th>Nama Perkiraan</th>
+                            <th class="text-end">Debet</th>
+                            <th class="text-end">Kredit</th>
+                        </tr>
+                        </thead>
+
+                        <tbody>
+                        </tbody>
+
+                    </table>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Close
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
 
 <script type="application/javascript" src="<?= base_url('assets/pagejs/sales/postsales/penjualan/penjualan_detail.js') ?>"></script>
 <script type="text/javascript">

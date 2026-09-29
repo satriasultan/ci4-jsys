@@ -251,3 +251,54 @@ INSERT INTO sc_mst.menuprg (
 ('JTS', 8, 'I.R.A.8', 'MATERIAL RELEASE', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/materialrelease', 'LEFT', 'NO'),
 ('JTS', 9, 'I.R.A.9', 'PENERIMAAN BRG PRODUKSI', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/penerimaanbp', 'LEFT', 'NO'),
 ('JTS', 10, 'I.R.A.10', 'BIAYA PROD NON MATERIAL', 'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o', 'production/trans/biaya_produksi_non_material', 'LEFT', 'NO');
+
+
+
+
+
+
+DELETE FROM sc_mst.menuprg
+WHERE kodemenu IN (
+    'I.H',
+    'I.H.A',
+    'I.H.A.1',
+    'I.H.A.2',
+    'I.H.A.3',
+    'I.H.A.4',
+    'I.H.A.5',
+    'I.H.A.6',
+    'I.H.A.7',
+    'I.H.A.8',
+    'I.H.A.9',
+    'I.H.A.10'
+);
+INSERT INTO sc_mst.menuprg (
+    branch, 
+    urut, 
+    kodemenu, 
+    namamenu, 
+    parentmenu, 
+    parentsub, 
+    child, 
+    holdmenu, 
+    iconmenu, 
+    linkmenu, 
+    menuposition, 
+    chold
+) VALUES 
+('JTS', 7, 'I.H', 'LAPORAN', '0', '0', 'U', false, 'fa-folder-open', '', 'LEFT', 'NO'),
+('JTS', 1, 'I.H.A', 'MASTER', 'I.H', '0', 'S', false, 'fa-cog', '', 'LEFT', 'NO'),
+('JTS', 1, 'I.H.A.1', 'MASTER BARANG', 'I.H', 'I.H.A', 'P', false, 'fa-lightbulb-o', 'report/trans/barang', 'LEFT', 'NO'),
+('JTS', 2, 'I.H.A.2', 'MASTER CUSTOMER', 'I.H', 'I.H.A', 'P', false, 'fa-lightbulb-o', 'report/trans/customer', 'LEFT', 'NO'),
+('JTS', 3, 'I.H.A.3', 'MASTER SUPPLIER', 'I.H', 'I.H.A', 'P', false, 'fa-lightbulb-o', 'report/trans/supplier', 'LEFT', 'NO'),
+('JTS', 2, 'I.H.B', 'PEMBELIAN', 'I.H', '0', 'S', false, 'fa-cart-plus', '', 'LEFT', 'NO'),
+('JTS', 1, 'I.H.B.1', 'LAPORAN OUTSTANDING PP', 'I.H', 'I.H.B', 'P', false, 'fa-lightbulb-o', 'report/trans/outspp', 'LEFT', 'NO'),
+('JTS', 2, 'I.H.B.2', 'LAPORAN PP HISTORY', 'I.H', 'I.H.B', 'P', false, 'fa-lightbulb-o', 'report/trans/pphistory', 'LEFT', 'NO'),
+('JTS', 3, 'I.H.B.3', 'LAPORAN OUSTANDING PO', 'I.H', 'I.H.B', 'P', false, 'fa-lightbulb-o', 'report/trans/outspo', 'LEFT', 'NO'),
+('JTS', 4, 'I.H.B.4', 'LAPORAN VOID PO', 'I.H', 'I.H.B', 'P', false, 'fa-lightbulb-o', 'report/trans/voidpo', 'LEFT', 'NO'),
+('JTS', 5, 'I.H.B.5', 'LAPORAN PO HISTORY', 'I.H', 'I.H.B', 'P', false, 'fa-lightbulb-o', 'report/trans/pohistory', 'LEFT', 'NO'),
+('JTS', 6, 'I.H.B.6', 'LAPORAN PEMBELIAN', 'I.H', 'I.H.B', 'P', false, 'fa-lightbulb-o', 'report/trans/pembelian', 'LEFT', 'NO'),
+('JTS', 3, 'I.H.C', 'PENJUALAN', 'I.H', '0', 'S', false, 'fa-area-chart', '', 'LEFT', 'NO'),
+('JTS', 1, 'I.H.C.1', 'LAPORAN SALES ORDER', 'I.H', 'I.H.C', 'P', false, 'fa-lightbulb-o', 'report/trans/so', 'LEFT', 'NO'),
+('JTS', 2, 'I.H.C.2', 'LAPORAN PENJUALAN', 'I.H', 'I.H.C', 'P', false, 'fa-lightbulb-o', 'report/trans/pjo', 'LEFT', 'NO')
+;

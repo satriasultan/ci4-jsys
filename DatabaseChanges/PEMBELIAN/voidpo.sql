@@ -785,3 +785,36 @@ BEGIN
     
 END;
 $$ LANGUAGE plpgsql;
+
+
+
+
+
+
+BEGIN;
+
+-- ================================================
+-- VOIDPO
+-- ================================================
+ALTER TABLE sc_tmp.voidpo DROP CONSTRAINT pk_tmp_voidpo;
+ALTER TABLE sc_tmp.voidpo ADD CONSTRAINT pk_tmp_voidpo PRIMARY KEY (idurut, docno);
+
+-- ================================================
+-- LPB
+-- ================================================
+ALTER TABLE sc_tmp.lpb DROP CONSTRAINT pk_tmp_lpb;
+ALTER TABLE sc_tmp.lpb ADD CONSTRAINT pk_tmp_lpb PRIMARY KEY (idurut, docno);
+
+-- ================================================
+-- RETURBELI
+-- ================================================
+ALTER TABLE sc_tmp.returbeli DROP CONSTRAINT pk_tmp_returbeli;
+ALTER TABLE sc_tmp.returbeli ADD CONSTRAINT pk_tmp_returbeli PRIMARY KEY (idurut, docno);
+
+-- ================================================
+-- SALESORDER
+-- ================================================
+ALTER TABLE sc_tmp.salesorder DROP CONSTRAINT pk_tmp_salesorder;
+ALTER TABLE sc_tmp.salesorder ADD CONSTRAINT pk_tmp_salesorder PRIMARY KEY (idurut, docno);
+
+-- ================================================

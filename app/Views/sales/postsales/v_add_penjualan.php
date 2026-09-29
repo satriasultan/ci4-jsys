@@ -236,7 +236,7 @@
                                 </div>
                                 <div class="col-md-3">
                                     <div class="row">
-                                        <div class="col-md-6" >
+                                        <!-- <div class="col-md-6" >
                                             <div class="form-group">
                                                 <label for="gradecustomer">Grade Actual</label>
                                                 <input name="gradecustomer"
@@ -253,7 +253,7 @@
                                                     <i class="fa fa-edit"></i> Change Grade Temp.
                                                 </button>
                                             </div>
-                                        </div>
+                                        </div> -->
                                         <div class="row align-items-end">
                                             <div class="col-md-4">
                                                 <div class="mb-3">
@@ -580,7 +580,7 @@
                                 <label>No. Surat Jalan</label>
                                 <select name="docnosj" id="docnosj"
                                         class="form-control select2"
-                                        style="width:100%"></select>
+                                        ></select>
                             </div>
                         </div>
                         <div class="col-md-12">
@@ -588,7 +588,7 @@
                                 <label>No. Sales Order</label>
                                 <select name="docnoso" id="docnoso"
                                         class="form-control select2"
-                                        style="width:100%"></select>
+                                        ></select>
                             </div>
                         </div>
                     </div>
@@ -702,11 +702,27 @@
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="form-group">
-                                <label>Spec</label>
-                                <input name="idspec" id="idspec"
-                                        class="form-control"
-                                        style="width:100%">
+                            <label for="idspec" class="form-label">
+                                Batch / Specification
+                            </label>
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <select
+                                            name="idspec"
+                                            id="idspec"
+                                            class="form-control select2"
+                                            style="width: 100%;">
+                                    </select>
+                                </div>
+                                <button
+                                        type="button"
+                                        id="btnNew"
+                                        class="btn btn-primary ms-1"
+                                        onclick="new_spec()"
+                                        title="New Specification">
+                                    <i class="fa fa-plus"></i>
+                                    New
+                                </button>
                             </div>
                         </div>
                         <div class="col-md-1">
@@ -795,7 +811,39 @@
     </div>
 </div>
 
+<!-- ============================================= -->
+<!-- MODAL NEW BATCH / SPEC -->
+<!-- ============================================= -->
+<div class="modal fade" id="modalNewSpec" tabindex="-1" aria-labelledby="modalNewSpecLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
 
+            <!-- HEADER -->
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalNewSpecLabel">New Batch / Specification</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- BODY -->
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="newbatch" class="form-label">Batch / Specification</label>
+                    <input type="text" class="form-control" id="newbatch" name="newbatch"
+                           autocomplete="off" style="text-transform: uppercase;">
+                </div>
+            </div>
+
+            <!-- FOOTER -->
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="save_new_spec()">
+                    <i class="fa fa-save"></i> Process
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
 
 
 <script type="application/javascript" src="<?= base_url('assets/pagejs/sales/postsales/penjualan/penjualan.js') ?>"></script>

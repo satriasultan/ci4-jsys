@@ -1,3 +1,8 @@
+<style>
+    .badge-cetak{
+        background-color: #b73fff;
+    }
+</style>
 <div class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">

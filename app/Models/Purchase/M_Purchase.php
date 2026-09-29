@@ -3008,6 +3008,8 @@ class M_Purchase extends Model
                 )
 
             WHERE 1=1
+            AND jh.status = 'POSTED'
+            AND jd.status = 'POSTED'
             $params
         )
 
@@ -3076,6 +3078,14 @@ class M_Purchase extends Model
     ");
     }
 
-
+    public function q_cek_periode($periode)
+    {
+        $sql = "SELECT idurut, periode, flagproses, keterangan
+                FROM sc_trx.closeperiod
+                WHERE TRIM(periode) = ?
+                ORDER BY idurut DESC
+                LIMIT 1";
+        return $this->db->query($sql, [$periode]);
+    }
 
 }
