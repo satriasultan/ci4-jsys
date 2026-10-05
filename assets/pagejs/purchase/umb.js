@@ -123,7 +123,7 @@ function documentReadable(){
             let prefixParts = docnoData.split('/'); // ["JTS", "PH", "25", "08"]
             $('[name="prefix"]').val(prefixParts[0]).prop('readonly', true);
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
-            $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
+            $('[name="suffix"]').val(prefixParts[2]).prop('readonly', true);
 
 
             $.ajax({
@@ -547,7 +547,7 @@ function saveUMBDetail() {
         // formData.append('estpakai', $('#estpakai').val());
 
         // docno gabungan (lebih aman pakai hidden header)
-        formData.set('docno', $('#prefix').val() + '/' + $('#infix').val() + '/' + $('#sufix').val());
+        formData.set('docno', $('#prefix').val() + '/' + $('#infix').val() + '/' + $('#suffix').val());
         // convert qty ke numeric DB
         let qty = $('#qty').val();
         let qtybonus = $('#qtybonus').val();
@@ -810,59 +810,138 @@ $('#cabang').on('change', function () {
 
                     currentKodeSuffix = res.kode_suffix; // PT / PA / PB
                     $('#infix').val(res.infix);          // YYMM
-                    $('#prefix').val('UMK');             // default
-                    $('#sufix').val(currentKodeSuffix + '0001');
+                    var prefix = res.prefix;
+                    $('#prefix').val(prefix);
+                    loadNextSuffixUMB()
+                    // defaultInitialPP = currentKodeSuffix;
 
+                    // =====================================================
+                    // DATE RANGE BERDASARKAN INFIX
+                    // =====================================================
                     var infix = (res.infix || '').toString();
+
                     if (infix.length === 4) {
                         $('#docdate').prop('disabled', false);
-                        var yy = infix.substring(0,2);
-                        var mm = infix.substring(2,4);
-                        var year = 2000 + parseInt(yy,10);
-                        var month = parseInt(mm,10) - 1; // moment month index
+                        var yy = infix.substring(0, 2);
+                        var mm = infix.substring(2, 4);
+                        var year = 2000 + parseInt(yy, 10);
+                        var month = parseInt(mm, 10) - 1;
 
-                        var today = moment();
+                        // Default: logindate dari server, fallback ke hari ini
+                        var logindate = res.logindate ? moment(res.logindate, 'DD-MM-YYYY') : moment();
 
                         var startDate = moment([year, month, 1]);
                         var endDate = moment(startDate).endOf('month');
+
+                        // Kalau logindate di luar range, pakai startDate
+                        var selectedDate = logindate.isBetween(startDate, endDate, 'day', '[]')
+                            ? logindate
+                            : startDate;
 
                         var $el = $('#docdate');
                         var drp = $el.data('daterangepicker');
 
                         if (drp) {
-                            // update limits & selected date
                             drp.minDate = startDate;
                             drp.maxDate = endDate;
-                            drp.setStartDate(startDate);
-                            drp.setEndDate(startDate);
+                            drp.setStartDate(selectedDate);
+                            drp.setEndDate(selectedDate);
                         } else {
-                            // fallback: (re)initialize with limits
                             $el.daterangepicker({
                                 autoUpdateInput: false,
                                 singleDatePicker: true,
                                 showDropdowns: true,
-                                startDate: today,
+                                startDate: selectedDate,
                                 minDate: startDate,
                                 maxDate: endDate,
                                 locale: { format: 'DD-MM-YYYY' },
                                 cancelLabel: 'Clear'
                             });
-                            // rebind handlers jika perlu (apply/cancel)
-                            $el.on('apply.daterangepicker', function(ev, picker) {
+                            $el.on('apply.daterangepicker', function (ev, picker) {
                                 $(this).val(picker.startDate.format('DD-MM-YYYY'));
+                                $(this).trigger('change');
                             });
-                            $el.on('cancel.daterangepicker', function(ev, picker) {
+                            $el.on('cancel.daterangepicker', function (ev, picker) {
                                 $(this).val('');
+                                $(this).trigger('change');
                             });
                         }
 
-                        // isi input langsung (opsional)
-                        $el.val(today.format('DD-MM-YYYY'));
+                        $el.val(selectedDate.format('DD-MM-YYYY'));
                     }
 
                     $('#docno').val(
-                        'UMK/' + res.infix + '/' + currentKodeSuffix + '0001'
+                        prefix + '/' + res.infix + '/' + currentKodeSuffix + '0001'
                     );
+
+                     // Ambil docdate dari field
+                    var docdate = $('#docdate').val() || '';
+                    
+                    // Load Currency dengan docdate
+                    if (res.currcode) {
+                        // Kosongkan Select2 terlebih dahulu
+                        $('[name="currcode"]').empty().trigger('change');
+                        
+                        // Panggil API dengan docdate
+                        var url = HOST_URL + 'api/globalmodule/list_currency' + '?var=' + res.currcode;
+                        if (docdate) {
+                            url += '&docdate=' + encodeURIComponent(docdate);
+                        }
+                        
+                        $.ajax({
+                            type: 'GET',
+                            url: url,
+                            dataType: 'json',
+                            delay: 250,
+                        }).then(function (datax) {
+                            if (datax.items && datax.items.length > 0) {
+                                // create the option and append to Select2
+                                var currencyData = datax.items[0];
+                                
+                                
+                                // create the option dan simpan data lengkap
+                                var option = new Option(currencyData.currname, currencyData.currcode, true, true);
+                                $(option).data('currency-data', currencyData); // Simpan data lengkap
+                                
+                                $('[name="currcode"]').append(option).trigger('change');
+                                
+                                // Set kurs
+                                setJtsValue('[name="kurs"]', convertToDbNumber(currencyData.kurs || 1));
+                                $('[name="kurs"]').prop('readonly', false);
+                            }
+                        }).fail(function() {
+                            console.error('Failed to load currency data');
+                        });
+                    }
+
+                    // Load Tax
+                    if (res.idtax) {
+                        // Kosongkan Select2 terlebih dahulu
+                        $('[name="idtax"]').empty().trigger('change');
+                        
+                        $.ajax({
+                            type: 'GET',
+                            url: HOST_URL + 'api/globalmodule/list_tax' + '?var=' + res.idtax,
+                            dataType: 'json',
+                            delay: 250,
+                        }).then(function (datax) {
+                            if (datax.items && datax.items.length > 0) {
+                                // create the option and append to Select2
+                                var option = new Option(datax.items[0].nmtax, datax.items[0].idtax, true, true);
+                                $('[name="idtax"]').append(option).trigger('change');
+
+                                // manually trigger the `select2:select` event
+                                $('[name="idtax"]').trigger({
+                                    type: 'select2:select',
+                                    params: {
+                                        data: datax
+                                    }
+                                });
+                            }
+                        }).fail(function() {
+                            console.error('Failed to load tax data');
+                        });
+                    }
                 }
             });
     }
@@ -870,9 +949,10 @@ $('#cabang').on('change', function () {
 });
 
 
-$('#prefix').on('blur', function () {
-    let prefix = $(this).val().toUpperCase();
-    let infix  = $('#infix').val();
+function loadNextSuffixUMB() {
+    
+    let prefix = $.trim($('#prefix').val()).toUpperCase();
+    let infix = $.trim($('#infix').val());
 
     if (!prefix || !infix || !currentKodeSuffix) return;
 
@@ -891,14 +971,31 @@ $('#prefix').on('blur', function () {
                 return;
             }
 
-            $('#sufix').val(res.suffix);
+            
+            $('#suffix')
+                .val(suffix)
+                .trigger('change');
+
             $('#docno').val(
                 prefix + '/' + infix + '/' + res.suffix
             );
         }
     });
+};
+
+
+$('#prefix').on('blur', function () {
+    loadNextSuffixUMB();
 });
 
+
+function cleanSuffix(value) {
+    return String(value || '')
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '')
+        .substring(0, 6);
+}
 
 
 

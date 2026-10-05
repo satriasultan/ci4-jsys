@@ -62,6 +62,18 @@ class Persediaan extends BaseController
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_persediaan->q_tmp_transfer_spk_mst($param);
         $logindate = trim($this->session->get('logindate'));
+        $periode   = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_persediaan->q_cek_periode($periode)->getRowArray();
+
+        $data['periodeTutup'] = false;
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            $data['periodeTutup'] = true;
+            $data['periodeInfo']  = [
+                'periode'    => trim($dtlPeriode['periode']),
+                'keterangan' => trim($dtlPeriode['keterangan']),
+            ];
+        }
+        /* ===================================================== */
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
@@ -122,6 +134,19 @@ class Persediaan extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_persediaan->q_tmp_transfer_spk_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
+        
+         /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_persediaan->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('persediaan/trans/perintah_transfer'));
+        }
+        // =================================
 
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
@@ -208,6 +233,7 @@ class Persediaan extends BaseController
         // =========================
         // AMBIL DATA DETAIL
         // =========================
+        $uniqueid = $this->request->getPost('iduniq');
         $idbarang    = trim($this->request->getPost('idbarang'));
         $nmbarang    = strtoupper(trim($this->request->getPost('nmbarang')));
         $unit        = strtoupper(trim($this->request->getPost('unit')));
@@ -226,11 +252,12 @@ class Persediaan extends BaseController
             ->where('nmbarang', $nmbarang)
             ->where('unit', $unit)
             ->where('qty', $qty)
+            ->where('inputby', $nama)
             ->where('description', $description);
 
         // jika mode update → jangan bandingkan dengan dirinya sendiri
         if ($idurut) {
-            $builderDuplicate->where('idurut !=', $idurut);
+            $builderDuplicate->where('iduniq !=', $uniqueid);
         }
 
         $duplicate = $builderDuplicate->countAllResults();
@@ -249,7 +276,11 @@ class Persediaan extends BaseController
         if ($idurut) {
 
             // 🔹 UPDATE
-            $builderDetail->where('idurut', $idurut)->update([
+            $builderDetail
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->where('iduniq', $uniqueid)
+            ->update([
                 'idbarang'    => $idbarang,
                 'nmbarang'    => $nmbarang,
                 'unit'        => $unit,
@@ -291,10 +322,99 @@ class Persediaan extends BaseController
         ]);
     }
 
+    public function getBranchInfoSPKTransfer()
+    {
+        $idbranch = trim($this->request->getGet('idbranch'));
+
+        $row = $this->db->table('sc_mst.branchjob')
+            ->select('nmbranch')
+            ->where('idbranch', $idbranch)
+            ->get()
+            ->getRowArray();
+
+        if (!$row) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Cabang tidak ditemukan'
+            ]);
+        }
+
+        // mapping nmbranch → kode suffix
+        $map = [
+            'PT JATIM TAMAN STEEL MFG' => 'PT',
+            'PLANT I'                 => 'PA',
+            'PLANT II'                => 'PB',
+        ];
+
+        $kodeSuffix = $map[trim($row['nmbranch'])] ?? '';
+
+        if ($kodeSuffix === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Mapping cabang belum diset'
+            ]);
+        }
+
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray(); // Ini mengembalikan array of objects/arrays
+
+
+        // Karena hanya 1 row, ambil index ke-0
+        $prefix = trim($konfigurasiUmum[0]['ptal']) ?? '';
+        $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
+        $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
+
+        $logindate = $this->session->get('logindate'); // dd-mm-yyyy
+        $infix = date('ym', strtotime($logindate));
+
+        return $this->response->setJSON([
+            'success'      => true,
+            'kode_suffix'  => $kodeSuffix,
+            'infix'        => $infix,
+            'logindate'     => $logindate,
+            'prefix'        => $prefix,
+            'konfigurasi_umum' => $konfigurasiUmum,
+            'currcode'      => $currcode,
+            'idtax'         => $idtax,
+        ]);
+    }
+
+    public function getNextSuffixSPKTransfer()
+    {
+        $prefix      = trim($this->request->getGet('prefix'));
+        $infix       = trim($this->request->getGet('infix'));
+        $kodeSuffix  = trim($this->request->getGet('kode_suffix'));
+
+        $like = $prefix . '/' . $infix . '/' . $kodeSuffix;
+
+        $row = $this->db->table('sc_trx.transfer_spk_mst')
+            ->select('docno')
+            ->like('docno', $like, 'after')
+            ->orderBy('docno', 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRowArray();
+
+        if ($row) {
+            $parts = explode('/', $row['docno']);
+            $last  = substr($parts[2], 2); // ambil angka setelah PT/PA/PB
+            $next  = str_pad(((int)$last) + 1, 4, '0', STR_PAD_LEFT);
+        } else {
+            $next = '0001';
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'suffix'  => $kodeSuffix . $next
+        ]);
+    }
+
     function showing_spk_mst_tmp(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno='$docno' and inputby='$nama'";
         $data = $this->m_persediaan->q_tmp_transfer_spk_mst($param);
         $output = array(
             'status' => true,
@@ -624,7 +744,7 @@ class Persediaan extends BaseController
                 $updateBtn = '
                     <a class="dropdown-item bg-warning" 
                     href="' . base_url('persediaan/trans/updateSPKTransfers') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Update This SPK Transfers : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Update This SPK Transfers : ' . $docno . '\')">
                         <i class="fa fa-edit"></i> Update 
                     </a>';
             }
@@ -644,7 +764,7 @@ class Persediaan extends BaseController
                     <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
                     href="' . base_url('persediaan/trans/show_pp') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Print SPK : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Print SPK : ' . $docno . '\')">
                         <i class="fa fa-print"></i> Print 
                     </a>';
             }
@@ -697,12 +817,15 @@ class Persediaan extends BaseController
             $row[] = $dropdownMenu;
 
             $row[] = $lm->docno;
-            $row[] = $lm->docdate;
+            $row[] = date(
+                'd-m-Y',
+                strtotime(trim($lm->docdate))
+            );
             $row[] = $lm->idlocation_from;
             $row[] = $lm->idlocation_to;
             $row[] = $lm->idlocation_transit;
-            $row[] = $lm->nmstatus;
             $row[] = $lm->keterangan;
+            $row[] = $lm->nmstatus;
 
 
             $data[] = $row;
@@ -725,6 +848,20 @@ class Persediaan extends BaseController
         $param = " and coalesce(docno,'')='$docno'";
         $dtl = $this->m_persediaan->q_trx_transfer_spk_mst($param)->getRowArray();
         $status = trim($dtl['status']);
+        
+        $logindate = trim($this->session->get('logindate'));
+
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_persediaan->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('persediaan/trans/perintah_transfer'));
+        }
 
         if ($status === 'F' || $status === 'P') {
 
@@ -842,6 +979,18 @@ class Persediaan extends BaseController
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_persediaan->q_tmp_transfer_location_mst($param);
         $logindate = trim($this->session->get('logindate'));
+        $periode   = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_persediaan->q_cek_periode($periode)->getRowArray();
+
+        $data['periodeTutup'] = false;
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            $data['periodeTutup'] = true;
+            $data['periodeInfo']  = [
+                'periode'    => trim($dtlPeriode['periode']),
+                'keterangan' => trim($dtlPeriode['keterangan']),
+            ];
+        }
+        /* ===================================================== */
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
@@ -904,7 +1053,7 @@ class Persediaan extends BaseController
                 $updateBtn = '
                     <a class="dropdown-item bg-warning" 
                     href="' . base_url('persediaan/trans/updateTransfersLocation') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Update Transfers Location : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Update Transfers Location : ' . $docno . '\')">
                         <i class="fa fa-edit"></i> Update 
                     </a>';
             }
@@ -924,7 +1073,7 @@ class Persediaan extends BaseController
                     <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
                     href="' . base_url('persediaan/trans/showPrint') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Print Transfer Lokasi : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Print Transfer Lokasi : ' . $docno . '\')">
                         <i class="fa fa-print"></i> Print 
                     </a>';
             }
@@ -977,12 +1126,15 @@ class Persediaan extends BaseController
             $row[] = $dropdownMenu;
 
             $row[] = $lm->docno;
-            $row[] = $lm->docdate;
+            $row[] = date(
+                'd-m-Y',
+                strtotime(trim($lm->docdate))
+            );
             $row[] = $lm->idlocation_from;
             $row[] = $lm->idlocation_to;
             $row[] = $lm->idlocation_transit;
-            $row[] = $lm->nmstatus;
             $row[] = $lm->description;
+            $row[] = $lm->nmstatus;
 
 
             $data[] = $row;
@@ -1038,6 +1190,19 @@ class Persediaan extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_persediaan->q_tmp_transfer_location_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
+        
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_persediaan->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('persediaan/trans/transfer_lokasi'));
+        }
+        // =================================
 
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
@@ -1116,6 +1281,7 @@ class Persediaan extends BaseController
         // =========================
         // AMBIL DATA DETAIL
         // =========================
+        $uniqueid = $this->request->getPost('iduniq');
         $idbarang    = trim($this->request->getPost('idbarang'));
         $nmbarang    = strtoupper(trim($this->request->getPost('nmbarang')));
         $unit        = strtoupper(trim($this->request->getPost('unit')));
@@ -1143,10 +1309,11 @@ class Persediaan extends BaseController
             ->where('nmbarang', $nmbarang)
             ->where('unit', $unit)
             ->where('qty', $qty)
+            ->where('inputby', $nama)
             ->where('description', $description);
 
-        if ($idurut) {
-            $builderDuplicate->where('idurut !=', $idurut);
+        if ($uniqueid) {
+            $builderDuplicate->where('iduniq !=', $uniqueid);
         }
 
         $duplicate = $builderDuplicate->countAllResults();
@@ -1166,7 +1333,9 @@ class Persediaan extends BaseController
         if ($idurut) {
 
             $updateDetail = $builderDetail
-                ->where('idurut', $idurut)
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->where('iduniq', $uniqueid)
                 ->update([
                     'idbarang'    => $idbarang,
                     'nmbarang'    => $nmbarang,
@@ -1236,7 +1405,7 @@ class Persediaan extends BaseController
     function showing_transfer_location_mst_tmp(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno='$docno' and inputby='$nama'";
         $data = $this->m_persediaan->q_tmp_transfer_location_mst($param);
         $output = array(
             'status' => true,
@@ -1414,6 +1583,21 @@ class Persediaan extends BaseController
         $dtl = $this->m_persediaan->q_trx_transfer_location_mst($param)->getRowArray();
         $status = trim($dtl['status']);
 
+        $logindate = trim($this->session->get('logindate'));
+
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_persediaan->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('persediaan/trans/transfer_lokasi'));
+        }
+
+
         if ($status === 'F' || $status === 'P') {
 
             $info = array(
@@ -1520,6 +1704,17 @@ class Persediaan extends BaseController
             ]);
         }
 
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray(); // Ini mengembalikan array of objects/arrays
+
+
+        // Karena hanya 1 row, ambil index ke-0
+        $prefix = trim($konfigurasiUmum[0]['tal']) ?? '';
+        $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
+        $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
+
         $logindate = $this->session->get('logindate'); // dd-mm-yyyy
         $infix = date('ym', strtotime($logindate));
 
@@ -1527,7 +1722,11 @@ class Persediaan extends BaseController
             'success'      => true,
             'kode_suffix'  => $kodeSuffix,
             'infix'        => $infix,
-            'logindate'        => $logindate,
+            'logindate'     => $logindate,
+            'prefix'        => $prefix,
+            'konfigurasi_umum' => $konfigurasiUmum,
+            'currcode'      => $currcode,
+            'idtax'         => $idtax,
         ]);
     }
 
@@ -1645,6 +1844,18 @@ class Persediaan extends BaseController
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_persediaan->q_tmp_ajustment_stock_mst($param);
         $logindate = trim($this->session->get('logindate'));
+        $periode   = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_persediaan->q_cek_periode($periode)->getRowArray();
+
+        $data['periodeTutup'] = false;
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            $data['periodeTutup'] = true;
+            $data['periodeInfo']  = [
+                'periode'    => trim($dtlPeriode['periode']),
+                'keterangan' => trim($dtlPeriode['keterangan']),
+            ];
+        }
+        /* ===================================================== */
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
@@ -1709,7 +1920,7 @@ class Persediaan extends BaseController
                 $updateBtn = '
                     <a class="dropdown-item bg-warning" 
                     href="' . base_url('persediaan/trans/updateAjustmentStock') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Update Transfers Location : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Update Transfers Location : ' . $docno . '\')">
                         <i class="fa fa-edit"></i> Update 
                     </a>';
             }
@@ -1729,7 +1940,7 @@ class Persediaan extends BaseController
                     <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
                     href="' . base_url('persediaan/trans/showPrintAjustmentStock') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Print Transfer Lokasi : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Print Transfer Lokasi : ' . $docno . '\')">
                         <i class="fa fa-print"></i> Print 
                     </a>';
             }
@@ -1739,7 +1950,7 @@ class Persediaan extends BaseController
                     <a class="dropdown-item" 
                     style="background-color:#FF7C7CD6;" 
                     href="' . base_url('persediaan/trans/cancelAjustmentStock') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Batal Transaksi : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Batal Transaksi : ' . $docno . '\')">
                         <i class="fa fa-trash"></i> Cancel 
                     </a>';
             }
@@ -1793,10 +2004,16 @@ class Persediaan extends BaseController
             $row[] = $dropdownMenu;
 
             $row[] = $lm->docno;
-            $row[] = $lm->docdate;
+            $row[] = date(
+                'd-m-Y',
+                strtotime(trim($lm->docdate))
+            );
             $row[] = $lm->docref;
             $row[] = $lm->cabang;
-            $row[] = $lm->docdate;
+            $row[] = date(
+                'd-m-Y',
+                strtotime(trim($lm->docdate))
+            );
             $status = strtolower(trim($lm->status));
             $statusLabel = $lm->nmstatus;
             $badge = 'secondary'; // default grey
@@ -1833,9 +2050,9 @@ class Persediaan extends BaseController
             }
 
             $statusBadge = '<span class="badge bg-'.$badge.' text-dark w-100" style="font-size:14px;display:block;padding:6px 8px;">'.$statusLabel.'</span>';
-            $row[] = '<div class="text-center">'.$statusBadge.'</div>';
             $row[] = $lm->description;
             $row[] = $lm->inputby;
+            $row[] = '<div class="text-center">'.$statusBadge.'</div>';
 
 
             $data[] = $row;
@@ -1891,6 +2108,19 @@ class Persediaan extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_persediaan->q_tmp_ajustment_stock_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
+        
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_persediaan->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('persediaan/trans/ajustment_stock'));
+        }
+        // =================================
 
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
@@ -1969,7 +2199,7 @@ class Persediaan extends BaseController
         // =========================
         // AMBIL DATA DETAIL
         // =========================
-
+        $uniqueid = $this->request->getPost('iduniq');
         $idlocation_dtl = strtoupper(trim($this->request->getPost('idlocation_dtl')));
         $idbarang = strtoupper(trim($this->request->getPost('idbarang')));
         $batch = strtoupper(trim($this->request->getPost('batch')));
@@ -2002,10 +2232,11 @@ class Persediaan extends BaseController
             ->where('idbarang', $idbarang)
             ->where('unit', $unit)
             ->where('qty', $qty)
+            ->where('inputby', $nama)
             ->where('description', $description);
 
         if ($idurut) {
-            $builderDuplicate->where('idurut !=', $idurut);
+            $builderDuplicate->where('idurut !=', $uniqueid);
         }
 
         $duplicate = $builderDuplicate->countAllResults();
@@ -2025,7 +2256,9 @@ class Persediaan extends BaseController
         if ($idurut) {
 
             $updateDetail = $builderDetail
-                ->where('idurut', $idurut)
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->where('iduniq', $uniqueid)
                 ->update([
 
                     'idlocation'    => $idlocation_dtl,
@@ -2108,7 +2341,7 @@ class Persediaan extends BaseController
     function showing_ajustment_stock_mst_tmp(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno='$docno' and inputby='$nama'";
         $data = $this->m_persediaan->q_tmp_ajustment_stock_mst($param);
         $output = array(
             'status' => true,
@@ -2317,6 +2550,20 @@ class Persediaan extends BaseController
         $dtl = $this->m_persediaan->q_trx_ajustment_stock_mst($param)->getRowArray();
         $status = trim($dtl['status']);
 
+        $logindate = trim($this->session->get('logindate'));
+
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_persediaan->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('persediaan/trans/ajustment_stock'));
+        }
+
         if ($status === 'F' or $status === 'P') {
 
             $info = array(
@@ -2424,6 +2671,17 @@ class Persediaan extends BaseController
             ]);
         }
 
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray(); // Ini mengembalikan array of objects/arrays
+
+
+        // Karena hanya 1 row, ambil index ke-0
+        $prefix = trim($konfigurasiUmum[0]['adjusmentstock']) ?? '';
+        $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
+        $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
+
         $logindate = $this->session->get('logindate'); // dd-mm-yyyy
         $infix = date('ym', strtotime($logindate));
 
@@ -2431,7 +2689,11 @@ class Persediaan extends BaseController
             'success'      => true,
             'kode_suffix'  => $kodeSuffix,
             'infix'        => $infix,
-            'logindate'        => $logindate,
+            'logindate'     => $logindate,
+            'prefix'        => $prefix,
+            'konfigurasi_umum' => $konfigurasiUmum,
+            'currcode'      => $currcode,
+            'idtax'         => $idtax,
         ]);
     }
 
@@ -2637,6 +2899,18 @@ class Persediaan extends BaseController
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_persediaan->q_tmp_pmk_brng_mst($param);
         $logindate = trim($this->session->get('logindate'));
+        $periode   = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_persediaan->q_cek_periode($periode)->getRowArray();
+
+        $data['periodeTutup'] = false;
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            $data['periodeTutup'] = true;
+            $data['periodeInfo']  = [
+                'periode'    => trim($dtlPeriode['periode']),
+                'keterangan' => trim($dtlPeriode['keterangan']),
+            ];
+        }
+        /* ===================================================== */
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
@@ -2699,7 +2973,7 @@ class Persediaan extends BaseController
                 $updateBtn = '
                     <a class="dropdown-item bg-warning" 
                     href="' . base_url('persediaan/trans/updatePmkBrg') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Update Pemakaian Barang : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Update Pemakaian Barang : ' . $docno . '\')">
                         <i class="fa fa-edit"></i> Update 
                     </a>';
             }
@@ -2719,7 +2993,7 @@ class Persediaan extends BaseController
                     <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
                     href="' . base_url('persediaan/trans/showPrintPmkBrg') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Print Pemakaian Barang : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Print Pemakaian Barang : ' . $docno . '\')">
                         <i class="fa fa-print"></i> Print 
                     </a>';
             }
@@ -2774,12 +3048,15 @@ class Persediaan extends BaseController
             $row[] = $lm->docno;
             $row[] = $lm->cabang;
             $row[] = $lm->idcostcenter;
-            $row[] = $lm->docdate;
+            $row[] = date(
+                'd-m-Y',
+                strtotime(trim($lm->docdate))
+            );
 
-            $row[] = $lm->nmstatus;
             $row[] = $lm->description;
             $row[] = $lm->inputby;
-
+            $row[] = $lm->nmstatus;
+            
 
             $data[] = $row;
         }
@@ -2834,6 +3111,20 @@ class Persediaan extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_persediaan->q_tmp_pmk_brng_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
+
+        
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_persediaan->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('persediaan/trans/pmk_brng'));
+        }
+        // =================================
 
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
@@ -2913,6 +3204,7 @@ class Persediaan extends BaseController
         // =========================
         // AMBIL DATA DETAIL
         // =========================
+        $uniqueid = $this->request->getPost('iduniq');
         $idbarang    = trim($this->request->getPost('idbarang'));
         $nmbarang    = strtoupper(trim($this->request->getPost('nmbarang')));
         $unit        = strtoupper(trim($this->request->getPost('unit')));
@@ -2943,10 +3235,11 @@ class Persediaan extends BaseController
             ->where('unit', $unit)
             ->where('qtystock', $qty)
             ->where('qty', $qty)
+            ->where('inputby', $nama)
             ->where('description', $description);
 
         if ($idurut) {
-            $builderDuplicate->where('idurut !=', $idurut);
+            $builderDuplicate->where('idurut !=', $uniqueid);
         }
 
         $duplicate = $builderDuplicate->countAllResults();
@@ -2966,7 +3259,9 @@ class Persediaan extends BaseController
         if ($idurut) {
 
             $updateDetail = $builderDetail
-                ->where('idurut', $idurut)
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->where('iduniq', $uniqueid)
                 ->update([
                     'doctype'    => 'PMKBRG',
                     'idbarang'    => $idbarang,
@@ -3046,7 +3341,7 @@ class Persediaan extends BaseController
     function showing_pmk_brng_mst_tmp(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno='$docno' and inputby='$nama'";
         $data = $this->m_persediaan->q_tmp_pmk_brng_mst($param);
         $output = array(
             'status' => true,
@@ -3228,6 +3523,20 @@ class Persediaan extends BaseController
         $param = " and coalesce(docno,'')='$docno'";
         $dtl = $this->m_persediaan->q_trx_pmk_brng_mst($param)->getRowArray();
         $status = trim($dtl['status']);
+        
+        $logindate = trim($this->session->get('logindate'));
+
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_persediaan->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('persediaan/trans/pmk_brng'));
+        }
 
         if ($status === 'F' || $status === 'P') {
 
@@ -3334,6 +3643,16 @@ class Persediaan extends BaseController
                 'message' => 'Mapping cabang belum diset'
             ]);
         }
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray(); // Ini mengembalikan array of objects/arrays
+
+
+        // Karena hanya 1 row, ambil index ke-0
+        $prefix = trim($konfigurasiUmum[0]['pmkbarang']) ?? '';
+        $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
+        $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
 
         $logindate = $this->session->get('logindate'); // dd-mm-yyyy
         $infix = date('ym', strtotime($logindate));
@@ -3342,7 +3661,11 @@ class Persediaan extends BaseController
             'success'      => true,
             'kode_suffix'  => $kodeSuffix,
             'infix'        => $infix,
-            'logindate'        => $logindate,
+            'logindate'     => $logindate,
+            'prefix'        => $prefix,
+            'konfigurasi_umum' => $konfigurasiUmum,
+            'currcode'      => $currcode,
+            'idtax'         => $idtax,
         ]);
     }
 
@@ -3503,6 +3826,18 @@ class Persediaan extends BaseController
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_persediaan->q_tmp_pnm_brng_mst($param);
         $logindate = trim($this->session->get('logindate'));
+        $periode   = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_persediaan->q_cek_periode($periode)->getRowArray();
+
+        $data['periodeTutup'] = false;
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            $data['periodeTutup'] = true;
+            $data['periodeInfo']  = [
+                'periode'    => trim($dtlPeriode['periode']),
+                'keterangan' => trim($dtlPeriode['keterangan']),
+            ];
+        }
+        /* ===================================================== */
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
@@ -3565,7 +3900,7 @@ class Persediaan extends BaseController
                 $updateBtn = '
                     <a class="dropdown-item bg-warning" 
                     href="' . base_url('persediaan/trans/updatepnmBrg') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Update Pemakaian Barang : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Update Pemakaian Barang : ' . $docno . '\')">
                         <i class="fa fa-edit"></i> Update 
                     </a>';
             }
@@ -3585,7 +3920,7 @@ class Persediaan extends BaseController
                     <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
                     href="' . base_url('persediaan/trans/showPrintpnmBrg') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Print Pemakaian Barang : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Print Pemakaian Barang : ' . $docno . '\')">
                         <i class="fa fa-print"></i> Print 
                     </a>';
             }
@@ -3640,11 +3975,14 @@ class Persediaan extends BaseController
             $row[] = $lm->docno;
             $row[] = $lm->cabang;
             $row[] = $lm->idcostcenter;
-            $row[] = $lm->docdate;
+            $row[] = date(
+                'd-m-Y',
+                strtotime(trim($lm->docdate))
+            );
 
-            $row[] = $lm->nmstatus;
             $row[] = $lm->description;
             $row[] = $lm->inputby;
+            $row[] = $lm->nmstatus;
 
 
             $data[] = $row;
@@ -3700,6 +4038,20 @@ class Persediaan extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_persediaan->q_tmp_pnm_brng_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
+
+        
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_persediaan->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('persediaan/trans/pnm_barang'));
+        }
+        // =================================
 
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
@@ -3779,6 +4131,7 @@ class Persediaan extends BaseController
         // =========================
         // AMBIL DATA DETAIL
         // =========================
+        $uniqueid = $this->request->getPost('iduniq');
         $idbarang    = trim($this->request->getPost('idbarang'));
         $nmbarang    = strtoupper(trim($this->request->getPost('nmbarang')));
         $unit        = strtoupper(trim($this->request->getPost('unit')));
@@ -3810,10 +4163,11 @@ class Persediaan extends BaseController
             ->where('nmbarang', $nmbarang)
             ->where('unit', $unit)
             ->where('qty', $qty)
+            ->where('inputby', $nama)
             ->where('description', $description);
 
         if ($idurut) {
-            $builderDuplicate->where('idurut !=', $idurut);
+            $builderDuplicate->where('idurut !=', $uniqueid);
         }
 
         $duplicate = $builderDuplicate->countAllResults();
@@ -3833,7 +4187,9 @@ class Persediaan extends BaseController
         if ($idurut) {
 
             $updateDetail = $builderDetail
-                ->where('idurut', $idurut)
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->where('iduniq', $uniqueid)
                 ->update([
                     'doctype'    => 'PNMBRG',
                     'idbarang'    => $idbarang,
@@ -3913,7 +4269,7 @@ class Persediaan extends BaseController
     function showing_pnm_brng_mst_tmp(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno='$docno' and inputby='$nama'";
         $data = $this->m_persediaan->q_tmp_pnm_brng_mst($param);
         $output = array(
             'status' => true,
@@ -4107,6 +4463,20 @@ class Persediaan extends BaseController
         $param = " and coalesce(docno,'')='$docno'";
         $dtl = $this->m_persediaan->q_trx_pnm_brng_mst($param)->getRowArray();
         $status = trim($dtl['status']);
+        
+        $logindate = trim($this->session->get('logindate'));
+
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_persediaan->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('persediaan/trans/pnm_barang'));
+        }
 
         if ($status === 'F' || $status === 'P') {
 
@@ -4213,6 +4583,17 @@ class Persediaan extends BaseController
                 'message' => 'Mapping cabang belum diset'
             ]);
         }
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray(); // Ini mengembalikan array of objects/arrays
+
+
+        // Karena hanya 1 row, ambil index ke-0
+        $prefix = trim($konfigurasiUmum[0]['pnmbarang']) ?? '';
+        $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
+        $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
+
 
         $logindate = $this->session->get('logindate'); // dd-mm-yyyy
         $infix = date('ym', strtotime($logindate));
@@ -4221,7 +4602,11 @@ class Persediaan extends BaseController
             'success'      => true,
             'kode_suffix'  => $kodeSuffix,
             'infix'        => $infix,
-            'logindate'        => $logindate,
+            'logindate'     => $logindate,
+            'prefix'        => $prefix,
+            'konfigurasi_umum' => $konfigurasiUmum,
+            'currcode'      => $currcode,
+            'idtax'         => $idtax,
         ]);
     }
 

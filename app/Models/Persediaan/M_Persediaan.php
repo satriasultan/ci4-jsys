@@ -1384,7 +1384,15 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.Q.A.1' and 
     }
 
 
-
+    public function q_cek_periode($periode)
+        {
+            $sql = "SELECT idurut, periode, flagproses, keterangan
+                    FROM sc_trx.closeperiod
+                    WHERE TRIM(periode) = ?
+                    ORDER BY idurut DESC
+                    LIMIT 1";
+            return $this->db->query($sql, [$periode]);
+        }
 
 
 

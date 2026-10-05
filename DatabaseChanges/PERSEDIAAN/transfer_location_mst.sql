@@ -158,35 +158,72 @@ BEGIN
         -- contoh:
         -- 05M/2601/PA0001 -> 05M/2601/PA
         -- PPB/2601/PT0025 -> PPB/2601/PT
+        /* ========================================================
+        CEK APAKAH SUDAH PERNAH DIFINALKAN
+        ======================================================== */
+
+        IF EXISTS (
+            SELECT 1
+            FROM sc_trx.transfer_location_mst
+            WHERE idurut = v_idurut
+                AND TRIM(COALESCE(inputby, '')) =
+                    TRIM(COALESCE(v_inputby, ''))
+        ) THEN
+
+            DELETE FROM sc_tmp.transfer_location_mst
+            WHERE TRIM(docno) = TRIM(OLD.docno)
+                AND idurut = v_idurut;
+
+            RETURN NEW;
+        END IF;
+
+
+        /* ========================================================
+        GENERATE DOCNO
+        ======================================================== */
+
         v_base_docno := regexp_replace(v_docno, '[0-9]+$', '');
 
-        -- ===============================
-        -- ADVISORY LOCK (ANTI RACE CONDITION)
-        -- ===============================
-        PERFORM pg_advisory_xact_lock(hashtext(v_base_docno));
+        v_lock_key := hashtext(v_base_docno);
 
-        -- ===============================
-        -- AUTO INCREMENT JIKA SUDAH ADA
-        -- ===============================
+        PERFORM pg_advisory_xact_lock(v_lock_key);
+
         v_new_docno := v_docno;
 
         LOOP
+
             EXIT WHEN NOT EXISTS (
                 SELECT 1
                 FROM sc_trx.transfer_location_mst
-                WHERE rtrim(docno) = v_new_docno
+                WHERE TRIM(docno) = TRIM(v_new_docno)
             );
 
-            -- ambil angka terakhir (dinamis)
-            v_num := regexp_replace(v_new_docno, '.*?([0-9]+)$', '\1');
+            v_num := regexp_replace(
+                v_new_docno,
+                '.*?([0-9]+)$',
+                '\1'
+            );
+
+            IF COALESCE(v_num, '') = '' THEN
+
+                RAISE EXCEPTION
+                    'Format DOCNO PP tidak valid: %',
+                    v_new_docno;
+
+            END IF;
+
             v_num_int := v_num::INTEGER + 1;
 
-            -- padding mengikuti panjang awal
-            v_new_docno := v_base_docno
-                        || lpad(v_num_int::TEXT, length(v_num), '0');
+            v_new_docno :=
+                v_base_docno ||
+                lpad(
+                    v_num_int::TEXT,
+                    length(v_num),
+                    '0'
+                );
+
         END LOOP;
 
-        -- gunakan docno final
         v_docno := v_new_docno;
 
 

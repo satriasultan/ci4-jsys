@@ -158,13 +158,13 @@
                                             <label for="kdcustomer">Kode Customer</label>
                                             <input type="hidden" id="type" name="type" value="<?= $type ?>" autocomplete="off">
                                             <input type="hidden" id="id" name="id" value="<?= $id ?>" autocomplete="off">
-                                            <input type="text" name="kdcustomer" class="form-control" id="kdcustomer" maxlength="60" <?= $type == 'UPDATE' ? 'disabled' : '' ?> placeholder="Kode Customer" style="text-transform:uppercase;">
+                                            <input type="text" name="kdcustomer" required class="form-control" id="kdcustomer" maxlength="60" <?= $type == 'UPDATE' ? 'disabled' : '' ?> placeholder="Kode Customer" style="text-transform:uppercase;">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label for="nmcustomer">Nama Customer</label>
-                                            <input type="text" name="nmcustomer" class="form-control" id="nmcustomer" maxlength="250" placeholder="Nama Customer" style="text-transform:uppercase;">
+                                            <input type="text" name="nmcustomer" required class="form-control" id="nmcustomer" maxlength="250" placeholder="Nama Customer" style="text-transform:uppercase;">
                                         </div>
                                     </div>
                                     <div class="col-md-3">
@@ -368,7 +368,7 @@
                                         <div class="form-group">
                                             <label for="idmarket">Market</label>
                                             <!-- <input type="text" name="idmarket" class="form-control" id="idmarket" maxlength="50" placeholder="Market" style="text-transform:uppercase;"> -->
-                                            <select name="idmarket" id="idmarket" class="form-control" required>
+                                            <select name="idmarket" id="idmarket" class="form-control">
                                             </select>
                                         </div>
                                     </div>
@@ -438,7 +438,7 @@
                                     <div class="col-md-2">
                                         <div class="form-group">
                                             <label for="idkotanpwp">Kota NPWP</label>
-                                            <select name="idkotanpwp" id="idkotanpwp" class="form-control" required>
+                                            <select name="idkotanpwp" id="idkotanpwp" class="form-control">
                                             </select>
                                         </div>
                                     </div>
@@ -486,7 +486,7 @@
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label for="grade">Grade</label>
-                                            <select name="grade" id="grade" class="form-control" required>
+                                            <select name="grade" id="grade" class="form-control" >
                                             </select>
                                         </div>
                                     </div>
@@ -494,7 +494,7 @@
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label for="salesman">Salesman</label>
-                                            <select name="salesman" id="salesman" class="form-control" required>
+                                            <select name="salesman" id="salesman" class="form-control" >
                                             </select>
                                         </div>
                                     </div>
@@ -502,7 +502,7 @@
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label for="kolektor">Kolektor</label>
-                                            <select name="kolektor" id="kolektor" class="form-control" required>
+                                            <select name="kolektor" id="kolektor" class="form-control" >
                                             </select>
                                         </div>
                                     </div>
@@ -528,7 +528,7 @@
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label for="harifakturin">Hari Faktur Masuk</label>
-                                            <select name="harifakturin[]" id="harifakturin" class="form-control" multiple required>
+                                            <select name="harifakturin[]" id="harifakturin" class="form-control" multiple >
                                                 <option value="MINGGU">MINGGU</option>
                                                 <option value="SENIN">SENIN</option>
                                                 <option value="SELASA">SELASA</option>
@@ -543,7 +543,7 @@
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label for="haripenagihan">Hari Penagihan</label>
-                                            <select name="haripenagihan[]" id="haripenagihan" class="form-control" multiple required>
+                                            <select name="haripenagihan[]" id="haripenagihan" class="form-control" multiple >
                                                 <option value="MINGGU">MINGGU</option>
                                                 <option value="SENIN">SENIN</option>
                                                 <option value="SELASA">SELASA</option>
@@ -558,7 +558,7 @@
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label for="haripembayaran">Hari Pembayaran</label>
-                                            <select name="haripembayaran[]" id="haripembayaran" class="form-control" multiple required>
+                                            <select name="haripembayaran[]" id="haripembayaran" class="form-control" multiple >
                                                 <option value="MINGGU">MINGGU</option>
                                                 <option value="SENIN">SENIN</option>
                                                 <option value="SELASA">SELASA</option>
@@ -573,7 +573,7 @@
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label for="defaultfor">Default For</label>
-                                            <select name="defaultfor" id="defaultfor" class="form-control" required>
+                                            <select name="defaultfor" id="defaultfor" class="form-control">
                                                 <option value="NONE" selected>NONE</option>
                                                 <option value="PENJUALAN">PENJUALAN</option>
                                                 <option value="PENJUALAN FO">PENJUALAN FO</option>

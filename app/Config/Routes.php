@@ -1239,6 +1239,9 @@ $routes->group('/persediaan/trans', ["namespace" => "App\Controllers\Persediaan"
     $routes->add('get_trx_spk_transfer_dtl(:any)', 'Persediaan::get_trx_spk_transfer_dtl$1');
     $routes->add('showing_spk_mst_trx', 'Persediaan::showing_spk_mst_trx');
     $routes->add('list_trx_spk_transfers_dtl', 'Persediaan::list_trx_spk_transfers_dtl');
+    $routes->add('getBranchInfoSPKTransfer', 'Persediaan::getBranchInfoSPKTransfer');
+    $routes->add('getNextSuffixSPKTransfer', 'Persediaan::getNextSuffixSPKTransfer');
+
 
 
     // TRANSFER LOKASI
@@ -1582,6 +1585,17 @@ $routes->group('/report/trans', ["namespace" => "App\Controllers\Report"], funct
     $routes->add('pembelian', 'Report::lpb');
     $routes->post('downloadLaporanLPB',  'Report::downloadLaporanLPB');
     $routes->post('previewLaporanLPB',  'Report::previewLaporanLPB');
+
+
+
+     $routes->add('so', 'Report::so');
+    $routes->post('downloadLaporanSO',  'Report::downloadLaporanSO');
+    $routes->post('previewLaporanLPB',  'Report::previewLaporanLPB');
+
+
+     $routes->add('pjo', 'Report::pjo');
+    $routes->post('downloadLaporanPJO',  'Report::downloadLaporanPJO');
+    $routes->post('previewLaporanPJO',  'Report::previewLaporanPJO');
 
 });
 

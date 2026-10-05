@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS sc_tmp.penjualan
     printby character varying(50) COLLATE pg_catalog."default",
     printdate timestamp without time zone,
     docnotmp character(30) COLLATE pg_catalog."default",
+    doctype CHARACTER(10) DEFAULT 'SALES',
     CONSTRAINT pk_tmp_penjualan PRIMARY KEY (docno)
 )
 
@@ -91,6 +92,7 @@ CREATE TABLE IF NOT EXISTS sc_trx.penjualan
     printby character varying(50) COLLATE pg_catalog."default",
     printdate timestamp without time zone,
     docnotmp character(30) COLLATE pg_catalog."default",
+    doctype CHARACTER(10) DEFAULT 'SALES',
     CONSTRAINT pk_trx_penjualan PRIMARY KEY (docno)
 )
 
@@ -125,6 +127,7 @@ CREATE TABLE IF NOT EXISTS sc_tmp.penjualan_dtl
     inputdate TIMESTAMP WITHOUT TIME ZONE,
     updateby CHARACTER VARYING(50) COLLATE pg_catalog."default",
     updatedate TIMESTAMP WITHOUT TIME ZONE,
+    doctype CHARACTER(10) DEFAULT 'SALES',
     docnotmp character(30)
 )
 TABLESPACE pg_default;
@@ -159,6 +162,7 @@ CREATE TABLE IF NOT EXISTS sc_trx.penjualan_dtl
     inputdate TIMESTAMP WITHOUT TIME ZONE,
     updateby CHARACTER VARYING(50) COLLATE pg_catalog."default",
     updatedate TIMESTAMP WITHOUT TIME ZONE,
+    doctype CHARACTER(10) DEFAULT 'SALES',
     docnotmp character(30)
 )
 TABLESPACE pg_default;
@@ -383,21 +387,6 @@ BEGIN
         DELETE FROM sc_trx.penjualan WHERE docno = NEW.docnotmp;
         DELETE FROM sc_trx.penjualan_dtl WHERE docno = NEW.docnotmp;
 
-        INSERT INTO sc_trx.penjualan_dtl
-        (idurut, docno, docnoso, docnosj, idbarang, uniqueid,  nmbarang,
-        idprincipal, idgudang, idspec, unit, qty, 
-        harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
-        bomdesc, multidisc,
-        inputby, inputdate, status, updateby, updatedate, docnotmp)
-        SELECT
-            idurut, NEW.docnotmp, docnoso, docnosj, idbarang, uniqueid,  nmbarang,
-            idprincipal, idgudang, idspec, unit, qty, 
-            harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
-            bomdesc, multidisc,
-            inputby, inputdate, status, updateby, updatedate, docnotmp
-        FROM sc_tmp.penjualan_dtl
-        WHERE rtrim(docno) = rtrim(NEW.docno);
-
         INSERT INTO sc_trx.penjualan
         (idurut, docno, cabang, docdate, pemohon, 
         kdcustomerdeliv, nmcustomerdeliv, alamatcustomerdeliv, carabayar,
@@ -418,6 +407,33 @@ BEGIN
             updateby, updatedate, printby, printdate, printcount, docnotmp
         FROM sc_tmp.penjualan
         WHERE rtrim(docno) = rtrim(NEW.docno);
+        
+        INSERT INTO sc_trx.penjualan_dtl
+        (idurut, docno, docnoso, docnosj, idbarang, uniqueid,  nmbarang,
+        idprincipal, idgudang, idspec, unit, qty, 
+        harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
+        bomdesc, multidisc,
+        inputby, inputdate, status, updateby, updatedate, docnotmp)
+        SELECT
+            idurut, NEW.docnotmp, docnoso, docnosj, idbarang, uniqueid,  nmbarang,
+            idprincipal, idgudang, idspec, unit, qty, 
+            harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
+            bomdesc, multidisc,
+            inputby, inputdate, status, updateby, updatedate, docnotmp
+        FROM sc_tmp.penjualan_dtl
+        WHERE rtrim(docno) = rtrim(NEW.docno);
+
+
+        -- DELETE PENJUALAN DT YANG SUDAH TIDAK ADA DI PENJUALAN TMP
+        DELETE FROM sc_trx.penjualan_dtl td
+        WHERE rtrim(td.docno) = rtrim(NEW.docnotmp)
+        AND td.doctype IN ('SALES', 'SALESX')
+        AND NOT EXISTS (
+            SELECT 1
+            FROM sc_tmp.penjualan_dtl d
+            WHERE rtrim(d.docno) = rtrim(NEW.docno)
+                AND d.uniqueid = td.uniqueid
+        );
 
 
         UPDATE sc_trx.salesorder_dtl ppd
@@ -465,6 +481,8 @@ BEGIN
             AND t.docnoso IS NOT NULL
             AND t.docnoso <> ''
         );
+
+
         
 
         PERFORM sc_log.fn_log_transaction(
@@ -477,6 +495,8 @@ BEGIN
             v_client_ip,
             COALESCE(NEW.updateby, NEW.inputby)
         );
+
+        
 
         DELETE FROM sc_tmp.penjualan WHERE rtrim(docno) = rtrim(NEW.docno);
         DELETE FROM sc_tmp.penjualan_dtl WHERE rtrim(docno) = rtrim(NEW.docno);

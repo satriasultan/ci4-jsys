@@ -32,7 +32,10 @@
                     </button>
                     <div class="dropdown-menu">
                         <?php if (isset($dtl_akses['a_input']) && trim($dtl_akses['a_input']) === 't'): ?>
-                            <a class="dropdown-item" href="<?= base_url('sales/postsales/addPenjualan') ?>"><i class="fa fa-plus"></i><?php echo '   Input'; ?> </a>
+                            <a class="dropdown-item" href="<?= base_url('sales/postsales/addPenjualan') ?>"
+                                onclick="return guardPeriodeTutup(event)"
+                                ><i class="fa fa-plus"></i><?php echo '   Input'; ?> 
+                            </a>
                         <?php endif; ?>
                             <!-- <a class="dropdown-item disabled" data-bs-toggle="modal" data-bs-target="#filter"  href="#"><i class="fa fa-filter"></i><?php echo '   Filter'; ?></a> -->
                         <a class="dropdown-item" href="#"  onclick="reload_tablePOTrx()"><i class="fa fa-refresh"></i><?php echo '    Reload'; ?> </a>
@@ -73,7 +76,6 @@
                                         <th style="min-width:10px; text-align:center; vertical-align:middle;">Action</th>
                                         <th style="min-width:100px; text-align:center; vertical-align:middle;">Docno</th>
                                         <th style="min-width:100px; text-align:center; vertical-align:middle;">Tanggal</th>
-                                        <th style="min-width:80px; text-align:center; vertical-align:middle;">Status</th>
                                         <th style="min-width:50px; text-align:center; vertical-align:middle;">Kode Customer</th>
                                         <th style="min-width:150px; text-align:center; vertical-align:middle;">Nama Customer</th>
                                         <th style="min-width:150px; text-align:center; vertical-align:middle;">Alamat Customer</th>
@@ -88,6 +90,7 @@
                                         <!-- <th style="min-width:100px; text-align:center; vertical-align:middle;">No. PO Customer</th> -->
                                         <th style="min-width:200px; text-align:center; vertical-align:middle;">Keterangan</th>
                                         <th style="min-width:150px; text-align:center; vertical-align:middle;">Cost Center</th>
+                                        <th style="min-width:80px; text-align:center; vertical-align:middle;">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>

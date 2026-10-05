@@ -7502,7 +7502,7 @@ class Purchase extends BaseController
         $logindate = $this->session->get('logindate'); // dd-mm-yyyy
         $infix = date('ym', strtotime($logindate));
          // Karena hanya 1 row, ambil index ke-0
-        $prefix = trim($konfigurasiUmum[0]['po']) ?? '';
+        $prefix = trim($konfigurasiUmum[0]['umb']) ?? '';
         $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
         $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
 

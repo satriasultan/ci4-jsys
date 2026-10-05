@@ -161,7 +161,7 @@ function documentReadable() {
             let prefixParts = item.docno.trim().split('/');
             $('[name="prefix"]').val(prefixParts[0]).prop('readonly', true);
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
-            $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
+            $('[name="suffix"]').val(prefixParts[2]).prop('readonly', true);
 
             $('[name="docdate"]').val(item.docdate).prop('disabled', true);
             $('[name="docref"]').val(item.docref).prop('disabled', false);
@@ -698,7 +698,7 @@ function updatepnmBrgDtl() {
             $('[name="idlocation_dtl"]').empty().trigger('change');
             $('#idbarang').empty().trigger('change');
             $('#batch').empty().trigger('change');
-
+            $('#iduniq').val(res.data.iduniq);
             if (!json.dataTables.status) return;
 
             let data = json.dataTables.items[0];
@@ -1041,7 +1041,7 @@ function savePnmBrg() {
             'docno',
             $('#prefix').val() + '/' +
             $('#infix').val() + '/' +
-            $('#sufix').val()
+            $('#suffix').val()
         );
 
         // Set numeric value yang sudah divalidasi
@@ -1050,6 +1050,7 @@ function savePnmBrg() {
         formData.set('valqty', valQty);
         formData.set('val', valVal);
         formData.set('valsum', valValsum);
+        formData.set('iduniq', iduniq);
 
         // ===============================
         // AJAX SAVE
@@ -1188,77 +1189,82 @@ $('#cabang').on('change', function () {
             currentKodeSuffix = res.kode_suffix;
 
             $('#infix').val(res.infix);
-
-            // SET PREFIX + TRIGGER CHANGE
-            $('#prefix').val('TBR').trigger('change');
-
-            $('#sufix').val(currentKodeSuffix + '0001');
-
+            var prefix = res.prefix;
+            $('#prefix').val(prefix);
+            loadNextSuffixPNM();
             var infix = (res.infix || '').toString();
 
-            if (infix.length === 4) {
-
+             if (infix.length === 4) {
                 $('#docdate').prop('disabled', false);
+                var yy = infix.substring(0,2);
+                var mm = infix.substring(2,4);
+                var year = 2000 + parseInt(yy,10);
+                var month = parseInt(mm,10) - 1; // moment month index
 
-                var yy = infix.substring(0, 2);
-                var mm = infix.substring(2, 4);
-
-                var year = 2000 + parseInt(yy, 10);
-                var month = parseInt(mm, 10) - 1;
-
-                var today = moment();
+                // Gunakan logindate dari response sebagai default
+                var logindate = res.logindate ? moment(res.logindate, 'DD-MM-YYYY') : moment();
+                
+                // Pastikan logindate dalam range bulan infix
                 var startDate = moment([year, month, 1]);
                 var endDate = moment(startDate).endOf('month');
+                
+                // Jika logindate dalam range, gunakan logindate,否则 gunakan startDate
+                var selectedDate = logindate.isBetween(startDate, endDate, 'day', '[]') 
+                    ? logindate 
+                    : startDate;
 
                 var $el = $('#docdate');
                 var drp = $el.data('daterangepicker');
 
                 if (drp) {
-
+                    // update limits & selected date
                     drp.minDate = startDate;
                     drp.maxDate = endDate;
-                    drp.setStartDate(startDate);
-                    drp.setEndDate(startDate);
-
+                    drp.setStartDate(selectedDate);
+                    drp.setEndDate(selectedDate);
                 } else {
-
+                    // fallback: (re)initialize with limits
                     $el.daterangepicker({
                         autoUpdateInput: false,
                         singleDatePicker: true,
                         showDropdowns: true,
-                        startDate: today,
+                        startDate: selectedDate,
                         minDate: startDate,
                         maxDate: endDate,
-                        locale: {format: 'YYYY-MM-DD'},
+                        locale: { format: 'DD-MM-YYYY' },
                         cancelLabel: 'Clear'
                     });
-
-                    $el.on('apply.daterangepicker', function (ev, picker) {
-                        $(this).val(picker.startDate.format('YYYY-MM-DD'));
+                    // rebind handlers
+                    $el.on('apply.daterangepicker', function(ev, picker) {
+                        $(this).val(picker.startDate.format('DD-MM-YYYY'));
+                        // Trigger change untuk update kurs
+                        $(this).trigger('change');
                     });
-
-                    $el.on('cancel.daterangepicker', function (ev, picker) {
+                    $el.on('cancel.daterangepicker', function(ev, picker) {
                         $(this).val('');
+                        // Trigger change untuk reset kurs
+                        $(this).trigger('change');
                     });
                 }
 
-                $el.val(today.format('YYYY-MM-DD'));
+                // isi input dengan selectedDate
+                $el.val(selectedDate.format('DD-MM-YYYY'));
             }
 
-            generateDocNumber('JBR', res.infix, currentKodeSuffix + '0001');
+            $('#docno').val(
+                prefix + '/' + res.infix + '/' + currentKodeSuffix + '0001'
+            );
 
         }
     });
 
 });
 
+function loadNextSuffixPNM() {
+    
+    let prefix = $.trim($('#prefix').val()).toUpperCase();
+    let infix = $.trim($('#infix').val());
 
-$('#prefix').on('change', function () {
-
-    let prefix = $(this).val().toUpperCase();
-    $(this).val(prefix);
-
-    let infix = $('#infix').val();
 
     if (!prefix || !infix || !currentKodeSuffix) return;
 
@@ -1278,13 +1284,27 @@ $('#prefix').on('change', function () {
                 return;
             }
 
-            $('#sufix').val(res.suffix);
+            let suffix = $.trim(
+                res.suffix || ''
+            );
 
-            generateDocNumber(prefix, infix, res.suffix);
+            $('#suffix')
+                .val(suffix)
+                .trigger('change');
+
+            $('#docno').val(
+                prefix + '/' + infix + '/' + res.suffix
+            );
 
         }
     });
 
+};
+
+
+
+$('#prefix').on('blur', function () {
+    loadNextSuffixPNM();
 });
 
 

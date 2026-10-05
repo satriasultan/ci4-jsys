@@ -143,14 +143,14 @@
                             <div class="col-md-2">
                                 <div class="form-group">
                                     <label for="idprovinsi">Wilayah/Provinsi</label>
-                                    <select name="idprovinsi" id="idprovinsi" class="form-control" required>
+                                    <select name="idprovinsi" id="idprovinsi" class="form-control">
                                     </select>
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
                                     <label for="idkota">Kota</label>
-                                    <select name="idkota" id="idkota" class="form-control" required>
+                                    <select name="idkota" id="idkota" class="form-control">
                                     </select>
                                 </div>
                             </div>

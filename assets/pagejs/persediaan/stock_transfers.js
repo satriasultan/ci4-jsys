@@ -123,7 +123,7 @@ function documentReadable() {
             let prefixParts = item.docno.trim().split('/');
             $('[name="prefix"]').val(prefixParts[0]).prop('readonly', true);
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
-            $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
+            $('[name="suffix"]').val(prefixParts[2]).prop('readonly', true);
 
             $('[name="docdate"]').val(item.docdate).prop('disabled', true);
             $('[name="keterangan"]').val(item.keterangan);
@@ -352,6 +352,22 @@ function tabletmpSPKDetail(){
                 }
             ]
         });
+
+        $('#tmptabspktransfersdtl tbody').on('click', 'tr', function(e) {
+            // Cegah jika yang diklik adalah checkbox itu sendiri (untuk menghindari double trigger)
+            if ($(e.target).is('input[type="checkbox"]')) {
+                return;
+            }
+            
+            // Cari checkbox di dalam baris ini
+            var checkbox = $(this).find('input[type="checkbox"].row-check');
+            
+            // Toggle status checkbox
+            checkbox.prop('checked', !checkbox.prop('checked'));
+            
+            // Trigger event change jika diperlukan
+            checkbox.trigger('change');
+        });
     }
 
     return initTable();
@@ -447,6 +463,7 @@ function updateSPKTransferDetail() {
             if(json.status){
 
                 $('#idurut').val(json.dataTables.items[0].idurut);
+                $('#iduniq').val(res.data.iduniq);
                 $('#description').val(json.dataTables.items[0].description);
                 $('#docno').val(json.dataTables.items[0].docno);
                 //$('#idbarang').val(res.data.idbarang).trigger('change');
@@ -725,13 +742,14 @@ function saveSpkStockDetail() {
         formData.append('idlocation_transit', $('#idlocation_transit').val());
         formData.append('keterangan', $('#keterangan').val());
         formData.append('docdate', $('#docdate').val());
+        formData.append('iduniq', $('#iduniq').val());
 
         // Gabungkan docno
         formData.set(
             'docno',
             $('#prefix').val() + '/' +
             $('#infix').val() + '/' +
-            $('#sufix').val()
+            $('#suffix').val()
         );
 
         // Set numeric value yang sudah divalidasi
@@ -854,7 +872,7 @@ $('#cabang').on('change', function () {
 
     if(idbranch){
         $.ajax({
-                url: HOST_URL + '/purchase/trans/getBranchInfo',
+                url: HOST_URL + '/persediaan/trans/getBranchInfoSPKTransfer',
                 method: 'GET',
                 data: { idbranch: idbranch },
                 dataType: 'json',
@@ -866,8 +884,9 @@ $('#cabang').on('change', function () {
 
                     currentKodeSuffix = res.kode_suffix; // PT / PA / PB
                     $('#infix').val(res.infix);          // YYMM
-                    $('#prefix').val('TRL');             // default
-                    $('#sufix').val(currentKodeSuffix + '0001');
+                    var prefix = res.prefix;
+                    $('#prefix').val(prefix);
+                    loadNextSuffixST()
 
                     var infix = (res.infix || '').toString();
                     if (infix.length === 4) {
@@ -877,10 +896,17 @@ $('#cabang').on('change', function () {
                         var year = 2000 + parseInt(yy,10);
                         var month = parseInt(mm,10) - 1; // moment month index
 
-                        var today = moment();
-
+                        // Gunakan logindate dari response sebagai default
+                        var logindate = res.logindate ? moment(res.logindate, 'DD-MM-YYYY') : moment();
+                        
+                        // Pastikan logindate dalam range bulan infix
                         var startDate = moment([year, month, 1]);
                         var endDate = moment(startDate).endOf('month');
+                        
+                        // Jika logindate dalam range, gunakan logindate,否则 gunakan startDate
+                        var selectedDate = logindate.isBetween(startDate, endDate, 'day', '[]') 
+                            ? logindate 
+                            : startDate;
 
                         var $el = $('#docdate');
                         var drp = $el.data('daterangepicker');
@@ -889,35 +915,39 @@ $('#cabang').on('change', function () {
                             // update limits & selected date
                             drp.minDate = startDate;
                             drp.maxDate = endDate;
-                            drp.setStartDate(startDate);
-                            drp.setEndDate(startDate);
+                            drp.setStartDate(selectedDate);
+                            drp.setEndDate(selectedDate);
                         } else {
                             // fallback: (re)initialize with limits
                             $el.daterangepicker({
                                 autoUpdateInput: false,
                                 singleDatePicker: true,
                                 showDropdowns: true,
-                                startDate: today,
+                                startDate: selectedDate,
                                 minDate: startDate,
                                 maxDate: endDate,
-                                locale: { format: 'YYYY-MM-DD' },
+                                locale: { format: 'DD-MM-YYYY' },
                                 cancelLabel: 'Clear'
                             });
-                            // rebind handlers jika perlu (apply/cancel)
+                            // rebind handlers
                             $el.on('apply.daterangepicker', function(ev, picker) {
-                                $(this).val(picker.startDate.format('YYYY-MM-DD'));
+                                $(this).val(picker.startDate.format('DD-MM-YYYY'));
+                                // Trigger change untuk update kurs
+                                $(this).trigger('change');
                             });
                             $el.on('cancel.daterangepicker', function(ev, picker) {
                                 $(this).val('');
+                                // Trigger change untuk reset kurs
+                                $(this).trigger('change');
                             });
                         }
 
-                        // isi input langsung (opsional)
-                        $el.val(today.format('YYYY-MM-DD'));
+                        // isi input dengan selectedDate
+                        $el.val(selectedDate.format('DD-MM-YYYY'));
                     }
 
                     $('#docno').val(
-                        'TRL/' + res.infix + '/' + currentKodeSuffix + '0001'
+                        prefix + '/' + res.infix + '/' + currentKodeSuffix + '0001'
                     );
                 }
             });
@@ -926,14 +956,15 @@ $('#cabang').on('change', function () {
 });
 
 
-$('#prefix').on('blur', function () {
-    let prefix = $(this).val().toUpperCase();
-    let infix  = $('#infix').val();
+function loadNextSuffixST() {
+    
+    let prefix = $.trim($('#prefix').val()).toUpperCase();
+    let infix = $.trim($('#infix').val());
 
     if (!prefix || !infix || !currentKodeSuffix) return;
 
     $.ajax({
-        url: HOST_URL + '/purchase/trans/getNextSuffixPP',
+        url: HOST_URL + '/persediaan/trans/getNextSuffixSPKTransfer',
         method: 'GET',
         data: {
             prefix: prefix,
@@ -947,14 +978,25 @@ $('#prefix').on('blur', function () {
                 return;
             }
 
-            $('#sufix').val(res.suffix);
+            let suffix = $.trim(
+                res.suffix || ''
+            );
+
+            $('#suffix')
+                .val(suffix)
+                .trigger('change');
+
             $('#docno').val(
                 prefix + '/' + infix + '/' + res.suffix
             );
         }
     });
-});
+};
 
+
+$('#prefix').on('blur', function () {
+    loadNextSuffixST();
+});
 
 
 

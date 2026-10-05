@@ -205,7 +205,7 @@ function documentReadable(){
             let prefixParts = docnoData.split('/'); // ["JTS", "PH", "25", "08"]
             $('[name="prefix"]').val(prefixParts[0]).prop('readonly', true);
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
-            $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
+            $('[name="suffix"]').val(prefixParts[2]).prop('readonly', true);
             defaultInitialSO = prefixParts[2].substring(0, 2);
 
 
@@ -1595,7 +1595,7 @@ function savePenjualanDetail() {
         // formData.append('estpakai', $('#estpakai').val());
 
         // docno gabungan (lebih aman pakai hidden header)
-        formData.set('docno', $('#prefix').val() + '/' + $('#infix').val() + '/' + $('#sufix').val());
+        formData.set('docno', $('#prefix').val() + '/' + $('#infix').val() + '/' + $('#suffix').val());
         // convert qty ke numeric DB
         let qty = $('#qty').val();
         // let qtybonus = $('#qtybonus').val();
@@ -1956,8 +1956,8 @@ $('#cabang').on('change', function () {
                     currentKodeSuffix = res.kode_suffix; // PT / PA / PB
                     $('#infix').val(res.infix);          // YYMM
                     var prefix = res.prefix;
-                    $('#prefix').val(prefix);             // default
-                    $('#sufix').val(currentKodeSuffix + '0001');
+                    $('#prefix').val(prefix);              // default
+                    loadNextSuffixPJO()
                     defaultInitialSO = currentKodeSuffix;
 
                     var infix = (res.infix || '').toString();
@@ -2097,9 +2097,10 @@ $('#cabang').on('change', function () {
 });
 
 
-$('#prefix').on('blur', function () {
-    let prefix = $(this).val().toUpperCase();
-    let infix  = $('#infix').val();
+function loadNextSuffixPJO() {
+    
+    let prefix = $.trim($('#prefix').val()).toUpperCase();
+    let infix = $.trim($('#infix').val());
 
     if (!prefix || !infix || !currentKodeSuffix) return;
 
@@ -2118,13 +2119,20 @@ $('#prefix').on('blur', function () {
                 return;
             }
 
-            $('#sufix').val(res.suffix);
+            let suffix = $.trim(
+                res.suffix || ''
+            );
+
+            $('#suffix')
+                .val(suffix)
+                .trigger('change');
+
             $('#docno').val(
                 prefix + '/' + infix + '/' + res.suffix
             );
         }
     });
-});
+};
 
 
 

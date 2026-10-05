@@ -1139,12 +1139,12 @@ $('#cabang').on('change', function () {
                         startDate: today,
                         minDate: startDate,
                         maxDate: endDate,
-                        locale: {format: 'YYYY-MM-DD'},
+                        locale: {format: 'DD-MM-YYYY'},
                         cancelLabel: 'Clear'
                     });
 
                     $el.on('apply.daterangepicker', function (ev, picker) {
-                        $(this).val(picker.startDate.format('YYYY-MM-DD'));
+                        $(this).val(picker.startDate.format('DD-MM-YYYY'));
                     });
 
                     $el.on('cancel.daterangepicker', function (ev, picker) {
@@ -1152,7 +1152,7 @@ $('#cabang').on('change', function () {
                     });
                 }
 
-                $el.val(today.format('YYYY-MM-DD'));
+                $el.val(today.format('DD-MM-YYYY'));
             }
 
             generateDocNumber('JBR', res.infix, currentKodeSuffix + '0001');

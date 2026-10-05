@@ -231,30 +231,21 @@
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label>No. Jurnal</label>
-                                                <div class="d-flex">
-                                                    <input type="text"
-                                                        name="prefix"
-                                                        id="prefix"
-                                                        class="form-control me-1"
-                                                        maxlength="3"
-                                                        style="text-transform: uppercase;"
-                                                        pattern="[A-Z0-9]+">
+                                                    <div class="d-flex">
+                                                        <input type="text" name="prefix" id="prefix" class="form-control me-1" maxlength="3" style="text-transform: uppercase;" pattern="[A-Za-z0-9]{1,3}" title="Prefix hanya boleh huruf dan angka, maksimal 3 karakter">
 
-                                                    <span class="px-2 align-self-center">/</span>
+                                                        <span class="px-2 align-self-center">/</span>
 
-                                                    <input type="text"
-                                                        name="infix"
-                                                        id="infix"
-                                                        class="form-control mx-1"
-                                                        readonly>
+                                                        <input type="text"
+                                                            name="infix"
+                                                            id="infix"
+                                                            class="form-control mx-1"
+                                                            readonly>
 
-                                                    <span class="px-2 align-self-center">/</span>
+                                                        <span class="px-2 align-self-center">/</span>
 
-                                                    <input type="text"
-                                                        name="sufix"
-                                                        id="sufix"
-                                                        class="form-control ms-1"
-                                                        readonly>
+                                                        <input type="text" name="suffix" id="suffix" class="form-control ms-1" maxlength="6" pattern="^[A-Za-z0-9]{0,2}[0-9]{4}$" title="Maksimal 6 karakter. 4 karakter terakhir wajib angka." style="text-transform: uppercase;">
+                                                            
                                                     </div>
                                                 </div>
                                             </div>
@@ -403,7 +394,7 @@
                 <div class="modal-body">
 
                     <input type="hidden" name="idurut" id="idurut">
-
+                    <input type="hidden" name="iduniq" id="iduniq">
                     <!-- ROW 1 -->
                     <div class="row g-3">
 
