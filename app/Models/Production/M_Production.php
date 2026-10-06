@@ -10,10 +10,12 @@ class M_Production extends Model
 
 
 
-    var $mst_standart_cost_mst_view = "(select A.*,z.uraian as nmstatus,kdtrx,z.jenistrx,z.uraian as nmstatus from sc_mst.standart_cost_mst a 
+    var $mst_standart_cost_mst_view = "(select A.*,to_char(a.docdate,'dd-mm-yyyy') as docdate1,to_char(a.activedate,'dd-mm-yyyy') as activedate1,to_char(a.inputdate,'dd-mm-yyyy') as inputdate1,to_char(a.updatedate,'dd-mm-yyyy') as updatedate1,z.uraian as nmstatus,kdtrx,z.jenistrx from sc_mst.standart_cost_mst a 
 left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and trim(a.status)=trim(z.kdtrx)) as x";
-    var $mst_standart_cost_mst_view_column = array('docno','docdate','activatedate');
+    var $mst_standart_cost_mst_view_column = array('docno','cabang','pemohon','docdate','activedate','docdate1','activedate1','description');
     var $mst_standart_cost_mst_view_order = array('docno' => 'desc'); // default order
+    // index kolom grid (#tstandart_cost) => kolom database asli (urut pakai ISO, bukan dd-mm-yyyy)
+    var $mst_standart_cost_mst_view_sortable = array(2 => 'docno', 5 => 'docdate', 6 => 'activedate', 11 => 'inputdate', 13 => 'updatedate');
     private function _get_mst_standart_cost_mst()
     {
         $this->session = \Config\Services::session();
@@ -22,6 +24,35 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
         $builder = $this->db->table($this->mst_standart_cost_mst_view);
 
+        // ================= FILTER MODAL GRID =================
+        if (!empty(trim($_POST['f_docno'] ?? ''))) {
+            $builder->like('trim(upper(docno))', strtoupper(trim($_POST['f_docno'])));
+        }
+
+        if (!empty(trim($_POST['f_cabang'] ?? ''))) {
+            $builder->where('trim(upper(cabang))', strtoupper(trim($_POST['f_cabang'])));
+        }
+
+        if (!empty(trim($_POST['f_pemohon'] ?? ''))) {
+            $builder->like('trim(upper(pemohon))', strtoupper(trim($_POST['f_pemohon'])));
+        }
+
+        if (!empty(trim($_POST['f_status'] ?? ''))) {
+            $builder->where('trim(status)', strtoupper(trim($_POST['f_status'])));
+        }
+
+        // rentang docdate: "dd-mm-yyyy - dd-mm-yyyy"
+        if (!empty(trim($_POST['tglrange'] ?? ''))) {
+            $dates = explode(' - ', trim($_POST['tglrange']));
+            if (count($dates) == 2) {
+                $start = \DateTime::createFromFormat('d-m-Y', trim($dates[0]));
+                $end   = \DateTime::createFromFormat('d-m-Y', trim($dates[1]));
+                if ($start && $end) {
+                    $builder->where("docdate BETWEEN '" . $start->format('Y-m-d') . "' AND '" . $end->format('Y-m-d') . "'");
+                }
+            }
+        }
+        // ===============================================
 
         $i = 0;
 
@@ -49,8 +80,9 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
         if(isset($_POST['order'])) // here order processing
         {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->mst_standart_cost_mst_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+            $col = $_POST['order']['0']['column'];
+            if (isset($this->mst_standart_cost_mst_view_sortable[$col])) {
+                $builder->orderBy($this->mst_standart_cost_mst_view_sortable[$col], $_POST['order']['0']['dir']);
             }
         }
         else if(isset($this->mst_standart_cost_mst_view_order))

@@ -2074,8 +2074,8 @@ class M_Postsales extends Model
     }
 
     function q_laporan_jurnal_transaksi($params = '')
-        {
-            return $this->db->query("
+    {
+        return $this->db->query("
             WITH data_jurnal AS (
                 
                 SELECT
@@ -2180,7 +2180,7 @@ class M_Postsales extends Model
                 jurnal_id,
                 id
         ");
-        }
+    }
 
 
 
@@ -3068,14 +3068,14 @@ class M_Postsales extends Model
 
 
     public function q_cek_periode($periode)
-        {
-            $sql = "SELECT idurut, periode, flagproses, keterangan
+    {
+        $sql = "SELECT idurut, periode, flagproses, keterangan
                     FROM sc_trx.closeperiod
                     WHERE TRIM(periode) = ?
                     ORDER BY idurut DESC
                     LIMIT 1";
-            return $this->db->query($sql, [$periode]);
-        }
+        return $this->db->query($sql, [$periode]);
+    }
 
 
 }

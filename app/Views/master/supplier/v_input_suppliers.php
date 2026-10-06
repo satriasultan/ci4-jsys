@@ -1,5 +1,5 @@
 <style>
-    
+
     .section-block {
         background-color: #e8e8e8;
         border-left: 4px solid #007bff;
@@ -8,10 +8,10 @@
         border-radius: 6px;
         margin-bottom: 30px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-                    box-shadow 0.4s ease, 
-                    border-color 0.4s ease;
-        
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.4s ease,
+        border-color 0.4s ease;
+
         transform: scale(1);
         will-change: transform;
     }
@@ -53,10 +53,10 @@
     .section-divider {
         height: 1px;
         background: linear-gradient(
-            to right,
-            #007bff 0%,
-            #cfe2ff 30%,
-            #e8e8e8 100%
+                to right,
+                #007bff 0%,
+                #cfe2ff 30%,
+                #e8e8e8 100%
         );
         margin: 24px 0;
         border: none;
@@ -89,8 +89,8 @@
 
 <?php echo $message;?>
 <?php
-    $isIT = isset($userinfo['rolename']) && trim($userinfo['rolename']) === 'IT';
-    $disabled = $isIT ? '' : 'disabled';
+$isIT = isset($userinfo['rolename']) && trim($userinfo['rolename']) === 'IT';
+$disabled = $isIT ? '' : 'disabled';
 ?>
 <div class="row">
     <!-- left column -->
@@ -188,20 +188,20 @@
                                 <div class="form-group">
                                     <label for="plafon">Plafon</label>
                                     <input type="text"
-                                        name="plafon"
-                                        id="plafon"
-                                        class="form-control ratakanan jtsseparator"
-                                        placeholder="0.00">
+                                           name="plafon"
+                                           id="plafon"
+                                           class="form-control ratakanan jtsseparator"
+                                           placeholder="0.00">
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
                                     <label for="jthtempo">Jatuh Tempo</label>
                                     <input type="text"
-                                        name="jthtempo"
-                                        id="jthtempo"
-                                        class="form-control ratakanan jtsseparator"
-                                        placeholder="0.00">
+                                           name="jthtempo"
+                                           id="jthtempo"
+                                           class="form-control ratakanan jtsseparator"
+                                           placeholder="0.00">
                                 </div>
                             </div>
                             <div class="col-md-2">
@@ -233,7 +233,7 @@
                                             Interngroup
                                         </label>
                                     </div>
-                                    
+
                                     <!-- Radio untuk Blacklist -->
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" name="blacklist" id="blacklist" value="1" <?= isset($data['blacklist']) && $data['blacklist'] == '1' ? 'checked' : '' ?> <?= $disabled ?>>
@@ -242,7 +242,7 @@
                                         </label>
                                     </div>
                                 </div>
-                            </div>                            
+                            </div>
                             <div class="col-md-3">
                                 <div class="form-group">
                                     <label for="Description">Keterangan</label>
@@ -304,7 +304,7 @@
         //$("#datemaskinput").inputmask("dd/mm/yyyy", {"placeholder": "dd/mm/yyyy"});
         //$("#datemaskinput").daterangepicker();
         //Date picker
-       
+
 
         $('#docdate').daterangepicker({
             autoUpdateInput: false,
@@ -323,7 +323,7 @@
             $(this).val('');
         });
 
-        
+
         $('#periodemulai').daterangepicker({
             autoUpdateInput: false,
             singleDatePicker: true,
@@ -341,7 +341,7 @@
             $(this).val('');
         });
 
-        
+
         $('#periodeakhir').daterangepicker({
             autoUpdateInput: false,
             singleDatePicker: true,
@@ -359,7 +359,7 @@
             $(this).val('');
         });
 
-        
+
 
     });
 

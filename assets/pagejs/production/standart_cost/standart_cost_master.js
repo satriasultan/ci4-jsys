@@ -4,7 +4,7 @@
  *  * Date: 12/2/20, 2:32 PM
  *  * Last Modified: 12/2/20, 2:32 PM.
  *  Developed By: Fiky Ashariza Powered By PhpStorm
- *  Copyright© 2020 .All rights reserved.
+ *  CopyrightÂ© 2020 .All rights reserved.
  *
  */
 
@@ -168,12 +168,12 @@ $('#cabang').on('change', function () {
                         startDate: today,
                         minDate: startDate,
                         maxDate: endDate,
-                        locale: {format: 'YYYY-MM-DD'},
+                        locale: {format: 'DD-MM-YYYY'},
                         cancelLabel: 'Clear'
                     });
 
                     $el.on('apply.daterangepicker', function (ev, picker) {
-                        $(this).val(picker.startDate.format('YYYY-MM-DD'));
+                        $(this).val(picker.startDate.format('DD-MM-YYYY'));
                     });
 
                     $el.on('cancel.daterangepicker', function (ev, picker) {
@@ -181,7 +181,7 @@ $('#cabang').on('change', function () {
                     });
                 }
 
-                $el.val(today.format('YYYY-MM-DD'));
+                $el.val(today.format('DD-MM-YYYY'));
             }
 
             generateDocNumber('JBR', res.infix, currentKodeSuffix + '0001');
@@ -330,8 +330,16 @@ function documentReadable() {
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
             $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
 
-            $('[name="docdate"]').val(item.docdate).prop('disabled', true);
-            $('[name="activedate"]').val(item.activedate).prop('disabled', true);
+            // docdate/activedate dari server = dd-mm-yyyy (view ada to_char); fallback konversi bila masih ISO
+            function stdCostFmtDate(v) {
+                v = (v || '').trim();
+                if (!v) return '';
+                var m = v.match(/^(\d{4})-(\d{2})-(\d{2})/); // ISO Y-m-d
+                return m ? (m[3] + '-' + m[2] + '-' + m[1]) : v;
+            }
+
+            $('[name="docdate"]').val(stdCostFmtDate(item.docdate)).prop('disabled', true);
+            $('[name="activedate"]').val(stdCostFmtDate(item.activedate)).prop('disabled', true);
             $('[name="docref"]').val(item.docref).prop('disabled', false);
             $('[name="keterangan"]').val(item.description);
 
@@ -716,7 +724,7 @@ $('#tmp_stdcost thead').on('change', '#checkAll', function () {
     $('#tmp_stdcost tbody .row-check').prop('checked', checked);
 });
 
-// JIKA SALAH SATU ROW UNCHECK → CHECKALL MATI
+// JIKA SALAH SATU ROW UNCHECK â†’ CHECKALL MATI
 $('#tmp_stdcost tbody').on('change', '.row-check', function () {
     const total = $('#tmp_stdcost tbody .row-check').length;
     const checked = $('#tmp_stdcost tbody .row-check:checked').length;
@@ -889,11 +897,11 @@ function updateStandartCost() {
                 =========================
                 */
 
-                // 🔥 VALIDASI AWAL (INI KUNCI)
+                // ðŸ”¥ VALIDASI AWAL (INI KUNCI)
                 let batchParam = (data.batch || '').trim();
 
                 if (!batchParam) {
-                    // batch kosong → stop di sini, tidak lanjut ke AJAX batch
+                    // batch kosong â†’ stop di sini, tidak lanjut ke AJAX batch
                     $('#batch').val(null);
                     return;
                 }
@@ -922,7 +930,7 @@ function updateStandartCost() {
                 let batch = resBatch.items[0];
                 let batchVal = (batch.batch || '').trim();
 
-                // 🔥 double safety (opsional tapi bagus)
+                // ðŸ”¥ double safety (opsional tapi bagus)
                 if (!batchVal) {
                     $batch.val(null);
                     return;

@@ -1729,7 +1729,7 @@ class PostSales extends BaseController
                     break;
             }
 
-            
+
             $row[] = $lm->kdcustomer;
             $row[] = $lm->nmcustomer;
             $row[] = $lm->alamatcustomer;
@@ -1927,7 +1927,7 @@ class PostSales extends BaseController
                     break;
             }
 
-            
+
             $row[] = $lm->kdcustomer;
             $row[] = $lm->nmcustomer;
             $row[] = $lm->alamatcustomer;
@@ -2058,8 +2058,8 @@ class PostSales extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_postsales->q_salesorder_master_temp($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
-        
-         /* ====== GUARD PERIODE TUTUP ====== */
+
+        /* ====== GUARD PERIODE TUTUP ====== */
         $periode = date('ym', strtotime($logindate));
         $dtlPeriode = $this->m_postsales->q_cek_periode($periode)->getRowArray();
 
@@ -2329,9 +2329,9 @@ class PostSales extends BaseController
 
             // Ambil kurs dari header SO
             $soHeader = $builderHeader->select('kurs, idtax')
-            ->where('docno', $docno)
-            ->where('inputby', $nama)
-            ->get()->getRowArray();
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->get()->getRowArray();
             $kurs = $soHeader['kurs'] ?? 0;
             $idtax = $soHeader['idtax'] ?? '';
 
@@ -2364,31 +2364,31 @@ class PostSales extends BaseController
             }
 
             $builderDetail
-            ->where('docno', $docno)
-            ->where('inputby', $nama)
-            ->where('uniqueid', $uniqueid)->update([
-                'qty'          => $qty,
-                // 'qtybonus'     => $qtybonus,
-                'harga'        => $harga,
-                'multidisc'    => $multidisc,
-                'nilai'        => $nilai,
-                'nilaikonversi' => $nilaikonversi,  // Tambahkan ini
-                'nilaipajak'   => $nilaipajak,      // Tambahkan ini
-                'kurs'          => strtoupper($this->request->getPost('kurs')),
-                'idtax'         => strtoupper($this->request->getPost('idtax')),
-                'currcode'      => strtoupper($this->request->getPost('currcode')),
-                // 'volitem'      => $volitem,
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->where('uniqueid', $uniqueid)->update([
+                    'qty'          => $qty,
+                    // 'qtybonus'     => $qtybonus,
+                    'harga'        => $harga,
+                    'multidisc'    => $multidisc,
+                    'nilai'        => $nilai,
+                    'nilaikonversi' => $nilaikonversi,  // Tambahkan ini
+                    'nilaipajak'   => $nilaipajak,      // Tambahkan ini
+                    'kurs'          => strtoupper($this->request->getPost('kurs')),
+                    'idtax'         => strtoupper($this->request->getPost('idtax')),
+                    'currcode'      => strtoupper($this->request->getPost('currcode')),
+                    // 'volitem'      => $volitem,
 
-                // 'biaya'      => $biaya,
-                // 'biaya2'      => $biaya2,
-                'idprincipal'      => $idprincipal,
-                'idgudang'      => $idgudang,
-                'idspec'      => $idspec,
+                    // 'biaya'      => $biaya,
+                    // 'biaya2'      => $biaya2,
+                    'idprincipal'      => $idprincipal,
+                    'idgudang'      => $idgudang,
+                    'idspec'      => $idspec,
 
-                'bomdesc' => $bomdesc,
-                'updateby'     => $nama,
-                'updatedate'   => date('Y-m-d H:i:s')
-            ]);
+                    'bomdesc' => $bomdesc,
+                    'updateby'     => $nama,
+                    'updatedate'   => date('Y-m-d H:i:s')
+                ]);
 
 
 
@@ -2416,9 +2416,9 @@ class PostSales extends BaseController
 
             // Ambil kurs dari header SO
             $soHeader = $builderHeader->select('kurs, idtax')
-            ->where('docno', $docno)
-            ->where('inputby', $nama)
-            ->get()->getRowArray();
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->get()->getRowArray();
             $kurs = $soHeader['kurs'] ?? 0;
             $idtax = $soHeader['idtax'] ?? '';
 
@@ -2681,7 +2681,7 @@ class PostSales extends BaseController
         $param = " and coalesce(docno,'')='$docno'";
         $dtl = $this->m_postsales->q_salesorder_master($param)->getRowArray();
         $status = trim($dtl['status']);
-        
+
         $logindate = trim($this->session->get('logindate'));
 
         /* ====== GUARD PERIODE TUTUP ====== */
@@ -3043,7 +3043,7 @@ class PostSales extends BaseController
             $currcode   = trim($this->request->getPost('currcode'));
             $salesman   = trim($this->request->getPost('kdsalesman'));
 
-           $dpp         = $this->request->getPost('dpp');
+            $dpp         = $this->request->getPost('dpp');
             $jumlahpajak = $this->request->getPost('jumlahpajak');
             $total       = $this->request->getPost('total');
 
@@ -3100,7 +3100,7 @@ class PostSales extends BaseController
                 'dpp'     => $dpp_clean,
                 'jumlahpajak'     => $jumlahpajak_clean,
                 'total'     => $total_clean,
-                
+
                 'keterangan'     => $keterangan,
                 'currcode'       => $currcode,
                 'kdsalesman'       => $salesman,
@@ -6836,8 +6836,8 @@ class PostSales extends BaseController
                 'keterangan' => trim($dtlPeriode['keterangan']),
             ];
         }
-        /* ===================================================== */ 
-        
+        /* ===================================================== */
+
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
@@ -7063,7 +7063,7 @@ class PostSales extends BaseController
                     break;
             }
 
-            
+
             $row[] = $lm->kdcust;
             $row[] = $lm->nmcust;
             $row[] = $lm->alamatcust;
@@ -7265,7 +7265,7 @@ class PostSales extends BaseController
                     break;
             }
 
-            
+
             $row[] = $lm->kdcust;
             $row[] = $lm->nmcust;
             $row[] = $lm->alamatcust;
@@ -7401,7 +7401,7 @@ class PostSales extends BaseController
         $data['mst'] = $this->m_postsales->q_penjualan_master_temp($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
 
-         /* ====== GUARD PERIODE TUTUP ====== */
+        /* ====== GUARD PERIODE TUTUP ====== */
         $periode = date('ym', strtotime($logindate));
         $dtlPeriode = $this->m_postsales->q_cek_periode($periode)->getRowArray();
 
@@ -8084,25 +8084,25 @@ class PostSales extends BaseController
             }
 
             $builderDetail
-            ->where('docno', $docno)
-            ->where('inputby', $nama)
-            ->where('uniqueid', $uniqueid)->update([
-                'qty'           => $qty,
-                'harga'         => $harga,
-                'multidisc'     => $multidisc,
-                'nilai'         => $nilai,
-                'nilaikonversi' => $nilaikonversi,
-                'nilaipajak'    => $nilaipajak,
-                'idtax'         => $idtax,
-                'kurs'          => $kurs,
-                'currcode'      => $currcode, // >>> FIX: dari $poData jadi $currcode
-                'idprincipal'   => $idprincipal,
-                'idgudang'      => $idgudang,
-                'idspec'        => $idspec,
-                'description'   => $description,
-                'updateby'      => $nama,
-                'updatedate'    => date('Y-m-d H:i:s')
-            ]);
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->where('uniqueid', $uniqueid)->update([
+                    'qty'           => $qty,
+                    'harga'         => $harga,
+                    'multidisc'     => $multidisc,
+                    'nilai'         => $nilai,
+                    'nilaikonversi' => $nilaikonversi,
+                    'nilaipajak'    => $nilaipajak,
+                    'idtax'         => $idtax,
+                    'kurs'          => $kurs,
+                    'currcode'      => $currcode, // >>> FIX: dari $poData jadi $currcode
+                    'idprincipal'   => $idprincipal,
+                    'idgudang'      => $idgudang,
+                    'idspec'        => $idspec,
+                    'description'   => $description,
+                    'updateby'      => $nama,
+                    'updatedate'    => date('Y-m-d H:i:s')
+                ]);
 
             $message = 'Data berhasil diupdate';
 
@@ -8295,9 +8295,9 @@ class PostSales extends BaseController
         // HITUNG TOTAL
         // =====================================================
         $penjualanHeader = $builderHeader->select('idtax')
-        ->where('docno', $docno)
-        ->where('inputby', $nama)
-        ->get()->getRowArray();
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->get()->getRowArray();
         $idtax = $penjualanHeader['idtax'] ?? '';
 
         $builderTotalDpp = $db->table('sc_tmp.penjualan_dtl');
@@ -8326,13 +8326,13 @@ class PostSales extends BaseController
         $total = $dpp + $jumlahPajak;
 
         $builderHeader->where('inputby', $nama)
-        ->where('docno', $docno)->update([
-            'dpp'         => number_format($dpp, 2, '.', ''),
-            'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
-            'total'       => number_format($total, 2, '.', ''),
-            'updateby'    => $nama,
-            'updatedate'  => date('Y-m-d H:i:s')
-        ]);
+            ->where('docno', $docno)->update([
+                'dpp'         => number_format($dpp, 2, '.', ''),
+                'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
+                'total'       => number_format($total, 2, '.', ''),
+                'updateby'    => $nama,
+                'updatedate'  => date('Y-m-d H:i:s')
+            ]);
 
         $db->transComplete();
 
@@ -8400,7 +8400,7 @@ class PostSales extends BaseController
         $param = " and coalesce(docno,'')='$docno'";
         $dtl = $this->m_postsales->q_penjualan_master($param)->getRowArray();
         $status = trim($dtl['status']);
-        
+
         $logindate = trim($this->session->get('logindate'));
 
         /* ====== GUARD PERIODE TUTUP ====== */

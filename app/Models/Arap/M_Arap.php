@@ -520,4 +520,596 @@ class M_Arap extends Model
                         ");
     }
 
+
+
+    /**
+     * Query dasar daftar Tanda Terima Supplier
+     */
+    private function builderTterima(array $filter = [])
+    {
+        $builder = $this->db->table('sc_trx.tterima_hd h');
+
+        $builder->select("
+        h.idurut,
+        h.docno,
+        h.docdate,
+        h.status,
+        h.kdsupplier,
+        h.nmsupplier,
+        h.kotasupplier,
+        h.noinvoice,
+        h.tglinvoice,
+        h.nosj,
+        h.tglsj,
+        h.noaju,
+        h.nobl,
+        h.noawb,
+        h.noinvoicebea,
+        h.tglinvoicebea,
+        h.nobkrev,
+        h.nofakturpajak,
+        h.senddate,
+        h.currcode,
+        h.idtax,
+        h.kurs,
+        h.jthtempo,
+        h.tgljthtempo,
+        h.isinclusive,
+        h.dpp,
+        h.jumlahpajak,
+        h.total,
+        h.beaimport,
+        h.ppnimport,
+        h.pphimport,
+        h.biayaangkut,
+        h.biayaasuransi,
+        h.biayalain,
+        h.totalestimasi,
+        h.cekinvoice,
+        h.ceksj,
+        h.cekpenerimaan,
+        h.cekfakturpajak,
+        h.cekbeaimport,
+        h.cekdokumen,
+        h.keterangan,
+        h.balance,
+        h.coabank,
+        h.nmcoabank,
+        h.inputby,
+        h.inputdate,
+        h.updateby,
+        h.updatedate
+    ", false);
+
+        // =========================
+        // FILTER STATUS
+        // =========================
+        if (
+            !empty($filter['status']) &&
+            strtoupper(trim($filter['status'])) !== 'ALL'
+        ) {
+            $builder->where(
+                'TRIM(h.status)',
+                trim($filter['status'])
+            );
+        }
+
+        // =========================
+        // FILTER SUPPLIER
+        // =========================
+        if (!empty($filter['kdsupplier'])) {
+            $builder->like(
+                'h.kdsupplier',
+                trim($filter['kdsupplier'])
+            );
+        }
+
+        // =========================
+        // FILTER INVOICE
+        // =========================
+        if (!empty($filter['noinvoice'])) {
+            $builder->like(
+                'h.noinvoice',
+                trim($filter['noinvoice'])
+            );
+        }
+
+        // =========================
+        // GLOBAL SEARCH DATATABLE
+        // =========================
+        if (!empty($filter['search'])) {
+
+            $search = trim($filter['search']);
+
+            $builder->groupStart()
+                ->like('h.docno', $search)
+                ->orLike('h.kdsupplier', $search)
+                ->orLike('h.nmsupplier', $search)
+                ->orLike('h.noinvoice', $search)
+                ->orLike('h.nosj', $search)
+                ->orLike('h.noaju', $search)
+                ->orLike('h.nobl', $search)
+                ->orLike('h.noawb', $search)
+                ->orLike('h.nobkrev', $search)
+                ->orLike('h.nofakturpajak', $search)
+                ->orLike('h.keterangan', $search)
+                ->groupEnd();
+        }
+
+        // =========================
+        // FILTER TANGGAL
+        // =========================
+        if (
+            !empty($filter['tglawal']) &&
+            !empty($filter['tglakhir'])
+        ) {
+
+            $builder->where(
+                "TO_DATE(TRIM(h.docdate), 'DD-MM-YYYY') >= TO_DATE(" .
+                $this->db->escape($filter['tglawal']) .
+                ", 'DD-MM-YYYY')",
+                null,
+                false
+            );
+
+            $builder->where(
+                "TO_DATE(TRIM(h.docdate), 'DD-MM-YYYY') <= TO_DATE(" .
+                $this->db->escape($filter['tglakhir']) .
+                ", 'DD-MM-YYYY')",
+                null,
+                false
+            );
+        }
+
+        return $builder;
+    }
+
+    /**
+     * Total seluruh data
+     */
+    public function countTterimaAll(): int
+    {
+        return $this->db->table('sc_trx.tterima_hd')
+            ->countAllResults();
+    }
+
+    /**
+     * Total data setelah filter
+     */
+    public function countTterimaFiltered(array $filter = []): int
+    {
+        return $this->builderTterima($filter)->countAllResults();
+    }
+
+    /**
+     * Data transaksi untuk DataTables
+     */
+    public function getTterimaList(
+        array $filter = [],
+        int $start = 0,
+        int $length = 10,
+        string $orderColumn = 'docdate',
+        string $orderDir = 'DESC'
+    ): array {
+        $allowedColumns = [
+            'docno'       => 'h.docno',
+            'docdate'     => 'h.docdate',
+            'status'      => 'h.status',
+            'kdsupplier'  => 'h.kdsupplier',
+            'nmsupplier'  => 'h.nmsupplier',
+            'noinvoice'   => 'h.noinvoice',
+            'tglinvoice'  => 'h.tglinvoice',
+            'nosj'        => 'h.nosj',
+            'tglsj'       => 'h.tglsj',
+            'currcode'    => 'h.currcode',
+            'kurs'        => 'h.kurs',
+            'dpp'         => 'h.dpp',
+            'jumlahpajak' => 'h.jumlahpajak',
+            'total'       => 'h.total',
+            'balance'     => 'h.balance',
+            'keterangan'  => 'h.keterangan',
+        ];
+
+        $orderBy = $allowedColumns[$orderColumn] ?? 'h.docdate';
+        $orderDir = strtoupper($orderDir) === 'ASC' ? 'ASC' : 'DESC';
+
+        return $this->builderTterima($filter)
+            ->orderBy($orderBy, $orderDir)
+            ->limit($length, $start)
+            ->get()
+            ->getResultArray();
+    }
+
+    /**
+     * Simpan header dan detail Tanda Terima ke tabel temporary.
+     *
+     * Header: sc_tmp.tterima_hd
+     * Detail: sc_tmp.tterima_dt
+     */
+    public function saveTterimaDraft(array $header, array $details): array
+    {
+        $db = $this->db;
+        $db->transBegin();
+
+        try {
+            $docno = trim($header['docno'] ?? '');
+
+            if ($docno === '') {
+                throw new \RuntimeException(
+                    'Nomor dokumen belum tersedia.'
+                );
+            }
+
+            $existing = $db->table('sc_tmp.tterima_hd')
+                ->where('docno', $docno)
+                ->get()
+                ->getRowArray();
+
+            $headerData = [
+                'docno'         => $docno,
+                'docdate'       => $header['docdate'] ?? null,
+                'cabang'        => $header['cabang'] ?? '',
+                'kdsupplier'    => $header['kdsupplier'] ?? '',
+                'nmsupplier'    => $header['nmsupplier'] ?? '',
+                'alamatsupplier'=> $header['alamatsupplier'] ?? '',
+                'kotasupplier'  => $header['kotasupplier'] ?? '',
+                'noinvoice'     => $header['noinvoice'] ?? '',
+                'tglinvoice'    => $header['tglinvoice'] ?? null,
+                'nosj'          => $header['nosj'] ?? '',
+                'tglsj'         => $header['tglsj'] ?? null,
+                'currcode'      => $header['currcode'] ?? '',
+                'kurs'          => $this->toNumber($header['kurs'] ?? 1),
+                'dpp'           => $this->toNumber($header['dpp'] ?? 0),
+                'jumlahpajak'   => $this->toNumber($header['jumlahpajak'] ?? 0),
+                'total'         => $this->toNumber($header['total'] ?? 0),
+                'balance'       => $this->toNumber($header['balance'] ?? 0),
+                'keterangan'    => $header['keterangan'] ?? '',
+            ];
+
+            if ($existing) {
+                if (trim($existing['status']) !== 'I') {
+                    throw new \RuntimeException(
+                        'Dokumen bukan berstatus draft dan tidak dapat diubah.'
+                    );
+                }
+
+                $db->table('sc_tmp.tterima_hd')
+                    ->where('docno', $docno)
+                    ->update($headerData);
+            } else {
+                $headerData['status'] = 'I';
+                $db->table('sc_tmp.tterima_hd')->insert($headerData);
+            }
+
+            // Replace detail temporary untuk dokumen ini
+            $db->table('sc_tmp.tterima_dt')
+                ->where('docno', $docno)
+                ->delete();
+
+            foreach ($details as $item) {
+                $db->table('sc_tmp.tterima_dt')->insert([
+                    'docno'            => $docno,
+                    'nobukti'          => $item['nobukti'] ?? '',
+                    'docref'           => $item['docref'] ?? '',
+                    'noperkiraan'      => $item['noperkiraan'] ?? '',
+                    'namaperkiraan'    => $item['namaperkiraan'] ?? '',
+                    'keterangan'       => $item['keterangan'] ?? '',
+                    'dk'               => $item['dk'] ?? '',
+                    'costprofitcenter' => $item['costprofitcenter'] ?? '',
+                    'nilai'            => $this->toNumber($item['nilai'] ?? 0),
+                    'status'           => 'I',
+                ]);
+            }
+
+            if ($db->transStatus() === false) {
+                throw new \RuntimeException('Gagal menyimpan transaksi database.');
+            }
+
+            $db->transCommit();
+
+            return [
+                'status' => true,
+                'docno'  => $docno,
+                'message'=> 'Draft berhasil disimpan.',
+            ];
+        } catch (\Throwable $e) {
+            $db->transRollback();
+
+            return [
+                'status'  => false,
+                'message' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Konversi angka format Indonesia.
+     */
+    private function toNumber($value): float
+    {
+        if (is_numeric($value)) {
+            return (float) $value;
+        }
+
+        $value = trim((string) $value);
+        $value = str_replace('.', '', $value);
+        $value = str_replace(',', '.', $value);
+
+        return is_numeric($value) ? (float) $value : 0;
+    }
+
+    public function getTterimaTempDetail(string $docno): array
+    {
+        return $this->db->table('sc_tmp.tterima_dt')
+            ->where('docno', trim($docno))
+            ->orderBy('idurut', 'ASC')
+            ->get()
+            ->getResultArray();
+    }
+
+    public function deleteTterimaTempDetail(string $docno, int $idurut): bool
+    {
+        return $this->db->table('sc_tmp.tterima_dt')
+            ->where('docno', trim($docno))
+            ->where('idurut', $idurut)
+            ->delete();
+    }
+
+    public function q_tterima_master_temp($param)
+    {
+        $builder = $this->db->table('sc_tmp.tterima_hd');
+
+        $builder->select('*');
+
+        if (!empty($param['docno'])) {
+            $builder->where('docno', $param['docno']);
+        }
+
+        if (!empty($param['docnotmp'])) {
+            $builder->where('docnotmp', $param['docnotmp']);
+        }
+
+        return $builder->get();
+    }
+
+    public function saveTterimaHeader(
+        array $data,
+              $idurut = null,
+              $docno = null
+    )
+    {
+        $db = $this->db;
+
+        $builder = $db->table('sc_tmp.tterima_hd');
+
+
+        // =====================================================
+        // UPDATE
+        // =====================================================
+        if (!empty($idurut)) {
+
+            $builder
+                ->where(
+                    'idurut',
+                    (int) $idurut
+                )
+                ->where(
+                    'docno',
+                    $docno
+                )
+                ->update($data);
+
+            return [
+                'idurut' => $idurut,
+                'docno'  => $docno,
+                'mode'   => 'UPDATE'
+            ];
+        }
+
+
+        // =====================================================
+        // INSERT
+        // =====================================================
+        $builder->insert($data);
+
+        $newId =
+            $db->insertID();
+
+        return [
+            'idurut' => $newId,
+            'docno'  => $data['docno'],
+            'mode'   => 'INSERT'
+        ];
+    }
+
+
+    // =========================================================
+    // GET HEADER TANDA TERIMA
+    // =========================================================
+    public function getTterimaHeader(
+        $idurut,
+        $docno
+    )
+    {
+        return $this->db
+            ->table('sc_tmp.tterima_hd')
+            ->where('idurut', $idurut)
+            ->where('docno', $docno)
+            ->get()
+            ->getRowArray();
+    }
+
+    /* TRX */
+
+    /* UNTUK LIST DEPAN TANDA TERIMA */
+    /* TRX TANDA TERIMA */
+
+    var $t_tterima_hd = "sc_trx.tterima_hd";
+
+    var $t_tterima_hd_column = array(
+        'docno',
+        'docdate',
+        'status',
+        'kdsupplier',
+        'nmsupplier',
+        'noinvoice',
+        'tglinvoice',
+        'nosj',
+        'tglsj',
+        'currcode',
+        'kurs',
+        'dpp',
+        'jumlahpajak',
+        'total',
+        'balance',
+        'keterangan'
+    );
+
+    var $t_tterima_hd_order = array("docdate" => 'desc'); // default order
+
+
+    private function _get_query_t_tterima_hd()
+    {
+        $this->session = \Config\Services::session();
+
+        $loccode = trim($this->session->get('loccode'));
+        $nama    = trim($this->session->get('nama'));
+
+        $builder = $this->db->table($this->t_tterima_hd);
+
+        $i = 0;
+
+        /*
+         * SEARCH DATATABLE
+         */
+        foreach ($this->t_tterima_hd_column as $mrp)
+        {
+            if ($_POST['search']['value'])
+            {
+                if ($i === 0)
+                {
+                    $builder->groupStart();
+
+                    $builder->like(
+                        "upper(cast(" . strtoupper($mrp) . " as varchar))",
+                        strtoupper($_POST['search']['value'])
+                    );
+                }
+                else
+                {
+                    $builder->orLike(
+                        "upper(cast(" . strtoupper($mrp) . " as varchar))",
+                        strtoupper($_POST['search']['value'])
+                    );
+                }
+
+                if (count($this->t_tterima_hd_column) - 1 == $i)
+                {
+                    $builder->groupEnd();
+                }
+            }
+
+            $i++;
+        }
+
+
+        /*
+         * ORDER DATATABLE
+         */
+        if (isset($_POST['order']))
+        {
+            /*
+             * Column 0 = No
+             * Column 1 = Action
+             *
+             * Data tabel dimulai dari column 2.
+             */
+            if ($_POST['order']['0']['column'] != 0 &&
+                $_POST['order']['0']['column'] != 1)
+            {
+                $column = $_POST['order']['0']['column'] - 2;
+
+                if (isset($this->t_tterima_hd_column[$column]))
+                {
+                    $builder->orderBy(
+                        $this->t_tterima_hd_column[$column],
+                        $_POST['order']['0']['dir']
+                    );
+                }
+            }
+        }
+        else if (isset($this->t_tterima_hd_order))
+        {
+            $order = $this->t_tterima_hd_order;
+
+            foreach ($order as $key => $mrp)
+            {
+                $builder->orderBy($key, $mrp);
+            }
+        }
+
+        return $builder;
+    }
+
+
+    function get_t_tterima_hd()
+    {
+        $builder = $this->_get_query_t_tterima_hd();
+
+        if ($_POST['length'] != -1)
+        {
+            $builder->limit(
+                $_POST['length'],
+                $_POST['start']
+            );
+        }
+
+        $query = $builder->get();
+
+        return $query->getResult();
+    }
+
+
+    function t_tterima_hd_count_filtered()
+    {
+        $builder = $this->_get_query_t_tterima_hd();
+
+        $query = $builder->get();
+
+        return $query->getNumRows();
+    }
+
+
+    public function t_tterima_hd_count_all()
+    {
+        $builder = $this->_get_query_t_tterima_hd();
+
+        return $builder->countAllResults();
+    }
+
+
+    public function get_t_tterima_hd_by_id($id)
+    {
+        $builder = $this->_get_query_t_tterima_hd();
+
+        $builder->where('docno', $id);
+
+        $query = $builder->get();
+
+        return $query->getRow();
+    }
+
+
+    public function q_tterima_master($param = '')
+    {
+        $sql = "
+        SELECT
+            *
+        FROM sc_trx.tterima_hd
+        WHERE 1=1
+        $param
+    ";
+
+        return $this->db->query($sql);
+    }
 }

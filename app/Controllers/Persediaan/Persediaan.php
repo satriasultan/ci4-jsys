@@ -21,7 +21,7 @@ use App\Controllers\BaseController;
 
 class Persediaan extends BaseController
 {
-    
+
     public function perintah_transfer()
     {
         $data['title']="SPK Transfers Lokasi";
@@ -85,7 +85,7 @@ class Persediaan extends BaseController
 
         $kmenu = 'I.Q.A.1';
         $role = trim($this->session->get('roleid'));
-        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
+        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
         //auto insert unit
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
@@ -134,8 +134,8 @@ class Persediaan extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_persediaan->q_tmp_transfer_spk_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
-        
-         /* ====== GUARD PERIODE TUTUP ====== */
+
+        /* ====== GUARD PERIODE TUTUP ====== */
         $periode = date('ym', strtotime($logindate));
         $dtlPeriode = $this->m_persediaan->q_cek_periode($periode)->getRowArray();
 
@@ -277,18 +277,18 @@ class Persediaan extends BaseController
 
             // 🔹 UPDATE
             $builderDetail
-            ->where('docno', $docno)
-            ->where('inputby', $nama)
-            ->where('iduniq', $uniqueid)
-            ->update([
-                'idbarang'    => $idbarang,
-                'nmbarang'    => $nmbarang,
-                'unit'        => $unit,
-                'qty'         => $qty,
-                'description' => $description,
-                'updateby'     => $nama,
-                'updatedate'   => date('Y-m-d H:i:s')
-            ]);
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->where('iduniq', $uniqueid)
+                ->update([
+                    'idbarang'    => $idbarang,
+                    'nmbarang'    => $nmbarang,
+                    'unit'        => $unit,
+                    'qty'         => $qty,
+                    'description' => $description,
+                    'updateby'     => $nama,
+                    'updatedate'   => date('Y-m-d H:i:s')
+                ]);
 
         } else {
 
@@ -670,7 +670,7 @@ class Persediaan extends BaseController
         }
 
     }
-    
+
     /*TRXXXXXXXXXXXXXXXXXXXXXXXX*/
 
 
@@ -848,7 +848,7 @@ class Persediaan extends BaseController
         $param = " and coalesce(docno,'')='$docno'";
         $dtl = $this->m_persediaan->q_trx_transfer_spk_mst($param)->getRowArray();
         $status = trim($dtl['status']);
-        
+
         $logindate = trim($this->session->get('logindate'));
 
         /* ====== GUARD PERIODE TUTUP ====== */
@@ -940,7 +940,7 @@ class Persediaan extends BaseController
     /* TRANSFER LOKASI +++++++++++++++++++++++++++++++++++++++++++++++++*/
     function transfer_lokasi()
     {
-       //I.Q.A.2
+        //I.Q.A.2
         $data['title']="Transfer Antar Lokasi";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
         $branch=$dtlbranch['branch'];
@@ -1190,7 +1190,7 @@ class Persediaan extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_persediaan->q_tmp_transfer_location_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
-        
+
         /* ====== GUARD PERIODE TUTUP ====== */
         $periode = date('ym', strtotime($logindate));
         $dtlPeriode = $this->m_persediaan->q_cek_periode($periode)->getRowArray();
@@ -1333,9 +1333,9 @@ class Persediaan extends BaseController
         if ($idurut) {
 
             $updateDetail = $builderDetail
-            ->where('docno', $docno)
-            ->where('inputby', $nama)
-            ->where('iduniq', $uniqueid)
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->where('iduniq', $uniqueid)
                 ->update([
                     'idbarang'    => $idbarang,
                     'nmbarang'    => $nmbarang,
@@ -2108,7 +2108,7 @@ class Persediaan extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_persediaan->q_tmp_ajustment_stock_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
-        
+
         /* ====== GUARD PERIODE TUTUP ====== */
         $periode = date('ym', strtotime($logindate));
         $dtlPeriode = $this->m_persediaan->q_cek_periode($periode)->getRowArray();
@@ -3056,7 +3056,7 @@ class Persediaan extends BaseController
             $row[] = $lm->description;
             $row[] = $lm->inputby;
             $row[] = $lm->nmstatus;
-            
+
 
             $data[] = $row;
         }
@@ -3112,7 +3112,7 @@ class Persediaan extends BaseController
         $data['mst'] = $this->m_persediaan->q_tmp_pmk_brng_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
 
-        
+
         /* ====== GUARD PERIODE TUTUP ====== */
         $periode = date('ym', strtotime($logindate));
         $dtlPeriode = $this->m_persediaan->q_cek_periode($periode)->getRowArray();
@@ -3523,7 +3523,7 @@ class Persediaan extends BaseController
         $param = " and coalesce(docno,'')='$docno'";
         $dtl = $this->m_persediaan->q_trx_pmk_brng_mst($param)->getRowArray();
         $status = trim($dtl['status']);
-        
+
         $logindate = trim($this->session->get('logindate'));
 
         /* ====== GUARD PERIODE TUTUP ====== */
@@ -4039,7 +4039,7 @@ class Persediaan extends BaseController
         $data['mst'] = $this->m_persediaan->q_tmp_pnm_brng_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
 
-        
+
         /* ====== GUARD PERIODE TUTUP ====== */
         $periode = date('ym', strtotime($logindate));
         $dtlPeriode = $this->m_persediaan->q_cek_periode($periode)->getRowArray();
@@ -4463,7 +4463,7 @@ class Persediaan extends BaseController
         $param = " and coalesce(docno,'')='$docno'";
         $dtl = $this->m_persediaan->q_trx_pnm_brng_mst($param)->getRowArray();
         $status = trim($dtl['status']);
-        
+
         $logindate = trim($this->session->get('logindate'));
 
         /* ====== GUARD PERIODE TUTUP ====== */

@@ -189,7 +189,7 @@
                         <?php if (isset($dtl_akses['a_input']) && trim($dtl_akses['a_input']) === 't'): ?>
                             <a class="dropdown-item" href="<?= base_url('production/trans/add_standart_cost') ?>"><i class="fa fa-plus"></i><?php echo '   Input'; ?> </a>
                         <?php endif; ?>
-                        <!-- <a class="dropdown-item disabled" data-bs-toggle="modal" data-bs-target="#filter"  href="#"><i class="fa fa-filter"></i><?php echo '   Filter'; ?></a> -->
+                        <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#filter" href="#"><i class="fa fa-filter"></i><?php echo '   Filter'; ?> </a>
                         <a class="dropdown-item" href="#"  onclick="reload_standart_cost()"><i class="fa fa-refresh"></i><?php echo '    Reload'; ?> </a>
                     </div>
                 </div>
@@ -244,28 +244,31 @@
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="tanggalpo">Tanggal Kedatangan</label>
-                        <input type="text" class="form-control tglrange" id="tglrange"  name="tglrange" data-date-format="dd-mm-yyyy" required placeholder="Entry LPB Date" required>
+                        <label for="tglrange">Rentang Doc Date</label>
+                        <input type="text" class="form-control tglrange" id="tglrange" name="tglrange" data-date-format="dd-mm-yyyy" placeholder="Pilih Rentang Tanggal">
                     </div>
                     <div class="form-group">
-                        <label for="itembarang">Item Barang</label>
-                        <select name="idbarang_filter" id="idbarang_filter" class="form-control" placeholder="Pilih Item Barang">
-                        </select>
+                        <label for="f_docno">Document No</label>
+                        <input type="text" class="form-control" id="f_docno" name="f_docno" placeholder="Document No">
                     </div>
                     <div class="form-group">
-                        <label for="suppliername">Nama Supplier</label>
-                        <select name="namasupplier" id="namasupplier" class="form-control" placeholder="Pilih Item Barang">
-                        </select>
+                        <label for="f_cabang">Cabang / Job</label>
+                        <input type="text" class="form-control" id="f_cabang" name="f_cabang" placeholder="Kode Cabang / Job">
                     </div>
                     <div class="form-group">
-                        <label for="status_filter">Status</label>
-                        <select name="status_filter" id="status_filter" class="form-control" placeholder="Pilih Status Filter">
+                        <label for="f_pemohon">Pemohon</label>
+                        <input type="text" class="form-control" id="f_pemohon" name="f_pemohon" placeholder="Pemohon">
+                    </div>
+                    <div class="form-group">
+                        <label for="f_status">Status</label>
+                        <select name="f_status" id="f_status" class="form-control">
                             <option value=""> Semua Status</option>
-                            <option value="A"> Outstanding</option>
-                            <option value="S"> Outstanding Sebagian</option>
-                            <option value="P"> Diterima Penuh</option>
+                            <option value="I"> DRAFT</option>
+                            <option value="E"> REVISI/EDIT</option>
+                            <option value="F"> FINAL USER</option>
+                            <option value="A"> APPROVE</option>
+                            <option value="C"> CANCEL</option>
                         </select>
-
                     </div>
                 </div>
                 <div class="modal-footer justify-content-between">
@@ -319,13 +322,13 @@
         autoUpdateInput: false,
         singleDatePicker: true,
         showDropdowns: true,
-        locale: { format: 'YYYY-MM-DD' },
+        locale: { format: 'DD-MM-YYYY' },
         cancelLabel: 'Clear'
     });
 
     // handler apply/cancel
     $('#activedate').on('apply.daterangepicker', function(ev, picker) {
-        $(this).val(picker.startDate.format('YYYY-MM-DD'));
+        $(this).val(picker.startDate.format('DD-MM-YYYY'));
         // jika butuh validasi bootstrapValidator:
         // $('#formInputTransfers').bootstrapValidator('updateStatus', 'activedate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'activedate');
     });
@@ -337,11 +340,12 @@
     $(".tglrange").daterangepicker({
         autoUpdateInput: false,
         locale: {
+            format: 'DD-MM-YYYY',
             cancelLabel: 'Clear'
         }
     });
 
-    $("#status_filter").select2();
+    $("#f_status").select2();
 
     $(".tglrange").on('apply.daterangepicker', function(ev, picker) {
         $(this).val(picker.startDate.format('DD-MM-YYYY') + ' - ' + picker.endDate.format('DD-MM-YYYY'));

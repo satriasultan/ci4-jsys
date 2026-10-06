@@ -2273,6 +2273,13 @@ class Tools extends BaseController
         $data['periode'] = $periode;
         $data['logindate'] = $logindate;
         $data['btnLabel'] = $btnLabel;
+
+        // Daftar seluruh periode pada sc_trx.closeperiod
+        $data['list'] = $this->db->table('sc_trx.closeperiod')
+            ->orderBy('idurut', 'DESC')
+            ->get()
+            ->getResultArray();
+
         return $this->template->render('tools/konfigurasi/v_list_bup',$data);
     }
 

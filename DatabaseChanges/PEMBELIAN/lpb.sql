@@ -1,5 +1,18 @@
+--select * from sc_trx.transaction_dt
+
+--select * from sc_trx.closeperiod
 -- ONE-RUN TRANSACTION SCRIPT
 BEGIN;
+
+/* ============================================================
+   REMOVE LEGACY UNPOST FUNCTION
+   ============================================================ */
+
+DROP FUNCTION IF EXISTS sc_trx.sp_unpost_by_doc(
+    character varying,
+    character varying
+);
+
 
 -- JALANKAN INI DULU
 DROP TABLE IF EXISTS sc_trx.lpb_dtl CASCADE;
@@ -341,58 +354,6 @@ BEGIN
 
         v_new_docno := v_docno;
 
-        LOOP
-
-            EXIT WHEN NOT EXISTS (
-                SELECT 1
-                FROM sc_trx.lpb
-                WHERE TRIM(docno) = TRIM(v_new_docno)
-            );
-
-            v_num := regexp_replace(
-                v_new_docno,
-                '.*?([0-9]+)$',
-                '\1'
-            );
-
-            IF COALESCE(v_num, '') = '' THEN
-
-                RAISE EXCEPTION
-                    'Format DOCNO LPB tidak valid: %',
-                    v_new_docno;
-
-            END IF;
-
-            v_num_int := v_num::INTEGER + 1;
-
-            v_new_docno :=
-                v_base_docno ||
-                lpad(
-                    v_num_int::TEXT,
-                    length(v_num),
-                    '0'
-                );
-
-        END LOOP;
-
-        v_docno := v_new_docno;
-
-        LOOP
-            EXIT WHEN NOT EXISTS (
-                SELECT 1
-                FROM sc_trx.lpb
-                WHERE rtrim(docno) = v_new_docno
-            );
-
-            -- ambil angka terakhir (dinamis)
-            v_num := regexp_replace(v_new_docno, '.*?([0-9]+)$', '\1');
-            v_num_int := v_num::INTEGER + 1;
-
-            -- padding mengikuti panjang awal
-            v_new_docno := v_base_docno
-                        || lpad(v_num_int::TEXT, length(v_num), '0');
-        END LOOP;
-
         -- gunakan docno final
         v_docno := v_new_docno;
 
@@ -562,18 +523,6 @@ BEGIN
             inputby, inputdate, status, updateby, updatedate, docnotmp,idtax,currcode,kurs,nilaikonversi,nilaipajak,qtyretur,idhistory_price,multidisctype,totaldiscount
         FROM sc_tmp.lpb_dtl
         WHERE rtrim(docno) = rtrim(NEW.docno);
-
-        -- DELETE TRANS DT YANG SUDAH TIDAK ADA DI LPB DTL
-        DELETE FROM sc_trx.transaction_dt td
-        WHERE rtrim(td.docno) = rtrim(NEW.docnotmp)
-        AND td.doctype IN ('GR', 'GRRET')
-        AND NOT EXISTS (
-            SELECT 1
-            FROM sc_trx.lpb_dtl d
-            WHERE rtrim(d.docno) = rtrim(NEW.docnotmp)
-                AND d.uniqueid = td.source_uniqueid
-        );
-
 
         UPDATE sc_trx.po_dtl ppd
         SET qtylpb = COALESCE(ppd.qtylpb, 0) + pod.qty_used
@@ -822,6 +771,270 @@ CREATE OR REPLACE TRIGGER tr_lpb
     EXECUTE FUNCTION sc_trx.tr_lpb();
 
 
+/* ============================================================
+   TRANSACTION_DT SYNC
+   ============================================================
+
+   SOURCE OF TRUTH:
+       sc_trx.lpb_dtl
+
+   MAPPING:
+       lpb_dtl.uniqueid
+           -> transaction_dt.source_uniqueid
+
+       md5(docno + journal_type + source_uniqueid)
+           -> transaction_dt.uniqueid
+
+   RULE:
+       INSERT lpb_dtl -> INSERT transaction_dt
+       DELETE lpb_dtl -> DELETE transaction_dt
+
+   Dengan pola ini:
+       - finalize normal       -> otomatis membuat transaction_dt
+       - edit LPB              -> delete lama + insert baru
+                                -> transaction_dt ikut delete/rebuild
+       - delete LPB            -> transaction_dt ikut terhapus
+       - tidak perlu sinkronisasi manual di finalize
+   ============================================================ */
+
+DROP TRIGGER IF EXISTS tr_lpb_dtl_transaction_dt
+ON sc_trx.lpb_dtl;
+
+CREATE OR REPLACE FUNCTION sc_trx.tr_lpb_dtl_transaction_dt()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $BODY$
+DECLARE
+    v_docno       TEXT;
+    v_tx_uniqueid TEXT;
+    v_header      sc_trx.lpb%ROWTYPE;
+BEGIN
+
+    /* ========================================================
+       DELETE
+       ======================================================== */
+    IF TG_OP = 'DELETE' THEN
+
+        IF NULLIF(BTRIM(OLD.uniqueid), '') IS NOT NULL THEN
+
+            DELETE FROM sc_trx.transaction_dt
+            WHERE uniqueid = md5(
+                'LPB|GRNREC|' ||
+                BTRIM(OLD.docno) || '|' ||
+                BTRIM(OLD.uniqueid)
+            );
+
+            /* Fallback untuk data lama yang mungkin masih
+               menggunakan source_uniqueid langsung. */
+            DELETE FROM sc_trx.transaction_dt
+            WHERE BTRIM(source_uniqueid) = BTRIM(OLD.uniqueid)
+              AND BTRIM(docno) = BTRIM(OLD.docno)
+              AND BTRIM(doctype) = 'GR'
+              AND BTRIM(journal_type) = 'GRNREC';
+
+        END IF;
+
+        RETURN OLD;
+    END IF;
+
+
+    /* ========================================================
+       INSERT
+       ======================================================== */
+
+    IF NULLIF(BTRIM(NEW.uniqueid), '') IS NULL THEN
+        RAISE EXCEPTION
+            'LPB detail % tidak mempunyai uniqueid PO. Transaction_dt tidak dapat dibuat.',
+            BTRIM(NEW.docno);
+    END IF;
+
+
+    v_docno := BTRIM(NEW.docno);
+
+    SELECT h.*
+    INTO v_header
+    FROM sc_trx.lpb h
+    WHERE BTRIM(h.docno) = v_docno
+    LIMIT 1;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION
+            'Header LPB % tidak ditemukan saat membuat transaction_dt.',
+            v_docno;
+    END IF;
+
+
+    v_tx_uniqueid := md5(
+        'LPB|GRNREC|' ||
+        v_docno || '|' ||
+        BTRIM(NEW.uniqueid)
+    );
+
+
+    /* ========================================================
+       UPSERT-SAFE DALAM KONTEKS DETAIL
+       Jika trigger dipanggil ulang untuk detail yang sama,
+       hapus transaction_dt yang sama terlebih dahulu.
+       ======================================================== */
+
+    DELETE FROM sc_trx.transaction_dt
+    WHERE uniqueid = v_tx_uniqueid;
+
+
+    -- ========================================================
+    -- HANYA SINKRONISASI KE TRANSACTION_DT
+    -- TIDAK ADA POST / UNPOST JURNAL
+    -- ========================================================
+    INSERT INTO sc_trx.transaction_dt
+    (
+        uniqueid,
+        source_uniqueid,
+
+        docno,
+        doctype,
+        journal_type,
+        line_no,
+        docdate,
+
+        idbranch,
+        cabang,
+        type_in_out,
+
+        ref_docno,
+        ref_doctype,
+
+        source_table,
+        source_id,
+        source_line_id,
+
+        kdsupplier,
+        nsupplier,
+
+        idbarang,
+        namabarang,
+        idunit,
+
+        idarea,
+        warehouse,
+        bin,
+
+        batch,
+        lotno,
+
+        qty,
+        harga,
+        bruto,
+        discount,
+        nilai,
+        dpp,
+        pajak,
+        total,
+
+        idtax,
+        isinclusive,
+
+        currcode,
+        kurs,
+
+        keterangan,
+        createdby,
+        createddate
+    )
+    VALUES
+    (
+        v_tx_uniqueid,
+        BTRIM(NEW.uniqueid),
+
+        v_docno,
+        'GR',
+        'GRNREC',
+        GREATEST(COALESCE(NEW.idurut, 1), 1),
+        v_header.docdate,
+
+        COALESCE(BTRIM(v_header.cabang), ''),
+        COALESCE(BTRIM(v_header.cabang), ''),
+        'IN',
+
+        COALESCE(BTRIM(NEW.docnopo), ''),
+        'PO',
+
+        'sc_trx.lpb_dtl',
+        NEW.idurut,
+        NEW.idurut,
+
+        COALESCE(BTRIM(v_header.kdsupplier), ''),
+        COALESCE(BTRIM(v_header.nmsupplier), ''),
+
+        COALESCE(BTRIM(NEW.idbarang), ''),
+        COALESCE(BTRIM(NEW.nmbarang), ''),
+        COALESCE(BTRIM(NEW.unit), ''),
+
+        '',
+        COALESCE(BTRIM(NEW.idgudang), ''),
+
+        '',
+
+        '',
+        '',
+
+        COALESCE(NEW.qty, 0),
+        COALESCE(NEW.harga, 0),
+        COALESCE(NEW.harga, 0) * COALESCE(NEW.qty, 0),
+        COALESCE(NEW.totaldiscount, 0),
+
+        /* NILAI = nilai DPP dasar */
+        COALESCE(
+            NULLIF(NEW.nilaikonversi, 0),
+            COALESCE(NEW.nilai, 0)
+        ),
+
+        /* DPP */
+        COALESCE(
+            NULLIF(NEW.nilaikonversi, 0),
+            COALESCE(NEW.nilai, 0)
+        ),
+
+        /* PAJAK */
+        COALESCE(NEW.nilaipajak, 0),
+
+        /* TOTAL = DPP + PAJAK */
+        COALESCE(
+            NULLIF(NEW.nilaikonversi, 0),
+            COALESCE(NEW.nilai, 0)
+        ) + COALESCE(NEW.nilaipajak, 0),
+
+        COALESCE(NULLIF(BTRIM(NEW.idtax), ''), NULLIF(BTRIM(v_header.idtax), ''), 'NON'),
+        COALESCE(NULLIF(BTRIM(v_header.isinclusive), ''), 'NO'),
+
+        COALESCE(NULLIF(BTRIM(NEW.currcode), ''), NULLIF(BTRIM(v_header.currcode), ''), 'IDR'),
+        COALESCE(NULLIF(NEW.kurs, 0), NULLIF(v_header.kurs, 0), 1),
+
+        COALESCE(
+            NULLIF(BTRIM(NEW.descriptionpp), ''),
+            NULLIF(BTRIM(NEW.descriptionpo), ''),
+            'LPB ' || v_docno
+        ),
+
+        COALESCE(BTRIM(NEW.inputby), BTRIM(v_header.inputby), ''),
+        COALESCE(NEW.inputdate, v_header.inputdate, CURRENT_TIMESTAMP)
+    );
+
+
+    RETURN NEW;
+END;
+$BODY$;
+
+ALTER FUNCTION sc_trx.tr_lpb_dtl_transaction_dt()
+    OWNER TO postgres;
+
+
+CREATE OR REPLACE TRIGGER tr_lpb_dtl_transaction_dt
+    AFTER INSERT OR DELETE
+    ON sc_trx.lpb_dtl
+    FOR EACH ROW
+    EXECUTE FUNCTION sc_trx.tr_lpb_dtl_transaction_dt();
+
+
 
 
 
@@ -854,14 +1067,14 @@ CREATE OR REPLACE TRIGGER tr_lpb
 
 -- ============================================================
 -- FUNCTION : sc_trx.sp_delete_lpb
--- PURPOSE  : Delete LPB dan reverse PO, GL, serta inventory
+-- PURPOSE  : Delete LPB dan reverse PO serta inventory; tanpa proses jurnal
 -- ============================================================
 
 /* DELETE LPB ALL */
 
 -- ============================================================
 -- FUNCTION : sc_trx.sp_delete_lpb
--- PURPOSE  : Delete LPB dan reverse PO, GL, serta inventory
+-- PURPOSE  : Delete LPB dan reverse PO serta inventory; tanpa proses jurnal
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION sc_trx.sp_delete_lpb(
@@ -1040,34 +1253,28 @@ BEGIN
 
 
     -- =========================================================
-    -- 4. DELETE JOURNAL DETAIL
-    -- Harus dihapus sebelum jurnal_hd
+    -- 4. DELETE TRANSACTION_DT
+    -- Source identity berasal dari LPB detail.
+    -- Detail trigger juga menghapus saat lpb_dtl dihapus.
+    -- Bagian ini membersihkan orphan/legacy transaction_dt.
     -- =========================================================
 
-    DELETE FROM sc_trx.jurnal_dt jd
-
-    USING sc_trx.jurnal_hd jh
-
-    WHERE jd.jurnal_id = jh.id
-
-      AND TRIM(jh.docno) = v_docno
-
-      AND TRIM(jh.doctype) = 'GR';
+    DELETE FROM sc_trx.transaction_dt td
+    WHERE BTRIM(td.docno) = v_docno
+      AND BTRIM(td.doctype) = 'GR'
+      AND BTRIM(td.journal_type) = 'GRNREC';
 
 
     -- =========================================================
-    -- 5. DELETE JOURNAL HEADER
+    -- 5. JOURNAL
     -- =========================================================
-
-    DELETE FROM sc_trx.jurnal_hd
-
-    WHERE TRIM(docno) = v_docno
-
-      AND TRIM(doctype) = 'GR';
+    -- TIDAK ADA POST / UNPOST / DELETE JURNAL DI MODUL LPB.
+    -- Journal diproses oleh accounting engine secara terpisah.
+    -- =========================================================
 
 
     -- =========================================================
-    -- 6. DELETE INVENTORY TRANSACTION
+    -- 5. DELETE INVENTORY TRANSACTION
     --
     -- Trigger stkblc seharusnya otomatis:
     --   - Update stkgdw
@@ -1084,7 +1291,7 @@ BEGIN
 
 
     -- =========================================================
-    -- 7. DELETE TEMP LPB DETAIL
+    -- 6. DELETE TEMP LPB DETAIL
     -- =========================================================
 
     DELETE FROM sc_tmp.lpb_dtl
@@ -1093,7 +1300,7 @@ BEGIN
 
 
     -- =========================================================
-    -- 8. DELETE TEMP LPB HEADER
+    -- 7. DELETE TEMP LPB HEADER
     -- =========================================================
 
     DELETE FROM sc_tmp.lpb
@@ -1102,7 +1309,7 @@ BEGIN
 
 
     -- =========================================================
-    -- 9. DELETE LPB DETAIL
+    -- 8. DELETE LPB DETAIL
     -- =========================================================
 
     DELETE FROM sc_trx.lpb_dtl
@@ -1111,7 +1318,7 @@ BEGIN
 
 
     -- =========================================================
-    -- 10. DELETE LPB HEADER
+    -- 9. DELETE LPB HEADER
     -- =========================================================
 
     DELETE FROM sc_trx.lpb
@@ -1120,7 +1327,7 @@ BEGIN
 
 
     -- =========================================================
-    -- 11. AUDIT LOG
+    -- 10. AUDIT LOG
     -- =========================================================
 
     PERFORM sc_log.fn_log_transaction(
@@ -1180,47 +1387,41 @@ $$;
 -- Contoh:
 -- SELECT sc_trx.sp_delete_lpb('LPB/2609/PA0001', 'USERNAME');
 
+/* ============================================================
+   VALIDATION
+   ============================================================
 
+   1. Setiap LPB detail final wajib mempunyai transaction_dt.
+   2. Tidak boleh ada transaction_dt orphan untuk LPB/GRNREC.
+   3. Delete lpb_dtl otomatis menghapus transaction_dt.
+   4. Insert lpb_dtl otomatis membuat transaction_dt.
+   ============================================================ */
 
+-- Cek orphan transaction_dt untuk LPB
+-- SELECT td.*
+-- FROM sc_trx.transaction_dt td
+-- WHERE BTRIM(td.doctype) = 'GR'
+--   AND BTRIM(td.journal_type) = 'GRNREC'
+--   AND NOT EXISTS (
+--       SELECT 1
+--       FROM sc_trx.lpb_dtl d
+--       WHERE BTRIM(d.docno) = BTRIM(td.docno)
+--         AND BTRIM(d.uniqueid) = BTRIM(td.source_uniqueid)
+--   );
 
--- FUNCTION: sc_trx.sp_unpost_by_doc(character varying, character varying)
+-- Cek jumlah source dan transaction_dt per LPB
+-- SELECT
+--     d.docno,
+--     COUNT(*) AS total_lpb_detail,
+--     COUNT(td.uniqueid) AS total_transaction_dt
+-- FROM sc_trx.lpb_dtl d
+-- LEFT JOIN sc_trx.transaction_dt td
+--   ON BTRIM(td.docno) = BTRIM(d.docno)
+--  AND BTRIM(td.source_uniqueid) = BTRIM(d.uniqueid)
+--  AND BTRIM(td.doctype) = 'GR'
+--  AND BTRIM(td.journal_type) = 'GRNREC'
+-- GROUP BY d.docno
+-- ORDER BY d.docno;
 
--- DROP FUNCTION IF EXISTS sc_trx.sp_unpost_by_doc(character varying, character varying);
-
-CREATE OR REPLACE FUNCTION sc_trx.sp_unpost_by_doc(
-	p_docno character varying,
-	p_doctype character varying)
-    RETURNS void
-    LANGUAGE 'plpgsql'
-    COST 100
-    VOLATILE PARALLEL UNSAFE
-AS $BODY$
-BEGIN
-
-    -- DELETE DETAIL
-    DELETE FROM sc_trx.jurnal_dt
-    WHERE jurnal_id IN (
-        SELECT id FROM sc_trx.jurnal_hd
-        WHERE TRIM(docno)=TRIM(p_docno)
-          AND TRIM(doctype)=TRIM(p_doctype)
-    );
-
-    -- DELETE HEADER
-    DELETE FROM sc_trx.jurnal_hd
-    WHERE TRIM(docno)=TRIM(p_docno)
-      AND TRIM(doctype)=TRIM(p_doctype);
-
-    -- RESET STKBLC
-    UPDATE sc_trx.stkblc
-    SET is_posted = FALSE,
-        posted_at = NULL
-    WHERE TRIM(docno)=TRIM(p_docno)
-      AND TRIM(doctype)=TRIM(p_doctype);
-
-END;
-$BODY$;
-
-ALTER FUNCTION sc_trx.sp_unpost_by_doc(character varying, character varying)
-    OWNER TO postgres;
 
 COMMIT;

@@ -2287,4 +2287,2974 @@ class Arap extends BaseController
             ]);
         }
     }
+
+    // ============== Tanda Terima ====================================
+
+    public function tterima()
+    {
+        $data['title'] = "Tanda Terima Supplier";
+
+        $dtlbranch = $this->m_global->q_branch()->getRowArray();
+        $branch = $dtlbranch['branch'];
+
+        /* CODE UNTUK VERSI */
+        $nama = trim($this->session->get('nama'));
+        $kodemenu = 'I.L.A.2';
+        $versirelease = 'I.L.A.2/01';
+        $releasedate = date('2025-04-12 00:00:00');
+
+        $versidb = $this->fiky_version->version(
+            $kodemenu,
+            $versirelease,
+            $releasedate,
+            $nama
+        );
+
+        $x = $this->fiky_menu->menus(
+            $kodemenu,
+            $versirelease,
+            $releasedate
+        );
+
+        $data['x'] = $x['rows'];
+        $data['y'] = $x['res'];
+        $data['t'] = $x['xn'];
+        $data['kodemenu'] = $kodemenu;
+        $data['version'] = $versidb;
+        /* END CODE UNTUK VERSI */
+
+        /* CEK ERROR TRANSAKSI */
+        $paramerror = " and userid='$nama' and modul='I.L.A.2'";
+
+        $dtlerror = $this->m_trxerror
+            ->q_trxerror($paramerror)
+            ->getRowArray();
+
+        $count_err = $this->m_trxerror
+            ->q_trxerror($paramerror)
+            ->getNumRows();
+
+        $errordesc = isset($dtlerror['description'])
+            ? trim($dtlerror['description'])
+            : '';
+
+        $nomorakhir1 = isset($dtlerror['nomorakhir1'])
+            ? trim($dtlerror['nomorakhir1'])
+            : '';
+
+        $errorcode = isset($dtlerror['errorcode'])
+            ? trim($dtlerror['errorcode'])
+            : '';
+
+        if ($count_err > 0 && $errordesc != '') {
+            if ($errorcode == 0) {
+                $data['message'] = "
+                <div class='alert alert-info'>
+                    DATA SUCCESSFULLY PROCESSED $nomorakhir1
+                </div>";
+            } else {
+                $data['message'] = "
+                <div class='alert alert-info'>
+                    $errordesc
+                </div>";
+            }
+        } else {
+            if ($errorcode == '0') {
+                $data['message'] = "
+                <div class='alert alert-info'>
+                    DATA SUCCESSFULLY PROCESSED $nomorakhir1
+                </div>";
+            } else {
+                $data['message'] = "";
+            }
+        }
+
+        /* ITEM ENTRY MASTER CHECK */
+        $param = " and coalesce(inputby,'')='$nama'";
+
+        // TODO: Ganti dengan query master temporary Tanda Terima Supplier
+        // Query master temporary Tanda Terima Supplier
+        $dtl = $this->m_arap->q_tterima_master_temp($param);
+
+        $logindate = trim($this->session->get('logindate'));
+
+        if ($dtl->getNumRows() > 0) {
+            $title = "WARNING !!!";
+
+            $urlclear = base_url('arap/transaksi/clearEntryTterima');
+            $urlnext  = base_url('arap/transaksi/addTterima');
+
+            $body = "Entry not finished found....!!!";
+
+            $data['showUnfinish'] = $this->m_trxerror->unfinish(
+                $nama,
+                $urlclear,
+                $urlnext,
+                $title,
+                $body
+            );
+        } else {
+            $data['showUnfinish'] = '';
+        }
+
+        /* HAK AKSES MENU */
+        $kmenu = 'I.L.A.2';
+        $role = trim($this->session->get('roleid'));
+
+        $data['dtl_akses'] = $this->m_role
+            ->detail_user_akses($role, $kmenu)
+            ->getRowArray();
+
+        /* HAPUS ERROR TRANSAKSI USER */
+        $pterror = " and userid='$nama'";
+        $this->m_trxerror->q_deltrxerror($pterror);
+
+        return $this->template->render(
+            '/arap/tterima/v_list_tterima',
+            $data
+        );
+    }
+
+
+    public function addTterima()
+    {
+        /* Penambahan Squence */
+        $data['title']="Nota Tanda Terima";
+        $dtlbranch=$this->m_global->q_branch()->getRowArray();
+        $branch=$dtlbranch['branch'];
+        /* CODE UNTUK VERSI*/
+        $nama=trim($this->session->get('nama'));
+        $kodemenu='I.L.A.2'; $versirelease='I.L.A.2/01'; $releasedate=date('2025-04-12 00:00:00');
+        $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
+        $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
+        $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
+        $data['kodemenu']=$kodemenu; $data['version']=$versidb;
+        $data['nama']=$nama; $data['version']=$versidb;
+        /* END CODE UNTUK VERSI */
+
+
+        $paramerror=" and userid='$nama' and modul='I.L.A.2'";
+        $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
+        $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
+        if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
+        if(isset($dtlerror['nomorakhir1'])) { $nomorakhir1=trim($dtlerror['nomorakhir1']); } else { $nomorakhir1='';  }
+        if(isset($dtlerror['errorcode'])) { $errorcode=trim($dtlerror['errorcode']); } else { $errorcode='';  }
+
+        if($count_err>0 and $errordesc<>''){
+            if ($dtlerror['errorcode']==0){
+                $data['message']="<div class='alert alert-info'>DATA SUCCESSFULLY PROCESSED $nomorakhir1 </div>";
+            } else {
+                $data['message']="<div class='alert alert-info'>$errordesc</div>";
+            }
+
+        }else {
+            if ($errorcode=='0'){
+                $data['message']="<div class='alert alert-info'>DATA SUCCESSFULLY PROCESSED $nomorakhir1 </div>";
+            } else {
+                $data['message']="";
+            }
+
+        }
+
+        // =====================================================
+        // AMBIL TANDA TERIMA TEMP USER
+        // HANYA YANG STATUS = E
+        // =====================================================
+        $builderTmp = $this->db
+            ->table('sc_tmp.tterima_hd')
+            ->where('TRIM(inputby)', $nama)
+            ->where('TRIM(status)', 'E')
+            ->orderBy('inputdate', 'DESC')
+            ->limit(1);
+
+        $data['dtldata'] = $builderTmp
+            ->get()
+            ->getRowArray();
+        $logindate = trim($this->session->get('logindate'));
+
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('arap/trans/tterima'));
+        }
+        // =================================
+
+        $data['typeform'] = 'INPUT';
+        $data['userlogin'] = $nama;
+        $param = " and trim(inputby)='$nama'";
+        $data['dtldata'] = $this->m_purchase->q_po_master_temp($param)->getRowArray();
+        $logindate  = trim($this->session->get('logindate'));
+        $ts    = strtotime($logindate);
+
+        $pterror = " and userid='$nama'";
+        $this->m_trxerror->q_deltrxerror($pterror);
+        return $this->template->render('arap/tterima/v_add_tterima',$data);
+    }
+    /**
+     * DataTables list Tanda Terima Supplier
+     */
+    /**
+     * DataTables list Tanda Terima Supplier
+     */
+    public function listTterimaTrx()
+    {
+        $list = $this->m_arap->get_t_tterima_hd();
+
+        $data = array();
+
+        $no = (int) ($_POST['start'] ?? 0);
+
+
+        /*
+         * ============================================================
+         * ACCESS
+         * ============================================================
+         */
+
+        $kmenu = 'I.L.A.2';
+
+        $role = trim(
+            $this->session->get('roleid')
+        );
+
+        $dtlAkses = $this->m_role
+            ->detail_user_akses(
+                $role,
+                $kmenu
+            )
+            ->getRowArray();
+
+
+        $canUpdate =
+            isset($dtlAkses['a_update']) &&
+            trim($dtlAkses['a_update']) === 't';
+
+        $canView =
+            isset($dtlAkses['a_view']) &&
+            trim($dtlAkses['a_view']) === 't';
+
+
+        /*
+         * ============================================================
+         * HELPER STATUS CHECKLIST DOKUMEN
+         * ============================================================
+         */
+
+        $docStatusIcon = function ($value, $label) {
+
+            $value = strtoupper(
+                trim(
+                    (string) $value
+                )
+            );
+
+            $checked = in_array(
+                $value,
+                array(
+                    '1',
+                    'Y',
+                    'YES',
+                    'TRUE',
+                    'T',
+                    'OK',
+                    'ADA'
+                ),
+                true
+            );
+
+            if ($checked) {
+
+                return '
+                <span
+                    class="d-inline-block me-1"
+                    title="' .
+                    htmlspecialchars(
+                        $label,
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ) .
+                    '"
+                >
+                    <i
+                        class="fa fa-check-circle text-success"
+                        style="font-size:18px;"
+                    ></i>
+                </span>
+            ';
+
+            }
+
+            return '
+            <span
+                class="d-inline-block me-1"
+                title="' .
+                htmlspecialchars(
+                    $label . ' belum dicentang',
+                    ENT_QUOTES,
+                    'UTF-8'
+                ) .
+                '"
+            >
+                <i
+                    class="fa fa-circle-o text-muted"
+                    style="font-size:18px;"
+                ></i>
+            </span>
+        ';
+        };
+
+
+        /*
+         * ============================================================
+         * LOOP DATA
+         * ============================================================
+         */
+
+        foreach ($list as $lm) {
+
+            $no++;
+
+            $row = array();
+
+
+            /*
+             * ========================================================
+             * DATA DASAR
+             * ========================================================
+             */
+
+            $docno = trim(
+                $lm->docno ?? ''
+            );
+
+            $status = strtoupper(
+                trim(
+                    $lm->status ?? ''
+                )
+            );
+
+
+            /*
+             * ========================================================
+             * ACTION
+             * ========================================================
+             */
+
+            $menuContent = '';
+
+
+            /*
+             * EDIT
+             */
+
+            if ($canUpdate) {
+
+                $menuContent .= '
+    <a
+        class="dropdown-item bg-warning"
+        href="' .
+                    base_url(
+                        'arap/transaksi/updateTterima'
+                    ) .
+                    '?id=' .
+                    bin2hex($docno) .
+                    '"
+    >
+        <i class="fa fa-edit"></i>
+        Edit Tanda Terima
+    </a>
+';
+            }
+
+
+            /*
+             * VIEW
+             */
+
+            if ($canView) {
+
+                $menuContent .= '
+                <a
+                    class="dropdown-item"
+                    href="' .
+                    base_url(
+                        'arap/transaksi/addTterima'
+                    ) .
+                    '?docno=' .
+                    urlencode($docno) .
+                    '"
+                >
+                    <i class="fa fa-eye"></i>
+                    Detail Tanda Terima
+                </a>
+            ';
+            }
+
+
+            /*
+             * TRACEABILITY
+             */
+
+            $docnoJs = htmlspecialchars(
+                $docno,
+                ENT_QUOTES,
+                'UTF-8'
+            );
+
+            $menuContent .= '
+            <a
+                class="dropdown-item bg-info text-white"
+                href="#"
+                onclick="openTterimaTraceabilityByDocno(\'' .
+                $docnoJs .
+                '\'); return false;"
+            >
+                <i class="fa fa-check-double"></i>
+                Traceability Dokumen
+            </a>
+        ';
+
+
+            /*
+             * DROPDOWN
+             */
+
+            $dropdownMenu = '
+            <div class="dropdown">
+
+                <button
+                    class="btn btn-primary btn-sm dropdown-toggle"
+                    type="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                >
+                    <i class="fa fa-bars"></i>
+                </button>
+
+                <div class="dropdown-menu">
+                    ' .
+                $menuContent .
+                '
+                </div>
+
+            </div>
+        ';
+
+
+            /*
+             * ========================================================
+             * STATUS DOKUMEN TRANSAKSI
+             * ========================================================
+             *
+             * Status E/F/C tetap ditampilkan hanya jika dibutuhkan
+             * untuk informasi transaksi.
+             *
+             * Kolom UI sekarang menggunakan "Status Dokumen"
+             * sebagai checklist dokumen.
+             *
+             * ========================================================
+             */
+
+
+            /*
+             * ========================================================
+             * STATUS CHECKLIST DOKUMEN
+             * ========================================================
+             *
+             * Tidak mandatory.
+             *
+             * Hanya menunjukkan dokumen mana yang sudah dicentang.
+             *
+             * Invoice
+             * Faktur Pajak
+             * Surat Jalan
+             * Penerimaan
+             * Bea Import
+             * Dokumen
+             *
+             * ========================================================
+             */
+
+            $statusDokumen = '
+
+            <div
+                class="d-flex align-items-center justify-content-center"
+                style="white-space: nowrap;"
+            >
+
+                ' .
+                $docStatusIcon(
+                    $lm->cekinvoice ?? '',
+                    'Invoice'
+                ) .
+
+                $docStatusIcon(
+                    $lm->cekfakturpajak ?? '',
+                    'Faktur Pajak'
+                ) .
+
+                $docStatusIcon(
+                    $lm->ceksj ?? '',
+                    'Surat Jalan'
+                ) .
+
+                $docStatusIcon(
+                    $lm->cekpenerimaan ?? '',
+                    'Penerimaan'
+                ) .
+
+                $docStatusIcon(
+                    $lm->cekbeaimport ?? '',
+                    'Bea Import'
+                ) .
+
+                $docStatusIcon(
+                    $lm->cekdokumen ?? '',
+                    'Dokumen'
+                ) .
+
+                '</div>
+        ';
+
+
+            /*
+             * ========================================================
+             * ROW
+             * ========================================================
+             *
+             * HARUS SAMA DENGAN <thead>:
+             *
+             * 0 No.
+             * 1 Action
+             * 2 Document
+             * 3 Tanggal
+             * 4 Nama Supplier
+             * 5 Currency
+             * 6 Nilai
+             * 7 Keterangan
+             * 8 Status Dokumen
+             *
+             * ========================================================
+             */
+
+            $row[] = $no;
+
+            $row[] = $dropdownMenu;
+
+            $row[] = htmlspecialchars(
+                $docno,
+                ENT_QUOTES,
+                'UTF-8'
+            );
+
+            $row[] = htmlspecialchars(
+                !empty($lm->docdate)
+                    ? date('d-m-Y', strtotime($lm->docdate))
+                    : '',
+                ENT_QUOTES,
+                'UTF-8'
+            );
+
+            $row[] = htmlspecialchars(
+                trim($lm->nmsupplier ?? ''),
+                ENT_QUOTES,
+                'UTF-8'
+            );
+
+            $row[] = htmlspecialchars(
+                trim($lm->currcode ?? ''),
+                ENT_QUOTES,
+                'UTF-8'
+            );
+
+            $row[] = number_format(
+                (float) ($lm->total ?? 0),
+                2,
+                '.',
+                ','
+            );
+
+            $row[] = htmlspecialchars(
+                trim($lm->keterangan ?? ''),
+                ENT_QUOTES,
+                'UTF-8'
+            );
+
+            $row[] = $statusDokumen;
+
+
+            /*
+             * ========================================================
+             * PUSH ROW
+             * ========================================================
+             */
+
+            $data[] = $row;
+        }
+
+
+        /*
+         * ============================================================
+         * DATATABLE RESPONSE
+         * ============================================================
+         */
+
+        $output = array(
+
+            "draw" =>
+                (int) ($_POST['draw'] ?? 0),
+
+            "recordsTotal" =>
+                $this->m_arap
+                    ->t_tterima_hd_count_all(),
+
+            "recordsFiltered" =>
+                $this->m_arap
+                    ->t_tterima_hd_count_filtered(),
+
+            "data" =>
+                $data
+        );
+
+
+        /*
+         * ============================================================
+         * ENCRYPT DATATABLE
+         * ============================================================
+         */
+
+        echo $this->fiky_encryption
+            ->jDatatable($output);
+    }
+
+    // ============================================================
+// LIST DETAIL TANDA TERIMA
+// Owner : nama session
+// Header harus status E
+// ============================================================
+    public function listTterimaDetail()
+    {
+        $db      = db_connect();
+        $request = $this->request;
+        $session = session();
+
+        $nama = trim(
+            (string) $session->get('nama')
+        );
+
+        if ($nama === '') {
+            return $this->response
+                ->setStatusCode(401)
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'Session nama tidak ditemukan.'
+                ]);
+        }
+
+        $docno = trim(
+            (string) $request->getPost('docno')
+        );
+
+        if ($docno === '') {
+            return $this->response->setJSON([
+                'success' => true,
+                'data'    => []
+            ]);
+        }
+
+        $data = $db->table('sc_tmp.tterima_dt')
+            ->select('
+            idurut,
+            docno,
+            idunique,
+            nobukti,
+            docref,
+            noperkiraan,
+            namaperkiraan,
+            keterangan,
+            TRIM(dk) AS dk,
+            costprofitcenter,
+            nilai,
+            status,
+            inputby,
+            inputdate,
+            updateby,
+            updatedate,
+            docnotmp
+        ')
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->where('status', 'E')
+            ->orderBy('idurut', 'ASC')
+            ->get()
+            ->getResultArray();
+
+        return $this->response->setJSON([
+            'success' => true,
+            'status'  => true,
+            'data'    => $data
+        ]);
+    }
+
+    // ============================================================
+// SAVE / UPDATE DETAIL TANDA TERIMA
+// INSERT : sc_tmp.tterima_dt
+// UPDATE : sc_tmp.tterima_dt
+// Owner  : nama session
+// Header : status E
+// ============================================================
+    public function saveTterimaDetail()
+    {
+        $db      = db_connect();
+        $request = $this->request;
+        $session = session();
+
+        $transStarted = false;
+
+        try {
+
+            // =====================================================
+            // USER
+            // =====================================================
+            $nama = trim(
+                (string) $session->get('nama')
+            );
+
+            if ($nama === '') {
+                return $this->response
+                    ->setStatusCode(401)
+                    ->setJSON([
+                        'success' => false,
+                        'message' => 'Session nama tidak ditemukan. Silakan login kembali.'
+                    ]);
+            }
+
+            // =====================================================
+            // ID HEADER
+            // =====================================================
+            $idurutHeader = trim(
+                (string) $request->getPost('idurut')
+            );
+
+            if (
+                $idurutHeader === '' ||
+                !ctype_digit($idurutHeader)
+            ) {
+                return $this->response
+                    ->setStatusCode(400)
+                    ->setJSON([
+                        'success' => false,
+                        'message' => 'ID header Tanda Terima tidak valid.'
+                    ]);
+            }
+
+            $idurutHeader = (int) $idurutHeader;
+
+            // =====================================================
+            // ID DETAIL / ID UNIQUE
+            //
+            // idurut_detail = SERIAL numeric
+            // idunique      = MD5(docno.inputdate.inputby)
+            //
+            // uniqueid tetap diterima untuk kompatibilitas,
+            // tetapi TIDAK lagi dianggap selalu numeric.
+            // =====================================================
+            $idurutDetailRaw = trim(
+                (string) $request->getPost('idurut_detail')
+            );
+
+            $iduniquePosted = trim(
+                (string) (
+                $request->getPost('idunique')
+                    ?: $request->getPost('uniqueid')
+                )
+            );
+
+            $idurutDetail = 0;
+
+            if ($idurutDetailRaw !== '') {
+
+                if (!ctype_digit($idurutDetailRaw)) {
+                    return $this->response
+                        ->setStatusCode(400)
+                        ->setJSON([
+                            'success' => false,
+                            'message' => 'ID detail tidak valid.'
+                        ]);
+                }
+
+                $idurutDetail = (int) $idurutDetailRaw;
+
+            } elseif (
+                $iduniquePosted !== '' &&
+                preg_match('/^[a-f0-9]{32}$/i', $iduniquePosted)
+            ) {
+
+                // idunique MD5 akan dipakai sebagai pencarian UPDATE.
+                // Nilai numeric idurut detail akan diambil dari database.
+
+            } elseif ($iduniquePosted !== '') {
+
+                // Kompatibilitas dengan frontend lama yang mengirim
+                // uniqueid sebagai numeric ID detail.
+                if (ctype_digit($iduniquePosted)) {
+                    $idurutDetail = (int) $iduniquePosted;
+                } else {
+                    return $this->response
+                        ->setStatusCode(400)
+                        ->setJSON([
+                            'success' => false,
+                            'message' => 'ID detail / ID unique tidak valid.'
+                        ]);
+                }
+            }
+
+            // =====================================================
+            // PERKIRAAN
+            // =====================================================
+            $perkiraan = strtoupper(
+                trim((string) $request->getPost('perkiraan'))
+            );
+
+            if ($perkiraan === '') {
+                return $this->response
+                    ->setStatusCode(400)
+                    ->setJSON([
+                        'success' => false,
+                        'message' => 'Perkiraan wajib diisi.'
+                    ]);
+            }
+
+            // =====================================================
+            // KETERANGAN
+            // =====================================================
+            $keterangan = strtoupper(
+                trim((string) $request->getPost('keterangan_dtl'))
+            );
+
+            if ($keterangan === '') {
+                return $this->response
+                    ->setStatusCode(400)
+                    ->setJSON([
+                        'success' => false,
+                        'message' => 'Keterangan detail wajib diisi.'
+                    ]);
+            }
+
+            // =====================================================
+            // DK
+            // =====================================================
+            $dk = strtoupper(
+                trim((string) $request->getPost('dk'))
+            );
+
+            if (!in_array($dk, ['D', 'K'], true)) {
+                return $this->response
+                    ->setStatusCode(400)
+                    ->setJSON([
+                        'success' => false,
+                        'message' => 'Debit / Kredit tidak valid. Nilai harus D atau K.'
+                    ]);
+            }
+
+            // =====================================================
+            // NILAI
+            // =====================================================
+            $nilaiRaw = trim(
+                (string) $request->getPost('nilai')
+            );
+
+            $nilaiRaw = str_replace(
+                ',',
+                '',
+                $nilaiRaw
+            );
+
+            $nilaiRaw = preg_replace(
+                '/[^0-9.\-]/',
+                '',
+                $nilaiRaw
+            );
+
+            if (
+                $nilaiRaw === '' ||
+                $nilaiRaw === '-' ||
+                !is_numeric($nilaiRaw)
+            ) {
+                $nilai = 0;
+            } else {
+                $nilai = (float) $nilaiRaw;
+            }
+
+            if ($nilai < 0) {
+                return $this->response
+                    ->setStatusCode(400)
+                    ->setJSON([
+                        'success' => false,
+                        'message' => 'Nilai tidak boleh negatif.'
+                    ]);
+            }
+
+            // =====================================================
+            // STRING LAIN
+            // =====================================================
+            $nobukti = strtoupper(
+                trim((string) $request->getPost('nobukti'))
+            );
+
+            $namaperkiraan = strtoupper(
+                trim((string) $request->getPost('namaperkiraan'))
+            );
+
+            $costprofitcenter = strtoupper(
+                trim((string) $request->getPost('costcenter'))
+            );
+
+            // =====================================================
+            // TRANSACTION
+            // =====================================================
+            $db->transBegin();
+            $transStarted = true;
+
+            // =====================================================
+            // CEK HEADER
+            // =====================================================
+            $header = $db->table('sc_tmp.tterima_hd')
+                ->select(
+                    'idurut, docno, cabang, kdsupplier, nmsupplier, status'
+                )
+                ->where('idurut', $idurutHeader)
+                ->where('inputby', $nama)
+                ->where('status', 'E')
+                ->get()
+                ->getRowArray();
+
+            if (!$header) {
+
+                $db->transRollback();
+                $transStarted = false;
+
+                return $this->response
+                    ->setStatusCode(404)
+                    ->setJSON([
+                        'success' => false,
+                        'message' => 'Header Tanda Terima tidak ditemukan atau bukan milik user.'
+                    ]);
+            }
+
+            // =====================================================
+            // CEK CABANG
+            // =====================================================
+            $cabang = trim(
+                (string) ($header['cabang'] ?? '')
+            );
+
+            if ($cabang === '') {
+
+                $db->transRollback();
+                $transStarted = false;
+
+                return $this->response
+                    ->setStatusCode(400)
+                    ->setJSON([
+                        'success' => false,
+                        'message' => 'Cabang pada header belum diisi.'
+                    ]);
+            }
+
+            // =====================================================
+            // CEK SUPPLIER
+            // =====================================================
+            $kdsupplier = trim(
+                (string) ($header['kdsupplier'] ?? '')
+            );
+
+            if ($kdsupplier === '') {
+
+                $db->transRollback();
+                $transStarted = false;
+
+                return $this->response
+                    ->setStatusCode(400)
+                    ->setJSON([
+                        'success' => false,
+                        'message' => 'Supplier pada header belum diisi.'
+                    ]);
+            }
+
+            // =====================================================
+            // DOCNO DARI DATABASE
+            // =====================================================
+            $docno = trim(
+                (string) ($header['docno'] ?? '')
+            );
+
+            if ($docno === '') {
+
+                $db->transRollback();
+                $transStarted = false;
+
+                return $this->response
+                    ->setStatusCode(400)
+                    ->setJSON([
+                        'success' => false,
+                        'message' => 'Nomor Tanda Terima tidak ditemukan.'
+                    ]);
+            }
+
+            // =====================================================
+            // JIKA ID UNIQUE MD5 DIKIRIM, CARI DETAIL
+            // =====================================================
+            if (
+                $idurutDetail <= 0 &&
+                $iduniquePosted !== '' &&
+                preg_match('/^[a-f0-9]{32}$/i', $iduniquePosted)
+            ) {
+
+                $existingByUnique = $db->table('sc_tmp.tterima_dt')
+                    ->select('idurut, idunique, inputdate')
+                    ->where('idunique', strtolower($iduniquePosted))
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->where('status', 'E')
+                    ->get()
+                    ->getRowArray();
+
+                if ($existingByUnique) {
+                    $idurutDetail = (int) $existingByUnique['idurut'];
+                }
+            }
+
+            // =====================================================
+            // UPDATE
+            // =====================================================
+            if ($idurutDetail > 0) {
+
+                // -----------------------------------------------
+                // CEK DETAIL MILIK USER
+                // -----------------------------------------------
+                $existing = $db->table('sc_tmp.tterima_dt')
+                    ->select(
+                        'idurut, docno, idunique, inputdate, inputby, status'
+                    )
+                    ->where('idurut', $idurutDetail)
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->where('status', 'E')
+                    ->get()
+                    ->getRowArray();
+
+                if (!$existing) {
+
+                    $db->transRollback();
+                    $transStarted = false;
+
+                    return $this->response
+                        ->setStatusCode(404)
+                        ->setJSON([
+                            'success' => false,
+                            'message' => 'Detail tidak ditemukan atau bukan milik user.'
+                        ]);
+                }
+
+                // Pertahankan idunique yang sudah dibuat saat INSERT.
+                $idunique = trim(
+                    (string) ($existing['idunique'] ?? '')
+                );
+
+                // Untuk data lama yang belum memiliki idunique,
+                // buat berdasarkan data asli row tersebut.
+                if ($idunique === '') {
+
+                    $existingInputDate = trim(
+                        (string) ($existing['inputdate'] ?? '')
+                    );
+
+                    if ($existingInputDate === '') {
+                        $existingInputDate = date('Y-m-d H:i:s.u');
+                    }
+
+                    $idunique = md5(
+                        $docno .
+                        '.' .
+                        $existingInputDate .
+                        '.' .
+                        $nama
+                    );
+                }
+
+                $updateData = [
+                    'idunique'          => $idunique,
+                    'nobukti'           => $nobukti,
+                    'noperkiraan'       => $perkiraan,
+                    'namaperkiraan'     => $namaperkiraan,
+                    'keterangan'        => $keterangan,
+                    'dk'                => $dk,
+                    'costprofitcenter'  => $costprofitcenter,
+                    'nilai'             => $nilai,
+                    'updateby'          => $nama,
+                    'updatedate'        => date('Y-m-d H:i:s')
+                ];
+
+                $updated = $db->table('sc_tmp.tterima_dt')
+                    ->where('idurut', $idurutDetail)
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->where('status', 'E')
+                    ->update($updateData);
+
+                if (!$updated) {
+
+                    $db->transRollback();
+                    $transStarted = false;
+
+                    return $this->response
+                        ->setStatusCode(500)
+                        ->setJSON([
+                            'success' => false,
+                            'message' => 'Gagal mengupdate detail Tanda Terima.'
+                        ]);
+                }
+
+                $detailId = $idurutDetail;
+                $mode     = 'UPDATE';
+
+            } else {
+
+                // =================================================
+                // INSERT
+                // =================================================
+
+                // Gunakan inputdate yang sama untuk pembentukan idunique.
+                $inputDate = date('Y-m-d H:i:s.u');
+
+                $idunique = md5(
+                    $docno .
+                    '.' .
+                    $inputDate .
+                    '.' .
+                    $nama
+                );
+
+                $detailData = [
+                    'docno'             => $docno,
+                    'idunique'          => $idunique,
+                    'nobukti'           => $nobukti,
+                    'docref'            => '',
+                    'noperkiraan'       => $perkiraan,
+                    'namaperkiraan'     => $namaperkiraan,
+                    'keterangan'        => $keterangan,
+                    'dk'                => $dk,
+                    'costprofitcenter'  => $costprofitcenter,
+                    'nilai'             => $nilai,
+                    'status'            => 'E',
+                    'inputby'           => $nama,
+                    'inputdate'         => $inputDate,
+                    'docnotmp'          => $docno
+                ];
+
+                $inserted = $db->table(
+                    'sc_tmp.tterima_dt'
+                )->insert($detailData);
+
+                if (!$inserted) {
+
+                    $db->transRollback();
+                    $transStarted = false;
+
+                    return $this->response
+                        ->setStatusCode(500)
+                        ->setJSON([
+                            'success' => false,
+                            'message' => 'Gagal menambahkan detail Tanda Terima.'
+                        ]);
+                }
+
+                $detailId = $db->insertID();
+                $mode     = 'INSERT';
+            }
+
+            // =====================================================
+            // TRANSACTION STATUS
+            // =====================================================
+            if ($db->transStatus() === false) {
+
+                $db->transRollback();
+                $transStarted = false;
+
+                return $this->response
+                    ->setStatusCode(500)
+                    ->setJSON([
+                        'success' => false,
+                        'message' => 'Gagal menyimpan detail Tanda Terima.'
+                    ]);
+            }
+
+            // =====================================================
+            // COMMIT
+            // =====================================================
+            $db->transCommit();
+            $transStarted = false;
+
+            return $this->response
+                ->setJSON([
+                    'success' => true,
+                    'message' => $mode === 'UPDATE'
+                        ? 'Detail Tanda Terima berhasil diupdate.'
+                        : 'Detail Tanda Terima berhasil ditambahkan.',
+                    'data' => [
+                        'idurut_header'     => $idurutHeader,
+                        'idurut_detail'     => $detailId,
+                        'idunique'          => $idunique,
+                        'docno'             => $docno,
+                        'nobukti'           => $nobukti,
+                        'noperkiraan'       => $perkiraan,
+                        'namaperkiraan'     => $namaperkiraan,
+                        'keterangan'        => $keterangan,
+                        'dk'                => $dk,
+                        'costprofitcenter'  => $costprofitcenter,
+                        'nilai'             => $nilai,
+                        'mode'              => $mode
+                    ]
+                ]);
+
+        } catch (\Throwable $e) {
+
+            if ($transStarted) {
+                $db->transRollback();
+            }
+
+            log_message(
+                'error',
+                'saveTterimaDetail error: ' . $e->getMessage()
+            );
+
+            return $this->response
+                ->setStatusCode(500)
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                ]);
+        }
+    }
+    // ============================================================
+// DELETE DETAIL TANDA TERIMA
+// Owner : nama session
+// Status : E
+// ============================================================
+    public function deleteTterimaDetail()
+    {
+        $db      = db_connect();
+        $request = $this->request;
+        $session = session();
+
+        try {
+
+            // =====================================================
+            // USER DARI SESSION
+            // =====================================================
+            $nama = trim(
+                (string) $session->get('nama')
+            );
+
+            if ($nama === '') {
+                return $this->response
+                    ->setStatusCode(401)
+                    ->setJSON([
+                        'success' => false,
+                        'message' => 'Session nama tidak ditemukan.'
+                    ]);
+            }
+
+            // =====================================================
+            // DOCNO
+            // =====================================================
+            $docno = trim(
+                (string) $request->getPost('docno')
+            );
+
+            if ($docno === '') {
+                return $this->response
+                    ->setStatusCode(400)
+                    ->setJSON([
+                        'success' => false,
+                        'message' => 'Docno Tanda Terima tidak valid.'
+                    ]);
+            }
+
+            // =====================================================
+            // ID DETAIL
+            // idurut yang dikirim frontend = ID DETAIL
+            // =====================================================
+            $idurutDetail = trim(
+                (string) $request->getPost('idurut')
+            );
+
+            if (
+                $idurutDetail === '' ||
+                !ctype_digit($idurutDetail) ||
+                (int) $idurutDetail <= 0
+            ) {
+                return $this->response
+                    ->setStatusCode(400)
+                    ->setJSON([
+                        'success' => false,
+                        'message' => 'ID detail tidak valid.'
+                    ]);
+            }
+
+            $idurutDetail = (int) $idurutDetail;
+
+            // =====================================================
+            // CEK HEADER
+            // Berdasarkan:
+            // docno + inputby + status E
+            // =====================================================
+            $header = $db->table('sc_tmp.tterima_hd')
+                ->select('docno, inputby, status')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->where('status', 'E')
+                ->get()
+                ->getRowArray();
+
+            if (!$header) {
+                return $this->response
+                    ->setStatusCode(404)
+                    ->setJSON([
+                        'success' => false,
+                        'message' => 'Header Tanda Terima tidak ditemukan atau bukan milik user.'
+                    ]);
+            }
+
+            // =====================================================
+            // CEK DETAIL
+            // WHERE:
+            // docno
+            // idurut
+            // inputby = nama
+            // status = E
+            // =====================================================
+            $detail = $db->table('sc_tmp.tterima_dt')
+                ->select('idurut, docno, inputby, status')
+                ->where('docno', $docno)
+                ->where('idurut', $idurutDetail)
+                ->where('inputby', $nama)
+                ->where('status', 'E')
+                ->get()
+                ->getRowArray();
+
+            if (!$detail) {
+                return $this->response
+                    ->setStatusCode(404)
+                    ->setJSON([
+                        'success' => false,
+                        'message' => 'Detail Tanda Terima tidak ditemukan atau bukan milik user.'
+                    ]);
+            }
+
+            // =====================================================
+            // DELETE
+            // =====================================================
+            $deleted = $db->table('sc_tmp.tterima_dt')
+                ->where('docno', $docno)
+                ->where('idurut', $idurutDetail)
+                ->where('inputby', $nama)
+                ->where('status', 'E')
+                ->delete();
+
+            if (!$deleted) {
+                return $this->response
+                    ->setStatusCode(500)
+                    ->setJSON([
+                        'success' => false,
+                        'message' => 'Gagal menghapus detail Tanda Terima.'
+                    ]);
+            }
+
+            return $this->response
+                ->setJSON([
+                    'success' => true,
+                    'message' => 'Detail Tanda Terima berhasil dihapus.',
+                    'data' => [
+                        'docno'         => $docno,
+                        'idurut_detail' => $idurutDetail,
+                        'inputby'       => $nama
+                    ]
+                ]);
+
+        } catch (\Throwable $e) {
+
+            log_message(
+                'error',
+                'deleteTterimaDetail error: ' . $e->getMessage()
+            );
+
+            return $this->response
+                ->setStatusCode(500)
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                ]);
+        }
+    }
+
+// ================================================================
+// TAMBAHKAN METHOD BERIKUT KE App\Controllers\Arap\Arap
+// Mekanisme mengikuti referensi PO:
+// branch -> kode_suffix + infix + prefix -> getNextSuffix -> docno
+// ================================================================
+
+    public function getBranchInfoTterima()
+    {
+        // ==========================================
+        // AMBIL ID BRANCH
+        // ==========================================
+        $idbranch = trim((string) $this->request->getGet('idbranch'));
+
+        // ==========================================
+        // VALIDASI
+        // ==========================================
+        if ($idbranch === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Branch wajib dipilih.'
+            ]);
+        }
+
+        // ==========================================
+        // AMBIL DATA BRANCH
+        // ==========================================
+        $row = $this->db
+            ->table('sc_mst.branchjob')
+            ->select('idbranch, nmbranch')
+            ->where('idbranch', $idbranch)
+            ->get()
+            ->getRowArray();
+
+        // ==========================================
+        // CEK BRANCH
+        // ==========================================
+        if (!$row) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Cabang tidak ditemukan.'
+            ]);
+        }
+
+        // ==========================================
+        // MAPPING NAMA BRANCH
+        // ==========================================
+        $map = [
+            'PT JATIM TAMAN STEEL MFG' => 'PT',
+            'PLANT I'                  => 'PA',
+            'PLANT II'                 => 'PB',
+        ];
+
+        $nmbranch   = trim((string) $row['nmbranch']);
+        $kodeSuffix = $map[$nmbranch] ?? '';
+
+        // ==========================================
+        // CEK MAPPING
+        // ==========================================
+        if ($kodeSuffix === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Mapping cabang belum diset.'
+            ]);
+        }
+
+        // ==========================================
+        // AMBIL KONFIGURASI UMUM
+        // ==========================================
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray();
+
+        // ==========================================
+        // CEK KONFIGURASI
+        // ==========================================
+        if (empty($konfigurasiUmum)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Konfigurasi umum belum tersedia.'
+            ]);
+        }
+
+        // ==========================================
+        // LOGIN DATE
+        // ==========================================
+        $logindate = trim((string) $this->session->get('logindate'));
+
+        // ==========================================
+        // FORMAT INFIX
+        // ==========================================
+        $infix = '';
+
+        if ($logindate !== '') {
+            $timestamp = strtotime($logindate);
+
+            if ($timestamp !== false) {
+                $infix = date('ym', $timestamp);
+            }
+        }
+
+        // ==========================================
+        // KONFIGURASI TT
+        // ==========================================
+        $config = $konfigurasiUmum[0];
+
+        /*
+         * Prefix Tanda Terima
+         *
+         * Sesuaikan nama field "tterima"
+         * dengan kolom yang ada di sc_mst.konfigurasi_umum.
+         */
+        $prefix = trim((string) ($config['tt'] ?? ''));
+
+        $currcode = trim((string) ($config['currcode'] ?? ''));
+        $idtax    = trim((string) ($config['idtax'] ?? ''));
+
+        // ==========================================
+        // VALIDASI PREFIX TT
+        // ==========================================
+        if ($prefix === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Prefix Tanda Terima belum diset pada konfigurasi umum.'
+            ]);
+        }
+
+        // ==========================================
+        // RESPONSE
+        // ==========================================
+        return $this->response->setJSON([
+            'success' => true,
+
+            // ======================================
+            // BRANCH
+            // ======================================
+            'idbranch'    => trim((string) $row['idbranch']),
+            'nmbranch'    => $nmbranch,
+            'kode_suffix' => $kodeSuffix,
+
+            // ======================================
+            // NOMOR TANDA TERIMA
+            // ======================================
+            'prefix'      => $prefix,
+            'infix'       => $infix,
+
+            // ======================================
+            // PERIODE
+            // ======================================
+            'logindate'   => $logindate,
+
+            // ======================================
+            // DEFAULT TRANSAKSI
+            // ======================================
+            'currcode'    => $currcode,
+            'idtax'       => $idtax,
+
+            // ======================================
+            // KONFIGURASI
+            // ======================================
+            'konfigurasi_umum' => $konfigurasiUmum,
+        ]);
+    }
+
+
+    public function getNextSuffixTterima()
+    {
+        $prefix     = trim((string) $this->request->getGet('prefix'));
+        $infix      = trim((string) $this->request->getGet('infix'));
+        $kodeSuffix = trim((string) $this->request->getGet('kode_suffix'));
+
+        if ($prefix === '' || $infix === '' || $kodeSuffix === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Prefix, infix, dan kode suffix wajib diisi.'
+            ]);
+        }
+
+        // Mengikuti mekanisme getNextSuffixPO.
+        $prefixPadded = str_pad($prefix, 3, ' ');
+        $like = $prefixPadded . '/' . $infix . '/' . $kodeSuffix;
+
+        $row = $this->db
+            ->table('sc_trx.tterima_hd')
+            ->select('docno')
+            ->like('docno', $like, 'after')
+            ->orderBy('docno', 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRowArray();
+
+        if ($row) {
+            $parts = explode('/', rtrim((string) $row['docno']));
+            $lastPart = $parts[2] ?? '';
+
+            // PT0001 / PA0001 / PB0001 -> 0001
+            $last = substr($lastPart, 2);
+            $next = str_pad(
+                ((int) $last) + 1,
+                4,
+                '0',
+                STR_PAD_LEFT
+            );
+        } else {
+            $next = '0001';
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'suffix'  => $kodeSuffix . $next
+        ]);
+    }
+
+// ================================================================
+// TAMBAHKAN ROUTE DALAM group /arap/transaksi
+// ================================================================
+
+    public function saveTterima()
+    {
+        try {
+
+            $request = $this->request;
+            $session = session();
+
+            // =====================================================
+            // USER LOGIN
+            // NIK dari session menjadi owner temporary.
+            // Jangan mengambil NIK dari POST agar tidak bisa dipalsukan.
+            // =====================================================
+            $nama = trim((string) $session->get('nama'));
+
+            if ($nama === '') {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Session NIK tidak ditemukan. Silakan login kembali.'
+                ]);
+            }
+
+
+            // =====================================================
+            // DATA DASAR
+            // =====================================================
+            $idurut = trim((string) $request->getPost('idurut'));
+            $docno  = trim((string) $request->getPost('docno'));
+
+            $docdate = trim((string) $request->getPost('docdate'));
+            $cabang  = trim((string) $request->getPost('cabang'));
+            $coabank = trim(
+                (string) $request->getPost('coabank')
+            );
+
+            $nmcoabank = trim(
+                (string) $request->getPost('nmcoabank')
+            );
+
+            // =====================================================
+            // VALIDASI INPUT AWAL
+            // =====================================================
+            if ($docno === '') {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Nomor Tanda Terima belum terbentuk.'
+                ]);
+            }
+
+            if ($docdate === '') {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Tanggal Tanda Terima belum diisi.'
+                ]);
+            }
+
+            if ($cabang === '') {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Cabang belum dipilih.'
+                ]);
+            }
+
+
+            // =====================================================
+            // DATA HEADER
+            // Field identitas akan diamankan lagi ketika UPDATE
+            // =====================================================
+            $data = [
+
+                // -------------------------------------------------
+                // HEADER
+                // -------------------------------------------------
+                'docno' => $docno,
+
+                'docdate' =>
+                    $this->convertDateToDb($docdate),
+
+                'cabang' => $cabang,
+
+                'pemohon' =>
+                    trim((string) $request->getPost('pemohon')),
+
+
+                // -------------------------------------------------
+                // SUPPLIER
+                // -------------------------------------------------
+                'kdsupplier' =>
+                    trim((string) $request->getPost('kdsupplier')),
+
+                'nmsupplier' =>
+                    trim((string) $request->getPost('nmsupplier')),
+
+                'kotasupplier' =>
+                    trim((string) $request->getPost('kotasupplier')),
+
+                'alamatsupplier' =>
+                    trim((string) $request->getPost('alamatsupplier')),
+
+                'alamatkirim' =>
+                    trim((string) $request->getPost('alamatkirim')),
+
+
+                // -------------------------------------------------
+                // DOCUMENT
+                // -------------------------------------------------
+                'noinvoice' =>
+                    trim((string) $request->getPost('noinvoice')),
+
+                'tglinvoice' =>
+                    $this->convertDateToDb(
+                        $request->getPost('tglinvoice')
+                    ),
+
+                'nosj' =>
+                    trim((string) $request->getPost('nosj')),
+
+                'tglsj' =>
+                    $this->convertDateToDb(
+                        $request->getPost('tglsj')
+                    ),
+
+                'noaju' =>
+                    trim((string) $request->getPost('noaju')),
+
+                'nobl' =>
+                    trim((string) $request->getPost('nobl')),
+
+                'noawb' =>
+                    trim((string) $request->getPost('noawb')),
+
+                'noinvoicebea' =>
+                    trim((string) $request->getPost('noinvoicebea')),
+
+                'tglinvoicebea' =>
+                    $this->convertDateToDb(
+                        $request->getPost('tglinvoicebea')
+                    ),
+
+                'nobkrev' =>
+                    trim((string) $request->getPost('nobkrev')),
+
+                'nofakturpajak' =>
+                    trim((string) $request->getPost('nofakturpajak')),
+
+
+                // -------------------------------------------------
+                // CURRENCY / JATUH TEMPO
+                // -------------------------------------------------
+                'senddate' =>
+                    $this->convertDateToDb(
+                        $request->getPost('senddate')
+                    ),
+
+                'currcode' =>
+                    trim((string) $request->getPost('currcode'))
+                        ?: 'IDR',
+
+                'idtax' =>
+                    trim((string) $request->getPost('idtax')),
+
+                'kurs' =>
+                    $this->dbNumber(
+                        $request->getPost('kurs')
+                    ),
+
+                'jthtempo' =>
+                    $this->dbNumber(
+                        $request->getPost('jthtempo')
+                    ),
+
+                'tgljthtempo' =>
+                    $this->convertDateToDb(
+                        $request->getPost('tgljthtempo')
+                    ),
+                'coabank' =>
+                    trim((string) $request->getPost('coabank')),
+
+                'nmcoabank' =>
+                    trim((string) $request->getPost('nmcoabank')),
+
+                'isinclusive' =>
+                    strtoupper(
+                        trim((string) $request->getPost('isinclusive'))
+                    ) === 'YES'
+                        ? 'YES'
+                        : 'NO',
+
+
+                // -------------------------------------------------
+                // VALUE
+                // -------------------------------------------------
+                'dpp' =>
+                    $this->dbNumber(
+                        $request->getPost('dpp')
+                    ),
+
+                'jumlahpajak' =>
+                    $this->dbNumber(
+                        $request->getPost('jumlahpajak')
+                    ),
+
+                'total' =>
+                    $this->dbNumber(
+                        $request->getPost('total')
+                    ),
+
+                'beaimport' =>
+                    $this->dbNumber(
+                        $request->getPost('beaimport')
+                    ),
+
+                'ppnimport' =>
+                    $this->dbNumber(
+                        $request->getPost('ppnimport')
+                    ),
+
+                'pphimport' =>
+                    $this->dbNumber(
+                        $request->getPost('pphimport')
+                    ),
+
+                'biayaangkut' =>
+                    $this->dbNumber(
+                        $request->getPost('biayaangkut')
+                    ),
+
+                'biayaasuransi' =>
+                    $this->dbNumber(
+                        $request->getPost('biayaasuransi')
+                    ),
+
+                'biayalain' =>
+                    $this->dbNumber(
+                        $request->getPost('biayalain')
+                    ),
+
+                'totalestimasi' =>
+                    $this->dbNumber(
+                        $request->getPost('totalestimasi')
+                    ),
+
+
+                // -------------------------------------------------
+                // CHECKLIST
+                // -------------------------------------------------
+
+                'cekinvoice' =>
+                    $request->getPost('cekinvoice') === '1',
+
+                'ceksj' =>
+                    $request->getPost('ceksj') === '1',
+
+                'cekpenerimaan' =>
+                    $request->getPost('cekpenerimaan') === '1',
+
+                'cekfakturpajak' =>
+                    $request->getPost('cekfakturpajak') === '1',
+
+                'cekbeaimport' =>
+                    $request->getPost('cekbeaimport') === '1',
+
+                'cekdokumen' =>
+                    $request->getPost('cekdokumen') === '1',
+
+
+                // -------------------------------------------------
+                // STATUS
+                // -------------------------------------------------
+                'status' =>
+                    trim((string) $request->getPost('status'))
+                        ?: 'E',
+
+                'keterangan' =>
+                    trim((string) strtoupper($request->getPost('keterangan'))),
+            ];
+
+
+            // =====================================================
+            // DATABASE
+            // =====================================================
+            $db = db_connect();
+
+            $db->transBegin();
+
+
+            // =====================================================
+            // CARI TEMPORARY MILIK USER
+            //
+            // Tidak hanya percaya idurut dari browser.
+            // =====================================================
+            $existing = null;
+
+
+            // -----------------------------------------------------
+            // Jika idurut dikirim, cek bahwa memang milik user
+            // -----------------------------------------------------
+            if ($idurut !== '') {
+
+                $existing = $db->table('sc_tmp.tterima_hd')
+                    ->where('idurut', (int) $idurut)
+                    ->where('inputby', $nama)
+                    ->where('status', 'E')
+                    ->get()
+                    ->getRowArray();
+            }
+
+
+            // -----------------------------------------------------
+            // Jika tidak ditemukan, cari berdasarkan inputby
+            // -----------------------------------------------------
+            if (!$existing) {
+
+                $existing = $db->table('sc_tmp.tterima_hd')
+                    ->where('inputby', $nama)
+                    ->where('status', 'E')
+                    ->orderBy('idurut', 'DESC')
+                    ->limit(1)
+                    ->get()
+                    ->getRowArray();
+            }
+
+
+            // =====================================================
+            // UPDATE
+            // =====================================================
+            if ($existing) {
+
+                $idurut = (int) $existing['idurut'];
+
+
+                // -------------------------------------------------
+                // FIELD YANG SUDAH LOCKED
+                //
+                // Jangan ambil dari POST ketika UPDATE.
+                // -------------------------------------------------
+                $data['docno'] =
+                    trim((string) $existing['docno']);
+
+                $data['cabang'] =
+                    trim((string) $existing['cabang']);
+
+                $data['kdsupplier'] =
+                    trim((string) $existing['kdsupplier']);
+
+                $data['nmsupplier'] =
+                    trim((string) $existing['nmsupplier']);
+
+                $data['alamatsupplier'] =
+                    trim((string) $existing['alamatsupplier']);
+
+
+                // -------------------------------------------------
+                // TANGGAL JATUH TEMPO
+                // -------------------------------------------------
+                // TIDAK lagi dipertahankan dari database.
+                // Nilai POST tgljthtempo harus masuk ke UPDATE.
+                //
+                // Karena inputby adalah owner NIK dan status masih E,
+                // header temporary milik user boleh diperbarui.
+
+
+                // -------------------------------------------------
+                // UPDATE HEADER TEMPORARY
+                // -------------------------------------------------
+                $db->table('sc_tmp.tterima_hd')
+                    ->where('idurut', $idurut)
+                    ->where(
+                        'docno',
+                        trim((string) $existing['docno'])
+                    )
+                    ->where('inputby', $nama)
+                    ->where('status', 'E')
+                    ->update([
+                        ...$data,
+
+                        // Draft selalu tetap E.
+                        'status' =>
+                            'E',
+
+                        'updateby' =>
+                            $nama ?: $nama,
+
+                        'updatedate' =>
+                            date('Y-m-d H:i:s')
+                    ]);
+
+                $message =
+                    'Header Tanda Terima berhasil diperbarui.';
+            }
+
+
+            // =====================================================
+            // INSERT
+            // =====================================================
+            else {
+
+                // -------------------------------------------------
+                // PEMILIK TEMPORARY
+                // -------------------------------------------------
+                // inputby menyimpan NIK sebagai owner temporary.
+                $data['inputby'] =
+                    $nama;
+
+                $data['inputdate'] =
+                    date('Y-m-d H:i:s');
+
+
+                // -------------------------------------------------
+                // DOCUMENT TEMP
+                // -------------------------------------------------
+                $data['docnotmp'] =
+                    $docno;
+
+
+                // -------------------------------------------------
+                // DEFAULT VALUE
+                // -------------------------------------------------
+                $data['balance'] = 0;
+                $data['beaimport'] = 0;
+                $data['ppnimport'] = 0;
+                $data['pphimport'] = 0;
+                $data['biayaangkut'] = 0;
+                $data['biayaasuransi'] = 0;
+                $data['biayalain'] = 0;
+                $data['totalestimasi'] = 0;
+
+
+                // -------------------------------------------------
+                // INSERT
+                // -------------------------------------------------
+                $db->table('sc_tmp.tterima_hd')
+                    ->insert($data);
+
+                $idurut =
+                    $db->insertID();
+
+
+                $message =
+                    'Header Tanda Terima berhasil disimpan.';
+            }
+
+
+            // =====================================================
+            // TRANSACTION CHECK
+            // =====================================================
+            if ($db->transStatus() === false) {
+
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' =>
+                        'Gagal menyimpan header Tanda Terima.'
+                ]);
+            }
+
+
+            // =====================================================
+            // COMMIT
+            // =====================================================
+            $db->transCommit();
+
+
+            // =====================================================
+            // RESPONSE
+            // =====================================================
+            return $this->response->setJSON([
+
+                'success' => true,
+
+                'message' =>
+                    $message,
+
+                'data' => [
+
+                    'idurut' =>
+                        $idurut,
+
+                    'docno' =>
+                        $data['docno'],
+
+                    'status' =>
+                        'E',
+
+                    'inputby' =>
+                        $nama
+                ]
+            ]);
+
+
+        } catch (\Throwable $e) {
+
+            log_message(
+                'error',
+                'saveTterima error: ' .
+                $e->getMessage()
+            );
+
+            return $this->response->setJSON([
+
+                'success' => false,
+
+                'message' =>
+                    'Terjadi kesalahan: ' .
+                    $e->getMessage()
+            ]);
+        }
+    }
+
+    private function convertDateToDb($date)
+    {
+        if (empty($date)) {
+            return null;
+        }
+
+        $date = trim($date);
+
+        // DD-MM-YYYY
+        if (preg_match(
+            '/^(\d{2})-(\d{2})-(\d{4})$/',
+            $date,
+            $m
+        )) {
+
+            return $m[3] . '-' .
+                $m[2] . '-' .
+                $m[1];
+        }
+
+        // YYYY-MM-DD
+        if (preg_match(
+            '/^\d{4}-\d{2}-\d{2}$/',
+            $date
+        )) {
+
+            return $date;
+        }
+
+        return null;
+    }
+
+    private function dbNumber($value)
+    {
+        if ($value === null) {
+            return 0;
+        }
+
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return 0;
+        }
+
+        // Hapus separator ribuan
+        $value = str_replace(',', '', $value);
+
+        // Hilangkan karakter selain angka, minus, dan titik desimal
+        $value = preg_replace('/[^0-9.\-]/', '', $value);
+
+        if ($value === '' || $value === '-' || $value === '.') {
+            return 0;
+        }
+
+        if (!is_numeric($value)) {
+            return 0;
+        }
+
+        // Kembalikan sebagai numeric string agar aman untuk PostgreSQL numeric
+        return $value;
+    }
+
+
+
+
+    // ============================================================
+// SHOWING TEMP TANDA TERIMA
+// HEADER + DETAIL
+// ============================================================
+    public function showing_tmp_tterima()
+    {
+        $nama = trim((string) $this->session->get('nama'));
+
+        if ($nama === '') {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'User login tidak ditemukan.',
+                'data'    => null
+            ]);
+        }
+
+        // =========================================================
+        // AMBIL HEADER TEMP MILIK USER
+        // =========================================================
+        $header = $this->db->table('sc_tmp.tterima_hd')
+            ->where('TRIM(inputby)', $nama)
+            ->where('TRIM(status)', 'E')
+            ->orderBy('idurut', 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRowArray();
+
+        // =========================================================
+        // BELUM ADA TEMP
+        // = INPUT BARU
+        // =========================================================
+        if (!$header) {
+
+            return $this->response->setJSON([
+                'status'  => true,
+                'mode'    => 'INPUT',
+                'message' => 'Belum ada Tanda Terima temporary.',
+                'data'    => [
+                    'header' => null,
+                    'detail' => []
+                ]
+            ]);
+        }
+
+        // =========================================================
+        // AMBIL DETAIL BERDASARKAN DOCNO
+        // =========================================================
+        $detail = $this->db->table('sc_tmp.tterima_dt')
+            ->where('docno', $header['docno'])
+            ->get()
+            ->getResultArray();
+
+        // =========================================================
+        // RESPONSE
+        // =========================================================
+        return $this->response->setJSON([
+            'status'  => true,
+            'mode'    => 'UPDATE',
+            'message' => 'Temporary Tanda Terima ditemukan.',
+            'data'    => [
+                'header' => $header,
+                'detail' => $detail
+            ]
+        ]);
+    }
+
+
+    public function finalTterima()
+    {
+        try {
+
+            $request = $this->request;
+            $session = session();
+
+            // =====================================================
+            // USER LOGIN
+            // =====================================================
+            $nama = trim((string) $session->get('nama'));
+
+            if ($nama === '') {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Session nama tidak ditemukan. Silakan login kembali.'
+                ]);
+            }
+
+
+            // =====================================================
+            // POST
+            // =====================================================
+            $idurut = trim(
+                (string) $request->getPost('idurut')
+            );
+
+            $docno = trim(
+                (string) $request->getPost('docno')
+            );
+
+
+            if ($idurut === '' && $docno === '') {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'ID atau nomor Tanda Terima tidak ditemukan.'
+                ]);
+            }
+
+
+            // =====================================================
+            // DATABASE
+            // =====================================================
+            $db = db_connect();
+
+            $db->transBegin();
+
+
+            // =====================================================
+            // CARI HEADER TMP MILIK USER
+            // =====================================================
+            $builder = $db->table('sc_tmp.tterima_hd')
+                ->where('inputby', $nama)
+                ->where('status', 'E');
+
+
+            // Prioritaskan ID apabila dikirim
+            if ($idurut !== '') {
+
+                $builder->where(
+                    'idurut',
+                    (int) $idurut
+                );
+
+            } else {
+
+                $builder->where(
+                    'docno',
+                    $docno
+                );
+            }
+
+
+            $header = $builder
+                ->limit(1)
+                ->get()
+                ->getRowArray();
+
+
+            if (!$header) {
+
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Data Tanda Terima tidak ditemukan atau bukan milik user.'
+                ]);
+            }
+
+
+            // =====================================================
+            // ID DAN DOCNO OTORITATIF DARI DATABASE
+            // =====================================================
+            $idurut = (int) $header['idurut'];
+
+            $docno = trim(
+                (string) $header['docno']
+            );
+
+
+            // =====================================================
+            // UPDATE STATUS E -> F
+            // TRIGGER DATABASE AKAN MENJALANKAN FINALISASI
+            // =====================================================
+            $db->table('sc_tmp.tterima_hd')
+                ->where('idurut', $idurut)
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->where('status', 'E')
+                ->update([
+                    'status' => 'F',
+                    'updateby' => $nama,
+                    'updatedate' => date('Y-m-d H:i:s')
+                ]);
+
+
+            // =====================================================
+            // CEK TRANSACTION
+            // =====================================================
+            if ($db->transStatus() === false) {
+
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal melakukan finalisasi Tanda Terima.'
+                ]);
+            }
+
+
+            // =====================================================
+            // COMMIT
+            // =====================================================
+            $db->transCommit();
+
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Tanda Terima berhasil difinalisasi.',
+                'data' => [
+                    'idurut' => $idurut,
+                    'docno' => $docno,
+                    'status' => 'F'
+                ]
+            ]);
+
+        } catch (\Throwable $e) {
+
+            log_message(
+                'error',
+                'finalTterima error: ' . $e->getMessage()
+            );
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat finalisasi Tanda Terima.'
+            ]);
+        }
+    }
+    public function clearEntryTterima()
+    {
+        $nama   = trim($this->session->get('nama'));
+        $urlBack = base_url('arap/transaksi/tterima');
+
+        if ($nama === '') {
+            return redirect()->to($urlBack);
+        }
+
+        $db = \Config\Database::connect();
+
+        try {
+
+            $db->transBegin();
+
+            /*
+             * --------------------------------------------------------------------------
+             * 1. Cari dokumen temporary milik user
+             * --------------------------------------------------------------------------
+             */
+            $tmpRows = $db->table('sc_tmp.tterima_hd')
+                ->select('idurut, docno, docnotmp')
+                ->where('inputby', $nama)
+                ->get()
+                ->getResultArray();
+
+
+            /*
+             * --------------------------------------------------------------------------
+             * 2. Kembalikan transaksi yang sedang diedit
+             * --------------------------------------------------------------------------
+             */
+            foreach ($tmpRows as $tmp) {
+
+                $docnoTmp = trim($tmp['docno'] ?? '');
+                $docnoTrx = trim($tmp['docnotmp'] ?? '');
+
+                // Jika docnotmp kosong, gunakan docno temporary
+                if ($docnoTrx === '') {
+                    $docnoTrx = $docnoTmp;
+                }
+
+
+                /*
+                 * ----------------------------------------------------------------------
+                 * Kembalikan header permanent menjadi F
+                 * ----------------------------------------------------------------------
+                 */
+                if ($docnoTrx !== '') {
+
+                    $db->table('sc_trx.tterima_hd')
+                        ->where('idurut', $tmp['idurut'])
+                        ->where('docno', $docnoTrx)
+                        ->where('status', 'E')
+                        ->update([
+                            'status'     => 'F',
+                            'updateby'   => $nama,
+                            'updatedate' => date('Y-m-d H:i:s')
+                        ]);
+                }
+
+
+                /*
+                 * ----------------------------------------------------------------------
+                 * Kembalikan detail permanent menjadi F
+                 * ----------------------------------------------------------------------
+                 */
+                if ($docnoTrx !== '') {
+
+                    $db->table('sc_trx.tterima_dt')
+                        ->where('idurut', $tmp['idurut'])
+                        ->where('docno', $docnoTrx)
+                        ->where('status', 'E')
+                        ->update([
+                            'status'     => 'F',
+                            'updateby'   => $nama,
+                            'updatedate' => date('Y-m-d H:i:s')
+                        ]);
+                }
+
+
+                /*
+                 * ----------------------------------------------------------------------
+                 * HAPUS DETAIL TEMPORARY
+                 *
+                 * Gunakan docno yang sama dengan header temporary.
+                 * Ini memastikan detail hasil "Tarik Penerimaan" ikut terhapus.
+                 * ----------------------------------------------------------------------
+                 */
+                if ($docnoTmp !== '') {
+
+                    $db->table('sc_tmp.tterima_dt')
+                        ->where('docno', $docnoTmp)
+                        ->delete();
+                }
+            }
+
+
+            /*
+             * --------------------------------------------------------------------------
+             * 3. Hapus detail temporary milik user sebagai fallback
+             * --------------------------------------------------------------------------
+             *
+             * Jika ada detail temporary yang tidak ditemukan melalui header,
+             * tetap bersihkan berdasarkan inputby.
+             */
+            $db->table('sc_tmp.tterima_dt')
+                ->where('inputby', $nama)
+                ->delete();
+
+
+            /*
+             * --------------------------------------------------------------------------
+             * 4. Hapus header temporary
+             * --------------------------------------------------------------------------
+             */
+            $db->table('sc_tmp.tterima_hd')
+                ->where('inputby', $nama)
+                ->delete();
+
+
+            /*
+             * --------------------------------------------------------------------------
+             * 5. Cek transaksi
+             * --------------------------------------------------------------------------
+             */
+            if ($db->transStatus() === false) {
+
+                $db->transRollback();
+
+                log_message(
+                    'error',
+                    'clearEntryTterima gagal rollback. User: ' . $nama
+                );
+
+                return redirect()
+                    ->to($urlBack)
+                    ->with(
+                        'error',
+                        'Gagal melakukan clear Tanda Terima.'
+                    );
+            }
+
+
+            /*
+             * --------------------------------------------------------------------------
+             * 6. Commit
+             * --------------------------------------------------------------------------
+             */
+            $db->transCommit();
+
+            return redirect()
+                ->to($urlBack)
+                ->with(
+                    'success',
+                    'Entry Tanda Terima dibatalkan dan data temporary berhasil dihapus.'
+                );
+
+        } catch (\Throwable $e) {
+
+            $db->transRollback();
+
+            log_message(
+                'error',
+                'clearEntryTterima ERROR: ' . $e->getMessage()
+            );
+
+            return redirect()
+                ->to($urlBack)
+                ->with(
+                    'error',
+                    'Gagal clear Tanda Terima: ' . $e->getMessage()
+                );
+        }
+    }
+
+    public function updateTterima()
+    {
+        $nama = trim(
+            $this->session->get('nama')
+        );
+
+        /*
+         * ============================================================
+         * DOCNO
+         * ============================================================
+         */
+
+        $docno = hex2bin(
+            $this->request->getGet('id')
+        );
+
+
+        /*
+         * ============================================================
+         * GET HEADER TANDA TERIMA
+         * ============================================================
+         */
+
+        $param =
+            " and coalesce(docno,'')='$docno'";
+
+        $dtl = $this->m_arap
+            ->q_tterima_master($param)
+            ->getRowArray();
+
+
+        /*
+         * ============================================================
+         * JIKA DATA TIDAK DITEMUKAN
+         * ============================================================
+         */
+
+        if (!$dtl) {
+
+            return redirect()->to(
+                base_url('arap/transaksi/tterima')
+            );
+        }
+
+
+        /*
+         * ============================================================
+         * STATUS
+         * ============================================================
+         */
+
+        $status = trim(
+            $dtl['status'] ?? ''
+        );
+
+
+        /*
+         * ============================================================
+         * LOGIN DATE
+         * ============================================================
+         */
+
+        $logindate = trim(
+            $this->session->get('logindate')
+        );
+
+
+        /*
+         * ============================================================
+         * GUARD PERIODE TUTUP
+         * ============================================================
+         */
+
+        $periode = date(
+            'ym',
+            strtotime($logindate)
+        );
+
+        $dtlPeriode = $this->m_purchase
+            ->q_cek_periode($periode)
+            ->getRowArray();
+
+
+        if (
+            $dtlPeriode &&
+            strtoupper(
+                trim(
+                    $dtlPeriode['flagproses']
+                )
+            ) === 'TUTUP'
+        ) {
+
+            session()->setFlashdata(
+                'periode_error',
+                'Periode ' .
+                $periode .
+                ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+
+            return redirect()->to(
+                base_url(
+                    'arap/transaksi/tterima'
+                )
+            );
+        }
+
+
+        /*
+         * ============================================================
+         * STATUS F / P
+         * ============================================================
+         *
+         * F = Final
+         * P = Posted
+         *
+         * Diubah kembali menjadi E
+         * agar dapat diedit.
+         * ============================================================
+         */
+
+        if (
+            $status === 'F' ||
+            $status === 'P'
+        ) {
+
+            $info = array(
+                'status' => 'E'
+            );
+
+
+            /*
+             * ========================================================
+             * UPDATE STATUS
+             * ========================================================
+             */
+
+            $builder = $this->db
+                ->table('sc_trx.tterima_hd');
+
+
+            $builder
+                ->where(
+                    'trim(docno)',
+                    $docno
+                );
+
+
+            $builder->update(
+                $info
+            );
+
+
+            /*
+             * ========================================================
+             * REDIRECT KE ADD TTERIMA
+             * ========================================================
+             */
+
+            return redirect()->to(
+                base_url(
+                    'arap/transaksi/addTterima'
+                ) .
+                '?docno=' .
+                urlencode($docno)
+            );
+
+
+        } else {
+
+            /*
+             * ========================================================
+             * STATUS BUKAN F / P
+             * ========================================================
+             */
+
+            return redirect()->to(
+                base_url(
+                    'arap/transaksi/tterima'
+                )
+            );
+        }
+    }
+
+    /* TANDA TERIMA LOAD LPB */
+
+    public function tarikPenerimaanTterima()
+    {
+        $docno      = trim($this->request->getPost('docno'));
+        $kdsupplier = trim($this->request->getPost('kdsupplier'));
+        $inputby    = trim($this->request->getPost('inputby'));
+
+        if ($docno == '') {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Nomor Tanda Terima belum tersedia.'
+            ]);
+        }
+
+        if ($kdsupplier == '') {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Supplier belum dipilih.'
+            ]);
+        }
+
+        /*
+         * Relasi:
+         *
+         * jurnal_dt.source_uniqueid
+         *          =
+         * transaction_dt.uniqueid
+         *
+         * Yang diambil hanya jurnal_dt.kredit.
+         *
+         * Summary:
+         * 1 LPB + 1 COA = 1 baris
+         *
+         * Keterangan diambil dari transaction_dt.namabarang
+         * dan digabung menggunakan " / ".
+         */
+        $sql = "
+            SELECT
+                TRIM(jd.ref_docno) AS nobukti,
+                TRIM(jd.idcoa) AS noperkiraan,
+                TRIM(td.kdsupplier) AS kdsupplier,
+                TRIM(td.nsupplier) AS nmsupplier,
+                STRING_AGG(
+                    DISTINCT NULLIF(TRIM(td.namabarang), ''),
+                    ' / '
+                    ORDER BY NULLIF(TRIM(td.namabarang), '')
+                ) AS keterangan,
+                SUM(COALESCE(jd.kredit, 0)) AS nilai
+            FROM sc_trx.jurnal_dt jd
+            INNER JOIN sc_trx.transaction_dt td
+                ON TRIM(td.uniqueid) = TRIM(jd.source_uniqueid)
+            WHERE trim(td.journal_type)='GRNREC' and TRIM(td.kdsupplier) = ?
+              AND COALESCE(jd.kredit, 0) > 0
+            GROUP BY
+                TRIM(jd.ref_docno),
+                TRIM(jd.idcoa),
+                TRIM(td.kdsupplier),
+                TRIM(td.nsupplier)
+            ORDER BY
+                TRIM(jd.ref_docno),
+                TRIM(jd.idcoa)
+        ";
+
+        $rows = $this->db->query($sql, [$kdsupplier])->getResultArray();
+
+        /*
+         * Tidak ada data penerimaan
+         */
+        if (empty($rows)) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Data penerimaan untuk supplier tersebut tidak ada.',
+                'data'    => []
+            ]);
+        }
+
+        $this->db->transBegin();
+
+        try {
+
+            $inserted = 0;
+            $skipped  = 0;
+
+            foreach ($rows as $row) {
+
+                $nobukti     = trim($row['nobukti']);
+                $noperkiraan = trim($row['noperkiraan']);
+                $nilai       = (float) $row['nilai'];
+                $keterangan  = trim($row['keterangan'] ?? '');
+
+                /*
+                 * 1 Tanda Terima + 1 LPB + 1 COA
+                 */
+                $idunique = md5(
+                    $docno
+                    . '|'
+                    . $nobukti
+                    . '|'
+                    . $noperkiraan
+                );
+
+                /*
+                 * Jangan insert data yang sama dua kali.
+                 */
+                $cek = $this->db
+                    ->table('sc_tmp.tterima_dt')
+                    ->where('docno', $docno)
+                    ->where('nobukti', $nobukti)
+                    ->where('noperkiraan', $noperkiraan)
+                    ->countAllResults();
+
+                if ($cek > 0) {
+                    $skipped++;
+                    continue;
+                }
+
+                $this->db
+                    ->table('sc_tmp.tterima_dt')
+                    ->insert([
+                        'docno'            => $docno,
+                        'idunique'         => $idunique,
+                        'nobukti'          => $nobukti,
+                        'docref'           => $nobukti,
+                        'noperkiraan'      => $noperkiraan,
+                        'namaperkiraan'    => '',
+                        'keterangan'       => $keterangan,
+                        'dk'               => 'D',
+                        'costprofitcenter' => '',
+                        'nilai'            => $nilai,
+                        'status'           => 'E',
+                        'inputby'          => $inputby,
+                        'inputdate'        => date('Y-m-d H:i:s')
+                    ]);
+
+                $inserted++;
+            }
+
+            if ($this->db->transStatus() === false) {
+                throw new \Exception(
+                    'Gagal menyimpan detail Tanda Terima.'
+                );
+            }
+
+            $this->db->transCommit();
+
+            /*
+             * Semua data sudah pernah ditarik
+             */
+            if ($inserted == 0) {
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Data penerimaan sudah pernah ditarik.',
+                    'data'    => []
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'status'   => true,
+                'message'  => 'Penerimaan berhasil ditarik ke detail Tanda Terima.',
+                'inserted' => $inserted,
+                'skipped'  => $skipped,
+                'data'     => $rows
+            ]);
+
+        } catch (\Throwable $e) {
+
+            $this->db->transRollback();
+
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
 }

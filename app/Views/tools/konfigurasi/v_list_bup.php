@@ -55,6 +55,50 @@
 		</div><!-- /.card -->
 	</div>
 </div>
+<div class="row">
+	<div class="col-sm-12">
+		<div class="card">
+			<div class="card-header">
+				<h3 class="card-title">Daftar Block/Unblock Periode</h3>
+			</div><!-- /.card-header -->
+			<div class="card-body table-responsive">
+				<table id="tbl_bup" class="table table-bordered table-striped" style="width:100%;">
+					<thead class="text-center">
+						<tr>
+							<th style="width:50px; text-align:center; vertical-align:middle;">No.</th>
+							<th style="min-width:100px; text-align:center; vertical-align:middle;">Periode</th>
+							<th style="min-width:100px; text-align:center; vertical-align:middle;">Status</th>
+							<th style="min-width:200px; text-align:center; vertical-align:middle;">Keterangan</th>
+							<th style="min-width:120px; text-align:center; vertical-align:middle;">Input By</th>
+							<th style="min-width:150px; text-align:center; vertical-align:middle;">Input Date</th>
+							<th style="min-width:120px; text-align:center; vertical-align:middle;">Update By</th>
+							<th style="min-width:150px; text-align:center; vertical-align:middle;">Update Date</th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php $no = 1; foreach ($list as $row): ?>
+							<?php
+								$flag = strtoupper(trim($row['flagproses'] ?? ''));
+								$badge = ($flag === 'TUTUP') ? 'badge-danger' : (($flag === 'OPEN') ? 'badge-success' : 'badge-secondary');
+							?>
+							<tr>
+								<td class="text-center"><?= $no++ ?></td>
+								<td class="text-center"><?= htmlspecialchars(trim($row['periode'] ?? '')) ?></td>
+								<td class="text-center"><span class="badge <?= $badge ?>"><?= $flag ?></span></td>
+								<td><?= htmlspecialchars(trim($row['keterangan'] ?? '')) ?></td>
+								<td class="text-center"><?= htmlspecialchars(trim($row['inputby'] ?? '')) ?></td>
+								<td class="text-center"><?= !empty($row['inputdate']) ? date('d-m-Y H:i', strtotime($row['inputdate'])) : '' ?></td>
+								<td class="text-center"><?= htmlspecialchars(trim($row['updateby'] ?? '')) ?></td>
+								<td class="text-center"><?= !empty($row['updatedate']) ? date('d-m-Y H:i', strtotime($row['updatedate'])) : '' ?></td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			</div><!-- /.card-body -->
+		</div><!-- /.card -->
+	</div>
+</div>
+
 
 
 
@@ -62,9 +106,10 @@
 <script type="application/javascript" src="<?= base_url('assets/pagejs/tools/bup.js') ?>"></script>
 <script type="text/javascript">
     $(function() {
-        $("#example1").dataTable();
-        $("#example2").dataTable();
-        $("#example4").dataTable();
+        $("#tbl_bup").dataTable({
+            "order": [[ 1, "desc" ]],
+            "pageLength": 25
+        });
         //datemask
         //$("#datemaskinput").inputmask("dd/mm/yyyy", {"placeholder": "dd/mm/yyyy"});
         //$("#datemaskinput").daterangepicker();

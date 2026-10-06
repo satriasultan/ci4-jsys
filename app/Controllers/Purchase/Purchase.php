@@ -7,7 +7,7 @@ use App\Controllers\BaseController;
 
 class Purchase extends BaseController
 {
-    
+
     public function pp()
     {
 
@@ -72,7 +72,7 @@ class Purchase extends BaseController
 
         $kmenu = 'I.P.A.1';
         $role = trim($this->session->get('roleid'));
-        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
+        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
         //auto insert unit
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
@@ -171,7 +171,7 @@ class Purchase extends BaseController
             // =========================
 
             if ($canUpdate && trim($lm->pemohon) == $nama && empty($lm->printby) &&
-                empty($lm->printdate) && 
+                empty($lm->printdate) &&
                 trim($status) == 'FINAL USER'
             ) {
 
@@ -184,7 +184,7 @@ class Purchase extends BaseController
             }
 
             if ($canUpdate && trim($lm->pemohon) == $nama && empty($lm->printby) &&
-                empty($lm->printdate) && 
+                empty($lm->printdate) &&
                 trim($status) == 'FINAL USER'
             ) {
                 $disapproveBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToCancel(\'' . trim($lm->docno) . '\');">
@@ -356,7 +356,7 @@ class Purchase extends BaseController
             // =========================
 
             if ($canUpdate && trim($lm->pemohon) == $nama && empty($lm->printby) &&
-                empty($lm->printdate) && 
+                empty($lm->printdate) &&
                 trim($status) == 'FINAL USER'
             ) {
 
@@ -389,7 +389,7 @@ class Purchase extends BaseController
             }
 
             if (trim($status) !== 'APPROVED' && trim($status) !== 'REVISION/EDITING') {
-                    $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
+                $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
                         <i class="fa fa-check-circle"></i> Approve</a>';
             }
 
@@ -496,12 +496,12 @@ class Purchase extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-    
+
     public function updateStatusPP()
     {
         $docno = $this->request->getPost('docno');
         $status = $this->request->getPost('status');
-        
+
         if (!$docno || !$status) {
             return $this->response->setJSON([
                 'success' => false,
@@ -514,7 +514,7 @@ class Purchase extends BaseController
         $builder->where('docno', $docno);
         $info = array('status' => $status);
         $update = $builder->update($info);
-        
+
         $action = '';
         switch ($status) {
             case 'A': $action = 'A'; break;  // APPROVED → 1 huruf
@@ -579,9 +579,9 @@ class Purchase extends BaseController
                 echo json_encode($result);
             }
         } else {
-                // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                // echo json_encode($result);
-                return redirect()->to(base_url('purchase/trans/pp'));
+            // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+            // echo json_encode($result);
+            return redirect()->to(base_url('purchase/trans/pp'));
         }
 
     }
@@ -630,7 +630,7 @@ class Purchase extends BaseController
         $data['mst'] = $this->m_purchase->q_pp_master_temp($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
 
-         /* ====== GUARD PERIODE TUTUP ====== */
+        /* ====== GUARD PERIODE TUTUP ====== */
         $periode = date('ym', strtotime($logindate));
         $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
 
@@ -661,7 +661,7 @@ class Purchase extends BaseController
     }
 
 
-   public function getBranchInfo()
+    public function getBranchInfo()
     {
         $idbranch = trim($this->request->getGet('idbranch'));
 
@@ -935,10 +935,10 @@ class Purchase extends BaseController
         } else {
 
             $inputdate = date('Y-m-d H:i:s');
-            $rawUnique = $nmbarang 
-            . '|' . $docno 
-            . '|' . $nama
-            . '|' . $inputdate;
+            $rawUnique = $nmbarang
+                . '|' . $docno
+                . '|' . $nama
+                . '|' . $inputdate;
 
             $uniqueid  = hash('sha256', $rawUnique);
 
@@ -1139,7 +1139,7 @@ class Purchase extends BaseController
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
             $row[] = $lm->capexno;
-/*status pp detail tidak usah dimunculkan dulu */
+            /*status pp detail tidak usah dimunculkan dulu */
 //            $row[] = trim($lm->status) == 'VP' ?
 //            '<div class="text-center"><span style="font-size:12px" class="badge badge-danger w-100">' . 'Void PP' . '</span></div>' :
 //            '<div class="text-center"><span style="font-size:12px" class="badge badge-primary w-100">' . 'Final User' . '</span></div>'  ;
@@ -1174,14 +1174,14 @@ class Purchase extends BaseController
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
             $row[] = $lm->capexno;
-            $row[] = trim($lm->status) == 'VP' ? 
-            '<div class="text-center"><span style="font-size:12px" class="badge badge-danger w-100">' . 'Void PP' . '</span></div>' : 
-            '<div class="text-center"><span style="font-size:12px" class="badge badge-primary w-100">' . 'Final User' . '</span></div>'  ;
+            $row[] = trim($lm->status) == 'VP' ?
+                '<div class="text-center"><span style="font-size:12px" class="badge badge-danger w-100">' . 'Void PP' . '</span></div>' :
+                '<div class="text-center"><span style="font-size:12px" class="badge badge-primary w-100">' . 'Final User' . '</span></div>'  ;
             $row[] = $lm->unit;
             $row[] = $lm->qty;
             $row[] = $lm->description;
-            $data[] = $row;   
-            
+            $data[] = $row;
+
         }
 
         $output = array(
@@ -1534,9 +1534,9 @@ class Purchase extends BaseController
 //                'printdate' => date('Y-m-d H:i:s')
 //            ]);
 
-        
+
         $enc_docno = $this->fiky_encryption->sealed($docno);
-        
+
         //$enc_docdate= $this->fiky_encryption->sealed($docdate);
         // $enc_idlocation = $this->fiky_encryption->sealed($idlocation);
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
@@ -1548,7 +1548,7 @@ class Purchase extends BaseController
         $datajson =  base_url("purchase/trans/api_pp/?enc_docno=$enc_docno") ;
 
         // if($formheader==="HEADER"){
-            $datamrt =  base_url("assets/mrt/report_pp.mrt") ;
+        $datamrt =  base_url("assets/mrt/report_pp.mrt") ;
         // } else {
         //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
         // }
@@ -1567,9 +1567,9 @@ class Purchase extends BaseController
         // $idgroup=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idgroup')));
         //$docno=trim($this->request->getGet('enc_docno'));
 
-       // $ddate = explode(' - ',$docdate);
-       // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
-       // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
+        // $ddate = explode(' - ',$docdate);
+        // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
+        // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
 
         if (empty($docno) or $docno==='') {
             $param_brg = "";
@@ -1588,7 +1588,7 @@ class Purchase extends BaseController
         $datamst = $this->m_purchase->q_pp_master($param);
         $datadtl = $this->m_purchase->q_pp_dtl($param);
         $tampungdtl = $datamst->getResult();
-        $detail = $tampungdtl[0] ?? null;        
+        $detail = $tampungdtl[0] ?? null;
         if ($detail) {
             $detail->namauser = $nama;
 
@@ -1607,7 +1607,7 @@ class Purchase extends BaseController
                     'userid' => $nama,
                     'param' => $param,
 
-                    ]
+                ]
                 ),
                 'branch' => $databranch->getResult(),
                 'master' => $datamst->getResult(),
@@ -1625,7 +1625,7 @@ class Purchase extends BaseController
 
 
     // ============================== VOID PP ==========================================
-     public function voidpp()
+    public function voidpp()
     {
         $data['title']="Void PP";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
@@ -1688,7 +1688,7 @@ class Purchase extends BaseController
 
         $kmenu = 'I.P.A.2';
         $role = trim($this->session->get('roleid'));
-        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
+        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
         //auto insert unit
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
@@ -1777,7 +1777,7 @@ class Purchase extends BaseController
             $docno  = trim($lm->docno);
             $docnoHex = bin2hex($docno);
 
-            
+
             $updateBtn = '';
             $detailBtn = '';
             $printBtn  = '';
@@ -1788,7 +1788,7 @@ class Purchase extends BaseController
             // =========================
 
             if ($canUpdate && trim($lm->pemohon) == $nama && empty($lm->printby) &&
-                empty($lm->printdate) && 
+                empty($lm->printdate) &&
                 trim($status) == 'FINAL USER') {
                 $updateBtn = '
                 <a class="dropdown-item bg-warning" 
@@ -1799,8 +1799,8 @@ class Purchase extends BaseController
             }
 
             if($canView){
-                $detailBtn = 
-                '<a class="dropdown-item" 
+                $detailBtn =
+                    '<a class="dropdown-item" 
                     style="background-color:#3badf6;" 
                     href="' . base_url('purchase/trans/detailVoidPP') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'View Detail Void PP : ' . $docno . '\')">
@@ -1820,7 +1820,7 @@ class Purchase extends BaseController
 
 
             if ($canUpdate && trim($lm->pemohon) == $nama && empty($lm->printby) &&
-                empty($lm->printdate) && 
+                empty($lm->printdate) &&
                 trim($status) == 'FINAL USER'
             ) {
                 $disapproveBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToCancel(\'' . trim($lm->docno) . '\');">
@@ -1956,9 +1956,9 @@ class Purchase extends BaseController
                 echo json_encode($result);
             }
         } else {
-                // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                // echo json_encode($result);
-                return redirect()->to(base_url('purchase/trans/voidpp'));
+            // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+            // echo json_encode($result);
+            return redirect()->to(base_url('purchase/trans/voidpp'));
         }
 
     }
@@ -2033,7 +2033,7 @@ class Purchase extends BaseController
     }
 
 
-   public function getBranchInfoVoid()
+    public function getBranchInfoVoid()
     {
         $idbranch = trim($this->request->getGet('idbranch'));
 
@@ -2222,18 +2222,18 @@ class Purchase extends BaseController
         $insertCount = 0;
         $message = '';
 
-    // =====================================================
-    // CEK MODE: ADD atau EDIT
-    // =====================================================
-    if (!empty($idurut)) {
         // =====================================================
-        // MODE EDIT - UPDATE QTY SAJA
+        // CEK MODE: ADD atau EDIT
         // =====================================================
-        $uniqueid = $this->request->getPost('uniqueid');
-        $qtyVoid = $this->request->getPost('qty'); // Qty yang akan divoid
+        if (!empty($idurut)) {
+            // =====================================================
+            // MODE EDIT - UPDATE QTY SAJA
+            // =====================================================
+            $uniqueid = $this->request->getPost('uniqueid');
+            $qtyVoid = $this->request->getPost('qty'); // Qty yang akan divoid
 
-        // Ambil data asli dari PP_DTL untuk validasi
-        $ppDetail = $db->query("
+            // Ambil data asli dari PP_DTL untuk validasi
+            $ppDetail = $db->query("
             SELECT 
                 qty,
                 qtypo,
@@ -2243,37 +2243,37 @@ class Purchase extends BaseController
             WHERE TRIM(uniqueid) = ?
         ", [$uniqueid])->getRow();
 
-        if (!$ppDetail) {
-            $db->transRollback();
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Data PP tidak ditemukan'
+            if (!$ppDetail) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Data PP tidak ditemukan'
+                ]);
+            }
+
+            // Validasi: qty void tidak boleh melebihi sisa qty
+            if ($qtyVoid > $ppDetail->sisa_qty) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Qty void (' . $qtyVoid . ') melebihi sisa qty (' . $ppDetail->sisa_qty . ')'
+                ]);
+            }
+
+            // Update di sc_tmp.voidpp_dtl
+            $builderDetail->where('uniqueid', $uniqueid)->update([
+                'qty'        => $qtyVoid,
+                'updateby'   => $nama,
+                'updatedate' => date('Y-m-d H:i:s')
             ]);
-        }
 
-        // Validasi: qty void tidak boleh melebihi sisa qty
-        if ($qtyVoid > $ppDetail->sisa_qty) {
-            $db->transRollback();
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Qty void (' . $qtyVoid . ') melebihi sisa qty (' . $ppDetail->sisa_qty . ')'
-            ]);
-        }
+            $message = 'Data void berhasil diupdate';
 
-        // Update di sc_tmp.voidpp_dtl
-        $builderDetail->where('uniqueid', $uniqueid)->update([
-            'qty'        => $qtyVoid,
-            'updateby'   => $nama,
-            'updatedate' => date('Y-m-d H:i:s')
-        ]);
-
-        $message = 'Data void berhasil diupdate';
-
-    } else {
-        // =====================================================
-        // MODE ADD - INSERT DATA DARI PP
-        // =====================================================
-        $ppDetails = $db->query("
+        } else {
+            // =====================================================
+            // MODE ADD - INSERT DATA DARI PP
+            // =====================================================
+            $ppDetails = $db->query("
             SELECT 
                 docno,
                 idbarang,
@@ -2290,68 +2290,68 @@ class Purchase extends BaseController
             AND TRIM(COALESCE(status,'')) <> 'VP'
         ", [$docnopp])->getResult();
 
-        if (empty($ppDetails)) {
-            $db->transRollback();
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Data PP tidak ditemukan'
-            ]);
-        }
+            if (empty($ppDetails)) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Data PP tidak ditemukan'
+                ]);
+            }
 
-        foreach ($ppDetails as $row) {
-            // $sisaQty = $row->qty - ($row->qtypo + $row->qtyvoid);
-            // =====================================================
-            // CEK APAKAH ITEM INI SEDANG DIEDIT
-            // Cari di sc_tmp.voidpp_dtl dengan docno yang sama dan uniqueid yang sama
-            // =====================================================
-            $qtyVoidSaatIni = 0;
-            
-            $existingVoid = $db->query("
+            foreach ($ppDetails as $row) {
+                // $sisaQty = $row->qty - ($row->qtypo + $row->qtyvoid);
+                // =====================================================
+                // CEK APAKAH ITEM INI SEDANG DIEDIT
+                // Cari di sc_tmp.voidpp_dtl dengan docno yang sama dan uniqueid yang sama
+                // =====================================================
+                $qtyVoidSaatIni = 0;
+
+                $existingVoid = $db->query("
                 SELECT qty 
                 FROM sc_tmp.voidpp_dtl 
                 WHERE
                 uniqueid = ?
             ", [$row->uniqueid])->getRow();
-            
-            if ($existingVoid) {
-                $qtyVoidSaatIni = $existingVoid->qty;
+
+                if ($existingVoid) {
+                    $qtyVoidSaatIni = $existingVoid->qty;
+                }
+
+                // Hitung sisa qty dengan mengeluarkan qty void yang sedang diedit
+                $sisaQty = $row->qty - ($row->qtypo + $row->qtyvoid - $qtyVoidSaatIni);
+
+                // Jika sisa quantity <= 0, skip item ini
+                if ($sisaQty <= 0) {
+                    continue;
+                }
+
+                // Cek apakah item sudah ada di tmp
+                $duplicate = $builderDetail
+                    ->where('uniqueid', $row->uniqueid)
+                    ->countAllResults();
+
+                if ($duplicate == 0) {
+                    $builderDetail->insert([
+                        'docno'       => $docno,
+                        'docnopp'     => $docnopp,
+                        'idbarang'    => $row->idbarang,
+                        'nmbarang'    => $row->nmbarang,
+                        'uniqueid'    => $row->uniqueid,
+                        'unit'        => $row->unit,
+                        'capexno'     => $row->capexno,
+                        'qty'         => $sisaQty, // Default ambil semua sisa
+                        'description' => $row->description,
+                        'inputby'     => $nama,
+                        'inputdate'   => date('Y-m-d H:i:s')
+                    ]);
+
+                    $insertCount++;
+                }
             }
 
-            // Hitung sisa qty dengan mengeluarkan qty void yang sedang diedit
-            $sisaQty = $row->qty - ($row->qtypo + $row->qtyvoid - $qtyVoidSaatIni);
-
-            // Jika sisa quantity <= 0, skip item ini
-            if ($sisaQty <= 0) {
-                continue;
-            }
-
-            // Cek apakah item sudah ada di tmp
-            $duplicate = $builderDetail
-                ->where('uniqueid', $row->uniqueid)
-                ->countAllResults();
-
-            if ($duplicate == 0) {
-                $builderDetail->insert([
-                    'docno'       => $docno,
-                    'docnopp'     => $docnopp,
-                    'idbarang'    => $row->idbarang,
-                    'nmbarang'    => $row->nmbarang,
-                    'uniqueid'    => $row->uniqueid,
-                    'unit'        => $row->unit,
-                    'capexno'     => $row->capexno,
-                    'qty'         => $sisaQty, // Default ambil semua sisa
-                    'description' => $row->description,
-                    'inputby'     => $nama,
-                    'inputdate'   => date('Y-m-d H:i:s')
-                ]);
-
-            $insertCount++;
-            }
-        }
-
-            $message = $insertCount > 0 
-                        ? "$insertCount item berhasil ditambahkan"
-                        : "Semua item sudah ada sebelumnya";
+            $message = $insertCount > 0
+                ? "$insertCount item berhasil ditambahkan"
+                : "Semua item sudah ada sebelumnya";
         }
 
         $db->transComplete();
@@ -2368,7 +2368,7 @@ class Purchase extends BaseController
     {
         $docno = $this->request->getPost('docno');
         $status = $this->request->getPost('status');
-        
+
         if (!$docno || !$status) {
             return $this->response->setJSON([
                 'success' => false,
@@ -2381,7 +2381,7 @@ class Purchase extends BaseController
         $builder->where('docno', $docno);
         $info = array('status' => $status);
         $update = $builder->update($info);
-        
+
         // Map status ke action (1 huruf)
         $action = '';
         switch ($status) {
@@ -2404,7 +2404,7 @@ class Purchase extends BaseController
             return $this->response->setJSON(['success' => true]);
         } else {
             return $this->response->setJSON([
-                'success' => false, 
+                'success' => false,
                 'message' => 'Gagal update status'
             ]);
         }
@@ -2418,7 +2418,7 @@ class Purchase extends BaseController
         $param = " and coalesce(docno,'')='$docno'";
         $dtl = $this->m_purchase->q_voidpp_master($param)->getRowArray();
         $status = trim($dtl['status']);
-        
+
         $logindate = trim($this->session->get('logindate'));
 
         /* ====== GUARD PERIODE TUTUP ====== */
@@ -2613,8 +2613,8 @@ class Purchase extends BaseController
             $row[] = $lm->unit;
             $row[] = $lm->qty;
             $row[] = $lm->description;
-            $data[] = $row;   
-            
+            $data[] = $row;
+
         }
 
         $output = array(
@@ -2667,7 +2667,7 @@ class Purchase extends BaseController
             $docdate   = trim($this->request->getPost('docdate'));
             // Convert expdate ke format YYYY-MM-DD
 
-             // Convert expdate ke format YYYY-MM-DD
+            // Convert expdate ke format YYYY-MM-DD
             $docdateph = null;
             if (!empty($docdate)) {
                 $docdateph = date('Y-m-d', strtotime($docdate));
@@ -2740,17 +2740,17 @@ class Purchase extends BaseController
             );
             return redirect()->to(base_url('purchase/trans/voidpp'));
         }
-    //    $builder = $builder
-    //         ->where('docno', $docno)
-    //         ->update([
-    //             'status'=> 'P',
-    //             'printby' => $nama,
-    //             'printdate' => date('Y-m-d H:i:s')
-    //         ]);
+        //    $builder = $builder
+        //         ->where('docno', $docno)
+        //         ->update([
+        //             'status'=> 'P',
+        //             'printby' => $nama,
+        //             'printdate' => date('Y-m-d H:i:s')
+        //         ]);
 
-        
+
         $enc_docno = $this->fiky_encryption->sealed($docno);
-        
+
         //$enc_docdate= $this->fiky_encryption->sealed($docdate);
         // $enc_idlocation = $this->fiky_encryption->sealed($idlocation);
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
@@ -2762,7 +2762,7 @@ class Purchase extends BaseController
         $datajson =  base_url("purchase/trans/api_voidpp/?enc_docno=$enc_docno") ;
 
         // if($formheader==="HEADER"){
-            $datamrt =  base_url("assets/mrt/report_voidpp.mrt") ;
+        $datamrt =  base_url("assets/mrt/report_voidpp.mrt") ;
         // } else {
         //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
         // }
@@ -2781,9 +2781,9 @@ class Purchase extends BaseController
         // $idgroup=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idgroup')));
         //$docno=trim($this->request->getGet('enc_docno'));
 
-       // $ddate = explode(' - ',$docdate);
-       // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
-       // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
+        // $ddate = explode(' - ',$docdate);
+        // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
+        // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
 
         if (empty($docno) or $docno==='') {
             $param_brg = "";
@@ -2802,7 +2802,7 @@ class Purchase extends BaseController
         $datamst = $this->m_purchase->q_voidpp_master($param);
         $datadtl = $this->m_purchase->q_voidpp_dtl($param);
         $tampungdtl = $datamst->getResult();
-        $detail = $tampungdtl[0] ?? null;        
+        $detail = $tampungdtl[0] ?? null;
         if ($detail) {
             $detail->namauser = $nama;
 
@@ -2821,7 +2821,7 @@ class Purchase extends BaseController
                     'userid' => $nama,
                     'param' => $param,
 
-                    ]
+                ]
                 ),
                 'branch' => $databranch->getResult(),
                 'master' => $datamst->getResult(),
@@ -2840,7 +2840,7 @@ class Purchase extends BaseController
     // =================================== PO ===========================================
 
 
-     public function po()
+    public function po()
     {
         $data['title']="Purchase Order (PO)";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
@@ -2903,7 +2903,7 @@ class Purchase extends BaseController
 
         $kmenu = 'I.P.A.3';
         $role = trim($this->session->get('roleid'));
-        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
+        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
         //auto insert unit
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
@@ -2991,7 +2991,7 @@ class Purchase extends BaseController
             $docno  = trim($lm->docno);
             $docnoHex = bin2hex($docno);
 
-            
+
             $updateBtn = '';
             $detailBtn = '';
             $printBtn  = '';
@@ -3012,8 +3012,8 @@ class Purchase extends BaseController
             }
 
             if($canView){
-                $detailBtn = 
-                '<a class="dropdown-item" 
+                $detailBtn =
+                    '<a class="dropdown-item" 
                     style="background-color:#3badf6;" 
                     href="' . base_url('purchase/trans/detailPO') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'View Detail PO : ' . $docno . '\')">
@@ -3037,8 +3037,8 @@ class Purchase extends BaseController
 
 
             if (trim($status) &&  !in_array(trim($status), ['REVISION/EDITING', 'APPROVED','DITARIK LPB'])) {
-            //if (trim($status) !== 'APPROVED' && trim($status) !== 'REVISION/EDITING') {
-                    $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
+                //if (trim($status) !== 'APPROVED' && trim($status) !== 'REVISION/EDITING') {
+                $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
                         <i class="fa fa-check-circle"></i> Approve</a>';
             }
 
@@ -3048,7 +3048,7 @@ class Purchase extends BaseController
             }
 
             if ($canUpdate && trim($lm->inputby) == $nama && empty($lm->printby) &&
-                empty($lm->printdate) && 
+                empty($lm->printdate) &&
                 trim($status) == 'FINAL USER'
             ) {
                 $disapproveBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToCancel(\'' . trim($lm->docno) . '\');">
@@ -3132,7 +3132,7 @@ class Purchase extends BaseController
                     break;
             }
 
-            
+
             $row[] = $lm->kdsupplier;
             $row[] = $lm->nmsupplier;
             $row[] = $lm->alamatsupplier;
@@ -3161,7 +3161,7 @@ class Purchase extends BaseController
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
             $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
-            
+
 
             $data[] = $row;
         }
@@ -3615,9 +3615,9 @@ class Purchase extends BaseController
                 echo json_encode($result);
             }
         } else {
-                // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                // echo json_encode($result);
-                return redirect()->to(base_url('purchase/trans/po'));
+            // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+            // echo json_encode($result);
+            return redirect()->to(base_url('purchase/trans/po'));
         }
 
     }
@@ -3665,8 +3665,8 @@ class Purchase extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_purchase->q_po_master_temp($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
-        
-         /* ====== GUARD PERIODE TUTUP ====== */
+
+        /* ====== GUARD PERIODE TUTUP ====== */
         $periode = date('ym', strtotime($logindate));
         $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
 
@@ -3928,11 +3928,11 @@ class Purchase extends BaseController
 
         $reload = false;
         // Untuk pengambilan data dari POST
-        
+
         if ($exists == 0) {
             $isinclusive = strtoupper(trim(
-                $this->request->getPost('isinclusive') 
-                ?? $dataprocess->isinclusive 
+                $this->request->getPost('isinclusive')
+                ?? $dataprocess->isinclusive
                 ?? 'NO'
             ));
 
@@ -3945,7 +3945,7 @@ class Purchase extends BaseController
                 'senddate'   => date('Y-m-d', strtotime(trim($this->request->getPost('senddate')))),
                 'jthtempo'     => $this->request->getPost('jthtempo'),
                 'isinclusive'     => $isinclusive,
-                
+
                 'kdsupplier'    => strtoupper($this->request->getPost('kdsupplier')),
                 'nmsupplier'    => strtoupper($this->request->getPost('nmsupplier')),
                 'alamatsupplier'    => strtoupper($this->request->getPost('alamatsupplier')),
@@ -4025,15 +4025,15 @@ class Purchase extends BaseController
 
             // Ambil kurs dari header PO
             $poHeader = $builderHeader->select('kurs, idtax')
-            ->where('docno', $docno)
-            ->where('inputby', $nama)
-            ->get()->getRowArray();
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->get()->getRowArray();
             $kurs = $poHeader['kurs'] ?? 0;
             $idtax = $poHeader['idtax'] ?? '';
-            
+
             // Hitung nilaikonversi = nilai * kurs
             $nilaikonversi = $nilai * $kurs;
-            
+
             // Hitung nilaipajak berdasarkan idtax
             $nilaipajak = 0;
             if (!empty($idtax) && trim($idtax) !== 'NON' && $nilai > 0) {
@@ -4043,13 +4043,13 @@ class Purchase extends BaseController
                     ->where('idtax', $idtax)
                     ->get()
                     ->getResultArray();
-                
+
                 $totalPersentase = 0;
                 foreach ($taxDetails as $tax) {
                     $persentase = $tax['percentation'] ?? 0;
                     $totalPersentase += $persentase;
                 }
-                
+
                 // Hitung nilaipajak = nilai + (nilai * totalPersentase / 100)
                 // $nilaipajak = $nilai + ($nilai * $totalPersentase / 100);
                 $nilaipajak = $nilai * $totalPersentase / 100;
@@ -4092,10 +4092,10 @@ class Purchase extends BaseController
 
 
             $poHeader = $builderHeader->select('idtax')
-            ->where('docno', $docno)
-            ->where('inputby', $nama)->get()->getRowArray();
+                ->where('docno', $docno)
+                ->where('inputby', $nama)->get()->getRowArray();
             $idtax = $poHeader['idtax'] ?? '';
-            
+
             // Hitung total DPP (sum nilai dari po_dtl)
             $builderTotalDpp = $db->table('sc_tmp.po_dtl');
             $totalDpp = $builderTotalDpp->select('COALESCE(SUM(nilai), 0) as total_dpp')
@@ -4103,12 +4103,12 @@ class Purchase extends BaseController
                 ->where('inputby', $nama)
                 ->get()
                 ->getRowArray();
-            
+
             $dpp = $totalDpp['total_dpp'] ?? 0;
-            
+
             // Hitung jumlah pajak berdasarkan idtax
             $jumlahPajak = 0;
-            
+
             if (!empty($idtax) && trim($idtax) !== 'NON'  && $dpp > 0) {
                 // Ambil detail tax dari sc_mst.tax_dtl
                 $builderTaxDtl = $db->table('sc_mst.tax_dtl');
@@ -4116,29 +4116,29 @@ class Purchase extends BaseController
                     ->where('idtax', $idtax)
                     ->get()
                     ->getResultArray();
-                
+
                 foreach ($taxDetails as $tax) {
                     $persentase = $tax['percentation'] ?? 0;
                     $jumlahPajak += $dpp * ($persentase / 100);
                 }
             }
-            
+
             // Hitung total (DPP + Jumlah Pajak)
             $total = $dpp + $jumlahPajak;
-            
+
             // Update header PO
             $builderHeader->where('docno', $docno)
-            ->where('inputby', $nama)
-            ->update([
-                'dpp' => number_format($dpp, 2, '.', ''),
-                'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
-                'total' => number_format($total, 2, '.', ''),
-                'updateby' => $nama,
-                'updatedate' => date('Y-m-d H:i:s')
-            ]);
-            
+                ->where('inputby', $nama)
+                ->update([
+                    'dpp' => number_format($dpp, 2, '.', ''),
+                    'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
+                    'total' => number_format($total, 2, '.', ''),
+                    'updateby' => $nama,
+                    'updatedate' => date('Y-m-d H:i:s')
+                ]);
+
             $message = 'Data berhasil diupdate';
-            
+
         } else {
             // =====================================================
             // MODE ADD - INSERT DATA DARI PP
@@ -4177,20 +4177,20 @@ class Purchase extends BaseController
                 //     ->where('inputby', $nama)
                 //     ->countAllResults();
                 $qtyPOSaatIni = 0;
-            
+
                 $existingPO = $db->query("
                     SELECT qty 
                     FROM sc_tmp.po_dtl 
                     WHERE
                     uniqueid = ?
                 ", [$row->uniqueid])->getRow();
-                
+
                 if ($existingPO) {
                     $qtyPOSaatIni = $existingPO->qty;
                 }
 
                 $sisaQty = $row->qty - ($row->qtypo + $row->qtyvoid - $qtyPOSaatIni);
-                
+
                 // Jika sisa quantity <= 0, skip item ini
                 if ($sisaQty <= 0) {
                     continue; // Lewati item ini
@@ -4229,10 +4229,10 @@ class Purchase extends BaseController
                     $insertCount++;
                 }
             }
-            
-            $message = $insertCount > 0 
-                        ? "$insertCount item berhasil ditambahkan"
-                        : "Semua item sudah ada sebelumnya";
+
+            $message = $insertCount > 0
+                ? "$insertCount item berhasil ditambahkan"
+                : "Semua item sudah ada sebelumnya";
         }
 
         $db->transComplete();
@@ -4249,7 +4249,7 @@ class Purchase extends BaseController
     {
         $docno = $this->request->getPost('docno');
         $status = $this->request->getPost('status');
-        
+
         if (!$docno || !$status) {
             return $this->response->setJSON([
                 'success' => false,
@@ -4262,7 +4262,7 @@ class Purchase extends BaseController
         $builder->where('docno', $docno);
         $info = array('status' => $status);
         $update = $builder->update($info);
-        
+
         $action = '';
         switch ($status) {
             case 'A': $action = 'A'; break;  // APPROVED → 1 huruf
@@ -4289,7 +4289,7 @@ class Purchase extends BaseController
             return $this->response->setJSON(['success' => true]);
         } else {
             return $this->response->setJSON([
-                'success' => false, 
+                'success' => false,
                 'message' => 'Gagal update status'
             ]);
         }
@@ -4461,7 +4461,7 @@ class Purchase extends BaseController
                 ->whereIn('uniqueid', $ids)
                 ->get()
                 ->getRowArray();
-            
+
             if ($firstDetail) {
                 $docno = $firstDetail['docno'];
             }
@@ -4505,20 +4505,20 @@ class Purchase extends BaseController
     {
         $db = \Config\Database::connect();
         $builderHeader = $db->table('sc_tmp.po');
-        
+
         // Ambil idtax dari header
         $poHeader = $builderHeader->select('idtax')->where('docno', $docno)->get()->getRowArray();
         $idtax = $poHeader['idtax'] ?? '';
-        
+
         // Hitung total DPP (sum nilai dari po_dtl)
         $builderTotalDpp = $db->table('sc_tmp.po_dtl');
         $totalDpp = $builderTotalDpp->select('COALESCE(SUM(nilai), 0) as total_dpp')
             ->where('docno', $docno)
             ->get()
             ->getRowArray();
-        
+
         $dpp = $totalDpp['total_dpp'] ?? 0;
-        
+
         // Hitung jumlah pajak
         $jumlahPajak = 0;
         if (!empty($idtax) && trim($idtax) !== 'NON' && $dpp > 0) {
@@ -4527,16 +4527,16 @@ class Purchase extends BaseController
                 ->where('idtax', $idtax)
                 ->get()
                 ->getResultArray();
-            
+
             foreach ($taxDetails as $tax) {
                 $persentase = $tax['percentation'] ?? 0;
                 $jumlahPajak += $dpp * ($persentase / 100);
             }
         }
-        
+
         // Hitung total
         $total = $dpp + $jumlahPajak;
-        
+
         // Update header
         $builderHeader->where('docno', $docno)->update([
             'dpp' => number_format($dpp, 2, '.', ''),
@@ -4619,8 +4619,8 @@ class Purchase extends BaseController
             $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 2, '.', ',') . '</div>';
             $row[] = $lm->descriptionpo;
             $row[] = $lm->descriptionpp;
-            $data[] = $row;   
-            
+            $data[] = $row;
+
         }
 
         $output = array(
@@ -4702,7 +4702,7 @@ class Purchase extends BaseController
             $isinclusive = $this->request->getPost('isinclusive') ? 'YES' : 'NO';
 
 
-            
+
             // **BERSIHKAN FORMAT KURS**
             $kurs = trim($this->request->getPost('kurs'));
             $kurs_clean = 0;
@@ -4712,7 +4712,7 @@ class Purchase extends BaseController
                 // $kurs_clean = floatval($kurs_clean);
             }
 
-             // Convert expdate ke format YYYY-MM-DD
+            // Convert expdate ke format YYYY-MM-DD
             $docdateph = null;
             if (!empty($docdate)) {
                 $docdateph = date('Y-m-d', strtotime($docdate));
@@ -4806,7 +4806,7 @@ class Purchase extends BaseController
         }
 
     }
-    
+
     public function finalEntryPO_DP()
     {
         $nama = trim($this->session->get('nama'));
@@ -4846,8 +4846,8 @@ class Purchase extends BaseController
 
         $builder_trxerror = $this->db->table('sc_mst.trxerror');
         $builder_trxerror->where('userid',$nama)
-                        ->where('modul','I.P.A.3')
-                        ->delete();
+            ->where('modul','I.P.A.3')
+            ->delete();
 
         if (($status === 'E' && $cek->getNumRows() > 0) || ($cek2->getNumRows() <= 0))
         {
@@ -4882,7 +4882,7 @@ class Purchase extends BaseController
         $dpp_clean = $this->cleanNumber($this->request->getPost('dpp'));
         $jumlahpajak_clean = $this->cleanNumber($this->request->getPost('jumlahpajak'));
         $total_clean = $this->cleanNumber($this->request->getPost('total'));
-        
+
         /*
         ==========================
         FORMAT KURS
@@ -4960,7 +4960,7 @@ class Purchase extends BaseController
         GENERATE DOCNO UMB
         ==========================
         */
-        
+
         $prefix = 'UMK';
         $infix = date('ym', strtotime($this->session->get('logindate')));
         // $kodeSuffix = 'PT';
@@ -4996,7 +4996,7 @@ class Purchase extends BaseController
         ==========================
         */
 
-        
+
         $this->db->table('sc_tmp.umb')->insert([
             'docno'          => $docnoUMB,
             'docdate'        => $header['docdate'],
@@ -5139,17 +5139,17 @@ class Purchase extends BaseController
             );
             return redirect()->to(base_url('purchase/trans/po'));
         }
-    //    $builder = $builder
-    //         ->where('docno', $docno)
-    //         ->update([
-    //             'status'=> 'P',
-    //             'printby' => $nama,
-    //             'printdate' => date('Y-m-d H:i:s')
-    //         ]);
+        //    $builder = $builder
+        //         ->where('docno', $docno)
+        //         ->update([
+        //             'status'=> 'P',
+        //             'printby' => $nama,
+        //             'printdate' => date('Y-m-d H:i:s')
+        //         ]);
 
-        
+
         $enc_docno = $this->fiky_encryption->sealed($docno);
-        
+
         //$enc_docdate= $this->fiky_encryption->sealed($docdate);
         // $enc_idlocation = $this->fiky_encryption->sealed($idlocation);
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
@@ -5161,7 +5161,7 @@ class Purchase extends BaseController
         $datajson =  base_url("purchase/trans/api_po/?enc_docno=$enc_docno") ;
 
         // if($formheader==="HEADER"){
-            $datamrt =  base_url("assets/mrt/report_po.mrt") ;
+        $datamrt =  base_url("assets/mrt/report_po.mrt") ;
         // } else {
         //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
         // }
@@ -5180,9 +5180,9 @@ class Purchase extends BaseController
         // $idgroup=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idgroup')));
         //$docno=trim($this->request->getGet('enc_docno'));
 
-       // $ddate = explode(' - ',$docdate);
-       // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
-       // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
+        // $ddate = explode(' - ',$docdate);
+        // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
+        // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
 
         if (empty($docno) or $docno==='') {
             $param_brg = "";
@@ -5201,7 +5201,7 @@ class Purchase extends BaseController
         $datamst = $this->m_purchase->q_po_master($param);
         $datadtl = $this->m_purchase->q_po_dtl($param);
         $tampungdtl = $datamst->getResult();
-        $detail = $tampungdtl[0] ?? null;        
+        $detail = $tampungdtl[0] ?? null;
         if ($detail) {
 
 
@@ -5240,9 +5240,9 @@ class Purchase extends BaseController
             $detail->currname = $cleanedCurrname;
 
 
-            
+
             $detail->namauser = $nama;
-            
+
         }
 
         header("Content-Type: text/json");
@@ -5258,7 +5258,7 @@ class Purchase extends BaseController
                     'userid' => $nama,
                     'param' => $param,
 
-                    ]
+                ]
                 ),
                 'branch' => $databranch->getResult(),
                 'master' => $datamst->getResult(),
@@ -5270,7 +5270,7 @@ class Purchase extends BaseController
     function penyebut($nilai) {
         $nilai = abs($nilai);
         $huruf = array("", "satu", "dua", "tiga", "empat", "lima", "enam",
-                    "tujuh", "delapan", "sembilan", "sepuluh", "sebelas");
+            "tujuh", "delapan", "sembilan", "sepuluh", "sebelas");
         $temp = "";
 
         if ($nilai < 12) {
@@ -5326,11 +5326,11 @@ class Purchase extends BaseController
 
 
 
-    
+
     // =================================== PO ===========================================
 
 
-     public function voidpo()
+    public function voidpo()
     {
         $data['title']="Void PO";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
@@ -5393,7 +5393,7 @@ class Purchase extends BaseController
 
         $kmenu = 'I.P.A.4';
         $role = trim($this->session->get('roleid'));
-        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
+        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
         //auto insert unit
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
@@ -5481,7 +5481,7 @@ class Purchase extends BaseController
             $docno  = trim($lm->docno);
             $docnoHex = bin2hex($docno);
 
-            
+
             $updateBtn = '';
             $detailBtn = '';
             $printBtn  = '';
@@ -5502,8 +5502,8 @@ class Purchase extends BaseController
             }
 
             if($canView){
-                $detailBtn = 
-                '<a class="dropdown-item" 
+                $detailBtn =
+                    '<a class="dropdown-item" 
                     style="background-color:#3badf6;" 
                     href="' . base_url('purchase/trans/detailVoidPO') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'View Detail Void PO : ' . $docno . '\')">
@@ -5606,14 +5606,14 @@ class Purchase extends BaseController
                     break;
             }
 
-            
+
             $row[] = $lm->kdsupplier;
             $row[] = $lm->nmsupplier;
             $row[] = $lm->alamatsupplier;
             $row[] = $lm->nmkota;
             $row[] = $lm->currcode;
             // $row[] = date(
-                //     'd-m-Y',
+            //     'd-m-Y',
             //     strtotime(trim($lm->senddate))
             // );
             $docdate  = trim($lm->docdate);
@@ -5631,11 +5631,11 @@ class Purchase extends BaseController
             }
 
             $row[] = $jatuhTempo;
-            
+
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
             $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
-            
+
 
             $data[] = $row;
         }
@@ -5649,7 +5649,7 @@ class Purchase extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-    
+
     function list_voidpo_apprv(){
         $list = $this->m_purchase->get_t_front_voidpo_apprv_view();
         $data = array();
@@ -5676,7 +5676,7 @@ class Purchase extends BaseController
             $docno  = trim($lm->docno);
             $docnoHex = bin2hex($docno);
 
-            
+
             $updateBtn = '';
             $detailBtn = '';
             $printBtn  = '';
@@ -5697,8 +5697,8 @@ class Purchase extends BaseController
             }
 
             if($canView){
-                $detailBtn = 
-                '<a class="dropdown-item" 
+                $detailBtn =
+                    '<a class="dropdown-item" 
                     style="background-color:#3badf6;" 
                     href="' . base_url('purchase/trans/detailVoidPO') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'View Detail Void PO : ' . $docno . '\')">
@@ -5718,7 +5718,7 @@ class Purchase extends BaseController
 
 
             if (trim($status) !== 'APPROVED' && trim($status) !== 'REVISION/EDITING') {
-                    $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
+                $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
                         <i class="fa fa-check-circle"></i> Approve</a>';
             }
 
@@ -5780,21 +5780,21 @@ class Purchase extends BaseController
                 'd-m-Y',
                 strtotime(trim($lm->docdate))
             );
-            
+
             $docdate  = trim($lm->docdate);
             $jthtempo = (int) $lm->jthtempo;
-            
+
             if (!empty($docdate)) {
-                
+
                 $date = new \DateTime(trim($lm->docdate));
                 $date->modify("+{$jthtempo} days");
-                
+
                 $jatuhTempo = $date->format('d/m/Y');
-                
-                } else {
-                    $jatuhTempo = '';
-                    }
-                    
+
+            } else {
+                $jatuhTempo = '';
+            }
+
             $row[] = $jatuhTempo;
             $row[] = date(
                 'd-m-Y',
@@ -5828,7 +5828,7 @@ class Purchase extends BaseController
             // $row[] = $lm->alamatsupplier;
             // $row[] = $lm->nmkota;
 
-            
+
 
             $data[] = $row;
         }
@@ -5877,9 +5877,9 @@ class Purchase extends BaseController
                 echo json_encode($result);
             }
         } else {
-                // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                // echo json_encode($result);
-                return redirect()->to(base_url('purchase/trans/voidpo'));
+            // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+            // echo json_encode($result);
+            return redirect()->to(base_url('purchase/trans/voidpo'));
         }
 
     }
@@ -5927,7 +5927,7 @@ class Purchase extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_purchase->q_voidpo_master_temp($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
-        
+
         /* ====== GUARD PERIODE TUTUP ====== */
         $periode = date('ym', strtotime($logindate));
         $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
@@ -5954,7 +5954,7 @@ class Purchase extends BaseController
     }
 
 
-   public function getBranchInfoVoidPO()
+    public function getBranchInfoVoidPO()
     {
         $idbranch = trim($this->request->getGet('idbranch'));
 
@@ -6101,7 +6101,7 @@ class Purchase extends BaseController
         $docno  = strtoupper(trim($this->request->getPost('docno')));
         $docnopo = strtoupper(trim($this->request->getPost('docnopo')));
         $idurut = $this->request->getPost('idurut'); // HAPUS strtoupper, biarkan apa adanya
-        
+
         // Tambahkan mode untuk membedakan add/edit dengan lebih jelas
         // $mode = $this->request->getPost('mode'); // 'add' atau 'edit'
 
@@ -6112,10 +6112,10 @@ class Purchase extends BaseController
             ]);
         }
 
-        
+
         $db = $this->db;
         $db->transStart();
-        
+
         $builderPO = $db->table('sc_trx.po');
         $poData = $builderPO
             ->select('currcode, kurs, idtax, isinclusive')
@@ -6144,7 +6144,7 @@ class Purchase extends BaseController
 
         $reload = false;
         // Untuk pengambilan data dari POST
-        
+
         if ($exists == 0) {
             $currcode   = $poData['currcode'] ?? '';
             $kurs       = $poData['kurs'] ?? 0;
@@ -6159,7 +6159,7 @@ class Purchase extends BaseController
                 // 'senddate'   => date('Y-m-d', strtotime(trim($this->request->getPost('senddate')))),
                 'jthtempo'     => $this->request->getPost('jthtempo'),
                 'isinclusive'     => $isinclusive,
-                
+
                 'kdsupplier'    => strtoupper($this->request->getPost('kdsupplier')),
                 'alamatsupplier'    => strtoupper($this->request->getPost('alamatsupplier')),
                 // 'alamatkirim'    => strtoupper($this->request->getPost('alamatkirim')),
@@ -6226,17 +6226,17 @@ class Purchase extends BaseController
             }
 
 
-             // Ambil kurs dari header PO
+            // Ambil kurs dari header PO
             $voidpoHeader = $builderHeader->select('kurs, idtax')
-            ->where('inputby', $nama)
-            ->where('docno', $docno)
-            ->get()->getRowArray();
+                ->where('inputby', $nama)
+                ->where('docno', $docno)
+                ->get()->getRowArray();
             $kurs = $voidpoHeader['kurs'] ?? 0;
             $idtax = $voidpoHeader['idtax'] ?? '';
-            
+
             // Hitung nilaikonversi = nilai * kurs
             $nilaikonversi = $nilai * $kurs;
-            
+
             // Hitung nilaipajak berdasarkan idtax
             $nilaipajak = 0;
             if (!empty($idtax) && trim($idtax) !== 'NON' && $nilai > 0) {
@@ -6246,13 +6246,13 @@ class Purchase extends BaseController
                     ->where('idtax', $idtax)
                     ->get()
                     ->getResultArray();
-                
+
                 $totalPersentase = 0;
                 foreach ($taxDetails as $tax) {
                     $persentase = $tax['percentation'] ?? 0;
                     $totalPersentase += $persentase;
                 }
-                
+
                 // Hitung nilaipajak = nilai + (nilai * totalPersentase / 100)
                 // $nilaipajak = $nilai + ($nilai * $totalPersentase / 100);
                 $nilaipajak = $nilai * $totalPersentase / 100;
@@ -6262,27 +6262,27 @@ class Purchase extends BaseController
             }
 
             $builderDetail
-            ->where('docno', $docno)
-            ->where('inputby', $nama)
-            ->where('uniqueid', $uniqueid)->update([
-                'qty'          => $qty,
-                // 'qtybonus'     => $qtybonus,
-                'harga'        => $harga,
-                // 'multidisc'    => $multidisc,
-                'nilai'        => $nilai,
-                'nilaikonversi' => $nilaikonversi,
-                'nilaipajak'   => $nilaipajak,    
-                // 'descriptionpo' => $descriptionpo,
-                'updateby'     => $nama,
-                'updatedate'   => date('Y-m-d H:i:s')
-            ]);
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->where('uniqueid', $uniqueid)->update([
+                    'qty'          => $qty,
+                    // 'qtybonus'     => $qtybonus,
+                    'harga'        => $harga,
+                    // 'multidisc'    => $multidisc,
+                    'nilai'        => $nilai,
+                    'nilaikonversi' => $nilaikonversi,
+                    'nilaipajak'   => $nilaipajak,
+                    // 'descriptionpo' => $descriptionpo,
+                    'updateby'     => $nama,
+                    'updatedate'   => date('Y-m-d H:i:s')
+                ]);
 
 
 
-            
-            
+
+
             $message = 'Data berhasil diupdate';
-            
+
         } else {
             // =====================================================
             // MODE ADD - INSERT DATA DARI PP
@@ -6295,7 +6295,7 @@ class Purchase extends BaseController
             ", [$docnopo])->getResult();
 
             if (empty($poDetails)) {
-                $db->transRollback();   
+                $db->transRollback();
                 return $this->response->setJSON([
                     'success' => false,
                     'message' => 'Data PO tidak ditemukan'
@@ -6311,21 +6311,21 @@ class Purchase extends BaseController
                 //     ->where('inputby', $nama)
                 //     ->countAllResults();
                 $qtyVoidSaatIni = 0;
-            
+
                 $existingVoid = $db->query("
                     SELECT qty 
                     FROM sc_tmp.voidpo_dtl 
                     WHERE
                     uniqueid = ?
                 ", [$row->uniqueid])->getRow();
-                
+
                 if ($existingVoid) {
                     $qtyVoidSaatIni = $existingVoid->qty;
                 }
 
                 $sisaQty = $row->qty - ($row->qtylpb + $row->qtyvoid - $qtyVoidSaatIni);
 
-                
+
                 // Jika sisa quantity <= 0, skip item ini
                 if ($sisaQty <= 0) {
                     continue; // Lewati item ini
@@ -6364,18 +6364,18 @@ class Purchase extends BaseController
                     $insertCount++;
                 }
             }
-            
-            $message = $insertCount > 0 
-                        ? "$insertCount item berhasil ditambahkan"
-                        : "Semua item sudah ada sebelumnya";
+
+            $message = $insertCount > 0
+                ? "$insertCount item berhasil ditambahkan"
+                : "Semua item sudah ada sebelumnya";
         }
 
         $voidpoHeader = $builderHeader->select('idtax')
-        ->where('docno', $docno)
-        ->where('inputby', $nama)
-        ->get()->getRowArray();
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->get()->getRowArray();
         $idtax = $voidpoHeader['idtax'] ?? '';
-        
+
         // Hitung total DPP (sum nilai dari po_dtl)
         $builderTotalDpp = $db->table('sc_tmp.voidpo_dtl');
         $totalDpp = $builderTotalDpp->select('COALESCE(SUM(nilai), 0) as total_dpp')
@@ -6383,12 +6383,12 @@ class Purchase extends BaseController
             ->where('inputby', $nama)
             ->get()
             ->getRowArray();
-        
+
         $dpp = $totalDpp['total_dpp'] ?? 0;
-        
+
         // Hitung jumlah pajak berdasarkan idtax
         $jumlahPajak = 0;
-        
+
         if (!empty($idtax) && trim($idtax) !== 'NON'  && $dpp > 0) {
             // Ambil detail tax dari sc_mst.tax_dtl
             $builderTaxDtl = $db->table('sc_mst.tax_dtl');
@@ -6396,16 +6396,16 @@ class Purchase extends BaseController
                 ->where('idtax', $idtax)
                 ->get()
                 ->getResultArray();
-            
+
             foreach ($taxDetails as $tax) {
                 $persentase = $tax['percentation'] ?? 0;
                 $jumlahPajak += $dpp * ($persentase / 100);
             }
         }
-        
+
         // Hitung total (DPP + Jumlah Pajak)
         $total = $dpp + $jumlahPajak;
-        
+
         // Update header Void PO
         $builderHeader->where('docno', $docno)->where('inputby', $nama)->update([
             'dpp' => number_format($dpp, 2, '.', ''),
@@ -6443,7 +6443,7 @@ class Purchase extends BaseController
         $info = array('status' => $status);
         $update = $builder->update($info);
 
-         // Map status ke action (1 huruf)
+        // Map status ke action (1 huruf)
         $action = '';
         switch ($status) {
             case 'C': $action = 'C'; break;  // CANCEL
@@ -6465,7 +6465,7 @@ class Purchase extends BaseController
             return $this->response->setJSON(['success' => true]);
         } else {
             return $this->response->setJSON([
-                'success' => false, 
+                'success' => false,
                 'message' => 'Gagal update status'
             ]);
         }
@@ -6480,7 +6480,7 @@ class Purchase extends BaseController
         $param = " and coalesce(docno,'')='$docno'";
         $dtl = $this->m_purchase->q_voidpo_master($param)->getRowArray();
         $status = trim($dtl['status']);
-        
+
         $logindate = trim($this->session->get('logindate'));
 
         /* ====== GUARD PERIODE TUTUP ====== */
@@ -6768,8 +6768,8 @@ class Purchase extends BaseController
             $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 0, '.', ',') . '</div>';
             // $row[] = $lm->descriptionpo;
             // $row[] = $lm->descriptionpp;
-            $data[] = $row;   
-            
+            $data[] = $row;
+
         }
 
         $output = array(
@@ -6834,7 +6834,7 @@ class Purchase extends BaseController
             $isinclusive = $this->request->getPost('isinclusive') ? 'YES' : 'NO';
 
 
-            
+
             // **BERSIHKAN FORMAT KURS**
             $kurs = trim($this->request->getPost('kurs'));
             $kurs_clean = 0;
@@ -6844,7 +6844,7 @@ class Purchase extends BaseController
                 // $kurs_clean = floatval($kurs_clean);
             }
 
-             // Convert expdate ke format YYYY-MM-DD
+            // Convert expdate ke format YYYY-MM-DD
             $docdateph = null;
             if (!empty($docdate)) {
                 $docdateph = date('Y-m-d', strtotime($docdate));
@@ -6941,9 +6941,9 @@ class Purchase extends BaseController
         //         'printdate' => date('Y-m-d H:i:s')
         //     ]);
 
-        
+
         $enc_docno = $this->fiky_encryption->sealed($docno);
-        
+
         //$enc_docdate= $this->fiky_encryption->sealed($docdate);
         // $enc_idlocation = $this->fiky_encryption->sealed($idlocation);
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
@@ -6955,7 +6955,7 @@ class Purchase extends BaseController
         $datajson =  base_url("purchase/trans/api_voidpo/?enc_docno=$enc_docno") ;
 
         // if($formheader==="HEADER"){
-            $datamrt =  base_url("assets/mrt/report_voidpo.mrt") ;
+        $datamrt =  base_url("assets/mrt/report_voidpo.mrt") ;
         // } else {
         //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
         // }
@@ -6974,9 +6974,9 @@ class Purchase extends BaseController
         // $idgroup=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idgroup')));
         //$docno=trim($this->request->getGet('enc_docno'));
 
-       // $ddate = explode(' - ',$docdate);
-       // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
-       // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
+        // $ddate = explode(' - ',$docdate);
+        // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
+        // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
 
         if (empty($docno) or $docno==='') {
             $param_brg = "";
@@ -6995,7 +6995,7 @@ class Purchase extends BaseController
         $datamst = $this->m_purchase->q_voidpo_master($param);
         $datadtl = $this->m_purchase->q_voidpo_dtl($param);
         $tampungdtl = $datamst->getResult();
-        $detail = $tampungdtl[0] ?? null;        
+        $detail = $tampungdtl[0] ?? null;
         if ($detail) {
 
             $detail->namauser = $nama;
@@ -7014,7 +7014,7 @@ class Purchase extends BaseController
                     'userid' => $nama,
                     'param' => $param,
 
-                    ]
+                ]
                 ),
                 'branch' => $databranch->getResult(),
                 'master' => $datamst->getResult(),
@@ -7023,12 +7023,12 @@ class Purchase extends BaseController
     }
 
 
-    
-    
+
+
     // =================================== UMB ===========================================
 
 
-     public function umb()
+    public function umb()
     {
         $data['title']="Uang Muka Pembelian";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
@@ -7091,7 +7091,7 @@ class Purchase extends BaseController
 
         $kmenu = 'I.P.A.5';
         $role = trim($this->session->get('roleid'));
-        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
+        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
         //auto insert unit
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
@@ -7179,7 +7179,7 @@ class Purchase extends BaseController
             $docno  = trim($lm->docno);
             $docnoHex = bin2hex($docno);
 
-            
+
             $updateBtn = '';
             $detailBtn = '';
             $printBtn  = '';
@@ -7200,8 +7200,8 @@ class Purchase extends BaseController
             }
 
             if($canView){
-                $detailBtn = 
-                '<a class="dropdown-item" 
+                $detailBtn =
+                    '<a class="dropdown-item" 
                     style="background-color:#3badf6;" 
                     href="' . base_url('purchase/trans/detailUMB') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'View Detail Uang Muka Pembelian : ' . $docno . '\')">
@@ -7335,7 +7335,7 @@ class Purchase extends BaseController
             $row[] = $lm->keterangan;
 
             $row[] = $lm->nmbranch;
-            
+
 
             $data[] = $row;
         }
@@ -7384,9 +7384,9 @@ class Purchase extends BaseController
                 echo json_encode($result);
             }
         } else {
-                // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                // echo json_encode($result);
-                return redirect()->to(base_url('purchase/trans/umb'));
+            // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+            // echo json_encode($result);
+            return redirect()->to(base_url('purchase/trans/umb'));
         }
 
     }
@@ -7434,8 +7434,8 @@ class Purchase extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_purchase->q_umb_master_temp($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
-        
-         /* ====== GUARD PERIODE TUTUP ====== */
+
+        /* ====== GUARD PERIODE TUTUP ====== */
         $periode = date('ym', strtotime($logindate));
         $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
 
@@ -7461,7 +7461,7 @@ class Purchase extends BaseController
     }
 
 
-   public function getBranchInfoUMB()
+    public function getBranchInfoUMB()
     {
         $idbranch = trim($this->request->getGet('idbranch'));
 
@@ -7501,7 +7501,7 @@ class Purchase extends BaseController
 
         $logindate = $this->session->get('logindate'); // dd-mm-yyyy
         $infix = date('ym', strtotime($logindate));
-         // Karena hanya 1 row, ambil index ke-0
+        // Karena hanya 1 row, ambil index ke-0
         $prefix = trim($konfigurasiUmum[0]['umb']) ?? '';
         $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
         $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
@@ -7606,7 +7606,7 @@ class Purchase extends BaseController
         $docno  = strtoupper(trim($this->request->getPost('docno')));
         $docnopo = strtoupper(trim($this->request->getPost('docnopo')));
         $idurut = $this->request->getPost('idurut'); // HAPUS strtoupper, biarkan apa adanya
-        
+
         // Tambahkan mode untuk membedakan add/edit dengan lebih jelas
         // $mode = $this->request->getPost('mode'); // 'add' atau 'edit'
 
@@ -7632,11 +7632,11 @@ class Purchase extends BaseController
 
         $reload = false;
         // Untuk pengambilan data dari POST
-        
+
         if ($exists == 0) {
             $isinclusive = strtoupper(trim(
-                $this->request->getPost('isinclusive') 
-                ?? $dataprocess->isinclusive 
+                $this->request->getPost('isinclusive')
+                ?? $dataprocess->isinclusive
                 ?? 'NO'
             ));
 
@@ -7649,7 +7649,7 @@ class Purchase extends BaseController
                 // 'senddate'   => date('Y-m-d', strtotime(trim($this->request->getPost('senddate')))),
                 'jthtempo'     => $this->request->getPost('jthtempo'),
                 'isinclusive'     => $isinclusive,
-                
+
                 'kdsupplier'    => strtoupper($this->request->getPost('kdsupplier')),
                 'alamatsupplier'    => strtoupper($this->request->getPost('alamatsupplier')),
                 // 'alamatkirim'    => strtoupper($this->request->getPost('alamatkirim')),
@@ -7713,10 +7713,10 @@ class Purchase extends BaseController
 
 
 
-            
-            
+
+
             $message = 'Data berhasil diupdate';
-            
+
         } else {
             // =====================================================
             // MODE ADD - INSERT DATA DARI PP
@@ -7740,7 +7740,7 @@ class Purchase extends BaseController
             ", [$docnopo])->getResult();
 
             if (empty($poDetails)) {
-                $db->transRollback();   
+                $db->transRollback();
                 return $this->response->setJSON([
                     'success' => false,
                     'message' => 'Data PO tidak ditemukan'
@@ -7786,30 +7786,30 @@ class Purchase extends BaseController
                     $insertCount++;
                 }
             }
-            
-            $message = $insertCount > 0 
-                        ? "$insertCount item berhasil ditambahkan"
-                        : "Semua item sudah ada sebelumnya";
+
+            $message = $insertCount > 0
+                ? "$insertCount item berhasil ditambahkan"
+                : "Semua item sudah ada sebelumnya";
         }
 
         $umbHeader = $builderHeader->select('idtax')
-        ->where('docno', $docno)
-        ->where('inputby', $nama)
-        ->get()->getRowArray();
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->get()->getRowArray();
         $idtax = $umbHeader['idtax'] ?? '';
-        
+
         // Hitung total DPP (sum nilai dari po_dtl)
         $builderTotalDpp = $db->table('sc_tmp.umb_dtl');
         $totalDpp = $builderTotalDpp->select('COALESCE(SUM(nilai), 0) as total_dpp')
             ->where('docno', $docno)
             ->get()
             ->getRowArray();
-        
+
         $dpp = $totalDpp['total_dpp'] ?? 0;
-        
+
         // Hitung jumlah pajak berdasarkan idtax
         $jumlahPajak = 0;
-        
+
         if (!empty($idtax) && trim($idtax) !== 'NON'  && $dpp > 0) {
             // Ambil detail tax dari sc_mst.tax_dtl
             $builderTaxDtl = $db->table('sc_mst.tax_dtl');
@@ -7817,26 +7817,26 @@ class Purchase extends BaseController
                 ->where('idtax', $idtax)
                 ->get()
                 ->getResultArray();
-            
+
             foreach ($taxDetails as $tax) {
                 $persentase = $tax['percentation'] ?? 0;
                 $jumlahPajak += $dpp * ($persentase / 100);
             }
         }
-        
+
         // Hitung total (DPP + Jumlah Pajak)
         $total = $dpp + $jumlahPajak;
-        
+
         // Update header UMB
         $builderHeader->where('docno', $docno)
-        ->where('inputby', $nama)
-        ->update([
-            'dpp' => number_format($dpp, 2, '.', ''),
-            'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
-            'total' => number_format($total, 2, '.', ''),
-            'updateby' => $nama,
-            'updatedate' => date('Y-m-d H:i:s')
-        ]);
+            ->where('inputby', $nama)
+            ->update([
+                'dpp' => number_format($dpp, 2, '.', ''),
+                'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
+                'total' => number_format($total, 2, '.', ''),
+                'updateby' => $nama,
+                'updatedate' => date('Y-m-d H:i:s')
+            ]);
 
         $db->transComplete();
 
@@ -7866,7 +7866,7 @@ class Purchase extends BaseController
         $info = array('status' => $status);
         $update = $builder->update($info);
 
-         // Map status ke action (1 huruf)
+        // Map status ke action (1 huruf)
         $action = '';
         switch ($status) {
             case 'C': $action = 'C'; break;  // CANCEL
@@ -7888,7 +7888,7 @@ class Purchase extends BaseController
             return $this->response->setJSON(['success' => true]);
         } else {
             return $this->response->setJSON([
-                'success' => false, 
+                'success' => false,
                 'message' => 'Gagal update status'
             ]);
         }
@@ -7904,7 +7904,7 @@ class Purchase extends BaseController
         $dtl = $this->m_purchase->q_umb_master($param)->getRowArray();
         $status = trim($dtl['status']);
 
-        
+
         $logindate = trim($this->session->get('logindate'));
 
         /* ====== GUARD PERIODE TUTUP ====== */
@@ -7975,7 +7975,7 @@ class Purchase extends BaseController
     function finalEntryUMB() {
         $nama = trim($this->session->get('nama'));
         $docno = trim($this->request->getPost('docno'));
-        
+
         // Hapus data error sebelumnya
         $builder_trxerror = $this->db->table('sc_mst.trxerror');
         $builder_trxerror->where('userid', $nama);
@@ -7992,7 +7992,7 @@ class Purchase extends BaseController
             $builder_trxerror->insert($infotrxerror);
             return redirect()->to(base_url('/purchase/trans/addUMB'));
         }
-        
+
         // Ambil semua data dari POST
         $cabang = trim($this->request->getPost('cabang'));
         $docdate = trim($this->request->getPost('docdate'));
@@ -8004,25 +8004,25 @@ class Purchase extends BaseController
         $currcode = strtoupper($this->request->getPost('currcode'));
         $idtax = strtoupper($this->request->getPost('idtax'));
         $isinclusive = $this->request->getPost('isinclusive') ? 'YES' : 'NO';
-        
+
         // Bersihkan format angka
         $kurs_clean = $this->cleanNumber($this->request->getPost('kurs'));
         $dpp_clean = $this->cleanNumber($this->request->getPost('dpp'));
         $jumlahpajak_clean = $this->cleanNumber($this->request->getPost('jumlahpajak'));
         $total_clean = $this->cleanNumber($this->request->getPost('total'));
-        
+
         // Convert date
         $docdateph = !empty($docdate) ? date('Y-m-d', strtotime($docdate)) : null;
-        
+
         // **CEK APAKAH DATA SUDAH ADA**
         $existingData = $this->db->table('sc_tmp.umb')
             ->where('inputby', $nama)
             ->where('docno', $docno)
             ->get()
             ->getRowArray();
-        
+
         $builder = $this->db->table('sc_tmp.umb');
-        
+
         if ($existingData) {
             // **UPDATE DATA YANG SUDAH ADA**
             $updateHeader = [
@@ -8040,10 +8040,10 @@ class Purchase extends BaseController
                 'idtax' => strtoupper($idtax),
                 'keterangan' => strtoupper($keterangan) // Hanya 1 kali
             ];
-            
+
             $builder->where('inputby', $nama)
-                    ->where('docno', $docno)
-                    ->update($updateHeader);
+                ->where('docno', $docno)
+                ->update($updateHeader);
         } else {
             // **INSERT DATA BARU**
             $insertHeader = [
@@ -8066,16 +8066,16 @@ class Purchase extends BaseController
                 'inputdate' => date('Y-m-d H:i:s'),
                 'status' => 'E' // Status awal E
             ];
-            
+
             $builder->insert($insertHeader);
         }
-        
+
         // **UPDATE STATUS MENJADI F** (untuk trigger)
         $updateStatus = $builder
             ->where('inputby', $nama)
             ->where('docno', $docno)
             ->update(['status' => 'F']);
-        
+
         if ($updateStatus) {
             // Berhasil update status
             $paramerror=" and userid='$nama' and modul='I.P.A.5'";
@@ -8131,17 +8131,17 @@ class Purchase extends BaseController
             );
             return redirect()->to(base_url('purchase/trans/po'));
         }
-    //    $builder = $builder
-    //         ->where('docno', $docno)
-    //         ->update([
-    //             'status'=> 'P',
-    //             'printby' => $nama,
-    //             'printdate' => date('Y-m-d H:i:s')
-    //         ]);
+        //    $builder = $builder
+        //         ->where('docno', $docno)
+        //         ->update([
+        //             'status'=> 'P',
+        //             'printby' => $nama,
+        //             'printdate' => date('Y-m-d H:i:s')
+        //         ]);
 
-        
+
         $enc_docno = $this->fiky_encryption->sealed($docno);
-        
+
         //$enc_docdate= $this->fiky_encryption->sealed($docdate);
         // $enc_idlocation = $this->fiky_encryption->sealed($idlocation);
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
@@ -8153,7 +8153,7 @@ class Purchase extends BaseController
         $datajson =  base_url("purchase/trans/api_umb/?enc_docno=$enc_docno") ;
 
         // if($formheader==="HEADER"){
-            $datamrt =  base_url("assets/mrt/report_umb.mrt") ;
+        $datamrt =  base_url("assets/mrt/report_umb.mrt") ;
         // } else {
         //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
         // }
@@ -8172,9 +8172,9 @@ class Purchase extends BaseController
         // $idgroup=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idgroup')));
         //$docno=trim($this->request->getGet('enc_docno'));
 
-       // $ddate = explode(' - ',$docdate);
-       // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
-       // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
+        // $ddate = explode(' - ',$docdate);
+        // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
+        // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
 
         if (empty($docno) or $docno==='') {
             $param_brg = "";
@@ -8193,22 +8193,22 @@ class Purchase extends BaseController
         $datamst = $this->m_purchase->q_umb_master($param);
         $datadtl = $this->m_purchase->q_umb_dtl($param);
         $tampungdtl = $datamst->getResult();
-        $detail = $tampungdtl[0] ?? null;        
+        $detail = $tampungdtl[0] ?? null;
         if ($detail) {
 
             $tujuan = isset($detail->tujuan) ? trim($detail->tujuan) : '';
-        
+
             // Tambahkan properti baru isPindah
             $detail->isPindah = false; // Default value
             if ($tujuan === 'pindah') {
                 $detail->isPindah = true;
             }
 
-             // Tambahkan properti baru isPembuangan
-             $detail->isPembuangan = false; // Default value
-             if ($tujuan === 'pembuangan') {
-                 $detail->isPembuangan = true;
-             }
+            // Tambahkan properti baru isPembuangan
+            $detail->isPembuangan = false; // Default value
+            if ($tujuan === 'pembuangan') {
+                $detail->isPembuangan = true;
+            }
 
             // Tambahkan properti baru isPinjam
             $detail->isPinjam = false; // Default value
@@ -8217,35 +8217,35 @@ class Purchase extends BaseController
             }
 
             $isreturn = isset($detail->isreturn) ? trim($detail->isreturn) : '';
-             // Tambahkan properti baru iskembali
-             $detail->iskembali = false; // Default value
-             if ($isreturn === 'kembali') {
-                 $detail->iskembali = true;
-             }
+            // Tambahkan properti baru iskembali
+            $detail->iskembali = false; // Default value
+            if ($isreturn === 'kembali') {
+                $detail->iskembali = true;
+            }
 
-             $detail->istidakkembali = false; // Default value
-             if ($isreturn === 'tidak_kembali') {
-                 $detail->istidakkembali = true;
-             }
+            $detail->istidakkembali = false; // Default value
+            if ($isreturn === 'tidak_kembali') {
+                $detail->istidakkembali = true;
+            }
 
-             $jenisbarang = isset($detail->jenisbarang) ? trim($detail->jenisbarang) : '';
-              // Tambahkan properti baru isAset
-              $detail->isAset = false; // Default value
-              if ($jenisbarang === 'aset') {
-                  $detail->isAset = true;
-              }
+            $jenisbarang = isset($detail->jenisbarang) ? trim($detail->jenisbarang) : '';
+            // Tambahkan properti baru isAset
+            $detail->isAset = false; // Default value
+            if ($jenisbarang === 'aset') {
+                $detail->isAset = true;
+            }
 
-              // Tambahkan properti baru isPersediaan
-              $detail->isPersediaan = false; // Default value
-              if ($jenisbarang === 'persediaan') {
-                  $detail->isPersediaan = true;
-              }
+            // Tambahkan properti baru isPersediaan
+            $detail->isPersediaan = false; // Default value
+            if ($jenisbarang === 'persediaan') {
+                $detail->isPersediaan = true;
+            }
 
-              // Tambahkan properti baru isLainlain
-              $detail->isLainlain = false; // Default value
-              if ($jenisbarang === 'lainlain') {
-                  $detail->isLainlain = true;
-              }
+            // Tambahkan properti baru isLainlain
+            $detail->isLainlain = false; // Default value
+            if ($jenisbarang === 'lainlain') {
+                $detail->isLainlain = true;
+            }
         }
 
         header("Content-Type: text/json");
@@ -8261,7 +8261,7 @@ class Purchase extends BaseController
                     'userid' => $nama,
                     'param' => $param,
 
-                    ]
+                ]
                 ),
                 'branch' => $databranch->getResult(),
                 'master' => $datamst->getResult(),
@@ -8274,12 +8274,12 @@ class Purchase extends BaseController
 
 
 
-    
-    
+
+
     // =================================== LPB ===========================================
 
 
-     public function lpb()
+    public function lpb()
     {
         $data['title']="Penerimaan Pembelian";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
@@ -8314,7 +8314,7 @@ class Purchase extends BaseController
                 $data['message']="";
             }
         }
-         /* Item Entry Master Check */
+        /* Item Entry Master Check */
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_purchase->q_lpb_master_temp($param);
         $logindate = trim($this->session->get('logindate'));
@@ -8341,7 +8341,7 @@ class Purchase extends BaseController
 
         $kmenu = 'I.P.A.6';
         $role = trim($this->session->get('roleid'));
-        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
+        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
         //auto insert unit
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
@@ -8429,7 +8429,7 @@ class Purchase extends BaseController
             $docno  = trim($lm->docno);
             $docnoHex = bin2hex($docno);
 
-            
+
             $updateBtn = '';
             $detailBtn = '';
             $printBtn  = '';
@@ -8450,8 +8450,8 @@ class Purchase extends BaseController
             }
 
             if($canView){
-                $detailBtn = 
-                '<a class="dropdown-item" 
+                $detailBtn =
+                    '<a class="dropdown-item" 
                     style="background-color:#3badf6;" 
                     href="' . base_url('purchase/trans/detailLPB') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'View Detail Penerimaan Pembelian : ' . $docno . '\')">
@@ -8554,7 +8554,7 @@ class Purchase extends BaseController
                     break;
             }
 
-            
+
             $row[] = $lm->kdsupplier;
             $row[] = $lm->nmsupplier;
             $row[] = $lm->alamatsupplier;
@@ -8583,10 +8583,10 @@ class Purchase extends BaseController
             $row[] = $lm->keterangan;
             $row[] = $lm->nofaktur;
             $row[] = $lm->nosj;
-            
+
             $row[] = $lm->nmbranch;
             $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
-            
+
 
             $data[] = $row;
         }
@@ -8600,7 +8600,7 @@ class Purchase extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-    
+
     function list_lpb_apprv(){
         $list = $this->m_purchase->get_t_front_lpb_apprv_view();
         $data = array();
@@ -8627,7 +8627,7 @@ class Purchase extends BaseController
             $docno  = trim($lm->docno);
             $docnoHex = bin2hex($docno);
 
-            
+
             $updateBtn = '';
             $detailBtn = '';
             $printBtn  = '';
@@ -8648,8 +8648,8 @@ class Purchase extends BaseController
             }
 
             if($canView){
-                $detailBtn = 
-                '<a class="dropdown-item" 
+                $detailBtn =
+                    '<a class="dropdown-item" 
                     style="background-color:#3badf6;" 
                     href="' . base_url('purchase/trans/detailLPB') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'View Detail LPB : ' . $docno . '\')">
@@ -8669,7 +8669,7 @@ class Purchase extends BaseController
 
 
             if (trim($status) !== 'APPROVED' && trim($status) !== 'REVISION/EDITING') {
-                    $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
+                $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
                         <i class="fa fa-check-circle"></i> Approve</a>';
             }
 
@@ -8731,21 +8731,21 @@ class Purchase extends BaseController
                 'd-m-Y',
                 strtotime(trim($lm->docdate))
             );
-            
+
             $docdate  = trim($lm->docdate);
             $jthtempo = (int) $lm->jthtempo;
-            
+
             if (!empty($docdate)) {
-                
+
                 $date = new \DateTime(trim($lm->docdate));
                 $date->modify("+{$jthtempo} days");
-                
+
                 $jatuhTempo = $date->format('d/m/Y');
-                
-                } else {
-                    $jatuhTempo = '';
-                    }
-                    
+
+            } else {
+                $jatuhTempo = '';
+            }
+
             $row[] = $jatuhTempo;
             $row[] = date(
                 'd-m-Y',
@@ -8779,7 +8779,7 @@ class Purchase extends BaseController
             // $row[] = $lm->alamatsupplier;
             // $row[] = $lm->nmkota;
 
-            
+
 
             $data[] = $row;
         }
@@ -9123,7 +9123,7 @@ class Purchase extends BaseController
                 // 'senddate'   => date('Y-m-d', strtotime(trim($this->request->getPost('senddate')))),
                 'jthtempo'     => $this->request->getPost('jthtempo'),
                 'isinclusive'   => $isinclusive,                              // ← Dari PO
-                
+
                 'kdsupplier'    => strtoupper($this->request->getPost('kdsupplier')),
                 'nmsupplier'    => strtoupper($this->request->getPost('nmsupplier')),
                 'alamatsupplier'    => strtoupper($this->request->getPost('alamatsupplier')),
@@ -9169,7 +9169,7 @@ class Purchase extends BaseController
             $idgudang = strtoupper($this->request->getPost('idgudang') ?? '');
             $idspec = strtoupper($this->request->getPost('idspec') ?? '');
 
-             // =====================================================
+            // =====================================================
             // VALIDASI QTY TERHADAP SISA QTY PO (untuk LPB)
             // =====================================================
             $poDetail = $db->query("
@@ -9275,14 +9275,14 @@ class Purchase extends BaseController
             foreach ($poDetails as $row) {
 
                 $qtyLPBSaatIni = 0;
-            
+
                 $existingLPB = $db->query("
                     SELECT qty 
                     FROM sc_tmp.lpb_dtl 
                     WHERE
                     uniqueid = ?
                 ", [$row->uniqueid])->getRow();
-                
+
                 if ($existingLPB) {
                     $qtyLPBSaatIni = $existingLPB->qty;
                 }
@@ -9330,20 +9330,20 @@ class Purchase extends BaseController
                 $insertCount++;
             }
 
-            $message = $insertCount > 0 
-                        ? "$insertCount item berhasil ditambahkan"
-                        : "Semua item sudah ada sebelumnya";
+            $message = $insertCount > 0
+                ? "$insertCount item berhasil ditambahkan"
+                : "Semua item sudah ada sebelumnya";
         }
 
         // ===============================
         // HITUNG TOTAL (AMAN)
         // ===============================
         $lpbHeader = $builderHeader->select('idtax')
-        ->where('inputby', $nama)
-        ->where('docno', $docno)
-        ->get()->getRowArray();
+            ->where('inputby', $nama)
+            ->where('docno', $docno)
+            ->get()->getRowArray();
         $idtax = $lpbHeader['idtax'] ?? '';
-        
+
         // Hitung total DPP (sum nilai dari po_dtl)
         $builderTotalDpp = $db->table('sc_tmp.lpb_dtl');
         $totalDpp = $builderTotalDpp->select('COALESCE(SUM(nilai), 0) as total_dpp')
@@ -9351,12 +9351,12 @@ class Purchase extends BaseController
             ->where('inputby', $nama)
             ->get()
             ->getRowArray();
-        
+
         $dpp = $totalDpp['total_dpp'] ?? 0;
-        
+
         // Hitung jumlah pajak berdasarkan idtax
         $jumlahPajak = 0;
-        
+
         if (!empty($idtax) && trim($idtax) !== 'NON'  && $dpp > 0) {
             // Ambil detail tax dari sc_mst.tax_dtl
             $builderTaxDtl = $db->table('sc_mst.tax_dtl');
@@ -9364,16 +9364,16 @@ class Purchase extends BaseController
                 ->where('idtax', $idtax)
                 ->get()
                 ->getResultArray();
-            
+
             foreach ($taxDetails as $tax) {
                 $persentase = $tax['percentation'] ?? 0;
                 $jumlahPajak += $dpp * ($persentase / 100);
             }
         }
-        
+
         // Hitung total (DPP + Jumlah Pajak)
         $total = $dpp + $jumlahPajak;
-        
+
         // Update header LPB
         $builderHeader->where('docno', $docno)->where('inputby', $nama)->update([
             'dpp' => number_format($dpp, 2, '.', ''),
@@ -9411,7 +9411,7 @@ class Purchase extends BaseController
         $info = array('status' => $status);
         $update = $builder->update($info);
 
-         // Map status ke action (1 huruf)
+        // Map status ke action (1 huruf)
         $action = '';
         switch ($status) {
             case 'C': $action = 'C'; break;  // CANCEL
@@ -9433,7 +9433,7 @@ class Purchase extends BaseController
             return $this->response->setJSON(['success' => true]);
         } else {
             return $this->response->setJSON([
-                'success' => false, 
+                'success' => false,
                 'message' => 'Gagal update status'
             ]);
         }
@@ -9542,143 +9542,143 @@ class Purchase extends BaseController
     public function delete_document_lpb()
     {
         try {
-                // =====================================================
-                // USER LOGIN
-                // =====================================================
-                $nama = trim($this->session->get('nama') ?? '');
+            // =====================================================
+            // USER LOGIN
+            // =====================================================
+            $nama = trim($this->session->get('nama') ?? '');
 
-                // =====================================================
-                // DOCNO
-                // =====================================================
-                $docno = trim($this->request->getPost('docno') ?? '');
-
-
-                // =====================================================
-                // VALIDASI DOCNO
-                // =====================================================
-                if ($docno === '') {
-
-                    return $this->response->setJSON([
-                        'success' => false,
-                        'message' => 'Document Number LPB tidak ditemukan.'
-                    ]);
-
-                }
+            // =====================================================
+            // DOCNO
+            // =====================================================
+            $docno = trim($this->request->getPost('docno') ?? '');
 
 
-                // =====================================================
-                // VALIDASI USER
-                // =====================================================
-                if ($nama === '') {
+            // =====================================================
+            // VALIDASI DOCNO
+            // =====================================================
+            if ($docno === '') {
 
-                    return $this->response->setJSON([
-                        'success' => false,
-                        'message' => 'User login tidak ditemukan.'
-                    ]);
-
-                }
-
-
-                // =====================================================
-                // PANGGIL POSTGRESQL FUNCTION
-                // SELECT sc_trx.sp_delete_lpb('DOCNO', 'USERNAME');
-                // =====================================================
-                $query = $this->db->query(
-                    "SELECT sc_trx.sp_delete_lpb(?, ?) AS result",
-                    [
-                        $docno,
-                        $nama
-                    ]
-                );
-
-
-                $result = $query->getRowArray();
-
-
-                // =====================================================
-                // VALIDASI RESULT DATABASE
-                // =====================================================
-                if (!$result || empty($result['result'])) {
-
-                    throw new \Exception(
-                        'Tidak ada response dari proses penghapusan LPB.'
-                    );
-
-                }
-
-
-                // =====================================================
-                // POSTGRESQL JSONB RESULT
-                // =====================================================
-                $response = json_decode(
-                    $result['result'],
-                    true
-                );
-
-
-                if (!$response) {
-
-                    throw new \Exception(
-                        'Response database tidak valid.'
-                    );
-
-                }
-
-
-                // =====================================================
-                // JIKA FUNCTION MENGEMBALIKAN GAGAL
-                // =====================================================
-                if (
-                    !isset($response['success'])
-                    || $response['success'] !== true
-                ) {
-
-                    return $this->response->setJSON([
-                        'success' => false,
-                        'message' => $response['message']
-                            ?? 'Gagal menghapus LPB.'
-                    ]);
-
-                }
-
-
-                // =====================================================
-                // SUCCESS
-                // =====================================================
                 return $this->response->setJSON([
-                    'success'      => true,
-                    'message'      => $response['message']
-                        ?? 'LPB berhasil dihapus.',
-                    'docno'        => $response['docno']
-                        ?? $docno,
-                    'total_detail' => $response['total_detail']
-                        ?? 0
+                    'success' => false,
+                    'message' => 'Document Number LPB tidak ditemukan.'
                 ]);
 
-
-            } catch (\Throwable $e) {
-
-                // =====================================================
-                // ERROR / EXCEPTION
-                // =====================================================
-                log_message(
-                    'error',
-                    'DELETE LPB ERROR [' . $docno . '] : ' . $e->getMessage()
-                );
+            }
 
 
-                return $this->response
-                    ->setStatusCode(500)
-                    ->setJSON([
+            // =====================================================
+            // VALIDASI USER
+            // =====================================================
+            if ($nama === '') {
 
-                        'success' => false,
-
-                        'message' => 'Gagal menghapus LPB: '
-                            . $e->getMessage()
-
-                    ]);
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'User login tidak ditemukan.'
+                ]);
 
             }
+
+
+            // =====================================================
+            // PANGGIL POSTGRESQL FUNCTION
+            // SELECT sc_trx.sp_delete_lpb('DOCNO', 'USERNAME');
+            // =====================================================
+            $query = $this->db->query(
+                "SELECT sc_trx.sp_delete_lpb(?, ?) AS result",
+                [
+                    $docno,
+                    $nama
+                ]
+            );
+
+
+            $result = $query->getRowArray();
+
+
+            // =====================================================
+            // VALIDASI RESULT DATABASE
+            // =====================================================
+            if (!$result || empty($result['result'])) {
+
+                throw new \Exception(
+                    'Tidak ada response dari proses penghapusan LPB.'
+                );
+
+            }
+
+
+            // =====================================================
+            // POSTGRESQL JSONB RESULT
+            // =====================================================
+            $response = json_decode(
+                $result['result'],
+                true
+            );
+
+
+            if (!$response) {
+
+                throw new \Exception(
+                    'Response database tidak valid.'
+                );
+
+            }
+
+
+            // =====================================================
+            // JIKA FUNCTION MENGEMBALIKAN GAGAL
+            // =====================================================
+            if (
+                !isset($response['success'])
+                || $response['success'] !== true
+            ) {
+
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => $response['message']
+                        ?? 'Gagal menghapus LPB.'
+                ]);
+
+            }
+
+
+            // =====================================================
+            // SUCCESS
+            // =====================================================
+            return $this->response->setJSON([
+                'success'      => true,
+                'message'      => $response['message']
+                    ?? 'LPB berhasil dihapus.',
+                'docno'        => $response['docno']
+                    ?? $docno,
+                'total_detail' => $response['total_detail']
+                    ?? 0
+            ]);
+
+
+        } catch (\Throwable $e) {
+
+            // =====================================================
+            // ERROR / EXCEPTION
+            // =====================================================
+            log_message(
+                'error',
+                'DELETE LPB ERROR [' . $docno . '] : ' . $e->getMessage()
+            );
+
+
+            return $this->response
+                ->setStatusCode(500)
+                ->setJSON([
+
+                    'success' => false,
+
+                    'message' => 'Gagal menghapus LPB: '
+                        . $e->getMessage()
+
+                ]);
+
+        }
 
     }
 
@@ -9891,8 +9891,8 @@ class Purchase extends BaseController
             $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 2, '.', ',') . '</div>';
             $row[] = $lm->descriptionpo;
             $row[] = $lm->descriptionpp;
-            $data[] = $row;   
-            
+            $data[] = $row;
+
         }
 
         $output = array(
@@ -9959,7 +9959,7 @@ class Purchase extends BaseController
             // $isinclusive = $this->request->getPost('isinclusive') ? 'YES' : 'NO';
 
 
-            
+
             // **BERSIHKAN FORMAT KURS**
             // $kurs = trim($this->request->getPost('kurs'));
             // $kurs_clean = 0;
@@ -9969,7 +9969,7 @@ class Purchase extends BaseController
             //     // $kurs_clean = floatval($kurs_clean);
             // }
 
-             // Convert expdate ke format YYYY-MM-DD
+            // Convert expdate ke format YYYY-MM-DD
             $docdateph = null;
             if (!empty($docdate)) {
                 $docdateph = date('Y-m-d', strtotime($docdate));
@@ -10060,17 +10060,17 @@ class Purchase extends BaseController
             return redirect()->to(base_url('purchase/trans/lpb'));
         }
 
-    //    $builder = $builder
-    //         ->where('docno', $docno)
-    //         ->update([
-    //             'status'=> 'P',
-    //             'printby' => $nama,
-    //             'printdate' => date('Y-m-d H:i:s')
-    //         ]);
+        //    $builder = $builder
+        //         ->where('docno', $docno)
+        //         ->update([
+        //             'status'=> 'P',
+        //             'printby' => $nama,
+        //             'printdate' => date('Y-m-d H:i:s')
+        //         ]);
 
-        
+
         $enc_docno = $this->fiky_encryption->sealed($docno);
-        
+
         //$enc_docdate= $this->fiky_encryption->sealed($docdate);
         // $enc_idlocation = $this->fiky_encryption->sealed($idlocation);
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
@@ -10082,7 +10082,7 @@ class Purchase extends BaseController
         $datajson =  base_url("purchase/trans/api_lpb/?enc_docno=$enc_docno") ;
 
         // if($formheader==="HEADER"){
-            $datamrt =  base_url("assets/mrt/report_lpb.mrt") ;
+        $datamrt =  base_url("assets/mrt/report_lpb.mrt") ;
         // } else {
         //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
         // }
@@ -10101,9 +10101,9 @@ class Purchase extends BaseController
         // $idgroup=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idgroup')));
         //$docno=trim($this->request->getGet('enc_docno'));
 
-       // $ddate = explode(' - ',$docdate);
-       // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
-       // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
+        // $ddate = explode(' - ',$docdate);
+        // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
+        // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
 
         if (empty($docno) or $docno==='') {
             $param_brg = "";
@@ -10122,7 +10122,7 @@ class Purchase extends BaseController
         $datamst = $this->m_purchase->q_lpb_master($param);
         $datadtl = $this->m_purchase->q_lpb_dtl($param);
         $tampungdtl = $datamst->getResult();
-        $detail = $tampungdtl[0] ?? null;        
+        $detail = $tampungdtl[0] ?? null;
         if ($detail) {
 
             // 🔹 Ambil nmsupplier berdasarkan kdsupplier
@@ -10140,7 +10140,7 @@ class Purchase extends BaseController
 
 
 
-             // 🔹 Ambil nmsupplier berdasarkan currcode
+            // 🔹 Ambil nmsupplier berdasarkan currcode
             $currcode = trim($detail->currcode);
 
             $curr = $this->db->query("
@@ -10169,7 +10169,7 @@ class Purchase extends BaseController
             $detail->jatuhtempodate = $jatuhTempo;
             $detail->namauser = $nama;
 
-            
+
         }
 
         header("Content-Type: text/json");
@@ -10185,7 +10185,7 @@ class Purchase extends BaseController
                     'userid' => $nama,
                     'param' => $param,
 
-                    ]
+                ]
                 ),
                 'branch' => $databranch->getResult(),
                 'master' => $datamst->getResult(),
@@ -10196,12 +10196,12 @@ class Purchase extends BaseController
 
 
 
-    
-    
+
+
     // =================================== RETUR ===========================================
 
 
-     public function returbeli()
+    public function returbeli()
     {
         $data['title']="Retur Pembelian";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
@@ -10264,7 +10264,7 @@ class Purchase extends BaseController
 
         $kmenu = 'I.P.A.7';
         $role = trim($this->session->get('roleid'));
-        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
+        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
         //auto insert unit
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
@@ -10352,7 +10352,7 @@ class Purchase extends BaseController
             $docno  = trim($lm->docno);
             $docnoHex = bin2hex($docno);
 
-            
+
             $updateBtn = '';
             $detailBtn = '';
             $printBtn  = '';
@@ -10373,8 +10373,8 @@ class Purchase extends BaseController
             }
 
             if($canView){
-                $detailBtn = 
-                '<a class="dropdown-item" 
+                $detailBtn =
+                    '<a class="dropdown-item" 
                     style="background-color:#3badf6;" 
                     href="' . base_url('purchase/trans/detailReturBeli') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'View Detail Retur Pembelian : ' . $docno . '\')">
@@ -10477,19 +10477,19 @@ class Purchase extends BaseController
                     break;
             }
 
-            
+
             $row[] = $lm->kdsupplier;
             $row[] = $lm->nmsupplier;
             $row[] = $lm->alamatsupplier;
             $row[] = $lm->nmkota;
             $row[] = $lm->currcode;
             // $row[] = date(
-                //     'd-m-Y',
-                //     strtotime(trim($lm->senddate))
-                // );
-                $docdate  = trim($lm->docdate);
-                $jthtempo = (int) $lm->jthtempo;
-                
+            //     'd-m-Y',
+            //     strtotime(trim($lm->senddate))
+            // );
+            $docdate  = trim($lm->docdate);
+            $jthtempo = (int) $lm->jthtempo;
+
             if (!empty($docdate)) {
 
                 $date = new \DateTime(trim($lm->docdate));
@@ -10506,10 +10506,10 @@ class Purchase extends BaseController
             $row[] = $lm->keterangan;
             // $row[] = $lm->nofaktur;
             // $row[] = $lm->nosj;
-            
+
             $row[] = $lm->nmbranch;
             $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
-            
+
 
             $data[] = $row;
         }
@@ -10523,7 +10523,7 @@ class Purchase extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-    
+
     function list_returbeli_apprv(){
         $list = $this->m_purchase->get_t_front_returbeli_apprv_view();
         $data = array();
@@ -10550,7 +10550,7 @@ class Purchase extends BaseController
             $docno  = trim($lm->docno);
             $docnoHex = bin2hex($docno);
 
-            
+
             $updateBtn = '';
             $detailBtn = '';
             $printBtn  = '';
@@ -10571,8 +10571,8 @@ class Purchase extends BaseController
             }
 
             if($canView){
-                $detailBtn = 
-                '<a class="dropdown-item" 
+                $detailBtn =
+                    '<a class="dropdown-item" 
                     style="background-color:#3badf6;" 
                     href="' . base_url('purchase/trans/detailReturBeli') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'View Detail ReturBeli : ' . $docno . '\')">
@@ -10592,7 +10592,7 @@ class Purchase extends BaseController
 
 
             if (trim($status) !== 'APPROVED' && trim($status) !== 'REVISION/EDITING') {
-                    $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
+                $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToApproved(\'' . trim($lm->docno) . '\');">
                         <i class="fa fa-check-circle"></i> Approve</a>';
             }
 
@@ -10654,21 +10654,21 @@ class Purchase extends BaseController
                 'd-m-Y',
                 strtotime(trim($lm->docdate))
             );
-            
+
             $docdate  = trim($lm->docdate);
             $jthtempo = (int) $lm->jthtempo;
-            
+
             if (!empty($docdate)) {
-                
+
                 $date = new \DateTime(trim($lm->docdate));
                 $date->modify("+{$jthtempo} days");
-                
+
                 $jatuhTempo = $date->format('d/m/Y');
-                
-                } else {
-                    $jatuhTempo = '';
-                    }
-                    
+
+            } else {
+                $jatuhTempo = '';
+            }
+
             $row[] = $jatuhTempo;
             $row[] = date(
                 'd-m-Y',
@@ -10702,7 +10702,7 @@ class Purchase extends BaseController
             // $row[] = $lm->alamatsupplier;
             // $row[] = $lm->nmkota;
 
-            
+
 
             $data[] = $row;
         }
@@ -10748,9 +10748,9 @@ class Purchase extends BaseController
                 echo json_encode($result);
             }
         } else {
-                // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                // echo json_encode($result);
-                return redirect()->to(base_url('purchase/trans/returbeli'));
+            // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+            // echo json_encode($result);
+            return redirect()->to(base_url('purchase/trans/returbeli'));
         }
 
     }
@@ -10811,7 +10811,7 @@ class Purchase extends BaseController
             return redirect()->to(base_url('purchase/trans/returbeli'));
         }
         // =================================
-        
+
 
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
@@ -10826,7 +10826,7 @@ class Purchase extends BaseController
     }
 
 
-   public function getBranchInfoReturBeli()
+    public function getBranchInfoReturBeli()
     {
         $idbranch = trim($this->request->getGet('idbranch'));
 
@@ -10973,7 +10973,7 @@ class Purchase extends BaseController
         $docno  = strtoupper(trim($this->request->getPost('docno')));
         $docnolpb = strtoupper(trim($this->request->getPost('docnolpb')));
         $idurut = $this->request->getPost('idurut'); // HAPUS strtoupper, biarkan apa adanya
-        
+
         // Tambahkan mode untuk membedakan add/edit dengan lebih jelas
         // $mode = $this->request->getPost('mode'); // 'add' atau 'edit'
 
@@ -11016,7 +11016,7 @@ class Purchase extends BaseController
 
         $reload = false;
         // Untuk pengambilan data dari POST
-        
+
         if ($exists == 0) {
             $currcode   = trim($lpbData['currcode']) ?? '';
             $kurs       = trim($lpbData['kurs']) ?? 0;
@@ -11032,7 +11032,7 @@ class Purchase extends BaseController
                 // 'senddate'   => date('Y-m-d', strtotime(trim($this->request->getPost('senddate')))),
                 'jthtempo'     => $this->request->getPost('jthtempo'),
                 'isinclusive'     => $isinclusive,
-                
+
                 'kdsupplier'    => strtoupper($this->request->getPost('kdsupplier')),
                 'alamatsupplier'    => strtoupper($this->request->getPost('alamatsupplier')),
                 // 'alamatkirim'    => strtoupper($this->request->getPost('alamatkirim')),
@@ -11105,33 +11105,33 @@ class Purchase extends BaseController
             }
 
             $builderDetail
-             ->where('docno', $docno)
-            ->where('inputby', $nama)
-            ->where('uniqueid', $uniqueid)->update([
-                'qty'          => $qty,
-                // 'qtybonus'     => $qtybonus,
-                'harga'        => $harga,
-                'multidisc'    => $multidisc,
-                'nilai'        => $nilai,
-                // 'volitem'      => $volitem,
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->where('uniqueid', $uniqueid)->update([
+                    'qty'          => $qty,
+                    // 'qtybonus'     => $qtybonus,
+                    'harga'        => $harga,
+                    'multidisc'    => $multidisc,
+                    'nilai'        => $nilai,
+                    // 'volitem'      => $volitem,
 
-                // 'biaya'      => $biaya,
-                // 'biaya2'      => $biaya2,
-                // 'idprincipal'      => $idprincipal,
-                'idgudang'      => $idgudang,
-                'idspec'      => $idspec,
+                    // 'biaya'      => $biaya,
+                    // 'biaya2'      => $biaya2,
+                    // 'idprincipal'      => $idprincipal,
+                    'idgudang'      => $idgudang,
+                    'idspec'      => $idspec,
 
-                'descriptionpo' => $descriptionpo,
-                'updateby'     => $nama,
-                'updatedate'   => date('Y-m-d H:i:s')
-            ]);
+                    'descriptionpo' => $descriptionpo,
+                    'updateby'     => $nama,
+                    'updatedate'   => date('Y-m-d H:i:s')
+                ]);
 
 
 
-            
-            
+
+
             $message = 'Data berhasil diupdate';
-            
+
         } else {
             // =====================================================
             // MODE ADD - INSERT DATA DARI PP
@@ -11158,7 +11158,7 @@ class Purchase extends BaseController
             ", [$docnolpb])->getResult();
 
             if (empty($lpbDetails)) {
-                $db->transRollback();   
+                $db->transRollback();
                 return $this->response->setJSON([
                     'success' => false,
                     'message' => 'Data PO tidak ditemukan'
@@ -11221,17 +11221,17 @@ class Purchase extends BaseController
                     $insertCount++;
                 }
             }
-            
-            $message = $insertCount > 0 
-                        ? "$insertCount item berhasil ditambahkan"
-                        : "Semua item sudah ada sebelumnya";
+
+            $message = $insertCount > 0
+                ? "$insertCount item berhasil ditambahkan"
+                : "Semua item sudah ada sebelumnya";
         }
 
         $returbeliHeader = $builderHeader->select('idtax')
-        ->where('inputby', $nama)
-        ->where('docno', $docno)->get()->getRowArray();
+            ->where('inputby', $nama)
+            ->where('docno', $docno)->get()->getRowArray();
         $idtax = $returbeliHeader['idtax'] ?? '';
-        
+
         // Hitung total DPP (sum nilai dari po_dtl)
         $builderTotalDpp = $db->table('sc_tmp.returbeli_dtl');
         $totalDpp = $builderTotalDpp->select('COALESCE(SUM(nilai), 0) as total_dpp')
@@ -11239,12 +11239,12 @@ class Purchase extends BaseController
             ->where('inputby', $nama)
             ->get()
             ->getRowArray();
-        
+
         $dpp = $totalDpp['total_dpp'] ?? 0;
-        
+
         // Hitung jumlah pajak berdasarkan idtax
         $jumlahPajak = 0;
-        
+
         if (!empty($idtax) && trim($idtax) !== 'NON'  && $dpp > 0) {
             // Ambil detail tax dari sc_mst.tax_dtl
             $builderTaxDtl = $db->table('sc_mst.tax_dtl');
@@ -11252,26 +11252,26 @@ class Purchase extends BaseController
                 ->where('idtax', $idtax)
                 ->get()
                 ->getResultArray();
-            
+
             foreach ($taxDetails as $tax) {
                 $persentase = $tax['percentation'] ?? 0;
                 $jumlahPajak += $dpp * ($persentase / 100);
             }
         }
-        
+
         // Hitung total (DPP + Jumlah Pajak)
         $total = $dpp + $jumlahPajak;
-        
+
         // Update header ReturBeli
         $builderHeader->where('docno', $docno)
-        ->where('inputby', $nama)
-        ->update([
-            'dpp' => number_format($dpp, 2, '.', ''),
-            'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
-            'total' => number_format($total, 2, '.', ''),
-            'updateby' => $nama,
-            'updatedate' => date('Y-m-d H:i:s')
-        ]);
+            ->where('inputby', $nama)
+            ->update([
+                'dpp' => number_format($dpp, 2, '.', ''),
+                'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
+                'total' => number_format($total, 2, '.', ''),
+                'updateby' => $nama,
+                'updatedate' => date('Y-m-d H:i:s')
+            ]);
 
         $db->transComplete();
 
@@ -11301,7 +11301,7 @@ class Purchase extends BaseController
         $info = array('status' => $status);
         $update = $builder->update($info);
 
-         // Map status ke action (1 huruf)
+        // Map status ke action (1 huruf)
         $action = '';
         switch ($status) {
             case 'C': $action = 'C'; break;  // CANCEL
@@ -11323,7 +11323,7 @@ class Purchase extends BaseController
             return $this->response->setJSON(['success' => true]);
         } else {
             return $this->response->setJSON([
-                'success' => false, 
+                'success' => false,
                 'message' => 'Gagal update status'
             ]);
         }
@@ -11338,7 +11338,7 @@ class Purchase extends BaseController
         $param = " and coalesce(docno,'')='$docno'";
         $dtl = $this->m_purchase->q_returbeli_master($param)->getRowArray();
         $status = trim($dtl['status']);
-        
+
         $logindate = trim($this->session->get('logindate'));
 
         /* ====== GUARD PERIODE TUTUP ====== */
@@ -11638,8 +11638,8 @@ class Purchase extends BaseController
             $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 0, '.', ',') . '</div>';
             // $row[] = $lm->descriptionpo;
             // $row[] = $lm->descriptionpp;
-            $data[] = $row;   
-            
+            $data[] = $row;
+
         }
 
         $output = array(
@@ -11705,7 +11705,7 @@ class Purchase extends BaseController
             $isinclusive = $this->request->getPost('isinclusive') ? 'YES' : 'NO';
 
 
-            
+
             // **BERSIHKAN FORMAT KURS**
             $kurs = trim($this->request->getPost('kurs'));
             $kurs_clean = 0;
@@ -11715,7 +11715,7 @@ class Purchase extends BaseController
                 // $kurs_clean = floatval($kurs_clean);
             }
 
-             // Convert expdate ke format YYYY-MM-DD
+            // Convert expdate ke format YYYY-MM-DD
             $docdateph = null;
             if (!empty($docdate)) {
                 $docdateph = date('Y-m-d', strtotime($docdate));
@@ -11804,17 +11804,17 @@ class Purchase extends BaseController
             );
             return redirect()->to(base_url('purchase/trans/lpb'));
         }
-    //    $builder = $builder
-    //         ->where('docno', $docno)
-    //         ->update([
-    //             'status'=> 'P',
-    //             'printby' => $nama,
-    //             'printdate' => date('Y-m-d H:i:s')
-    //         ]);
+        //    $builder = $builder
+        //         ->where('docno', $docno)
+        //         ->update([
+        //             'status'=> 'P',
+        //             'printby' => $nama,
+        //             'printdate' => date('Y-m-d H:i:s')
+        //         ]);
 
-        
+
         $enc_docno = $this->fiky_encryption->sealed($docno);
-        
+
         //$enc_docdate= $this->fiky_encryption->sealed($docdate);
         // $enc_idlocation = $this->fiky_encryption->sealed($idlocation);
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
@@ -11826,7 +11826,7 @@ class Purchase extends BaseController
         $datajson =  base_url("purchase/trans/api_returbeli/?enc_docno=$enc_docno") ;
 
         // if($formheader==="HEADER"){
-            $datamrt =  base_url("assets/mrt/report_returbeli.mrt") ;
+        $datamrt =  base_url("assets/mrt/report_returbeli.mrt") ;
         // } else {
         //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
         // }
@@ -11845,9 +11845,9 @@ class Purchase extends BaseController
         // $idgroup=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idgroup')));
         //$docno=trim($this->request->getGet('enc_docno'));
 
-       // $ddate = explode(' - ',$docdate);
-       // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
-       // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
+        // $ddate = explode(' - ',$docdate);
+        // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
+        // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
 
         if (empty($docno) or $docno==='') {
             $param_brg = "";
@@ -11866,22 +11866,22 @@ class Purchase extends BaseController
         $datamst = $this->m_purchase->q_returbeli_master($param);
         $datadtl = $this->m_purchase->q_returbeli_dtl($param);
         $tampungdtl = $datamst->getResult();
-        $detail = $tampungdtl[0] ?? null;        
+        $detail = $tampungdtl[0] ?? null;
         if ($detail) {
 
             $tujuan = isset($detail->tujuan) ? trim($detail->tujuan) : '';
-        
+
             // Tambahkan properti baru isPindah
             $detail->isPindah = false; // Default value
             if ($tujuan === 'pindah') {
                 $detail->isPindah = true;
             }
 
-             // Tambahkan properti baru isPembuangan
-             $detail->isPembuangan = false; // Default value
-             if ($tujuan === 'pembuangan') {
-                 $detail->isPembuangan = true;
-             }
+            // Tambahkan properti baru isPembuangan
+            $detail->isPembuangan = false; // Default value
+            if ($tujuan === 'pembuangan') {
+                $detail->isPembuangan = true;
+            }
 
             // Tambahkan properti baru isPinjam
             $detail->isPinjam = false; // Default value
@@ -11890,35 +11890,35 @@ class Purchase extends BaseController
             }
 
             $isreturn = isset($detail->isreturn) ? trim($detail->isreturn) : '';
-             // Tambahkan properti baru iskembali
-             $detail->iskembali = false; // Default value
-             if ($isreturn === 'kembali') {
-                 $detail->iskembali = true;
-             }
+            // Tambahkan properti baru iskembali
+            $detail->iskembali = false; // Default value
+            if ($isreturn === 'kembali') {
+                $detail->iskembali = true;
+            }
 
-             $detail->istidakkembali = false; // Default value
-             if ($isreturn === 'tidak_kembali') {
-                 $detail->istidakkembali = true;
-             }
+            $detail->istidakkembali = false; // Default value
+            if ($isreturn === 'tidak_kembali') {
+                $detail->istidakkembali = true;
+            }
 
-             $jenisbarang = isset($detail->jenisbarang) ? trim($detail->jenisbarang) : '';
-              // Tambahkan properti baru isAset
-              $detail->isAset = false; // Default value
-              if ($jenisbarang === 'aset') {
-                  $detail->isAset = true;
-              }
+            $jenisbarang = isset($detail->jenisbarang) ? trim($detail->jenisbarang) : '';
+            // Tambahkan properti baru isAset
+            $detail->isAset = false; // Default value
+            if ($jenisbarang === 'aset') {
+                $detail->isAset = true;
+            }
 
-              // Tambahkan properti baru isPersediaan
-              $detail->isPersediaan = false; // Default value
-              if ($jenisbarang === 'persediaan') {
-                  $detail->isPersediaan = true;
-              }
+            // Tambahkan properti baru isPersediaan
+            $detail->isPersediaan = false; // Default value
+            if ($jenisbarang === 'persediaan') {
+                $detail->isPersediaan = true;
+            }
 
-              // Tambahkan properti baru isLainlain
-              $detail->isLainlain = false; // Default value
-              if ($jenisbarang === 'lainlain') {
-                  $detail->isLainlain = true;
-              }
+            // Tambahkan properti baru isLainlain
+            $detail->isLainlain = false; // Default value
+            if ($jenisbarang === 'lainlain') {
+                $detail->isLainlain = true;
+            }
         }
 
         header("Content-Type: text/json");
@@ -11934,7 +11934,7 @@ class Purchase extends BaseController
                     'userid' => $nama,
                     'param' => $param,
 
-                    ]
+                ]
                 ),
                 'branch' => $databranch->getResult(),
                 'master' => $datamst->getResult(),

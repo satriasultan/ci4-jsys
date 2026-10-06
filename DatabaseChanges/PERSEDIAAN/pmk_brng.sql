@@ -1,19 +1,44 @@
---I.Q.A.5
+-- ============================================================
+-- PMK BRNG - ONE EXECUTE / CLEAN INSTALL
+-- I.Q.A.5
+-- ============================================================
 
---drop table sc_tmp.pmk_brng_mst;
-CREATE TABLE IF NOT EXISTS sc_tmp.pmk_brng_mst
+BEGIN;
+
+-- HAPUS TRIGGER LAMA
+DROP TRIGGER IF EXISTS tr_tmp_pmk_brng_mst ON sc_tmp.pmk_brng_mst;
+DROP TRIGGER IF EXISTS tr_trx_pmk_brng_mst ON sc_trx.pmk_brng_mst;
+
+-- HAPUS FUNCTION LAMA
+DROP FUNCTION IF EXISTS sc_tmp.tr_tmp_pmk_brng_mst();
+DROP FUNCTION IF EXISTS sc_trx.tr_trx_pmk_brng_mst();
+DROP FUNCTION IF EXISTS sc_trx.sp_rebuild_pmk(VARCHAR);
+DROP FUNCTION IF EXISTS sc_trx.sp_unpost_stk_pmk(VARCHAR);
+
+-- HAPUS TABEL LAMA
+DROP TABLE IF EXISTS sc_tmp.pmk_brng_dtl CASCADE;
+DROP TABLE IF EXISTS sc_trx.pmk_brng_dtl CASCADE;
+DROP TABLE IF EXISTS sc_tmp.pmk_brng_mst CASCADE;
+DROP TABLE IF EXISTS sc_trx.pmk_brng_mst CASCADE;
+
+-- ============================================================
+-- CREATE TABLE
+-- ============================================================
+
+CREATE TABLE sc_tmp.pmk_brng_mst
 (
+    idurut BIGSERIAL,
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
-    doctype character(20) default 'pmk_brng' ,
+    doctype character(20) DEFAULT 'pmk_brng',
     docdate character(20) COLLATE pg_catalog."default",
     docref character(30) COLLATE pg_catalog."default",
-    cabang character (30 ) COLLATE pg_catalog."default",    
-    cabang_sent character (30 ) COLLATE pg_catalog."default",    
+    cabang character(30) COLLATE pg_catalog."default",
+    cabang_sent character(30) COLLATE pg_catalog."default",
     pemohon character(100) COLLATE pg_catalog."default",
     estpakai character(20) COLLATE pg_catalog."default",
-	idlocation_from character(30),
-	idlocation_to character(30),
-	idlocation_transit character(30),
+    idlocation_from character(30),
+    idlocation_to character(30),
+    idlocation_transit character(30),
     status character(6) COLLATE pg_catalog."default",
     description TEXT,
     inputby character varying(50) COLLATE pg_catalog."default",
@@ -24,28 +49,22 @@ CREATE TABLE IF NOT EXISTS sc_tmp.pmk_brng_mst
     printdate timestamp without time zone,
     docnotmp character(30) COLLATE pg_catalog."default",
     CONSTRAINT pk_tmp_pmk_brng_mst PRIMARY KEY (docno)
-)
-
-TABLESPACE pg_default;
-
-ALTER TABLE IF EXISTS sc_tmp.pmk_brng_mst
-    OWNER to postgres;
-
-
---drop table sc_trx.pmk_brng_mst;
-CREATE TABLE IF NOT EXISTS sc_trx.pmk_brng_mst
+);
+ALTER TABLE sc_tmp.pmk_brng_mst OWNER TO postgres;
+CREATE TABLE sc_trx.pmk_brng_mst
 (
+    idurut BIGINT,
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
-	doctype character(20) default 'pmk_brng' ,
+    doctype character(20) DEFAULT 'pmk_brng',
     docdate character(20) COLLATE pg_catalog."default",
-	docref character(30) COLLATE pg_catalog."default",
-    cabang character (30 ) COLLATE pg_catalog."default",    
-	cabang_sent character (30 ) COLLATE pg_catalog."default",  
+    docref character(30) COLLATE pg_catalog."default",
+    cabang character(30) COLLATE pg_catalog."default",
+    cabang_sent character(30) COLLATE pg_catalog."default",
     pemohon character(100) COLLATE pg_catalog."default",
     estpakai character(20) COLLATE pg_catalog."default",
-	idlocation_from character(30),
-	idlocation_to character(30),
-	idlocation_transit character(30),
+    idlocation_from character(30),
+    idlocation_to character(30),
+    idlocation_transit character(30),
     status character(6) COLLATE pg_catalog."default",
     description TEXT,
     inputby character varying(50) COLLATE pg_catalog."default",
@@ -56,22 +75,14 @@ CREATE TABLE IF NOT EXISTS sc_trx.pmk_brng_mst
     printdate timestamp without time zone,
     docnotmp character(30) COLLATE pg_catalog."default",
     CONSTRAINT pk_trx_pmk_brng_mst PRIMARY KEY (docno)
-)
-
-TABLESPACE pg_default;
-
-ALTER TABLE IF EXISTS sc_trx.pmk_brng_mst
-    OWNER to postgres;
-
-
-
---drop table sc_tmp.pmk_brng_dtl;
-CREATE TABLE IF NOT EXISTS sc_tmp.pmk_brng_dtl
+);
+ALTER TABLE sc_trx.pmk_brng_mst OWNER TO postgres;
+CREATE TABLE sc_tmp.pmk_brng_dtl
 (
     idurut BIGSERIAL PRIMARY KEY,
     docno CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
-	docref character(30) COLLATE pg_catalog."default",
-	doctype character(20) default 'pmk_brng' ,
+    docref character(30) COLLATE pg_catalog."default",
+    doctype character(20) DEFAULT 'pmk_brng',
     idbarang CHARACTER(20) COLLATE pg_catalog."default",
     nmbarang CHARACTER(150) COLLATE pg_catalog."default",
     unit CHARACTER(20) COLLATE pg_catalog."default",
@@ -79,58 +90,47 @@ CREATE TABLE IF NOT EXISTS sc_tmp.pmk_brng_dtl
     qty NUMERIC(18,2),
     description TEXT COLLATE pg_catalog."default",
     status CHARACTER(6) COLLATE pg_catalog."default",
-	val numeric(18,2),
-	valsum numeric(18,2),
+    val numeric(18,2),
+    valsum numeric(18,2),
     inputby character(50) COLLATE pg_catalog."default",
     inputdate TIMESTAMP WITHOUT TIME ZONE,
     updateby CHARACTER(50) COLLATE pg_catalog."default",
     updatedate TIMESTAMP WITHOUT TIME ZONE,
-	iduniq text,
-    docnotmp character(30)
-)
-TABLESPACE pg_default;
-
-ALTER TABLE IF EXISTS sc_tmp.pmk_brng_dtl
-    OWNER TO postgres;
-
-
---drop table sc_trx.pmk_brng_dtl;
-CREATE TABLE IF NOT EXISTS sc_trx.pmk_brng_dtl
+    iduniq text,
+    docnotmp character(30),
+    idcostcenter character(10),
+    batch character(100),
+    idlocation character(10),
+    idcoa character(20)
+);
+ALTER TABLE sc_tmp.pmk_brng_dtl OWNER TO postgres;
+CREATE TABLE sc_trx.pmk_brng_dtl
 (
     idurut INTEGER,
     docno CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
-	docref character(30) COLLATE pg_catalog."default",
-	doctype character(20) default 'pmk_brng' ,
+    docref character(30) COLLATE pg_catalog."default",
+    doctype character(20) DEFAULT 'pmk_brng',
     idbarang CHARACTER(20) COLLATE pg_catalog."default",
     nmbarang CHARACTER(150) COLLATE pg_catalog."default",
     unit CHARACTER(20) COLLATE pg_catalog."default",
-	qtystock NUMERIC(18,2),
+    qtystock NUMERIC(18,2),
     qty NUMERIC(18,2),
     description TEXT COLLATE pg_catalog."default",
     status CHARACTER(6) COLLATE pg_catalog."default",
-	val numeric(18,2),
-	valsum numeric(18,2),
+    val numeric(18,2),
+    valsum numeric(18,2),
     inputby character(50) COLLATE pg_catalog."default",
     inputdate TIMESTAMP WITHOUT TIME ZONE,
     updateby CHARACTER(50) COLLATE pg_catalog."default",
     updatedate TIMESTAMP WITHOUT TIME ZONE,
-	iduniq text,
-    docnotmp character(30)
-)
-TABLESPACE pg_default;
-
-ALTER TABLE IF EXISTS sc_trx.pmk_brng_dtl
-    OWNER TO postgres;
-
-
-
-
-alter table sc_tmp.pmk_brng_dtl add column idcostcenter character(10), add column batch character(100);
-alter table sc_trx.pmk_brng_dtl add column idcostcenter character(10), add column batch character(100);
-
-
-alter table sc_tmp.pmk_brng_dtl add column idlocation character(10), add column idcoa character(20);
-alter table sc_trx.pmk_brng_dtl add column idlocation character(10), add column idcoa character(20);
+    iduniq text,
+    docnotmp character(30),
+    idcostcenter character(10),
+    batch character(100),
+    idlocation character(10),
+    idcoa character(20)
+);
+ALTER TABLE sc_trx.pmk_brng_dtl OWNER TO postgres;
 
 CREATE OR REPLACE FUNCTION sc_tmp.tr_tmp_pmk_brng_mst()
 RETURNS trigger
@@ -146,6 +146,8 @@ DECLARE
     v_num_int INTEGER;
     v_row RECORD;
     v_doctype TEXT;
+    v_idurut BIGINT;
+    v_lock_key BIGINT;
 BEGIN
 
 -- =========================================
@@ -161,6 +163,7 @@ IF OLD.status = 'E' AND NEW.status = 'F' AND COALESCE(NEW.docnotmp, '') = '' THE
     v_docno := TRIM(NEW.docno);
     v_inputby := NEW.inputby;
     v_inputdate := NEW.inputdate;
+    v_idurut := NEW.idurut;
 
     /* ========================================================
     CEK APAKAH SUDAH PERNAH DIFINALKAN
@@ -252,9 +255,14 @@ IF OLD.status = 'E' AND NEW.status = 'F' AND COALESCE(NEW.docnotmp, '') = '' THE
     -- INSERT HEADER
     -- ===============================
     INSERT INTO sc_trx.pmk_brng_mst
-    SELECT 
-        v_docno, v_doctype, docdate, docref, cabang, cabang_sent, pemohon, estpakai,
-        idlocation_from, idlocation_to, idlocation_transit, 'F',
+    (
+        idurut, docno, doctype, docdate, docref, cabang, cabang_sent, pemohon,
+        estpakai, idlocation_from, idlocation_to, idlocation_transit, status,
+        description, inputby, inputdate, updateby, updatedate, printby, printdate, docnotmp
+    )
+    SELECT
+        idurut, v_docno, v_doctype, docdate, docref, cabang, cabang_sent, pemohon,
+        estpakai, idlocation_from, idlocation_to, idlocation_transit, 'F',
         description, inputby, inputdate, updateby, updatedate, printby, printdate, docnotmp
     FROM sc_tmp.pmk_brng_mst
     WHERE TRIM(docno)=TRIM(OLD.docno);
@@ -263,10 +271,15 @@ IF OLD.status = 'E' AND NEW.status = 'F' AND COALESCE(NEW.docnotmp, '') = '' THE
     -- INSERT DETAIL
     -- ===============================
     INSERT INTO sc_trx.pmk_brng_dtl
-    SELECT 
-        v_docno, docref, v_doctype, idbarang, nmbarang, unit, qtystock, qty,
+    (
+        idurut, docno, docref, doctype, idbarang, nmbarang, unit, qtystock, qty,
+        description, status, val, valsum, inputby, inputdate, updateby, updatedate,
+        iduniq, docnotmp, idcostcenter, batch, idlocation, idcoa
+    )
+    SELECT
+        idurut, v_docno, docref, v_doctype, idbarang, nmbarang, unit, qtystock, qty,
         description, 'F', val, valsum, inputby, inputdate, updateby, updatedate,
-        iduniq, docnotmp, idurut, idcostcenter, batch, idlocation, idcoa
+        iduniq, docnotmp, idcostcenter, batch, idlocation, idcoa
     FROM sc_tmp.pmk_brng_dtl
     WHERE TRIM(docno)=TRIM(OLD.docno);
 
@@ -320,10 +333,15 @@ ELSIF OLD.status='E' AND NEW.status='F' AND COALESCE(NEW.docnotmp,'')<>'' THEN
     -- INSERT DETAIL
     -- ===============================
     INSERT INTO sc_trx.pmk_brng_dtl
-    SELECT 
-        NEW.docnotmp, docref, v_doctype, idbarang, nmbarang, unit, qtystock, qty,
+    (
+        idurut, docno, docref, doctype, idbarang, nmbarang, unit, qtystock, qty,
+        description, status, val, valsum, inputby, inputdate, updateby, updatedate,
+        iduniq, docnotmp, idcostcenter, batch, idlocation, idcoa
+    )
+    SELECT
+        idurut, NEW.docnotmp, docref, v_doctype, idbarang, nmbarang, unit, qtystock, qty,
         description, 'F', val, valsum, inputby, inputdate, updateby, updatedate,
-        iduniq, docnotmp, idurut, idcostcenter, batch, idlocation, idcoa
+        iduniq, docnotmp, idcostcenter, batch, idlocation, idcoa
     FROM sc_tmp.pmk_brng_dtl
     WHERE TRIM(docno)=TRIM(NEW.docno);
 
@@ -331,8 +349,13 @@ ELSIF OLD.status='E' AND NEW.status='F' AND COALESCE(NEW.docnotmp,'')<>'' THEN
     -- INSERT HEADER
     -- ===============================
     INSERT INTO sc_trx.pmk_brng_mst
-    SELECT 
-        NEW.docnotmp, v_doctype, docdate, docref, cabang, cabang_sent, pemohon,
+    (
+        idurut, docno, doctype, docdate, docref, cabang, cabang_sent, pemohon,
+        estpakai, idlocation_from, idlocation_to, idlocation_transit, status,
+        description, inputby, inputdate, updateby, updatedate, printby, printdate, docnotmp
+    )
+    SELECT
+        idurut, NEW.docnotmp, v_doctype, docdate, docref, cabang, cabang_sent, pemohon,
         estpakai, idlocation_from, idlocation_to, idlocation_transit, 'F',
         description, inputby, inputdate, updateby, updatedate, printby,
         printdate, docnotmp
@@ -360,16 +383,6 @@ RETURN NEW;
 END;
 $$;
 
--- FUNCTION: sc_tmp.tr_tmp_pmk_brng_mst()
--- Trigger: tr_tmp_pmk_brng_mst
-
--- DROP TRIGGER IF EXISTS tr_tmp_pmk_brng_mst ON sc_tmp.pmk_brng_mst;
-
-CREATE OR REPLACE TRIGGER tr_tmp_pmk_brng_mst
-    AFTER UPDATE 
-    ON sc_tmp.pmk_brng_mst
-    FOR EACH ROW
-    EXECUTE FUNCTION sc_tmp.tr_tmp_pmk_brng_mst();
 
 
 
@@ -403,10 +416,15 @@ BEGIN
 		
         -- ===============================
         INSERT INTO sc_tmp.pmk_brng_mst (
-            docno,doctype,docdate,docref,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,status,description,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp
+            idurut, docno, doctype, docdate, docref, cabang, cabang_sent, pemohon,
+            estpakai, idlocation_from, idlocation_to, idlocation_transit, status,
+            description, inputby, inputdate, updateby, updatedate, printby, printdate, docnotmp
         )
-        (SELECT new.updateby,doctype,docdate,docref,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,'E',description,inputby,inputdate,updateby,updatedate,printby,printdate,docno as docnotmp FROM sc_trx.pmk_brng_mst
-        WHERE trim(docno) = trim(new.docno));
+        (SELECT idurut, new.updateby, doctype, docdate, docref, cabang, cabang_sent, pemohon,
+            estpakai, idlocation_from, idlocation_to, idlocation_transit, 'E',
+            description, inputby, inputdate, updateby, updatedate, printby, printdate, docno
+         FROM sc_trx.pmk_brng_mst
+         WHERE trim(docno) = trim(new.docno));
 
 
 
@@ -421,16 +439,6 @@ ALTER FUNCTION sc_trx.tr_trx_pmk_brng_mst()
     OWNER TO postgres;
 
 
--- FUNCTION: sc_trx.tr_trx_pmk_brng_mst()
--- Trigger: tr_trx_pmk_brng_mst
-
--- DROP TRIGGER IF EXISTS tr_trx_pmk_brng_mst ON sc_trx.pmk_brng_mst;
-
-CREATE OR REPLACE TRIGGER tr_trx_pmk_brng_mst
-    AFTER UPDATE 
-    ON sc_trx.pmk_brng_mst
-    FOR EACH ROW
-    EXECUTE FUNCTION sc_trx.tr_trx_pmk_brng_mst();
 
 
     
@@ -584,3 +592,28 @@ BEGIN
 
 END;
 $$;
+
+
+-- ============================================================
+-- TRIGGER
+-- ============================================================
+
+DROP TRIGGER IF EXISTS tr_tmp_pmk_brng_mst ON sc_tmp.pmk_brng_mst;
+
+CREATE TRIGGER tr_tmp_pmk_brng_mst
+    AFTER UPDATE ON sc_tmp.pmk_brng_mst
+    FOR EACH ROW
+    EXECUTE FUNCTION sc_tmp.tr_tmp_pmk_brng_mst();
+
+DROP TRIGGER IF EXISTS tr_trx_pmk_brng_mst ON sc_trx.pmk_brng_mst;
+
+CREATE TRIGGER tr_trx_pmk_brng_mst
+    AFTER UPDATE ON sc_trx.pmk_brng_mst
+    FOR EACH ROW
+    EXECUTE FUNCTION sc_trx.tr_trx_pmk_brng_mst();
+
+COMMIT;
+
+-- ============================================================
+-- SELESAI
+-- ============================================================

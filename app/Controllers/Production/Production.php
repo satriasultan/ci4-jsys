@@ -279,8 +279,8 @@ class Production extends BaseController
             $row[] = $lm->cabang;
             $row[] = $lm->pemohon;
 
-            $row[] = $lm->docdate;
-            $row[] = $lm->activedate;
+            $row[] = $lm->docdate1;
+            $row[] = $lm->activedate1;
 
             $row[] = $lm->docref;
 
@@ -289,10 +289,10 @@ class Production extends BaseController
             $row[] = '<div class="text-center">'.$statusBadge.'</div>';
 
             $row[] = $lm->inputby;
-            $row[] = $lm->inputdate;
+            $row[] = $lm->inputdate1;
 
             $row[] = $lm->updateby;
-            $row[] = $lm->updatedate;
+            $row[] = $lm->updatedate1;
 
             $data[] = $row;
         }
@@ -429,11 +429,31 @@ class Production extends BaseController
     }
 
 
+    // =========================================================
+    // tanggal form (dd-mm-yyyy) -> tanggal database (Y-m-d)
+    // =========================================================
+    private function stdCostDateToDb($val)
+    {
+        $val = trim((string) $val);
+        if ($val === '') {
+            return null;
+        }
+
+        $dt = \DateTime::createFromFormat('d-m-Y', $val);
+        if ($dt && $dt->format('d-m-Y') === $val) {
+            return $dt->format('Y-m-d');
+        }
+
+        $ts = strtotime($val); // sudah ISO (Y-m-d) / format lain yang dimengerti
+        return $ts ? date('Y-m-d', $ts) : $val;
+    }
+
     public function save_standart_cost_mst()
     {
         $nama = trim($this->session->get('nama'));
         $docno  = strtoupper($this->request->getPost('docno'));
         $idurut = $this->request->getPost('idurut');
+        $cabang = strtoupper(trim($this->request->getPost('cabang')));
 
         if (!$docno) {
             return $this->response->setJSON([
@@ -463,8 +483,9 @@ class Production extends BaseController
                 'docno'      => $docno,
                 'doctype'    => 'STDCOST',
                 'docref'     => trim($this->request->getPost('docref')),
-                'docdate'    => trim($this->request->getPost('docdate')),
-                'activedate'     => trim($this->request->getPost('activedate')),
+                'docdate'    => $this->stdCostDateToDb($this->request->getPost('docdate')),
+                'activedate' => $this->stdCostDateToDb($this->request->getPost('activedate')),
+                'cabang'     => $cabang,
                 'penyesuaian_a'    => trim($this->request->getPost('penyesuaian_a')),
                 'penyesuaian_b'   => trim($this->request->getPost('penyesuaian_b')),
                 'pemohon'       => trim($this->request->getPost('pemohon')),
@@ -489,6 +510,22 @@ class Production extends BaseController
             }
 
             $reload = true;
+
+        } else {
+
+            // header sudah ada: sinkronkan cabang / tanggal / ref dari form
+            $builderHeader
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->update([
+                    'cabang'     => $cabang,
+                    'docref'     => trim($this->request->getPost('docref')),
+                    'docdate'    => $this->stdCostDateToDb($this->request->getPost('docdate')),
+                    'activedate' => $this->stdCostDateToDb($this->request->getPost('activedate')),
+                    'pemohon'    => trim($this->request->getPost('pemohon')),
+                    'updateby'   => $nama,
+                    'updatedate' => date('Y-m-d H:i:s'),
+                ]);
         }
 
         // =========================
@@ -553,8 +590,9 @@ class Production extends BaseController
                     'idbarang'    => $idbarang,
                     'nmbarang'    => $nmbarang,
                     'unit'        => $unit,
-                    'docdate'    => trim($this->request->getPost('docdate')),
-                    'activedate'     => trim($this->request->getPost('activedate')),
+                    'docdate'    => $this->stdCostDateToDb($this->request->getPost('docdate')),
+                    'activedate' => $this->stdCostDateToDb($this->request->getPost('activedate')),
+                    'cabang'     => $cabang,
                     'newcost'        => $newcost,
                     'description' => $description_detail,
                     'updateby'    => $nama,
@@ -584,8 +622,9 @@ class Production extends BaseController
                 'idbarang'    => $idbarang,
                 'nmbarang'    => $nmbarang,
                 'unit'        => $unit,
-                'docdate'    => trim($this->request->getPost('docdate')),
-                'activedate'     => trim($this->request->getPost('activedate')),
+                'docdate'    => $this->stdCostDateToDb($this->request->getPost('docdate')),
+                'activedate' => $this->stdCostDateToDb($this->request->getPost('activedate')),
+                'cabang'     => $cabang,
                 //'batch'         => $batch,
                 //'qty'         => $qty,
                 'newcost'        => $newcost,
@@ -625,45 +664,66 @@ class Production extends BaseController
 
     function clearStandartCostTmp()
     {
-        $nama=trim($this->session->get('nama'));
-        $param = " and coalesce(inputby,'')='$nama'";
+        $nama = trim($this->session->get('nama'));
+
+        $param = " AND COALESCE(inputby,'') = '$nama'";
+
         $dtl = $this->m_production->q_tmp_standart_cost_mst($param);
-        // if(isEmpty($dtl->getRowArray()['status'])){
-        //     return redirect()->to(base_url('production/trans/pp'));
-        // }
-        $status = trim($dtl->getRowArray()['status']);
-        $builder = $this->db->table('sc_tmp.standart_cost_mst');
-        $builder_dtl = $this->db->table('sc_tmp.standart_cost_dtl');
 
-        if ($status==='I') {
-            // $builder= $this->db->table('sc_tmp.standart_usage_mst');
-            $builder->where('inputby',$nama);
-            $builder->delete();
-
-            return redirect()->to(base_url('production/trans/standart_cost'));
-        } else if ($status==='E') {
-            $builder->where('inputby',$nama);
-            if ($builder->update(array('status' => 'C'))) {
-
-                $builder->where('inputby',$nama);
-                $builder->delete();
-                $builder_dtl->where('inputby',$nama);
-                $builder_dtl->delete();
-
-                $result = array('status' => true, 'messages' => 'Sukses Di Proses');
-                echo json_encode($result);
-                return redirect()->to(base_url('production/trans/standart_cost'));
-            }
-            else {
-                $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                echo json_encode($result);
-            }
-        } else {
-            // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-            // echo json_encode($result);
+        // =====================================================
+        // JIKA TIDAK ADA DATA / ROW LANGSUNG KEMBALI KE LIST
+        // =====================================================
+        if (!$dtl || $dtl->getNumRows() == 0) {
             return redirect()->to(base_url('production/trans/standart_cost'));
         }
 
+        $row = $dtl->getRowArray();
+
+        // JIKA DOCNO ATAU DATA TIDAK ADA
+        if (empty($row) || empty(trim($row['docno'] ?? ''))) {
+            return redirect()->to(base_url('production/trans/standart_cost'));
+        }
+
+        $status = trim($row['status'] ?? '');
+
+        $builder     = $this->db->table('sc_tmp.standart_cost_mst');
+        $builder_dtl = $this->db->table('sc_tmp.standart_cost_dtl');
+
+        if ($status === 'I') {
+
+            $builder
+                ->where('inputby', $nama)
+                ->delete();
+
+            $builder_dtl
+                ->where('inputby', $nama)
+                ->delete();
+
+            return redirect()->to(base_url('production/trans/standart_cost'));
+
+        } elseif ($status === 'E') {
+
+            $builder->where('inputby', $nama);
+
+            if ($builder->update([
+                'status' => 'C'
+            ])) {
+
+                $builder_dtl
+                    ->where('inputby', $nama)
+                    ->delete();
+
+                return redirect()->to(base_url('production/trans/standart_cost'));
+
+            } else {
+
+                return redirect()->to(base_url('production/trans/standart_cost'));
+
+            }
+
+        }
+
+        return redirect()->to(base_url('production/trans/standart_cost'));
     }
 
 
@@ -5275,7 +5335,7 @@ class Production extends BaseController
 
             } else {
 
-                // selain status tersebut → tampilkan sesuai hak akses
+                // selain status tersebut â†’ tampilkan sesuai hak akses
                 if ($canUpdate) $menuContent .= $updateBtn;
                 if ($canPrint)  $menuContent .= $printBtn;
                 if ($canView)   $menuContent .= $detailBtn;
@@ -5471,7 +5531,7 @@ class Production extends BaseController
             ]);
         }
 
-        // mapping nmbranch → kode suffix
+        // mapping nmbranch â†’ kode suffix
         $map = [
             'PT JATIM TAMAN STEEL MFG' => 'PT',
             'PLANT I'                 => 'PA',
@@ -5548,7 +5608,7 @@ class Production extends BaseController
         $builder = $this->db->table('sc_tmp.woe');
         $exists = $builder->where('docno', $docno)->countAllResults();
 
-        // HEADER SUDAH ADA → TIDAK PERLU RELOAD
+        // HEADER SUDAH ADA â†’ TIDAK PERLU RELOAD
         if ($exists > 0) {
             return $this->response->setJSON([
                 'success' => true,
@@ -5556,7 +5616,7 @@ class Production extends BaseController
             ]);
         }
 
-        // HEADER BARU → INSERT
+        // HEADER BARU â†’ INSERT
         $builder->insert([
             'docno'      => $docno,
             'docdate'    => $docdate,
@@ -5571,7 +5631,7 @@ class Production extends BaseController
 
         return $this->response->setJSON([
             'success' => true,
-            'reload'  => true   // ⬅ PENTING
+            'reload'  => true   // â¬… PENTING
         ]);
     }
 

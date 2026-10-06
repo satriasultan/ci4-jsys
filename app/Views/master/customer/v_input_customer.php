@@ -1,5 +1,5 @@
 <style>
-    
+
     .section-block {
         background-color: #e8e8e8;
         border-left: 4px solid #007bff;
@@ -8,10 +8,10 @@
         border-radius: 6px;
         margin-bottom: 30px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-                    box-shadow 0.4s ease, 
-                    border-color 0.4s ease;
-        
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.4s ease,
+        border-color 0.4s ease;
+
         transform: scale(1);
         will-change: transform;
     }
@@ -53,10 +53,10 @@
     .section-divider {
         height: 1px;
         background: linear-gradient(
-            to right,
-            #007bff 0%,
-            #cfe2ff 30%,
-            #e8e8e8 100%
+                to right,
+                #007bff 0%,
+                #cfe2ff 30%,
+                #e8e8e8 100%
         );
         margin: 24px 0;
         border: none;
@@ -111,8 +111,8 @@
 
 <?php echo $message;?>
 <?php
-    $isIT = isset($userinfo['rolename']) && trim($userinfo['rolename']) === 'IT';
-    $disabled = $isIT ? '' : 'disabled';
+$isIT = isset($userinfo['rolename']) && trim($userinfo['rolename']) === 'IT';
+$disabled = $isIT ? '' : 'disabled';
 ?>
 <div class="row">
     <!-- left column -->
@@ -128,19 +128,19 @@
                     <ul class="nav nav-tabs" id="customerTab" role="tablist">
                         <li class="nav-item">
                             <a class="nav-link active" id="general-tab" data-bs-toggle="tab"
-                            href="#general" role="tab">
+                               href="#general" role="tab">
                                 <i class="fa fa-info-circle"></i> General
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" id="npwp-tab" data-bs-toggle="tab"
-                            href="#npwptab" role="tab">
+                               href="#npwptab" role="tab">
                                 <i class="fa fa-file-text"></i> NPWP
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" id="others-tab" data-bs-toggle="tab"
-                            href="#others" role="tab">
+                               href="#others" role="tab">
                                 <i class="fa fa-ellipsis-h"></i> Others
                             </a>
                         </li>
@@ -169,7 +169,7 @@
                                     </div>
                                     <div class="col-md-3">
                                         <div class="form-group">
-                                        <label class="">Hold</label>
+                                            <label class="">Hold</label>
                                             <select name="chold" id="chold" class="form-control inform" style="text-transform:uppercase;" >
                                                 <!--option value="">--Pilih Hold--</option-->
                                                 <option value="NO"> NO </option>
@@ -192,8 +192,8 @@
                                             </select>
                                         </div>
                                     </div> -->
-                                    <!-- <div class="row"> -->  
-                                        <!--  +++++++++++++++++++++++ KANTOR ++++++++++++++++++++++++ -->
+                                    <!-- <div class="row"> -->
+                                    <!--  +++++++++++++++++++++++ KANTOR ++++++++++++++++++++++++ -->
                                     <div class="col-md-12"><hr></div>
                                     <div class="col-md-2">
                                         <label for="inputdept" >Provinsi Kantor</label>
@@ -213,8 +213,8 @@
                                     <div class="col-md-2">
                                         <label for="inputdept" >Kel/Desa Kantor</label>
                                         <select class="form-control input-sm"  id="kel_kantor" name="kel_kantor">
-                                            </select>
-                                        </div>
+                                        </select>
+                                    </div>
                                     <div class="col-md-3">
                                         <label>Alamat Kantor</label>
                                         <textarea name="alamat_kantor" class="form-control" style="text-transform: uppercase;" rows="2"></textarea>
@@ -237,7 +237,7 @@
                                     <div class="col-md-2 mt-2">
                                         <label for="inputdept" >Provinsi Pengiriman</label>
                                         <select class="form-control input-sm" id="provinsi_pengiriman" name="provinsi_pengiriman">
-                                    </select>
+                                        </select>
                                     </div>
                                     <div class="col-md-2 mt-2">
                                         <label for="inputdept" >Kota Pengiriman</label>
@@ -303,16 +303,16 @@
                                         <input type="text" name="kodepos_penagihan" class="form-control">
                                     </div>
                                     <div class="col-md-12"><hr></div>
-                                        <!-- <div class="col-md-12"><hr></div> -->
-                                        <!--  +++++++++++++++++++++++ END OF PENAGIHAN ++++++++++++++++++++++++ -->
-                                        <!-- <div class="col-md-6 mt-2">
-                                            <label>Alamat 1</label>
-                                            <textarea name="alamat1" class="form-control" rows="2"></textarea>
-                                        </div>
-                                        <div class="col-md-6 mt-2">
-                                            <label>Alamat 2</label>
-                                            <textarea name="alamat2" class="form-control" rows="2"></textarea>
-                                        </div> -->
+                                    <!-- <div class="col-md-12"><hr></div> -->
+                                    <!--  +++++++++++++++++++++++ END OF PENAGIHAN ++++++++++++++++++++++++ -->
+                                    <!-- <div class="col-md-6 mt-2">
+                                        <label>Alamat 1</label>
+                                        <textarea name="alamat1" class="form-control" rows="2"></textarea>
+                                    </div>
+                                    <div class="col-md-6 mt-2">
+                                        <label>Alamat 2</label>
+                                        <textarea name="alamat2" class="form-control" rows="2"></textarea>
+                                    </div> -->
                                     <!-- </div> -->
                                     <div class="col-md-2">
                                         <div class="form-group">
@@ -348,20 +348,20 @@
                                         <div class="form-group">
                                             <label for="plafon">Plafon</label>
                                             <input type="text"
-                                                name="plafon"
-                                                id="plafon"
-                                                class="form-control ratakanan jtsseparator"
-                                                placeholder="0.00">
+                                                   name="plafon"
+                                                   id="plafon"
+                                                   class="form-control ratakanan jtsseparator"
+                                                   placeholder="0.00">
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="form-group">
                                             <label for="jthtempo">Jatuh Tempo</label>
                                             <input type="text"
-                                                name="jthtempo"
-                                                id="jthtempo"
-                                                class="form-control ratakanan jtsseparator"
-                                                placeholder="0.00">
+                                                   name="jthtempo"
+                                                   id="jthtempo"
+                                                   class="form-control ratakanan jtsseparator"
+                                                   placeholder="0.00">
                                         </div>
                                     </div>
                                     <div class="col-md-2">
@@ -393,7 +393,7 @@
                                                     COA
                                                 </label>
                                             </div>
-                                            
+
                                             <!-- Radio untuk Blacklist -->
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" name="blacklist" id="blacklist" value="1" <?= isset($data['blacklist']) && $data['blacklist'] == '1' ? 'checked' : '' ?> <?= $disabled ?>>
@@ -402,7 +402,7 @@
                                                 </label>
                                             </div>
                                         </div>
-                                    </div>                            
+                                    </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="Description">Keterangan</label>
@@ -423,15 +423,15 @@
                                         <div class="form-group">
                                             <label for="namanpwp">Nama NPWP</label>
                                             <input type="text" name="namanpwp" style="text-transform: uppercase;" id="namanpwp"
-                                                class="form-control" maxlength="50">
+                                                   class="form-control" maxlength="50">
                                         </div>
                                     </div>
-                                    
+
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label for="alamatnpwp">Alamat NPWP</label>
                                             <textarea name="alamatnpwp" style="text-transform: uppercase;" id="alamatnpwp"
-                                            class="form-control" rows="3"></textarea>
+                                                      class="form-control" rows="3"></textarea>
                                         </div>
                                     </div>
 
@@ -448,29 +448,29 @@
                                         color: #007bff;
                                         margin-bottom: 20px;
                                         font-size: 1.1rem;">
-                                        <i class="fa fa-percent"></i>Coretax    
+                                        <i class="fa fa-percent"></i>Coretax
                                     </div>
                                     <!-- </div> -->
-                                    
+
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="idcoretax">Jenis ID</label>
                                             <input type="text" style="text-transform: uppercase;" name="idcoretax" id="idcoretax"
-                                                class="form-control" maxlength="100">
+                                                   class="form-control" maxlength="100">
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="idtku">ID TKU</label>
                                             <input type="text" style="text-transform: uppercase;" name="idtku" id="idtku"
-                                                class="form-control" maxlength="100">
+                                                   class="form-control" maxlength="100">
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="docnopembeli">No Doc Pembeli</label>
                                             <input type="text" style="text-transform: uppercase;" name="docnopembeli" id="docnopembeli"
-                                                class="form-control" maxlength="100">
+                                                   class="form-control" maxlength="100">
                                         </div>
                                     </div>
                                 </div>
@@ -490,7 +490,7 @@
                                             </select>
                                         </div>
                                     </div>
-                                    
+
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label for="salesman">Salesman</label>
@@ -511,7 +511,7 @@
                                         <div class="form-group">
                                             <label for="koderetur">Kode Retur</label>
                                             <input type="text" style="text-transform: uppercase;" name="koderetur" id="koderetur"
-                                                class="form-control" maxlength="3">
+                                                   class="form-control" maxlength="3">
                                         </div>
                                     </div>
                                     <div class="col-md-2" style="margin-top: 25px;">
@@ -569,7 +569,7 @@
                                             </select>
                                         </div>
                                     </div>
- 
+
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label for="defaultfor">Default For</label>
@@ -580,7 +580,7 @@
                                                 <option value="SERVICE">SERVICE</option>
                                             </select>
                                         </div>
-                                    </div>   
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -617,7 +617,7 @@
         //$("#datemaskinput").inputmask("dd/mm/yyyy", {"placeholder": "dd/mm/yyyy"});
         //$("#datemaskinput").daterangepicker();
         //Date picker
-       
+
 
         $('#docdate').daterangepicker({
             autoUpdateInput: false,
@@ -636,7 +636,7 @@
             $(this).val('');
         });
 
-        
+
         $('#periodemulai').daterangepicker({
             autoUpdateInput: false,
             singleDatePicker: true,
@@ -654,7 +654,7 @@
             $(this).val('');
         });
 
-        
+
         $('#periodeakhir').daterangepicker({
             autoUpdateInput: false,
             singleDatePicker: true,
@@ -672,7 +672,7 @@
             $(this).val('');
         });
 
-        
+
 
     });
 

@@ -406,3 +406,9 @@ DO UPDATE SET
     -- AUDIT
     updateby              = EXCLUDED.updateby,
     updatedate            = CURRENT_TIMESTAMP;
+	
+	
+	
+
+alter table sc_mst.konfigurasi_umum add column tt character(10);
+update sc_mst.konfigurasi_umum set tt='TTS';

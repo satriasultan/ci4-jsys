@@ -1,8 +1,32 @@
-I.Q.A.1
+-- ============================================================
+-- I.Q.A.1
+-- TRANSFER SPK / PERINTAH TRANSFER
+-- ONE TIME EXECUTE - CLEAN INSTALL
+-- ============================================================
 
---drop table sc_tmp.transfer_spk_mst;
+BEGIN;
+
+-- 1. DROP TRIGGER
+DROP TRIGGER IF EXISTS tr_tmp_transfer_spk_mst
+    ON sc_tmp.transfer_spk_mst;
+
+DROP TRIGGER IF EXISTS tr_trx_transfer_spk_mst
+    ON sc_trx.transfer_spk_mst;
+
+-- 2. DROP FUNCTION
+DROP FUNCTION IF EXISTS sc_tmp.tr_tmp_transfer_spk_mst();
+DROP FUNCTION IF EXISTS sc_trx.tr_trx_transfer_spk_mst();
+
+-- 3. DROP TABLE
+DROP TABLE IF EXISTS sc_tmp.transfer_spk_dtl CASCADE;
+DROP TABLE IF EXISTS sc_trx.transfer_spk_dtl CASCADE;
+DROP TABLE IF EXISTS sc_tmp.transfer_spk_mst CASCADE;
+DROP TABLE IF EXISTS sc_trx.transfer_spk_mst CASCADE;
+
+-- 4. CREATE TABLE
 CREATE TABLE IF NOT EXISTS sc_tmp.transfer_spk_mst
 (
+    idurut BIGSERIAL,
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
     doctype character(20) default 'SPK_TRANSFERS' ,
     docdate character(20) COLLATE pg_catalog."default",
@@ -23,17 +47,11 @@ CREATE TABLE IF NOT EXISTS sc_tmp.transfer_spk_mst
     printdate timestamp without time zone,
     docnotmp character(30) COLLATE pg_catalog."default",
     CONSTRAINT pk_tmp_transfer_spk_mst PRIMARY KEY (docno)
-)
+);
 
-TABLESPACE pg_default;
-
-ALTER TABLE IF EXISTS sc_tmp.transfer_spk_mst
-    OWNER to postgres;
-
-
---drop table sc_trx.transfer_spk_mst;
 CREATE TABLE IF NOT EXISTS sc_trx.transfer_spk_mst
 (
+    idurut BIGSERIAL,
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
 	doctype character(20) default 'SPK_TRANSFERS' ,
     docdate character(20) COLLATE pg_catalog."default",
@@ -54,16 +72,8 @@ CREATE TABLE IF NOT EXISTS sc_trx.transfer_spk_mst
     printdate timestamp without time zone,
     docnotmp character(30) COLLATE pg_catalog."default",
     CONSTRAINT pk_trx_transfer_spk_mst PRIMARY KEY (docno)
-)
+);
 
-TABLESPACE pg_default;
-
-ALTER TABLE IF EXISTS sc_trx.transfer_spk_mst
-    OWNER to postgres;
-
-
-
---drop table sc_tmp.transfer_spk_dtl;
 CREATE TABLE IF NOT EXISTS sc_tmp.transfer_spk_dtl
 (
     idurut BIGSERIAL PRIMARY KEY,
@@ -83,14 +93,8 @@ CREATE TABLE IF NOT EXISTS sc_tmp.transfer_spk_dtl
     updatedate TIMESTAMP WITHOUT TIME ZONE,
 	iduniq text,
     docnotmp character(30)
-)
-TABLESPACE pg_default;
+);
 
-ALTER TABLE IF EXISTS sc_tmp.transfer_spk_dtl
-    OWNER TO postgres;
-
-
---drop table sc_trx.transfer_spk_dtl;
 CREATE TABLE IF NOT EXISTS sc_trx.transfer_spk_dtl
 (
     idurut INTEGER,
@@ -110,20 +114,8 @@ CREATE TABLE IF NOT EXISTS sc_trx.transfer_spk_dtl
     updatedate TIMESTAMP WITHOUT TIME ZONE,
 	iduniq text,
     docnotmp character(30)
-)
-TABLESPACE pg_default;
+);
 
-ALTER TABLE IF EXISTS sc_trx.transfer_spk_dtl
-    OWNER TO postgres;
-
-
-
-
-
-
--- FUNCTION: sc_tmp.tr_tmp_transfer_spk_mst()
-
--- DROP FUNCTION IF EXISTS sc_tmp.tr_tmp_transfer_spk_mst();
 CREATE OR REPLACE FUNCTION sc_tmp.tr_tmp_transfer_spk_mst()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -131,7 +123,7 @@ AS $BODY$
 DECLARE
     v_docno     TEXT;
     v_inputby   TEXT;
-    v_idurut    INTEGER;
+    v_idurut    BIGINT;
     v_prefix    TEXT;
     v_num       TEXT;
     v_num_int   INTEGER;
@@ -147,7 +139,7 @@ BEGIN
         v_docno := rtrim(NEW.docno);
         v_inputby := NEW.inputby;
         v_inputdate  := NEW.inputdate;
-        --v_idurut  := NEW.idurut;
+        v_idurut := NEW.idurut;
         -- ambil base docno (tanpa angka belakang)
         -- contoh:
         -- 05M/2601/PA0001 -> 05M/2601/PA
@@ -227,9 +219,9 @@ BEGIN
 
         -- ===============================
         INSERT INTO sc_trx.transfer_spk_mst (
-            docno,doctype,docdate,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,status,keterangan,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp
+            idurut,docno,doctype,docdate,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,status,keterangan,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp
         )
-        (SELECT v_docno,doctype,docdate,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,'F',keterangan,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp FROM sc_tmp.transfer_spk_mst
+        (SELECT v_idurut,v_docno,doctype,docdate,cabang,cabang_sent,pemohon,idlocation_from,idlocation_to,idlocation_transit,'F',keterangan,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp FROM sc_tmp.transfer_spk_mst
         WHERE rtrim(docno) = rtrim(OLD.docno)
           AND inputby = v_inputby
           AND inputdate = v_inputdate);
@@ -264,9 +256,9 @@ BEGIN
 
         -- ===============================
         INSERT INTO sc_trx.transfer_spk_mst (
-            docno,doctype,docdate,cabang,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,status,keterangan,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp
+            idurut,docno,doctype,docdate,cabang,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,status,keterangan,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp
         )
-        (SELECT v_docno,doctype,docdate,cabang,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,'F',keterangan,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp FROM sc_tmp.transfer_spk_mst
+        (SELECT idurut,v_docno,doctype,docdate,cabang,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,'F',keterangan,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp FROM sc_tmp.transfer_spk_mst
         WHERE rtrim(docno) = rtrim(OLD.docno)
           AND inputby = v_inputby
           AND inputdate = v_inputdate);
@@ -284,7 +276,7 @@ BEGIN
         DELETE FROM sc_tmp.transfer_spk_dtl WHERE rtrim(docno) = rtrim(NEW.docno);
 
 
-    ELSEIF (OLD.STATUS = 'E' AND NEW.STATUS = 'C') THEN
+    ELSIF (OLD.STATUS = 'E' AND NEW.STATUS = 'C') THEN
         IF NEW.printby IS NOT NULL AND NEW.printby <> '' AND NEW.printdate IS NOT NULL THEN
             UPDATE sc_trx.transfer_spk_mst SET status = 'P' WHERE docno = NEW.docnotmp;
         ELSE
@@ -300,21 +292,6 @@ BEGIN
     RETURN NEW;
 END;
 $BODY$;
-
-
-
-CREATE TRIGGER tr_tmp_transfer_spk_mst
-    AFTER UPDATE ON sc_tmp.transfer_spk_mst
-    FOR EACH ROW
-    EXECUTE FUNCTION sc_tmp.tr_tmp_transfer_spk_mst();
-
-
-
-
-
-
-
--- DROP FUNCTION IF EXISTS sc_trx.tr_trx_transfer_spk_mst();
 
 CREATE OR REPLACE FUNCTION sc_trx.tr_trx_transfer_spk_mst()
     RETURNS trigger
@@ -335,9 +312,9 @@ BEGIN
 		IF (OLD.STATUS='F' AND NEW.STATUS='E') THEN
         -- ===============================
         INSERT INTO sc_tmp.transfer_spk_mst (
-            docno,doctype,docdate,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,status,keterangan,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp
+            idurut,docno,doctype,docdate,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,status,keterangan,inputby,inputdate,updateby,updatedate,printby,printdate,docnotmp
         )
-        (SELECT docno,doctype,docdate,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,'E',keterangan,inputby,inputdate,updateby,updatedate,printby,printdate,docno as docnotmp FROM sc_trx.transfer_spk_mst
+        (SELECT idurut,docno,doctype,docdate,cabang,cabang_sent,pemohon,estpakai,idlocation_from,idlocation_to,idlocation_transit,'E',keterangan,inputby,inputdate,updateby,updatedate,printby,printdate,docno as docnotmp FROM sc_trx.transfer_spk_mst
         WHERE trim(docno) = new.docno);
 
         -- ===============================
@@ -355,20 +332,18 @@ BEGIN
 END;
 $BODY$;
 
-ALTER FUNCTION sc_trx.tr_trx_transfer_spk_mst()
-    OWNER TO postgres;
 
+-- 5. CREATE TRIGGER
+CREATE TRIGGER tr_tmp_transfer_spk_mst
+    AFTER UPDATE
+    ON sc_tmp.transfer_spk_mst
+    FOR EACH ROW
+    EXECUTE FUNCTION sc_tmp.tr_tmp_transfer_spk_mst();
 
-    
-
--- FUNCTION: sc_trx.tr_trx_transfer_spk_mst()
--- Trigger: tr_trx_transfer_spk_mst
-
--- DROP TRIGGER IF EXISTS tr_trx_transfer_spk_mst ON sc_trx.transfer_spk_mst;
-
-CREATE OR REPLACE TRIGGER tr_trx_transfer_spk_mst
-    AFTER UPDATE 
+CREATE TRIGGER tr_trx_transfer_spk_mst
+    AFTER UPDATE
     ON sc_trx.transfer_spk_mst
     FOR EACH ROW
     EXECUTE FUNCTION sc_trx.tr_trx_transfer_spk_mst();
 
+COMMIT;

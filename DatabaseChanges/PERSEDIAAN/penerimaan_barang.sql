@@ -1,8 +1,21 @@
---I.Q.A.6
+-- PNM BRNG - FULL 1x EXECUTE
+-- WARNING: script drops existing PNM BRNG tables and their data.
+BEGIN;
+
+DROP TRIGGER IF EXISTS tr_tmp_pnm_brng_mst ON sc_tmp.pnm_brng_mst;
+DROP TRIGGER IF EXISTS tr_trx_pnm_brng_mst ON sc_trx.pnm_brng_mst;
+DROP FUNCTION IF EXISTS sc_tmp.tr_tmp_pnm_brng_mst();
+DROP FUNCTION IF EXISTS sc_trx.tr_trx_pnm_brng_mst();
+DROP TABLE IF EXISTS sc_tmp.pnm_brng_dtl CASCADE;
+DROP TABLE IF EXISTS sc_trx.pnm_brng_dtl CASCADE;
+DROP TABLE IF EXISTS sc_tmp.pnm_brng_mst CASCADE;
+DROP TABLE IF EXISTS sc_trx.pnm_brng_mst CASCADE;
+
 
 --drop table sc_tmp.pnm_brng_mst;
 CREATE TABLE IF NOT EXISTS sc_tmp.pnm_brng_mst
 (
+    idurut BIGSERIAL,
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
     doctype character(20) default 'pnm_brng' ,
     docdate character(20) COLLATE pg_catalog."default",
@@ -25,8 +38,7 @@ CREATE TABLE IF NOT EXISTS sc_tmp.pnm_brng_mst
     docnotmp character(30) COLLATE pg_catalog."default",
     CONSTRAINT pk_tmp_pnm_brng_mst PRIMARY KEY (docno)
 )
-
-TABLESPACE pg_default;
+;
 
 ALTER TABLE IF EXISTS sc_tmp.pnm_brng_mst
     OWNER to postgres;
@@ -35,6 +47,7 @@ ALTER TABLE IF EXISTS sc_tmp.pnm_brng_mst
 --drop table sc_trx.pnm_brng_mst;
 CREATE TABLE IF NOT EXISTS sc_trx.pnm_brng_mst
 (
+    idurut BIGINT,
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
 	doctype character(20) default 'pnm_brng' ,
     docdate character(20) COLLATE pg_catalog."default",
@@ -57,8 +70,7 @@ CREATE TABLE IF NOT EXISTS sc_trx.pnm_brng_mst
     docnotmp character(30) COLLATE pg_catalog."default",
     CONSTRAINT pk_trx_pnm_brng_mst PRIMARY KEY (docno)
 )
-
-TABLESPACE pg_default;
+;
 
 ALTER TABLE IF EXISTS sc_trx.pnm_brng_mst
     OWNER to postgres;
@@ -87,8 +99,7 @@ CREATE TABLE IF NOT EXISTS sc_tmp.pnm_brng_dtl
     updatedate TIMESTAMP WITHOUT TIME ZONE,
 	iduniq text,
     docnotmp character(30)
-)
-TABLESPACE pg_default;
+);
 
 ALTER TABLE IF EXISTS sc_tmp.pnm_brng_dtl
     OWNER TO postgres;
@@ -116,8 +127,7 @@ CREATE TABLE IF NOT EXISTS sc_trx.pnm_brng_dtl
     updatedate TIMESTAMP WITHOUT TIME ZONE,
 	iduniq text,
     docnotmp character(30)
-)
-TABLESPACE pg_default;
+);
 
 ALTER TABLE IF EXISTS sc_trx.pnm_brng_dtl
     OWNER TO postgres;
@@ -149,6 +159,8 @@ DECLARE
     v_num_int   INTEGER;
     v_inputdate TIMESTAMP;
     v_doctype   TEXT;
+    v_idurut    BIGINT;
+    v_lock_key  BIGINT;
 BEGIN
 
     -- =========================================
@@ -159,6 +171,7 @@ BEGIN
     IF OLD.status = 'E' AND NEW.status = 'F' AND COALESCE(NEW.docnotmp, '') = '' THEN
 
         v_docno := TRIM(NEW.docno);
+        v_idurut := NEW.idurut;
         v_inputby := NEW.inputby;
         v_inputdate := NEW.inputdate;
 
@@ -399,5 +412,4 @@ CREATE OR REPLACE TRIGGER tr_trx_pnm_brng_mst
     FOR EACH ROW
     EXECUTE FUNCTION sc_trx.tr_trx_pnm_brng_mst();
 
-
-    
+COMMIT;
