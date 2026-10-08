@@ -32,7 +32,11 @@
     }
     #tblPreviewVPO_wrapper { overflow-x: auto; }
     #tblPreviewVPO { font-size: 12.5px; }
-    #tblPreviewVPO thead th { white-space: nowrap; background: #f1f5f9; }
+    #tblPreviewVPO thead th { white-space: nowrap; background: linear-gradient(
+                    135deg,
+                    #1f2937,
+                    #374151
+            ) !important; }
     #tblPreviewVPO tbody td { white-space: nowrap; }
     .preview-info {
         font-size: 12px; color: #64748b;
@@ -155,7 +159,7 @@
             <div class="card-body">
                 <div id="tblPreviewVPO_wrapper">
                     <table id="tblPreviewVPO" class="table table-bordered table-striped table-hover" style="width:100%">
-                        <thead>
+                        <thead class="bg-primary text-white">
                             <tr>
                                 <th>No</th>
                                 <th>No. VPO</th>

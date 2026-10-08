@@ -2781,7 +2781,7 @@ class Globalmodule extends BaseController
         $limit = $perpage * $page;
 
         if (!empty($pg) or $pg!=='') {
-            $paramglobal = " and trim(coalesce(docno,'')) ='$pg'";
+            $paramglobal = " and substring(trim(lpb.docno) from '.*/([A-Z]{2})') = '$pg'";
         } else {
             $paramglobal = "";
         }

@@ -339,7 +339,7 @@
             <div class="card mt-3 card-primary">
                 <div class="card-header clearfix">
                     <h3 class="card-title">
-                        Detail PO & Barang
+                        Detail LPB & Barang
                     </h3>
 
                     <div class="float-right d-flex align-items-center gap-2">
@@ -628,8 +628,8 @@
                     <div class="row">
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label>PO</label>
-                                <input name="docnopomodal" id="docnopomodal"
+                                <label>LPB</label>
+                                <input name="docnolpbmodal" id="docnolpbmodal"
                                         class="form-control"
                                         style="width:100%" readonly>
                             </div>
@@ -672,12 +672,29 @@
                                         style="width:100%"></select>
                             </div>
                         </div>
+                        <!-- SPEC -->
                         <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Spec</label>
-                                <input name="idspec" id="idspec"
-                                        class="form-control"
-                                        style="width:100%;text-transform: uppercase;">
+                            <label for="idspec" class="form-label">
+                                Batch / Specification
+                            </label>
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <select
+                                            name="idspec"
+                                            id="idspec"
+                                            class="form-control select2"
+                                            style="width: 100%;">
+                                    </select>
+                                </div>
+                                <button
+                                        type="button"
+                                        id="btnNew"
+                                        class="btn btn-primary ms-1"
+                                        onclick="new_spec()"
+                                        title="New Specification">
+                                    <i class="fa fa-plus"></i>
+                                    New
+                                </button>
                             </div>
                         </div>
                         <div class="col-md-2">

@@ -2767,7 +2767,7 @@ class Purchase extends BaseController
         //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
         // }
 
-        return $this->fiky_report->render($datajson,$datamrt,$title,$nama,$module,$table,$docno);
+        return $this->fiky_report->render($datajson,$datamrt,$title,$nama,$module,$table,$docno,$menu);
     }
 
     function api_voidpp(){

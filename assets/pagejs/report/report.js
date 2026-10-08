@@ -42,13 +42,50 @@ function getMode() {
         };
     }
     if (jenis === 'outstanding_po' || jenis === 'history_po') {
+        if (jenis === 'history_po') {
+            return {
+                type:       'PO_HISTORY',
+                previewUrl: HOST_URL + 'report/trans/previewLaporanPO',
+                bodyId:     'tblPreviewPOBody',
+                colspan:    17        // No + 16 data
+            };
+        }
         return {
             type:       'PO',
             previewUrl: HOST_URL + 'report/trans/previewLaporanPO',
             bodyId:     'tblPreviewPOBody',
-            colspan:    25
+            colspan:    25        // 25 kolom (sesuai aslinya)
         };
     }
+    /* ====== PP ====== */
+    if (jenis === 'history') {
+        return {
+            type:       'PP_HISTORY',
+            previewUrl: HOST_URL + 'report/trans/previewLaporanPP',
+            bodyId:     'tblPreviewPPBody',
+            colspan:    17        // 17 kolom (No + 16 data history)
+        };
+    }
+    /* ====== SALES ORDER ====== */
+    if (jenis === 'salesorder') {
+        return {
+            type:       'SO',
+            previewUrl: HOST_URL + 'report/trans/previewLaporanSalesOrder',
+            bodyId:     'tblPreviewSOBody',
+            colspan:    22   // No + 21 data
+        };
+    }
+
+    /* ====== PENJUALAN ====== */
+    if (jenis === 'penjualan') {
+        return {
+            type:       'PJ',
+            previewUrl: HOST_URL + 'report/trans/previewLaporanPenjualan',
+            bodyId:     'tblPreviewPJBody',
+            colspan:    42   // No + 41 data
+        };
+    }
+
     return {
         type:       'PP',
         previewUrl: HOST_URL + 'report/trans/previewLaporanPP',
@@ -70,10 +107,12 @@ function tarikData(page) {
     var idbarang = $('#lapIdbarang').val();
     var kdsupp   = $('#lapKdsupplier').val();
     var cabang   = $('#lapCabang').val();
+    var kdcust = $('#lapKdcustomer').val();
 
     // Filter khusus: PP pakai idbarang, PO/VPO pakai supplier
-    var filterKhusus = (mode.type === 'PP') ? idbarang : kdsupp;
-
+    var filterKhusus = (mode.type === 'PP') ? idbarang
+                : (mode.type === 'SO' || mode.type === 'PJ') ? kdcust
+                : kdsupp;
     if (!tgl && !docno && !filterKhusus && !cabang) {
         Swal.fire({
             icon: 'warning',
@@ -102,6 +141,7 @@ function tarikData(page) {
             idbarang:     idbarang,
             kdsupplier:   kdsupp,
             cabang:       cabang,
+            kdcustomer: kdcust,
             page:         page,
             perpage:      lapState.perpage
         },
@@ -208,6 +248,34 @@ function renderPreview(rows, page, perpage, mode) {
                 '<td>' + escapeHtml(r.keterangan_vp) + '</td>' +
                 '<td>' + escapeHtml(r.currcode) + '</td>' +
             '</tr>';
+        } else if (mode.type === 'PO_HISTORY') {
+            /* ---------- PO HISTORY: 17 kolom ---------- */
+            var st = (r.status_outstanding || '').toUpperCase();
+            var badge = 'secondary';
+            if (st === 'FINISH')           badge = 'success';
+            else if (st === 'OUTSTANDING') badge = 'warning';
+            else if (st === 'CANCEL')      badge = 'danger';
+
+            html += '<tr>' +
+                '<td>' + (startNo + i) + '</td>' +
+                '<td>' + escapeHtml(r.docno_po) + '</td>' +
+                '<td>' + escapeHtml(r.jurnal) + '</td>' +
+                '<td>' + escapeHtml(r.docdate) + '</td>' +
+                '<td>' + escapeHtml(r.kdsupplier) + '</td>' +
+                '<td>' + escapeHtml(r.nmsupplier) + '</td>' +
+                '<td>' + escapeHtml(r.idbarang) + '</td>' +
+                '<td>' + escapeHtml(r.nmbarang) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.qty) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.qty_realisasi) + '</td>' +
+                '<td>' + escapeHtml(r.unit) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.nilai) + '</td>' +
+                '<td>' + escapeHtml(r.job) + '</td>' +
+                '<td>' + escapeHtml(r.nama_job) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.harga_po) + '</td>' +
+                '<td>' + escapeHtml(r.ket_item_pp) + '</td>' +
+                '<td>' + escapeHtml(r.tgl_kirim) + '</td>' +
+                '<td><span class="badge badge-' + badge + '">' + escapeHtml(st) + '</span></td>' +
+            '</tr>';
         } else if (mode.type === 'PO') {
             /* ---------- PO: 25 kolom ---------- */
             html += '<tr>' +
@@ -237,8 +305,108 @@ function renderPreview(rows, page, perpage, mode) {
                 '<td>' + escapeHtml(r.status_po) + '</td>' +
                 '<td>' + escapeHtml(r.keterangan_po) + '</td>' +
             '</tr>';
-        } else {
-            /* ---------- PP: 15 kolom ---------- */
+        } else if (mode.type === 'PP_HISTORY') {
+            /* ---------- PP HISTORY: 17 kolom ---------- */
+            var st = (r.status_outstanding || '').toUpperCase();
+            var badge = 'secondary';
+            if (st === 'FINISH')          badge = 'success';
+            else if (st === 'OUTSTANDING') badge = 'warning';
+            else if (st === 'CANCEL')      badge = 'danger';
+
+            html += '<tr>' +
+                '<td>' + (startNo + i) + '</td>' +
+                '<td>' + escapeHtml(r.docno_pp) + '</td>' +
+                '<td>' + escapeHtml(r.jurnal) + '</td>' +
+                '<td>' + escapeHtml(r.docdate) + '</td>' +
+                '<td>' + escapeHtml(r.userid) + '</td>' +
+                '<td>' + escapeHtml(r.idbarang) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.qty) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.qty_realisasi) + '</td>' +
+                '<td>' + escapeHtml(r.nama_user) + '</td>' +
+                '<td>' + escapeHtml(r.nmbarang) + '</td>' +
+                '<td>' + escapeHtml(r.unit) + '</td>' +
+                '<td>' + escapeHtml(r.spec) + '</td>' +
+                '<td>' + escapeHtml(r.ket_pp_header) + '</td>' +
+                '<td>' + escapeHtml(r.ket_detail) + '</td>' +
+                '<td>' + escapeHtml(r.tglpakai) + '</td>' +
+                '<td>' + escapeHtml(r.job) + '</td>' +
+                '<td><span class="badge badge-' + badge + '">' + escapeHtml(st) + '</span></td>' +
+            '</tr>';
+        } else if (mode.type === 'SO') {
+            /* ---------- SALES ORDER: 22 kolom ---------- */
+            html += '<tr>' +
+                '<td>' + (startNo + i) + '</td>' +
+                '<td>' + escapeHtml(r.docno) + '</td>' +
+                '<td>' + escapeHtml(r.docdate) + '</td>' +
+                '<td>' + escapeHtml(r.kdcustomer) + '</td>' +
+                '<td>' + escapeHtml(r.nmcustomer) + '</td>' +
+                '<td>' + escapeHtml(r.alamatcustomer) + '</td>' +
+                '<td>' + escapeHtml(r.desa) + '</td>' +
+                '<td>' + escapeHtml(r.kecamatan) + '</td>' +
+                '<td>' + escapeHtml(r.nmkota) + '</td>' +
+                '<td>' + escapeHtml(r.kdsalesman) + '</td>' +
+                '<td>' + escapeHtml(r.nmsalesman) + '</td>' +
+                '<td>' + escapeHtml(r.idbarang) + '</td>' +
+                '<td>' + escapeHtml(r.nmbarang) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.qty) + '</td>' +
+                '<td>' + escapeHtml(r.unit) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.harga) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.nilaibruto) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.nilaidisc) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.nilaipajak) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.nilai) + '</td>' +
+                '<td>' + escapeHtml(r.job) + '</td>' +
+                '<td>' + escapeHtml(r.namajob) + '</td>' +
+            '</tr>';
+        } else if (mode.type === 'PJ') {
+            /* ---------- PENJUALAN: 42 kolom ---------- */
+            html += '<tr>' +
+                '<td>' + (startNo + i) + '</td>' +
+                '<td>' + escapeHtml(r.docno) + '</td>' +
+                '<td>' + escapeHtml(r.docdate) + '</td>' +
+                '<td>' + escapeHtml(r.tgljt) + '</td>' +
+                '<td>' + escapeHtml(r.currcode) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.kurs) + '</td>' +
+                '<td>' + escapeHtml(r.kdcustomer) + '</td>' +
+                '<td>' + escapeHtml(r.nmcustomer) + '</td>' +
+                '<td>' + escapeHtml(r.alamatcustomer) + '</td>' +
+                '<td>' + escapeHtml(r.nmkota) + '</td>' +
+                '<td>' + escapeHtml(r.kdsalesman) + '</td>' +
+                '<td>' + escapeHtml(r.nmsalesman) + '</td>' +
+                '<td>' + escapeHtml(r.idbarang) + '</td>' +
+                '<td>' + escapeHtml(r.nmbarang) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.qty) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.qtybonus) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.nilaibonus) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.nilaibruto) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.nilaidisc) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.nilaipajak) + '</td>' +
+                '<td>' + escapeHtml(r.job) + '</td>' +
+                '<td>' + escapeHtml(r.namajob) + '</td>' +
+                '<td>' + escapeHtml(r.unit) + '</td>' +
+                '<td>' + escapeHtml(r.npwp) + '</td>' +
+                '<td>' + escapeHtml(r.market) + '</td>' +
+                '<td>' + escapeHtml(r.jenismarket) + '</td>' +
+                '<td>' + escapeHtml(r.region) + '</td>' +
+                '<td>' + escapeHtml(r.idgudang) + '</td>' +
+                '<td>' + escapeHtml(r.nmgudang) + '</td>' +
+                '<td>' + escapeHtml(r.idspec) + '</td>' +
+                '<td>' + escapeHtml(r.expdate) + '</td>' +
+                '<td>' + escapeHtml(r.keteranganbarang) + '</td>' +
+                '<td>' + escapeHtml(r.specbarang) + '</td>' +
+                '<td>' + escapeHtml(r.idprincipal) + '</td>' +
+                '<td>' + escapeHtml(r.nmprincipal) + '</td>' +
+                '<td>' + escapeHtml(r.golongan) + '</td>' +
+                '<td>' + escapeHtml(r.jenisproduk) + '</td>' +
+                '<td>' + escapeHtml(r.kelompokbarang) + '</td>' +
+                '<td>' + escapeHtml(r.desa) + '</td>' +
+                '<td>' + escapeHtml(r.kecamatan) + '</td>' +
+                '<td>' + escapeHtml(r.wilayah) + '</td>' +
+                '<td>' + escapeHtml(r.keteranganpenjualan) + '</td>' +
+            '</tr>';
+        }
+        else {
+            /* ---------- PP OUTSTANDING: 15 kolom ---------- */
             html += '<tr>' +
                 '<td>' + (startNo + i) + '</td>' +
                 '<td>' + escapeHtml(r.docno) + '</td>' +
@@ -373,6 +541,7 @@ function resetLaporanParam() {
     $('#lapIdbarang').val(null).trigger('change');
     $('#lapKdsupplier').val(null).trigger('change');
     $('#lapCabang').val(null).trigger('change');
+    $('#lapKdcustomer').val(null).trigger('change');
     $('#lapTglRange').val('');
     $('#lapDocno').val('');
 
@@ -425,8 +594,8 @@ $(function () {
     if (isPP && $('#lapIdbarang').length) {
         var defaultInitialGroupBrng = '';
         $('#lapIdbarang').select2({
-            dropdownParent: $(document.body),
             placeholder: "Choose Your Item List",
+            dropdownParent: $(document.body),
             allowClear: true,
             width: '100%',
             minimumInputLength: 2,
@@ -506,6 +675,48 @@ $(function () {
     }
 
     /* =====================================================
+    Select2 Customer — untuk Sales Order
+    ===================================================== */
+    if ((jenis === 'salesorder' || jenis === 'penjualan') && $('#lapKdcustomer').length) {
+        var defaultInitialCustomer = '';
+        $('#lapKdcustomer').select2({
+            dropdownParent: $(document.body),
+            placeholder: "Type / Choose Customer",
+            allowClear: true,
+            width: '100%',
+            ajax: {
+                url: HOST_URL + 'api/globalmodule/list_customer',
+                type: 'POST',
+                dataType: 'json',
+                delay: 250,
+                data: function (params) {
+                    return {
+                        _search_: params.term,
+                        _page_: params.page,
+                        _draw_: true,
+                        _start_: 1,
+                        _perpage_: 2,
+                        _paramglobal_: defaultInitialCustomer,
+                        _parameterx_: defaultInitialCustomer,
+                        term: params.term,
+                    };
+                },
+                processResults: function (data, params) {
+                    params.page = params.page || 1;
+                    return {
+                        results: data.items,
+                        pagination: { more: (params.page * 30) < data.total_count }
+                    };
+                },
+                cache: false
+            },
+            escapeMarkup: function (markup) { return markup; },
+            templateResult: formatCustomer,
+            templateSelection: formatCustomerSelection
+        });
+    }
+
+    /* =====================================================
        Select2 Cabang — untuk semua laporan
        ===================================================== */
     if ($('#lapCabang').length) {
@@ -580,4 +791,14 @@ function formatSupplier(repo) {
 }
 function formatSupplierSelection(repo) {
     return repo.nmsupplier || repo.text;
+}
+
+function formatCustomer(repo) {
+    if (repo.loading) return repo.text;
+    return "<div class='select2-result-repository__description'>" +
+           repo.kdcustomer + "   <i class='fa fa-circle-o'></i>   " +
+           repo.nmcustomer + "</div>";
+}
+function formatCustomerSelection(repo) {
+    return repo.nmcustomer || repo.text;
 }

@@ -195,6 +195,7 @@ function documentReadable(){
                 $(option).data('supplier-data', supplierData); // Simpan data lengkap
 
                 $('[name="kdsupplier"]').append(option).trigger('change');
+                $("#nmsupplier").val(supplierData.nmsupplier); //
 
                 // Set alamat dan phone langsung
                 $("#alamatsupplier").val(json.dataTables.items[0].alamatsupplier).prop('readonly', true);
@@ -1378,7 +1379,7 @@ $("#kdsupplier").select2({
     if (e.params && e.params.data) {
         var selectedData = e.params.data;
 
-        $("#alamatsupplier").val(selectedData.alamat || '').prop('disabled', true);
+        $("#alamatsupplier").val(selectedData.alamat || '').prop('readonly', true);
         $("#jthtempo").val(selectedData.jthtempo || '')
         // $("#phone").val(selectedData.phone || '').prop('disabled', true);
     }

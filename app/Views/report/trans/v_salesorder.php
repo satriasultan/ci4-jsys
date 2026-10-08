@@ -30,14 +30,14 @@
         background: #cbd5e1; box-shadow: none;
         transform: none; cursor: not-allowed;
     }
-    #tblPreviewPP_wrapper { overflow-x: auto; }
-    #tblPreviewPP { font-size: 12.5px; }
-    #tblPreviewPP thead th { white-space: nowrap; background: linear-gradient(
+    #tblPreviewSO_wrapper { overflow-x: auto; }
+    #tblPreviewSO { font-size: 12.5px; }
+    #tblPreviewSO thead th { white-space: nowrap; background: linear-gradient(
                     135deg,
                     #1f2937,
                     #374151
             ) !important; }
-    #tblPreviewPP tbody td { white-space: nowrap; }
+    #tblPreviewSO tbody td { white-space: nowrap; }
     .preview-info {
         font-size: 12px; color: #64748b;
         padding: 6px 10px; background: #f8fafc;
@@ -88,7 +88,7 @@
 
             <div class="card-body">
                 <form id="formLaporanParam"
-                      action="<?= base_url('report/trans/downloadLaporanPP') ?>"
+                      action="<?= base_url('report/trans/downloadLaporanSalesOrder') ?>"
                       method="post"
                       target="downloadFrame">
 
@@ -106,7 +106,7 @@
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label>No. Dokumen PP</label>
+                                <label>No. Dokumen SO</label>
                                 <input type="text" name="docno" id="lapDocno"
                                        class="form-control"
                                        placeholder="Ketik No. Dokumen (boleh sebagian)"
@@ -115,21 +115,22 @@
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label>ID Barang</label>
-                                <select name="idbarang" id="lapIdbarang"
-                                        class="form-control select2"></select>
+                                <label>Customer</label>
+                                <select name="kdcustomer" id="lapKdcustomer"
+                                        class="form-control select2" style="width:100%"></select>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label>Cabang / Job</label>
                                 <select name="cabang" id="lapCabang"
-                                        class="form-control select2"></select>
+                                        class="form-control select2" style="width:100%"></select>
                             </div>
                         </div>
                     </div>
                 </form>
             </div>
+
             <div class="card-footer d-flex justify-content-between align-items-center flex-wrap">
                 <div class="d-flex flex-wrap" style="gap:8px;">
                     <button type="button" class="btn btn-tarik-modern" id="btnTarikData" onclick="tarikData()">
@@ -139,40 +140,47 @@
                             onclick="submitLaporan()" disabled>
                         <i class="fa fa-file-excel-o"></i> Cetak Excel
                     </button>
-                    <button type="button" class="btn btn-secondary" onclick="resetLaporanParam()">
+                    <button type="button" class="btn btn-default" onclick="resetLaporanParam()">
                         <i class="fa fa-refresh"></i> Reset
                     </button>
                 </div>
             </div>
+
             <div class="card-body" id="previewWrapper" style="display:none;">
-                <div id="tblPreviewPP_wrapper">
-                    <table id="tblPreviewPP" class="table table-bordered table-striped table-hover" style="width:100%">
+                <div id="tblPreviewSO_wrapper">
+                    <table id="tblPreviewSO" class="table table-bordered table-striped table-hover" style="width:100%">
                         <thead class="bg-primary text-white">
                             <tr>
                                 <th>No</th>
-                                <th>No. Dokumen</th>
+                                <th>No. SO</th>
                                 <th>Tanggal</th>
-                                <th>Cabang</th>
-                                <th>Pemohon</th>
-                                <th>ID Barang</th>
+                                <th>Kode Customer</th>
+                                <th>Nama Customer</th>
+                                <th>Alamat Customer</th>
+                                <th>Desa</th>
+                                <th>Kecamatan</th>
+                                <th>Kota Customer</th>
+                                <th>Kode Salesman</th>
+                                <th>Nama Salesman</th>
+                                <th>Kode Barang</th>
                                 <th>Nama Barang</th>
-                                <th>Satuan</th>
                                 <th>Qty</th>
-                                <th>Qty PO</th>
-                                <th>Qty Void</th>
-                                <th>Qty Proses</th>
-                                <th>Keterangan</th>
-                                <th>No. Capex</th>
-                                <th>Keterangan PP</th>
+                                <th>Satuan</th>
+                                <th>Harga</th>
+                                <th>Nilai Bruto</th>
+                                <th>Nilai Disc</th>
+                                <th>Nilai Pajak</th>
+                                <th>Nilai</th>
+                                <th>Job</th>
+                                <th>Nama Job</th>
                             </tr>
                         </thead>
-                        <tbody id="tblPreviewPPBody">
-                            <tr><td colspan="15" class="text-center text-muted">Belum ada data.</td></tr>
+                        <tbody id="tblPreviewSOBody">
+                            <tr><td colspan="22" class="text-center text-muted">Belum ada data.</td></tr>
                         </tbody>
                     </table>
                 </div>
 
-                <!-- Pagination -->
                 <div class="d-flex justify-content-between align-items-center mt-2 flex-wrap">
                     <div>
                         <label class="mr-2 mb-0">Baris per halaman:</label>
@@ -192,21 +200,6 @@
         </div>
     </div>
 </div>
-
-<!-- ===== PREVIEW TABLE ===== -->
-<!-- <div class="row" id="previewWrapper" style="display:none;">
-    <div class="col-md-12">
-        <div class="card card-outline card-info">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h3 class="card-title mb-0">
-                    <i class="fa fa-table"></i> Preview Data
-                </h3>
-                <span class="preview-info" id="previewInfo">-</span>
-            </div>
-            
-        </div>
-    </div>
-</div> -->
 
 <iframe name="downloadFrame" style="display:none;"></iframe>
 

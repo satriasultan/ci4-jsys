@@ -32,7 +32,11 @@
     }
     #tblPreviewPO_wrapper { overflow-x: auto; }
     #tblPreviewPO { font-size: 12.5px; }
-    #tblPreviewPO thead th { white-space: nowrap; background: #f1f5f9; }
+    #tblPreviewPO thead th { white-space: nowrap; background: linear-gradient(
+                    135deg,
+                    #1f2937,
+                    #374151
+            ) !important; }
     #tblPreviewPO tbody td { white-space: nowrap; }
     .preview-info {
         font-size: 12px; color: #64748b;
@@ -88,20 +92,11 @@
 
 <div class="row">
     <div class="col-md-12">
-        <div class="card card-outline card-primary">
-            <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
-                <div class="d-flex flex-wrap" style="gap:8px;">
-                    <button type="button" class="btn btn-tarik-modern" id="btnTarikData" onclick="tarikData()">
-                        <i class="fa fa-search"></i> Tarik Data
-                    </button>
-                    <button type="button" class="btn btn-excel-modern" id="btnCetakExcel"
-                            onclick="submitLaporan()" disabled>
-                        <i class="fa fa-file-excel-o"></i> Cetak Excel
-                    </button>
-                    <button type="button" class="btn btn-secondary" onclick="resetLaporanParam()">
-                        <i class="fa fa-refresh"></i> Reset
-                    </button>
-                </div>
+        <div class="card card-primary">
+            <div class="card-header">
+                 <h3 class="card-title mb-0" style="color: white;">
+                    <i class="fa fa-filter"></i> Filter
+                </h3>
             </div>
 
             <div class="card-body">
@@ -135,18 +130,32 @@
                             <div class="form-group">
                                 <label>Supplier</label>
                                 <select name="kdsupplier" id="lapKdsupplier"
-                                        class="form-control select2" style="width:100%"></select>
+                                        class="form-control select2"></select>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label>Cabang / Job</label>
                                 <select name="cabang" id="lapCabang"
-                                        class="form-control select2" style="width:100%"></select>
+                                        class="form-control select2"></select>
                             </div>
                         </div>
                     </div>
                 </form>
+            </div>
+            <div class="card-footer  d-flex justify-content-between align-items-center flex-wrap">
+                <div class="d-flex flex-wrap" style="gap:8px;">
+                    <button type="button" class="btn btn-tarik-modern" id="btnTarikData" onclick="tarikData()">
+                        <i class="fa fa-search"></i> Tarik Data
+                    </button>
+                    <button type="button" class="btn btn-excel-modern" id="btnCetakExcel"
+                            onclick="submitLaporan()" disabled>
+                        <i class="fa fa-file-excel-o"></i> Cetak Excel
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="resetLaporanParam()">
+                        <i class="fa fa-refresh"></i> Reset
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -157,7 +166,7 @@
     <div class="col-md-12">
         <div class="card card-outline card-info">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h3 class="card-title mb-0">
+                <h3 class="card-title mb-0" style="color:white">
                     <i class="fa fa-table"></i> Preview Data
                 </h3>
                 <span class="preview-info" id="previewInfo">-</span>
@@ -168,34 +177,27 @@
                         <thead>
                             <tr>
                                 <th>No</th>
-                                <th>No. Dokumen</th>
+                                <th>No. PO</th>
+                                <th>Jurnal</th>
                                 <th>Tanggal</th>
-                                <th>Cabang</th>
                                 <th>Kode Supplier</th>
                                 <th>Nama Supplier</th>
-                                <th>Pemohon</th>
-                                <th>ID Barang</th>
+                                <th>Kode Barang</th>
                                 <th>Nama Barang</th>
-                                <th>Satuan</th>
                                 <th>Qty</th>
-                                <th>Qty Bonus</th>
-                                <th>Qty LPB</th>
-                                <th>Qty Void</th>
-                                <th>Qty Proses</th>
-                                <th>Harga</th>
-                                <th>Jumlah</th>
-                                <th>Disc</th>
-                                <th>PPN</th>
-                                <th>Total</th>
-                                <th>Ket. PO</th>
-                                <th>Ket. PP</th>
-                                <!-- <th>Status Dtl</th>
-                                <th>Status PO</th> -->
-                                <th>Ket. Tambahan</th>
+                                <th>Qty Realisasi</th>
+                                <th>Satuan</th>
+                                <th>Nilai</th>
+                                <th>Job</th>
+                                <th>Nama Job</th>
+                                <th>Harga PO</th>
+                                <th>Keterangan Item PP</th>
+                                <th>Tgl Kirim</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
                         <tbody id="tblPreviewPOBody">
-                            <tr><td colspan="25" class="text-center text-muted">Belum ada data.</td></tr>
+                            <tr><td colspan="18" class="text-center text-muted">Belum ada data.</td></tr>
                         </tbody>
                     </table>
                 </div>

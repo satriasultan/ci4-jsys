@@ -124,6 +124,7 @@ function documentReadable(){
             $('[name="prefix"]').val(prefixParts[0]).prop('readonly', true);
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
             $('[name="suffix"]').val(prefixParts[2]).prop('readonly', true);
+            defaultInitialLPB = prefixParts[2].substring(0, 2);
 
 
             $.ajax({
@@ -397,7 +398,7 @@ var defaultInitialLPB = '';
 var defaultInitialSupLPB = '';
 $("#docnolpb").select2({
     placeholder: "Choose Your LPB",
-    dropdownParent: $('#modalDetailReturBeli'),
+    dropdownParent: $('#modalDetailReturBeli .modal-body'),
     allowClear: true,
     width:'100%',
     ajax: {
@@ -788,7 +789,85 @@ function btnUpdateDetail(){
                 // $('#qtybonus').val(res.data.qtybonus);
                 // $('#harga').val(res.data.harga);
                 // $('#multidisc').val(res.data.multidisc);
-                setSelect2Ajax('#idprincipal', res.data.idprincipal, res.data.idprincipal);
+                // setSelect2Ajax('#idprincipal', res.data.idprincipal, res.data.idprincipal);
+                var selectedSpec = $.trim(res.data.idspec || '');
+                var selectedItem = $.trim(res.data.idbarang || '');
+
+                // Reset Batch / Specification dari data sebelumnya
+                $('#idspec')
+                    .empty()
+                    .val(null)
+                    .trigger('change');
+
+                // Jika idspec kosong, pastikan tidak ada yang terpilih
+                if (selectedSpec === '') {
+
+                    $('#idspec')
+                        .val(null)
+                        .trigger('change');
+
+                } else {
+
+                    $.ajax({
+                        type: 'POST',
+                        url: HOST_URL + 'api/globalmodule/list_batch_item',
+                        dataType: 'json',
+                        data: {
+                            _search_: selectedSpec,
+                            _page_: 1,
+                            _draw_: true,
+                            _start_: 1,
+                            _perpage_: 30,
+                            _paramglobal_: '',
+                            _parameterx_: selectedItem,
+                            _var_: selectedSpec
+                        }
+                    }).then(function (datax) {
+
+                        if (!datax || !datax.items || datax.items.length === 0) {
+                            console.warn('Batch / Specification tidak ditemukan');
+                            $('#idspec').empty().val(null).trigger('change');
+                            return;
+                        }
+
+                        var specData = datax.items.find(function (item) {
+                            return $.trim(item.batch || '') === selectedSpec;
+                        });
+
+                        if (!specData) {
+                            console.warn('Batch yang sesuai tidak ditemukan:', selectedSpec);
+                            $('#idspec').empty().val(null).trigger('change');
+                            return;
+                        }
+
+                        specData.id = specData.batch;
+                        specData.text = specData.batch;
+
+                        var option = new Option(
+                            specData.batch,
+                            specData.batch,
+                            true,
+                            true
+                        );
+
+                        $(option).data('spec-data', specData);
+
+                        $('#idspec')
+                            .empty()
+                            .append(option)
+                            .val(specData.batch)
+                            .trigger('change');
+
+                        $('#idspec').trigger({
+                            type: 'select2:select',
+                            params: {
+                                data: specData
+                            }
+                        });
+
+                    });
+
+                }
                 $.ajax({
                     type: 'GET',
                     url: HOST_URL + 'api/globalmodule/list_mlocation' + '?var=' + res.data.idgudang,
@@ -823,6 +902,162 @@ function btnUpdateDetail(){
     });
 }
 
+
+function new_spec() {
+    // =============================================
+    // RESET INPUT
+    // =============================================
+    $('#newbatch')
+        .val('')
+        .prop('disabled', false)
+        .prop('readonly', false);
+
+    // =============================================
+    // OPEN MODAL BOOTSTRAP 5
+    // =============================================
+    const modalElement = document.getElementById('modalNewSpec');
+    const modalNewSpec = bootstrap.Modal.getOrCreateInstance(modalElement);
+    modalNewSpec.show();
+
+    // =============================================
+    // FOCUS INPUT
+    // =============================================
+    modalElement.addEventListener('shown.bs.modal', function () {
+        $('#newbatch').focus();
+    }, { once: true });
+}
+
+function save_new_spec() {
+    // =============================================
+    // AMBIL DATA
+    // =============================================
+    const newbatch = $.trim($('#newbatch').val() || '').toUpperCase();
+    const idbarang = $.trim($('[name="idbarang"]').val() || '');
+
+    // =============================================
+    // VALIDASI BATCH
+    // =============================================
+    if (newbatch === '') {
+        $('#newbatch').focus();
+        alert('Batch / Specification harus diisi.');
+        return;
+    }
+
+    // =============================================
+    // VALIDASI BARANG
+    // =============================================
+    if (idbarang === '') {
+        alert('Item Barang belum dipilih.');
+        return;
+    }
+
+    // =============================================
+    // AJAX SIMPAN
+    // =============================================
+    $.ajax({
+        type: 'POST',
+        url: HOST_URL + 'api/globalmodule/add_newbatch',
+        dataType: 'json',
+        data: {
+            idbarang: idbarang,
+            batch: newbatch
+        },
+        success: function (datax) {
+            if (datax.status) {
+                // Masukkan ke input spec LPB
+                $('#idspec')
+                    .prop('disabled', false)
+                    .prop('readonly', false)
+                    .val(newbatch)
+                    .trigger('change');
+
+                // Tutup modal new spec
+                const modalElement = document.getElementById('modalNewSpec');
+                const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                if (modalInstance) modalInstance.hide();
+
+                // Focus kembali ke spec
+                setTimeout(function () {
+                    $('#idspec').focus();
+                }, 300);
+
+                // Notifikasi
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil',
+                    text: datax.messages || 'Batch / Specification berhasil disimpan.'
+                });
+            } else {
+                alert(datax.messages || 'Gagal menyimpan Batch / Specification.');
+            }
+        },
+        error: function (xhr) {
+            console.error(xhr.responseText);
+            alert('Unable To Response Data');
+        }
+    });
+}
+
+$("#idspec").select2({
+    placeholder: "Silahkan pilih spek, click x untuk reset pilihan",
+    allowClear: true,
+    ajax: {
+        url: HOST_URL + 'api/globalmodule/list_batch_item',
+        type: 'POST',
+        dataType: 'json',
+        delay: 250,
+        data: function (params) {
+            return {
+                _search_: params.term,
+                _page_: params.page,
+                _draw_: true,
+                _start_: 1,
+                _perpage_: 30,
+                _paramglobal_: "",
+                _parameterx_: $('[name="idbarang"]').val(),
+                term: params.term
+            };
+        },
+        processResults: function (data, params) {
+            params.page = params.page || 1;
+
+            var results = $.map(data.items || [], function (item) {
+                return {
+                    id: item.batch,
+                    text: item.batch,
+                    batch: item.batch
+                };
+            });
+
+            return {
+                results: results,
+                pagination: {
+                    more: (params.page * 30) < (data.total_count || 0)
+                }
+            };
+        },
+        cache: false
+    },
+    escapeMarkup: function (markup) {
+        return markup;
+    },
+    templateResult: formatBatch,
+    templateSelection: formatBatchSelection
+}).on("select2:select", function (e) {
+    var data = e.params.data;
+    console.log('Batch dipilih:', data.batch);
+});
+
+/* Format Group */
+function formatBatch(repo) {
+    if (repo.loading) return repo.text;
+    var markup = "<div class='select2-result-repository__description'>" + repo.batch + "</div>";
+    return markup;
+}
+
+function formatBatchSelection(repo) {
+    return repo.batch || repo.text;
+}
 
 
 var defaultInitialLocation = '';
@@ -1330,6 +1565,7 @@ $('#cabang').on('change', function () {
                     var prefix = res.prefix;
                     $('#prefix').val(prefix);             // default
                     loadNextSuffixReturBeli()
+                    defaultInitialLPB = currentKodeSuffix;
 
                     var infix = (res.infix || '').toString();
                     if (infix.length === 4) {

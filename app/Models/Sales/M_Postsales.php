@@ -2133,8 +2133,8 @@ class M_Postsales extends Model
                 docno,
                 doctype,
                 trxdate,
-                kdsupplier,
-                nmsupplier,
+                kdcustomer,
+                nmcustomer,
 
                 0 AS urutan
 

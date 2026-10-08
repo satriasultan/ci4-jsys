@@ -32,7 +32,11 @@
     }
     #tblPreviewPP_wrapper { overflow-x: auto; }
     #tblPreviewPP { font-size: 12.5px; }
-    #tblPreviewPP thead th { white-space: nowrap; background: #f1f5f9; }
+    #tblPreviewPP thead th { white-space: nowrap; background: linear-gradient(
+                    135deg,
+                    #1f2937,
+                    #374151
+            ) !important; }
     #tblPreviewPP tbody td { white-space: nowrap; }
     .preview-info {
         font-size: 12px; color: #64748b;
@@ -75,23 +79,11 @@
 
 <div class="row">
     <div class="col-md-12">
-        <div class="card card-outline card-primary">
-            <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
-                <!-- <h3 class="card-title mb-0">
-                    <i class="fa fa-filter"></i> Parameter Laporan
-                </h3> -->
-                <div class="d-flex flex-wrap" style="gap:8px;">
-                    <button type="button" class="btn btn-tarik-modern" id="btnTarikData" onclick="tarikData()">
-                        <i class="fa fa-search"></i> Tarik Data
-                    </button>
-                    <button type="button" class="btn btn-excel-modern" id="btnCetakExcel"
-                            onclick="submitLaporan()" disabled>
-                        <i class="fa fa-file-excel-o"></i> Cetak Excel
-                    </button>
-                    <button type="button" class="btn btn-default" onclick="resetLaporanParam()">
-                        <i class="fa fa-refresh"></i> Reset
-                    </button>
-                </div>
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title mb-0" style="color: white;">
+                    <i class="fa fa-filter"></i> Filter
+                </h3>
             </div>
 
             <div class="card-body">
@@ -125,57 +117,59 @@
                             <div class="form-group">
                                 <label>ID Barang</label>
                                 <select name="idbarang" id="lapIdbarang"
-                                        class="form-control select2" style="width:100%"></select>
+                                        class="form-control select2"></select>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label>Cabang / Job</label>
                                 <select name="cabang" id="lapCabang"
-                                        class="form-control select2" style="width:100%"></select>
+                                        class="form-control select2"></select>
                             </div>
                         </div>
                     </div>
                 </form>
             </div>
-        </div>
-    </div>
-</div>
-
-<!-- ===== PREVIEW TABLE ===== -->
-<div class="row" id="previewWrapper" style="display:none;">
-    <div class="col-md-12">
-        <div class="card card-outline card-info">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h3 class="card-title mb-0">
-                    <i class="fa fa-table"></i> Preview Data
-                </h3>
-                <span class="preview-info" id="previewInfo">-</span>
+            <div class="card-footer d-flex justify-content-between align-items-center flex-wrap">
+                <div class="d-flex flex-wrap" style="gap:8px;">
+                    <button type="button" class="btn btn-tarik-modern" id="btnTarikData" onclick="tarikData()">
+                        <i class="fa fa-search"></i> Tarik Data
+                    </button>
+                    <button type="button" class="btn btn-excel-modern" id="btnCetakExcel"
+                            onclick="submitLaporan()" disabled>
+                        <i class="fa fa-file-excel-o"></i> Cetak Excel
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="resetLaporanParam()">
+                        <i class="fa fa-refresh"></i> Reset
+                    </button>
+                </div>
             </div>
-            <div class="card-body">
+            <div class="card-body"  id="previewWrapper" style="display:none;">
                 <div id="tblPreviewPP_wrapper">
                     <table id="tblPreviewPP" class="table table-bordered table-striped table-hover" style="width:100%">
-                        <thead>
+                        <thead class="bg-primary text-white">
                             <tr>
                                 <th>No</th>
-                                <th>No. Dokumen</th>
+                                <th>No. PP</th>
+                                <th>Jurnal</th>
                                 <th>Tanggal</th>
-                                <th>Cabang</th>
-                                <th>Pemohon</th>
-                                <th>ID Barang</th>
+                                <th>UserID</th>
+                                <th>Kode Barang</th>
+                                <th>Qty</th>
+                                <th>Qty Realisasi</th>
+                                <th>Nama User</th>
                                 <th>Nama Barang</th>
                                 <th>Satuan</th>
-                                <th>Qty</th>
-                                <th>Qty PO</th>
-                                <th>Qty Void</th>
-                                <th>Qty Proses</th>
-                                <th>Keterangan</th>
-                                <th>No. Capex</th>
-                                <th>Keterangan PP</th>
+                                <th>Spec</th>
+                                <th>Keterangan PP Header</th>
+                                <th>Keterangan Detail</th>
+                                <th>Tanggal Pakai</th>
+                                <th>Job</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
                         <tbody id="tblPreviewPPBody">
-                            <tr><td colspan="15" class="text-center text-muted">Belum ada data.</td></tr>
+                            <tr><td colspan="17" class="text-center text-muted">Belum ada data.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -186,8 +180,8 @@
                         <label class="mr-2 mb-0">Baris per halaman:</label>
                         <select id="perpageSelect" class="form-control form-control-sm d-inline-block"
                                 style="width:80px;" onchange="changePerpage()">
-                            <option value="10" >10</option>
-                                <option value="25" selected>25</option>
+                            <option value="10">10</option>
+                            <option value="25" selected>25</option>
                             <option value="50">50</option>
                             <option value="100">100</option>
                             <option value="200">200</option>
@@ -201,6 +195,21 @@
         </div>
     </div>
 </div>
+
+<!-- ===== PREVIEW TABLE — KHUSUS HISTORY ===== -->
+<!-- <div class="row">
+    <div class="col-md-12">
+        <div class="card card-outline card-info">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0">
+                    <i class="fa fa-table"></i> Preview Data
+                </h3>
+                <span class="preview-info" id="previewInfo">-</span>
+            </div>
+            
+        </div>
+    </div>
+</div> -->
 
 <iframe name="downloadFrame" style="display:none;"></iframe>
 

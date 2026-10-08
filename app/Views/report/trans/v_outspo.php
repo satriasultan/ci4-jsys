@@ -32,7 +32,11 @@
     }
     #tblPreviewPO_wrapper { overflow-x: auto; }
     #tblPreviewPO { font-size: 12.5px; }
-    #tblPreviewPO thead th { white-space: nowrap; background: #f1f5f9; }
+    #tblPreviewPO thead th { white-space: nowrap; background: linear-gradient(
+                    135deg,
+                    #1f2937,
+                    #374151
+            ) !important; }
     #tblPreviewPO tbody td { white-space: nowrap; }
     .preview-info {
         font-size: 12px; color: #64748b;
@@ -89,19 +93,10 @@
 <div class="row">
     <div class="col-md-12">
         <div class="card card-outline card-primary">
-            <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
-                <div class="d-flex flex-wrap" style="gap:8px;">
-                    <button type="button" class="btn btn-tarik-modern" id="btnTarikData" onclick="tarikData()">
-                        <i class="fa fa-search"></i> Tarik Data
-                    </button>
-                    <button type="button" class="btn btn-excel-modern" id="btnCetakExcel"
-                            onclick="submitLaporan()" disabled>
-                        <i class="fa fa-file-excel-o"></i> Cetak Excel
-                    </button>
-                    <button type="button" class="btn btn-secondary" onclick="resetLaporanParam()">
-                        <i class="fa fa-refresh"></i> Reset
-                    </button>
-                </div>
+            <div class="card-header">
+                <h3 class="card-title mb-0" style="color: white;">
+                    <i class="fa fa-filter"></i> Filter
+                </h3>
             </div>
 
             <div class="card-body">
@@ -148,24 +143,24 @@
                     </div>
                 </form>
             </div>
-        </div>
-    </div>
-</div>
-
-<!-- ===== PREVIEW TABLE ===== -->
-<div class="row" id="previewWrapper" style="display:none;">
-    <div class="col-md-12">
-        <div class="card card-outline card-info">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h3 class="card-title mb-0">
-                    <i class="fa fa-table"></i> Preview Data
-                </h3>
-                <span class="preview-info" id="previewInfo">-</span>
+            <div class="card-footerd-flex justify-content-between align-items-center flex-wrap">
+                <div class="d-flex flex-wrap" style="gap:8px;">
+                    <button type="button" class="btn btn-tarik-modern" id="btnTarikData" onclick="tarikData()">
+                        <i class="fa fa-search"></i> Tarik Data
+                    </button>
+                    <button type="button" class="btn btn-excel-modern" id="btnCetakExcel"
+                            onclick="submitLaporan()" disabled>
+                        <i class="fa fa-file-excel-o"></i> Cetak Excel
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="resetLaporanParam()">
+                        <i class="fa fa-refresh"></i> Reset
+                    </button>
+                </div>
             </div>
-            <div class="card-body">
+            <div class="card-body"  id="previewWrapper" style="display:none;">
                 <div id="tblPreviewPO_wrapper">
                     <table id="tblPreviewPO" class="table table-bordered table-striped table-hover" style="width:100%">
-                        <thead>
+                        <thead class="bg-primary text-white">
                             <tr>
                                 <th>No</th>
                                 <th>No. Dokumen</th>
@@ -216,6 +211,21 @@
                     </nav>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== PREVIEW TABLE ===== -->
+<div class="row" id="previewWrapper" style="display:none;">
+    <div class="col-md-12">
+        <div class="card card-outline card-info">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0">
+                    <i class="fa fa-table"></i> Preview Data
+                </h3>
+                <span class="preview-info" id="previewInfo">-</span>
+            </div>
+           
         </div>
     </div>
 </div>

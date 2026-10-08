@@ -1588,14 +1588,14 @@ $routes->group('/report/trans', ["namespace" => "App\Controllers\Report"], funct
 
 
 
-     $routes->add('so', 'Report::so');
-    $routes->post('downloadLaporanSO',  'Report::downloadLaporanSO');
-    $routes->post('previewLaporanLPB',  'Report::previewLaporanLPB');
+    $routes->add('so', 'Report::salesorder');
+    $routes->post('downloadLaporanSalesOrder',  'Report::downloadLaporanSalesOrder');
+    $routes->post('previewLaporanSalesOrder',  'Report::previewLaporanSalesOrder');
 
 
-     $routes->add('pjo', 'Report::pjo');
-    $routes->post('downloadLaporanPJO',  'Report::downloadLaporanPJO');
-    $routes->post('previewLaporanPJO',  'Report::previewLaporanPJO');
+    $routes->add('pjo', 'Report::penjualan');
+    $routes->post('downloadLaporanPenjualan',  'Report::downloadLaporanPenjualan');
+    $routes->post('previewLaporanPenjualan',  'Report::previewLaporanPenjualan');
 
 });
 

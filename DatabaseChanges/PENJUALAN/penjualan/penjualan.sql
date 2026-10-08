@@ -424,15 +424,15 @@ BEGIN
         WHERE rtrim(docno) = rtrim(NEW.docno);
 
 
-        -- DELETE PENJUALAN DT YANG SUDAH TIDAK ADA DI PENJUALAN TMP
-        DELETE FROM sc_trx.penjualan_dtl td
+        -- DELETE TRANS DT YANG SUDAH TIDAK ADA DI LPB DTL
+        DELETE FROM sc_trx.transaction_dt td
         WHERE rtrim(td.docno) = rtrim(NEW.docnotmp)
         AND td.doctype IN ('SALES', 'SALESX')
         AND NOT EXISTS (
             SELECT 1
-            FROM sc_tmp.penjualan_dtl d
-            WHERE rtrim(d.docno) = rtrim(NEW.docno)
-                AND d.uniqueid = td.uniqueid
+            FROM sc_trx.penjualan_dtl d
+            WHERE rtrim(d.docno) = rtrim(NEW.docnotmp)
+                AND d.uniqueid = td.source_uniqueid
         );
 
 
@@ -758,3 +758,186 @@ ALTER TABLE sc_tmp.penjualan_dtl
 
 ALTER TABLE sc_trx.penjualan_dtl 
     ALTER COLUMN docnoso DROP NOT NULL;
+
+
+
+
+CREATE OR REPLACE FUNCTION sc_trx.fn_sync_penjualan_dtl_to_transaction(
+    p_docno TEXT,
+    p_uniqueid TEXT
+)
+RETURNS VOID
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_pjo          sc_trx.penjualan%ROWTYPE;
+    v_dtl          sc_trx.penjualan_dtl%ROWTYPE;
+    v_journal      CHAR(6);
+    v_type         CHAR(3);
+    v_tx_uid       TEXT;
+    v_source_uid   TEXT;
+    v_exists       BOOLEAN;
+    v_idbranch     CHAR(20);
+
+    v_dpp          NUMERIC(18,2);
+    v_pajak        NUMERIC(18,2);
+    v_nilai        NUMERIC(18,2);
+    v_bruto        NUMERIC(18,2);
+BEGIN
+    -- 1. Ambil header
+    SELECT * INTO v_pjo
+    FROM sc_trx.penjualan
+    WHERE rtrim(docno) = rtrim(p_docno);
+
+    IF NOT FOUND THEN
+        RETURN;
+    END IF;
+
+    -- 2. Ambil detail
+    SELECT * INTO v_dtl
+    FROM sc_trx.penjualan_dtl
+    WHERE rtrim(docno) = rtrim(p_docno)
+      AND uniqueid = p_uniqueid;
+
+    IF NOT FOUND THEN
+        RETURN;
+    END IF;
+
+    -- 3. Tentukan journal_type dari doctype
+    v_journal := CASE rtrim(COALESCE(v_dtl.doctype, v_pjo.doctype))
+        WHEN 'SALES'    THEN 'SALESX'::CHAR(6)
+        -- WHEN 'GRRET' THEN 'GRNRET'::CHAR(6)
+        ELSE 'SALESX'::CHAR(6)
+    END;
+
+    v_type := CASE v_journal
+        WHEN 'SALESX' THEN 'OUT'::CHAR(3)
+        -- WHEN 'GRNRET' THEN 'OUT'::CHAR(3)
+        ELSE 'OUT'::CHAR(3)
+    END;
+
+    -- 4. idbranch
+    v_idbranch := CASE rtrim(v_pjo.cabang)
+        WHEN 'JTS1' THEN 'JTS'::CHAR(20)
+        WHEN 'JTS2' THEN 'JTS'::CHAR(20)
+        ELSE rtrim(v_pjo.cabang)::CHAR(20)
+    END;
+
+    -- 5. Hitung nilai
+    v_dpp   := COALESCE(v_dtl.nilaikonversi, 0);
+    v_pajak := COALESCE(v_dtl.nilaipajak, 0);
+    v_nilai := v_dpp + v_pajak;
+    v_bruto := v_nilai;
+
+    -- 6. Generate uniqueid transaksi
+    v_tx_uid := md5(rtrim(p_docno) || '|' || COALESCE(v_dtl.uniqueid, ''));
+
+    v_source_uid := COALESCE(v_dtl.uniqueid, '');
+
+    -- 7. Cek apakah sudah ada
+    SELECT EXISTS (
+        SELECT 1 FROM sc_trx.transaction_dt
+        WHERE rtrim(docno) = rtrim(p_docno)
+          AND uniqueid = v_tx_uid
+    ) INTO v_exists;
+
+    -- 8. Insert atau update
+    IF v_exists THEN
+        UPDATE sc_trx.transaction_dt
+        SET
+            qty             = v_dtl.qty,
+            harga           = v_dtl.harga,
+            bruto           = v_bruto,
+            discount        = COALESCE(v_dtl.multidisc, 0),
+            nilai           = v_nilai,
+            dpp             = v_dpp,
+            pajak           = v_pajak,
+            total           = v_nilai,
+            idtax           = rtrim(v_dtl.idtax),
+            isinclusive     = rtrim(v_pjo.isinclusive),
+            currcode        = rtrim(v_pjo.currcode),
+            kurs            = v_pjo.kurs,
+            idbarang        = rtrim(v_dtl.idbarang),
+            namabarang      = rtrim(v_dtl.nmbarang),
+            idunit          = rtrim(v_dtl.unit),
+            warehouse       = rtrim(v_dtl.idgudang),
+            idarea          = rtrim(v_dtl.idgudang),
+            kdcustomer      = rtrim(v_pjo.kdcustomer),
+            ncustomer       = rtrim(v_pjo.nmcustomer),
+            updatedby       = v_pjo.updateby,
+            updateddate     = CURRENT_TIMESTAMP
+        WHERE rtrim(docno) = rtrim(p_docno)
+          AND uniqueid = v_tx_uid;
+    ELSE
+        INSERT INTO sc_trx.transaction_dt (
+            uniqueid, source_uniqueid, docno, doctype, journal_type,
+            line_no, docdate, idbranch, cabang, type_in_out,
+            ref_docno, ref_doctype,
+            kdcustomer, ncustomer,
+            idbarang, namabarang, idunit, idarea, warehouse,
+            bin, batch, lotno,
+            qty, harga, bruto, discount, nilai, dpp, pajak, total,
+            idtax, isinclusive, currcode, kurs, createdby
+        )
+        VALUES (
+            v_tx_uid,
+            v_source_uid,
+            rtrim(p_docno),
+            rtrim(COALESCE(v_dtl.doctype, v_pjo.doctype)),
+            v_journal,
+            v_dtl.idurut,
+            v_pjo.docdate,
+            v_idbranch,
+            rtrim(v_pjo.cabang),
+            v_type,
+            rtrim(v_dtl.docnoso),
+            'PJO',
+            rtrim(v_pjo.kdcustomer),
+            rtrim(v_pjo.nmcustomer),
+            rtrim(v_dtl.idbarang),
+            rtrim(v_dtl.nmbarang),
+            rtrim(v_dtl.unit),
+            rtrim(v_dtl.idgudang),
+            rtrim(v_dtl.idgudang),
+            '',                              -- bin
+            rtrim(v_dtl.idspec),                              -- batch
+            '',                              -- lotno
+            v_dtl.qty,
+            v_dtl.harga,
+            v_bruto,
+            COALESCE(v_dtl.multidisc, 0),
+            v_nilai,
+            v_dpp,
+            v_pajak,
+            v_nilai,
+            rtrim(v_dtl.idtax),
+            rtrim(v_pjo.isinclusive),
+            rtrim(v_pjo.currcode),
+            v_pjo.kurs,
+            rtrim(v_pjo.inputby)
+        );
+    END IF;
+END;
+$$;
+
+
+
+
+
+CREATE OR REPLACE FUNCTION sc_trx.fn_penjualan_dtl_to_transaction()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF TG_OP IN ('INSERT') THEN
+        PERFORM sc_trx.fn_sync_penjualan_dtl_to_transaction(NEW.docno, NEW.uniqueid);
+        RETURN NEW;
+    END IF;
+END;
+$$;
+
+CREATE TRIGGER tr_penjualan_dtl_to_transaction
+AFTER INSERT
+ON sc_trx.penjualan_dtl
+FOR EACH ROW
+EXECUTE FUNCTION sc_trx.fn_penjualan_dtl_to_transaction();

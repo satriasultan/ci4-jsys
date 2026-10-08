@@ -211,6 +211,7 @@
                                             <div class="form-group">
                                                 <label for="kdsupplier">Supplier</label>
                                                 <select name="kdsupplier" id="kdsupplier" class="form-control select2" required></select>
+                                                <input type="hidden" name="nmsupplier" id="nmsupplier">
                                             </div>
                                         </div>
                                         <div class="col-md-12">

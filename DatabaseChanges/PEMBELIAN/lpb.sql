@@ -354,6 +354,59 @@ BEGIN
 
         v_new_docno := v_docno;
 
+        
+        LOOP
+
+            EXIT WHEN NOT EXISTS (
+                SELECT 1
+                FROM sc_trx.lpb
+                WHERE TRIM(docno) = TRIM(v_new_docno)
+            );
+
+            v_num := regexp_replace(
+                v_new_docno,
+                '.*?([0-9]+)$',
+                '\1'
+            );
+
+            IF COALESCE(v_num, '') = '' THEN
+
+                RAISE EXCEPTION
+                    'Format DOCNO LPB tidak valid: %',
+                    v_new_docno;
+
+            END IF;
+
+            v_num_int := v_num::INTEGER + 1;
+
+            v_new_docno :=
+                v_base_docno ||
+                lpad(
+                    v_num_int::TEXT,
+                    length(v_num),
+                    '0'
+                );
+
+        END LOOP;
+
+        v_docno := v_new_docno;
+
+        LOOP
+            EXIT WHEN NOT EXISTS (
+                SELECT 1
+                FROM sc_trx.lpb
+                WHERE rtrim(docno) = v_new_docno
+            );
+
+            -- ambil angka terakhir (dinamis)
+            v_num := regexp_replace(v_new_docno, '.*?([0-9]+)$', '\1');
+            v_num_int := v_num::INTEGER + 1;
+
+            -- padding mengikuti panjang awal
+            v_new_docno := v_base_docno
+                        || lpad(v_num_int::TEXT, length(v_num), '0');
+        END LOOP;
+
         -- gunakan docno final
         v_docno := v_new_docno;
 
@@ -400,6 +453,18 @@ BEGIN
         FROM sc_tmp.lpb_dtl
         WHERE rtrim(docno) = rtrim(OLD.docno)
             AND inputby = v_inputby;
+
+        
+        -- DELETE TRANS DT YANG SUDAH TIDAK ADA DI LPB DTL
+        DELETE FROM sc_trx.transaction_dt td
+        WHERE rtrim(td.docno) = rtrim(NEW.docnotmp)
+        AND td.doctype IN ('GR', 'GRRET')
+        AND NOT EXISTS (
+            SELECT 1
+            FROM sc_trx.lpb_dtl d
+            WHERE rtrim(d.docno) = rtrim(NEW.docnotmp)
+                AND d.uniqueid = td.source_uniqueid
+        );
 
 
         UPDATE sc_trx.po_dtl ppd
