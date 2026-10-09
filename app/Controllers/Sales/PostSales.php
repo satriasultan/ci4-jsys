@@ -3322,6 +3322,18 @@ class PostSales extends BaseController
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_postsales->q_deliveryorder_master_temp($param);
         $logindate = trim($this->session->get('logindate'));
+        $periode   = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_postsales->q_cek_periode($periode)->getRowArray();
+
+        $data['periodeTutup'] = false;
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            $data['periodeTutup'] = true;
+            $data['periodeInfo']  = [
+                'periode'    => trim($dtlPeriode['periode']),
+                'keterangan' => trim($dtlPeriode['keterangan']),
+            ];
+        }
+        /* ===================================================== */
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
@@ -3441,7 +3453,7 @@ class PostSales extends BaseController
                 $updateBtn = '
                 <a class="dropdown-item bg-warning" 
                     href="' . base_url('sales/postsales/updateDeliveryOrder') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Update This DeliveryOrder : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Update This DeliveryOrder : ' . $docno . '\')">
                     <i class="fa fa-edit"></i> Update DeliveryOrder 
                 </a>';
             }
@@ -3461,7 +3473,7 @@ class PostSales extends BaseController
                 <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
                     href="' . base_url('sales/postsales/show_deliveryorder') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Print DeliveryOrder : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Print DeliveryOrder : ' . $docno . '\')">
                     <i class="fa fa-print"></i> Print DeliveryOrder 
                 </a>';
             }
@@ -3569,8 +3581,7 @@ class PostSales extends BaseController
                     break;
             }
 
-            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
-
+            
             $row[] = $lm->kdcust;
             $row[] = $lm->nmcust;
             $row[] = $lm->alamatcust;
@@ -3603,8 +3614,9 @@ class PostSales extends BaseController
             $row[] = $lm->nmsalesman;
             // $row[] = $lm->pocust;
             $row[] = $lm->keterangan;
-
+            
             $row[] = $lm->nmbranch;
+            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
 
 
             $data[] = $row;
@@ -3661,7 +3673,7 @@ class PostSales extends BaseController
                 $updateBtn = '
                 <a class="dropdown-item bg-warning" 
                     href="' . base_url('sales/postsales/updateDeliveryOrder') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Update This DeliveryOrder : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Update This DeliveryOrder : ' . $docno . '\')">
                     <i class="fa fa-edit"></i> Update DeliveryOrder 
                 </a>';
             }
@@ -3681,7 +3693,7 @@ class PostSales extends BaseController
                 <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
                     href="' . base_url('sales/postsales/show_po') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Print DeliveryOrder : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Print DeliveryOrder : ' . $docno . '\')">
                     <i class="fa fa-print"></i> Print DeliveryOrder 
                 </a>';
             }
@@ -3771,8 +3783,7 @@ class PostSales extends BaseController
                     break;
             }
 
-            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
-
+            
             $row[] = $lm->kdcust;
             $row[] = $lm->nmcust;
             $row[] = $lm->alamatcust;
@@ -3805,9 +3816,10 @@ class PostSales extends BaseController
             $row[] = $lm->nmsalesman;
             // $row[] = $lm->pocust;
             $row[] = $lm->keterangan;
-
+            
             $row[] = $lm->nmbranch;
-
+            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
+            
 
             $data[] = $row;
         }
@@ -3906,6 +3918,19 @@ class PostSales extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_postsales->q_deliveryorder_master_temp($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
+
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_postsales->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('sales/postsales/deliveryorder'));
+        }
+        // =================================
 
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
@@ -4235,6 +4260,7 @@ class PostSales extends BaseController
 
                 $duplicate = $builderDetail
                     ->where('docno', $docno)
+                    ->where('inputby', $nama)
                     ->where('uniqueid', $row->uniqueid)
                     ->countAllResults();
 
@@ -4340,6 +4366,20 @@ class PostSales extends BaseController
         $dtl = $this->m_postsales->q_deliveryorder_master($param)->getRowArray();
         $status = trim($dtl['status']);
 
+         $logindate = trim($this->session->get('logindate'));
+
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_purchase->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('sales/postsales/deliveryorder'));
+        }
+
         if ($status === 'F' || $status === 'P') {
             // Update hanya status di tabel sc_trx.standart_usage_mst
             $info = array(
@@ -4375,7 +4415,7 @@ class PostSales extends BaseController
     function showing_deliveryordertemp(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno='$docno' and inputby ='$nama'";
         $data = $this->m_postsales->q_deliveryorder_master_temp($param);
         $output = array(
             'status' => true,
@@ -5054,6 +5094,26 @@ class PostSales extends BaseController
         // $docno = hex2bin($this->request->getGet('docno'));
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.deliveryorder');
+        $logindate = trim($this->session->get('logindate'));
+
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_postsales->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('sales/postsales/deliveryorder'));
+        }
+        //    $builder = $builder
+        //         ->where('docno', $docno)
+        //         ->update([
+        //             'status'=> 'P',
+        //             'printby' => $nama,
+        //             'printdate' => date('Y-m-d H:i:s')
+        //         ]);
 
         //    $builder = $builder
         //         ->where('docno', $docno)
@@ -5245,6 +5305,18 @@ class PostSales extends BaseController
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_postsales->q_suratjalan_master_temp($param);
         $logindate = trim($this->session->get('logindate'));
+        $periode   = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_postsales->q_cek_periode($periode)->getRowArray();
+
+        $data['periodeTutup'] = false;
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            $data['periodeTutup'] = true;
+            $data['periodeInfo']  = [
+                'periode'    => trim($dtlPeriode['periode']),
+                'keterangan' => trim($dtlPeriode['keterangan']),
+            ];
+        }
+        /* ===================================================== */
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
@@ -5364,7 +5436,7 @@ class PostSales extends BaseController
                 $updateBtn = '
                 <a class="dropdown-item bg-warning" 
                     href="' . base_url('sales/postsales/updateSuratJalan') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Update This SuratJalan : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Update This SuratJalan : ' . $docno . '\')">
                     <i class="fa fa-edit"></i> Update SuratJalan 
                 </a>';
             }
@@ -5384,7 +5456,7 @@ class PostSales extends BaseController
                 <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
                     href="' . base_url('sales/postsales/show_suratjalan') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Print SuratJalan : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Print SuratJalan : ' . $docno . '\')">
                     <i class="fa fa-print"></i> Print SuratJalan 
                 </a>';
             }
@@ -5483,8 +5555,7 @@ class PostSales extends BaseController
                     break;
             }
 
-            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
-
+            
             $row[] = $lm->kdcust;
             $row[] = $lm->nmcust;
             $row[] = $lm->alamatcust;
@@ -5519,6 +5590,7 @@ class PostSales extends BaseController
             $row[] = $lm->keterangan;
 
             $row[] = $lm->nmbranch;
+            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
 
 
             $data[] = $row;
@@ -5575,7 +5647,7 @@ class PostSales extends BaseController
                 $updateBtn = '
                 <a class="dropdown-item bg-warning" 
                     href="' . base_url('sales/postsales/updateSuratJalan') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Update This SuratJalan : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Update This SuratJalan : ' . $docno . '\')">
                     <i class="fa fa-edit"></i> Update SuratJalan 
                 </a>';
             }
@@ -5595,7 +5667,7 @@ class PostSales extends BaseController
                 <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
                     href="' . base_url('sales/postsales/show_po') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Print SuratJalan : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Print SuratJalan : ' . $docno . '\')">
                     <i class="fa fa-print"></i> Print SuratJalan 
                 </a>';
             }
@@ -5685,8 +5757,7 @@ class PostSales extends BaseController
                     break;
             }
 
-            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
-
+            
             $row[] = $lm->kdcust;
             $row[] = $lm->nmcust;
             $row[] = $lm->alamatcust;
@@ -5708,22 +5779,23 @@ class PostSales extends BaseController
                 $date = new \DateTime(trim($lm->docdate));
                 $date->modify("+{$jthtempo} days");
 
-                $jatuhTempo = $date->format('d/m/Y');
+                $jatuhTempo = $date->format('d-m-Y');
 
             } else {
                 $jatuhTempo = '';
             }
 
             $row[] = $jatuhTempo;
-
+            
             $row[] = $lm->nmsalesman;
             // $row[] = $lm->pocust;
             $row[] = $lm->keterangan;
 
             $row[] = $lm->nmbranch;
 
-
+            
             $data[] = $row;
+            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
         }
 
         $output = array(
@@ -5820,6 +5892,19 @@ class PostSales extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_postsales->q_suratjalan_master_temp($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
+
+         /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_postsales->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('sales/postsales/suratjalan'));
+        }
+        // =================================
 
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
@@ -6149,6 +6234,7 @@ class PostSales extends BaseController
 
                 $duplicate = $builderDetail
                     ->where('docno', $docno)
+                    ->where('inputby', $nama)
                     ->where('uniqueid', $row->uniqueid)
                     ->countAllResults();
 
@@ -6254,6 +6340,20 @@ class PostSales extends BaseController
         $dtl = $this->m_postsales->q_suratjalan_master($param)->getRowArray();
         $status = trim($dtl['status']);
 
+        $logindate = trim($this->session->get('logindate'));
+
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_postsales->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('sales/postsales/suratjalan'));
+        }
+
         if ($status === 'F' || $status === 'P') {
             // Update hanya status di tabel sc_trx.standart_usage_mst
             $info = array(
@@ -6289,7 +6389,7 @@ class PostSales extends BaseController
     function showing_suratjalantemp(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno='$docno' and inputby='$nama'";
         $data = $this->m_postsales->q_suratjalan_master_temp($param);
         $output = array(
             'status' => true,
@@ -6641,6 +6741,19 @@ class PostSales extends BaseController
         // $docno = hex2bin($this->request->getGet('docno'));
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.suratjalan');
+        $logindate = trim($this->session->get('logindate'));
+
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_postsales->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('sales/postsales/suratjalan'));
+        }
 
         //    $builder = $builder
         //         ->where('docno', $docno)
@@ -7287,7 +7400,7 @@ class PostSales extends BaseController
                 $date = new \DateTime(trim($lm->docdate));
                 $date->modify("+{$jthtempo} days");
 
-                $jatuhTempo = $date->format('d/m/Y');
+                $jatuhTempo = $date->format('d-m-Y');
 
             } else {
                 $jatuhTempo = '';

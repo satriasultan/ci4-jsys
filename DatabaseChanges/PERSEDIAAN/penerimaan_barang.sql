@@ -161,6 +161,7 @@ DECLARE
     v_doctype   TEXT;
     v_idurut    BIGINT;
     v_lock_key  BIGINT;
+    v_client_ip TEXT;
 BEGIN
 
     -- =========================================
@@ -224,7 +225,7 @@ BEGIN
             IF COALESCE(v_num, '') = '' THEN
 
                 RAISE EXCEPTION
-                    'Format DOCNO PP tidak valid: %',
+                    'Format DOCNO PNM BRG tidak valid: %',
                     v_new_docno;
 
             END IF;
@@ -274,9 +275,20 @@ BEGIN
         -- ===============================
         -- 🔥 REPOST UNIVERSAL
         -- ===============================
-        PERFORM sc_trx.sp_repost_universal(
-            v_docno,
-            v_doctype,
+        -- PERFORM sc_trx.sp_repost_universal(
+        --     v_docno,
+        --     v_doctype,
+        --     v_inputby
+        -- );
+
+        PERFORM sc_log.fn_log_transaction(
+            v_docno::CHAR(30),
+            NULL,
+            'I.Q',
+            'I.Q.A.6',
+            'I',
+            v_inputby,
+            v_client_ip,
             v_inputby
         );
 
@@ -302,6 +314,16 @@ BEGIN
         DELETE FROM sc_trx.pnm_brng_mst WHERE docno = NEW.docnotmp;
         DELETE FROM sc_trx.pnm_brng_dtl WHERE docno = NEW.docnotmp;
 
+        -- INSERT HEADER
+        INSERT INTO sc_trx.pnm_brng_mst
+        SELECT 
+            NEW.docnotmp, v_doctype, docdate, docref, cabang, cabang_sent, pemohon,
+            estpakai, idlocation_from, idlocation_to, idlocation_transit,
+            'F', description, inputby, inputdate, updateby, updatedate,
+            printby, printdate, docnotmp, idcostcenter
+        FROM sc_tmp.pnm_brng_mst
+        WHERE TRIM(docno)=TRIM(NEW.docno);
+
         -- INSERT DETAIL
         INSERT INTO sc_trx.pnm_brng_dtl
         SELECT 
@@ -313,26 +335,50 @@ BEGIN
         FROM sc_tmp.pnm_brng_dtl
         WHERE TRIM(docno)=TRIM(NEW.docno);
 
-        -- INSERT HEADER
-        INSERT INTO sc_trx.pnm_brng_mst
-        SELECT 
-            NEW.docnotmp, v_doctype, docdate, docref, cabang, cabang_sent, pemohon,
-            estpakai, idlocation_from, idlocation_to, idlocation_transit,
-            'F', description, inputby, inputdate, updateby, updatedate,
-            printby, printdate, docnotmp, idcostcenter
-        FROM sc_tmp.pnm_brng_mst
-        WHERE TRIM(docno)=TRIM(NEW.docno);
+        DELETE FROM sc_trx.transaction_dt td
+        WHERE rtrim(td.docno) = rtrim(NEW.docnotmp)
+        AND td.doctype = 'PNMBRG'
+        AND NOT EXISTS (
+            SELECT 1 FROM sc_trx.pnm_brng_dtl d
+            WHERE rtrim(d.docno) = rtrim(NEW.docnotmp)
+                AND d.iduniq = td.source_uniqueid
+        );
 
-        -- 🔥 REPOST UNIVERSAL
-        PERFORM sc_trx.sp_repost_universal(
-            NEW.docnotmp,
-            v_doctype,
+
+        -- -- 🔥 REPOST UNIVERSAL
+        -- PERFORM sc_trx.sp_repost_universal(
+        --     NEW.docnotmp,
+        --     v_doctype,
+        --     v_inputby
+        -- );
+
+        PERFORM sc_log.fn_log_transaction(
+            rtrim(NEW.docnotmp)::CHAR(30),
+            NULL,
+            'I.Q',
+            'I.Q.A.6',
+            'U',
+            v_inputby,
+            v_client_ip,
             v_inputby
         );
 
         -- CLEANUP
         DELETE FROM sc_tmp.pnm_brng_mst WHERE TRIM(docno)=TRIM(NEW.docno);
         DELETE FROM sc_tmp.pnm_brng_dtl WHERE TRIM(docno)=TRIM(NEW.docno);
+    ELSIF OLD.status = 'E' AND NEW.status = 'C' THEN
+
+            IF NEW.printby IS NOT NULL AND NEW.printby <> ''
+            AND NEW.printdate IS NOT NULL THEN
+                UPDATE sc_trx.pnm_brng_mst SET status = 'P'
+                WHERE rtrim(docno) = rtrim(NEW.docnotmp);
+            ELSE
+                UPDATE sc_trx.pnm_brng_mst SET status = 'F'
+                WHERE rtrim(docno) = rtrim(NEW.docnotmp);
+            END IF;
+
+            DELETE FROM sc_tmp.pnm_brng_mst WHERE TRIM(docno) = TRIM(NEW.docno);
+            DELETE FROM sc_tmp.pnm_brng_dtl WHERE TRIM(docno) = TRIM(NEW.docno);
 
     END IF;
 
@@ -413,3 +459,102 @@ CREATE OR REPLACE TRIGGER tr_trx_pnm_brng_mst
     EXECUTE FUNCTION sc_trx.tr_trx_pnm_brng_mst();
 
 COMMIT;
+
+
+
+
+
+
+CREATE OR REPLACE FUNCTION sc_trx.fn_sync_pnm_brng_dtl_to_transaction(
+    p_docno TEXT,
+    p_uniqueid TEXT
+)
+RETURNS VOID
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_hdr      sc_trx.pnm_brng_mst%ROWTYPE;
+    v_dtl      sc_trx.pnm_brng_dtl%ROWTYPE;
+    v_idbranch CHAR(20);
+    v_tx_uid   TEXT;
+    v_qty      NUMERIC(18,2);
+    v_val      NUMERIC(18,2);
+BEGIN
+    -- Header
+    SELECT * INTO v_hdr
+    FROM sc_trx.pnm_brng_mst
+    WHERE rtrim(docno) = rtrim(p_docno);
+    IF NOT FOUND THEN RETURN; END IF;
+
+    -- Detail
+    SELECT * INTO v_dtl
+    FROM sc_trx.pnm_brng_dtl
+    WHERE rtrim(docno) = rtrim(p_docno)
+      AND iduniq = p_uniqueid;
+    IF NOT FOUND THEN RETURN; END IF;
+
+    -- idbranch
+    v_idbranch := CASE rtrim(v_hdr.cabang)
+        WHEN 'JTS1' THEN 'JTS'::CHAR(20)
+        WHEN 'JTS2' THEN 'JTS'::CHAR(20)
+        ELSE rtrim(v_hdr.cabang)::CHAR(20)
+    END;
+
+    v_qty := COALESCE(v_dtl.qty, 0);
+    v_val := COALESCE(v_dtl.val, 0);
+
+    v_tx_uid := md5(rtrim(p_docno) || '|' || COALESCE(v_dtl.iduniq, ''));
+
+    INSERT INTO sc_trx.transaction_dt (
+        uniqueid, source_uniqueid, docno, doctype, journal_type,
+        line_no, docdate, idbranch, cabang, type_in_out,
+        ref_docno, ref_doctype,
+        idbarang, namabarang, idunit, idarea, warehouse,
+        bin, batch, lotno,
+        qty, harga, bruto, discount, nilai, dpp, pajak, total,
+        createdby
+    )
+    VALUES (
+        v_tx_uid, v_dtl.iduniq, rtrim(p_docno), 'PNMBRG', 'STKINX'::CHAR(6),
+        v_dtl.idurut, v_hdr.docdate, v_idbranch, rtrim(v_hdr.cabang), 'IN',
+        rtrim(v_dtl.docref), 'PNM',
+        rtrim(v_dtl.idbarang), rtrim(v_dtl.nmbarang), rtrim(v_dtl.unit),
+        rtrim(v_dtl.idlocation), rtrim(v_dtl.idlocation),
+        '', rtrim(v_dtl.batch), '',
+        v_qty, v_val, v_val * v_qty, 0, v_val * v_qty, 0, 0, v_val * v_qty,
+        rtrim(v_hdr.inputby)
+    )
+    ON CONFLICT (uniqueid) DO UPDATE
+    SET
+        qty         = EXCLUDED.qty,
+        harga       = EXCLUDED.harga,
+        nilai       = EXCLUDED.nilai,
+        total       = EXCLUDED.total,
+        warehouse   = EXCLUDED.warehouse,
+        idarea      = EXCLUDED.idarea,
+        batch       = EXCLUDED.batch,
+        cabang      = EXCLUDED.cabang,
+        updateddate = CURRENT_TIMESTAMP;
+END;
+$$;
+
+
+
+
+CREATE OR REPLACE FUNCTION sc_trx.fn_pnm_brng_dtl_to_transaction()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        PERFORM sc_trx.fn_sync_pnm_brng_dtl_to_transaction(NEW.docno, NEW.iduniq);
+        RETURN NEW;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER tr_pnm_brng_dtl_to_transaction
+AFTER INSERT ON sc_trx.pnm_brng_dtl
+FOR EACH ROW
+EXECUTE FUNCTION sc_trx.fn_pnm_brng_dtl_to_transaction();

@@ -6,6 +6,631 @@ use App\Controllers\BaseController;
 
 class Report extends BaseController
 {
+
+    /* =========================================================
+    LAPORAN MASTER BARANG
+    ========================================================= */
+    public function masterbarang()
+    {
+        $data = $this->commonData();
+        $data['title']        = "Laporan Master Barang";
+        $data['jenisLaporan'] = 'masterbarang';
+        $data['pagejs']       = 'report/report.js';
+        return $this->template->render('report/trans/v_mbarang', $data);
+    }
+
+    /* =========================================================
+    PREVIEW DATA MASTER BARANG — AJAX pagination
+    ========================================================= */
+    public function previewLaporanMasterBarang()
+    {
+        $idbarang = $this->request->getPost('idbarang');
+
+        $page    = max(1, (int)($this->request->getPost('page') ?? 1));
+        $perpage = (int)($this->request->getPost('perpage') ?? 25);
+        if ($perpage < 1 || $perpage > 200) $perpage = 25;
+
+        $offset = ($page - 1) * $perpage;
+
+        /* ====== BUILD WHERE ====== */
+        $where = []; $bind = [];
+
+        if (!empty($idbarang)) {
+            $where[] = "TRIM(idbarang) LIKE ?";
+            $bind[]  = '%' . trim(strtoupper($idbarang)) . '%';
+        }
+
+        $whereSql = count($where) > 0 ? ' WHERE ' . implode(' AND ', $where) : '';
+
+        /* ====== COUNT ====== */
+        $sqlCount = "SELECT COUNT(*) AS total FROM sc_mst.mbarang $whereSql";
+        $totalRow  = $this->db->query($sqlCount, $bind)->getRowArray();
+        $total     = (int)($totalRow['total'] ?? 0);
+        $totalPage = $perpage > 0 ? (int)ceil($total / $perpage) : 0;
+
+        /* ====== DATA HALAMAN INI ====== */
+        $sqlData = "
+            SELECT
+                TRIM(idbarang)          AS idbarang,
+                TRIM(nmbarang)          AS nmbarang,
+                minstock                AS minstock,
+                ppersediaan             AS ppersediaan,
+                TRIM(unit)              AS unit,
+                TRIM(description)       AS description,
+                TRIM(discontinue)       AS discontinue,
+                TRIM(inputby)           AS inputby,
+                inputdate               AS inputdate,
+                TRIM(idgroup)           AS idgroup,
+                berat                   AS berat,
+                lsize                   AS lsize,
+                psize                   AS psize,
+                tsize                   AS tsize,
+                TRIM(idtype)            AS idtype,
+                TRIM(idgolonganbarang)  AS idgolonganbarang,
+                TRIM(idjenisproduk)     AS idjenisproduk,
+                TRIM(idkelompokbarang)  AS idkelompokbarang,
+                ''                      AS launchingdate,
+                TRIM(deflocation)       AS deflocation,
+                TRIM(grade)             AS batch,
+                TRIM(idprincipal)       AS idprincipal,
+                0                       AS batasexpdate,
+                ''                      AS fastmoving,
+                ''                      AS withserialno,
+                psj                      AS prksuratjalan,
+                volume                  AS volume,
+                TRIM(lokasireff)        AS lokasireff,
+                ''                      AS satuandinkes,
+                ''                      AS konversidinkes,
+                '01'                    AS job,
+                'Approval'              AS approval,
+                ''                      AS tglapproved,
+                ''                      AS approvedby,
+                ''                      AS prkrevenue,
+                ''                      AS prkhpp,
+                ''                      AS prkproduksi,
+                ''                      AS kategoribarang,
+                gw                      AS gw,
+                TRIM(kdtax)             AS kdtax,
+                TRIM(satuantax)         AS satuantax
+            FROM sc_mst.mbarang
+            $whereSql
+            ORDER BY idbarang
+            LIMIT ? OFFSET ?
+        ";
+        $bindData   = $bind;
+        $bindData[] = $perpage;
+        $bindData[] = $offset;
+
+        $rows = $this->db->query($sqlData, $bindData)->getResultArray();
+
+        return $this->response->setJSON([
+            'status'     => 'ok',
+            'data'       => $rows,
+            'page'       => $page,
+            'perpage'    => $perpage,
+            'total'      => $total,
+            'total_page' => $totalPage,
+        ]);
+    }
+
+    /* =========================================================
+    DOWNLOAD EXCEL — MASTER BARANG
+    ========================================================= */
+    public function downloadLaporanMasterBarang()
+    {
+        $idbarang = $this->request->getPost('idbarang');
+
+        /* ====== BUILD WHERE ====== */
+        $where = []; $bind = [];
+
+        if (!empty($idbarang)) {
+            $where[] = "TRIM(idbarang) LIKE ?";
+            $bind[]  = '%' . trim(strtoupper($idbarang)) . '%';
+        }
+
+        $whereSql = count($where) > 0 ? ' WHERE ' . implode(' AND ', $where) : '';
+
+        /* ====== SQL ====== */
+        $sql = "
+            SELECT
+                TRIM(idbarang)          AS idbarang,
+                TRIM(nmbarang)          AS nmbarang,
+                minstock                AS minstock,
+                ppersediaan             AS ppersediaan,
+                TRIM(unit)              AS unit,
+                TRIM(description)       AS description,
+                TRIM(discontinue)       AS discontinue,
+                TRIM(inputby)           AS inputby,
+                inputdate               AS inputdate,
+                TRIM(idgroup)           AS idgroup,
+                berat                   AS berat,
+                lsize                   AS lsize,
+                psize                   AS psize,
+                tsize                   AS tsize,
+                TRIM(idtype)            AS idtype,
+                TRIM(idgolonganbarang)  AS idgolonganbarang,
+                TRIM(idjenisproduk)     AS idjenisproduk,
+                TRIM(idkelompokbarang)  AS idkelompokbarang,
+                ''                      AS launchingdate,
+                TRIM(deflocation)       AS deflocation,
+                TRIM(grade)             AS batch,
+                TRIM(idprincipal)       AS idprincipal,
+                0                       AS batasexpdate,
+                ''                      AS fastmoving,
+                ''                      AS withserialno,
+                psj                      AS prksuratjalan,
+                volume                  AS volume,
+                TRIM(lokasireff)        AS lokasireff,
+                ''                      AS satuandinkes,
+                ''                      AS konversidinkes,
+                '01'                    AS job,
+                'Approval'              AS approval,
+                ''                      AS tglapproved,
+                ''                      AS approvedby,
+                ''                      AS prkrevenue,
+                ''                      AS prkhpp,
+                ''                      AS prkproduksi,
+                ''                      AS kategoribarang,
+                gw                      AS gw,
+                TRIM(kdtax)             AS kdtax,
+                TRIM(satuantax)         AS satuantax
+            FROM sc_mst.mbarang
+            $whereSql
+            ORDER BY idbarang
+        ";
+
+        /* ====== SETUP ====== */
+        ini_set('memory_limit', '512M');
+        set_time_limit(0);
+        if (ob_get_length()) ob_end_clean();
+
+        $query = $this->db->query($sql, $bind);
+        if ($query === false) {
+            log_message('error', 'Laporan Master Barang query failed: ' . print_r($this->db->error(), true));
+            exit('Query gagal. Hubungi administrator.');
+        }
+
+        /* ====== EXCEL ====== */
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $judulLaporan = 'LAPORAN MASTER BARANG';
+
+        $sheet->setCellValue('A1', $judulLaporan);
+        $sheet->mergeCells('A1:AO1');   // 41 kolom
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal('center');
+
+        /* --- Header: 41 kolom --- */
+        $headers = [
+            'Kode', 'Nama', 'Qty Minimum', 'Prk Persediaan', 'Satuan', 'Keterangan',
+            'Discontinue', 'Create By', 'Terakhir Simpan', 'Group_',
+            'Berat', 'Panjang', 'Lebar', 'Tinggi',
+            'Jenis Barang', 'Golongan', 'Jenis Produk', 'Kelompok Barang',
+            'Launching Date', 'Gudang Default', 'Spec', 'Principal',
+            'Batas Expired Date', 'Fast Moving', 'With Serial No.', 'Prk Surat Jalan',
+            'Volume', 'Lokasi Reff', 'Satuan DinKes', 'Konversi Dinkes',
+            'JOB', 'Approval', 'Tgl Approved', 'Approved by',
+            'Prk Revenue', 'Prk HPP', 'Prk Produksi', 'Kategori Barang',
+            'Gross Weight', 'Kode Barang Tax', 'Satuan Tax'
+        ]; // 41 kolom
+        $sheet->fromArray($headers, null, 'A3');
+
+        $lastCol = 'AO';
+        $sheet->getStyle("A3:{$lastCol}3")->getFont()->setBold(true);
+        $sheet->getStyle("A3:{$lastCol}3")->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FFCCE5FF');
+
+        $rowNum      = 4;
+        $rowCount    = 0;
+        $sampleWidth = array_fill(0, count($headers), 0);
+        $sampleMax   = 100;
+        $sampleCount = 0;
+
+        while ($r = $query->getUnbufferedRow('array')) {
+            $rowData = [
+                $r['idbarang'], $r['nmbarang'], $r['minstock'], $r['ppersediaan'], $r['unit'], $r['description'],
+                $r['discontinue'], $r['inputby'], $r['inputdate'], $r['idgroup'],
+                $r['berat'], $r['lsize'], $r['psize'], $r['tsize'],
+                $r['idtype'], $r['idgolonganbarang'], $r['idjenisproduk'], $r['idkelompokbarang'],
+                $r['launchingdate'], $r['deflocation'], $r['batch'], $r['idprincipal'],
+                $r['batasexpdate'], $r['fastmoving'], $r['withserialno'], $r['prksuratjalan'],
+                $r['volume'], $r['lokasireff'], $r['satuandinkes'], $r['konversidinkes'],
+                $r['job'], $r['approval'], $r['tglapproved'], $r['approvedby'],
+                $r['prkrevenue'], $r['prkhpp'], $r['prkproduksi'], $r['kategoribarang'],
+                $r['gw'], $r['kdtax'], $r['satuantax']
+            ];
+
+            $sheet->fromArray($rowData, null, 'A' . $rowNum);
+
+            if ($sampleCount < $sampleMax) {
+                foreach ($rowData as $i => $val) {
+                    $len = mb_strlen((string)$val);
+                    if ($len > $sampleWidth[$i]) $sampleWidth[$i] = $len;
+                }
+                $sampleCount++;
+            }
+
+            $rowNum++;
+            $rowCount++;
+        }
+
+        if ($rowCount === 0) {
+            $sheet->setCellValue('A4', 'Tidak ada data sesuai filter.');
+            $sheet->mergeCells("A4:{$lastCol}4");
+        }
+
+        /* ====== AUTO-WIDTH ====== */
+        $colLetter = 'A';
+        foreach ($headers as $i => $h) {
+            $width = max(mb_strlen($h), $sampleWidth[$i]) + 2;
+            if ($width > 40) $width = 40;
+            if ($width < 8)  $width = 8;
+            $sheet->getColumnDimension($colLetter)->setWidth($width);
+            $colLetter++;
+        }
+
+        /* ====== FORMAT ANGKA ====== */
+        // C=Qty Min, D=Prk Persediaan, K=Berat, L=Panjang, M=Lebar, N=Tinggi,
+        // AA=Volume, AM=Gross Weight
+        $firstDataRow = 4;
+        $lastDataRow  = max(4, $rowNum - 1);
+        foreach (['C','D','K','L','M','N','AA','AM'] as $col) {
+            $sheet->getStyle("{$col}{$firstDataRow}:{$col}{$lastDataRow}")
+                ->getNumberFormat()->setFormatCode('#,##0.00');
+        }
+
+        $sheet->freezePane('A4');
+
+        /* ====== OUTPUT ====== */
+        $namaFile = 'Laporan_MasterBarang_' . date('Ymd_His') . '.xlsx';
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $namaFile . '"');
+        header('Cache-Control: max-age=0');
+        header('Pragma: public');
+
+        $writer->save('php://output');
+
+        $spreadsheet->disconnectWorksheets();
+        unset($spreadsheet);
+        exit;
+    }
+
+    /* =========================================================
+    LAPORAN MASTER CUSTOMER
+    ========================================================= */
+    public function mastercustomer()
+    {
+        $data = $this->commonData();
+        $data['title']        = "Laporan Master Customer";
+        $data['jenisLaporan'] = 'mastercustomer';
+        $data['pagejs']       = 'report/report.js';
+        return $this->template->render('report/trans/v_mcustomer', $data);
+    }
+
+    private function buildQueryMasterCustomer()
+    {
+        $sql = "SELECT
+                    TRIM(c.kdcustomer)              AS kdcustomer,
+                    TRIM(c.nmcustomer)              AS nmcustomer,
+                    TRIM(c.cp)                      AS cp,
+                    TRIM(c.phone)                   AS phone,
+                    TRIM(c.fax)                     AS fax,
+                    TRIM(c.alamat_kantor)           AS alamat,
+                    TRIM(c.kodepos_kantor)          AS kodepos,
+                    TRIM(c.npwp)                    AS npwp,
+                    TRIM(c.keterangan)              AS keterangan,
+                    c.plafon                        AS plafon,
+                    TRIM(k.namakotakab)             AS nmkota,
+                    TRIM(m.nmmarket)                AS nmmarket,
+                    TRIM(c.blacklist)               AS blacklist,
+                    TRIM(c.namanpwp)                AS namanpwp,
+                    TRIM(c.alamatnpwp)              AS alamatnpwp,
+                    TRIM(kn.namakotakab)            AS nmkotanpwp,
+                    TRIM(c.email)                   AS email,
+                    TRIM(c.jabatan)                 AS jabatan,
+                    TRIM(c.npkp)                    AS npkp,
+                    TRIM(c.grade)                   AS grade,
+                    TRIM(c.koderetur)               AS koderetur,
+                    TRIM(c.salesman)                AS salesman,
+                    TRIM(c.kolektor)                AS kolektor,
+                    ''                              AS billto,
+                    ''                              AS sendto,
+                    TRIM(c.isfaktur)                AS statusfpj,
+                    c.jthtempo                      AS jthtempo,
+                    TRIM(c.idcoretax)               AS jenisidpembeli,
+                    TRIM(c.idtku)                   AS idtkupembeli,
+                    '' AS namapsa, '' AS emailpsa, '' AS telppsa, '' AS noijinpsa,
+                    '' AS namaapoteker, '' AS kodestra, '' AS nosipa,
+                    '' AS telpapoteker, '' AS emailapoteker, '' AS alamatapoteker,
+                    '' AS masaberlakusipa, '' AS masaberlakupsa
+                FROM sc_mst.customer c
+                LEFT JOIN sc_mst.kotakab k  ON TRIM(k.kodekotakab)  = TRIM(c.kota_kantor)
+                LEFT JOIN sc_mst.kotakab kn ON TRIM(kn.kodekotakab) = TRIM(c.idkotanpwp)
+                LEFT JOIN sc_mst.market  m  ON TRIM(m.idmarket)     = TRIM(c.idmarket)";
+        return $sql;
+    }
+
+    public function previewLaporanMasterCustomer()
+    {
+        $kdcustomer = $this->request->getPost('kdcustomer');
+
+        $page    = max(1, (int)($this->request->getPost('page') ?? 1));
+        $perpage = (int)($this->request->getPost('perpage') ?? 25);
+        if ($perpage < 1 || $perpage > 200) $perpage = 25;
+
+        $where = []; $bind = [];
+        if (!empty($kdcustomer)) {
+            $where[] = "(TRIM(c.kdcustomer) ILIKE ? OR TRIM(c.nmcustomer) ILIKE ?)";
+            $bind[]  = '%' . trim($kdcustomer) . '%';
+            $bind[]  = '%' . trim($kdcustomer) . '%';
+        }
+        $whereSql = count($where) ? ' WHERE ' . implode(' AND ', $where) : '';
+
+        $sqlBase = $this->buildQueryMasterCustomer() . $whereSql;
+        $offset  = ($page - 1) * $perpage;
+
+        $totalRow = $this->db->query(
+            "SELECT COUNT(*) AS total FROM (" . $sqlBase . ") x", $bind
+        )->getRowArray();
+        $total     = (int)($totalRow['total'] ?? 0);
+        $totalPage = $perpage > 0 ? (int)ceil($total / $perpage) : 0;
+
+        $rows = $this->db->query(
+            $sqlBase . " ORDER BY kdcustomer LIMIT ? OFFSET ?",
+            array_merge($bind, [$perpage, $offset])
+        )->getResultArray();
+
+        return $this->response->setJSON([
+            'status' => 'ok', 'data' => $rows,
+            'page' => $page, 'perpage' => $perpage,
+            'total' => $total, 'total_page' => $totalPage,
+        ]);
+    }
+
+    public function downloadLaporanMasterCustomer()
+    {
+        $kdcustomer = $this->request->getPost('kdcustomer');
+
+        $where = []; $bind = [];
+        if (!empty($kdcustomer)) {
+            $where[] = "(TRIM(c.kdcustomer) ILIKE ? OR TRIM(c.nmcustomer) ILIKE ?)";
+            $bind[]  = '%' . trim($kdcustomer) . '%';
+            $bind[]  = '%' . trim($kdcustomer) . '%';
+        }
+        $whereSql = count($where) ? ' WHERE ' . implode(' AND ', $where) : '';
+        $sql = $this->buildQueryMasterCustomer() . $whereSql . " ORDER BY kdcustomer";
+
+        ini_set('memory_limit', '512M');
+        set_time_limit(0);
+        if (ob_get_length()) ob_end_clean();
+
+        $query = $this->db->query($sql, $bind);
+        if ($query === false) exit('Query gagal.');
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setCellValue('A1', 'LAPORAN MASTER CUSTOMER');
+        $sheet->mergeCells('A1:AO1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal('center');
+
+        $headers = [
+            'Kode', 'Nama', 'CP', 'Phone', 'Fax', 'Alamat', 'Kode Post', 'NPWP',
+            'Keterangan', 'Max Plafon', 'Kota', 'Market', 'BlackList',
+            'Nama NPWP', 'Alamat NPWP', 'Kota NPWP', 'Email', 'Jabatan', 'NPKP',
+            'Grade', 'Kode Retur', 'Salesman', 'Kolektor', 'Bill To', 'Send To',
+            'Status FPJ', 'Periode Jatuh Tempo', 'Jenis ID Pembeli', 'ID TKU Pembeli',
+            'Nama PSA', 'Email PSA', 'Telp PSA', 'No.Ijin PSA',
+            'Nama Apoteker', 'Kode STRA Apoteker', 'No.SIPA/SIKA Apoteker',
+            'Telp Apoteker', 'Email Apoteker', 'Alamat Apoteker',
+            'Masa Berlaku No.SIPA/SIKA', 'Masa Berlaku PSA'
+        ];
+        $sheet->fromArray($headers, null, 'A3');
+        $sheet->getStyle('A3:AO3')->getFont()->setBold(true);
+        $sheet->getStyle('A3:AO3')->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FFCCE5FF');
+
+        $rowNum = 4; $rowCount = 0;
+        while ($r = $query->getUnbufferedRow('array')) {
+            $sheet->fromArray([
+                $r['kdcustomer'], $r['nmcustomer'], $r['cp'], $r['phone'], $r['fax'],
+                $r['alamat'], $r['kodepos'], $r['npwp'], $r['keterangan'], $r['plafon'],
+                $r['nmkota'], $r['nmmarket'], $r['blacklist'],
+                $r['namanpwp'], $r['alamatnpwp'], $r['nmkotanpwp'],
+                $r['email'], $r['jabatan'], $r['npkp'], $r['grade'],
+                $r['koderetur'], $r['salesman'], $r['kolektor'],
+                $r['billto'], $r['sendto'], $r['statusfpj'], $r['jthtempo'],
+                $r['jenisidpembeli'], $r['idtkupembeli'],
+                $r['namapsa'], $r['emailpsa'], $r['telppsa'], $r['noijinpsa'],
+                $r['namaapoteker'], $r['kodestra'], $r['nosipa'],
+                $r['telpapoteker'], $r['emailapoteker'], $r['alamatapoteker'],
+                $r['masaberlakusipa'], $r['masaberlakupsa']
+            ], null, 'A' . $rowNum);
+            $rowNum++; $rowCount++;
+        }
+        if ($rowCount === 0) {
+            $sheet->setCellValue('A4', 'Tidak ada data.');
+            $sheet->mergeCells('A4:AO4');
+        }
+
+        $colLetter = 'A';
+        foreach ($headers as $h) {
+            $sheet->getColumnDimension($colLetter)->setWidth(max(12, min(35, mb_strlen($h) + 4)));
+            $colLetter++;
+        }
+        // Format plafon sebagai angka
+        $firstData = 4; $lastData = max(4, $rowNum - 1);
+        $sheet->getStyle("J{$firstData}:J{$lastData}")
+            ->getNumberFormat()->setFormatCode('#,##0.00');
+        $sheet->freezePane('A4');
+
+        $namaFile = 'Laporan_MasterCustomer_' . date('Ymd_His') . '.xlsx';
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $namaFile . '"');
+        header('Cache-Control: max-age=0');
+        header('Pragma: public');
+        $writer->save('php://output');
+        $spreadsheet->disconnectWorksheets();
+        unset($spreadsheet);
+        exit;
+    }
+
+
+    /* =========================================================
+    LAPORAN MASTER SUPPLIER
+    ========================================================= */
+    public function mastersupplier()
+    {
+        $data = $this->commonData();
+        $data['title']        = "Laporan Master Supplier";
+        $data['jenisLaporan'] = 'mastersupplier';
+        $data['pagejs']       = 'report/report.js';
+        return $this->template->render('report/trans/v_msupplier', $data);
+    }
+
+    private function buildQueryMasterSupplier()
+    {
+        $sql = "SELECT
+                    TRIM(s.kdsupplier)              AS kdsupplier,
+                    TRIM(s.nmsupplier)              AS nmsupplier,
+                    TRIM(s.cp)                      AS cp,
+                    TRIM(s.phone)                   AS phone,
+                    TRIM(s.fax)                     AS fax,
+                    TRIM(s.alamat)                  AS alamat,
+                    ''                              AS kodepos,
+                    TRIM(s.npwp)                    AS npwp,
+                    TRIM(s.keterangan)              AS keterangan,
+                    TRIM(k.namakotakab)             AS nmkota,
+                    TRIM(m.nmmarket)                AS nmmarket,
+                    TRIM(s.email)                   AS email,
+                    TRIM(s.jabatan)                 AS jabatan,
+                    TRIM(s.npkp)                    AS npkp,
+                    s.jthtempo                      AS jthtempo
+                FROM sc_mst.mstsupplier s
+                LEFT JOIN sc_mst.kotakab k ON TRIM(k.kodekotakab) = TRIM(s.idkota)
+                LEFT JOIN sc_mst.market  m ON TRIM(m.idmarket)    = TRIM(s.idmarket)";
+        return $sql;
+    }
+
+    public function previewLaporanMasterSupplier()
+    {
+        $kdsupplier = $this->request->getPost('kdsupplier');
+
+        $page    = max(1, (int)($this->request->getPost('page') ?? 1));
+        $perpage = (int)($this->request->getPost('perpage') ?? 25);
+        if ($perpage < 1 || $perpage > 200) $perpage = 25;
+
+        $where = []; $bind = [];
+        if (!empty($kdsupplier)) {
+            $where[] = "(TRIM(s.kdsupplier) ILIKE ? OR TRIM(s.nmsupplier) ILIKE ?)";
+            $bind[]  = '%' . trim($kdsupplier) . '%';
+            $bind[]  = '%' . trim($kdsupplier) . '%';
+        }
+        $whereSql = count($where) ? ' WHERE ' . implode(' AND ', $where) : '';
+
+        $sqlBase = $this->buildQueryMasterSupplier() . $whereSql;
+        $offset  = ($page - 1) * $perpage;
+
+        $totalRow = $this->db->query(
+            "SELECT COUNT(*) AS total FROM (" . $sqlBase . ") x", $bind
+        )->getRowArray();
+        $total     = (int)($totalRow['total'] ?? 0);
+        $totalPage = $perpage > 0 ? (int)ceil($total / $perpage) : 0;
+
+        $rows = $this->db->query(
+            $sqlBase . " ORDER BY kdsupplier LIMIT ? OFFSET ?",
+            array_merge($bind, [$perpage, $offset])
+        )->getResultArray();
+
+        return $this->response->setJSON([
+            'status' => 'ok', 'data' => $rows,
+            'page' => $page, 'perpage' => $perpage,
+            'total' => $total, 'total_page' => $totalPage,
+        ]);
+    }
+
+    public function downloadLaporanMasterSupplier()
+    {
+        $kdsupplier = $this->request->getPost('kdsupplier');
+
+        $where = []; $bind = [];
+        if (!empty($kdsupplier)) {
+            $where[] = "(TRIM(s.kdsupplier) ILIKE ? OR TRIM(s.nmsupplier) ILIKE ?)";
+            $bind[]  = '%' . trim($kdsupplier) . '%';
+            $bind[]  = '%' . trim($kdsupplier) . '%';
+        }
+        $whereSql = count($where) ? ' WHERE ' . implode(' AND ', $where) : '';
+        $sql = $this->buildQueryMasterSupplier() . $whereSql . " ORDER BY kdsupplier";
+
+        ini_set('memory_limit', '512M');
+        set_time_limit(0);
+        if (ob_get_length()) ob_end_clean();
+
+        $query = $this->db->query($sql, $bind);
+        if ($query === false) exit('Query gagal.');
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setCellValue('A1', 'LAPORAN MASTER SUPPLIER');
+        $sheet->mergeCells('A1:O1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal('center');
+
+        $headers = [
+            'Kode', 'Nama', 'CP', 'Phone', 'Fax', 'Alamat', 'Kode Post', 'NPWP',
+            'Keterangan', 'Kota', 'Market', 'Email', 'Jabatan', 'NPKP', 'Periode Jatuh Tempo'
+        ];
+        $sheet->fromArray($headers, null, 'A3');
+        $sheet->getStyle('A3:O3')->getFont()->setBold(true);
+        $sheet->getStyle('A3:O3')->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FFCCE5FF');
+
+        $rowNum = 4; $rowCount = 0;
+        while ($r = $query->getUnbufferedRow('array')) {
+            $sheet->fromArray([
+                $r['kdsupplier'], $r['nmsupplier'], $r['cp'], $r['phone'], $r['fax'],
+                $r['alamat'], $r['kodepos'], $r['npwp'], $r['keterangan'],
+                $r['nmkota'], $r['nmmarket'], $r['email'], $r['jabatan'],
+                $r['npkp'], $r['jthtempo']
+            ], null, 'A' . $rowNum);
+            $rowNum++; $rowCount++;
+        }
+        if ($rowCount === 0) {
+            $sheet->setCellValue('A4', 'Tidak ada data.');
+            $sheet->mergeCells('A4:O4');
+        }
+
+        $colLetter = 'A';
+        foreach ($headers as $h) {
+            $sheet->getColumnDimension($colLetter)->setWidth(max(12, min(35, mb_strlen($h) + 4)));
+            $colLetter++;
+        }
+        $sheet->freezePane('A4');
+
+        $namaFile = 'Laporan_MasterSupplier_' . date('Ymd_His') . '.xlsx';
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $namaFile . '"');
+        header('Cache-Control: max-age=0');
+        header('Pragma: public');
+        $writer->save('php://output');
+        $spreadsheet->disconnectWorksheets();
+        unset($spreadsheet);
+        exit;
+    }
+
+
+
+
+
     /* =========================================================
     LAPORAN OUTSTANDING PP
     ========================================================= */
@@ -1655,6 +2280,193 @@ class Report extends BaseController
     }
 
 
+    /* =========================================================
+    LAPORAN PO HARIAN
+    ========================================================= */
+    public function poharian()
+    {
+        $data = $this->commonData();
+        $data['title']        = "Laporan PO Harian";
+        $data['jenisLaporan'] = 'poharian';
+        $data['pagejs']       = 'report/report.js';
+        return $this->template->render('report/trans/v_poharian', $data);
+    }
+
+    private function buildQueryPOHarian()
+    {
+        $sql = "SELECT
+                    TO_CHAR(p.docdate, 'DD/MM/YYYY')     AS docdate,
+                    TRIM(d.docno)                        AS docno,
+                    TRIM(d.nmbarang)                     AS nmbarang,
+                    TRIM(p.nmsupplier)                   AS nmsupplier,
+                    d.qty                                AS qty,
+                    TRIM(d.unit)                         AS unit,
+                    d.harga                              AS harga,
+                    TRIM(d.currcode)                     AS currcode,
+                    d.kurs                               AS kurs,
+                    TRIM(d.descriptionpo)                AS keterangan,
+                    TO_CHAR(p.senddate, 'DD/MM/YYYY')    AS senddate
+                FROM sc_trx.po_dtl d
+                INNER JOIN sc_trx.po p ON TRIM(p.docno) = TRIM(d.docno)";
+        return $sql;
+    }
+
+    public function previewLaporanPOHarian()
+    {
+        $tglrange   = $this->request->getPost('tglrange');
+        $docno      = $this->request->getPost('docno');
+        $kdsupplier = $this->request->getPost('kdsupplier');
+        $cabang     = $this->request->getPost('cabang');
+
+        $page    = max(1, (int)($this->request->getPost('page') ?? 1));
+        $perpage = (int)($this->request->getPost('perpage') ?? 25);
+        if ($perpage < 1 || $perpage > 200) $perpage = 25;
+
+        $where = []; $bind = [];
+
+        if (!empty($tglrange)) {
+            $parts = explode(' - ', $tglrange);
+            if (count($parts) == 2) {
+                $where[] = "p.docdate BETWEEN ? AND ?";
+                $bind[]  = date('Y-m-d', strtotime($parts[0]));
+                $bind[]  = date('Y-m-d', strtotime($parts[1]));
+            }
+        }
+        if (!empty($docno)) {
+            $where[] = "TRIM(d.docno) ILIKE ?";
+            $bind[]  = '%' . trim(strtoupper($docno)) . '%';
+        }
+        if (!empty($kdsupplier)) {
+            $where[] = "TRIM(p.kdsupplier) = ?";
+            $bind[]  = trim(strtoupper($kdsupplier));
+        }
+        if (!empty($cabang)) {
+            $where[] = "TRIM(p.cabang) = ?";
+            $bind[]  = trim(strtoupper($cabang));
+        }
+
+        $whereSql = count($where) ? ' WHERE ' . implode(' AND ', $where) : '';
+
+        $sqlBase = $this->buildQueryPOHarian() . $whereSql;
+        $offset  = ($page - 1) * $perpage;
+
+        $totalRow = $this->db->query(
+            "SELECT COUNT(*) AS total FROM (" . $sqlBase . ") x", $bind
+        )->getRowArray();
+        $total     = (int)($totalRow['total'] ?? 0);
+        $totalPage = $perpage > 0 ? (int)ceil($total / $perpage) : 0;
+
+        $rows = $this->db->query(
+            $sqlBase . " ORDER BY p.docdate DESC, d.docno, d.idurut LIMIT ? OFFSET ?",
+            array_merge($bind, [$perpage, $offset])
+        )->getResultArray();
+
+        return $this->response->setJSON([
+            'status' => 'ok', 'data' => $rows,
+            'page' => $page, 'perpage' => $perpage,
+            'total' => $total, 'total_page' => $totalPage,
+        ]);
+    }
+
+    public function downloadLaporanPOHarian()
+    {
+        $tglrange   = $this->request->getPost('tglrange');
+        $docno      = $this->request->getPost('docno');
+        $kdsupplier = $this->request->getPost('kdsupplier');
+        $cabang     = $this->request->getPost('cabang');
+
+        $where = []; $bind = [];
+        if (!empty($tglrange)) {
+            $parts = explode(' - ', $tglrange);
+            if (count($parts) == 2) {
+                $where[] = "p.docdate BETWEEN ? AND ?";
+                $bind[]  = date('Y-m-d', strtotime($parts[0]));
+                $bind[]  = date('Y-m-d', strtotime($parts[1]));
+            }
+        }
+        if (!empty($docno)) {
+            $where[] = "TRIM(d.docno) ILIKE ?";
+            $bind[]  = '%' . trim(strtoupper($docno)) . '%';
+        }
+        if (!empty($kdsupplier)) {
+            $where[] = "TRIM(p.kdsupplier) = ?";
+            $bind[]  = trim(strtoupper($kdsupplier));
+        }
+        if (!empty($cabang)) {
+            $where[] = "TRIM(p.cabang) = ?";
+            $bind[]  = trim(strtoupper($cabang));
+        }
+        $whereSql = count($where) ? ' WHERE ' . implode(' AND ', $where) : '';
+
+        $sql = $this->buildQueryPOHarian() . $whereSql . " ORDER BY p.docdate DESC, d.docno, d.idurut";
+
+        ini_set('memory_limit', '512M');
+        set_time_limit(0);
+        if (ob_get_length()) ob_end_clean();
+
+        $query = $this->db->query($sql, $bind);
+        if ($query === false) {
+            log_message('error', 'PO Harian query failed: ' . print_r($this->db->error(), true));
+            exit('Query gagal.');
+        }
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setCellValue('A1', 'LAPORAN PO HARIAN');
+        $sheet->mergeCells('A1:K1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal('center');
+
+        $headers = [
+            'Tanggal', 'No.PO', 'Nama Barang', 'Nama Supplier',
+            'Qty', 'Satuan', 'Harga', 'Mata Uang', 'Kurs',
+            'Keterangan', 'Tgl Kirim'
+        ];
+        $sheet->fromArray($headers, null, 'A3');
+        $sheet->getStyle('A3:K3')->getFont()->setBold(true);
+        $sheet->getStyle('A3:K3')->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FFCCE5FF');
+
+        $rowNum = 4; $rowCount = 0;
+        while ($r = $query->getUnbufferedRow('array')) {
+            $sheet->fromArray([
+                $r['docdate'], $r['docno'], $r['nmbarang'], $r['nmsupplier'],
+                $r['qty'], $r['unit'], $r['harga'], $r['currcode'], $r['kurs'],
+                $r['keterangan'], $r['senddate']
+            ], null, 'A' . $rowNum);
+            $rowNum++; $rowCount++;
+        }
+        if ($rowCount === 0) {
+            $sheet->setCellValue('A4', 'Tidak ada data.');
+            $sheet->mergeCells('A4:K4');
+        }
+
+        $colLetter = 'A';
+        foreach ($headers as $h) {
+            $sheet->getColumnDimension($colLetter)->setWidth(max(12, min(35, mb_strlen($h) + 4)));
+            $colLetter++;
+        }
+        // Format angka: E=Qty, G=Harga, I=Kurs
+        $firstData = 4; $lastData = max(4, $rowNum - 1);
+        foreach (['E','G','I'] as $col) {
+            $sheet->getStyle("{$col}{$firstData}:{$col}{$lastData}")
+                ->getNumberFormat()->setFormatCode('#,##0.00');
+        }
+        $sheet->freezePane('A4');
+
+        $namaFile = 'Laporan_POHarian_' . date('Ymd_His') . '.xlsx';
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $namaFile . '"');
+        header('Cache-Control: max-age=0');
+        header('Pragma: public');
+        $writer->save('php://output');
+        $spreadsheet->disconnectWorksheets();
+        unset($spreadsheet);
+        exit;
+    }
+
     
 
     /* =========================================================
@@ -2328,6 +3140,1814 @@ class Report extends BaseController
 
         $writer->save('php://output');
 
+        $spreadsheet->disconnectWorksheets();
+        unset($spreadsheet);
+        exit;
+    }
+
+
+
+
+
+
+
+    /* =========================================================
+    LAPORAN ANALISA MUTASI STOCK
+    ========================================================= */
+    public function analisamutasi()
+    {
+        $data = $this->commonData();
+        $data['title']        = "Analisa Mutasi Stock";
+        $data['jenisLaporan'] = 'analisamutasi';
+        $data['pagejs']       = 'report/report.js';
+        return $this->template->render('report/trans/v_analisamutasi', $data);
+    }
+
+    private function buildQueryAnalisaMutasi($withLimit = false, $perpage = 25, $offset = 0)
+    {
+        $sql = "WITH parameter AS (
+                SELECT
+                    ?::date  AS tanggal_awal,
+                    ?::date  AS tanggal_akhir,
+                    ?        AS cabang,
+                    ?        AS idbarang
+            ),
+
+            saldo_sebelumnya AS (
+                SELECT
+                    s.idlocation, s.idarea, s.idbarang, s.warehouse,
+                    s.cabang, s.unit, s.subunit, s.idunit, s.idbranch,
+                    SUM(COALESCE(s.qty_in, 0)) - SUM(COALESCE(s.qty_out, 0)) AS saldo_qty,
+                    SUM(CASE WHEN COALESCE(s.qty_in, 0)  > 0 THEN COALESCE(s.totalcost, 0) ELSE 0 END)
+                    -
+                    SUM(CASE WHEN COALESCE(s.qty_out, 0) > 0 THEN COALESCE(s.totalcost, 0) ELSE 0 END)
+                    AS saldo_cost
+                FROM sc_trx.stkblc s
+                CROSS JOIN parameter p
+                WHERE s.trxdate::date < p.tanggal_awal
+                AND (p.cabang   IS NULL OR TRIM(p.cabang)   = '' OR TRIM(s.cabang)   = TRIM(p.cabang))
+                AND (p.idbarang IS NULL OR TRIM(p.idbarang) = '' OR TRIM(s.idbarang) = TRIM(p.idbarang))
+                GROUP BY
+                    s.idlocation, s.idarea, s.idbarang, s.warehouse,
+                    s.cabang, s.unit, s.subunit, s.idunit, s.idbranch
+            ),
+
+            transaksi AS (
+                SELECT
+                    s.*,
+                    CASE WHEN COALESCE(s.qty_in, 0)  > 0 THEN COALESCE(s.totalcost, 0) ELSE 0 END AS cost_in,
+                    CASE WHEN COALESCE(s.qty_out, 0) > 0 THEN COALESCE(s.totalcost, 0) ELSE 0 END AS cost_out
+                FROM sc_trx.stkblc s
+                CROSS JOIN parameter p
+                WHERE s.trxdate::date >= p.tanggal_awal
+                AND s.trxdate::date <= p.tanggal_akhir
+                AND (p.cabang   IS NULL OR TRIM(p.cabang)   = '' OR TRIM(s.cabang)   = TRIM(p.cabang))
+                AND (p.idbarang IS NULL OR TRIM(p.idbarang) = '' OR TRIM(s.idbarang) = TRIM(p.idbarang))
+            ),
+
+            stock_list AS (
+                SELECT idlocation, idarea, idbarang, warehouse, cabang, unit, subunit, idunit, idbranch
+                FROM saldo_sebelumnya
+                UNION
+                SELECT idlocation, idarea, idbarang, warehouse, cabang, unit, subunit, idunit, idbranch
+                FROM transaksi
+            ),
+
+            saldo_awal AS (
+                SELECT
+                    1 AS urut,
+                    sl.idlocation, sl.idarea, sl.idbarang, sl.warehouse,
+                    sl.cabang, sl.unit, sl.subunit, sl.idunit, sl.idbranch,
+                    p.tanggal_awal AS trxdate,
+                    p.tanggal_awal AS docdate,
+                    'SALDO AWAL'::varchar AS doctype,
+                    NULL::varchar AS docno,
+                    NULL::varchar AS docref,
+                    COALESCE(ss.saldo_qty, 0)  AS qty_in,
+                    0::numeric                 AS qty_out,
+                    COALESCE(ss.saldo_cost, 0) AS cost_in,
+                    0::numeric                 AS cost_out,
+                    NULL::numeric AS unitcost,
+                    NULL::numeric AS totalcost,
+                    'SALDO AWAL'::text AS keterangan,
+                    NULL::varchar AS batch
+                FROM stock_list sl
+                CROSS JOIN parameter p
+                LEFT JOIN saldo_sebelumnya ss
+                    ON  ss.idlocation = sl.idlocation
+                    AND ss.idarea     = sl.idarea
+                    AND ss.idbarang   = sl.idbarang
+                    AND ss.warehouse  = sl.warehouse
+                    AND ss.cabang     = sl.cabang
+                    AND ss.unit       = sl.unit
+                    AND COALESCE(ss.subunit, '') = COALESCE(sl.subunit, '')
+                    AND ss.idunit     = sl.idunit
+                    AND ss.idbranch   = sl.idbranch
+            ),
+
+            trx AS (
+                SELECT
+                    2 AS urut,
+                    t.idlocation, t.idarea, t.idbarang, t.warehouse,
+                    t.cabang, t.unit, t.subunit, t.idunit, t.idbranch,
+                    t.trxdate, t.docdate,
+                    t.doctype, t.docno, t.docref,
+                    COALESCE(t.qty_in, 0)   AS qty_in,
+                    COALESCE(t.qty_out, 0)  AS qty_out,
+                    COALESCE(t.cost_in, 0)  AS cost_in,
+                    COALESCE(t.cost_out, 0) AS cost_out,
+                    t.unitcost, t.totalcost,
+                    t.keterangan,
+                    t.batch
+                FROM transaksi t
+            ),
+
+            gabung AS (
+                SELECT * FROM saldo_awal
+                UNION ALL
+                SELECT * FROM trx
+            ),
+
+            final AS (
+                SELECT
+                    g.*,
+                    SUM(COALESCE(g.qty_in, 0) - COALESCE(g.qty_out, 0)) OVER (
+                        PARTITION BY g.idlocation, g.idarea, g.idbarang, g.warehouse,
+                                    g.cabang, g.unit, g.subunit, g.idunit, g.idbranch
+                        ORDER BY g.urut, g.trxdate, g.docno NULLS FIRST
+                        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+                    ) AS saldo_qty_akhir,
+                    SUM(COALESCE(g.cost_in, 0) - COALESCE(g.cost_out, 0)) OVER (
+                        PARTITION BY g.idlocation, g.idarea, g.idbarang, g.warehouse,
+                                    g.cabang, g.unit, g.subunit, g.idunit, g.idbranch
+                        ORDER BY g.urut, g.trxdate, g.docno NULLS FIRST
+                        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+                    ) AS saldo_cost_akhir
+                FROM gabung g
+            )
+
+            SELECT
+                TRIM(f.idbarang)                 AS idbarang,
+                TRIM(mb.nmbarang)                AS nmbarang,
+                TRIM(f.unit)                     AS unit,
+                TO_CHAR(f.trxdate, 'DD/MM/YYYY') AS trxdate,
+                TRIM(f.docno)                    AS docno,
+                TRIM(f.keterangan)               AS keterangan,
+                COALESCE(f.qty_in, 0)            AS qty_debet,
+                COALESCE(f.cost_in, 0)           AS nilai_debet,
+                COALESCE(f.qty_out, 0)           AS qty_kredit,
+                COALESCE(f.cost_out, 0)          AS nilai_kredit,
+                COALESCE(f.saldo_qty_akhir, 0)   AS saldo_qty_akhir,
+                COALESCE(f.saldo_cost_akhir, 0)  AS saldo_cost_akhir,
+                TRIM(f.idbranch)                 AS job,
+                COALESCE(NULLIF(TRIM(pr.nmprincipal), ''), TRIM(mb.idprincipal), '') AS principal,
+                TRIM(mb.ppersediaan)             AS perkiraan,
+                TRIM(f.batch)                    AS batch,
+                ''                               AS expdate
+            FROM final f
+            LEFT JOIN sc_mst.mbarang   mb ON TRIM(mb.idbarang)    = TRIM(f.idbarang)
+            LEFT JOIN sc_mst.principal pr ON TRIM(pr.idprincipal) = TRIM(mb.idprincipal)
+            ORDER BY
+                f.idbarang, f.unit, f.urut, f.trxdate, f.docno";  // tempel query di atas
+        if ($withLimit) {
+            $sql .= " LIMIT ? OFFSET ?";
+        }
+        return $sql;
+    }
+
+    /* =========================================================
+    PREVIEW
+    ========================================================= */
+    public function previewLaporanAnalisaMutasi()
+    {
+        $tglrange = $this->request->getPost('tglrange');
+        $cabang   = $this->request->getPost('cabang');
+        $idbarang = $this->request->getPost('idbarang');
+
+        $page    = max(1, (int)($this->request->getPost('page') ?? 1));
+        $perpage = (int)($this->request->getPost('perpage') ?? 25);
+        if ($perpage < 1 || $perpage > 200) $perpage = 25;
+
+        $tglAwal  = null;
+        $tglAkhir = null;
+        if (!empty($tglrange)) {
+            $parts = explode(' - ', $tglrange);
+            if (count($parts) == 2) {
+                $tglAwal  = date('Y-m-d', strtotime($parts[0]));
+                $tglAkhir = date('Y-m-d', strtotime($parts[1]));
+            }
+        }
+
+        // WAJIB ada tanggal
+        if (empty($tglAwal) || empty($tglAkhir)) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Tanggal wajib diisi.',
+            ]);
+        }
+
+        $sql = $this->buildQueryAnalisaMutasi();
+
+        // --- HITUNG TOTAL BARIS ---
+        $sqlCount = "SELECT COUNT(*) AS total FROM (" . rtrim($sql, ';') . ") x";
+        $bindBase = [$tglAwal, $tglAkhir, $cabang ?: null, $idbarang ?: null];
+
+        $totalRow  = $this->db->query($sqlCount, $bindBase)->getRowArray();
+        $total     = (int)($totalRow['total'] ?? 0);
+        $totalPage = $perpage > 0 ? (int)ceil($total / $perpage) : 0;
+
+        // --- DATA HALAMAN INI ---
+        $offset   = ($page - 1) * $perpage;
+        $bindData = array_merge($bindBase, [$perpage, $offset]);
+
+        $rows = $this->db->query($sql . " LIMIT ? OFFSET ?", $bindData)->getResultArray();
+
+        return $this->response->setJSON([
+            'status'     => 'ok',
+            'data'       => $rows,
+            'page'       => $page,
+            'perpage'    => $perpage,
+            'total'      => $total,
+            'total_page' => $totalPage,
+        ]);
+    }
+
+    /* =========================================================
+    DOWNLOAD EXCEL
+    ========================================================= */
+    public function downloadLaporanAnalisaMutasi()
+    {
+        $tglrange = $this->request->getPost('tglrange');
+        $cabang   = $this->request->getPost('cabang');
+        $idbarang = $this->request->getPost('idbarang');
+
+        $tglAwal  = null;
+        $tglAkhir = null;
+        if (!empty($tglrange)) {
+            $parts = explode(' - ', $tglrange);
+            if (count($parts) == 2) {
+                $tglAwal  = date('Y-m-d', strtotime($parts[0]));
+                $tglAkhir = date('Y-m-d', strtotime($parts[1]));
+            }
+        }
+
+        if (empty($tglAwal) || empty($tglAkhir)) {
+            exit('Tanggal wajib diisi.');
+        }
+
+        $sql  = $this->buildQueryAnalisaMutasi();
+        $bind = [$tglAwal, $tglAkhir, $cabang ?: null, $idbarang ?: null];
+
+        ini_set('memory_limit', '512M');
+        set_time_limit(0);
+        if (ob_get_length()) ob_end_clean();
+
+        $query = $this->db->query($sql, $bind);
+        if ($query === false) {
+            log_message('error', 'Analisa Mutasi query failed: ' . print_r($this->db->error(), true));
+            exit('Query gagal. Hubungi administrator.');
+        }
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setCellValue('A1', 'LAPORAN ANALISA MUTASI STOCK');
+        $sheet->mergeCells('A1:O1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal('center');
+
+        $headers = [
+            'Kode Barang', 'Nama Barang', 'Satuan', 'Tanggal', 'No. Jurnal',
+            'Keterangan', 'Qty Debet', 'Nilai Debet', 'Qty Kredit', 'Nilai Kredit',
+            'Saldo Qty', 'Saldo Nilai', 'Job', 'Principal', 'Perkiraan'
+        ];
+        $sheet->fromArray($headers, null, 'A3');
+
+        $lastCol = 'O';
+        $sheet->getStyle("A3:{$lastCol}3")->getFont()->setBold(true);
+        $sheet->getStyle("A3:{$lastCol}3")->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FFCCE5FF');
+
+        $rowNum   = 4;
+        $rowCount = 0;
+
+        while ($r = $query->getUnbufferedRow('array')) {
+            $sheet->fromArray([
+                $r['idbarang'],
+                $r['nmbarang'],
+                $r['unit'],
+                $r['trxdate'],
+                $r['docno'],
+                $r['keterangan'],
+                $r['qty_debet'],
+                $r['nilai_debet'],
+                $r['qty_kredit'],
+                $r['nilai_kredit'],
+                $r['saldo_qty_akhir'],
+                $r['saldo_cost_akhir'],
+                $r['job'],
+                $r['principal'],
+                $r['perkiraan'],
+            ], null, 'A' . $rowNum);
+            $rowNum++;
+            $rowCount++;
+        }
+
+        if ($rowCount === 0) {
+            $sheet->setCellValue('A4', 'Tidak ada data sesuai filter.');
+            $sheet->mergeCells("A4:{$lastCol}4");
+        }
+
+        // auto width
+        $colLetter = 'A';
+        foreach ($headers as $h) {
+            $sheet->getColumnDimension($colLetter)->setWidth(max(12, min(35, mb_strlen($h) + 4)));
+            $colLetter++;
+        }
+
+        // format angka
+        $firstData = 4;
+        $lastData  = max(4, $rowNum - 1);
+        foreach (['G','H','I','J','K','L'] as $col) {
+            $sheet->getStyle("{$col}{$firstData}:{$col}{$lastData}")
+                ->getNumberFormat()->setFormatCode('#,##0.00');
+        }
+
+        $sheet->freezePane('A4');
+
+        $namaFile = 'Laporan_AnalisaMutasiStock_' . date('Ymd_His') . '.xlsx';
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $namaFile . '"');
+        header('Cache-Control: max-age=0');
+        header('Pragma: public');
+        $writer->save('php://output');
+        $spreadsheet->disconnectWorksheets();
+        unset($spreadsheet);
+        exit;
+    }
+
+
+
+    /* =========================================================
+    LAPORAN KARTU STOCK PER GUDANG
+    ========================================================= */
+    public function kartustock()
+    {
+        $data = $this->commonData();
+        $data['title']        = "Kartu Stock Per Gudang";
+        $data['jenisLaporan'] = 'kartustock';
+        $data['pagejs']       = 'report/report.js';
+        return $this->template->render('report/trans/v_kartustock', $data);
+    }
+
+    private function buildQueryKartuStock()
+    {
+        $sql = "WITH parameter AS (
+                SELECT
+                    ?::date  AS tanggal_awal,
+                    ?::date  AS tanggal_akhir,
+                    ?        AS cabang,
+                    ?        AS idlocation,
+                    ?        AS idbarang
+            ),
+
+            saldo_sebelumnya AS (
+                SELECT
+                    s.idlocation, s.idarea, s.idbarang, s.warehouse,
+                    s.cabang, s.unit, s.subunit, s.idunit, s.idbranch,
+                    SUM(COALESCE(s.qty_in, 0)) - SUM(COALESCE(s.qty_out, 0)) AS saldo_qty
+                FROM sc_trx.stkblc s
+                CROSS JOIN parameter p
+                WHERE s.trxdate::date < p.tanggal_awal
+                AND (p.cabang     IS NULL OR TRIM(p.cabang)     = '' OR TRIM(s.cabang)     = TRIM(p.cabang))
+                AND (p.idlocation IS NULL OR TRIM(p.idlocation) = '' OR TRIM(s.idlocation) = TRIM(p.idlocation))
+                AND (p.idbarang   IS NULL OR TRIM(p.idbarang)   = '' OR TRIM(s.idbarang)   = TRIM(p.idbarang))
+                GROUP BY
+                    s.idlocation, s.idarea, s.idbarang, s.warehouse,
+                    s.cabang, s.unit, s.subunit, s.idunit, s.idbranch
+            ),
+
+            transaksi AS (
+                SELECT
+                    s.*,
+                    CASE WHEN COALESCE(s.qty_in, 0)  > 0 THEN COALESCE(s.totalcost, 0) ELSE 0 END AS cost_in,
+                    CASE WHEN COALESCE(s.qty_out, 0) > 0 THEN COALESCE(s.totalcost, 0) ELSE 0 END AS cost_out
+                FROM sc_trx.stkblc s
+                CROSS JOIN parameter p
+                WHERE s.trxdate::date >= p.tanggal_awal
+                AND s.trxdate::date <= p.tanggal_akhir
+                AND (p.cabang     IS NULL OR TRIM(p.cabang)     = '' OR TRIM(s.cabang)     = TRIM(p.cabang))
+                AND (p.idlocation IS NULL OR TRIM(p.idlocation) = '' OR TRIM(s.idlocation) = TRIM(p.idlocation))
+                AND (p.idbarang   IS NULL OR TRIM(p.idbarang)   = '' OR TRIM(s.idbarang)   = TRIM(p.idbarang))
+            ),
+
+            stock_list AS (
+                SELECT idlocation, idarea, idbarang, warehouse, cabang, unit, subunit, idunit, idbranch
+                FROM saldo_sebelumnya
+                UNION
+                SELECT idlocation, idarea, idbarang, warehouse, cabang, unit, subunit, idunit, idbranch
+                FROM transaksi
+            ),
+
+            saldo_awal AS (
+                SELECT
+                    1 AS urut,
+                    sl.idlocation, sl.idarea, sl.idbarang, sl.warehouse,
+                    sl.cabang, sl.unit, sl.subunit, sl.idunit, sl.idbranch,
+                    p.tanggal_awal AS trxdate,
+                    'SALDO AWAL'::varchar AS doctype,
+                    NULL::varchar AS docno,
+                    COALESCE(ss.saldo_qty, 0) AS qty_in,
+                    0::numeric                AS qty_out,
+                    'SALDO AWAL'::text        AS keterangan,
+                    NULL::varchar             AS batch
+                FROM stock_list sl
+                CROSS JOIN parameter p
+                LEFT JOIN saldo_sebelumnya ss
+                    ON  ss.idlocation = sl.idlocation
+                    AND ss.idarea     = sl.idarea
+                    AND ss.idbarang   = sl.idbarang
+                    AND ss.warehouse  = sl.warehouse
+                    AND ss.cabang     = sl.cabang
+                    AND ss.unit       = sl.unit
+                    AND COALESCE(ss.subunit, '') = COALESCE(sl.subunit, '')
+                    AND ss.idunit     = sl.idunit
+                    AND ss.idbranch   = sl.idbranch
+            ),
+
+            trx AS (
+                SELECT
+                    2 AS urut,
+                    t.idlocation, t.idarea, t.idbarang, t.warehouse,
+                    t.cabang, t.unit, t.subunit, t.idunit, t.idbranch,
+                    t.trxdate,
+                    t.doctype, t.docno,
+                    COALESCE(t.qty_in, 0)  AS qty_in,
+                    COALESCE(t.qty_out, 0) AS qty_out,
+                    t.keterangan,
+                    t.batch
+                FROM transaksi t
+            ),
+
+            gabung AS (
+                SELECT * FROM saldo_awal
+                UNION ALL
+                SELECT * FROM trx
+            )
+
+            SELECT
+                TRIM(f.idlocation)               AS idlocation,
+                TRIM(ml.nmlocation)              AS nmgudang,
+                TRIM(f.idbarang)                 AS idbarang,
+                TRIM(mb.nmbarang)                AS nmbarang,
+                TRIM(f.unit)                     AS unit,
+                TO_CHAR(f.trxdate, 'DD/MM/YYYY') AS trxdate,
+                TRIM(f.docno)                    AS docno,
+                TRIM(f.keterangan)               AS keterangan,
+                COALESCE(f.qty_in, 0)            AS qty_debet,
+                COALESCE(f.qty_out, 0)           AS qty_kredit,
+                TRIM(f.idbranch)                 AS job,
+                COALESCE(NULLIF(TRIM(pr.nmprincipal), ''), TRIM(mb.idprincipal), '') AS principal,
+                TRIM(f.batch)                    AS batch,
+                ''                               AS expdate
+            FROM gabung f
+            LEFT JOIN sc_mst.mbarang   mb ON TRIM(mb.idbarang)    = TRIM(f.idbarang)
+            LEFT JOIN sc_mst.principal pr ON TRIM(pr.idprincipal) = TRIM(mb.idprincipal)
+            LEFT JOIN sc_mst.mlocation ml ON TRIM(ml.idlocation)  = TRIM(f.idlocation)
+            ORDER BY
+                f.idlocation, f.idbarang, f.unit, f.urut, f.trxdate, f.docno";
+
+        return rtrim($sql, " \t\n\r\0\x0B;");
+    }
+
+    public function previewLaporanKartuStock()
+    {
+        $tglrange  = $this->request->getPost('tglrange');
+        $cabang    = $this->request->getPost('cabang');
+        $idlocation= $this->request->getPost('idlocation');
+        $idbarang  = $this->request->getPost('idbarang');
+
+        $page    = max(1, (int)($this->request->getPost('page') ?? 1));
+        $perpage = (int)($this->request->getPost('perpage') ?? 25);
+        if ($perpage < 1 || $perpage > 200) $perpage = 25;
+
+        $tglAwal = $tglAkhir = null;
+        if (!empty($tglrange)) {
+            $parts = explode(' - ', $tglrange);
+            if (count($parts) == 2) {
+                $tglAwal  = date('Y-m-d', strtotime($parts[0]));
+                $tglAkhir = date('Y-m-d', strtotime($parts[1]));
+            }
+        }
+
+        if (empty($tglAwal) || empty($tglAkhir)) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Tanggal wajib diisi.']);
+        }
+
+        $bindBase = [$tglAwal, $tglAkhir, $cabang ?: null, $idlocation ?: null, $idbarang ?: null];
+        $sql = $this->buildQueryKartuStock();
+
+        $sqlCount  = "SELECT COUNT(*) AS total FROM (" . $sql . ") x";
+        $totalRow  = $this->db->query($sqlCount, $bindBase)->getRowArray();
+        $total     = (int)($totalRow['total'] ?? 0);
+        $totalPage = $perpage > 0 ? (int)ceil($total / $perpage) : 0;
+
+        $offset   = ($page - 1) * $perpage;
+        $bindData = array_merge($bindBase, [$perpage, $offset]);
+        $rows = $this->db->query($sql . " LIMIT ? OFFSET ?", $bindData)->getResultArray();
+
+        return $this->response->setJSON([
+            'status' => 'ok', 'data' => $rows,
+            'page' => $page, 'perpage' => $perpage,
+            'total' => $total, 'total_page' => $totalPage,
+        ]);
+    }
+
+    public function downloadLaporanKartuStock()
+    {
+        $tglrange  = $this->request->getPost('tglrange');
+        $cabang    = $this->request->getPost('cabang');
+        $idlocation= $this->request->getPost('idlocation');
+        $idbarang  = $this->request->getPost('idbarang');
+
+        $tglAwal = $tglAkhir = null;
+        if (!empty($tglrange)) {
+            $parts = explode(' - ', $tglrange);
+            if (count($parts) == 2) {
+                $tglAwal  = date('Y-m-d', strtotime($parts[0]));
+                $tglAkhir = date('Y-m-d', strtotime($parts[1]));
+            }
+        }
+
+        if (empty($tglAwal) || empty($tglAkhir)) exit('Tanggal wajib diisi.');
+
+        $bind = [$tglAwal, $tglAkhir, $cabang ?: null, $idlocation ?: null, $idbarang ?: null];
+        $sql  = $this->buildQueryKartuStock();
+
+        ini_set('memory_limit', '512M');
+        set_time_limit(0);
+        if (ob_get_length()) ob_end_clean();
+
+        $query = $this->db->query($sql, $bind);
+        if ($query === false) {
+            log_message('error', 'Kartu Stock query failed: ' . print_r($this->db->error(), true));
+            exit('Query gagal. Hubungi administrator.');
+        }
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setCellValue('A1', 'LAPORAN KARTU STOCK PER GUDANG');
+        $sheet->mergeCells('A1:N1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal('center');
+
+        $headers = [
+            'Kode Gudang', 'Gudang', 'Kode Barang', 'Nama Barang', 'Satuan',
+            'Tanggal', 'No. Jurnal', 'Keterangan', 'Qty Debet', 'Qty Kredit',
+            'Job', 'Principal', 'No. Batch/Spec', 'Expired Date'
+        ];
+        $sheet->fromArray($headers, null, 'A3');
+
+        $lastCol = 'N';
+        $sheet->getStyle("A3:{$lastCol}3")->getFont()->setBold(true);
+        $sheet->getStyle("A3:{$lastCol}3")->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FFCCE5FF');
+
+        $rowNum = 4;
+        $rowCount = 0;
+        while ($r = $query->getUnbufferedRow('array')) {
+            $sheet->fromArray([
+                $r['idlocation'], $r['nmgudang'], $r['idbarang'], $r['nmbarang'], $r['unit'],
+                $r['trxdate'], $r['docno'], $r['keterangan'], $r['qty_debet'], $r['qty_kredit'],
+                $r['job'], $r['principal'], $r['batch'], $r['expdate']
+            ], null, 'A' . $rowNum);
+            $rowNum++;
+            $rowCount++;
+        }
+
+        if ($rowCount === 0) {
+            $sheet->setCellValue('A4', 'Tidak ada data sesuai filter.');
+            $sheet->mergeCells("A4:{$lastCol}4");
+        }
+
+        $colLetter = 'A';
+        foreach ($headers as $h) {
+            $sheet->getColumnDimension($colLetter)->setWidth(max(12, min(35, mb_strlen($h) + 4)));
+            $colLetter++;
+        }
+
+        $firstData = 4;
+        $lastData  = max(4, $rowNum - 1);
+        foreach (['I','J'] as $col) {
+            $sheet->getStyle("{$col}{$firstData}:{$col}{$lastData}")
+                ->getNumberFormat()->setFormatCode('#,##0.00');
+        }
+
+        $sheet->freezePane('A4');
+
+        $namaFile = 'Laporan_KartuStock_' . date('Ymd_His') . '.xlsx';
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $namaFile . '"');
+        header('Cache-Control: max-age=0');
+        header('Pragma: public');
+        $writer->save('php://output');
+        $spreadsheet->disconnectWorksheets();
+        unset($spreadsheet);
+        exit;
+    }
+
+
+    /* =========================================================
+    LAPORAN POSISI BARANG PER GUDANG
+    ========================================================= */
+    public function posisibrg()
+    {
+        $data = $this->commonData();
+        $data['title']        = "Posisi Barang Per Gudang";
+        $data['jenisLaporan'] = 'posisibrg';
+        $data['pagejs']       = 'report/report.js';
+        return $this->template->render('report/trans/v_posisibrg', $data);
+    }
+
+    private function buildQueryPosisiBrg()
+    {
+        $sql = "WITH parameter AS (
+                SELECT
+                    ?::date  AS tanggal_awal,
+                    ?::date  AS tanggal_akhir,
+                    ?        AS cabang,
+                    ?        AS idlocation,
+                    ?        AS idbarang
+            ),
+
+            saldo_awal AS (
+                SELECT
+                    s.idbarang, s.idlocation,
+                    s.cabang, s.idbranch,
+                    SUM(COALESCE(s.qty_in, 0)) - SUM(COALESCE(s.qty_out, 0)) AS saldo_awal
+                FROM sc_trx.stkblc s
+                CROSS JOIN parameter p
+                WHERE s.trxdate::date < p.tanggal_awal
+                AND (p.cabang     IS NULL OR TRIM(p.cabang)     = '' OR TRIM(s.cabang)     = TRIM(p.cabang))
+                AND (p.idlocation IS NULL OR TRIM(p.idlocation) = '' OR TRIM(s.idlocation) = TRIM(p.idlocation))
+                AND (p.idbarang   IS NULL OR TRIM(p.idbarang)   = '' OR TRIM(s.idbarang)   = TRIM(p.idbarang))
+                GROUP BY s.idbarang, s.idlocation, s.cabang, s.idbranch
+            ),
+
+            mutasi AS (
+                SELECT
+                    s.idbarang, s.idlocation,
+                    s.cabang, s.idbranch,
+                    SUM(COALESCE(s.qty_in, 0))  AS debet,
+                    SUM(COALESCE(s.qty_out, 0)) AS kredit
+                FROM sc_trx.stkblc s
+                CROSS JOIN parameter p
+                WHERE s.trxdate::date >= p.tanggal_awal
+                AND s.trxdate::date <= p.tanggal_akhir
+                AND (p.cabang     IS NULL OR TRIM(p.cabang)     = '' OR TRIM(s.cabang)     = TRIM(p.cabang))
+                AND (p.idlocation IS NULL OR TRIM(p.idlocation) = '' OR TRIM(s.idlocation) = TRIM(p.idlocation))
+                AND (p.idbarang   IS NULL OR TRIM(p.idbarang)   = '' OR TRIM(s.idbarang)   = TRIM(p.idbarang))
+                GROUP BY s.idbarang, s.idlocation, s.cabang, s.idbranch
+            ),
+
+            stock_list AS (
+                SELECT idbarang, idlocation, cabang, idbranch FROM saldo_awal
+                UNION
+                SELECT idbarang, idlocation, cabang, idbranch FROM mutasi
+            ),
+
+            final AS (
+                SELECT
+                    sl.idbarang, sl.idlocation,
+                    sl.cabang, sl.idbranch,
+                    COALESCE(sa.saldo_awal, 0) AS saldo_awal,
+                    COALESCE(m.debet, 0)       AS debet,
+                    COALESCE(m.kredit, 0)      AS kredit,
+                    COALESCE(sa.saldo_awal, 0) + COALESCE(m.debet, 0) - COALESCE(m.kredit, 0) AS saldo_akhir
+                FROM stock_list sl
+                LEFT JOIN saldo_awal sa
+                    ON  sa.idbarang   = sl.idbarang
+                    AND sa.idlocation = sl.idlocation
+                    AND sa.cabang     = sl.cabang
+                    AND sa.idbranch   = sl.idbranch
+                LEFT JOIN mutasi m
+                    ON  m.idbarang   = sl.idbarang
+                    AND m.idlocation = sl.idlocation
+                    AND m.cabang     = sl.cabang
+                    AND m.idbranch   = sl.idbranch
+            )
+
+            SELECT
+                TRIM(f.idbarang)                          AS idbarang,
+                TRIM(mb.nmbarang)                         AS nmbarang,
+                ''                                        AS batch,
+                '01/01/0001'                              AS expdate,
+                TRIM(f.idlocation)                        AS idlocation,
+                TRIM(ml.nmlocation)                       AS nmlocation,
+                TRIM(mb.unit)                             AS unit,
+                COALESCE(f.saldo_awal, 0)                 AS saldo_awal,
+                COALESCE(f.debet, 0)                      AS debet,
+                COALESCE(f.kredit, 0)                     AS kredit,
+                COALESCE(f.saldo_akhir, 0)                AS saldo_akhir,
+                TRIM(f.cabang)                            AS job_kode,
+                TRIM(b.nmbranch)                          AS namajob,
+                TRIM(mb.idgolonganbarang)                 AS golongan,
+                TRIM(mb.idjenisproduk)                    AS jenisproduk,
+                TRIM(mb.idkelompokbarang)                 AS kelompok,
+                COALESCE(NULLIF(TRIM(pr.nmprincipal), ''), TRIM(mb.idprincipal), '') AS principal,
+                TRIM(mb.description)                      AS keteranganbarang,
+                TRIM(mb.nmbarang)                         AS bomdesc
+            FROM final f
+            LEFT JOIN sc_mst.mbarang   mb ON TRIM(mb.idbarang)    = TRIM(f.idbarang)
+            LEFT JOIN sc_mst.mlocation ml ON TRIM(ml.idlocation)  = TRIM(f.idlocation)
+            LEFT JOIN sc_mst.principal pr ON TRIM(pr.idprincipal) = TRIM(mb.idprincipal)
+            LEFT JOIN sc_mst.branchjob b  ON TRIM(b.idbranch)     = TRIM(f.idbranch)
+            ORDER BY
+                f.idbarang, f.idlocation";
+
+        return rtrim($sql, " \t\n\r\0\x0B;");
+    }
+
+    public function previewLaporanPosisiBrg()
+    {
+        $tglrange   = $this->request->getPost('tglrange');
+        $cabang     = $this->request->getPost('cabang');
+        $idlocation = $this->request->getPost('idlocation');
+        $idbarang   = $this->request->getPost('idbarang');
+
+        $page    = max(1, (int)($this->request->getPost('page') ?? 1));
+        $perpage = (int)($this->request->getPost('perpage') ?? 25);
+        if ($perpage < 1 || $perpage > 200) $perpage = 25;
+
+        $tglAwal = $tglAkhir = null;
+        if (!empty($tglrange)) {
+            $parts = explode(' - ', $tglrange);
+            if (count($parts) == 2) {
+                $tglAwal  = date('Y-m-d', strtotime($parts[0]));
+                $tglAkhir = date('Y-m-d', strtotime($parts[1]));
+            }
+        }
+
+        if (empty($tglAwal) || empty($tglAkhir)) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Tanggal wajib diisi.']);
+        }
+
+        $bindBase = [$tglAwal, $tglAkhir, $cabang ?: null, $idlocation ?: null, $idbarang ?: null];
+        $sql = $this->buildQueryPosisiBrg();
+
+        $sqlCount  = "SELECT COUNT(*) AS total FROM (" . $sql . ") x";
+        $totalRow  = $this->db->query($sqlCount, $bindBase)->getRowArray();
+        $total     = (int)($totalRow['total'] ?? 0);
+        $totalPage = $perpage > 0 ? (int)ceil($total / $perpage) : 0;
+
+        $offset   = ($page - 1) * $perpage;
+        $bindData = array_merge($bindBase, [$perpage, $offset]);
+        $rows = $this->db->query($sql . " LIMIT ? OFFSET ?", $bindData)->getResultArray();
+
+        return $this->response->setJSON([
+            'status' => 'ok', 'data' => $rows,
+            'page' => $page, 'perpage' => $perpage,
+            'total' => $total, 'total_page' => $totalPage,
+        ]);
+    }
+
+    public function downloadLaporanPosisiBrg()
+    {
+        $tglrange   = $this->request->getPost('tglrange');
+        $cabang     = $this->request->getPost('cabang');
+        $idlocation = $this->request->getPost('idlocation');
+        $idbarang   = $this->request->getPost('idbarang');
+
+        $tglAwal = $tglAkhir = null;
+        if (!empty($tglrange)) {
+            $parts = explode(' - ', $tglrange);
+            if (count($parts) == 2) {
+                $tglAwal  = date('Y-m-d', strtotime($parts[0]));
+                $tglAkhir = date('Y-m-d', strtotime($parts[1]));
+            }
+        }
+
+        if (empty($tglAwal) || empty($tglAkhir)) exit('Tanggal wajib diisi.');
+
+        $bind = [$tglAwal, $tglAkhir, $cabang ?: null, $idlocation ?: null, $idbarang ?: null];
+        $sql  = $this->buildQueryPosisiBrg();
+
+        ini_set('memory_limit', '512M');
+        set_time_limit(0);
+        if (ob_get_length()) ob_end_clean();
+
+        $query = $this->db->query($sql, $bind);
+        if ($query === false) {
+            log_message('error', 'Posisi Barang query failed: ' . print_r($this->db->error(), true));
+            exit('Query gagal. Hubungi administrator.');
+        }
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setCellValue('A1', 'LAPORAN POSISI BARANG PER GUDANG');
+        $sheet->mergeCells('A1:R1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal('center');
+
+        $headers = [
+            'Kode', 'Nama Barang', 'No.Batch', 'Expired Date',
+            'Kode Gudang', 'Nama Gudang', 'Satuan',
+            'Saldo Awal', 'Debet', 'Kredit', 'Saldo Akhir',
+            'Job', 'Nama Job',
+            'Golongan', 'Jenis Produk', 'Kelompok', 'Principal',
+            'Keterangan Barang', 'BOM Deskripsi'
+        ];
+        $sheet->fromArray($headers, null, 'A3');
+
+        $lastCol = 'S';
+        $sheet->getStyle("A3:{$lastCol}3")->getFont()->setBold(true);
+        $sheet->getStyle("A3:{$lastCol}3")->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FFCCE5FF');
+
+        $rowNum = 4;
+        $rowCount = 0;
+        while ($r = $query->getUnbufferedRow('array')) {
+            $sheet->fromArray([
+                $r['idbarang'], $r['nmbarang'], $r['batch'], $r['expdate'],
+                $r['idlocation'], $r['nmlocation'], $r['unit'],
+                $r['saldo_awal'], $r['debet'], $r['kredit'], $r['saldo_akhir'],
+                $r['job_kode'], $r['namajob'],
+                $r['golongan'], $r['jenisproduk'], $r['kelompok'], $r['principal'],
+                $r['keteranganbarang'], $r['bomdesc']
+            ], null, 'A' . $rowNum);
+            $rowNum++;
+            $rowCount++;
+        }
+
+        if ($rowCount === 0) {
+            $sheet->setCellValue('A4', 'Tidak ada data sesuai filter.');
+            $sheet->mergeCells("A4:{$lastCol}4");
+        }
+
+        $colLetter = 'A';
+        foreach ($headers as $h) {
+            $sheet->getColumnDimension($colLetter)->setWidth(max(12, min(35, mb_strlen($h) + 4)));
+            $colLetter++;
+        }
+
+        $firstData = 4;
+        $lastData  = max(4, $rowNum - 1);
+        foreach (['H','I','J','K'] as $col) {
+            $sheet->getStyle("{$col}{$firstData}:{$col}{$lastData}")
+                ->getNumberFormat()->setFormatCode('#,##0.00');
+        }
+
+        $sheet->freezePane('A4');
+
+        $namaFile = 'Laporan_PosisiBarangPerGudang_' . date('Ymd_His') . '.xlsx';
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $namaFile . '"');
+        header('Cache-Control: max-age=0');
+        header('Pragma: public');
+        $writer->save('php://output');
+        $spreadsheet->disconnectWorksheets();
+        unset($spreadsheet);
+        exit;
+    }
+
+
+
+
+
+
+
+    /* =========================================================
+    LAPORAN POSISI HUTANG
+    ========================================================= */
+    public function posisihutang()
+    {
+        $data = $this->commonData();
+        $data['title']        = "Laporan Posisi Hutang";
+        $data['jenisLaporan'] = 'posisihutang';
+        $data['pagejs']       = 'report/report.js';
+        return $this->template->render('report/trans/v_posisihutang', $data);
+    }
+
+    private function buildQueryPosisiHutang()
+    {
+        $sql = "WITH parameter AS (
+                    SELECT ?::date AS tgl_awal, ?::date AS tgl_akhir,
+                        ? AS cabang, ? AS kdprk, ? AS kdsupplier
+                ),
+                saldo_awal AS (
+                    SELECT td.idcoa, td.kdsupplier,
+                        SUM(COALESCE(td.debet, 0) - COALESCE(td.kredit, 0)) AS saldo_awal
+                    FROM sc_trx.transaction_dt td
+                    CROSS JOIN parameter p
+                    WHERE td.docdate::date < p.tgl_awal
+                    AND td.idcoa LIKE '2%'
+                    AND (p.cabang IS NULL OR TRIM(p.cabang) = '' OR TRIM(td.cabang) = TRIM(p.cabang))
+                    AND (p.kdprk  IS NULL OR TRIM(p.kdprk)  = '' OR TRIM(td.idcoa)  = TRIM(p.kdprk))
+                    AND (p.kdsupplier IS NULL OR TRIM(p.kdsupplier) = '' OR TRIM(td.kdsupplier) = TRIM(p.kdsupplier))
+                    GROUP BY td.idcoa, td.kdsupplier
+                ),
+                mutasi AS (
+                    SELECT td.idcoa, td.kdsupplier,
+                        SUM(COALESCE(td.debet, 0))  AS debet,
+                        SUM(COALESCE(td.kredit, 0)) AS kredit
+                    FROM sc_trx.transaction_dt td
+                    CROSS JOIN parameter p
+                    WHERE td.docdate::date >= p.tgl_awal
+                    AND td.docdate::date <= p.tgl_akhir
+                    AND td.idcoa LIKE '2%'
+                    AND (p.cabang IS NULL OR TRIM(p.cabang) = '' OR TRIM(td.cabang) = TRIM(p.cabang))
+                    AND (p.kdprk  IS NULL OR TRIM(p.kdprk)  = '' OR TRIM(td.idcoa)  = TRIM(p.kdprk))
+                    AND (p.kdsupplier IS NULL OR TRIM(p.kdsupplier) = '' OR TRIM(td.kdsupplier) = TRIM(p.kdsupplier))
+                    GROUP BY td.idcoa, td.kdsupplier
+                ),
+                stock_list AS (
+                    SELECT idcoa, kdsupplier FROM saldo_awal
+                    UNION
+                    SELECT idcoa, kdsupplier FROM mutasi
+                ),
+                final AS (
+                    SELECT sl.idcoa, sl.kdsupplier,
+                        COALESCE(sa.saldo_awal, 0)  AS saldo_awal,
+                        COALESCE(m.debet, 0)        AS debet,
+                        COALESCE(m.kredit, 0)       AS kredit,
+                        COALESCE(sa.saldo_awal, 0) + COALESCE(m.debet, 0) - COALESCE(m.kredit, 0) AS saldo_akhir
+                    FROM stock_list sl
+                    LEFT JOIN saldo_awal sa ON sa.idcoa = sl.idcoa AND sa.kdsupplier = sl.kdsupplier
+                    LEFT JOIN mutasi     m  ON m.idcoa  = sl.idcoa AND m.kdsupplier  = sl.kdsupplier
+                )
+                SELECT
+                    TRIM(f.idcoa)               AS kdprk,
+                    TRIM(c.nmcoa)               AS nmprk,
+                    TRIM(f.kdsupplier)          AS kdsupplier,
+                    TRIM(s.nmsupplier)          AS nmsupplier,
+                    COALESCE(f.saldo_awal, 0)   AS saldo_awal,
+                    COALESCE(f.debet, 0)        AS debet,
+                    COALESCE(f.kredit, 0)       AS kredit,
+                    COALESCE(f.saldo_akhir, 0)  AS saldo_akhir
+                FROM final f
+                LEFT JOIN sc_mst.coa        c ON TRIM(c.idcoa)      = TRIM(f.idcoa)
+                LEFT JOIN sc_mst.mstsupplier s ON TRIM(s.kdsupplier) = TRIM(f.kdsupplier)
+                ORDER BY f.idcoa, f.kdsupplier";
+
+        return rtrim($sql, " \t\n\r\0\x0B;");
+    }
+
+    public function previewLaporanPosisiHutang()
+    {
+        $tglrange   = $this->request->getPost('tglrange');
+        $cabang     = $this->request->getPost('cabang');
+        $kdprk      = $this->request->getPost('kdprk');
+        $kdsupplier = $this->request->getPost('kdsupplier');
+
+        $page    = max(1, (int)($this->request->getPost('page') ?? 1));
+        $perpage = (int)($this->request->getPost('perpage') ?? 25);
+        if ($perpage < 1 || $perpage > 200) $perpage = 25;
+
+        $tglAwal = $tglAkhir = null;
+        if (!empty($tglrange)) {
+            $parts = explode(' - ', $tglrange);
+            if (count($parts) == 2) {
+                $tglAwal  = date('Y-m-d', strtotime($parts[0]));
+                $tglAkhir = date('Y-m-d', strtotime($parts[1]));
+            }
+        }
+        if (empty($tglAwal) || empty($tglAkhir)) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Tanggal wajib diisi.']);
+        }
+
+        $bindBase = [$tglAwal, $tglAkhir, $cabang ?: null, $kdprk ?: null, $kdsupplier ?: null];
+
+        $sql = $this->buildQueryPosisiHutang();
+
+        // COUNT
+        $sqlCount  = "SELECT COUNT(*) AS total FROM (" . $sql . ") x";
+        $totalRow  = $this->db->query($sqlCount, $bindBase)->getRowArray();
+        $total     = (int)($totalRow['total'] ?? 0);
+        $totalPage = $perpage > 0 ? (int)ceil($total / $perpage) : 0;
+
+        // DATA
+        $offset   = ($page - 1) * $perpage;
+        $bindData = array_merge($bindBase, [$perpage, $offset]);
+        $rows = $this->db->query($sql . " LIMIT ? OFFSET ?", $bindData)->getResultArray();
+
+        return $this->response->setJSON([
+            'status' => 'ok', 'data' => $rows,
+            'page' => $page, 'perpage' => $perpage,
+            'total' => $total, 'total_page' => $totalPage,
+        ]);
+    }
+
+    public function downloadLaporanPosisiHutang()
+    {
+        $tglrange   = $this->request->getPost('tglrange');
+        $cabang     = $this->request->getPost('cabang');
+        $kdprk      = $this->request->getPost('kdprk');
+        $kdsupplier = $this->request->getPost('kdsupplier');
+
+        $tglAwal = $tglAkhir = null;
+        if (!empty($tglrange)) {
+            $parts = explode(' - ', $tglrange);
+            if (count($parts) == 2) {
+                $tglAwal  = date('Y-m-d', strtotime($parts[0]));
+                $tglAkhir = date('Y-m-d', strtotime($parts[1]));
+            }
+        }
+        if (empty($tglAwal) || empty($tglAkhir)) exit('Tanggal wajib diisi.');
+
+        $bind = [$tglAwal, $tglAkhir, $cabang ?: null, $kdprk ?: null, $kdsupplier ?: null];
+        $sql  = $this->buildQueryPosisiHutang();
+
+        ini_set('memory_limit', '512M');
+        set_time_limit(0);
+        if (ob_get_length()) ob_end_clean();
+
+        $query = $this->db->query($sql, $bind);
+        if ($query === false) {
+            log_message('error', 'Posisi Hutang query failed: ' . print_r($this->db->error(), true));
+            exit('Query gagal. Hubungi administrator.');
+        }
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setCellValue('A1', 'LAPORAN POSISI HUTANG');
+        $sheet->mergeCells('A1:G1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal('center');
+
+        $headers = ['Kode Prk', 'Nama Prk', 'Kode Supplier', 'Nama Supplier',
+                    'Saldo Awal', 'Debet', 'Kredit', 'Saldo Akhir'];
+        $sheet->fromArray($headers, null, 'A3');
+        $sheet->getStyle('A3:H3')->getFont()->setBold(true);
+        $sheet->getStyle('A3:H3')->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FFCCE5FF');
+
+        $rowNum = 4; $rowCount = 0;
+        $lastCoa = null;
+        $subtotal = ['sa' => 0, 'd' => 0, 'k' => 0, 'akhir' => 0];
+
+        while ($r = $query->getUnbufferedRow('array')) {
+
+            // Ganti COA → tulis Total COA sebelumnya
+            if ($lastCoa !== null && $lastCoa !== $r['kdprk']) {
+                $sheet->fromArray(['', '', '', 'TOTAL ' . $lastCoa,
+                    $subtotal['sa'], $subtotal['d'], $subtotal['k'], $subtotal['akhir']],
+                    null, 'A' . $rowNum);
+                $sheet->getStyle("A{$rowNum}:H{$rowNum}")->getFont()->setBold(true);
+                $rowNum++;
+                $subtotal = ['sa' => 0, 'd' => 0, 'k' => 0, 'akhir' => 0];
+            }
+
+            $sheet->fromArray([
+                $r['kdprk'], $r['nmprk'], $r['kdsupplier'], $r['nmsupplier'],
+                $r['saldo_awal'], $r['debet'], $r['kredit'], $r['saldo_akhir']
+            ], null, 'A' . $rowNum);
+
+            $subtotal['sa']    += (float)$r['saldo_awal'];
+            $subtotal['d']     += (float)$r['debet'];
+            $subtotal['k']     += (float)$r['kredit'];
+            $subtotal['akhir'] += (float)$r['saldo_akhir'];
+            $lastCoa = $r['kdprk'];
+
+            $rowNum++; $rowCount++;
+        }
+
+        // Total COA terakhir
+        if ($lastCoa !== null) {
+            $sheet->fromArray(['', '', '', 'TOTAL ' . $lastCoa,
+                $subtotal['sa'], $subtotal['d'], $subtotal['k'], $subtotal['akhir']],
+                null, 'A' . $rowNum);
+            $sheet->getStyle("A{$rowNum}:H{$rowNum}")->getFont()->setBold(true);
+            $rowNum++;
+        }
+
+        if ($rowCount === 0) {
+            $sheet->setCellValue('A4', 'Tidak ada data.');
+            $sheet->mergeCells('A4:H4');
+        }
+
+        $colLetter = 'A';
+        foreach ($headers as $h) {
+            $sheet->getColumnDimension($colLetter)->setWidth(max(12, min(35, mb_strlen($h) + 4)));
+            $colLetter++;
+        }
+
+        // Format angka: E..H
+        $firstData = 4; $lastData = max(4, $rowNum - 1);
+        foreach (['E','F','G','H'] as $col) {
+            $sheet->getStyle("{$col}{$firstData}:{$col}{$lastData}")
+                ->getNumberFormat()->setFormatCode('#,##0.00');
+        }
+        $sheet->freezePane('A4');
+
+        $namaFile = 'Laporan_PosisiHutang_' . date('Ymd_His') . '.xlsx';
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $namaFile . '"');
+        header('Cache-Control: max-age=0');
+        header('Pragma: public');
+        $writer->save('php://output');
+        $spreadsheet->disconnectWorksheets();
+        unset($spreadsheet);
+        exit;
+    }
+
+
+
+
+    /* =========================================================
+    LAPORAN UMUR HUTANG (AP AGING)
+    ========================================================= */
+    public function umurhutang()
+    {
+        $data = $this->commonData();
+        $data['title']        = "Laporan Umur Hutang";
+        $data['jenisLaporan'] = 'umurhutang';
+        $data['pagejs']       = 'report/report.js';
+        return $this->template->render('report/trans/v_umurhutang', $data);
+    }
+
+    private function buildQueryUmurHutang()
+    {
+        // ============================================
+        // TODO: ISI QUERY DARI ATASAN
+        // ============================================
+        // Kolom output yang diharapkan:
+        // docno, kdsupplier, nmsupplier, kdprk, nmprk, docdate, tgljt, dk,
+        // keterangan, currcode, kurs, nilai, nilai_belum_jt,
+        // nilai_jt_1..4, umur, kodejob, namajob, alamatsupplier, kotasupplier
+        //
+        // Filter (pakai ? di query):
+        // - cabang
+        // - kdsupplier
+        // - kdprk (COA)
+        // - interval (default 30)
+        // - konversi ke IDR (lokal)
+        // ============================================
+
+        $sql = "SELECT
+                    '' AS docno,
+                    '' AS kdsupplier,
+                    '' AS nmsupplier,
+                    '' AS kdprk,
+                    '' AS nmprk,
+                    NULL AS docdate,
+                    NULL AS tgljt,
+                    '' AS dk,
+                    '' AS keterangan,
+                    'IDR' AS currcode,
+                    1 AS kurs,
+                    0 AS nilai,
+                    0 AS nilai_belum_jt,
+                    0 AS nilai_jt_1,
+                    0 AS nilai_jt_2,
+                    0 AS nilai_jt_3,
+                    0 AS nilai_jt_4,
+                    0 AS umur,
+                    '' AS kodejob,
+                    '' AS namajob,
+                    '' AS alamatsupplier,
+                    '' AS kotasupplier
+                WHERE 1=0";
+
+        return rtrim($sql, " \t\n\r\0\x0B;");
+    }
+
+    public function previewLaporanUmurHutang()
+    {
+        $tglrange   = $this->request->getPost('tglrange');
+        $cabang     = $this->request->getPost('cabang');
+        $kdsupplier = $this->request->getPost('kdsupplier');
+        $kdprk      = $this->request->getPost('kdprk');
+        $interval   = $this->request->getPost('interval') ?: 30;
+
+        $page    = max(1, (int)($this->request->getPost('page') ?? 1));
+        $perpage = (int)($this->request->getPost('perpage') ?? 25);
+        if ($perpage < 1 || $perpage > 200) $perpage = 25;
+
+        // ⚠️ SEMENTARA: query placeholder tidak punya ? → bindBase kosong
+        // Setelah query asli datang, isi: [$cabang, $kdsupplier, $kdprk, $interval]
+        $bindBase = [];
+
+        $sql = $this->buildQueryUmurHutang();
+
+        // COUNT
+        $sqlCount = "SELECT COUNT(*) AS total FROM (" . $sql . ") x";
+        $totalRow = $this->db->query($sqlCount, $bindBase)->getRowArray();
+        $total    = (int)($totalRow['total'] ?? 0);
+        $totalPage = $perpage > 0 ? (int)ceil($total / $perpage) : 0;
+
+        // DATA
+        $offset   = ($page - 1) * $perpage;
+        $bindData = array_merge($bindBase, [$perpage, $offset]);
+        $rows = $this->db->query($sql . " LIMIT ? OFFSET ?", $bindData)->getResultArray();
+
+        return $this->response->setJSON([
+            'status'     => 'ok',
+            'data'       => $rows,
+            'page'       => $page,
+            'perpage'    => $perpage,
+            'total'      => $total,
+            'total_page' => $totalPage,
+        ]);
+    }
+
+    public function downloadLaporanUmurHutang()
+    {
+        $cabang     = $this->request->getPost('cabang');
+        $kdsupplier = $this->request->getPost('kdsupplier');
+        $kdprk      = $this->request->getPost('kdprk');
+        $interval   = $this->request->getPost('interval') ?: 30;
+
+        // ⚠️ SEMENTARA: kosong, ikuti bindBase preview
+        $bind = [];
+
+        $sql = $this->buildQueryUmurHutang();
+
+        ini_set('memory_limit', '512M');
+        set_time_limit(0);
+        if (ob_get_length()) ob_end_clean();
+
+        $query = $this->db->query($sql, $bind);
+        if ($query === false) {
+            log_message('error', 'Umur Hutang query failed: ' . print_r($this->db->error(), true));
+            exit('Query gagal. Hubungi administrator.');
+        }
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setCellValue('A1', 'LAPORAN UMUR HUTANG');
+        $sheet->mergeCells('A1:V1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal('center');
+
+        $headers = [
+            'No.Jurnal', 'Kode Supplier', 'Nama Supplier', 'Kode Prk', 'Nama Prk',
+            'Tanggal', 'Tgl JT', 'DK', 'Keterangan', 'Mata Uang', 'Kurs',
+            'Nilai', 'Nilai Belum JT',
+            'Nilai JT 1', 'Nilai JT 2', 'Nilai JT 3', 'Nilai JT 4',
+            'Umur', 'Kode Job', 'Nama Job', 'Alamat Supplier', 'Kota Supplier'
+        ];
+        $sheet->fromArray($headers, null, 'A3');
+        $sheet->getStyle('A3:V3')->getFont()->setBold(true);
+        $sheet->getStyle('A3:V3')->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FFCCE5FF');
+
+        $rowNum = 4; $rowCount = 0;
+        while ($r = $query->getUnbufferedRow('array')) {
+            $sheet->fromArray([
+                $r['docno'], $r['kdsupplier'], $r['nmsupplier'], $r['kdprk'], $r['nmprk'],
+                $r['docdate'], $r['tgljt'], $r['dk'], $r['keterangan'],
+                $r['currcode'], $r['kurs'],
+                $r['nilai'], $r['nilai_belum_jt'],
+                $r['nilai_jt_1'], $r['nilai_jt_2'], $r['nilai_jt_3'], $r['nilai_jt_4'],
+                $r['umur'], $r['kodejob'], $r['namajob'],
+                $r['alamatsupplier'], $r['kotasupplier']
+            ], null, 'A' . $rowNum);
+            $rowNum++; $rowCount++;
+        }
+        if ($rowCount === 0) {
+            $sheet->setCellValue('A4', 'Tidak ada data.');
+            $sheet->mergeCells('A4:V4');
+        }
+
+        $colLetter = 'A';
+        foreach ($headers as $h) {
+            $sheet->getColumnDimension($colLetter)->setWidth(max(12, min(35, mb_strlen($h) + 4)));
+            $colLetter++;
+        }
+
+        // Format angka: K=Kurs, L=Nilai, M=Belum JT, N-Q=JT1..4, R=Umur
+        $firstData = 4; $lastData = max(4, $rowNum - 1);
+        foreach (['K','L','M','N','O','P','Q','R'] as $col) {
+            $sheet->getStyle("{$col}{$firstData}:{$col}{$lastData}")
+                ->getNumberFormat()->setFormatCode('#,##0.00');
+        }
+        $sheet->freezePane('A4');
+
+        $namaFile = 'Laporan_UmurHutang_' . date('Ymd_His') . '.xlsx';
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $namaFile . '"');
+        header('Cache-Control: max-age=0');
+        header('Pragma: public');
+        $writer->save('php://output');
+        $spreadsheet->disconnectWorksheets();
+        unset($spreadsheet);
+        exit;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /* =========================================================
+    LAPORAN POSISI PIUTANG (AR POSITION)
+    ========================================================= */
+    public function posisipiutang()
+    {
+        $data = $this->commonData();
+        $data['title']        = "Laporan Posisi Piutang";
+        $data['jenisLaporan'] = 'posisipiutang';
+        $data['pagejs']       = 'report/report.js';
+        return $this->template->render('report/trans/v_posisipiutang', $data);
+    }
+
+    private function buildQueryPosisiPiutang()
+    {
+        $sql = "WITH parameter AS (
+                    SELECT ?::date AS tgl_awal,
+                        ?::date AS tgl_akhir,
+                        ?       AS cabang,
+                        ?       AS kdprk,
+                        ?       AS kdcustomer
+                ),
+
+                /* ============================================
+                SALDO AWAL (sebelum tgl_awal)
+                ============================================ */
+                saldo_awal AS (
+                    SELECT
+                        td.idcoa,
+                        td.kdcustomer,
+                        SUM(COALESCE(td.debet, 0) - COALESCE(td.kredit, 0)) AS saldo_awal
+                    FROM sc_trx.transaction_dt td
+                    CROSS JOIN parameter p
+                    WHERE td.docdate::date < p.tgl_awal
+                    AND td.idcoa LIKE '1%'
+                    AND (p.cabang     IS NULL OR TRIM(p.cabang)     = '' OR TRIM(td.cabang)     = TRIM(p.cabang))
+                    AND (p.kdprk      IS NULL OR TRIM(p.kdprk)      = '' OR TRIM(td.idcoa)      = TRIM(p.kdprk))
+                    AND (p.kdcustomer IS NULL OR TRIM(p.kdcustomer) = '' OR TRIM(td.kdcustomer) = TRIM(p.kdcustomer))
+                    GROUP BY td.idcoa, td.kdcustomer
+                ),
+
+                /* ============================================
+                MUTASI PERIODE
+                ============================================ */
+                mutasi AS (
+                    SELECT
+                        td.idcoa,
+                        td.kdcustomer,
+                        SUM(COALESCE(td.debet, 0))  AS debet,
+                        SUM(COALESCE(td.kredit, 0)) AS kredit
+                    FROM sc_trx.transaction_dt td
+                    CROSS JOIN parameter p
+                    WHERE td.docdate::date >= p.tgl_awal
+                    AND td.docdate::date <= p.tgl_akhir
+                    AND td.idcoa LIKE '1%'
+                    AND (p.cabang     IS NULL OR TRIM(p.cabang)     = '' OR TRIM(td.cabang)     = TRIM(p.cabang))
+                    AND (p.kdprk      IS NULL OR TRIM(p.kdprk)      = '' OR TRIM(td.idcoa)      = TRIM(p.kdprk))
+                    AND (p.kdcustomer IS NULL OR TRIM(p.kdcustomer) = '' OR TRIM(td.kdcustomer) = TRIM(p.kdcustomer))
+                    GROUP BY td.idcoa, td.kdcustomer
+                ),
+
+                /* ============================================
+                STOCK LIST
+                ============================================ */
+                stock_list AS (
+                    SELECT idcoa, kdcustomer FROM saldo_awal
+                    UNION
+                    SELECT idcoa, kdcustomer FROM mutasi
+                ),
+
+                /* ============================================
+                FINAL
+                ============================================ */
+                final AS (
+                    SELECT
+                        sl.idcoa,
+                        sl.kdcustomer,
+                        COALESCE(sa.saldo_awal, 0)  AS saldo_awal,
+                        COALESCE(m.debet, 0)        AS debet,
+                        COALESCE(m.kredit, 0)       AS kredit,
+                        COALESCE(sa.saldo_awal, 0)
+                        + COALESCE(m.debet, 0)
+                        - COALESCE(m.kredit, 0)   AS saldo_akhir
+                    FROM stock_list sl
+                    LEFT JOIN saldo_awal sa
+                        ON sa.idcoa = sl.idcoa AND sa.kdcustomer = sl.kdcustomer
+                    LEFT JOIN mutasi m
+                        ON m.idcoa  = sl.idcoa AND m.kdcustomer  = sl.kdcustomer
+                )
+
+                SELECT
+                    TRIM(f.idcoa)               AS kdprk,
+                    TRIM(c.nmcoa)               AS nmprk,
+                    TRIM(f.kdcustomer)          AS kdcustomer,
+                    TRIM(cu.nmcustomer)         AS nmcustomer,
+                    COALESCE(f.saldo_awal, 0)   AS saldo_awal,
+                    COALESCE(f.debet, 0)        AS debet,
+                    COALESCE(f.kredit, 0)       AS kredit,
+                    COALESCE(f.saldo_akhir, 0)  AS saldo_akhir
+                FROM final f
+                LEFT JOIN sc_mst.coa      c  ON TRIM(c.idcoa)       = TRIM(f.idcoa)
+                LEFT JOIN sc_mst.customer cu ON TRIM(cu.kdcustomer) = TRIM(f.kdcustomer)
+                ORDER BY f.idcoa, f.kdcustomer";
+
+        return rtrim($sql, " \t\n\r\0\x0B;");
+    }
+
+    public function previewLaporanPosisiPiutang()
+    {
+        $tglrange   = $this->request->getPost('tglrange');
+        $cabang     = $this->request->getPost('cabang');
+        $kdprk      = $this->request->getPost('kdprk');
+        $kdcustomer = $this->request->getPost('kdcustomer');
+
+        $page    = max(1, (int)($this->request->getPost('page') ?? 1));
+        $perpage = (int)($this->request->getPost('perpage') ?? 25);
+        if ($perpage < 1 || $perpage > 200) $perpage = 25;
+
+        // ---- Tanggal ----
+        $tglAwal = $tglAkhir = null;
+        if (!empty($tglrange)) {
+            $parts = explode(' - ', $tglrange);
+            if (count($parts) == 2) {
+                $tglAwal  = date('Y-m-d', strtotime($parts[0]));
+                $tglAkhir = date('Y-m-d', strtotime($parts[1]));
+            }
+        }
+        if (empty($tglAwal) || empty($tglAkhir)) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Tanggal wajib diisi.',
+            ]);
+        }
+
+        $bindBase = [
+            $tglAwal,
+            $tglAkhir,
+            $cabang     ?: null,
+            $kdprk      ?: null,
+            $kdcustomer ?: null,
+        ];
+
+        $sql = $this->buildQueryPosisiPiutang();
+
+        // ---- COUNT ----
+        $sqlCount = "SELECT COUNT(*) AS total FROM (" . $sql . ") x";
+        $totalRow = $this->db->query($sqlCount, $bindBase)->getRowArray();
+        $total    = (int)($totalRow['total'] ?? 0);
+        $totalPage = $perpage > 0 ? (int)ceil($total / $perpage) : 0;
+
+        // ---- DATA ----
+        $offset   = ($page - 1) * $perpage;
+        $bindData = array_merge($bindBase, [$perpage, $offset]);
+        $rows = $this->db->query($sql . " LIMIT ? OFFSET ?", $bindData)->getResultArray();
+
+        return $this->response->setJSON([
+            'status'     => 'ok',
+            'data'       => $rows,
+            'page'       => $page,
+            'perpage'    => $perpage,
+            'total'      => $total,
+            'total_page' => $totalPage,
+        ]);
+    }
+
+    public function downloadLaporanPosisiPiutang()
+    {
+        $tglrange   = $this->request->getPost('tglrange');
+        $cabang     = $this->request->getPost('cabang');
+        $kdprk      = $this->request->getPost('kdprk');
+        $kdcustomer = $this->request->getPost('kdcustomer');
+
+        // ---- Tanggal ----
+        $tglAwal = $tglAkhir = null;
+        if (!empty($tglrange)) {
+            $parts = explode(' - ', $tglrange);
+            if (count($parts) == 2) {
+                $tglAwal  = date('Y-m-d', strtotime($parts[0]));
+                $tglAkhir = date('Y-m-d', strtotime($parts[1]));
+            }
+        }
+        if (empty($tglAwal) || empty($tglAkhir)) {
+            exit('Tanggal wajib diisi.');
+        }
+
+        $bind = [
+            $tglAwal,
+            $tglAkhir,
+            $cabang     ?: null,
+            $kdprk      ?: null,
+            $kdcustomer ?: null,
+        ];
+
+        $sql = $this->buildQueryPosisiPiutang();
+
+        ini_set('memory_limit', '512M');
+        set_time_limit(0);
+        if (ob_get_length()) ob_end_clean();
+
+        $query = $this->db->query($sql, $bind);
+        if ($query === false) {
+            log_message('error', 'Posisi Piutang query failed: ' . print_r($this->db->error(), true));
+            exit('Query gagal. Hubungi administrator.');
+        }
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $sheet->setCellValue('A1', 'LAPORAN POSISI PIUTANG');
+        $sheet->mergeCells('A1:H1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal('center');
+
+        // Header (No dihilangkan di Excel, nomor urut tidak perlu)
+        $headers = [
+            'Kode Prk', 'Nama Prk',
+            'Kode Customer', 'Nama Customer',
+            'Saldo Awal', 'Debet', 'Kredit', 'Saldo Akhir'
+        ];
+        $sheet->fromArray($headers, null, 'A3');
+        $sheet->getStyle('A3:H3')->getFont()->setBold(true);
+        $sheet->getStyle('A3:H3')->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FFCCE5FF');
+
+        $rowNum   = 4;
+        $rowCount = 0;
+        $lastCoa  = null;
+        $subtotal = ['sa' => 0, 'd' => 0, 'k' => 0, 'akhir' => 0];
+
+        while ($r = $query->getUnbufferedRow('array')) {
+
+            // Ketika COA berubah → tulis TOTAL COA sebelumnya
+            if ($lastCoa !== null && $lastCoa !== $r['kdprk']) {
+                $sheet->fromArray(
+                    ['', '', '', 'TOTAL ' . $lastCoa,
+                    $subtotal['sa'], $subtotal['d'], $subtotal['k'], $subtotal['akhir']],
+                    null, 'A' . $rowNum
+                );
+                $sheet->getStyle("A{$rowNum}:H{$rowNum}")->getFont()->setBold(true);
+                $rowNum++;
+                $subtotal = ['sa' => 0, 'd' => 0, 'k' => 0, 'akhir' => 0];
+            }
+
+            $sheet->fromArray([
+                $r['kdprk'],
+                $r['nmprk'],
+                $r['kdcustomer'],
+                $r['nmcustomer'],
+                $r['saldo_awal'],
+                $r['debet'],
+                $r['kredit'],
+                $r['saldo_akhir'],
+            ], null, 'A' . $rowNum);
+
+            $subtotal['sa']    += (float)$r['saldo_awal'];
+            $subtotal['d']     += (float)$r['debet'];
+            $subtotal['k']     += (float)$r['kredit'];
+            $subtotal['akhir'] += (float)$r['saldo_akhir'];
+
+            $lastCoa = $r['kdprk'];
+
+            $rowNum++;
+            $rowCount++;
+        }
+
+        // Total COA terakhir
+        if ($lastCoa !== null) {
+            $sheet->fromArray(
+                ['', '', '', 'TOTAL ' . $lastCoa,
+                $subtotal['sa'], $subtotal['d'], $subtotal['k'], $subtotal['akhir']],
+                null, 'A' . $rowNum
+            );
+            $sheet->getStyle("A{$rowNum}:H{$rowNum}")->getFont()->setBold(true);
+            $rowNum++;
+        }
+
+        if ($rowCount === 0) {
+            $sheet->setCellValue('A4', 'Tidak ada data.');
+            $sheet->mergeCells('A4:H4');
+        }
+
+        // Auto-width
+        $colLetter = 'A';
+        foreach ($headers as $h) {
+            $sheet->getColumnDimension($colLetter)->setWidth(max(12, min(35, mb_strlen($h) + 4)));
+            $colLetter++;
+        }
+
+        // Format angka: E..H
+        $firstData = 4;
+        $lastData  = max(4, $rowNum - 1);
+        foreach (['E','F','G','H'] as $col) {
+            $sheet->getStyle("{$col}{$firstData}:{$col}{$lastData}")
+                ->getNumberFormat()->setFormatCode('#,##0.00');
+        }
+
+        $sheet->freezePane('A4');
+
+        $namaFile = 'Laporan_PosisiPiutang_' . date('Ymd_His') . '.xlsx';
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $namaFile . '"');
+        header('Cache-Control: max-age=0');
+        header('Pragma: public');
+
+        $writer->save('php://output');
+
+        $spreadsheet->disconnectWorksheets();
+        unset($spreadsheet);
+        exit;
+    }
+
+
+    /* =========================================================
+    LAPORAN UMUR PIUTANG (AR AGING)
+   ========================================================= */
+    public function umurpiutang()
+    {
+        $data = $this->commonData();
+        $data['title']        = "Laporan Umur Piutang";
+        $data['jenisLaporan'] = 'umurpiutang';
+        $data['pagejs']       = 'report/report.js';
+        return $this->template->render('report/trans/v_umurpiutang', $data);
+    }
+
+    private function buildQueryUmurPiutang()
+    {
+        // ============================================
+        // TODO: ISI QUERY DARI ATASAN
+        // ============================================
+        // Kolom output yang diharapkan:
+        // docno, kdcustomer, nmcustomer, kdprk, nmprk, docdate, tgljt, dk,
+        // keterangan, currcode, kurs, nilai, nilai_belum_jt,
+        // nilai_jt_1..4, umur, kodejob, namajob,
+        // alamatcustomer, kotacustomer, kdsalesman, nmsalesman
+        // ============================================
+
+        $sql = "SELECT
+                    '' AS docno,
+                    '' AS kdcustomer,
+                    '' AS nmcustomer,
+                    '' AS kdprk,
+                    '' AS nmprk,
+                    NULL AS docdate,
+                    NULL AS tgljt,
+                    '' AS dk,
+                    '' AS keterangan,
+                    'IDR' AS currcode,
+                    1 AS kurs,
+                    0 AS nilai,
+                    0 AS nilai_belum_jt,
+                    0 AS nilai_jt_1,
+                    0 AS nilai_jt_2,
+                    0 AS nilai_jt_3,
+                    0 AS nilai_jt_4,
+                    0 AS umur,
+                    '' AS kodejob,
+                    '' AS namajob,
+                    '' AS alamatcustomer,
+                    '' AS kotacustomer,
+                    '' AS kdsalesman,
+                    '' AS nmsalesman
+                WHERE 1=0";
+
+        return rtrim($sql, " \t\n\r\0\x0B;");
+    }
+
+    public function previewLaporanUmurPiutang()
+    {
+        $tglrange   = $this->request->getPost('tglrange');
+        $cabang     = $this->request->getPost('cabang');
+        $kdcustomer = $this->request->getPost('kdcustomer');
+        $kdprk      = $this->request->getPost('kdprk');
+        $interval   = $this->request->getPost('interval') ?: 30;
+
+        $page    = max(1, (int)($this->request->getPost('page') ?? 1));
+        $perpage = (int)($this->request->getPost('perpage') ?? 25);
+        if ($perpage < 1 || $perpage > 200) $perpage = 25;
+
+        // ⚠️ SEMENTARA: query placeholder tanpa ? → bindBase kosong
+        // Setelah query asli datang, isi: [$cabang, $kdcustomer, $kdprk, $interval]
+        $bindBase = [];
+
+        $sql = $this->buildQueryUmurPiutang();
+
+        // COUNT
+        $sqlCount = "SELECT COUNT(*) AS total FROM (" . $sql . ") x";
+        $totalRow = $this->db->query($sqlCount, $bindBase)->getRowArray();
+        $total    = (int)($totalRow['total'] ?? 0);
+        $totalPage = $perpage > 0 ? (int)ceil($total / $perpage) : 0;
+
+        // DATA
+        $offset   = ($page - 1) * $perpage;
+        $bindData = array_merge($bindBase, [$perpage, $offset]);
+        $rows = $this->db->query($sql . " LIMIT ? OFFSET ?", $bindData)->getResultArray();
+
+        return $this->response->setJSON([
+            'status'     => 'ok',
+            'data'       => $rows,
+            'page'       => $page,
+            'perpage'    => $perpage,
+            'total'      => $total,
+            'total_page' => $totalPage,
+        ]);
+    }
+
+    public function downloadLaporanUmurPiutang()
+    {
+        $cabang     = $this->request->getPost('cabang');
+        $kdcustomer = $this->request->getPost('kdcustomer');
+        $kdprk      = $this->request->getPost('kdprk');
+        $interval   = $this->request->getPost('interval') ?: 30;
+
+        // ⚠️ SEMENTARA: kosong
+        $bind = [];
+
+        $sql = $this->buildQueryUmurPiutang();
+
+        ini_set('memory_limit', '512M');
+        set_time_limit(0);
+        if (ob_get_length()) ob_end_clean();
+
+        $query = $this->db->query($sql, $bind);
+        if ($query === false) {
+            log_message('error', 'Umur Piutang query failed: ' . print_r($this->db->error(), true));
+            exit('Query gagal. Hubungi administrator.');
+        }
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setCellValue('A1', 'LAPORAN UMUR PIUTANG');
+        $sheet->mergeCells('A1:X1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal('center');
+
+        // ⚠️ PIUTANG: header CUSTOMER + Salesman
+        $headers = [
+            'No.Jurnal', 'Kode Customer', 'Nama Customer', 'Kode Prk', 'Nama Prk',
+            'Tanggal', 'Tgl JT', 'DK', 'Keterangan', 'Mata Uang', 'Kurs',
+            'Nilai', 'Nilai Belum JT',
+            'Nilai JT 1', 'Nilai JT 2', 'Nilai JT 3', 'Nilai JT 4',
+            'Umur', 'Kode Job', 'Nama Job',
+            'Alamat Customer', 'Kota Customer',
+            'Kode Salesman', 'Nama Salesman'
+        ];
+        $sheet->fromArray($headers, null, 'A3');
+        $sheet->getStyle('A3:X3')->getFont()->setBold(true);
+        $sheet->getStyle('A3:X3')->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FFCCE5FF');
+
+        $rowNum = 4; $rowCount = 0;
+        while ($r = $query->getUnbufferedRow('array')) {
+            $sheet->fromArray([
+                $r['docno'], $r['kdcustomer'], $r['nmcustomer'], $r['kdprk'], $r['nmprk'],
+                $r['docdate'], $r['tgljt'], $r['dk'], $r['keterangan'],
+                $r['currcode'], $r['kurs'],
+                $r['nilai'], $r['nilai_belum_jt'],
+                $r['nilai_jt_1'], $r['nilai_jt_2'], $r['nilai_jt_3'], $r['nilai_jt_4'],
+                $r['umur'], $r['kodejob'], $r['namajob'],
+                $r['alamatcustomer'], $r['kotacustomer'],
+                $r['kdsalesman'], $r['nmsalesman']
+            ], null, 'A' . $rowNum);
+            $rowNum++; $rowCount++;
+        }
+        if ($rowCount === 0) {
+            $sheet->setCellValue('A4', 'Tidak ada data.');
+            $sheet->mergeCells('A4:X4');
+        }
+
+        $colLetter = 'A';
+        foreach ($headers as $h) {
+            $sheet->getColumnDimension($colLetter)->setWidth(max(12, min(35, mb_strlen($h) + 4)));
+            $colLetter++;
+        }
+
+        // Format angka: K=Kurs, L=Nilai, M=Belum JT, N-Q=JT1..4, R=Umur
+        $firstData = 4; $lastData = max(4, $rowNum - 1);
+        foreach (['K','L','M','N','O','P','Q','R'] as $col) {
+            $sheet->getStyle("{$col}{$firstData}:{$col}{$lastData}")
+                ->getNumberFormat()->setFormatCode('#,##0.00');
+        }
+        $sheet->freezePane('A4');
+
+        $namaFile = 'Laporan_UmurPiutang_' . date('Ymd_His') . '.xlsx';
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $namaFile . '"');
+        header('Cache-Control: max-age=0');
+        header('Pragma: public');
+        $writer->save('php://output');
         $spreadsheet->disconnectWorksheets();
         unset($spreadsheet);
         exit;

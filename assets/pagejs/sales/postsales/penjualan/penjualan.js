@@ -2135,6 +2135,9 @@ function loadNextSuffixPJO() {
 };
 
 
+$('#prefix').on('blur', function () {
+    loadNextSuffixPJO();
+});
 
 
 var defaultInitialBranch = '';

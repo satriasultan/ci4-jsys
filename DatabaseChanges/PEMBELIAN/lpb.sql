@@ -454,18 +454,6 @@ BEGIN
         WHERE rtrim(docno) = rtrim(OLD.docno)
             AND inputby = v_inputby;
 
-        
-        -- DELETE TRANS DT YANG SUDAH TIDAK ADA DI LPB DTL
-        DELETE FROM sc_trx.transaction_dt td
-        WHERE rtrim(td.docno) = rtrim(NEW.docnotmp)
-        AND td.doctype IN ('GR', 'GRRET')
-        AND NOT EXISTS (
-            SELECT 1
-            FROM sc_trx.lpb_dtl d
-            WHERE rtrim(d.docno) = rtrim(NEW.docnotmp)
-                AND d.uniqueid = td.source_uniqueid
-        );
-
 
         UPDATE sc_trx.po_dtl ppd
         SET qtylpb = COALESCE(ppd.qtylpb, 0) + pod.qty_used
@@ -588,6 +576,17 @@ BEGIN
             inputby, inputdate, status, updateby, updatedate, docnotmp,idtax,currcode,kurs,nilaikonversi,nilaipajak,qtyretur,idhistory_price,multidisctype,totaldiscount
         FROM sc_tmp.lpb_dtl
         WHERE rtrim(docno) = rtrim(NEW.docno);
+
+         -- DELETE TRANS DT YANG SUDAH TIDAK ADA DI LPB DTL
+        DELETE FROM sc_trx.transaction_dt td
+        WHERE rtrim(td.docno) = rtrim(NEW.docnotmp)
+        AND td.doctype IN ('GR', 'GRRET')
+        AND NOT EXISTS (
+            SELECT 1
+            FROM sc_trx.lpb_dtl d
+            WHERE rtrim(d.docno) = rtrim(NEW.docnotmp)
+                AND d.uniqueid = td.source_uniqueid
+        );
 
         UPDATE sc_trx.po_dtl ppd
         SET qtylpb = COALESCE(ppd.qtylpb, 0) + pod.qty_used

@@ -1565,6 +1565,19 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
 
 
 $routes->group('/report/trans', ["namespace" => "App\Controllers\Report"], function ($routes) {
+    $routes->add('barang', 'Report::masterbarang'); 
+    $routes->post('downloadLaporanMasterBarang',  'Report::downloadLaporanMasterBarang');
+    $routes->post('previewLaporanMasterBarang',  'Report::previewLaporanMasterBarang');
+
+    $routes->add('customer', 'Report::mastercustomer'); 
+    $routes->post('downloadLaporanMasterCustomer',  'Report::downloadLaporanMasterCustomer');
+    $routes->post('previewLaporanMasterCustomer',  'Report::previewLaporanMasterCustomer');
+
+    $routes->add('supplier', 'Report::mastersupplier'); 
+    $routes->post('downloadLaporanMasterSupplier',  'Report::downloadLaporanMasterSupplier');
+    $routes->post('previewLaporanMasterSupplier',  'Report::previewLaporanMasterSupplier');
+
+
     $routes->add('outspp', 'Report::outspp');
     $routes->add('pphistory', 'Report::pphistory');
     $routes->post('downloadLaporanPP',  'Report::downloadLaporanPP');
@@ -1586,7 +1599,9 @@ $routes->group('/report/trans', ["namespace" => "App\Controllers\Report"], funct
     $routes->post('downloadLaporanLPB',  'Report::downloadLaporanLPB');
     $routes->post('previewLaporanLPB',  'Report::previewLaporanLPB');
 
-
+    $routes->add('poharian', 'Report::poharian');
+    $routes->post('previewLaporanPOHarian', 'Report::previewLaporanPOHarian');
+    $routes->post('downloadLaporanPOHarian', 'Report::downloadLaporanPOHarian');
 
     $routes->add('so', 'Report::salesorder');
     $routes->post('downloadLaporanSalesOrder',  'Report::downloadLaporanSalesOrder');
@@ -1597,6 +1612,35 @@ $routes->group('/report/trans', ["namespace" => "App\Controllers\Report"], funct
     $routes->post('downloadLaporanPenjualan',  'Report::downloadLaporanPenjualan');
     $routes->post('previewLaporanPenjualan',  'Report::previewLaporanPenjualan');
 
+
+    $routes->add('analisamutasi', 'Report::analisamutasi');
+    $routes->post('previewLaporanAnalisaMutasi', 'Report::previewLaporanAnalisaMutasi');
+    $routes->post('downloadLaporanAnalisaMutasi', 'Report::downloadLaporanAnalisaMutasi');
+
+    $routes->add('kartustock', 'Report::kartustock');
+    $routes->post('previewLaporanKartuStock', 'Report::previewLaporanKartuStock');
+    $routes->post('downloadLaporanKartuStock', 'Report::downloadLaporanKartuStock');
+    
+
+    $routes->add('posisibrg', 'Report::posisibrg');
+    $routes->post('previewLaporanPosisiBrg', 'Report::previewLaporanPosisiBrg');
+    $routes->post('downloadLaporanPosisiBrg', 'Report::downloadLaporanPosisiBrg');
+    
+    $routes->get('posisihutang', 'Report::posisihutang');
+    $routes->post('previewLaporanPosisiHutang', 'Report::previewLaporanPosisiHutang');
+    $routes->post('downloadLaporanPosisiHutang', 'Report::downloadLaporanPosisiHutang');
+    
+    $routes->get('umurhutang', 'Report::umurhutang');
+    $routes->post('previewLaporanUmurHutang', 'Report::previewLaporanUmurHutang');
+    $routes->post('downloadLaporanUmurHutang', 'Report::downloadLaporanUmurHutang');
+
+    $routes->get('posisipiutang', 'Report::posisipiutang');
+    $routes->post('previewLaporanPosisiPiutang', 'Report::previewLaporanPosisiPiutang');
+    $routes->post('downloadLaporanPosisiPiutang', 'Report::downloadLaporanPosisiPiutang');
+
+    $routes->get('umurpiutang', 'Report::umurpiutang');
+    $routes->post('previewLaporanUmurPiutang', 'Report::previewLaporanUmurPiutang');
+    $routes->post('downloadLaporanUmurPiutang', 'Report::downloadLaporanUmurPiutang');
 });
 
 

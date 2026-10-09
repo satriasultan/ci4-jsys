@@ -320,9 +320,52 @@ INSERT INTO sc_mst.menuprg (
 ('JTS', 4, 'I.H.B.4', 'LAPORAN VOID PO', 'I.H', 'I.H.B', 'P', false, 'fa-lightbulb-o', 'report/trans/voidpo', 'LEFT', 'NO'),
 ('JTS', 5, 'I.H.B.5', 'LAPORAN PO HISTORY', 'I.H', 'I.H.B', 'P', false, 'fa-lightbulb-o', 'report/trans/pohistory', 'LEFT', 'NO'),
 ('JTS', 6, 'I.H.B.6', 'LAPORAN PEMBELIAN', 'I.H', 'I.H.B', 'P', false, 'fa-lightbulb-o', 'report/trans/pembelian', 'LEFT', 'NO'),
+('JTS', 7, 'I.H.B.7', 'LAPORAN PO HARIAN', 'I.H', 'I.H.B', 'P', false, 'fa-lightbulb-o', 'report/trans/poharian', 'LEFT', 'NO'),
+-- ('JTS', 8, 'I.H.B.8', 'LAPORAN RETUR BELI', 'I.H', 'I.H.B', 'P', false, 'fa-lightbulb-o', 'report/trans/returbeli', 'LEFT', 'NO'),
 ('JTS', 3, 'I.H.C', 'PENJUALAN', 'I.H', '0', 'S', false, 'fa-area-chart', '', 'LEFT', 'NO'),
 ('JTS', 1, 'I.H.C.1', 'LAPORAN SALES ORDER', 'I.H', 'I.H.C', 'P', false, 'fa-lightbulb-o', 'report/trans/so', 'LEFT', 'NO'),
 ('JTS', 2, 'I.H.C.2', 'LAPORAN PENJUALAN', 'I.H', 'I.H.C', 'P', false, 'fa-lightbulb-o', 'report/trans/pjo', 'LEFT', 'NO');
+('JTS', 4, 'I.H.D', 'PERSEDIAAN', 'I.H', '0', 'S', false, 'fa-cubes', '', 'LEFT', 'NO'),
+('JTS', 1, 'I.H.D.1', 'ANALISA MUTASI STOCK', 'I.H', 'I.H.D', 'P', false, 'fa-lightbulb-o', 'report/trans/analisamutasi', 'LEFT', 'NO'),
+('JTS', 2, 'I.H.D.2', 'KARTU STOCK PER GUDANG', 'I.H', 'I.H.D', 'P', false, 'fa-lightbulb-o', 'report/trans/kartustock', 'LEFT', 'NO'),
+('JTS', 3, 'I.H.D.3', 'POSISI BRG PER GUDANG', 'I.H', 'I.H.D', 'P', false, 'fa-lightbulb-o', 'report/trans/posisibrg', 'LEFT', 'NO'),
+
+-- ============================
+-- HUTANG (AP)
+-- ============================
+('JTS', 5, 'I.H.E', 'HUTANG (AP)', 'I.H', '0', 'S', false, 'fa-file-text-o', '', 'LEFT', 'NO'),
+('JTS', 1, 'I.H.E.1', 'POSISI HUTANG',                 'I.H', 'I.H.E', 'P', false, 'fa-lightbulb-o', 'report/trans/posisihutang',    'LEFT', 'NO'),
+('JTS', 2, 'I.H.E.2', 'BUKU PEMBANTU HUTANG',          'I.H', 'I.H.E', 'P', false, 'fa-lightbulb-o', 'report/trans/bukuhutang',       'LEFT', 'NO'),
+('JTS', 3, 'I.H.E.3', 'PROYEKSI HUTANG',               'I.H', 'I.H.E', 'P', false, 'fa-lightbulb-o', 'report/trans/proyeksihutang',   'LEFT', 'NO'),
+('JTS', 4, 'I.H.E.4', 'UMUR HUTANG',                   'I.H', 'I.H.E', 'P', false, 'fa-lightbulb-o', 'report/trans/umurhutang',       'LEFT', 'NO'),
+('JTS', 5, 'I.H.E.5', 'HISTORY NOTA HUTANG',           'I.H', 'I.H.E', 'P', false, 'fa-lightbulb-o', 'report/trans/historynotahutang','LEFT', 'NO'),
+
+-- ============================
+-- PIUTANG (AR)
+-- ============================
+('JTS', 6, 'I.H.F', 'PIUTANG (AR)', 'I.H', '0', 'S', false, 'fa-file-text-o', '', 'LEFT', 'NO'),
+('JTS', 1, 'I.H.F.1', 'POSISI PIUTANG',                       'I.H', 'I.H.F', 'P', false, 'fa-lightbulb-o', 'report/trans/posisipiutang',      'LEFT', 'NO'),
+('JTS', 2, 'I.H.F.2', 'BUKU PEMBANTU PIUTANG',                'I.H', 'I.H.F', 'P', false, 'fa-lightbulb-o', 'report/trans/bukupiutang',        'LEFT', 'NO'),
+('JTS', 3, 'I.H.F.3', 'PROYEKSI PIUTANG',                     'I.H', 'I.H.F', 'P', false, 'fa-lightbulb-o', 'report/trans/proyeksipiutang',    'LEFT', 'NO'),
+('JTS', 4, 'I.H.F.4', 'UMUR PIUTANG',                         'I.H', 'I.H.F', 'P', false, 'fa-lightbulb-o', 'report/trans/umurpiutang',        'LEFT', 'NO'),
+('JTS', 5, 'I.H.F.5', 'UMUR PIUTANG GLOBAL',                  'I.H', 'I.H.F', 'P', false, 'fa-lightbulb-o', 'report/trans/umurpiutangglobal',  'LEFT', 'NO'),
+('JTS', 6, 'I.H.F.6', 'HISTORY NOTA PIUTANG',                 'I.H', 'I.H.F', 'P', false, 'fa-lightbulb-o', 'report/trans/historynotapiutang', 'LEFT', 'NO'),
+
+-- ============================
+-- KEUANGAN & ACCOUNTING
+-- ============================
+('JTS', 7, 'I.H.G', 'KEUANGAN & ACCOUNTING', 'I.H', '0', 'S', false, 'fa-calculator', '', 'LEFT', 'NO'),
+('JTS', 1, 'I.H.G.1', 'BUKU BESAR DETAIL',     'I.H', 'I.H.G', 'P', false, 'fa-lightbulb-o', 'report/trans/bukubesar',       'LEFT', 'NO'),
+('JTS', 2, 'I.H.G.2', 'JURNAL TRANSAKSI',      'I.H', 'I.H.G', 'P', false, 'fa-lightbulb-o', 'report/trans/jurnaltransaksi', 'LEFT', 'NO'),
+('JTS', 3, 'I.H.G.3', 'NERACA SALDO - LEVEL',  'I.H', 'I.H.G', 'P', false, 'fa-lightbulb-o', 'report/trans/neracasaldo',     'LEFT', 'NO'),
+('JTS', 4, 'I.H.G.4', 'LABA RUGI',             'I.H', 'I.H.G', 'P', false, 'fa-lightbulb-o', 'report/trans/labarugi',        'LEFT', 'NO'),
+('JTS', 5, 'I.H.G.5', 'KAS BANK DETAIL',       'I.H', 'I.H.G', 'P', false, 'fa-lightbulb-o', 'report/trans/kasbankdetail',   'LEFT', 'NO'),
+
+-- ============================
+-- PRODUKSI
+-- ============================
+('JTS', 8, 'I.H.H', 'PRODUKSI', 'I.H', '0', 'S', false, 'fa-industry', '', 'LEFT', 'NO'),
+('JTS', 1, 'I.H.H.1', 'LAPORAN WO', 'I.H', 'I.H.H', 'P', false, 'fa-lightbulb-o', 'report/trans/wo', 'LEFT', 'NO');
 
 
 COMMIT;

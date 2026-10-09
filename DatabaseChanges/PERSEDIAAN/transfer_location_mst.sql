@@ -373,3 +373,170 @@ CREATE OR REPLACE TRIGGER tr_trx_transfer_location_mst
     FOR EACH ROW
     EXECUTE FUNCTION sc_trx.tr_trx_transfer_location_mst();
 
+
+
+
+
+
+CREATE OR REPLACE FUNCTION sc_trx.fn_sync_transfer_location_dtl_to_transaction(
+    p_docno TEXT,
+    p_uniqueid TEXT
+)
+RETURNS VOID
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_hdr        sc_trx.transfer_location_mst%ROWTYPE;
+    v_dtl        sc_trx.transfer_location_dtl%ROWTYPE;
+    v_journal    CHAR(6);
+    v_idbranch   CHAR(20);
+    v_qty        NUMERIC(18,2);
+    v_val        NUMERIC(18,2);
+    v_from       TEXT;
+    v_to         TEXT;
+    v_transit    TEXT;
+    v_src_uid    TEXT;
+    v_cab_from   TEXT;
+    v_cab_to     TEXT;
+    v_uid        TEXT;
+    v_type       CHAR(3);
+    v_loc        TEXT;
+    v_cabang     TEXT;
+    v_step       TEXT;    -- label step: 'OUT-FROM', 'IN-TRANSIT', 'OUT-TRANSIT', 'IN-TO'
+BEGIN
+    -- ============================================
+    -- 1. Ambil header
+    -- ============================================
+    SELECT * INTO v_hdr
+    FROM sc_trx.transfer_location_mst
+    WHERE rtrim(docno) = rtrim(p_docno);
+    IF NOT FOUND THEN RETURN; END IF;
+
+    -- ============================================
+    -- 2. Ambil detail
+    -- ============================================
+    SELECT * INTO v_dtl
+    FROM sc_trx.transfer_location_dtl
+    WHERE rtrim(docno) = rtrim(p_docno)
+      AND iduniq = p_uniqueid;
+    IF NOT FOUND THEN RETURN; END IF;
+
+    -- ============================================
+    -- 3. Siapkan nilai
+    -- ============================================
+    v_journal := CASE
+        WHEN rtrim(v_hdr.cabang) = rtrim(v_hdr.cabang_sent) THEN 'TRFWHS'::CHAR(6)
+        ELSE 'BRNTRF'::CHAR(6)
+    END;
+
+    v_idbranch := CASE rtrim(v_hdr.cabang)
+        WHEN 'JTS1' THEN 'JTS'::CHAR(20)
+        WHEN 'JTS2' THEN 'JTS'::CHAR(20)
+        ELSE rtrim(v_hdr.cabang)::CHAR(20)
+    END;
+
+    v_qty      := COALESCE(v_dtl.qty, 0);
+    v_val      := COALESCE(v_dtl.val, 0);
+    v_src_uid  := COALESCE(v_dtl.iduniq, '');
+
+    v_from     := rtrim(COALESCE(v_hdr.idlocation_from, ''));
+    v_to       := rtrim(COALESCE(v_hdr.idlocation_to, ''));
+    v_transit  := rtrim(COALESCE(v_hdr.idlocation_transit, ''));
+
+    v_cab_from := rtrim(COALESCE(v_hdr.cabang, ''));
+    v_cab_to   := rtrim(COALESCE(v_hdr.cabang_sent, ''));
+
+    -- Kalau from == to → tidak ada perpindahan, skip
+    IF v_from = v_to AND v_from = v_transit THEN
+        RETURN;
+    END IF;
+
+    -- Transit dianggap aktif kalau beda dari from & to
+    IF v_transit = v_from OR v_transit = v_to THEN
+        v_transit := '';
+    END IF;
+
+    -- ============================================
+    -- 4. Loop step: FROM → [TRANSIT] → TO
+    -- ============================================
+    FOR v_step IN
+        SELECT unnest(
+            CASE
+                WHEN v_transit = '' THEN ARRAY['OUT-FROM','IN-TO']
+                ELSE ARRAY['OUT-FROM','IN-TRANSIT','OUT-TRANSIT','IN-TO']
+            END
+        )
+    LOOP
+        -- Tentukan type_in_out
+        IF v_step LIKE 'OUT%' THEN
+            v_type := 'OUT';
+        ELSE
+            v_type := 'IN';
+        END IF;
+
+        -- Tentukan lokasi
+        v_loc := CASE v_step
+            WHEN 'OUT-FROM'    THEN v_from
+            WHEN 'IN-TRANSIT'  THEN v_transit
+            WHEN 'OUT-TRANSIT' THEN v_transit
+            WHEN 'IN-TO'       THEN v_to
+        END;
+
+        -- Tentukan cabang (asal untuk OUT, tujuan untuk IN)
+        v_cabang := CASE
+            WHEN v_type = 'OUT' THEN v_cab_from
+            ELSE v_cab_to
+        END;
+
+        -- Generate uniqueid
+        v_uid := md5(rtrim(p_docno) || '|' || v_step || '|' || v_src_uid);
+
+        -- ============================================
+        -- 5. Upsert
+        -- ============================================
+        INSERT INTO sc_trx.transaction_dt (
+            uniqueid, source_uniqueid, docno, doctype, journal_type,
+            line_no, docdate, idbranch, cabang, type_in_out,
+            ref_docno, ref_doctype,
+            idbarang, namabarang, idunit, idarea, warehouse,
+            bin, batch, lotno,
+            qty, harga, bruto, discount, nilai, dpp, pajak, total,
+            createdby
+        )
+        VALUES (
+            v_uid, v_src_uid, rtrim(p_docno), 'SPK_TRANSFERS', v_journal,
+            v_dtl.idurut, v_hdr.docdate, v_idbranch, v_cabang, v_type,
+            rtrim(v_dtl.docref), 'TRF',
+            rtrim(v_dtl.idbarang), rtrim(v_dtl.nmbarang), rtrim(v_dtl.unit),
+            v_loc, v_loc,
+            '', '', '',
+            v_qty, 0, v_val, 0, v_val, 0, 0, v_val,
+            rtrim(v_hdr.inputby)
+        )
+        ON CONFLICT (uniqueid) DO UPDATE
+        SET
+            qty         = EXCLUDED.qty,
+            nilai       = EXCLUDED.nilai,
+            total       = EXCLUDED.total,
+            warehouse   = EXCLUDED.warehouse,
+            idarea      = EXCLUDED.idarea,
+            cabang      = EXCLUDED.cabang,
+            updateddate = CURRENT_TIMESTAMP;
+    END LOOP;
+END;
+$$;
+
+
+
+CREATE OR REPLACE FUNCTION sc_trx.fn_transfer_location_dtl_to_transaction()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+    PERFORM sc_trx.fn_sync_transfer_location_dtl_to_transaction(NEW.docno, NEW.iduniq);
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER tr_transfer_location_dtl_to_transaction
+AFTER INSERT OR UPDATE ON sc_trx.transfer_location_dtl
+FOR EACH ROW
+EXECUTE FUNCTION sc_trx.fn_transfer_location_dtl_to_transaction();

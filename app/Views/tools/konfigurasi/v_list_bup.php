@@ -36,7 +36,7 @@
                                 id="periode"
                                 class="form-control"
                                 value="<?= $periode ?>"
-                                readonly>
+                                disabled>
                                 <?php if ($btnLabel == 'Open Period'): ?>
                                     <small style="color:red; font-style:italic;">
                                         Periode ini telah ditutup...!!!

@@ -1337,11 +1337,11 @@ function saveLPBDetail() {
 
                 if (!res.success) {
 
-                    // Swal.fire({
-                    //     icon: 'warning',
-                    //     title: 'Gagal',
-                    //     text: res.message
-                    // });
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Gagal',
+                        text: res.message
+                    });
 
                     return;
                 }
