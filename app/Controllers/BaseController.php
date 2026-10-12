@@ -179,5 +179,7 @@ class BaseController extends Controller
         $this->m_finance = new M_Finance();
         $this->m_production = new M_Production();
         $this->m_report = new M_Report();
+
+
     }
 }

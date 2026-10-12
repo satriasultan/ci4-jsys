@@ -752,6 +752,8 @@ ADD COLUMN nilaipajak numeric(18,2);
 
 
 
+
+
 -- =========== TAMBAHAN 24/8/26 ====================
 ALTER TABLE sc_tmp.returbeli_dtl
 ADD COLUMN capexno character(30)
@@ -760,7 +762,7 @@ ALTER TABLE sc_trx.returbeli_dtl
 ADD COLUMN capexno character(30)
 
 
-
+/*
 -- docdate
 ALTER TABLE sc_trx.returbeli
 ALTER COLUMN docdate TYPE DATE
@@ -768,6 +770,24 @@ USING TRIM(docdate)::DATE;
 ALTER TABLE sc_tmp.returbeli
 ALTER COLUMN docdate TYPE DATE
 USING TRIM(docdate)::DATE;
+*/
+
+-- Ubah docdate menjadi DATE tolong benahi kalau kurang separasi dll
+ALTER TABLE sc_trx.returbeli
+ALTER COLUMN docdate TYPE DATE
+USING NULLIF(TRIM(docdate::TEXT), '')::DATE;
+
+ALTER TABLE sc_tmp.returbeli
+ALTER COLUMN docdate TYPE DATE
+USING NULLIF(TRIM(docdate::TEXT), '')::DATE;
+
+
+-- Tambahkan printcount jika belum ada
+ALTER TABLE sc_tmp.returbeli
+ADD COLUMN IF NOT EXISTS printcount INTEGER DEFAULT 0;
+
+ALTER TABLE sc_trx.returbeli
+ADD COLUMN IF NOT EXISTS printcount INTEGER DEFAULT 0;
 
 
 

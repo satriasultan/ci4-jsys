@@ -11,7 +11,7 @@ class Finance extends BaseController
     // =================================== PO ===========================================
 
 
-     public function jup()
+    public function jup()
     {
         $data['title']="Jurnal Umum Perkiraan";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
@@ -62,7 +62,7 @@ class Finance extends BaseController
 
         $kmenu = 'I.K.A.1';
         $role = trim($this->session->get('roleid'));
-        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
+        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
         //auto insert unit
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
@@ -150,7 +150,7 @@ class Finance extends BaseController
             $docno  = trim($lm->docno);
             $docnoHex = bin2hex($docno);
 
-            
+
             $updateBtn = '';
             $detailBtn = '';
             $printBtn  = '';
@@ -171,8 +171,8 @@ class Finance extends BaseController
             }
 
             if($canView){
-                $detailBtn = 
-                '<a class="dropdown-item" 
+                $detailBtn =
+                    '<a class="dropdown-item" 
                     style="background-color:#3badf6;" 
                     href="' . base_url('ka/accounting/detailJUP') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'View Detail Jurnal Umum Perkiraan : ' . $docno . '\')">
@@ -304,7 +304,7 @@ class Finance extends BaseController
 
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
-            
+
 
             $data[] = $row;
         }
@@ -318,7 +318,7 @@ class Finance extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-    
+
 
     function clearEntryJUP()
     {
@@ -352,9 +352,9 @@ class Finance extends BaseController
                 echo json_encode($result);
             }
         } else {
-                // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                // echo json_encode($result);
-                return redirect()->to(base_url('ka/accounting/jup'));
+            // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+            // echo json_encode($result);
+            return redirect()->to(base_url('ka/accounting/jup'));
         }
 
     }
@@ -416,7 +416,7 @@ class Finance extends BaseController
     }
 
 
-   public function getBranchInfoJUP()
+    public function getBranchInfoJUP()
     {
         $idbranch = trim($this->request->getGet('idbranch'));
 
@@ -543,9 +543,24 @@ class Finance extends BaseController
     {
         $nama   = trim($this->session->get('nama'));
         $docno  = strtoupper(trim($this->request->getPost('docno')));
-        // $docnopp = strtoupper(trim($this->request->getPost('docnopp')));
-        $idurut = $this->request->getPost('idurut'); // HAPUS strtoupper, biarkan apa adanya
-        
+        // ID detail harus berbeda dari ID header.
+// Ambil dari hidden field khusus detail.
+        $idurutRaw = trim((string) (
+            $post['detail_idurut']
+            ?? $post['idurut_detail']
+            ?? ''
+        ));
+
+        $idurut = null;
+
+        if ($idurutRaw !== '') {
+            if (!ctype_digit($idurutRaw) || (int) $idurutRaw <= 0) {
+                throw new \RuntimeException('ID detail tidak valid');
+            }
+
+            $idurut = (int) $idurutRaw;
+        }
+
         // Tambahkan mode untuk membedakan add/edit dengan lebih jelas
         // $mode = $this->request->getPost('mode'); // 'add' atau 'edit'
 
@@ -571,7 +586,7 @@ class Finance extends BaseController
 
         $reload = false;
         // Untuk pengambilan data dari POST
-        
+
         if ($exists == 0) {
 
             $builderHeader->insert([
@@ -581,7 +596,7 @@ class Finance extends BaseController
                 // 'senddate'   => date('Y-m-d', strtotime(trim($this->request->getPost('senddate')))),
                 // 'jthtempo'     => $this->request->getPost('jthtempo'),
                 // 'isinclusive'     => $isinclusive,
-                
+
                 // 'kdsupplier'    => strtoupper($this->request->getPost('kdsupplier')),
                 // 'alamatsupplier'    => strtoupper($this->request->getPost('alamatsupplier')),
                 // 'alamatkirim'    => strtoupper($this->request->getPost('alamatkirim')),
@@ -612,8 +627,8 @@ class Finance extends BaseController
 
         // CEK MODE: ADD atau EDIT
         if (!empty($idurut)) {
-            $uniqueid = $this->request->getPost('uniqueid'); // HAPUS strtoupper, biarkan 
-                // 🔹 UPDATE
+            $uniqueid = $this->request->getPost('uniqueid'); // HAPUS strtoupper, biarkan
+            // 🔹 UPDATE
             $builderDetail->where('idurut', $idurut)->update([
                 'idcoa'    => $idcoa,
                 'nmcoa'    => $nmcoa,
@@ -624,7 +639,7 @@ class Finance extends BaseController
                 'updateby'     => $nama,
                 'updatedate'   => date('Y-m-d H:i:s')
             ]);
-            
+
             // // Update header PO
             // $builderHeader->where('docno', $docno)->update([
             //     // 'dpp' => number_format($dpp, 2, '.', ''),
@@ -633,15 +648,15 @@ class Finance extends BaseController
             //     'updateby' => $nama,
             //     'updatedate' => date('Y-m-d H:i:s')
             // ]);
-            
+
             $message = 'Data berhasil diupdate';
-            
+
         } else {
             $inputdate = date('Y-m-d H:i:s');
-            $rawUnique = $nmcoa 
-            . '|' . $docno 
-            . '|' . $nama
-            . '|' . $inputdate;
+            $rawUnique = $nmcoa
+                . '|' . $docno
+                . '|' . $nama
+                . '|' . $inputdate;
 
             $uniqueid  = hash('sha256', $rawUnique);
 
@@ -911,8 +926,8 @@ class Finance extends BaseController
             $row[] = $lm->dk;
             $row[] = $lm->cabang;
             $row[] = '<div class="ratakanan">'. number_format($lm->nilai, 2, '.', ',') . '</div>';
-            $data[] = $row;   
-            
+            $data[] = $row;
+
         }
 
         $output = array(
@@ -964,8 +979,8 @@ class Finance extends BaseController
             // $pemohon = strtoupper(trim($this->request->getPost('pemohon')));
             $docdate   = trim($this->request->getPost('docdate'));
             $keterangan   = trim($this->request->getPost('keterangan'));
-            
-             // Convert expdate ke format YYYY-MM-DD
+
+            // Convert expdate ke format YYYY-MM-DD
             $docdateph = null;
             if (!empty($docdate)) {
                 $docdateph = date('Y-m-d', strtotime(str_replace('-', '/', $docdate)));
@@ -1020,7 +1035,7 @@ class Finance extends BaseController
         }
 
     }
-    
+
     public function finalEntryPO_DP()
     {
         $nama = trim($this->session->get('nama'));
@@ -1060,8 +1075,8 @@ class Finance extends BaseController
 
         $builder_trxerror = $this->db->table('sc_mst.trxerror');
         $builder_trxerror->where('userid',$nama)
-                        ->where('modul','I.K.A.1')
-                        ->delete();
+            ->where('modul','I.K.A.1')
+            ->delete();
 
         if (($status === 'E' && $cek->getNumRows() > 0) || ($cek2->getNumRows() <= 0))
         {
@@ -1096,7 +1111,7 @@ class Finance extends BaseController
         $dpp_clean = $this->cleanNumber($this->request->getPost('dpp'));
         $jumlahpajak_clean = $this->cleanNumber($this->request->getPost('jumlahpajak'));
         $total_clean = $this->cleanNumber($this->request->getPost('total'));
-        
+
         /*
         ==========================
         FORMAT KURS
@@ -1174,7 +1189,7 @@ class Finance extends BaseController
         GENERATE DOCNO UMB
         ==========================
         */
-        
+
         $prefix = 'UMK';
         $infix = date('ym', strtotime($this->session->get('logindate')));
         // $kodeSuffix = 'PT';
@@ -1210,7 +1225,7 @@ class Finance extends BaseController
         ==========================
         */
 
-        
+
         $this->db->table('sc_tmp.umb')->insert([
             'docno'          => $docnoUMB,
             'docdate'        => $header['docdate'],
@@ -1340,17 +1355,17 @@ class Finance extends BaseController
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.jup');
 
-    //    $builder = $builder
-    //         ->where('docno', $docno)
-    //         ->update([
-    //             'status'=> 'P',
-    //             'printby' => $nama,
-    //             'printdate' => date('Y-m-d H:i:s')
-    //         ]);
+        //    $builder = $builder
+        //         ->where('docno', $docno)
+        //         ->update([
+        //             'status'=> 'P',
+        //             'printby' => $nama,
+        //             'printdate' => date('Y-m-d H:i:s')
+        //         ]);
 
-        
+
         $enc_docno = $this->fiky_encryption->sealed($docno);
-        
+
         //$enc_docdate= $this->fiky_encryption->sealed($docdate);
         // $enc_idlocation = $this->fiky_encryption->sealed($idlocation);
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
@@ -1362,7 +1377,7 @@ class Finance extends BaseController
         $datajson =  base_url("ka/accounting/api_jup/?enc_docno=$enc_docno") ;
 
         // if($formheader==="HEADER"){
-            $datamrt =  base_url("assets/mrt/report_jup.mrt") ;
+        $datamrt =  base_url("assets/mrt/report_jup.mrt") ;
         // } else {
         //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
         // }
@@ -1381,9 +1396,9 @@ class Finance extends BaseController
         // $idgroup=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idgroup')));
         //$docno=trim($this->request->getGet('enc_docno'));
 
-       // $ddate = explode(' - ',$docdate);
-       // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
-       // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
+        // $ddate = explode(' - ',$docdate);
+        // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
+        // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
 
         if (empty($docno) or $docno==='') {
             $param_brg = "";
@@ -1402,7 +1417,7 @@ class Finance extends BaseController
         $datamst = $this->m_finance->q_jup_master($param);
         $datadtl = $this->m_finance->q_jup_dtl($param);
         $tampungdtl = $datamst->getResult();
-        $detail = $tampungdtl[0] ?? null;        
+        $detail = $tampungdtl[0] ?? null;
         if ($detail) {
 
 
@@ -1410,8 +1425,8 @@ class Finance extends BaseController
             // $kdsupplier = trim($detail->kdsupplier);
 
             // $supplier = $this->db->query("
-            //     SELECT nmsupplier 
-            //     FROM sc_mst.mstsupplier 
+            //     SELECT nmsupplier
+            //     FROM sc_mst.mstsupplier
             //     WHERE TRIM(kdsupplier) = ?
             //     LIMIT 1
             // ", [$kdsupplier])->getRow();
@@ -1428,8 +1443,8 @@ class Finance extends BaseController
             // $currcode = trim($detail->currcode);
 
             // $currency = $this->db->query("
-            //     SELECT currname 
-            //     FROM sc_mst.currency 
+            //     SELECT currname
+            //     FROM sc_mst.currency
             //     WHERE TRIM(currcode) = ?
             //     LIMIT 1
             // ", [$currcode])->getRow();
@@ -1441,9 +1456,9 @@ class Finance extends BaseController
             // $detail->currname = $cleanedCurrname;
 
 
-            
+
             $detail->namauser = $nama;
-            
+
         }
 
         $detailRows = $datadtl->getResultArray();
@@ -1498,7 +1513,7 @@ class Finance extends BaseController
                     'userid' => $nama,
                     'param' => $param,
 
-                    ]
+                ]
                 ),
                 'branch' => $databranch->getResult(),
                 'master' => $datamst->getResult(),
@@ -1510,7 +1525,7 @@ class Finance extends BaseController
     function penyebut($nilai) {
         $nilai = abs($nilai);
         $huruf = array("", "satu", "dua", "tiga", "empat", "lima", "enam",
-                    "tujuh", "delapan", "sembilan", "sepuluh", "sebelas");
+            "tujuh", "delapan", "sembilan", "sepuluh", "sebelas");
         $temp = "";
 
         if ($nilai < 12) {
@@ -1563,7 +1578,7 @@ class Finance extends BaseController
     // =================================== UMB ===========================================
 
 
-     public function umt()
+    public function umt()
     {
         $data['title']="Uang Muka Titipan";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
@@ -1614,7 +1629,7 @@ class Finance extends BaseController
 
         $kmenu = 'I.K.B.1';
         $role = trim($this->session->get('roleid'));
-        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
+        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
         //auto insert unit
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
@@ -1702,7 +1717,7 @@ class Finance extends BaseController
             $docno  = trim($lm->docno);
             $docnoHex = bin2hex($docno);
 
-            
+
             $updateBtn = '';
             $detailBtn = '';
             $printBtn  = '';
@@ -1723,8 +1738,8 @@ class Finance extends BaseController
             }
 
             if($canView){
-                $detailBtn = 
-                '<a class="dropdown-item" 
+                $detailBtn =
+                    '<a class="dropdown-item" 
                     style="background-color:#3badf6;" 
                     href="' . base_url('ka/finance/detailUMT') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'View Detail Uang Muka Titipan : ' . $docno . '\')">
@@ -1858,7 +1873,7 @@ class Finance extends BaseController
             $row[] = $lm->keterangan;
 
             $row[] = $lm->nmbranch;
-            
+
 
             $data[] = $row;
         }
@@ -1904,9 +1919,9 @@ class Finance extends BaseController
                 echo json_encode($result);
             }
         } else {
-                // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                // echo json_encode($result);
-                return redirect()->to(base_url('ka/finance/umt'));
+            // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+            // echo json_encode($result);
+            return redirect()->to(base_url('ka/finance/umt'));
         }
 
     }
@@ -1968,7 +1983,7 @@ class Finance extends BaseController
     }
 
 
-   public function getBranchInfoUMT()
+    public function getBranchInfoUMT()
     {
         $idbranch = trim($this->request->getGet('idbranch'));
 
@@ -2097,7 +2112,7 @@ class Finance extends BaseController
         $docno  = strtoupper(trim($this->request->getPost('docno')));
         $docnopo = strtoupper(trim($this->request->getPost('docnopo')));
         $idurut = $this->request->getPost('idurut'); // HAPUS strtoupper, biarkan apa adanya
-        
+
         // Tambahkan mode untuk membedakan add/edit dengan lebih jelas
         // $mode = $this->request->getPost('mode'); // 'add' atau 'edit'
 
@@ -2123,11 +2138,11 @@ class Finance extends BaseController
 
         $reload = false;
         // Untuk pengambilan data dari POST
-        
+
         if ($exists == 0) {
             $isinclusive = strtoupper(trim(
-                $this->request->getPost('isinclusive') 
-                ?? $dataprocess->isinclusive 
+                $this->request->getPost('isinclusive')
+                ?? $dataprocess->isinclusive
                 ?? 'NO'
             ));
 
@@ -2140,7 +2155,7 @@ class Finance extends BaseController
                 // 'senddate'   => date('Y-m-d', strtotime(trim($this->request->getPost('senddate')))),
                 'jthtempo'     => $this->request->getPost('jthtempo'),
                 'isinclusive'     => $isinclusive,
-                
+
                 'kdsupplier'    => strtoupper($this->request->getPost('kdsupplier')),
                 'alamatsupplier'    => strtoupper($this->request->getPost('alamatsupplier')),
                 // 'alamatkirim'    => strtoupper($this->request->getPost('alamatkirim')),
@@ -2204,10 +2219,10 @@ class Finance extends BaseController
 
 
 
-            
-            
+
+
             $message = 'Data berhasil diupdate';
-            
+
         } else {
             // =====================================================
             // MODE ADD - INSERT DATA DARI PP
@@ -2231,7 +2246,7 @@ class Finance extends BaseController
             ", [$docnopo])->getResult();
 
             if (empty($poDetails)) {
-                $db->transRollback();   
+                $db->transRollback();
                 return $this->response->setJSON([
                     'success' => false,
                     'message' => 'Data PO tidak ditemukan'
@@ -2277,27 +2292,27 @@ class Finance extends BaseController
                     $insertCount++;
                 }
             }
-            
-            $message = $insertCount > 0 
-                        ? "$insertCount item berhasil ditambahkan"
-                        : "Semua item sudah ada sebelumnya";
+
+            $message = $insertCount > 0
+                ? "$insertCount item berhasil ditambahkan"
+                : "Semua item sudah ada sebelumnya";
         }
 
         $umtHeader = $builderHeader->select('idtax')->where('docno', $docno)->get()->getRowArray();
         $idtax = $umtHeader['idtax'] ?? '';
-        
+
         // Hitung total DPP (sum nilai dari po_dtl)
         $builderTotalDpp = $db->table('sc_tmp.umt_dtl');
         $totalDpp = $builderTotalDpp->select('COALESCE(SUM(nilai), 0) as total_dpp')
             ->where('docno', $docno)
             ->get()
             ->getRowArray();
-        
+
         $dpp = $totalDpp['total_dpp'] ?? 0;
-        
+
         // Hitung jumlah pajak berdasarkan idtax
         $jumlahPajak = 0;
-        
+
         if (!empty($idtax) && trim($idtax) !== 'NON'  && $dpp > 0) {
             // Ambil detail tax dari sc_mst.tax_dtl
             $builderTaxDtl = $db->table('sc_mst.tax_dtl');
@@ -2305,16 +2320,16 @@ class Finance extends BaseController
                 ->where('idtax', $idtax)
                 ->get()
                 ->getResultArray();
-            
+
             foreach ($taxDetails as $tax) {
                 $persentase = $tax['percentation'] ?? 0;
                 $jumlahPajak += $dpp * ($persentase / 100);
             }
         }
-        
+
         // Hitung total (DPP + Jumlah Pajak)
         $total = $dpp + $jumlahPajak;
-        
+
         // Update header UMT
         $builderHeader->where('docno', $docno)->update([
             'dpp' => number_format($dpp, 2, '.', ''),
@@ -2425,7 +2440,7 @@ class Finance extends BaseController
     function finalEntryUMT() {
         $nama = trim($this->session->get('nama'));
         $docno = trim($this->request->getPost('docno'));
-        
+
         // Hapus data error sebelumnya
         $builder_trxerror = $this->db->table('sc_mst.trxerror');
         $builder_trxerror->where('userid', $nama);
@@ -2442,7 +2457,7 @@ class Finance extends BaseController
             $builder_trxerror->insert($infotrxerror);
             return redirect()->to(base_url('/ka/finance/addUMT'));
         }
-        
+
         // Ambil semua data dari POST
         $cabang = trim($this->request->getPost('cabang'));
         $docdate = trim($this->request->getPost('docdate'));
@@ -2456,25 +2471,25 @@ class Finance extends BaseController
         $currcode = strtoupper($this->request->getPost('currcode'));
         $idtax = strtoupper($this->request->getPost('idtax'));
         $isinclusive = $this->request->getPost('isinclusive') ? 'YES' : 'NO';
-        
+
         // Bersihkan format angka
         $kurs_clean = $this->cleanNumber($this->request->getPost('kurs'));
         $dpp_clean = $this->cleanNumber($this->request->getPost('dpp'));
         $jumlahpajak_clean = $this->cleanNumber($this->request->getPost('jumlahpajak'));
         $total_clean = $this->cleanNumber($this->request->getPost('total'));
-        
+
         // Convert date
         $docdateph = !empty($docdate) ? date('Y-m-d', strtotime(str_replace('-', '/', $docdate))) : null;
-        
+
         // **CEK APAKAH DATA SUDAH ADA**
         $existingData = $this->db->table('sc_tmp.umt')
             ->where('inputby', $nama)
             ->where('docno', $docno)
             ->get()
             ->getRowArray();
-        
+
         $builder = $this->db->table('sc_tmp.umt');
-        
+
         if ($existingData) {
             // **UPDATE DATA YANG SUDAH ADA**
             $updateHeader = [
@@ -2494,10 +2509,10 @@ class Finance extends BaseController
                 'idtax' => strtoupper($idtax),
                 'keterangan' => strtoupper($keterangan) // Hanya 1 kali
             ];
-            
+
             $builder->where('inputby', $nama)
-                    ->where('docno', $docno)
-                    ->update($updateHeader);
+                ->where('docno', $docno)
+                ->update($updateHeader);
         } else {
             // **INSERT DATA BARU**
             $insertHeader = [
@@ -2522,16 +2537,16 @@ class Finance extends BaseController
                 'inputdate' => date('Y-m-d H:i:s'),
                 'status' => 'E' // Status awal E
             ];
-            
+
             $builder->insert($insertHeader);
         }
-        
+
         // **UPDATE STATUS MENJADI F** (untuk trigger)
         $updateStatus = $builder
             ->where('inputby', $nama)
             ->where('docno', $docno)
             ->update(['status' => 'F']);
-        
+
         if ($updateStatus) {
             // Berhasil update status
             $paramerror=" and userid='$nama' and modul='I.K.B.1'";
@@ -2572,7 +2587,7 @@ class Finance extends BaseController
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.umt');
 
-       $builder = $builder
+        $builder = $builder
             ->where('docno', $docno)
             ->update([
                 'status'=> 'P',
@@ -2580,9 +2595,9 @@ class Finance extends BaseController
                 'printdate' => date('Y-m-d H:i:s')
             ]);
 
-        
+
         $enc_docno = $this->fiky_encryption->sealed($docno);
-        
+
         //$enc_docdate= $this->fiky_encryption->sealed($docdate);
         // $enc_idlocation = $this->fiky_encryption->sealed($idlocation);
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
@@ -2594,7 +2609,7 @@ class Finance extends BaseController
         $datajson =  base_url("ka/finance/api_umt/?enc_docno=$enc_docno") ;
 
         // if($formheader==="HEADER"){
-            $datamrt =  base_url("assets/mrt/report_umt.mrt") ;
+        $datamrt =  base_url("assets/mrt/report_umt.mrt") ;
         // } else {
         //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
         // }
@@ -2613,9 +2628,9 @@ class Finance extends BaseController
         // $idgroup=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idgroup')));
         //$docno=trim($this->request->getGet('enc_docno'));
 
-       // $ddate = explode(' - ',$docdate);
-       // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
-       // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
+        // $ddate = explode(' - ',$docdate);
+        // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
+        // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
 
         if (empty($docno) or $docno==='') {
             $param_brg = "";
@@ -2634,22 +2649,22 @@ class Finance extends BaseController
         $datamst = $this->m_finance->q_umt_master($param);
         $datadtl = $this->m_finance->q_umt_dtl($param);
         $tampungdtl = $datamst->getResult();
-        $detail = $tampungdtl[0] ?? null;        
+        $detail = $tampungdtl[0] ?? null;
         if ($detail) {
 
             $tujuan = isset($detail->tujuan) ? trim($detail->tujuan) : '';
-        
+
             // Tambahkan properti baru isPindah
             $detail->isPindah = false; // Default value
             if ($tujuan === 'pindah') {
                 $detail->isPindah = true;
             }
 
-             // Tambahkan properti baru isPembuangan
-             $detail->isPembuangan = false; // Default value
-             if ($tujuan === 'pembuangan') {
-                 $detail->isPembuangan = true;
-             }
+            // Tambahkan properti baru isPembuangan
+            $detail->isPembuangan = false; // Default value
+            if ($tujuan === 'pembuangan') {
+                $detail->isPembuangan = true;
+            }
 
             // Tambahkan properti baru isPinjam
             $detail->isPinjam = false; // Default value
@@ -2658,35 +2673,35 @@ class Finance extends BaseController
             }
 
             $isreturn = isset($detail->isreturn) ? trim($detail->isreturn) : '';
-             // Tambahkan properti baru iskembali
-             $detail->iskembali = false; // Default value
-             if ($isreturn === 'kembali') {
-                 $detail->iskembali = true;
-             }
+            // Tambahkan properti baru iskembali
+            $detail->iskembali = false; // Default value
+            if ($isreturn === 'kembali') {
+                $detail->iskembali = true;
+            }
 
-             $detail->istidakkembali = false; // Default value
-             if ($isreturn === 'tidak_kembali') {
-                 $detail->istidakkembali = true;
-             }
+            $detail->istidakkembali = false; // Default value
+            if ($isreturn === 'tidak_kembali') {
+                $detail->istidakkembali = true;
+            }
 
-             $jenisbarang = isset($detail->jenisbarang) ? trim($detail->jenisbarang) : '';
-              // Tambahkan properti baru isAset
-              $detail->isAset = false; // Default value
-              if ($jenisbarang === 'aset') {
-                  $detail->isAset = true;
-              }
+            $jenisbarang = isset($detail->jenisbarang) ? trim($detail->jenisbarang) : '';
+            // Tambahkan properti baru isAset
+            $detail->isAset = false; // Default value
+            if ($jenisbarang === 'aset') {
+                $detail->isAset = true;
+            }
 
-              // Tambahkan properti baru isPersediaan
-              $detail->isPersediaan = false; // Default value
-              if ($jenisbarang === 'persediaan') {
-                  $detail->isPersediaan = true;
-              }
+            // Tambahkan properti baru isPersediaan
+            $detail->isPersediaan = false; // Default value
+            if ($jenisbarang === 'persediaan') {
+                $detail->isPersediaan = true;
+            }
 
-              // Tambahkan properti baru isLainlain
-              $detail->isLainlain = false; // Default value
-              if ($jenisbarang === 'lainlain') {
-                  $detail->isLainlain = true;
-              }
+            // Tambahkan properti baru isLainlain
+            $detail->isLainlain = false; // Default value
+            if ($jenisbarang === 'lainlain') {
+                $detail->isLainlain = true;
+            }
         }
 
         header("Content-Type: text/json");
@@ -2702,7 +2717,7 @@ class Finance extends BaseController
                     'userid' => $nama,
                     'param' => $param,
 
-                    ]
+                ]
                 ),
                 'branch' => $databranch->getResult(),
                 'master' => $datamst->getResult(),
@@ -2764,7 +2779,7 @@ class Finance extends BaseController
 
         $kmenu = 'I.K.B.2';
         $role = trim($this->session->get('roleid'));
-        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
+        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
         //auto insert unit
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
@@ -2852,7 +2867,7 @@ class Finance extends BaseController
             $docno  = trim($lm->docno);
             $docnoHex = bin2hex($docno);
 
-            
+
             $updateBtn = '';
             $detailBtn = '';
             $printBtn  = '';
@@ -2873,8 +2888,8 @@ class Finance extends BaseController
             }
 
             if($canView){
-                $detailBtn = 
-                '<a class="dropdown-item" 
+                $detailBtn =
+                    '<a class="dropdown-item" 
                     style="background-color:#3badf6;" 
                     href="' . base_url('ka/finance/detailPenerimaanKB') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'View Detail Penerimaan Kas/Bank : ' . $docno . '\')">
@@ -3010,7 +3025,7 @@ class Finance extends BaseController
 
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
-            
+
 
             $data[] = $row;
         }
@@ -3024,7 +3039,7 @@ class Finance extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-    
+
 
     function clearEntryPenerimaanKB()
     {
@@ -3058,9 +3073,9 @@ class Finance extends BaseController
                 echo json_encode($result);
             }
         } else {
-                // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                // echo json_encode($result);
-                return redirect()->to(base_url('ka/finance/penerimaankb'));
+            // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+            // echo json_encode($result);
+            return redirect()->to(base_url('ka/finance/penerimaankb'));
         }
 
     }
@@ -3122,7 +3137,7 @@ class Finance extends BaseController
     }
 
 
-   public function getBranchInfoPenerimaanKB()
+    public function getBranchInfoPenerimaanKB()
     {
         $idbranch = trim($this->request->getGet('idbranch'));
 
@@ -3513,7 +3528,7 @@ class Finance extends BaseController
 
         // balance = debit - kredit
         $total = $totalDebit - $totalKredit;
-        
+
 
         $db->table('sc_tmp.penerimaankb')
             ->where('docno', $docno)
@@ -3548,7 +3563,7 @@ class Finance extends BaseController
         $docno  = strtoupper(trim($this->request->getPost('docno')));
         // $docnopp = strtoupper(trim($this->request->getPost('docnopp')));
         $idurut = $this->request->getPost('idurut'); // HAPUS strtoupper, biarkan apa adanya
-        
+
         // Tambahkan mode untuk membedakan add/edit dengan lebih jelas
         // $mode = $this->request->getPost('mode'); // 'add' atau 'edit'
 
@@ -3574,7 +3589,7 @@ class Finance extends BaseController
 
         $reload = false;
         // Untuk pengambilan data dari POST
-        
+
         if ($exists == 0) {
 
             $builderHeader->insert([
@@ -3584,7 +3599,10 @@ class Finance extends BaseController
                 // 'senddate'   => date('Y-m-d', strtotime(trim($this->request->getPost('senddate')))),
                 // 'jthtempo'     => $this->request->getPost('jthtempo'),
                 // 'isinclusive'     => $isinclusive,
-                'perkkas'    => strtoupper($this->request->getPost('perkkas')),
+                'dpp'    => strtoupper($this->request->getPost('dpp')),
+                'jumlahpajak'    => strtoupper($this->request->getPost('ppn')),
+                'total'    => strtoupper($this->request->getPost('total')),
+                'prkkas'    => strtoupper($this->request->getPost('prkkas')),
                 'kdcustomer'    => strtoupper($this->request->getPost('kdcustomer')),
                 'alamatcustomer'    => strtoupper($this->request->getPost('alamatcustomer')),
                 // 'alamatkirim'    => strtoupper($this->request->getPost('alamatkirim')),
@@ -3615,8 +3633,8 @@ class Finance extends BaseController
 
         // CEK MODE: ADD atau EDIT
         if (!empty($idurut)) {
-            $uniqueid = $this->request->getPost('uniqueid'); // HAPUS strtoupper, biarkan 
-                // 🔹 UPDATE
+            $uniqueid = $this->request->getPost('uniqueid'); // HAPUS strtoupper, biarkan
+            // 🔹 UPDATE
             $builderDetail->where('idurut', $idurut)->update([
                 'idcoa'    => $idcoa,
                 'nmcoa'    => $nmcoa,
@@ -3674,7 +3692,7 @@ class Finance extends BaseController
                         'updatedate' => date('Y-m-d H:i:s')
                     ]);
             }
-            
+
             // // Update header PO
             // $builderHeader->where('docno', $docno)->update([
             //     // 'dpp' => number_format($dpp, 2, '.', ''),
@@ -3683,15 +3701,15 @@ class Finance extends BaseController
             //     'updateby' => $nama,
             //     'updatedate' => date('Y-m-d H:i:s')
             // ]);
-            
+
             $message = 'Data berhasil diupdate';
-            
+
         } else {
             $inputdate = date('Y-m-d H:i:s');
-            $rawUnique = $nmcoa 
-            . '|' . $docno 
-            . '|' . $nama
-            . '|' . $inputdate;
+            $rawUnique = $nmcoa
+                . '|' . $docno
+                . '|' . $nama
+                . '|' . $inputdate;
 
             $uniqueid  = hash('sha256', $rawUnique);
 
@@ -4008,7 +4026,7 @@ class Finance extends BaseController
                 </button>
                 &nbsp
                 '.(
-                    empty(trim($lm->nobukti))
+                empty(trim($lm->nobukti))
                     ? '<button type="button"
                             class="btn btn-danger btn-sm btn-delete"
                             data-id="'.$lm->idurut.'">
@@ -4058,7 +4076,7 @@ class Finance extends BaseController
                 'checked' => $checked
             ];
 
-            
+
 
             $row[] = $lm->nobukti;
             //item
@@ -4071,8 +4089,8 @@ class Finance extends BaseController
                 : '<span class="badge bg-secondary text-dark">BELUM DIPILIH</span>';
             $row[] = $lm->cabang;
             $row[] = '<div class="ratakanan">'. number_format($lm->nilai, 2, '.', ',') . '</div>';
-            $data[] = $row;   
-            
+            $data[] = $row;
+
         }
 
         $output = array(
@@ -4158,8 +4176,8 @@ class Finance extends BaseController
                 // $kurs_clean = str_replace('.', '.', $kurs_clean);
                 // $kurs_clean = floatval($kurs_clean);
             }
-            
-             // Convert expdate ke format YYYY-MM-DD
+
+            // Convert expdate ke format YYYY-MM-DD
             // $docdateph = null;
             // if (!empty($docdate)) {
             //     $docdateph = date('Y-m-d', strtotime(str_replace('-', '/', $docdate)));
@@ -4213,7 +4231,7 @@ class Finance extends BaseController
         }
 
     }
-    
+
 
 
     function show_penerimaankb(){
@@ -4230,17 +4248,17 @@ class Finance extends BaseController
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.penerimaankb');
 
-    //    $builder = $builder
-    //         ->where('docno', $docno)
-    //         ->update([
-    //             'status'=> 'P',
-    //             'printby' => $nama,
-    //             'printdate' => date('Y-m-d H:i:s')
-    //         ]);
+        //    $builder = $builder
+        //         ->where('docno', $docno)
+        //         ->update([
+        //             'status'=> 'P',
+        //             'printby' => $nama,
+        //             'printdate' => date('Y-m-d H:i:s')
+        //         ]);
 
-        
+
         $enc_docno = $this->fiky_encryption->sealed($docno);
-        
+
         //$enc_docdate= $this->fiky_encryption->sealed($docdate);
         // $enc_idlocation = $this->fiky_encryption->sealed($idlocation);
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
@@ -4252,7 +4270,7 @@ class Finance extends BaseController
         $datajson =  base_url("ka/finance/api_penerimaankb/?enc_docno=$enc_docno") ;
 
         // if($formheader==="HEADER"){
-            $datamrt =  base_url("assets/mrt/report_penerimaankb.mrt") ;
+        $datamrt =  base_url("assets/mrt/report_penerimaankb.mrt") ;
         // } else {
         //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
         // }
@@ -4271,9 +4289,9 @@ class Finance extends BaseController
         // $idgroup=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idgroup')));
         //$docno=trim($this->request->getGet('enc_docno'));
 
-       // $ddate = explode(' - ',$docdate);
-       // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
-       // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
+        // $ddate = explode(' - ',$docdate);
+        // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
+        // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
 
         if (empty($docno) or $docno==='') {
             $param_brg = "";
@@ -4292,7 +4310,7 @@ class Finance extends BaseController
         $datamst = $this->m_finance->q_penerimaankb_master($param);
         $datadtl = $this->m_finance->q_penerimaankb_dtl($param);
         $tampungdtl = $datamst->getResult();
-        $detail = $tampungdtl[0] ?? null;        
+        $detail = $tampungdtl[0] ?? null;
         if ($detail) {
 
 
@@ -4346,9 +4364,9 @@ class Finance extends BaseController
 
             $detail->perkkasname = $cleanedPrkkas;
 
-            
+
             $detail->namauser = $nama;
-            
+
         }
 
         $detailRows = $datadtl->getResultArray();
@@ -4403,7 +4421,7 @@ class Finance extends BaseController
                     'userid' => $nama,
                     'param' => $param,
 
-                    ]
+                ]
                 ),
                 'branch' => $databranch->getResult(),
                 'master' => $datamst->getResult(),
@@ -4414,7 +4432,7 @@ class Finance extends BaseController
 
 
 
-    
+
     // ============== PENGELUARAN KAS BANK ====================================
 
     public function pengeluarankb()
@@ -4460,7 +4478,7 @@ class Finance extends BaseController
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
-            $urlclear = base_url('ka/finance/clearEntryPengeluaranKB');
+            $urlclear = base_url('ka/finance/clearfinalPengeluaranKB');
             $urlnext = base_url('ka/finance/addPengeluaranKB');
             $body = " Entry not finished found....!!!";
             $data['showUnfinish'] = $this->m_trxerror->unfinish($nama, $urlclear, $urlnext, $title, $body);
@@ -4468,7 +4486,7 @@ class Finance extends BaseController
 
         $kmenu = 'I.K.B.3';
         $role = trim($this->session->get('roleid'));
-        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
+        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
         //auto insert unit
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
@@ -4556,7 +4574,7 @@ class Finance extends BaseController
             $docno  = trim($lm->docno);
             $docnoHex = bin2hex($docno);
 
-            
+
             $updateBtn = '';
             $detailBtn = '';
             $printBtn  = '';
@@ -4577,8 +4595,8 @@ class Finance extends BaseController
             }
 
             if($canView){
-                $detailBtn = 
-                '<a class="dropdown-item" 
+                $detailBtn =
+                    '<a class="dropdown-item" 
                     style="background-color:#3badf6;" 
                     href="' . base_url('ka/finance/detailPengeluaranKB') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'View Detail Pengeluaran Kas/Bank : ' . $docno . '\')">
@@ -4681,7 +4699,7 @@ class Finance extends BaseController
                     break;
             }
 
-            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
+
 
             $row[] = $lm->kdsupplier;
             $row[] = $lm->nmsuppliernew;
@@ -4714,7 +4732,7 @@ class Finance extends BaseController
 
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
-            
+            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
 
             $data[] = $row;
         }
@@ -4728,7 +4746,7 @@ class Finance extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-    
+
 
     function clearEntryPengeluaranKB()
     {
@@ -4762,9 +4780,9 @@ class Finance extends BaseController
                 echo json_encode($result);
             }
         } else {
-                // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                // echo json_encode($result);
-                return redirect()->to(base_url('ka/finance/pengeluarankb'));
+            // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+            // echo json_encode($result);
+            return redirect()->to(base_url('ka/finance/pengeluarankb'));
         }
 
     }
@@ -4826,7 +4844,7 @@ class Finance extends BaseController
     }
 
 
-   public function getBranchInfoPengeluaranKB()
+    public function getBranchInfoPengeluaranKB()
     {
         $idbranch = trim($this->request->getGet('idbranch'));
 
@@ -4901,50 +4919,174 @@ class Finance extends BaseController
 
     public function initPengeluaranKBHeader()
     {
-        $nama = trim($this->session->get('nama'));
+        $nama = trim((string) $this->session->get('nama'));
 
-        $docno      = strtoupper($this->request->getPost('docno'));
-        $docdate    = $this->request->getPost('docdate');
-        $cabang     = $this->request->getPost('cabang');
-        $pemohon    = strtoupper($this->request->getPost('pemohon'));
-        // $estpakai   = $this->request->getPost('estpakai');
-        // $keterangan = strtoupper($this->request->getPost('keterangan'));
-
-        if (!$docno || !$docdate || !$cabang) {
+        if ($nama === '') {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Header belum lengkap'
+                'message' => 'User login tidak ditemukan.'
             ]);
         }
 
-        $builder = $this->db->table('sc_tmp.pengeluarankb');
-        $exists = $builder->where('docno', $docno)->countAllResults();
+        // =========================================================
+        // AMBIL DATA HEADER DARI POST
+        // =========================================================
+        $docno         = strtoupper(trim((string) $this->request->getPost('docno')));
+        $docdate       = trim((string) $this->request->getPost('docdate'));
+        $cabang        = trim((string) $this->request->getPost('cabang'));
+        $pemohon       = strtoupper(trim((string) $this->request->getPost('pemohon')));
+        $kdsupplier    = trim((string) $this->request->getPost('kdsupplier'));
+        $nmsupplier    = trim((string) $this->request->getPost('nmsupplier'));
+        $alamatsupplier = trim((string) $this->request->getPost('alamatsupplier'));
+        $prkkas        = trim((string) $this->request->getPost('prkkas'));
+        $np            = trim((string) $this->request->getPost('np'));
+        $jthtempo      = $this->request->getPost('jthtempo');
+        $isinclusive   = trim((string) $this->request->getPost('isinclusive'));
+        $currcode      = strtoupper(trim((string) $this->request->getPost('currcode')));
+        $kurs          = $this->request->getPost('kurs');
+        $dpp           = $this->request->getPost('dpp');
+        $jumlahpajak   = $this->request->getPost('jumlahpajak');
+        $total         = $this->request->getPost('total');
+        $keterangan    = trim((string) $this->request->getPost('keterangan'));
+        $balance       = $this->request->getPost('balance');
+        $docnotmp      = trim((string) $this->request->getPost('docnotmp'));
 
-        // HEADER SUDAH ADA → TIDAK PERLU RELOAD
-        if ($exists > 0) {
+        // =========================================================
+        // VALIDASI HEADER MINIMAL
+        // =========================================================
+        if ($docno === '' || $docdate === '' || $cabang === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Nomor dokumen, tanggal, dan cabang wajib diisi.'
+            ]);
+        }
+
+        // =========================================================
+        // KONVERSI ANGKA
+        // =========================================================
+        $toNumber = static function ($value, $default = 0) {
+            if ($value === null || trim((string) $value) === '') {
+                return $default;
+            }
+
+            return (float) str_replace(',', '', (string) $value);
+        };
+
+        $jthtempo    = $toNumber($jthtempo);
+        $kurs        = $toNumber($kurs, 1);
+        $dpp         = $toNumber($dpp);
+        $jumlahpajak = $toNumber($jumlahpajak);
+        $total       = $toNumber($total);
+        $balance     = $toNumber($balance);
+
+        // =========================================================
+// CEK HEADER TEMP MILIK USER
+// =========================================================
+        $builder = $this->db->table('sc_tmp.pengeluarankb');
+
+        $existing = $builder
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->where('status', 'E')
+            ->get()
+            ->getRowArray();
+
+// =========================================================
+// DATA HEADER
+// =========================================================
+        $data = [
+            'docdate'        => $docdate,
+            'cabang'         => $cabang,
+            'pemohon'        => $pemohon,
+            'kdsupplier'     => $kdsupplier,
+            'nmsupplier'     => $nmsupplier,
+            'alamatsupplier' => $alamatsupplier,
+            'prkkas'         => $prkkas,
+            'np'             => $np,
+            'jthtempo'       => $jthtempo,
+            'isinclusive'    => $isinclusive,
+            'currcode'       => $currcode !== '' ? $currcode : 'IDR',
+            'kurs'           => $kurs,
+            'dpp'            => $dpp,
+            'jumlahpajak'    => $jumlahpajak,
+            'total'          => $total,
+            'keterangan'     => $keterangan,
+            'balance'        => $balance,
+            'inputdate'      => date('Y-m-d H:i:s'),
+            'docnotmp'       => $docnotmp !== '' ? $docnotmp : null
+        ];
+
+        try {
+            if ($existing) {
+                // =====================================================
+                // UPDATE HEADER TEMPORARY YANG SUDAH ADA
+                // =====================================================
+                $idurut = $existing['idurut'];
+
+                $updated = $this->db
+                    ->table('sc_tmp.pengeluarankb')
+                    ->where('idurut', $idurut)
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->where('status', 'E')
+                    ->update($data);
+
+                if (!$updated && $this->db->error()['code'] != 0) {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Gagal memperbarui header temporary.'
+                    ]);
+                }
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'reload'  => false,
+                    'message' => 'Header temporary berhasil diperbarui.',
+                    'data'    => [
+                        'idurut' => $idurut,
+                        'docno'  => $docno
+                    ]
+                ]);
+            }
+
+            // =========================================================
+            // INSERT HEADER TEMPORARY BARU
+            // =========================================================
+            $data['docno']     = $docno;
+            $data['status']    = 'E';
+            $data['inputby']   = $nama;
+
+            $inserted = $this->db
+                ->table('sc_tmp.pengeluarankb')
+                ->insert($data);
+
+            if (!$inserted) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal menyimpan header temporary.'
+                ]);
+            }
+
+            $idurut = $this->db->insertID();
+
             return $this->response->setJSON([
                 'success' => true,
-                'reload'  => false
+                'reload'  => true,
+                'message' => 'Header temporary berhasil disimpan.',
+                'data'    => [
+                    'idurut' => $idurut,
+                    'docno'  => $docno
+                ]
+            ]);
+
+        } catch (\Throwable $e) {
+            log_message('error', 'initPengeluaranKBHeader: ' . $e->getMessage());
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menyimpan header.'
             ]);
         }
-
-        // HEADER BARU → INSERT
-        $builder->insert([
-            'docno'      => $docno,
-            'docdate'    => $docdate,
-            'cabang'     => $cabang,
-            'pemohon'    => $pemohon,
-            // 'estpakai'   => $estpakai,
-            'status'     => 'E',
-            // 'keterangan' => $keterangan,
-            'inputby'    => $nama,
-            'inputdate'  => date('Y-m-d H:i:s')
-        ]);
-
-        return $this->response->setJSON([
-            'success' => true,
-            'reload'  => true   // ⬅ PENTING
-        ]);
     }
 
     public function getPembelianSup()
@@ -5232,199 +5374,166 @@ ORDER BY p.docno;
 
     public function savePengeluaranKBDetail()
     {
-        $nama   = trim($this->session->get('nama'));
-        $docno  = strtoupper(trim($this->request->getPost('docno')));
-        // $docnopp = strtoupper(trim($this->request->getPost('docnopp')));
-        $idurut = $this->request->getPost('idurut'); // HAPUS strtoupper, biarkan apa adanya
-        
-        // Tambahkan mode untuk membedakan add/edit dengan lebih jelas
-        // $mode = $this->request->getPost('mode'); // 'add' atau 'edit'
+        $db   = $this->db;
+        $post = $this->request->getPost();
+        $nama = trim((string) $this->session->get('nama'));
+        $now  = date('Y-m-d H:i:s');
 
-        if (!$docno) {
+        $docno = strtoupper(trim((string) ($post['docno'] ?? '')));
+
+        if ($docno === '') {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Docno tidak boleh kosong'
+                'message' => 'No. Bukti tidak boleh kosong'
             ]);
         }
 
-        $db = $this->db;
-        $db->transStart();
+        $toNumber = static function ($value) {
+            $value = str_replace(',', '', trim((string) ($value ?? '0')));
 
-        // =====================================================
-        // CEK / INSERT HEADER
-        // =====================================================
-        $builderHeader = $db->table('sc_tmp.pengeluarankb');
+            return $value === ''
+                ? 0
+                : (is_numeric($value) ? (float) $value : null);
+        };
 
-        $exists = $builderHeader
-            ->where('docno', $docno)
-            ->where('inputby', $nama)
-            ->countAllResults();
+        $nilai = $toNumber($post['nilai'] ?? 0);
 
-        $reload = false;
-        // Untuk pengambilan data dari POST
-        
-        if ($exists == 0) {
-
-            $builderHeader->insert([
-                'docno'     => $docno,
-                'cabang'     => $this->request->getPost('cabang'),
-                'docdate'   => date('Y-m-d', strtotime(trim($this->request->getPost('docdate')))),
-                // 'senddate'   => date('Y-m-d', strtotime(trim($this->request->getPost('senddate')))),
-                // 'jthtempo'     => $this->request->getPost('jthtempo'),
-                // 'isinclusive'     => $isinclusive,
-                'perkkas'    => strtoupper($this->request->getPost('perkkas')),
-                'kdsupplier'    => strtoupper($this->request->getPost('kdsupplier')),
-                'alamatsupplier'    => strtoupper($this->request->getPost('alamatsupplier')),
-                // 'alamatkirim'    => strtoupper($this->request->getPost('alamatkirim')),
-                // 'idtax'    => strtoupper($this->request->getPost('idtax')),
-                'currcode'    => strtoupper($this->request->getPost('currcode')),
-                'kurs'    => strtoupper($this->request->getPost('kurs')),
-                'keterangan'    => strtoupper($this->request->getPost('keterangan')),
-                'status'    => 'E',
-                'inputby'   => $nama,
-                'inputdate' => date('Y-m-d H:i:s')
+        if ($nilai === null || $nilai <= 0) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Nilai detail harus lebih besar dari 0'
             ]);
-
-            $reload = true;
         }
 
-        $builderDetail = $db->table('sc_tmp.pengeluarankb_dtl');
-        $insertCount = 0;
-        $message = '';
+        // =====================================================
+        // VALIDASI DETAIL
+        // =====================================================
+        $idurut = trim((string) ($post['idurut_detail'] ?? ''));
+        $idcoa  = trim((string) ($post['perkiraan'] ?? ''));
+        $nmcoa  = strtoupper(trim((string) ($post['nmperkiraan'] ?? '')));
+        $dk     = strtoupper(trim((string) ($post['dk'] ?? '')));
 
+        $cabangdtl = trim((string) ($post['costcenter'] ?? ''));
+        $remarks   = strtoupper(trim((string) ($post['keterangan_dtl'] ?? '')));
 
-
-        $idcoa    = $this->request->getPost('idcoa');
-        $nmcoa    = strtoupper($this->request->getPost('nmcoa'));
-        $nilai       = $this->request->getPost('nilai') ?: 0;
-        $remarks = strtoupper($this->request->getPost('remarks'));
-        $dk = strtoupper($this->request->getPost('dk'));
-        $cabangdtl = strtoupper($this->request->getPost('cabangdtl'));
-
-        // CEK MODE: ADD atau EDIT
-        if (!empty($idurut)) {
-            $uniqueid = $this->request->getPost('uniqueid'); // HAPUS strtoupper, biarkan 
-                // 🔹 UPDATE
-            $builderDetail->where('idurut', $idurut)->update([
-                'idcoa'    => $idcoa,
-                'nmcoa'    => $nmcoa,
-                'dk'        => $dk,
-                'nilai'        => $nilai,
-                // 'status'        => 'F',
-                'cabang'        => $cabangdtl,
-                'remarks' => $remarks,
-                'updateby'     => $nama,
-                'updatedate'   => date('Y-m-d H:i:s')
+        if ($idcoa === '' || $nmcoa === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Perkiraan dan nama perkiraan tidak boleh kosong'
             ]);
-            
-            $getDetail = $db->table('sc_tmp.pengeluarankb_dtl')
-                ->select('status')
-                ->where('idurut', $idurut)
-                ->get()
-                ->getRowArray();
+        }
 
-            if (trim($getDetail['status'] ?? '') == 'F') {
+        if ($remarks === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Keterangan detail tidak boleh kosong'
+            ]);
+        }
 
-                $getBalance = $db->table('sc_tmp.pengeluarankb_dtl')
-                    ->select("
-                        COALESCE(SUM(CASE WHEN dk='DEBIT' THEN nilai ELSE 0 END),0) AS total_debit,
-                        COALESCE(SUM(CASE WHEN dk='KREDIT' THEN nilai ELSE 0 END),0) AS total_kredit
-                    ")
+        if (!in_array($dk, ['D', 'K'], true)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Jenis debit/kredit harus D atau K'
+            ]);
+        }
+
+        $docnoDetail = trim((string) ($post['docno_detail'] ?? ''));
+
+        if ($docnoDetail !== '' && strtoupper($docnoDetail) !== $docno) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'No. Bukti detail tidak sesuai'
+            ]);
+        }
+
+        $detailTable = $db->table('sc_tmp.pengeluarankb_dtl');
+
+        $detailData = [
+            'idcoa'      => $idcoa,
+            'nmcoa'      => $nmcoa,
+            'dk'         => $dk,
+            'nilai'      => $nilai,
+            'cabang'     => $cabangdtl,
+            'remarks'    => $remarks,
+            'updateby'   => $nama,
+            'updatedate' => $now
+        ];
+
+        try {
+            $db->transBegin();
+
+            if ($idurut !== '') {
+                // UPDATE DETAIL
+                $updated = $detailTable
+                    ->where('idurut', $idurut)
                     ->where('docno', $docno)
-                    ->where("TRIM(status) = 'F'", null, false)
-                    ->get()
-                    ->getRowArray();
+                    ->where('inputby', $nama)
+                    ->update($detailData);
 
-                $totalDebit  = ($getBalance['total_debit'] ?? 0);
-                $totalKredit = ($getBalance['total_kredit'] ?? 0);
+                if ($updated === false) {
+                    $error = $db->error();
 
-                $getHeader = $db->table('sc_tmp.pengeluarankb')
-                    ->select('dpp')
-                    ->where('docno', $docno)
-                    ->get()
-                    ->getRowArray();
-
-                if (!$getHeader) {
-                    throw new \Exception('Header tidak ditemukan');
+                    throw new \RuntimeException(
+                        'Gagal memperbarui detail: ' .
+                        ($error['message'] ?? 'Penyebab tidak diketahui')
+                    );
                 }
 
-                $dpp = $getHeader['dpp'];
+                $message = 'Detail berhasil diperbarui';
+            } else {
+                // INSERT DETAIL
+                $uniqueid = trim((string) ($post['uniqueid'] ?? ''));
 
-                $total = $totalDebit - $totalKredit;
-                $balance = $dpp + $totalKredit - $totalDebit;
+                if ($uniqueid === '') {
+                    $uniqueid = hash(
+                        'sha256',
+                        $docno . '|' . $idcoa . '|' . $nama . '|' . $now
+                    );
+                }
 
-                $db->table('sc_tmp.pengeluarankb')
-                    ->where('docno', $docno)
-                    ->update([
-                        'total'      => $total,
-                        'balance'    => $balance,
-                        'updateby'   => $nama,
-                        'updatedate' => date('Y-m-d H:i:s')
-                    ]);
+                $detailData['docno']     = $docno;
+                $detailData['inputby']   = $nama;
+                $detailData['inputdate'] = $now;
+                $detailData['uniqueid']  = $uniqueid;
+
+                if (!$detailTable->insert($detailData)) {
+                    $error = $db->error();
+
+                    throw new \RuntimeException(
+                        'Gagal menyimpan detail: ' .
+                        ($error['message'] ?? 'Penyebab tidak diketahui')
+                    );
+                }
+
+                $message = 'Detail berhasil ditambahkan';
             }
-            
-            $message = 'Data berhasil diupdate';
-            
-        } else {
-            $inputdate = date('Y-m-d H:i:s');
-            $rawUnique = $nmcoa 
-            . '|' . $docno 
-            . '|' . $nama
-            . '|' . $inputdate;
 
-            $uniqueid  = hash('sha256', $rawUnique);
+            if ($db->transStatus() === false) {
+                throw new \RuntimeException('Transaksi database gagal');
+            }
 
+            $db->transCommit();
 
-            // 🔹 INSERT
-            $builderDetail->insert([
-                'docno'       => $docno,
-                'idcoa'    => $idcoa,
-                'nmcoa'    => $nmcoa,
-                'dk'         => $dk,
-                'cabang'         => $cabangdtl,
-                'remarks' => $remarks,
-                'nilai' => $nilai,
-                // 'status'      => 'F',
-                'inputby'     => $nama,
-                'inputdate'   => date('Y-m-d H:i:s'),
-                'uniqueid'    => $uniqueid
+            return $this->response->setJSON([
+                'success' => true,
+                'reload'  => true,
+                'message' => $message
+            ]);
+
+        } catch (\Throwable $e) {
+            $db->transRollback();
+
+            log_message(
+                'error',
+                'savePengeluaranKBDetail: ' . $e->getMessage()
+            );
+
+            return $this->response->setJSON([
+                'success' => false,
+                'reload'  => false,
+                'message' => $e->getMessage()
             ]);
         }
-
-
-        // =====================================================
-        // HITUNG ULANG BALANCE HEADER
-        // =====================================================
-
-        // $getBalance = $db->table('sc_tmp.pengeluarankb_dtl')
-        //     ->select("
-        //         SUM(CASE WHEN dk='DEBIT' THEN nilai ELSE 0 END) AS total_debit,
-        //         SUM(CASE WHEN dk='KREDIT' THEN nilai ELSE 0 END) AS total_kredit
-        //     ")
-        //     ->where('docno', $docno)
-        //     ->where("TRIM(status) = 'F'", null, false)
-        //     ->get()
-        //     ->getRowArray();
-
-        // $totalDebit  = ($getBalance['total_debit'] ?? 0);
-        // $totalKredit = ($getBalance['total_kredit'] ?? 0);
-
-        // // balance = debit - kredit
-        // $balance = $totalDebit - $totalKredit;
-
-        // // update header
-        // $builderHeader->where('docno', $docno)->update([
-        //     'balance'    => $balance,
-        //     'updateby'   => $nama,
-        //     'updatedate' => date('Y-m-d H:i:s')
-        // ]);
-        $db->transComplete();
-
-        return $this->response->setJSON([
-            'success' => true,
-            'reload'  => $reload,
-            'message' => $message
-        ]);
     }
 
 
@@ -5521,58 +5630,138 @@ ORDER BY p.docno;
     }
 
 
-    function updatePengeluaranKB()
+
+    public function updatePengeluaranKB()
     {
         $nama = trim($this->session->get('nama'));
         $docno = hex2bin($this->request->getGet('id'));
-        $param = " and coalesce(docno,'')='$docno'";
-        $dtl = $this->m_finance->q_pengeluarankb_master($param)->getRowArray();
-        $status = trim($dtl['status']);
 
-        if ($status === 'F' || $status === 'P') {
-            // Update hanya status di tabel sc_trx.standart_usage_mst
-            $info = array(
-                'status' => 'E',
-            );
-            $builder = $this->db->table('sc_trx.po');
-            $builder->where('trim(docno)', $docno);
-            $builder->update($info);
-
-            // Redirect ke halaman addStdUsage
-            return redirect()->to(base_url('ka/finance/addPengeluaranKB'));
-        } else {
-            // Jika status bukan 'F', redirect ke halaman mrpgroup
+        if ($docno === false || trim($docno) === '') {
             return redirect()->to(base_url('ka/finance/pengeluarankb'));
         }
+
+        $docno = trim($docno);
+
+        $header = $this->db->table('sc_trx.pengeluarankb')
+            ->where('docno', $docno)
+            ->get()
+            ->getRowArray();
+
+        if (!$header) {
+            $header = $this->db->table('sc_tmp.pengeluarankb')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->get()
+                ->getRowArray();
+        }
+
+        if (!$header) {
+            return redirect()->to(base_url('ka/finance/pengeluarankb'));
+        }
+
+        $status = strtoupper(trim($header['status'] ?? ''));
+
+        // Periode berdasarkan tanggal login
+        $logindate = trim($this->session->get('logindate'));
+        $periode = date('ym', strtotime($logindate));
+
+        $dtlPeriode = $this->m_purchase
+            ->q_cek_periode($periode)
+            ->getRowArray();
+
+        if (
+            $dtlPeriode &&
+            strtoupper(trim($dtlPeriode['flagproses'] ?? '')) === 'TUTUP'
+        ) {
+            session()->setFlashdata(
+                'periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+
+            return redirect()->to(base_url('ka/finance/pengeluarankb'));
+        }
+
+        if ($status === 'F' || $status === 'P') {
+            $this->db->table('sc_trx.pengeluarankb')
+                ->where('docno', $docno)
+                ->update(['status' => 'E']);
+
+            return redirect()->to(
+                base_url('ka/finance/addPengeluaranKB')
+            );
+        }
+
+        if ($status === 'E') {
+            return redirect()->to(
+                base_url('ka/finance/addPengeluaranKB')
+            );
+        }
+
+        return redirect()->to(base_url('ka/finance/pengeluarankb'));
     }
 
-    function showing_pengeluarankbtrx(){
-        $nama=trim($this->session->get('nama'));
-        $docno = trim($this->request->getGet('docno')); // Ambil parameter docno dari Ajax
 
-        $param = " and docno='$docno'";
-        $data = $this->m_finance->q_pengeluarankb_master($param);
-        $output = array(
-            'status' => true,
-            'total_count' => $data->getNumRows(),
-            'items' => $data->getResult(),
-            'incomplete_getResults' => false,
-        );
-        echo $this->fiky_encryption->jDatatable($output);
-    }
+    public function showing_pengeluarankbtemp()
+    {
+        $nama = trim((string) $this->session->get('nama'));
 
-    function showing_pengeluarankbtemp(){
-        $docno = trim($this->request->getGet('docno')); // ambil dari GET
-        $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
-        $data = $this->m_finance->q_pengeluarankb_master_temp($param);
-        $output = array(
-            'status' => true,
-            'total_count' => $data->getNumRows(),
-            'items' => $data->getResult(),
-            'incomplete_getResults' => false,
-        );
-        echo $this->fiky_encryption->jDatatable($output);
+        if ($nama === '') {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'User login tidak ditemukan.',
+                'data'    => null
+            ]);
+        }
+
+        // =========================================================
+        // AMBIL HEADER TEMPORARY MILIK USER
+        // =========================================================
+        $header = $this->db->table('sc_tmp.pengeluarankb')
+            ->where('TRIM(inputby)', $nama)
+            ->where('TRIM(status)', 'E')
+            ->orderBy('idurut', 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRowArray();
+
+        // =========================================================
+        // BELUM ADA TEMPORARY = INPUT BARU
+        // =========================================================
+        if (!$header) {
+            return $this->response->setJSON([
+                'status'  => true,
+                'mode'    => 'INPUT',
+                'message' => 'Belum ada Pengeluaran Kas Bank temporary.',
+                'data'    => [
+                    'header' => null,
+                    'detail' => []
+                ]
+            ]);
+        }
+
+        $docno = trim($header['docno']);
+
+        // =========================================================
+        // AMBIL DETAIL BERDASARKAN DOCNO
+        // =========================================================
+        $detail = $this->db->table('sc_tmp.pengeluarankb_dtl')
+            ->where('docno', $docno)
+            ->where('TRIM(inputby)', $nama)
+            ->get()
+            ->getResultArray();
+
+        // =========================================================
+        // RESPONSE
+        // =========================================================
+        return $this->response->setJSON([
+            'status'  => true,
+            'mode'    => 'UPDATE',
+            'message' => 'Temporary Pengeluaran Kas Bank ditemukan.',
+            'data'    => [
+                'header' => $header,
+                'detail' => $detail
+            ]
+        ]);
     }
 
     function showing_pengeluarankb_dtl($id){
@@ -5588,7 +5777,8 @@ ORDER BY p.docno;
         $id = $this->request->getGet('id');
 
         $row = $this->db->table('sc_tmp.pengeluarankb_dtl')
-            ->where('idurut', $id)
+            //->where('idurut', $id)
+            ->where('uniqueid', $id)
             ->get()
             ->getRowArray();
 
@@ -5631,7 +5821,7 @@ ORDER BY p.docno;
         try {
 
             $builder
-                ->whereIn('idurut', $ids)
+                ->whereIn('uniqueid', $ids)
                 ->delete();
 
             if ($db->affectedRows() === 0) {
@@ -5661,62 +5851,41 @@ ORDER BY p.docno;
     }
 
 
-    function list_tmp_pengeluarankb_dtl(){
-        $docno = trim($this->request->getPost('docno')); // ambil dari POST
-        $list = $this->m_finance->get_t_pengeluarankb_dtl_temp_view($docno);
-        $data = array();
-        $no = $_POST['start'];
+    function list_tmp_pengeluarankb_dtl()
+    {
+        $docno = trim((string) $this->request->getPost('docno'));
+        $list  = $this->m_finance->get_t_pengeluarankb_dtl_temp_view($docno);
+
+        $data = [];
+        $draw = (int) ($this->request->getPost('draw') ?? 0);
+
         foreach ($list as $lm) {
-            $row = array();
+            $row = [];
 
-            $checked = trim($lm->status) == 'F' ? 'checked' : '';
-
-            $row[] = [
-                'id' => $lm->idurut,
-                'checked' => $checked
-            ];
-
-            $row[] = '
-            <div class="btn-group">
-
-                <button type="button"
-                        class="btn btn-warning btn-sm btn-edit"
-                        data-id="'.$lm->idurut.'">
-                    <i class="fa fa-edit"></i>
-                </button>
-                &nbsp
-                '.(
-                    empty(trim($lm->nobukti))
-                    ? '<button type="button"
-                            class="btn btn-danger btn-sm btn-delete"
-                            data-id="'.$lm->idurut.'">
-                        <i class="fa fa-trash"></i>
-                    </button>'
-                    : ''
-                ).'
-
-            </div>';
+            // Checkbox menggunakan uniqueid
+            $row[] = $lm->uniqueid;
 
             $row[] = $lm->nobukti;
-            $row[] = $lm->idcoa;
-            $row[] = $lm->nmcoa;
+            $row[] = $lm->idcoa.'  -  '.$lm->nmcoa;
             $row[] = $lm->remarks;
             $row[] = $lm->dk;
-            $row[] = trim($lm->status) == 'F'
-                ? '<span class="badge bg-success">DIPILIH</span>'
-                : '<span class="badge bg-secondary text-dark">BELUM DIPILIH</span>';
             $row[] = $lm->cabang;
-            $row[] = '<div class="ratakanan">'.number_format($lm->nilai,2,'.',',').'</div>';
+            $row[] = '<div class="ratakanan">'
+                . number_format((float) $lm->nilai, 2, '.', ',')
+                . '</div>';
 
             $data[] = $row;
         }
 
-        $output = array(
-            "draw" => $_POST['draw'],
-            "recordsTotal" => $this->m_finance->t_pengeluarankb_dtl_temp_view_count_all($docno),
-            "recordsFiltered" => $this->m_finance->t_pengeluarankb_dtl_temp_view_count_filtered($docno),
-            "data" => $data,
-        );
+        $output = [
+            'draw'            => $draw,
+            'recordsTotal'    => $this->m_finance
+                ->t_pengeluarankb_dtl_temp_view_count_all($docno),
+            'recordsFiltered' => $this->m_finance
+                ->t_pengeluarankb_dtl_temp_view_count_filtered($docno),
+            'data'            => $data
+        ];
+
         echo $this->fiky_encryption->jDatatable($output);
     }
 
@@ -5736,7 +5905,7 @@ ORDER BY p.docno;
                 'checked' => $checked
             ];
 
-            
+
 
             $row[] = $lm->nobukti;
             //item
@@ -5749,8 +5918,8 @@ ORDER BY p.docno;
                 : '<span class="badge bg-secondary text-dark">BELUM DIPILIH</span>';
             $row[] = $lm->cabang;
             $row[] = '<div class="ratakanan">'. number_format($lm->nilai, 2, '.', ',') . '</div>';
-            $data[] = $row;   
-            
+            $data[] = $row;
+
         }
 
         $output = array(
@@ -5763,135 +5932,192 @@ ORDER BY p.docno;
     }
 
 
-    function finalEntryPengeluaranKB(){
-        $nama = trim($this->session->get('nama'));
-        // $loccode = trim($this->session->get('loccode'));
-        $param = " and coalesce(inputby,'')='$nama'";
-        $paramdtl = " AND COALESCE(inputby, '') = '$nama' 
-        AND (COALESCE(dk, '') = ''  
-        OR nilai = '0.00' 
-        OR COALESCE(nmcoa, '') = ''  
-        OR COALESCE(remarks, '') = '') ";
-        $paramdtl2 = " and coalesce(inputby,'')='$nama'";
+    public function finalPengeluaranKB()
+    {
+        $db = db_connect();
+        $nama = trim((string) session()->get('nama'));
 
-        $header = $this->m_finance->q_pengeluarankb_master_temp($param);
-        $status = trim($header->getRowArray()['status']);
-        $cek = $this->m_finance->q_pengeluarankb_dtl_temp($paramdtl);
-        $cek2 = $this->m_finance->q_pengeluarankb_dtl_temp($paramdtl2);
-
-
-        $builder = $this->db->table('sc_tmp.pengeluarankb');
-
-        //INSERT TRX ERROR
-        $builder_trxerror = $this->db->table('sc_mst.trxerror');
-        $builder_trxerror->where('userid', $nama);
-        $builder_trxerror->where('modul', 'I.K.B.3');
-        $builder_trxerror->delete();
-
-
-        if (($status==='E' and $cek->getNumRows() > 0) or ($cek2->getNumRows() <= '0'))
-        {
-            $infotrxerror = array(
-                'userid' => $nama,
-                'errorcode' => 3,
-                'nomorakhir1' => $cek->getNumRows(),
-                'nomorakhir2' => $cek2->getNumRows(),
-                'modul' => 'I.K.B.3',
-            );
-            $builder_trxerror->insert($infotrxerror);
-
-            return redirect()->to(base_url('/ka/finance/addPengeluaranKB'));
-        } else {
-            // Ambil dari request POST
-            // $pemohon = strtoupper(trim($this->request->getPost('pemohon')));
-            $keterangan   = trim($this->request->getPost('keterangan'));
-            $prkkas   = trim($this->request->getPost('prkkas'));
-            $dpp   = trim($this->request->getPost('dpp'));
-            $balance   = trim($this->request->getPost('balance'));
-            $total   = trim($this->request->getPost('total_awal'));
-
-            $dpp = trim($this->request->getPost('dpp'));
-            $dpp_clean = 0;
-            if (!empty($dpp)) {
-                $dpp_clean = str_replace(',', '', $dpp);
-                // $kurs_clean = str_replace('.', '.', $kurs_clean);
-                // $kurs_clean = floatval($kurs_clean);
-            }
-
-
-            $balance = trim($this->request->getPost('balance'));
-            $balance_clean = 0;
-            if (!empty($balance)) {
-                $balance_clean = str_replace(',', '', $balance);
-                // $kurs_clean = str_replace('.', '.', $kurs_clean);
-                // $kurs_clean = floatval($kurs_clean);
-            }
-
-
-            $total = trim($this->request->getPost('total'));
-            $total_clean = 0;
-            if (!empty($total)) {
-                $total_clean = str_replace(',', '', $total);
-                // $kurs_clean = str_replace('.', '.', $kurs_clean);
-                // $kurs_clean = floatval($kurs_clean);
-            }
-            
-             // Convert expdate ke format YYYY-MM-DD
-            // $docdateph = null;
-            // if (!empty($docdate)) {
-            //     $docdateph = date('Y-m-d', strtotime(str_replace('-', '/', $docdate)));
-            // }
-
-            // Update data header dulu sebelum set status F
-            $updateHeader = [
-                // 'docdate'        => $docdateph,
-                'prkkas'    => strtoupper($prkkas),
-                'dpp'    => $dpp_clean,
-                'balance'    => $balance_clean,
-                'total'    => $total_clean,
-                'keterangan'     => strtoupper($keterangan),
-                // 'currcode'       => $currcode,
-                // 'kurs'           => $kurs_clean,
-                // 'isinclusive'    => strtoupper($isinclusive),
-                // 'idtax'          => strtoupper($idtax),
-                // 'syarat'         => strtoupper($syarat)
-                // 'pemohon'       => $pemohon (jika masih diperlukan nanti bisa ditambahkan)
-            ];
-
-            $builder->where('inputby', $nama);
-            $builder->update($updateHeader);
-
-            $info = array(
-                'status' => 'F'
-            );
-            $builder->where('inputby',$nama);
-            if ($builder->update($info)) {
-                $paramerror=" and userid='$nama' and modul='I.K.B.3'";
-                $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
-                $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
-
-                // $docno = trim(bin2hex(trim($dtlerror['nomorakhir1'])));
-
-                return redirect()->to(base_url('/ka/finance/pengeluarankb'));
-            } else {
-                $infotrxerror = array(
-                    'userid' => $nama,
-                    'errorcode' => 3,
-                    'nomorakhir1' => $cek->getNumRows(),
-                    'nomorakhir2' => $cek2->getNumRows(),
-                    'modul' => 'I.K.B.3',
-                );
-                $builder_trxerror->insert($infotrxerror);
-                return redirect()->to(base_url('/ka/finance/addPengeluaranKB'));
-            }
-
-
-
+        if ($nama === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Session nama tidak ditemukan. Silakan login kembali.'
+            ]);
         }
 
-    }
-    
+        $idurut = trim((string) $this->request->getPost('idurut'));
+        $docno  = trim((string) $this->request->getPost('docno'));
 
+        if ($idurut === '' && $docno === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'ID atau nomor Pengeluaran Kas Bank tidak ditemukan.'
+            ]);
+        }
+
+        try {
+            $db->transBegin();
+
+            $builder = $db->table('sc_tmp.pengeluarankb')
+                ->where('inputby', $nama)
+                ->where('status', 'E');
+
+            if ($idurut !== '') {
+                $builder->where('idurut', (int) $idurut);
+            } else {
+                $builder->where('docno', $docno);
+            }
+
+            $header = $builder->get()->getRowArray();
+
+            if (!$header) {
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Data Pengeluaran Kas Bank tidak ditemukan atau bukan milik user.'
+                ]);
+            }
+
+            $idurut = (int) $header['idurut'];
+            $docno  = trim((string) $header['docno']);
+
+            $db->table('sc_tmp.pengeluarankb')
+                ->where('idurut', $idurut)
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->where('status', 'E')
+                ->update([
+                    'status'     => 'F',
+                    'updateby'   => $nama,
+                    'updatedate' => date('Y-m-d H:i:s')
+                ]);
+
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal melakukan finalisasi Pengeluaran Kas Bank.'
+                ]);
+            }
+
+            $db->transCommit();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Pengeluaran Kas Bank berhasil difinalisasi.',
+                'data' => [
+                    'idurut' => $idurut,
+                    'docno'  => $docno,
+                    'status' => 'F'
+                ]
+            ]);
+
+        } catch (\Throwable $e) {
+            if ($db->transStatus() !== false) {
+                $db->transRollback();
+            }
+
+            log_message('error', 'finalPengeluaranKB error: ' . $e->getMessage());
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat finalisasi Pengeluaran Kas Bank.'
+            ]);
+        }
+    }
+
+    public function clearfinalPengeluaranKB()
+    {
+        $db = db_connect();
+        $nama = trim((string) session()->get('nama'));
+        $urlBack = base_url('ka/finance/pengeluarankb');
+
+        if ($nama === '') {
+            return redirect()->to($urlBack);
+        }
+
+        try {
+            $db->transBegin();
+
+            $tmpRows = $db->table('sc_tmp.pengeluarankb')
+                ->select('idurut, docno, docnotmp')
+                ->where('inputby', $nama)
+                ->get()
+                ->getResultArray();
+
+            foreach ($tmpRows as $tmp) {
+                $idurut  = $tmp['idurut'];
+                $docnoTmp = trim((string) ($tmp['docno'] ?? ''));
+                $docnoTrx = trim((string) ($tmp['docnotmp'] ?? ''));
+
+                if ($docnoTrx === '') {
+                    $docnoTrx = $docnoTmp;
+                }
+
+                // Kembalikan header permanent menjadi F
+                if ($docnoTrx !== '') {
+                    $db->table('sc_trx.pengeluarankb')
+                        ->where('idurut', $idurut)
+                        ->where('docno', $docnoTrx)
+                        ->where('status', 'E')
+                        ->update([
+                            'status'     => 'F',
+                            'updateby'   => $nama,
+                            'updatedate' => date('Y-m-d H:i:s')
+                        ]);
+
+                    // Kembalikan detail permanent menjadi F
+                    $db->table('sc_trx.pengeluarankb_dtl')
+                        ->where('idurut', $idurut)
+                        ->where('docno', $docnoTrx)
+                        ->where('status', 'E')
+                        ->update([
+                            'status'     => 'F',
+                            'updateby'   => $nama,
+                            'updatedate' => date('Y-m-d H:i:s')
+                        ]);
+                }
+
+                // Hapus detail temporary
+                if ($docnoTmp !== '') {
+                    $db->table('sc_tmp.pengeluarankb_dtl')
+                        ->where('docno', $docnoTmp)
+                        ->delete();
+                }
+            }
+
+            // Bersihkan detail temporary milik user
+            $db->table('sc_tmp.pengeluarankb_dtl')
+                ->where('inputby', $nama)
+                ->delete();
+
+            // Hapus header temporary milik user
+            $db->table('sc_tmp.pengeluarankb')
+                ->where('inputby', $nama)
+                ->delete();
+
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+
+                return redirect()->to($urlBack)
+                    ->with('error', 'Gagal membersihkan Pengeluaran Kas Bank.');
+            }
+
+            $db->transCommit();
+
+            return redirect()->to($urlBack)
+                ->with('success', 'Entry Pengeluaran Kas Bank berhasil dibersihkan.');
+
+        } catch (\Throwable $e) {
+            $db->transRollback();
+
+            log_message('error', 'clearfinalPengeluaranKB error: ' . $e->getMessage());
+
+            return redirect()->to($urlBack)
+                ->with('error', 'Gagal membersihkan Pengeluaran Kas Bank.');
+        }
+    }
 
     function show_pengeluarankb(){
         $module = 'Pengeluaran Kas/Bank';
@@ -5907,17 +6133,17 @@ ORDER BY p.docno;
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.pengeluarankb');
 
-    //    $builder = $builder
-    //         ->where('docno', $docno)
-    //         ->update([
-    //             'status'=> 'P',
-    //             'printby' => $nama,
-    //             'printdate' => date('Y-m-d H:i:s')
-    //         ]);
+        //    $builder = $builder
+        //         ->where('docno', $docno)
+        //         ->update([
+        //             'status'=> 'P',
+        //             'printby' => $nama,
+        //             'printdate' => date('Y-m-d H:i:s')
+        //         ]);
 
-        
+
         $enc_docno = $this->fiky_encryption->sealed($docno);
-        
+
         //$enc_docdate= $this->fiky_encryption->sealed($docdate);
         // $enc_idlocation = $this->fiky_encryption->sealed($idlocation);
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
@@ -5929,7 +6155,7 @@ ORDER BY p.docno;
         $datajson =  base_url("ka/finance/api_pengeluarankb/?enc_docno=$enc_docno") ;
 
         // if($formheader==="HEADER"){
-            $datamrt =  base_url("assets/mrt/report_pengeluarankb.mrt") ;
+        $datamrt =  base_url("assets/mrt/report_pengeluarankb.mrt") ;
         // } else {
         //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
         // }
@@ -5948,9 +6174,9 @@ ORDER BY p.docno;
         // $idgroup=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idgroup')));
         //$docno=trim($this->request->getGet('enc_docno'));
 
-       // $ddate = explode(' - ',$docdate);
-       // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
-       // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
+        // $ddate = explode(' - ',$docdate);
+        // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
+        // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
 
         if (empty($docno) or $docno==='') {
             $param_brg = "";
@@ -5969,7 +6195,7 @@ ORDER BY p.docno;
         $datamst = $this->m_finance->q_pengeluarankb_master($param);
         $datadtl = $this->m_finance->q_pengeluarankb_dtl($param);
         $tampungdtl = $datamst->getResult();
-        $detail = $tampungdtl[0] ?? null;        
+        $detail = $tampungdtl[0] ?? null;
         if ($detail) {
 
 
@@ -6006,7 +6232,7 @@ ORDER BY p.docno;
             $cleanedCurrname = trim($cleanedCurrname);
 
             $detail->currname = $cleanedCurrname;
-            
+
             $prkkas = trim($detail->prkkas);
             $coa = $this->db->query("
                 SELECT nmcoa 
@@ -6020,11 +6246,11 @@ ORDER BY p.docno;
             } else {
                 $cleanedPrkkas = '';
             }
-            $detail->perkkasname = $cleanedPrkkas;
+            $detail->prkkasname = $cleanedPrkkas;
 
-            
+
             $detail->namauser = $nama;
-            
+
         }
 
         $detailRows = $datadtl->getResultArray();
@@ -6079,7 +6305,7 @@ ORDER BY p.docno;
                     'userid' => $nama,
                     'param' => $param,
 
-                    ]
+                ]
                 ),
                 'branch' => $databranch->getResult(),
                 'master' => $datamst->getResult(),

@@ -187,6 +187,31 @@ $routes->group('/arap/transaksi', ["namespace" => "App\Controllers\Arap"], funct
     $routes->add("loadPerSupplier", "Arap::loadPerSupplier");
     $routes->add("laporan_jurnal_transaksi_ndk", "Arap::laporan_jurnal_transaksi_ndk");
 
+
+    $routes->add("tterima", "Arap::tterima");
+    $routes->post("listTterimaTrx","Arap::listTterimaTrx");
+    $routes->post('saveTterima', 'Arap::saveTterima');
+    $routes->post('listTterimaDetail', 'Arap::listTterimaDetail');
+    $routes->post('deleteTterimaDetail', 'Arap::deleteTterimaDetail');
+    $routes->post('finalTterima', 'Arap::finalTterima');
+    $routes->add('addTterima', 'Arap::addTterima');
+    $routes->add('getBranchInfoTterima', 'Arap::getBranchInfoTterima');
+    $routes->add('getNextSuffixTterima(:any)', 'Arap::getNextSuffixTterima$1');
+    $routes->add('updateTterima(:any)', 'Arap::updateTterima$1');
+
+    /* Showing TMP Tterima */
+    $routes->add('showing_tmp_tterima', 'Arap::showing_tmp_tterima');
+    $routes->add('saveTterimaDetail', 'Arap::saveTterimaDetail');
+    $routes->add('clearEntryTterima', 'Arap::clearEntryTterima');
+    $routes->add('tarikPenerimaanTterima', 'Arap::tarikPenerimaanTterima');
+    $routes->add('getTterimaPrint', 'Arap::getTterimaPrint');
+
+    $routes->get(
+        'detailTterima(:any)',
+        'Arap::detailTterima$1'
+    );
+
+    $routes->add('deleteTterima', 'Arap::deleteTterima');
 });
 
 
@@ -297,6 +322,8 @@ $routes->group('/ka/finance', ["namespace" => "App\Controllers\Finance"], functi
 
 
 
+    /* PENGELUARAN KAS / BANK */
+
 
 
     $routes->add('pengeluarankb', 'Finance::pengeluarankb');
@@ -311,13 +338,11 @@ $routes->group('/ka/finance', ["namespace" => "App\Controllers\Finance"], functi
     $routes->add('list_tmp_pengeluarankb_dtl', 'Finance::list_tmp_pengeluarankb_dtl');
     // $routes->add('showing_sikbsp_mst', 'Finance::showing_sikbsp_mst');
 
-    $routes->add('clearEntryPengeluaranKB', 'Finance::clearEntryPengeluaranKB');
-    $routes->add('finalEntryPengeluaranKB', 'Finance::finalEntryPengeluaranKB');
+
     $routes->add('showing_pengeluarankbtemp', 'Finance::showing_pengeluarankbtemp');
     $routes->add('updateStatusPengeluaranKB', 'Finance::updateStatusPengeluaranKB');
 
 
-    $routes->add('save_pengeluarankb_detail', 'Finance::save_pengeluarankb_detail');
     $routes->get('updatePengeluaranKB(:any)', 'Finance::updatePengeluaranKB$1');
 
     $routes->add('update_status_pengeluarankb_dtl', 'Finance::update_status_pengeluarankb_dtl');
@@ -332,6 +357,9 @@ $routes->group('/ka/finance', ["namespace" => "App\Controllers\Finance"], functi
     $routes->add('savePengeluaranKBDetail', 'Finance::savePengeluaranKBDetail');
     $routes->add("get_pengeluarankb_detail(:any)", "Finance::get_pengeluarankb_detail$1");
     $routes->add("delete_pengeluarankb_detail", "Finance::delete_pengeluarankb_detail");
+
+    $routes->add('clearfinalPengeluaranKB', 'Finance::clearfinalPengeluaranKB');
+    $routes->add('finalPengeluaranKB', 'Finance::finalPengeluaranKB');
 
 
 });
@@ -1243,7 +1271,6 @@ $routes->group('/persediaan/trans', ["namespace" => "App\Controllers\Persediaan"
     $routes->add('getNextSuffixSPKTransfer', 'Persediaan::getNextSuffixSPKTransfer');
 
 
-
     // TRANSFER LOKASI
 
     $routes->add('transfer_lokasi', 'Persediaan::transfer_lokasi');
@@ -1261,7 +1288,6 @@ $routes->group('/persediaan/trans', ["namespace" => "App\Controllers\Persediaan"
 //TRX
     $routes->add('get_trx_transfer_location_dtl(:any)', 'Persediaan::get_trx_transfer_location_dtl$1');
     $routes->add('showing_transfer_mst_trx', 'Persediaan::showing_transfer_mst_trx');
-    $routes->add('list_trx_spk_transfers_dtl', 'Persediaan::list_trx_spk_transfers_dtl');
     $routes->add('getBranchInfoStockTransfers', 'Persediaan::getBranchInfoStockTransfers');
     $routes->add('getNextSuffixStockTransfers', 'Persediaan::getNextSuffixStockTransfers');
 
@@ -1565,15 +1591,15 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
 
 
 $routes->group('/report/trans', ["namespace" => "App\Controllers\Report"], function ($routes) {
-    $routes->add('barang', 'Report::masterbarang'); 
+    $routes->add('barang', 'Report::masterbarang');
     $routes->post('downloadLaporanMasterBarang',  'Report::downloadLaporanMasterBarang');
     $routes->post('previewLaporanMasterBarang',  'Report::previewLaporanMasterBarang');
 
-    $routes->add('customer', 'Report::mastercustomer'); 
+    $routes->add('customer', 'Report::mastercustomer');
     $routes->post('downloadLaporanMasterCustomer',  'Report::downloadLaporanMasterCustomer');
     $routes->post('previewLaporanMasterCustomer',  'Report::previewLaporanMasterCustomer');
 
-    $routes->add('supplier', 'Report::mastersupplier'); 
+    $routes->add('supplier', 'Report::mastersupplier');
     $routes->post('downloadLaporanMasterSupplier',  'Report::downloadLaporanMasterSupplier');
     $routes->post('previewLaporanMasterSupplier',  'Report::previewLaporanMasterSupplier');
 
@@ -1594,7 +1620,7 @@ $routes->group('/report/trans', ["namespace" => "App\Controllers\Report"], funct
     $routes->post('downloadLaporanVoidPO',  'Report::downloadLaporanVoidPO');
     $routes->post('previewLaporanVoidPO',  'Report::previewLaporanVoidPO');
 
-    
+
     $routes->add('pembelian', 'Report::lpb');
     $routes->post('downloadLaporanLPB',  'Report::downloadLaporanLPB');
     $routes->post('previewLaporanLPB',  'Report::previewLaporanLPB');
@@ -1620,16 +1646,16 @@ $routes->group('/report/trans', ["namespace" => "App\Controllers\Report"], funct
     $routes->add('kartustock', 'Report::kartustock');
     $routes->post('previewLaporanKartuStock', 'Report::previewLaporanKartuStock');
     $routes->post('downloadLaporanKartuStock', 'Report::downloadLaporanKartuStock');
-    
+
 
     $routes->add('posisibrg', 'Report::posisibrg');
     $routes->post('previewLaporanPosisiBrg', 'Report::previewLaporanPosisiBrg');
     $routes->post('downloadLaporanPosisiBrg', 'Report::downloadLaporanPosisiBrg');
-    
+
     $routes->get('posisihutang', 'Report::posisihutang');
     $routes->post('previewLaporanPosisiHutang', 'Report::previewLaporanPosisiHutang');
     $routes->post('downloadLaporanPosisiHutang', 'Report::downloadLaporanPosisiHutang');
-    
+
     $routes->get('umurhutang', 'Report::umurhutang');
     $routes->post('previewLaporanUmurHutang', 'Report::previewLaporanUmurHutang');
     $routes->post('downloadLaporanUmurHutang', 'Report::downloadLaporanUmurHutang');

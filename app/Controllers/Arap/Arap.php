@@ -2505,201 +2505,77 @@ class Arap extends BaseController
     public function listTterimaTrx()
     {
         $list = $this->m_arap->get_t_tterima_hd();
-
         $data = array();
-
         $no = (int) ($_POST['start'] ?? 0);
 
-
-        /*
-         * ============================================================
-         * ACCESS
-         * ============================================================
-         */
-
         $kmenu = 'I.L.A.2';
-
-        $role = trim(
-            $this->session->get('roleid')
-        );
+        $role = trim($this->session->get('roleid'));
 
         $dtlAkses = $this->m_role
-            ->detail_user_akses(
-                $role,
-                $kmenu
-            )
+            ->detail_user_akses($role, $kmenu)
             ->getRowArray();
 
-
-        $canUpdate =
-            isset($dtlAkses['a_update']) &&
+        $canUpdate = isset($dtlAkses['a_update']) &&
             trim($dtlAkses['a_update']) === 't';
 
-        $canView =
-            isset($dtlAkses['a_view']) &&
+        $canView = isset($dtlAkses['a_view']) &&
             trim($dtlAkses['a_view']) === 't';
 
-
-        /*
-         * ============================================================
-         * HELPER STATUS CHECKLIST DOKUMEN
-         * ============================================================
-         */
-
         $docStatusIcon = function ($value, $label) {
-
-            $value = strtoupper(
-                trim(
-                    (string) $value
-                )
-            );
+            $value = strtoupper(trim((string) $value));
 
             $checked = in_array(
                 $value,
-                array(
-                    '1',
-                    'Y',
-                    'YES',
-                    'TRUE',
-                    'T',
-                    'OK',
-                    'ADA'
-                ),
+                array('1', 'Y', 'YES', 'TRUE', 'T', 'OK', 'ADA'),
                 true
             );
 
             if ($checked) {
-
                 return '
-                <span
-                    class="d-inline-block me-1"
-                    title="' .
-                    htmlspecialchars(
-                        $label,
-                        ENT_QUOTES,
-                        'UTF-8'
-                    ) .
-                    '"
-                >
-                    <i
-                        class="fa fa-check-circle text-success"
-                        style="font-size:18px;"
-                    ></i>
-                </span>
-            ';
-
+                <span class="d-inline-block me-1" title="' .
+                    htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '">
+                    <i class="fa fa-check-circle text-success"
+                       style="font-size:18px;"></i>
+                </span>';
             }
 
             return '
-            <span
-                class="d-inline-block me-1"
-                title="' .
-                htmlspecialchars(
-                    $label . ' belum dicentang',
-                    ENT_QUOTES,
-                    'UTF-8'
-                ) .
-                '"
-            >
-                <i
-                    class="fa fa-circle-o text-muted"
-                    style="font-size:18px;"
-                ></i>
-            </span>
-        ';
+            <span class="d-inline-block me-1" title="' .
+                htmlspecialchars($label . ' belum dicentang', ENT_QUOTES, 'UTF-8') . '">
+                <i class="fa fa-circle-o text-muted"
+                   style="font-size:18px;"></i>
+            </span>';
         };
 
-
-        /*
-         * ============================================================
-         * LOOP DATA
-         * ============================================================
-         */
-
         foreach ($list as $lm) {
-
             $no++;
-
             $row = array();
 
-
-            /*
-             * ========================================================
-             * DATA DASAR
-             * ========================================================
-             */
-
-            $docno = trim(
-                $lm->docno ?? ''
-            );
-
-            $status = strtoupper(
-                trim(
-                    $lm->status ?? ''
-                )
-            );
-
-
-            /*
-             * ========================================================
-             * ACTION
-             * ========================================================
-             */
+            $docno = trim($lm->docno ?? '');
 
             $menuContent = '';
 
-
-            /*
-             * EDIT
-             */
-
             if ($canUpdate) {
-
                 $menuContent .= '
-    <a
-        class="dropdown-item bg-warning"
-        href="' .
-                    base_url(
-                        'arap/transaksi/updateTterima'
-                    ) .
-                    '?id=' .
-                    bin2hex($docno) .
-                    '"
-    >
-        <i class="fa fa-edit"></i>
-        Edit Tanda Terima
-    </a>
-';
+                <a class="dropdown-item bg-warning"
+                   href="' .
+                    base_url('arap/transaksi/updateTterima') .
+                    '?id=' . bin2hex($docno) . '">
+                    <i class="fa fa-edit"></i>
+                    Edit Tanda Terima
+                </a>';
             }
-
-
-            /*
-             * VIEW
-             */
 
             if ($canView) {
-
                 $menuContent .= '
-                <a
-                    class="dropdown-item"
-                    href="' .
-                    base_url(
-                        'arap/transaksi/addTterima'
-                    ) .
-                    '?docno=' .
-                    urlencode($docno) .
-                    '"
-                >
+                <a class="dropdown-item"
+                   href="' .
+                    base_url('arap/transaksi/detailTterima') .
+                    '?docno=' . urlencode($docno) . '">
                     <i class="fa fa-eye"></i>
                     Detail Tanda Terima
-                </a>
-            ';
+                </a>';
             }
-
-
-            /*
-             * TRACEABILITY
-             */
 
             $docnoJs = htmlspecialchars(
                 $docno,
@@ -2708,140 +2584,37 @@ class Arap extends BaseController
             );
 
             $menuContent .= '
-            <a
-                class="dropdown-item bg-info text-white"
-                href="#"
-                onclick="openTterimaTraceabilityByDocno(\'' .
-                $docnoJs .
-                '\'); return false;"
-            >
-                <i class="fa fa-check-double"></i>
-                Traceability Dokumen
-            </a>
-        ';
-
-
-            /*
-             * DROPDOWN
-             */
+            <a class="dropdown-item bg-primary text-white"
+               href="#"
+               onclick="btnCetakTterima(\'' . $docnoJs . '\'); return false;">
+                <i class="fa fa-print"></i>
+                Cetak Tanda Terima
+            </a>';
 
             $dropdownMenu = '
             <div class="dropdown">
-
-                <button
-                    class="btn btn-primary btn-sm dropdown-toggle"
-                    type="button"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                >
+                <button class="btn btn-primary btn-sm dropdown-toggle"
+                        type="button"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false">
                     <i class="fa fa-bars"></i>
                 </button>
-
                 <div class="dropdown-menu">
-                    ' .
-                $menuContent .
-                '
+                    ' . $menuContent . '
                 </div>
-
-            </div>
-        ';
-
-
-            /*
-             * ========================================================
-             * STATUS DOKUMEN TRANSAKSI
-             * ========================================================
-             *
-             * Status E/F/C tetap ditampilkan hanya jika dibutuhkan
-             * untuk informasi transaksi.
-             *
-             * Kolom UI sekarang menggunakan "Status Dokumen"
-             * sebagai checklist dokumen.
-             *
-             * ========================================================
-             */
-
-
-            /*
-             * ========================================================
-             * STATUS CHECKLIST DOKUMEN
-             * ========================================================
-             *
-             * Tidak mandatory.
-             *
-             * Hanya menunjukkan dokumen mana yang sudah dicentang.
-             *
-             * Invoice
-             * Faktur Pajak
-             * Surat Jalan
-             * Penerimaan
-             * Bea Import
-             * Dokumen
-             *
-             * ========================================================
-             */
+            </div>';
 
             $statusDokumen = '
-
-            <div
-                class="d-flex align-items-center justify-content-center"
-                style="white-space: nowrap;"
-            >
-
+            <div class="d-flex align-items-center justify-content-center"
+                 style="white-space:nowrap;">
                 ' .
-                $docStatusIcon(
-                    $lm->cekinvoice ?? '',
-                    'Invoice'
-                ) .
-
-                $docStatusIcon(
-                    $lm->cekfakturpajak ?? '',
-                    'Faktur Pajak'
-                ) .
-
-                $docStatusIcon(
-                    $lm->ceksj ?? '',
-                    'Surat Jalan'
-                ) .
-
-                $docStatusIcon(
-                    $lm->cekpenerimaan ?? '',
-                    'Penerimaan'
-                ) .
-
-                $docStatusIcon(
-                    $lm->cekbeaimport ?? '',
-                    'Bea Import'
-                ) .
-
-                $docStatusIcon(
-                    $lm->cekdokumen ?? '',
-                    'Dokumen'
-                ) .
-
-                '</div>
-        ';
-
-
-            /*
-             * ========================================================
-             * ROW
-             * ========================================================
-             *
-             * HARUS SAMA DENGAN <thead>:
-             *
-             * 0 No.
-             * 1 Action
-             * 2 Document
-             * 3 Tanggal
-             * 4 Nama Supplier
-             * 5 Currency
-             * 6 Nilai
-             * 7 Keterangan
-             * 8 Status Dokumen
-             *
-             * ========================================================
-             */
+                $docStatusIcon($lm->cekinvoice ?? '', 'Invoice') .
+                $docStatusIcon($lm->cekfakturpajak ?? '', 'Faktur Pajak') .
+                $docStatusIcon($lm->ceksj ?? '', 'Surat Jalan') .
+                $docStatusIcon($lm->cekpenerimaan ?? '', 'Penerimaan') .
+                $docStatusIcon($lm->cekbeaimport ?? '', 'Bea Import') .
+                $docStatusIcon($lm->cekdokumen ?? '', 'Dokumen') .
+                '</div>';
 
             $row[] = $no;
 
@@ -2880,6 +2653,19 @@ class Arap extends BaseController
                 ','
             );
 
+            $row[] = (
+                (float) ($lm->total ?? 0) ===
+                (float) ($lm->balance ?? 0)
+            )
+                ? '<span class="badge"
+                     style="background-color:#198754;color:#fff;font-weight:bold;">
+                    BALANCE
+               </span>'
+                : '<span class="badge"
+                     style="background-color:#dc3545;color:#fff;font-weight:bold;">
+                    NOT BALANCE
+               </span>';
+
             $row[] = htmlspecialchars(
                 trim($lm->keterangan ?? ''),
                 ENT_QUOTES,
@@ -2888,49 +2674,89 @@ class Arap extends BaseController
 
             $row[] = $statusDokumen;
 
+            // Input By
+            $row[] = htmlspecialchars(
+                trim($lm->inputby ?? ''),
+                ENT_QUOTES,
+                'UTF-8'
+            );
 
-            /*
-             * ========================================================
-             * PUSH ROW
-             * ========================================================
-             */
+            // Input Date
+            $row[] = htmlspecialchars(
+                !empty($lm->inputdate)
+                    ? date('d-m-Y H:i:s', strtotime($lm->inputdate))
+                    : '',
+                ENT_QUOTES,
+                'UTF-8'
+            );
 
             $data[] = $row;
         }
 
-
-        /*
-         * ============================================================
-         * DATATABLE RESPONSE
-         * ============================================================
-         */
-
         $output = array(
-
-            "draw" =>
-                (int) ($_POST['draw'] ?? 0),
-
-            "recordsTotal" =>
-                $this->m_arap
-                    ->t_tterima_hd_count_all(),
-
-            "recordsFiltered" =>
-                $this->m_arap
-                    ->t_tterima_hd_count_filtered(),
-
-            "data" =>
-                $data
+            'draw' => (int) ($_POST['draw'] ?? 0),
+            'recordsTotal' => $this->m_arap->t_tterima_hd_count_all(),
+            'recordsFiltered' => $this->m_arap->t_tterima_hd_count_filtered(),
+            'data' => $data
         );
 
+        echo $this->fiky_encryption->jDatatable($output);
+    }
 
-        /*
-         * ============================================================
-         * ENCRYPT DATATABLE
-         * ============================================================
-         */
+    public function getTterimaPrint()
+    {
+        $docno = trim($this->request->getPost('docno') ?? '');
 
-        echo $this->fiky_encryption
-            ->jDatatable($output);
+        if ($docno === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Nomor Tanda Terima tidak tersedia.'
+            ]);
+        }
+
+        $db = \Config\Database::connect();
+
+        try {
+
+            $header = $db->table('sc_trx.tterima_hd')
+                ->where('docno', $docno)
+                ->get()
+                ->getRowArray();
+
+            if (!$header) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Data Tanda Terima tidak ditemukan.'
+                ]);
+            }
+
+            $detail = $db->table('sc_trx.tterima_dt')
+                ->where('docno', $docno)
+                ->orderBy('idurut', 'ASC')
+                ->get()
+                ->getResultArray();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Data Tanda Terima berhasil diambil.',
+                'data' => [
+                    'header' => $header,
+                    'detail' => $detail
+                ]
+            ]);
+
+        } catch (\Throwable $e) {
+
+            log_message(
+                'error',
+                'getTterimaPrint error: ' . $e->getMessage()
+            );
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengambil data Tanda Terima.'
+            ]);
+        }
     }
 
     // ============================================================
@@ -3922,6 +3748,11 @@ class Arap extends BaseController
 // TAMBAHKAN ROUTE DALAM group /arap/transaksi
 // ================================================================
 
+    private function cleanString($value): string
+    {
+        return strtoupper(trim((string) ($value ?? '')));
+    }
+
     public function saveTterima()
     {
         try {
@@ -3931,10 +3762,8 @@ class Arap extends BaseController
 
             // =====================================================
             // USER LOGIN
-            // NIK dari session menjadi owner temporary.
-            // Jangan mengambil NIK dari POST agar tidak bisa dipalsukan.
             // =====================================================
-            $nama = trim((string) $session->get('nama'));
+            $nama = $this->cleanString($session->get('nama'));
 
             if ($nama === '') {
                 return $this->response->setJSON([
@@ -3943,22 +3772,15 @@ class Arap extends BaseController
                 ]);
             }
 
-
             // =====================================================
             // DATA DASAR
             // =====================================================
-            $idurut = trim((string) $request->getPost('idurut'));
-            $docno  = trim((string) $request->getPost('docno'));
-
-            $docdate = trim((string) $request->getPost('docdate'));
-            $cabang  = trim((string) $request->getPost('cabang'));
-            $coabank = trim(
-                (string) $request->getPost('coabank')
-            );
-
-            $nmcoabank = trim(
-                (string) $request->getPost('nmcoabank')
-            );
+            $idurut   = $this->cleanString($request->getPost('idurut'));
+            $docno    = $this->cleanString($request->getPost('docno'));
+            $docdate  = $this->cleanString($request->getPost('docdate'));
+            $cabang   = $this->cleanString($request->getPost('cabang'));
+            $coabank  = $this->cleanString($request->getPost('coabank'));
+            $nmcoabank = $this->cleanString($request->getPost('nmcoabank'));
 
             // =====================================================
             // VALIDASI INPUT AWAL
@@ -3984,16 +3806,12 @@ class Arap extends BaseController
                 ]);
             }
 
-
             // =====================================================
             // DATA HEADER
-            // Field identitas akan diamankan lagi ketika UPDATE
             // =====================================================
             $data = [
 
-                // -------------------------------------------------
                 // HEADER
-                // -------------------------------------------------
                 'docno' => $docno,
 
                 'docdate' =>
@@ -4002,33 +3820,41 @@ class Arap extends BaseController
                 'cabang' => $cabang,
 
                 'pemohon' =>
-                    trim((string) $request->getPost('pemohon')),
+                    $this->cleanString(
+                        $request->getPost('pemohon')
+                    ),
 
-
-                // -------------------------------------------------
                 // SUPPLIER
-                // -------------------------------------------------
                 'kdsupplier' =>
-                    trim((string) $request->getPost('kdsupplier')),
+                    $this->cleanString(
+                        $request->getPost('kdsupplier')
+                    ),
 
                 'nmsupplier' =>
-                    trim((string) $request->getPost('nmsupplier')),
+                    $this->cleanString(
+                        $request->getPost('nmsupplier')
+                    ),
 
                 'kotasupplier' =>
-                    trim((string) $request->getPost('kotasupplier')),
+                    $this->cleanString(
+                        $request->getPost('kotasupplier')
+                    ),
 
                 'alamatsupplier' =>
-                    trim((string) $request->getPost('alamatsupplier')),
+                    $this->cleanString(
+                        $request->getPost('alamatsupplier')
+                    ),
 
                 'alamatkirim' =>
-                    trim((string) $request->getPost('alamatkirim')),
+                    $this->cleanString(
+                        $request->getPost('alamatkirim')
+                    ),
 
-
-                // -------------------------------------------------
                 // DOCUMENT
-                // -------------------------------------------------
                 'noinvoice' =>
-                    trim((string) $request->getPost('noinvoice')),
+                    $this->cleanString(
+                        $request->getPost('noinvoice')
+                    ),
 
                 'tglinvoice' =>
                     $this->convertDateToDb(
@@ -4036,7 +3862,9 @@ class Arap extends BaseController
                     ),
 
                 'nosj' =>
-                    trim((string) $request->getPost('nosj')),
+                    $this->cleanString(
+                        $request->getPost('nosj')
+                    ),
 
                 'tglsj' =>
                     $this->convertDateToDb(
@@ -4044,16 +3872,24 @@ class Arap extends BaseController
                     ),
 
                 'noaju' =>
-                    trim((string) $request->getPost('noaju')),
+                    $this->cleanString(
+                        $request->getPost('noaju')
+                    ),
 
                 'nobl' =>
-                    trim((string) $request->getPost('nobl')),
+                    $this->cleanString(
+                        $request->getPost('nobl')
+                    ),
 
                 'noawb' =>
-                    trim((string) $request->getPost('noawb')),
+                    $this->cleanString(
+                        $request->getPost('noawb')
+                    ),
 
                 'noinvoicebea' =>
-                    trim((string) $request->getPost('noinvoicebea')),
+                    $this->cleanString(
+                        $request->getPost('noinvoicebea')
+                    ),
 
                 'tglinvoicebea' =>
                     $this->convertDateToDb(
@@ -4061,26 +3897,30 @@ class Arap extends BaseController
                     ),
 
                 'nobkrev' =>
-                    trim((string) $request->getPost('nobkrev')),
+                    $this->cleanString(
+                        $request->getPost('nobkrev')
+                    ),
 
                 'nofakturpajak' =>
-                    trim((string) $request->getPost('nofakturpajak')),
+                    $this->cleanString(
+                        $request->getPost('nofakturpajak')
+                    ),
 
-
-                // -------------------------------------------------
                 // CURRENCY / JATUH TEMPO
-                // -------------------------------------------------
                 'senddate' =>
                     $this->convertDateToDb(
                         $request->getPost('senddate')
                     ),
 
                 'currcode' =>
-                    trim((string) $request->getPost('currcode'))
-                        ?: 'IDR',
+                    $this->cleanString(
+                        $request->getPost('currcode')
+                    ) ?: 'IDR',
 
                 'idtax' =>
-                    trim((string) $request->getPost('idtax')),
+                    $this->cleanString(
+                        $request->getPost('idtax')
+                    ),
 
                 'kurs' =>
                     $this->dbNumber(
@@ -4096,23 +3936,19 @@ class Arap extends BaseController
                     $this->convertDateToDb(
                         $request->getPost('tgljthtempo')
                     ),
-                'coabank' =>
-                    trim((string) $request->getPost('coabank')),
 
-                'nmcoabank' =>
-                    trim((string) $request->getPost('nmcoabank')),
+                'coabank' => $coabank,
+
+                'nmcoabank' => $nmcoabank,
 
                 'isinclusive' =>
-                    strtoupper(
-                        trim((string) $request->getPost('isinclusive'))
+                    $this->cleanString(
+                        $request->getPost('isinclusive')
                     ) === 'YES'
                         ? 'YES'
                         : 'NO',
 
-
-                // -------------------------------------------------
                 // VALUE
-                // -------------------------------------------------
                 'dpp' =>
                     $this->dbNumber(
                         $request->getPost('dpp')
@@ -4163,11 +3999,7 @@ class Arap extends BaseController
                         $request->getPost('totalestimasi')
                     ),
 
-
-                // -------------------------------------------------
                 // CHECKLIST
-                // -------------------------------------------------
-
                 'cekinvoice' =>
                     $request->getPost('cekinvoice') === '1',
 
@@ -4186,18 +4018,17 @@ class Arap extends BaseController
                 'cekdokumen' =>
                     $request->getPost('cekdokumen') === '1',
 
-
-                // -------------------------------------------------
                 // STATUS
-                // -------------------------------------------------
                 'status' =>
-                    trim((string) $request->getPost('status'))
-                        ?: 'E',
+                    $this->cleanString(
+                        $request->getPost('status')
+                    ) ?: 'E',
 
                 'keterangan' =>
-                    trim((string) strtoupper($request->getPost('keterangan'))),
+                    $this->cleanString(
+                        $request->getPost('keterangan')
+                    ),
             ];
-
 
             // =====================================================
             // DATABASE
@@ -4206,18 +4037,11 @@ class Arap extends BaseController
 
             $db->transBegin();
 
-
             // =====================================================
             // CARI TEMPORARY MILIK USER
-            //
-            // Tidak hanya percaya idurut dari browser.
             // =====================================================
             $existing = null;
 
-
-            // -----------------------------------------------------
-            // Jika idurut dikirim, cek bahwa memang milik user
-            // -----------------------------------------------------
             if ($idurut !== '') {
 
                 $existing = $db->table('sc_tmp.tterima_hd')
@@ -4228,10 +4052,6 @@ class Arap extends BaseController
                     ->getRowArray();
             }
 
-
-            // -----------------------------------------------------
-            // Jika tidak ditemukan, cari berdasarkan inputby
-            // -----------------------------------------------------
             if (!$existing) {
 
                 $existing = $db->table('sc_tmp.tterima_hd')
@@ -4243,7 +4063,6 @@ class Arap extends BaseController
                     ->getRowArray();
             }
 
-
             // =====================================================
             // UPDATE
             // =====================================================
@@ -4251,58 +4070,45 @@ class Arap extends BaseController
 
                 $idurut = (int) $existing['idurut'];
 
-
-                // -------------------------------------------------
-                // FIELD YANG SUDAH LOCKED
-                //
-                // Jangan ambil dari POST ketika UPDATE.
-                // -------------------------------------------------
                 $data['docno'] =
-                    trim((string) $existing['docno']);
+                    $this->cleanString(
+                        $existing['docno']
+                    );
 
                 $data['cabang'] =
-                    trim((string) $existing['cabang']);
+                    $this->cleanString(
+                        $existing['cabang']
+                    );
 
                 $data['kdsupplier'] =
-                    trim((string) $existing['kdsupplier']);
+                    $this->cleanString(
+                        $existing['kdsupplier']
+                    );
 
                 $data['nmsupplier'] =
-                    trim((string) $existing['nmsupplier']);
+                    $this->cleanString(
+                        $existing['nmsupplier']
+                    );
 
                 $data['alamatsupplier'] =
-                    trim((string) $existing['alamatsupplier']);
+                    $this->cleanString(
+                        $existing['alamatsupplier']
+                    );
 
-
-                // -------------------------------------------------
-                // TANGGAL JATUH TEMPO
-                // -------------------------------------------------
-                // TIDAK lagi dipertahankan dari database.
-                // Nilai POST tgljthtempo harus masuk ke UPDATE.
-                //
-                // Karena inputby adalah owner NIK dan status masih E,
-                // header temporary milik user boleh diperbarui.
-
-
-                // -------------------------------------------------
-                // UPDATE HEADER TEMPORARY
-                // -------------------------------------------------
                 $db->table('sc_tmp.tterima_hd')
                     ->where('idurut', $idurut)
                     ->where(
                         'docno',
-                        trim((string) $existing['docno'])
+                        $this->cleanString($existing['docno'])
                     )
                     ->where('inputby', $nama)
                     ->where('status', 'E')
                     ->update([
                         ...$data,
 
-                        // Draft selalu tetap E.
-                        'status' =>
-                            'E',
+                        'status' => 'E',
 
-                        'updateby' =>
-                            $nama ?: $nama,
+                        'updateby' => $nama,
 
                         'updatedate' =>
                             date('Y-m-d H:i:s')
@@ -4312,33 +4118,19 @@ class Arap extends BaseController
                     'Header Tanda Terima berhasil diperbarui.';
             }
 
-
             // =====================================================
             // INSERT
             // =====================================================
             else {
 
-                // -------------------------------------------------
-                // PEMILIK TEMPORARY
-                // -------------------------------------------------
-                // inputby menyimpan NIK sebagai owner temporary.
-                $data['inputby'] =
-                    $nama;
+                $data['inputby'] = $nama;
 
                 $data['inputdate'] =
                     date('Y-m-d H:i:s');
 
-
-                // -------------------------------------------------
-                // DOCUMENT TEMP
-                // -------------------------------------------------
                 $data['docnotmp'] =
                     $docno;
 
-
-                // -------------------------------------------------
-                // DEFAULT VALUE
-                // -------------------------------------------------
                 $data['balance'] = 0;
                 $data['beaimport'] = 0;
                 $data['ppnimport'] = 0;
@@ -4348,21 +4140,15 @@ class Arap extends BaseController
                 $data['biayalain'] = 0;
                 $data['totalestimasi'] = 0;
 
-
-                // -------------------------------------------------
-                // INSERT
-                // -------------------------------------------------
                 $db->table('sc_tmp.tterima_hd')
                     ->insert($data);
 
                 $idurut =
                     $db->insertID();
 
-
                 $message =
                     'Header Tanda Terima berhasil disimpan.';
             }
-
 
             // =====================================================
             // TRANSACTION CHECK
@@ -4378,39 +4164,30 @@ class Arap extends BaseController
                 ]);
             }
 
-
             // =====================================================
             // COMMIT
             // =====================================================
             $db->transCommit();
 
-
             // =====================================================
             // RESPONSE
             // =====================================================
             return $this->response->setJSON([
-
                 'success' => true,
 
-                'message' =>
-                    $message,
+                'message' => $message,
 
                 'data' => [
-
-                    'idurut' =>
-                        $idurut,
+                    'idurut' => $idurut,
 
                     'docno' =>
                         $data['docno'],
 
-                    'status' =>
-                        'E',
+                    'status' => 'E',
 
-                    'inputby' =>
-                        $nama
+                    'inputby' => $nama
                 ]
             ]);
-
 
         } catch (\Throwable $e) {
 
@@ -4421,9 +4198,7 @@ class Arap extends BaseController
             );
 
             return $this->response->setJSON([
-
                 'success' => false,
-
                 'message' =>
                     'Terjadi kesalahan: ' .
                     $e->getMessage()
@@ -4901,41 +4676,76 @@ class Arap extends BaseController
     public function updateTterima()
     {
         $nama = trim(
-            $this->session->get('nama')
+            (string) $this->session->get('nama')
         );
 
-        /*
-         * ============================================================
-         * DOCNO
-         * ============================================================
-         */
-
-        $docno = hex2bin(
-            $this->request->getGet('id')
+        // ============================================================
+        // DOCNO
+        // ============================================================
+        $id = trim(
+            (string) $this->request->getGet('id')
         );
 
+        if ($id === '') {
+            return redirect()->to(
+                base_url('arap/transaksi/tterima')
+            );
+        }
 
-        /*
-         * ============================================================
-         * GET HEADER TANDA TERIMA
-         * ============================================================
-         */
+        $docno = hex2bin($id);
 
-        $param =
-            " and coalesce(docno,'')='$docno'";
+        if ($docno === false || trim($docno) === '') {
+            return redirect()->to(
+                base_url('arap/transaksi/tterima')
+            );
+        }
+
+        $docno = trim($docno);
+
+
+        // ============================================================
+        // GET HEADER TANDA TERIMA
+        // ============================================================
+        $param = " AND COALESCE(docno, '') = '" .
+            addslashes($docno) .
+            "'";
 
         $dtl = $this->m_arap
             ->q_tterima_master($param)
             ->getRowArray();
 
 
-        /*
-         * ============================================================
-         * JIKA DATA TIDAK DITEMUKAN
-         * ============================================================
-         */
-
+        // ============================================================
+        // DATA TIDAK DITEMUKAN
+        // ============================================================
         if (!$dtl) {
+            return redirect()->to(
+                base_url('arap/transaksi/tterima')
+            );
+        }
+
+
+        // ============================================================
+        // STATUS
+        // ============================================================
+        $status = strtoupper(
+            trim((string) ($dtl['status'] ?? ''))
+        );
+
+
+        // ============================================================
+        // LOGIN DATE
+        // ============================================================
+        $logindate = trim(
+            (string) $this->session->get('logindate')
+        );
+
+        if ($logindate === '') {
+
+            session()->setFlashdata(
+                'periode_error',
+                'Tanggal login tidak ditemukan.'
+            );
 
             return redirect()->to(
                 base_url('arap/transaksi/tterima')
@@ -4943,142 +4753,113 @@ class Arap extends BaseController
         }
 
 
-        /*
-         * ============================================================
-         * STATUS
-         * ============================================================
-         */
-
-        $status = trim(
-            $dtl['status'] ?? ''
-        );
-
-
-        /*
-         * ============================================================
-         * LOGIN DATE
-         * ============================================================
-         */
-
-        $logindate = trim(
-            $this->session->get('logindate')
-        );
-
-
-        /*
-         * ============================================================
-         * GUARD PERIODE TUTUP
-         * ============================================================
-         */
-
+        // ============================================================
+        // PERIODE
+        // ============================================================
         $periode = date(
             'ym',
             strtotime($logindate)
         );
 
-        $dtlPeriode = $this->m_purchase
-            ->q_cek_periode($periode)
+
+        // ============================================================
+        // CEK CLOSE PERIOD
+        // ============================================================
+        $closePeriod = $this->db
+            ->table('sc_trx.closeperiod')
+            ->select('idurut, periode, flagproses, keterangan')
+            ->where('TRIM(periode)', $periode)
+            ->where('UPPER(TRIM(flagproses))', 'TUTUP')
+            ->limit(1)
+            ->get()
             ->getRowArray();
 
 
-        if (
-            $dtlPeriode &&
-            strtoupper(
-                trim(
-                    $dtlPeriode['flagproses']
-                )
-            ) === 'TUTUP'
-        ) {
+        // ============================================================
+        // JIKA PERIODE SUDAH TUTUP
+        // ============================================================
+        if ($closePeriod) {
+
+            $keterangan = trim(
+                (string) ($closePeriod['keterangan'] ?? '')
+            );
+
+            $message =
+                'Periode ' . $periode .
+                ' sudah TUTUP. Tidak dapat melakukan edit Tanda Terima.';
+
+            if ($keterangan !== '') {
+                $message .= ' ' . $keterangan;
+            }
 
             session()->setFlashdata(
                 'periode_error',
-                'Periode ' .
-                $periode .
-                ' sudah TUTUP. Tidak dapat melakukan input.'
+                $message
             );
 
             return redirect()->to(
-                base_url(
-                    'arap/transaksi/tterima'
-                )
+                base_url('arap/transaksi/tterima')
             );
         }
 
 
-        /*
-         * ============================================================
-         * STATUS F / P
-         * ============================================================
-         *
-         * F = Final
-         * P = Posted
-         *
-         * Diubah kembali menjadi E
-         * agar dapat diedit.
-         * ============================================================
-         */
-
+        // ============================================================
+        // STATUS F / P
+        // ============================================================
+        // F = Final
+        // P = Posted
+        //
+        // Diubah kembali menjadi E agar dapat diedit.
+        // ============================================================
         if (
-            $status === 'F' ||
-            $status === 'P'
+            $status !== 'F' &&
+            $status !== 'P'
         ) {
 
-            $info = array(
-                'status' => 'E'
-            );
-
-
-            /*
-             * ========================================================
-             * UPDATE STATUS
-             * ========================================================
-             */
-
-            $builder = $this->db
-                ->table('sc_trx.tterima_hd');
-
-
-            $builder
-                ->where(
-                    'trim(docno)',
-                    $docno
-                );
-
-
-            $builder->update(
-                $info
-            );
-
-
-            /*
-             * ========================================================
-             * REDIRECT KE ADD TTERIMA
-             * ========================================================
-             */
-
             return redirect()->to(
-                base_url(
-                    'arap/transaksi/addTterima'
-                ) .
-                '?docno=' .
-                urlencode($docno)
-            );
-
-
-        } else {
-
-            /*
-             * ========================================================
-             * STATUS BUKAN F / P
-             * ========================================================
-             */
-
-            return redirect()->to(
-                base_url(
-                    'arap/transaksi/tterima'
-                )
+                base_url('arap/transaksi/tterima')
             );
         }
+
+
+        // ============================================================
+        // UPDATE STATUS F/P -> E
+        // ============================================================
+        $updated = $this->db
+            ->table('sc_trx.tterima_hd')
+            ->where('TRIM(docno)', $docno)
+            ->whereIn('status', ['F', 'P'])
+            ->update([
+                'status'     => 'E',
+                'updateby'   => $nama,
+                'updatedate' => date('Y-m-d H:i:s')
+            ]);
+
+
+        // ============================================================
+        // GAGAL UPDATE
+        // ============================================================
+        if ($updated === false) {
+
+            session()->setFlashdata(
+                'periode_error',
+                'Tanda Terima gagal dibuka kembali untuk diedit.'
+            );
+
+            return redirect()->to(
+                base_url('arap/transaksi/tterima')
+            );
+        }
+
+
+        // ============================================================
+        // REDIRECT KE ADD TTERIMA
+        // ============================================================
+        return redirect()->to(
+            base_url('arap/transaksi/addTterima') .
+            '?docno=' .
+            urlencode($docno)
+        );
     }
 
     /* TANDA TERIMA LOAD LPB */
@@ -5087,7 +4868,9 @@ class Arap extends BaseController
     {
         $docno      = trim($this->request->getPost('docno'));
         $kdsupplier = trim($this->request->getPost('kdsupplier'));
-        $inputby    = trim($this->request->getPost('inputby'));
+        $nama = trim(
+            (string) $this->session->get('nama')
+        );
 
         if ($docno == '') {
             return $this->response->setJSON([
@@ -5118,32 +4901,79 @@ class Arap extends BaseController
          * Keterangan diambil dari transaction_dt.namabarang
          * dan digabung menggunakan " / ".
          */
-        $sql = "
-            SELECT
-                TRIM(jd.ref_docno) AS nobukti,
-                TRIM(jd.idcoa) AS noperkiraan,
-                TRIM(td.kdsupplier) AS kdsupplier,
-                TRIM(td.nsupplier) AS nmsupplier,
-                STRING_AGG(
-                    DISTINCT NULLIF(TRIM(td.namabarang), ''),
-                    ' / '
-                    ORDER BY NULLIF(TRIM(td.namabarang), '')
-                ) AS keterangan,
-                SUM(COALESCE(jd.kredit, 0)) AS nilai
-            FROM sc_trx.jurnal_dt jd
-            INNER JOIN sc_trx.transaction_dt td
-                ON TRIM(td.uniqueid) = TRIM(jd.source_uniqueid)
-            WHERE trim(td.journal_type)='GRNREC' and TRIM(td.kdsupplier) = ?
-              AND COALESCE(jd.kredit, 0) > 0
-            GROUP BY
-                TRIM(jd.ref_docno),
-                TRIM(jd.idcoa),
-                TRIM(td.kdsupplier),
-                TRIM(td.nsupplier)
-            ORDER BY
-                TRIM(jd.ref_docno),
-                TRIM(jd.idcoa)
-        ";
+//        $sql = "
+//            SELECT
+//                TRIM(jd.ref_docno) AS nobukti,
+//                TRIM(jd.idcoa) AS noperkiraan,
+//                TRIM(td.kdsupplier) AS kdsupplier,
+//                TRIM(td.nsupplier) AS nmsupplier,
+//                STRING_AGG(
+//                    DISTINCT NULLIF(TRIM(td.namabarang), ''),
+//                    ' / '
+//                    ORDER BY NULLIF(TRIM(td.namabarang), '')
+//                ) AS keterangan,
+//                SUM(COALESCE(jd.kredit, 0)) AS nilai
+//            FROM sc_trx.jurnal_dt jd
+//            INNER JOIN sc_trx.transaction_dt td
+//                ON TRIM(td.uniqueid) = TRIM(jd.source_uniqueid)
+//            WHERE trim(td.journal_type)='GRNREC' and TRIM(td.kdsupplier) = ?
+//              AND COALESCE(jd.kredit, 0) > 0
+//            GROUP BY
+//                TRIM(jd.ref_docno),
+//                TRIM(jd.idcoa),
+//                TRIM(td.kdsupplier),
+//                TRIM(td.nsupplier)
+//            ORDER BY
+//                TRIM(jd.ref_docno),
+//                TRIM(jd.idcoa)
+//        ";
+
+        $sql = "SELECT
+    TRIM(jd.ref_docno)   AS nobukti,
+    TRIM(jd.idcoa)       AS noperkiraan,
+    TRIM(td.kdsupplier)  AS kdsupplier,
+    TRIM(td.nsupplier)   AS nmsupplier,
+    STRING_AGG(
+        DISTINCT NULLIF(TRIM(td.namabarang), ''),
+        ' / '
+        ORDER BY NULLIF(TRIM(td.namabarang), '')
+    ) AS keterangan,
+    SUM(COALESCE(jd.kredit, 0))
+      - COALESCE(MAX(penggunaan.total_digunakan), 0) AS nilai
+FROM sc_trx.jurnal_dt jd
+INNER JOIN sc_trx.jurnal_hd jh
+    ON jh.id = jd.jurnal_id
+INNER JOIN sc_trx.transaction_dt td
+    ON TRIM(td.uniqueid) = TRIM(jd.source_uniqueid)
+LEFT JOIN (
+    SELECT
+        TRIM(nobukti)     AS nobukti,
+        TRIM(noperkiraan) AS noperkiraan,
+        SUM(COALESCE(nilai, 0)) AS total_digunakan
+    FROM sc_trx.jurnal_hd_penggunaan
+    GROUP BY
+        TRIM(nobukti),
+        TRIM(noperkiraan)
+) penggunaan
+    ON  penggunaan.nobukti     = TRIM(jd.ref_docno)
+    AND penggunaan.noperkiraan = TRIM(jd.idcoa)
+WHERE TRIM(td.journal_type) = 'GRNREC'
+  AND TRIM(td.kdsupplier)   = ?
+  AND COALESCE(jd.kredit, 0) > 0
+  AND TRIM(jh.status)       = 'POSTED'
+  AND TRIM(jd.status)       = 'POSTED'
+GROUP BY
+    TRIM(jd.ref_docno),
+    TRIM(jd.idcoa),
+    TRIM(td.kdsupplier),
+    TRIM(td.nsupplier),
+    penggunaan.total_digunakan
+HAVING
+    SUM(COALESCE(jd.kredit, 0))
+      - COALESCE(MAX(penggunaan.total_digunakan), 0) > 0
+ORDER BY
+    TRIM(jd.ref_docno),
+    TRIM(jd.idcoa); ";
 
         $rows = $this->db->query($sql, [$kdsupplier])->getResultArray();
 
@@ -5212,8 +5042,10 @@ class Arap extends BaseController
                         'costprofitcenter' => '',
                         'nilai'            => $nilai,
                         'status'           => 'E',
-                        'inputby'          => $inputby,
-                        'inputdate'        => date('Y-m-d H:i:s')
+                        'inputby'          => $nama,
+                        'inputdate'        => date('Y-m-d H:i:s'),
+                        'jurnalref'        => 'YES',
+                        'nilai_ref'            => $nilai,
                     ]);
 
                 $inserted++;
@@ -5257,4 +5089,356 @@ class Arap extends BaseController
         }
     }
 
+
+// ============================================================
+// DETAIL TANDA TERIMA SUPPLIER
+// MODE : VIEW ONLY
+// SOURCE : sc_trx.tterima_hd + sc_trx.tterima_dt
+// ============================================================
+    public function detailTterima()
+    {
+        $docno = trim(
+            (string) $this->request->getGet('docno')
+        );
+
+        if ($docno === '') {
+
+            return redirect()->to(
+                base_url('arap/transaksi/tterima')
+            );
+        }
+
+        $db = db_connect();
+
+        try {
+
+            // =====================================================
+            // HEADER
+            // =====================================================
+
+            $header = $db
+                ->table('sc_trx.tterima_hd')
+                ->where('docno', $docno)
+                ->get()
+                ->getRowArray();
+
+
+            if (!$header) {
+
+                return redirect()
+                    ->to(
+                        base_url('arap/transaksi/tterima')
+                    )
+                    ->with(
+                        'message',
+                        '<div class="alert alert-danger">
+                        Data Tanda Terima tidak ditemukan.
+                    </div>'
+                    );
+            }
+
+
+            // =====================================================
+            // DETAIL
+            // =====================================================
+
+            $detail = $db
+                ->table('sc_trx.tterima_dt')
+                ->select('
+                idurut,
+                docno,
+                idunique,
+                nobukti,
+                docref,
+                noperkiraan,
+                namaperkiraan,
+                keterangan,
+                TRIM(dk) AS dk,
+                costprofitcenter,
+                nilai,
+                status,
+                inputby,
+                inputdate,
+                updateby,
+                updatedate,
+                docnotmp
+            ')
+                ->where('docno', $docno)
+                ->orderBy('idurut', 'ASC')
+                ->get()
+                ->getResultArray();
+
+
+            // =====================================================
+            // DATA UNTUK VIEW
+            // =====================================================
+
+            $data = [
+
+                'title' =>
+                    'Detail Tanda Terima Supplier',
+
+                'kodemenu' =>
+                    $this->request->getGet('kodemenu')
+                    ?? '',
+
+                'y' =>
+                    [],
+
+                'message' =>
+                    session()->getFlashdata('message'),
+
+                'dtldata' =>
+                    $header,
+
+                'detaildata' =>
+                    $detail,
+
+                'docno' =>
+                    $docno,
+
+                'typeform' =>
+                    'DETAIL'
+
+            ];
+
+
+            return $this->template->render(
+                '/arap/tterima/v_detail_tterima',
+                $data
+            );
+
+
+        } catch (\Throwable $e) {
+
+            log_message(
+                'error',
+                'detailTterima error: ' .
+                $e->getMessage()
+            );
+
+
+            return redirect()
+                ->to(
+                    base_url('arap/transaksi/tterima')
+                )
+                ->with(
+                    'message',
+                    '<div class="alert alert-danger">
+                    Terjadi kesalahan saat mengambil
+                    data Tanda Terima.
+                </div>'
+                );
+        }
+    }
+
+    public function deleteTterima()
+    {
+        $docno = trim((string) $this->request->getPost('docno'));
+        $nama  = trim((string) $this->session->get('nama'));
+
+        if ($docno === '') {
+            return $this->response->setJSON([
+                'status'  => false,
+                'success' => false,
+                'message' => 'Nomor dokumen Tanda Terima tidak ditemukan.'
+            ]);
+        }
+
+        $db = \Config\Database::connect();
+
+        try {
+
+            $db->transBegin();
+
+
+            // =====================================================
+            // 1. LOCK HEADER
+            // =====================================================
+            $header = $db->query("
+            SELECT
+                idurut,
+                TRIM(docno) AS docno,
+                TRIM(status) AS status,
+                TRIM(docdate) AS docdate
+            FROM sc_trx.tterima_hd
+            WHERE TRIM(docno) = ?
+            LIMIT 1
+            FOR UPDATE
+        ", [$docno])->getRowArray();
+
+
+            if (!$header) {
+
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'success' => false,
+                    'message' => 'Data Tanda Terima tidak ditemukan.'
+                ]);
+            }
+
+
+            $idurut  = (int) $header['idurut'];
+            $docnoDb = trim((string) $header['docno']);
+            $status  = strtoupper(trim((string) $header['status']));
+            $docdate = trim((string) $header['docdate']);
+
+
+            // =====================================================
+            // 2. CEK CLOSING TRANSAKSI
+            // =====================================================
+            if ($status === 'C') {
+
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'success' => false,
+                    'message' => 'Tanda Terima ' . $docnoDb .
+                        ' sudah closing dan tidak dapat dihapus.'
+                ]);
+            }
+
+
+            // =====================================================
+            // 3. CEK TUTUP PERIODE
+            // =====================================================
+            if ($docdate === '') {
+
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'success' => false,
+                    'message' => 'Tanggal Tanda Terima tidak ditemukan.'
+                ]);
+            }
+
+
+            try {
+
+                $dateObj = new \DateTime($docdate);
+                $periode = $dateObj->format('ym');
+
+            } catch (\Throwable $e) {
+
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'success' => false,
+                    'message' => 'Format tanggal Tanda Terima tidak valid.'
+                ]);
+            }
+
+
+            // =====================================================
+// CEK PERIODE SUDAH DITUTUP
+// =====================================================
+
+            $closePeriod = $db->query("
+    SELECT
+        idurut,
+        periode,
+        flagproses,
+        keterangan
+    FROM sc_trx.closeperiod
+    WHERE TRIM(periode) = ?
+      AND UPPER(TRIM(flagproses)) = 'TUTUP'
+    LIMIT 1
+", [$periode])->getRowArray();
+
+
+            if ($closePeriod) {
+
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'success' => false,
+                    'message' => 'Tanda Terima ' . $docnoDb .
+                        ' tidak dapat dihapus karena periode ' .
+                        $periode . ' sudah ditutup.'
+                ]);
+            }
+
+            $this->db->query("DELETE FROM sc_trx.jurnal_hd_penggunaan
+                                    WHERE docno = v_docno
+                                      AND EXISTS (
+                                          SELECT 1
+                                          FROM sc_tmp.tterima_dt
+                                          WHERE jurnalref = 'YES'
+                                            AND docno = $docno)");
+            // =====================================================
+            // 5. HAPUS DETAIL
+            // =====================================================
+            $db->table('sc_trx.tterima_dt')
+                ->where('idurut', $idurut)
+                ->where('docno', $docnoDb)
+                ->delete();
+
+
+            // =====================================================
+            // 6. HAPUS HEADER
+            // =====================================================
+            $db->table('sc_trx.tterima_hd')
+                ->where('idurut', $idurut)
+                ->where('docno', $docnoDb)
+                ->where('status !=', 'C')
+                ->delete();
+
+
+            // =====================================================
+            // 7. CEK TRANSACTION
+            // =====================================================
+            if ($db->transStatus() === false) {
+
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'success' => false,
+                    'message' => 'Gagal menghapus Tanda Terima.'
+                ]);
+            }
+
+
+            // =====================================================
+            // 8. COMMIT
+            // =====================================================
+            $db->transCommit();
+
+
+            return $this->response->setJSON([
+                'status'  => true,
+                'success' => true,
+                'message' => 'Tanda Terima ' . $docnoDb .
+                    ' berhasil dihapus.',
+                'data'    => [
+                    'idurut'  => $idurut,
+                    'docno'   => $docnoDb,
+                    'periode' => $periode,
+                    'inputby' => $nama
+                ]
+            ]);
+
+
+        } catch (\Throwable $e) {
+
+            $db->transRollback();
+
+            log_message(
+                'error',
+                'deleteTterima error: ' . $e->getMessage()
+            );
+
+            return $this->response->setJSON([
+                'status'  => false,
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus Tanda Terima.'
+            ]);
+        }
+    }
 }

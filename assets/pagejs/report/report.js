@@ -153,7 +153,7 @@ function getMode() {
             type:       'UH',
             previewUrl: HOST_URL + 'report/trans/previewLaporanUmurHutang',
             bodyId:     'tblPreviewUHBody',
-            colspan:    23
+            colspan:    28        // ✅ No + 27 data
         };
     }
     if (jenis === 'umurpiutang') {
@@ -699,10 +699,15 @@ function renderPreview(rows, page, perpage, mode) {
                 '<td>' + escapeHtml(r.kdprk) + '</td>' +
                 '<td>' + escapeHtml(r.nmprk) + '</td>' +
                 '<td>' + escapeHtml(r.docdate) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.jthtempo) + '</td>' +
+                '<td>' + escapeHtml(r.tgljt_supplier) + '</td>' +
                 '<td>' + escapeHtml(r.tgljt) + '</td>' +
-                '<td>' + escapeHtml(r.dk) + '</td>' +
+                '<td class="text-center">' + escapeHtml(r.status_tt) + '</td>' +
+                '<td>' + escapeHtml(r.no_tt) + '</td>' +
+                '<td>' + escapeHtml(r.tgl_tt) + '</td>' +
+                '<td class="text-center">' + escapeHtml(r.dk) + '</td>' +
                 '<td>' + escapeHtml(r.keterangan) + '</td>' +
-                '<td>' + escapeHtml(r.currcode) + '</td>' +
+                '<td class="text-center">' + escapeHtml(r.currcode) + '</td>' +
                 '<td class="text-right">' + fmtNum(r.kurs) + '</td>' +
                 '<td class="text-right">' + fmtNum(r.nilai) + '</td>' +
                 '<td class="text-right">' + fmtNum(r.nilai_belum_jt) + '</td>' +
@@ -715,7 +720,7 @@ function renderPreview(rows, page, perpage, mode) {
                 '<td>' + escapeHtml(r.namajob) + '</td>' +
                 '<td>' + escapeHtml(r.alamatsupplier) + '</td>' +
                 '<td>' + escapeHtml(r.kotasupplier) + '</td>' +
-            '</tr>';
+                '</tr>';
         } else if (mode.type === 'UP') {
             html += '<tr>' +
                 '<td>' + (startNo + i) + '</td>' +

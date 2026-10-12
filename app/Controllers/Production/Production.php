@@ -680,9 +680,21 @@ class Production extends BaseController
         $row = $dtl->getRowArray();
 
         // JIKA DOCNO ATAU DATA TIDAK ADA
-        if (empty($row) || empty(trim($row['docno'] ?? ''))) {
-            return redirect()->to(base_url('production/trans/standart_cost'));
-        }
+        // ... existing code ...
+        
+                    if (!empty(trim($_POST['f_docno'] ?? ''))) {
+                        $builder->like('trim(upper(docno))', strtoupper(trim($_POST['f_docno'])));
+                    }
+        
+                    if (!empty(trim($_POST['f_cabang'] ?? ''))) {
+                        $builder->like('trim(upper(cabang))', strtoupper(trim($_POST['f_cabang'])));
+                    }
+        
+                    if (!empty(trim($_POST['f_pemohon'] ?? ''))) {
+                        $builder->like('trim(upper(pemohon))', strtoupper(trim($_POST['f_pemohon'])));
+                    }
+        
+        // ... existing code ...
 
         $status = trim($row['status'] ?? '');
 

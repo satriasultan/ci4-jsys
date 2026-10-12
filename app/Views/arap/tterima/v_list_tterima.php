@@ -195,15 +195,25 @@
                                             </th>
 
                                             <th class="text-center">
-                                                Nilai
+                                                Nilai TT
                                             </th>
-
+                                            <th class="text-center">
+                                                Balance
+                                            </th>
                                             <th class="text-center">
                                                 Keterangan
                                             </th>
 
                                             <th class="text-center">
                                                 Status Dokumen
+                                            </th>
+
+                                            <th class="text-center">
+                                                Inputby
+                                            </th>
+
+                                            <th class="text-center">
+                                                Inputdate
                                             </th>
                                         </tr>
                                         </thead>
@@ -1372,415 +1382,110 @@
 
 </div>
 
+<?php if (session()->getFlashdata('periode_error')): ?>
 
+    <script>
+        $(document).ready(function () {
+
+            Swal.fire({
+                icon: 'warning',
+                title: 'Periode Sudah Ditutup',
+                text: <?= json_encode(
+                        session()->getFlashdata('periode_error')
+                ); ?>,
+                confirmButtonText: 'OK'
+            });
+
+        });
+    </script>
+
+<?php endif; ?>
 
 <!-- =========================================================
      TRACEABILITY HELPER
 ========================================================= -->
 
 <script>
-
-    function openTterimaTraceability(data)
-    {
-        /*
-         * Fungsi ini sengaja dibuat generic.
-         *
-         * Nantinya tterima.js dapat memanggil:
-         *
-         * openTterimaTraceability({
-         *     docno: row.docno,
-         *     docdate: row.docdate,
-         *     supplier: row.nmsupplier,
-         *     status: row.status
-         * });
-         */
-
-        data = data || {};
-
-        $('#trace_docno').val(
-            data.docno || ''
-        );
-
-        $('#trace_docdate').val(
-            data.docdate || ''
-        );
-
-        $('#trace_supplier').val(
-            data.supplier || data.nmsupplier || ''
-        );
-
-        $('#trace_status').val(
-            data.status || ''
-        );
-
-
-        /*
-         * Reset summary.
-         */
-
-        $('#trace_total').text('6');
-        $('#trace_complete').text('0');
-        $('#trace_missing').text('0');
-
-        $('#trace_progress')
-            .css('width', '0%');
-
-        $('#trace_progress_text')
-            .text('0%');
-
-        $('#trace_check_status')
-            .removeClass(
-                'bg-success bg-danger bg-warning'
-            )
-            .addClass('bg-secondary')
-            .text('Belum Dicek');
-
-
-        /*
-         * Reset checklist.
-         */
-
-        $('#tableTraceability .trace-status')
-            .val('BELUM');
-
-        $('#tableTraceability .trace-no')
-            .val('');
-
-        $('#tableTraceability .trace-date')
-            .val('');
-
-        $('#tableTraceability .trace-note')
-            .val('');
-
-
-        /*
-         * Tampilkan modal.
-         */
-
-        const modalElement =
-            document.getElementById(
-                'modalTraceability'
-            );
-
-        const modal =
-            bootstrap.Modal.getOrCreateInstance(
-                modalElement
-            );
-
-        modal.show();
-    }
-
-
-    /*
-     * Hitung summary checklist.
-     */
-
-    function calculateTraceability()
-    {
-        const total =
-            $('#tableTraceability .trace-status').length;
-
-        let complete = 0;
-        let missing = 0;
-
-
-        $('#tableTraceability .trace-status')
-            .each(function () {
-
-                const status =
-                    $(this).val();
-
-                if (status === 'ADA') {
-                    complete++;
-                }
-
-                if (status === 'BELUM') {
-                    missing++;
-                }
-
-            });
-
-
-        const percentage =
-            total > 0
-                ? Math.round(
-                    (
-                        complete /
-                        total
-                    ) * 100
-                )
-                : 0;
-
-
-        $('#trace_total')
-            .text(total);
-
-        $('#trace_complete')
-            .text(complete);
-
-        $('#trace_missing')
-            .text(missing);
-
-
-        $('#trace_progress')
-            .css(
-                'width',
-                percentage + '%'
-            );
-
-
-        $('#trace_progress_text')
-            .text(
-                percentage + '%'
-            );
-
-
-        const $status =
-            $('#trace_check_status');
-
-
-        $status
-            .removeClass(
-                'bg-secondary bg-success bg-danger bg-warning'
-            );
-
-
-        if (percentage === 100) {
-
-            $status
-                .addClass('bg-success')
-                .text('Lengkap');
-
-        } else if (complete > 0) {
-
-            $status
-                .addClass('bg-warning')
-                .text('Sebagian');
-
-        } else {
-
-            $status
-                .addClass('bg-danger')
-                .text('Belum Lengkap');
-
-        }
-    }
-
-
-    /*
-     * Update otomatis ketika checklist berubah.
-     */
-
-    $(document).on(
-        'change',
-        '#tableTraceability .trace-status',
-        function () {
-
-            calculateTraceability();
-
-        }
-    );
-
-
     $(document).ready(function () {
 
-        /*
-         * DataTables existing.
-         */
-
-        if (
-            $.fn.DataTable &&
-            !$.fn.DataTable.isDataTable(
-                '#tableTterimaTrx'
-            )
-        ) {
-
-            $('#tableTterimaTrx').DataTable({
-                processing: true,
-                serverSide: true,
-
-                ajax: {
-                    url:
-                        HOST_URL +
-                        'arap/transaksi/listTterimaTrx',
-
-                    type: 'POST'
-                }
-            });
-
-        }
-
-
-        /*
-         * Date range filter.
-         */
-
-        if (
-            $.fn.daterangepicker
-        ) {
-
+        if ($.fn.daterangepicker) {
             $('.tglrange').daterangepicker({
-
                 autoUpdateInput: false,
-
                 locale: {
                     cancelLabel: 'Clear',
                     format: 'DD-MM-YYYY'
                 }
-
             });
-
 
             $('.tglrange').on(
                 'apply.daterangepicker',
-                function (
-                    ev,
-                    picker
-                ) {
-
+                function (ev, picker) {
                     $(this).val(
-                        picker.startDate.format(
-                            'DD-MM-YYYY'
-                        ) +
+                        picker.startDate.format('DD-MM-YYYY') +
                         ' - ' +
-                        picker.endDate.format(
-                            'DD-MM-YYYY'
-                        )
+                        picker.endDate.format('DD-MM-YYYY')
                     );
-
                 }
             );
-
 
             $('.tglrange').on(
                 'cancel.daterangepicker',
                 function () {
-
                     $(this).val('');
-
                 }
             );
-
         }
 
+        $('#btn-reset').on('click', function () {
+            $('#form-filter')[0].reset();
+            $('.tglrange').val('');
+            reload_tableTterimaTrx();
+        });
 
-        /*
-         * Tombol reset filter.
-         */
-
-        $('#btn-reset').on(
-            'click',
-            function () {
-
-                $('#form-filter')[0].reset();
-
-                $('.tglrange').val('');
-
-                reload_tableTterimaTrx();
-
+        $('#btn-filter').on('click', function () {
+            if ($.fn.DataTable.isDataTable('#tableTterimaTrx')) {
+                const table = $('#tableTterimaTrx').DataTable();
+                table.ajax.reload(null, false);
             }
-        );
 
+            const modalElement = document.getElementById('filter');
+            const modal = bootstrap.Modal.getInstance(modalElement);
 
-        /*
-         * Tombol filter.
-         *
-         * Menggunakan parameter existing
-         * DataTables.
-         */
-
-        $('#btn-filter').on(
-            'click',
-            function () {
-
-                if (
-                    $.fn.DataTable.isDataTable(
-                        '#tableTterimaTrx'
-                    )
-                ) {
-
-                    const table =
-                        $('#tableTterimaTrx')
-                            .DataTable();
-
-                    table.ajax.reload(
-                        null,
-                        false
-                    );
-
-                }
-
-                const modalElement =
-                    document.getElementById(
-                        'filter'
-                    );
-
-                const modal =
-                    bootstrap.Modal.getInstance(
-                        modalElement
-                    );
-
-                if (modal) {
-                    modal.hide();
-                }
-
+            if (modal) {
+                modal.hide();
             }
-        );
+        });
 
+        $('#btnSaveTraceability').on('click', function () {
+            calculateTraceability();
 
-        /*
-         * Save checklist.
-         *
-         * Untuk tahap pertama hanya
-         * melakukan validasi UI.
-         *
-         * Endpoint backend dapat
-         * ditambahkan di tterima.js.
-         */
+            const total =
+                $('#tableTraceability .trace-status').length;
 
-        $('#btnSaveTraceability').on(
-            'click',
-            function () {
+            const complete =
+                $('#tableTraceability .trace-status')
+                    .filter(function () {
+                        return $(this).val() === 'ADA';
+                    })
+                    .length;
 
-                calculateTraceability();
-
-                const total =
-                    $('#tableTraceability .trace-status').length;
-
-                const complete =
-                    $('#tableTraceability .trace-status')
-                        .filter(function () {
-                            return $(this).val() === 'ADA';
-                        })
-                        .length;
-
-
-                if (complete === 0) {
-
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Dokumen Belum Dicek',
-                        text:
-                            'Belum ada dokumen yang ditandai tersedia.'
-                    });
-
-                    return;
-
-                }
-
-
+            if (complete === 0) {
                 Swal.fire({
-                    icon: 'success',
-                    title: 'Checklist Siap Disimpan',
-                    text:
-                        'Checklist traceability sudah divalidasi.'
+                    icon: 'warning',
+                    title: 'Dokumen Belum Dicek',
+                    text: 'Belum ada dokumen yang ditandai tersedia.'
                 });
-
+                return;
             }
-        );
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Checklist Siap Disimpan',
+                text: 'Checklist traceability sudah divalidasi.'
+            });
+        });
 
     });
-
 </script>
 
 

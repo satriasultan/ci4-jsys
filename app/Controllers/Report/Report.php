@@ -909,7 +909,7 @@ class Report extends BaseController
             'total_page' => $totalPage,
         ]);
     }
-    
+
     public function downloadLaporanPP()
     {
         $jenis    = $this->request->getPost('jenisLaporan');
@@ -1063,19 +1063,19 @@ class Report extends BaseController
             $whereSql
         ";
 
-        $sql      = "SELECT docno_pp, jurnal, docdate, userid, idbarang, qty, qty_realisasi,
+            $sql      = "SELECT docno_pp, jurnal, docdate, userid, idbarang, qty, qty_realisasi,
                             nama_user, nmbarang, unit, spec, ket_pp_header, ket_detail,
                             tglpakai, job, status_outstanding
                     FROM ($unionSql) z
                     ORDER BY docdate DESC, docno_pp, idbarang, src_order, jurnal";
-        $bindData = array_merge($bind, $bind);
+            $bindData = array_merge($bind, $bind);
 
-        $judulLaporan = 'LAPORAN PP HISTORY';
-        $headers = [
-            'No. PP','Jurnal','Tanggal','UserID','Kode Barang','Qty',
-            'Qty Realisasi','Nama User','Nama Barang','Satuan','Spec',
-            'Keterangan PP Header','Keterangan Detail','Tanggal Pakai','Job','Status'
-        ];
+            $judulLaporan = 'LAPORAN PP HISTORY';
+            $headers = [
+                'No. PP','Jurnal','Tanggal','UserID','Kode Barang','Qty',
+                'Qty Realisasi','Nama User','Nama Barang','Satuan','Spec',
+                'Keterangan PP Header','Keterangan Detail','Tanggal Pakai','Job','Status'
+            ];
         }
 
         /* ====== SETUP ====== */
@@ -2467,7 +2467,7 @@ class Report extends BaseController
         exit;
     }
 
-    
+
 
     /* =========================================================
     LAPORAN SALES ORDER
@@ -4180,7 +4180,7 @@ class Report extends BaseController
         $sheet->getStyle('A1')->getAlignment()->setHorizontal('center');
 
         $headers = ['Kode Prk', 'Nama Prk', 'Kode Supplier', 'Nama Supplier',
-                    'Saldo Awal', 'Debet', 'Kredit', 'Saldo Akhir'];
+            'Saldo Awal', 'Debet', 'Kredit', 'Saldo Akhir'];
         $sheet->fromArray($headers, null, 'A3');
         $sheet->getStyle('A3:H3')->getFont()->setBold(true);
         $sheet->getStyle('A3:H3')->getFill()
@@ -4272,80 +4272,242 @@ class Report extends BaseController
         return $this->template->render('report/trans/v_umurhutang', $data);
     }
 
-    private function buildQueryUmurHutang()
+    private function buildQueryUmurHutang($interval = 30)
     {
-        // ============================================
-        // TODO: ISI QUERY DARI ATASAN
-        // ============================================
-        // Kolom output yang diharapkan:
-        // docno, kdsupplier, nmsupplier, kdprk, nmprk, docdate, tgljt, dk,
-        // keterangan, currcode, kurs, nilai, nilai_belum_jt,
-        // nilai_jt_1..4, umur, kodejob, namajob, alamatsupplier, kotasupplier
-        //
-        // Filter (pakai ? di query):
-        // - cabang
-        // - kdsupplier
-        // - kdprk (COA)
-        // - interval (default 30)
-        // - konversi ke IDR (lokal)
-        // ============================================
+        $interval = (int)$interval;
+        if ($interval < 1) $interval = 30;
 
-        $sql = "SELECT
-                    '' AS docno,
-                    '' AS kdsupplier,
-                    '' AS nmsupplier,
-                    '' AS kdprk,
-                    '' AS nmprk,
-                    NULL AS docdate,
-                    NULL AS tgljt,
-                    '' AS dk,
-                    '' AS keterangan,
-                    'IDR' AS currcode,
-                    1 AS kurs,
-                    0 AS nilai,
-                    0 AS nilai_belum_jt,
-                    0 AS nilai_jt_1,
-                    0 AS nilai_jt_2,
-                    0 AS nilai_jt_3,
-                    0 AS nilai_jt_4,
-                    0 AS umur,
-                    '' AS kodejob,
-                    '' AS namajob,
-                    '' AS alamatsupplier,
-                    '' AS kotasupplier
-                WHERE 1=0";
+        $jt1 = $interval;
+        $jt2 = $interval * 2;
+        $jt3 = $interval * 3;
 
-        return rtrim($sql, " \t\n\r\0\x0B;");
+        return "SELECT
+    MAX(jh_docno)                                       AS docno,
+    kdsupplier                                          AS kdsupplier,
+    MAX(nmsupplier)                                     AS nmsupplier,
+    idcoa                                               AS kdprk,
+    MAX(nmcoa)                                          AS nmprk,
+    MAX(tanggal)                                        AS docdate,
+
+    MAX(jthtempo_hari)                                  AS jthtempo,
+    MAX(tgl_jt_supplier)                                AS tgljt_supplier,
+    MAX(tgl_jt)                                         AS tgljt,
+
+    CASE
+        WHEN MAX(no_tt) IS NOT NULL AND MAX(no_tt) <> '' THEN 'ADA'
+        ELSE 'BELUM'
+    END                                                 AS status_tt,
+    COALESCE(MAX(no_tt), '')                            AS no_tt,
+    MAX(tgl_tt)                                         AS tgl_tt,
+
+    CASE
+        WHEN SUM(kredit) > 0 THEN 'K'
+        WHEN SUM(debet)  > 0 THEN 'D'
+        ELSE ''
+    END                                                 AS dk,
+    MAX(keterangan)                                     AS keterangan,
+    MAX(currcode)                                       AS currcode,
+    MAX(kurs)                                           AS kurs,
+    SUM(kredit)                                         AS nilai,
+    SUM(kredit) - COALESCE(SUM(total_dibayar), 0)       AS nilai_belum_jt,
+
+    CASE
+      WHEN MAX(umur) BETWEEN 1 AND {$jt1}
+        THEN SUM(kredit) - COALESCE(SUM(total_dibayar), 0)
+      ELSE 0
+    END                                                 AS nilai_jt_1,
+    CASE
+      WHEN MAX(umur) BETWEEN {$jt1}+1 AND {$jt2}
+        THEN SUM(kredit) - COALESCE(SUM(total_dibayar), 0)
+      ELSE 0
+    END                                                 AS nilai_jt_2,
+    CASE
+      WHEN MAX(umur) BETWEEN {$jt2}+1 AND {$jt3}
+        THEN SUM(kredit) - COALESCE(SUM(total_dibayar), 0)
+      ELSE 0
+    END                                                 AS nilai_jt_3,
+    CASE
+      WHEN MAX(umur) > {$jt3}
+        THEN SUM(kredit) - COALESCE(SUM(total_dibayar), 0)
+      ELSE 0
+    END                                                 AS nilai_jt_4,
+
+    MAX(umur)                                           AS umur,
+
+    ''                                                  AS kodejob,
+    ''                                                  AS namajob,
+    MAX(alamatsupplier)                                 AS alamatsupplier,
+    ''                                                  AS kotasupplier
+
+FROM (
+    SELECT
+        jh.docno                                        AS jh_docno,
+        jh.trxdate                                      AS tanggal,
+        jh.currcode                                     AS currcode,
+        jh.kurs                                         AS kurs,
+        jh.cabang                                       AS cabang,
+
+        TRIM(lp.kdsupplier)                             AS kdsupplier,
+        TRIM(lp.nmsupplier)                             AS nmsupplier,
+        TRIM(lp.alamatsupplier)                         AS alamatsupplier,
+        COALESCE(lp.jthtempo, 30)                       AS jthtempo_hari,
+
+        (lp.docdate + (COALESCE(lp.jthtempo, 30) || ' day')::interval)::date
+                                                        AS tgl_jt_supplier,
+
+        COALESCE(th.tgljthtempo,
+                 (jh.trxdate + (COALESCE(lp.jthtempo, 30) || ' day')::interval)::date
+        )                                               AS tgl_jt,
+
+        TRIM(th.docno)                                  AS no_tt,
+        th.docdate                                      AS tgl_tt,
+
+        TRIM(jd.idcoa)                                  AS idcoa,
+        TRIM(coa.nmcoa)                                 AS nmcoa,
+        TRIM(jd.keterangan)                             AS keterangan,
+
+        COALESCE(jd.debet, 0)                           AS debet,
+        COALESCE(jd.kredit, 0)                          AS kredit,
+
+        COALESCE(tt.total_dibayar, 0)                   AS total_dibayar,
+
+        (CURRENT_DATE - COALESCE(th.tgljthtempo,
+            (jh.trxdate + (COALESCE(lp.jthtempo, 30) || ' day')::interval)::date)
+        )                                               AS umur
+
+    FROM sc_trx.jurnal_dt jd
+
+    INNER JOIN sc_trx.jurnal_hd jh
+        ON jh.id = jd.jurnal_id
+
+    LEFT JOIN sc_mst.coa coa
+        ON TRIM(coa.idcoa) = TRIM(jd.idcoa)
+
+    LEFT JOIN sc_trx.lpb lp
+        ON TRIM(lp.docno) = TRIM(jd.ref_docno)
+
+    LEFT JOIN sc_trx.tterima_hd th
+        ON TRIM(th.docno) = (
+            SELECT TRIM(td_inner.docno)
+            FROM sc_trx.tterima_dt td_inner
+            WHERE TRIM(td_inner.nobukti)     = TRIM(jd.ref_docno)
+              AND TRIM(td_inner.noperkiraan) = TRIM(jd.idcoa)
+            LIMIT 1
+        )
+
+    /* ============================================================
+       PELUNASAN: dari pengeluarankb_dtl (BUKAN tterima_dt)
+       ============================================================ */
+    LEFT JOIN (
+        SELECT
+            TRIM(pd.nobukti)              AS nobukti,
+            TRIM(pd.idcoa)                AS idcoa,
+            SUM(COALESCE(pd.nilai, 0))    AS total_dibayar
+        FROM sc_trx.pengeluarankb_dtl pd
+        INNER JOIN sc_trx.pengeluarankb ph
+            ON TRIM(ph.docno) = TRIM(pd.docno)
+        WHERE TRIM(ph.status) = 'POSTED'
+          AND TRIM(pd.status) = 'POSTED'
+          AND TRIM(pd.dk)     = 'D'
+        GROUP BY
+            TRIM(pd.nobukti),
+            TRIM(pd.idcoa)
+    ) tt
+        ON  tt.nobukti = TRIM(jd.ref_docno)
+        AND tt.idcoa   = TRIM(jd.idcoa)
+
+    WHERE TRIM(jd.account_role) = 'AP'
+      AND COALESCE(jd.kredit, 0) > 0
+      AND TRIM(jh.status)       = 'POSTED'
+      AND TRIM(jd.status)       = 'POSTED'
+      /* __FILTER__ */
+) x
+
+GROUP BY
+    kdsupplier,
+    idcoa
+
+HAVING
+    SUM(kredit) - COALESCE(SUM(total_dibayar), 0) > 0
+
+ORDER BY
+    kdsupplier,
+    idcoa";
     }
 
+    private function buildFilterWhereUmurHutang(
+        &$bind,
+        $tglAwal,
+        $tglAkhir,
+        $kdsupplier,
+        $kdprk
+    ) {
+        $cond = '';
+
+        if (!empty($tglAwal) && !empty($tglAkhir)) {
+            $cond .= " AND jh.trxdate BETWEEN ? AND ? ";
+            $bind[] = $tglAwal;
+            $bind[] = $tglAkhir;
+        } elseif (!empty($tglAwal)) {
+            $cond .= " AND jh.trxdate >= ? ";
+            $bind[] = $tglAwal;
+        } elseif (!empty($tglAkhir)) {
+            $cond .= " AND jh.trxdate <= ? ";
+            $bind[] = $tglAkhir;
+        }
+
+        if (!empty($kdsupplier)) {
+            $cond .= " AND TRIM(lp.kdsupplier) = ? ";
+            $bind[] = $kdsupplier;
+        }
+
+        if (!empty($kdprk)) {
+            $cond .= " AND TRIM(jd.idcoa) = ? ";
+            $bind[] = $kdprk;
+        }
+
+        return $cond;
+    }
     public function previewLaporanUmurHutang()
     {
         $tglrange   = $this->request->getPost('tglrange');
-        $cabang     = $this->request->getPost('cabang');
         $kdsupplier = $this->request->getPost('kdsupplier');
         $kdprk      = $this->request->getPost('kdprk');
-        $interval   = $this->request->getPost('interval') ?: 30;
+        $interval   = (int)($this->request->getPost('interval') ?: 30);
+        if ($interval < 1) $interval = 30;
 
         $page    = max(1, (int)($this->request->getPost('page') ?? 1));
         $perpage = (int)($this->request->getPost('perpage') ?? 25);
         if ($perpage < 1 || $perpage > 200) $perpage = 25;
 
-        // ⚠️ SEMENTARA: query placeholder tidak punya ? → bindBase kosong
-        // Setelah query asli datang, isi: [$cabang, $kdsupplier, $kdprk, $interval]
-        $bindBase = [];
+        /* ---------- Parse tglrange ---------- */
+        $tglAwal  = null;
+        $tglAkhir = null;
+        if (!empty($tglrange) && strpos($tglrange, ' - ') !== false) {
+            [$a, $b] = array_map('trim', explode(' - ', $tglrange, 2));
+            $tglAwal  = date('Y-m-d', strtotime(str_replace('/', '-', $a)));
+            $tglAkhir = date('Y-m-d', strtotime(str_replace('/', '-', $b)));
+        }
 
-        $sql = $this->buildQueryUmurHutang();
+        /* ---------- Bind + filter dinamis ---------- */
+        $bind   = [];
+        $filter = $this->buildFilterWhereUmurHutang(
+            $bind, $tglAwal, $tglAkhir, $kdsupplier, $kdprk
+        );
 
-        // COUNT
+        $sql = $this->buildQueryUmurHutang($interval);
+        $sql = str_replace('/* __FILTER__ */', $filter, $sql);
+
+        /* ---------- COUNT ---------- */
         $sqlCount = "SELECT COUNT(*) AS total FROM (" . $sql . ") x";
-        $totalRow = $this->db->query($sqlCount, $bindBase)->getRowArray();
+        $totalRow = $this->db->query($sqlCount, $bind)->getRowArray();
         $total    = (int)($totalRow['total'] ?? 0);
         $totalPage = $perpage > 0 ? (int)ceil($total / $perpage) : 0;
 
-        // DATA
-        $offset   = ($page - 1) * $perpage;
-        $bindData = array_merge($bindBase, [$perpage, $offset]);
-        $rows = $this->db->query($sql . " LIMIT ? OFFSET ?", $bindData)->getResultArray();
+        /* ---------- DATA (LIMIT/OFFSET literal) ---------- */
+        $offset  = ($page - 1) * $perpage;
+        $sqlData = $sql . " LIMIT {$perpage} OFFSET {$offset}";
+        $rows    = $this->db->query($sqlData, $bind)->getResultArray();
 
         return $this->response->setJSON([
             'status'     => 'ok',
@@ -4354,20 +4516,40 @@ class Report extends BaseController
             'perpage'    => $perpage,
             'total'      => $total,
             'total_page' => $totalPage,
+            'filter'     => [
+                'tglrange'   => $tglrange,
+                'kdsupplier' => $kdsupplier,
+                'kdprk'      => $kdprk,
+                'interval'   => $interval,
+            ],
         ]);
     }
 
     public function downloadLaporanUmurHutang()
     {
-        $cabang     = $this->request->getPost('cabang');
+        $tglrange   = $this->request->getPost('tglrange');
         $kdsupplier = $this->request->getPost('kdsupplier');
         $kdprk      = $this->request->getPost('kdprk');
-        $interval   = $this->request->getPost('interval') ?: 30;
+        $interval   = (int)($this->request->getPost('interval') ?: 30);
+        if ($interval < 1) $interval = 30;
 
-        // ⚠️ SEMENTARA: kosong, ikuti bindBase preview
-        $bind = [];
+        /* ---------- Parse tglrange ---------- */
+        $tglAwal  = null;
+        $tglAkhir = null;
+        if (!empty($tglrange) && strpos($tglrange, ' - ') !== false) {
+            [$a, $b] = array_map('trim', explode(' - ', $tglrange, 2));
+            $tglAwal  = date('Y-m-d', strtotime(str_replace('/', '-', $a)));
+            $tglAkhir = date('Y-m-d', strtotime(str_replace('/', '-', $b)));
+        }
 
-        $sql = $this->buildQueryUmurHutang();
+        /* ---------- Bind + filter dinamis ---------- */
+        $bind   = [];
+        $filter = $this->buildFilterWhereUmurHutang(
+            $bind, $tglAwal, $tglAkhir, $kdsupplier, $kdprk
+        );
+
+        $sql = $this->buildQueryUmurHutang($interval);
+        $sql = str_replace('/* __FILTER__ */', $filter, $sql);
 
         ini_set('memory_limit', '512M');
         set_time_limit(0);
@@ -4379,23 +4561,26 @@ class Report extends BaseController
             exit('Query gagal. Hubungi administrator.');
         }
 
+        /* ---------- Spreadsheet ---------- */
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
+
         $sheet->setCellValue('A1', 'LAPORAN UMUR HUTANG');
-        $sheet->mergeCells('A1:V1');
+        $sheet->mergeCells('A1:AA1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
         $sheet->getStyle('A1')->getAlignment()->setHorizontal('center');
 
         $headers = [
-            'No.Jurnal', 'Kode Supplier', 'Nama Supplier', 'Kode Prk', 'Nama Prk',
-            'Tanggal', 'Tgl JT', 'DK', 'Keterangan', 'Mata Uang', 'Kurs',
-            'Nilai', 'Nilai Belum JT',
-            'Nilai JT 1', 'Nilai JT 2', 'Nilai JT 3', 'Nilai JT 4',
-            'Umur', 'Kode Job', 'Nama Job', 'Alamat Supplier', 'Kota Supplier'
+            'No.Jurnal','Kode Supplier','Nama Supplier','Kode Prk','Nama Prk',
+            'Tanggal','Jth Tempo (Hari)','Tgl JT Supplier','Tgl JT',
+            'Status TT','No. TT','Tgl TT',
+            'DK','Keterangan','Mata Uang','Kurs','Nilai','Nilai Belum JT',
+            'Nilai JT 1','Nilai JT 2','Nilai JT 3','Nilai JT 4',
+            'Umur','Kode Job','Nama Job','Alamat Supplier','Kota Supplier'
         ];
         $sheet->fromArray($headers, null, 'A3');
-        $sheet->getStyle('A3:V3')->getFont()->setBold(true);
-        $sheet->getStyle('A3:V3')->getFill()
+        $sheet->getStyle('A3:AA3')->getFont()->setBold(true);
+        $sheet->getStyle('A3:AA3')->getFill()
             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
             ->getStartColor()->setARGB('FFCCE5FF');
 
@@ -4403,8 +4588,9 @@ class Report extends BaseController
         while ($r = $query->getUnbufferedRow('array')) {
             $sheet->fromArray([
                 $r['docno'], $r['kdsupplier'], $r['nmsupplier'], $r['kdprk'], $r['nmprk'],
-                $r['docdate'], $r['tgljt'], $r['dk'], $r['keterangan'],
-                $r['currcode'], $r['kurs'],
+                $r['docdate'], $r['jthtempo'], $r['tgljt_supplier'], $r['tgljt'],
+                $r['status_tt'], $r['no_tt'], $r['tgl_tt'],
+                $r['dk'], $r['keterangan'], $r['currcode'], $r['kurs'],
                 $r['nilai'], $r['nilai_belum_jt'],
                 $r['nilai_jt_1'], $r['nilai_jt_2'], $r['nilai_jt_3'], $r['nilai_jt_4'],
                 $r['umur'], $r['kodejob'], $r['namajob'],
@@ -4414,7 +4600,7 @@ class Report extends BaseController
         }
         if ($rowCount === 0) {
             $sheet->setCellValue('A4', 'Tidak ada data.');
-            $sheet->mergeCells('A4:V4');
+            $sheet->mergeCells('A4:AA4');
         }
 
         $colLetter = 'A';
@@ -4423,27 +4609,33 @@ class Report extends BaseController
             $colLetter++;
         }
 
-        // Format angka: K=Kurs, L=Nilai, M=Belum JT, N-Q=JT1..4, R=Umur
-        $firstData = 4; $lastData = max(4, $rowNum - 1);
-        foreach (['K','L','M','N','O','P','Q','R'] as $col) {
+        $firstData = 4;
+        $lastData  = max(4, $rowNum - 1);
+
+        foreach (['P','Q','R','S','T','U','V','W'] as $col) {
             $sheet->getStyle("{$col}{$firstData}:{$col}{$lastData}")
                 ->getNumberFormat()->setFormatCode('#,##0.00');
         }
+        foreach (['F','H','I','L'] as $col) {
+            $sheet->getStyle("{$col}{$firstData}:{$col}{$lastData}")
+                ->getNumberFormat()->setFormatCode('DD/MM/YYYY');
+        }
+
         $sheet->freezePane('A4');
 
         $namaFile = 'Laporan_UmurHutang_' . date('Ymd_His') . '.xlsx';
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment; filename="' . $namaFile . '"');
         header('Cache-Control: max-age=0');
         header('Pragma: public');
+
         $writer->save('php://output');
         $spreadsheet->disconnectWorksheets();
         unset($spreadsheet);
         exit;
     }
-
-
 
 
 
@@ -4691,7 +4883,7 @@ class Report extends BaseController
             if ($lastCoa !== null && $lastCoa !== $r['kdprk']) {
                 $sheet->fromArray(
                     ['', '', '', 'TOTAL ' . $lastCoa,
-                    $subtotal['sa'], $subtotal['d'], $subtotal['k'], $subtotal['akhir']],
+                        $subtotal['sa'], $subtotal['d'], $subtotal['k'], $subtotal['akhir']],
                     null, 'A' . $rowNum
                 );
                 $sheet->getStyle("A{$rowNum}:H{$rowNum}")->getFont()->setBold(true);
@@ -4725,7 +4917,7 @@ class Report extends BaseController
         if ($lastCoa !== null) {
             $sheet->fromArray(
                 ['', '', '', 'TOTAL ' . $lastCoa,
-                $subtotal['sa'], $subtotal['d'], $subtotal['k'], $subtotal['akhir']],
+                    $subtotal['sa'], $subtotal['d'], $subtotal['k'], $subtotal['akhir']],
                 null, 'A' . $rowNum
             );
             $sheet->getStyle("A{$rowNum}:H{$rowNum}")->getFont()->setBold(true);

@@ -38,6 +38,8 @@
         color: #fff;
     }
     #tblPreviewUH tbody td { white-space: nowrap; }
+    #tblPreviewUH td.text-end { text-align: right; font-variant-numeric: tabular-nums; }
+    #tblPreviewUH td.text-center { text-align: center; }
 </style>
 
 <div class="content-header">
@@ -125,34 +127,39 @@
                 <div id="tblPreviewUH_wrapper">
                     <table id="tblPreviewUH" class="table table-bordered table-striped table-hover" style="width:100%">
                         <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>No.Jurnal</th>
-                                <th>Kode Supplier</th>
-                                <th>Nama Supplier</th>
-                                <th>Kode Prk</th>
-                                <th>Nama Prk</th>
-                                <th>Tanggal</th>
-                                <th>Tgl JT</th>
-                                <th>DK</th>
-                                <th>Keterangan</th>
-                                <th>Mata Uang</th>
-                                <th>Kurs</th>
-                                <th>Nilai</th>
-                                <th>Nilai Belum JT</th>
-                                <th>Nilai JT 1</th>
-                                <th>Nilai JT 2</th>
-                                <th>Nilai JT 3</th>
-                                <th>Nilai JT 4</th>
-                                <th>Umur</th>
-                                <th>Kode Job</th>
-                                <th>Nama Job</th>
-                                <th>Alamat Supplier</th>
-                                <th>Kota Supplier</th>
-                            </tr>
+                        <tr>
+                            <th>No</th>
+                            <th>No.Jurnal</th>
+                            <th>Kode Supplier</th>
+                            <th>Nama Supplier</th>
+                            <th>Kode Prk</th>
+                            <th>Nama Prk</th>
+                            <th>Tanggal</th>
+                            <th>Jth Tempo (Hari)</th>
+                            <th>Tgl JT Supplier</th>
+                            <th>Tgl JT</th>
+                            <th>Status TT</th>
+                            <th>No. TT</th>
+                            <th>Tgl TT</th>
+                            <th>DK</th>
+                            <th>Keterangan</th>
+                            <th>Mata Uang</th>
+                            <th>Kurs</th>
+                            <th>Nilai</th>
+                            <th>Nilai Belum JT</th>
+                            <th>Nilai JT 1</th>
+                            <th>Nilai JT 2</th>
+                            <th>Nilai JT 3</th>
+                            <th>Nilai JT 4</th>
+                            <th>Umur</th>
+                            <th>Kode Job</th>
+                            <th>Nama Job</th>
+                            <th>Alamat Supplier</th>
+                            <th>Kota Supplier</th>
+                        </tr>
                         </thead>
                         <tbody id="tblPreviewUHBody">
-                            <tr><td colspan="23" class="text-center text-muted">Belum ada data.</td></tr>
+                        <tr><td colspan="28" class="text-center text-muted">Belum ada data.</td></tr>
                         </tbody>
                     </table>
                 </div>

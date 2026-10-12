@@ -1750,7 +1750,7 @@
                                         <button type="button"
                                                 class="btn btn-secondary btn-sm"
                                                 id="btnCetakTterima"
-                                                onclick="window.print();">
+                                                onclick="window.btnCetakTterima();">
                                             <i class="fa fa-print me-1"></i>
                                             Cetak Tanda Terima
                                         </button>
@@ -1949,11 +1949,6 @@
 
 
 
-<!-- Modal TTerima -->
-
-<!-- =========================================================
-     MODAL ADD / EDIT DETAIL TANDA TERIMA
-========================================================= -->
 <!-- =========================================================
      MODAL ADD / EDIT DETAIL TANDA TERIMA
 ========================================================= -->
@@ -2017,7 +2012,14 @@
                            name="docno_detail"
                            id="detail_docno">
 
+                    <!--inisialisasi pembatasan -->
+                    <input type="hidden"
+                           name="nilai_ref"
+                           id="nilai_ref">
 
+                    <input type="hidden"
+                           name="jurnalref"
+                           id="jurnalref">
                     <!-- =================================================
                          HEADER REFERENCE
                     ================================================== -->

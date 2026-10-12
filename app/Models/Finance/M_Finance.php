@@ -1196,11 +1196,11 @@ class M_Finance extends Model
 
         $builder = $this->db->table($this->t_front_pengeluarankb_view);
         // $builder->join(
-        //     "(SELECT DISTINCT ON (kdtrx) kdtrx, uraian 
-        //     FROM sc_mst.trxtype 
-        //     WHERE jenistrx = 'I.P.A.2' 
-        //     ORDER BY kdtrx, uraian DESC) AS trx", 
-        //     "COALESCE(x.status, '') = COALESCE(trx.kdtrx, '')", 
+        //     "(SELECT DISTINCT ON (kdtrx) kdtrx, uraian
+        //     FROM sc_mst.trxtype
+        //     WHERE jenistrx = 'I.P.A.2'
+        //     ORDER BY kdtrx, uraian DESC) AS trx",
+        //     "COALESCE(x.status, '') = COALESCE(trx.kdtrx, '')",
         //     "left"
         // );
         $builder->select("x.*");

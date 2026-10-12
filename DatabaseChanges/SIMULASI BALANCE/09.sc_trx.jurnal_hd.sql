@@ -621,3 +621,33 @@ LEFT JOIN sc_mst.journal_type jt
 WHERE jt.journal_type IS NULL
 GROUP BY h.journal_type
 ORDER BY h.journal_type;
+
+
+-- ============================================================
+-- 9. HISTORY PENGURANGAN JURNAL UNTUK BLOKKING NILAI BERLEBIH
+-- ============================================================
+CREATE TABLE sc_trx.jurnal_hd_penggunaan
+(
+    idurut BIGSERIAL NOT NULL,
+    docno CHARACTER(30) NOT NULL,
+    -- ID unik detail yang dibuat oleh server
+    idunique CHARACTER(32),
+    -- Referensi LPB dan dokumen sumber
+    nobukti CHARACTER(30),
+    docref CHARACTER(100),
+    -- Perkiraan / akun
+    noperkiraan CHARACTER(20),
+    namaperkiraan CHARACTER(250),
+    -- Keterangan transaksi
+    keterangan TEXT,
+    -- D = Debit, K = Kredit
+    dk CHARACTER(1),
+    -- Cost / Profit Center
+    costprofitcenter CHARACTER(30),
+    -- Nilai jurnal
+    nilai NUMERIC(18,2) DEFAULT 0,
+    status CHARACTER(6) DEFAULT 'E',
+    inputby VARCHAR(50),
+    inputdate TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+ 
+);	

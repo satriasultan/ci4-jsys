@@ -1,5 +1,5 @@
 <style>
-    
+
     .section-block {
         background-color: #e8e8e8;
         border-left: 4px solid #007bff;
@@ -8,10 +8,10 @@
         border-radius: 6px;
         margin-bottom: 30px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-                    box-shadow 0.4s ease, 
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                    box-shadow 0.4s ease,
                     border-color 0.4s ease;
-        
+
         transform: scale(1);
         will-change: transform;
     }
@@ -99,7 +99,7 @@
             <!-- jquery validation -->
             <div class="card card-primary">
                 <div class="card-header">
-                    <h3 class="card-title"><?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> Pengeluaran Kas/Bank</h3>
+                    <h3 class="card-title"><?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> Header</h3>
                 </div>
                 <!-- /.card-header -->
                 <!-- form start -->
@@ -121,7 +121,7 @@
                                             </div>
                                         </div>
 
-                                        
+
                                     </div>
 
                                     <div class="row">
@@ -153,14 +153,16 @@
                                                         id="sufix"
                                                         class="form-control ms-1"
                                                         readonly>
-                                                        
+
                                                     </div>
                                                 </div>
                                             </div>
                                             <input type="hidden" name="docno" class="form-control col-sm-12" id="docno" maxlength="20"     value="<?= isset($dtldata['docno']) ? esc(trim($dtldata['docno'])) : '' ?>" style="text-transform: uppercase;" readonly>
-                                            
+                                            <input type="hidden" name="nmprkkas" class="form-control col-sm-12" id="nmprkkas">
+
+
                                     </div>
-                                        
+
                                 </div>
 
                                 <!-- RIGHT COLUMN -->
@@ -178,12 +180,12 @@
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group">
-                                                <label for="pp">PP</label>
+                                                <label for="pp">Referensi</label>
                                                 <input type="text"
                                                 name="pp"
                                                 id="pp"
                                                 class="form-control"
-                                                placeholder="PP">
+                                                placeholder="Referensi" style="text-transform:uppercase;" >
                                             </div>
                                         </div>
                                     </div>
@@ -228,7 +230,7 @@
                                                     class="form-control"
                                                     rows="2"
                                                     placeholder="Alamat Supplier"
-                                                    
+
                                                     style="text-transform:uppercase;"></textarea>
                                             </div>
                                         </div>
@@ -259,10 +261,10 @@
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label for="dpp">Nilai</label>
+                                                    <label for="total">Nilai</label>
                                                     <input type="text"
-                                                            name="dpp"
-                                                            id="dpp"
+                                                            name="total"
+                                                            id="total"
                                                             class="form-control jtsseparator ratakanan">
                                                 </div>
                                             </div>
@@ -276,272 +278,503 @@
                 </div>
             </div>
 
-            <div class="card mt-3 card-primary">
-                <div class="card-header clearfix">
-                    <h3 class="card-title">
-                        Detail Perkiraan
-                    </h3>
 
-                    <div class="float-right d-flex align-items-center gap-2">
-                        <button type="button"
-                                class="btn btn-warning btn-lg action-btn"
-                                data-bs-toggle="tooltip"
-                                title="Reload data per supplier"
-                                onclick="loadPerSupplier()">
-                            <i class="fa fa-repeat"></i></button>
-                        <button type="button"
-                                class="btn btn-success btn-lg action-btn"
-                                data-bs-toggle="tooltip"
-                                title="Input Data"
-                                onclick="btnInputDetail()">
-                            <i class="fa fa-plug"></i>
-                        </button>
-
-                        <!-- <button type="button"
-                                class="btn btn-warning btn-lg action-btn"
-                                data-bs-toggle="tooltip"
-                                title="Update Data"
-                                onclick="btnUpdateDetail()">
-                            <i class="fa fa-edit"></i>
-                        </button>
-
-                        <button type="button"
-                                class="btn btn-danger btn-lg action-btn"
-                                data-bs-toggle="tooltip"
-                                title="Hapus Data"
-                                onclick="btnDeleteDetail()">
-                            <i class="fa fa-trash"></i>
-                        </button> -->
-
-
+                <!-- =====================================================
+                     CARD 3 : ALOKASI / BUKTI PENERIMAAN BARANG
+                ====================================================== -->
+                <div class="card mt-3 card-primary">
+                    <div class="card-header d-flex align-items-center flex-wrap gap-2">
+                        <h3 class="card-title mb-0 me-3">Bukti Alokasi Nilai</h3>
                     </div>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="table-responsive" style="overflow-x: auto;">
-                                <table id="tabpengeluarankbdtl" class="table table-bordered table-striped" style="width:100%;" cellspacing="0">
-                                    <thead class="bg-primary text-white">
-                                        <tr>
-                                            <th width="30">
-                                                <input type="checkbox" id="checkAll">
-                                            </th>
-                                            <th width="100">Action</th>
-                                            <th>No. Bukti</th>
-                                            <th>Kode Perk.</th>
-                                            <th>Nama Perkiraan</th>
-                                            <th>Keterangan</th>
-                                            <th>DK</th>
-                                            <th>Status</th>
-                                            <th>Cost/Profit Center</th>
-                                            <th>Nilai</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                    </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <th colspan="9" style="background-color: #ffe483;" class="text-right">
-                                                TOTAL NILAI
-                                            </th>
-                                            <th id="total" class="text-right" style="font-weight: bold;">
-                                                0
-                                            </th>
-                                        </tr>
-                                </tfoot>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <hr>
-                    <div class="row" style="margin-top: 10px;">
-                        <div class="col-md-6">
-                            
-                        </div>
 
-                        <div class="col-md-6">
-                            <div class="row">
-                                <div class="col-md-12 ">
-                                    <div class="col-md-4" style="float: right;">
-                                        <div class="form-group mb-2">
-                                            <div class="row">
-                                                <div class="col-md-4 text-end">
-                                                    <label for="balance" class="mt-2">Balance</label>
-                                                </div>
-                                                <div class="col-md-8">
-                                                    <input type="text"
-                                                        name="balance"
-                                                        id="balance"
-                                                        class="form-control jtsseparator ratakanan"
-                                                        readonly>
-                                                        <input type="hidden" id="balance_awal">
-                                                        <input type="hidden" id="total_awal">
-                                                </div>
-                                            </div>
-                                        </div>
+                    <div class="card-body">
+                        <!--                <hr class="my-4">-->
+
+                        <div class="row g-3">
+
+
+                            <!-- =========================================
+                                 LEFT : ALOKASI
+                            ========================================== -->
+
+                            <div class="col-12">
+                                <!-- TARIK PENERIMAAN - TETAP -->
+                                <div class="d-flex justify-content-between align-items-center mb-2 w-100">
+
+                                    <!-- KIRI : TARIK PENERIMAAN -->
+                                    <button type="button" class="btn btn-primary" onclick="btnTarikPenerimaanTterima()">
+                                        <i class="fas fa-search"></i> Tarik Penerimaan
+                                    </button>
+
+
+                                    <!-- KANAN : ACTION DETAIL -->
+                                    <div class="d-flex align-items-center gap-1 detail-action-toolbar">
+
+                                        <!-- TAMBAH -->
+                                        <button type="button"
+                                                class="btn btn-success btn-sm btn-detail-action"
+                                                id="btnAddDetail"
+                                                onclick="addDetailPengeluaranKB()"
+                                                title="Tambah Detail"
+                                                aria-label="Tambah Detail">
+                                            <i class="fa fa-plus"></i>
+                                        </button>
+
+                                        <!-- EDIT -->
+                                        <button type="button"
+                                                class="btn btn-warning btn-sm btn-detail-action"
+                                                id="btnEditDetail"
+                                                onclick="editSelectedTterimaDetail()"
+                                                title="Edit Detail"
+                                                aria-label="Edit Detail"
+                                                disabled>
+                                            <i class="fa fa-edit"></i>
+                                        </button>
+
+                                        <!-- DELETE -->
+                                        <button type="button"
+                                                class="btn btn-danger btn-sm btn-detail-action"
+                                                id="btnDeleteDetail"
+                                                onclick="deleteSelectedTterimaDetail()"
+                                                title="Hapus Detail"
+                                                aria-label="Hapus Detail"
+                                                disabled>
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+
                                     </div>
+
                                 </div>
+
+                            </div>
+
+
+                            <div class="allocation-box">
+
+                                <div class="table-responsive">
+
+                                    <table id="tabpengeluarankbdtl"
+                                           class="table table-bordered table-hover table-sm mb-0"
+                                           width="100%">
+
+                                        <thead class="table-light">
+
+                                        <tr>
+
+                                            <th width="30">
+                                                <input type="checkbox"
+                                                       id="checkAll">
+                                            </th>
+
+                                            <th>No. Bukti</th>
+                                            <th>Perkiraan</th>
+                                            <th>
+                                                Keterangan
+                                            </th>
+                                            <th class="text-center">
+                                                DK
+                                            </th>
+                                            <th>
+                                                Cost/Profit Center
+                                            </th>
+                                            <th class="text-end">
+                                                Nilai
+                                            </th>
+
+                                        </tr>
+
+                                        </thead>
+
+
+                                        <tbody id="bodyTterimaDetail">
+
+                                        <tr>
+
+                                            <td colspan="7"
+                                                class="allocation-empty">
+
+                                                <i class="fa fa-box-open text-muted"></i>
+
+                                                Belum ada penerimaan
+                                                yang dialokasikan.
+
+                                            </td>
+
+                                        </tr>
+
+                                        </tbody>
+
+                                    </table>
+
+                                </div>
+
+                                <!-- TOTAL ALOKASI NILAI -->
+                                <div class="d-flex justify-content-end align-items-center border-top bg-light px-1 py-2">
+                                    <label for="totalalokasi"
+                                           class="form-label mb-0 me-2 fw-semibold">
+                                        Total Alokasi
+                                    </label>
+
+                                    <input type="text"
+                                           name="totalalokasi"
+                                           id="totalalokasi"
+                                           class="form-control form-control-sm text-end"
+                                           style="max-width: 220px; font-size: 17px; font-weight: 700;"
+                                           value="0"
+                                           readonly>
+                                </div>
+
                             </div>
                         </div>
                     </div>
-                    <hr>
 
+                    <!-- FOOTER -->
+                    <div class="card-footer bg-light">
+                        <div class="d-flex justify-content-between">
+                            <a href="<?= base_url('ka/finance/clearfinalPengeluaranKB'); ?>"
+                               class="btn btn-secondary"
+                               onclick="return confirm('Clear entry Tanda Terima?')">
+                                <i class="fa fa-arrow-left me-1"></i>
+                                Kembali
+                            </a>
+
+                            <?php if ($typeform != 'DETAIL') : ?>
+                                <button type="button"
+                                        id="btnSimpan"
+                                        class="btn btn-success"
+                                        onclick="finalPengeluaranKB()">
+
+                                    <i class="fa fa-save me-1"></i>
+                                    Simpan Final Entry Kas Bank
+
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-footer bg-light">
-                    <a href="<?= base_url('ka/finance/pengeluarankb') ?>"
-                        class="btn btn-default btn-lg">
-                        <i class="fa fa-arrow-left mr-2"></i>
-                        Kembali
-                    </a>
-                    <?php if ($typeform != 'DETAIL' && $dtldata != null): ?>
-                        <button type="submit"
-                                onclick="return confirm('Finish Entry?')"
-                                class="btn btn-success btn-lg float-right">
-                            <i class="fa fa-save"></i> Simpan Final Data
-                        </button>
-                    <?php endif; ?>
-                </div>
-                
+
             </div>
-        </div>
     </form>
-        <!-- /.card -->
-    <!--/.col (left) -->
-    <!-- right column -->
-    <div class="col-md-6">
-
-    </div>
-    <!--/.col (right) -->
-</div>
+        </div>
 
 
 
 
-<div class="modal fade" id="modalDetailPengeluaranKB" tabindex="-1" role="dialog" aria-labelledby="modalDetailPengeluaranKBLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document">
-        <div class="modal-content">
+    <!-- =========================================================
+         MODAL ADD / EDIT DETAIL TANDA TERIMA
+    ========================================================= -->
+    <div class="modal fade"
+         id="modalDetailPengeluaranKB"
+         tabindex="-1"
+         aria-labelledby="modalDetailPengeluaranKBLabel"
+         aria-hidden="true">
 
-            <!-- HEADER -->
-            <div class="modal-header bg-primary">
-                <h5 class="modal-title" id="modalDetailPengeluaranKBLabel">
-                    </i> Input Perkiraan Detail
-                </h5>
-                <button type="button" class="close text-white" data-bs-dismiss="modal">
-                    <span>&times;</span>
-                </button>
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+
+            <div class="modal-content border-0 shadow">
+
+                <!-- =================================================
+                     HEADER MODAL
+                ================================================== -->
+                <div class="modal-header bg-primary text-white">
+
+                    <div>
+                        <h5 class="modal-title mb-0"
+                            id="modalDetailPengeluaranKBLabel">
+                            Detail Tanda Terima
+                        </h5>
+
+                        <small class="opacity-75">
+                            Input detail transaksi
+                        </small>
+                    </div>
+
+                    <button type="button"
+                            class="btn-close btn-close-white"
+                            data-bs-dismiss="modal"
+                            aria-label="Close">
+                    </button>
+
+                </div>
+
+
+                <!-- =================================================
+                     FORM DETAIL
+                ================================================== -->
+                <form id="formPengeluaranKBDetail" autocomplete="off">
+
+                    <div class="modal-body">
+
+                        <!-- =================================================
+                             HIDDEN DETAIL
+                             JANGAN gunakan idurut/docno header
+                        ================================================== -->
+
+                        <input type="hidden"
+                               name="idurut_detail"
+                               id="detail_idurut">
+
+                        <input type="hidden"
+                               name="uniqueid"
+                               id="detail_uniqueid">
+
+                        <input type="hidden"
+                               name="docno_detail"
+                               id="detail_docno">
+
+                        <!--inisialisasi pembatasan -->
+                        <input type="hidden"
+                               name="nilai_ref"
+                               id="nilai_ref">
+
+                        <input type="hidden"
+                               name="jurnalref"
+                               id="jurnalref">
+                        <input type="hidden" name="nmperkiraan" class="form-control col-sm-12" id="nmperkiraan">
+                        <!-- =================================================
+                             HEADER REFERENCE
+                        ================================================== -->
+                        <div class="row g-3 mb-3">
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-semibold">
+                                    Supplier
+                                </label>
+
+                                <input type="text"
+                                       id="detail_supplier"
+                                       class="form-control bg-light"
+                                       readonly
+                                       placeholder="Supplier">
+
+                            </div>
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-semibold">
+                                    No. Jurnal
+                                </label>
+
+                                <input type="text"
+                                       id="detail_docno_display"
+                                       class="form-control bg-light"
+                                       readonly
+                                       placeholder="No. Jurnal">
+
+                            </div>
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-semibold">
+                                    ID Header
+                                </label>
+
+                                <input type="text"
+                                       id="detail_idurut_display"
+                                       class="form-control bg-light"
+                                       readonly
+                                       placeholder="ID Header">
+
+                            </div>
+
+                        </div>
+
+
+                        <hr class="my-3">
+
+
+                        <!-- =================================================
+                             ROW 1
+                        ================================================== -->
+                        <div class="row g-3">
+
+                            <!-- NO BUKTI -->
+                            <div class="col-md-4">
+
+                                <label for="nobukti"
+                                       class="form-label fw-semibold">
+                                    No. Bukti
+                                </label>
+
+                                <input type="text"
+                                       name="nobukti"
+                                       id="nobukti"
+                                       class="form-control"
+                                       maxlength="50"
+                                       placeholder="Nomor Bukti"
+                                       style="text-transform:uppercase;">
+
+                            </div>
+
+
+                            <!-- PERKIRAAN -->
+                            <div class="col-md-8">
+
+                                <label for="perkiraan"
+                                       class="form-label fw-semibold">
+                                    Perkiraan
+                                </label>
+
+                                <select name="perkiraan"
+                                        id="perkiraan"
+                                        class="form-select"
+                                        style="width:100%;">
+
+                                    <option value="">
+                                        -- Pilih Perkiraan --
+                                    </option>
+
+                                </select>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- =================================================
+                             ROW 2
+                        ================================================== -->
+                        <div class="row g-3 mt-1">
+
+                            <!-- DK -->
+                            <div class="col-md-2">
+
+                                <label for="dk"
+                                       class="form-label fw-semibold">
+                                    DK
+                                </label>
+
+                                <select name="dk"
+                                        id="dk"
+                                        class="form-select">
+
+                                    <option value="D">
+                                        D
+                                    </option>
+
+                                    <option value="K">
+                                        K
+                                    </option>
+
+                                </select>
+
+                            </div>
+
+
+                            <!-- COST / PROFIT CENTER -->
+                            <div class="col-md-4">
+
+                                <label for="costcenter"
+                                       class="form-label fw-semibold">
+                                    Cost / Profit Center
+                                </label>
+
+                                <select name="costcenter"
+                                        id="costcenter"
+                                        class="form-select"
+                                        style="width:100%;">
+
+                                    <option value="">
+                                        -- Pilih Cost / Profit Center --
+                                    </option>
+
+                                    <option value="01.01">
+                                        01.01 - PLANT I
+                                    </option>
+
+                                    <option value="01.02">
+                                        01.02 - PLANT II
+                                    </option>
+
+                                </select>
+
+                            </div>
+
+
+                            <!-- KETERANGAN -->
+                            <div class="col-md-6">
+
+                                <label for="keterangan_dtl"
+                                       class="form-label fw-semibold">
+                                    Keterangan
+                                </label>
+
+                                <textarea name="keterangan_dtl"
+                                          id="keterangan_dtl"
+                                          class="form-control"
+                                          rows="2"
+                                          maxlength="500"
+                                          placeholder="Keterangan detail..."
+                                          style="text-transform:uppercase;"></textarea>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- =================================================
+                             ROW 3
+                        ================================================== -->
+                        <div class="row g-3 mt-1">
+
+                            <!-- NILAI -->
+                            <div class="col-md-5 ms-auto">
+
+                                <label for="nilai"
+                                       class="form-label fw-semibold">
+                                    Nilai
+                                </label>
+
+                                <div class="input-group">
+
+                                <span class="input-group-text">
+                                    Rp
+                                </span>
+
+                                    <input type="text"
+                                           name="nilai"
+                                           id="nilai"
+                                           class="form-control text-end fw-bold jtsseparator ratakanan"
+                                           value="0"
+                                           placeholder="0"
+                                           inputmode="decimal">
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- =================================================
+                         FOOTER
+                    ================================================== -->
+                    <div class="modal-footer bg-light">
+
+                        <button type="button"
+                                class="btn btn-primary"
+                                id="btnSavePengeluaranKBDetail"
+                                onclick="savePengeluaranKBDetail()">
+                            <i class="fa fa-save"></i> Simpan
+                        </button>
+                        <button type="button"
+                                class="btn btn-secondary"
+                                data-bs-dismiss="modal"
+                                onclick="$('#modalDetailPengeluaranKB').modal('hide')">
+                            <i class="fa fa-times"></i> Batal
+                        </button>
+                    </div>
+
+                </form>
+
             </div>
 
-            <!-- FORM -->
-            <form id="formPengeluaranKBDetail">
-                <div class="modal-body">
-
-                    <!-- hidden -->
-                    <input type="hidden" name="idurut" id="idurut">
-                    <input type="hidden" name="docno" id="docno">
-                    <!-- <input type="hidden" name="status" id="status" value="P">
-                    <input type="hidden" name="chold" id="chold" value="NO"> -->
-
-                    <!-- ROW 1 -->
-                    <div class="row">
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>No. Bukti</label>
-                                <input type="text"
-                                        name="nobukti"
-                                        id="nobukti"
-                                        class="form-control"
-                                        placeholder="No. Bukti"
-                                        style="text-transform:uppercase" readonly>
-                            </div>
-                        </div>
-
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>ID Perkiraan</label>
-                                <select name="idcoa" id="idcoa"
-                                        class="form-control select2"
-                                        style="width:100%"></select>
-                            </div>
-                        </div>
-
-                        <div class="col-md-8">
-                            <div class="form-group">
-                                <label>Nama Perkiraan</label>
-                                <input type="text"
-                                        name="nmcoa"
-                                        id="nmcoa"
-                                        class="form-control"
-                                        placeholder="Nama Perkiraan"
-                                        style="text-transform:uppercase" readonly>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ROW 2 -->
-                    <div class="row">
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label for="dk">Debit/Kredit</label>
-                                <select name="dk" id="dk" class="form-control" required>
-                                    <option value="">-- Pilih --</option>
-                                    <option value="DEBIT">Debit</option>
-                                    <option value="KREDIT">Kredit</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Cost Center</label>
-                                <input name="cabangdtl" id="cabangdtl"
-                                        class="form-control select2"
-                                        style="width:100%">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Keterangan</label>
-                                <textarea type="text"
-                                        name="remarks"
-                                        rows="4"
-                                        style="text-transform: uppercase;"
-                                        id="remarks"
-                                        class="form-control"></textarea>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Nilai</label>
-                                <input type="text"
-                                        name="nilai"
-                                        id="nilai"
-                                        class="form-control jtsseparator ratakanan"
-                                        placeholder="0.00">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- FOOTER -->
-                <div class="modal-footer bg-light">
-                    
-                    <button type="button"
-                        class="btn btn-primary"
-                        onclick="savePengeluaranKBDetail()">
-                        <i class="fa fa-save"></i> Simpan
-                    </button>
-                    <button type="button"
-                            class="btn btn-secondary"
-                            data-bs-dismiss="modal"
-                            onclick="$('#modalDetailPengeluaranKB').modal('hide')">
-                        <i class="fa fa-times"></i> Batal
-                    </button>
-                </div>
-            </form>
         </div>
+
     </div>
-</div>
-
-
 
 <script type="application/javascript" src="<?= base_url('assets/pagejs/finance/pengeluarankb.js') ?>"></script>
 <script type="text/javascript">
@@ -602,7 +835,7 @@
         });
 
 
-        
+
         $('#periodemulai').daterangepicker({
             autoUpdateInput: false,
             singleDatePicker: true,
@@ -620,7 +853,7 @@
             $(this).val('');
         });
 
-        
+
         $('#periodeakhir').daterangepicker({
             autoUpdateInput: false,
             singleDatePicker: true,

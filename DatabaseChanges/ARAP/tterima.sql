@@ -499,7 +499,9 @@ BEGIN
             inputdate,
             updateby,
             updatedate,
-            docnotmp
+            docnotmp,
+			jurnalref,
+			nilai_ref
         )
         SELECT
             idurut,
@@ -518,10 +520,39 @@ BEGIN
             inputdate,
             updateby,
             updatedate,
-            docnotmp
+            docnotmp,
+			jurnalref,
+			nilai_ref
         FROM sc_tmp.tterima_dt
         WHERE rtrim(docno) = v_docno
           AND COALESCE(TRIM(status), 'E') <> 'C';
+
+
+		/* MASUK KE JURNAL HD PENGGUNAAN */	
+
+		DELETE FROM sc_trx.jurnal_hd_penggunaan
+		WHERE docno = v_docno
+		  AND EXISTS (
+			  SELECT 1
+			  FROM sc_tmp.tterima_dt
+			  WHERE jurnalref = 'YES'
+				AND docno = v_docno
+		  );
+
+		INSERT INTO sc_trx.jurnal_hd_penggunaan
+		(
+			docno, idunique, nobukti, docref,
+			noperkiraan, namaperkiraan, keterangan, dk,
+			costprofitcenter, nilai, status, inputby, inputdate
+		)
+		SELECT
+			docno, idunique, nobukti, docref,
+			noperkiraan, namaperkiraan, keterangan, dk,
+			costprofitcenter, nilai, 'P', inputby, inputdate
+		FROM sc_tmp.tterima_dt
+		WHERE jurnalref = 'YES'
+		  AND docno = v_docno;
+
 
         -- ---------------------------------------------
         -- HAPUS DETAIL TEMPORARY
@@ -748,7 +779,9 @@ BEGIN
             inputdate,
             updateby,
             updatedate,
-            docnotmp
+            docnotmp,
+			jurnalref,
+			nilai_ref
         )
         SELECT
             d.idurut,
@@ -767,7 +800,9 @@ BEGIN
             v_now,
             d.updateby,
             d.updatedate,
-            d.docnotmp
+            d.docnotmp,
+			jurnalref,
+			nilai_ref
         FROM sc_trx.tterima_dt d
         WHERE rtrim(d.docno) = rtrim(NEW.docno)
           AND COALESCE(TRIM(d.status), 'F') <> 'C';
@@ -821,6 +856,12 @@ CREATE INDEX idx_tterima_trx_dt_idunique
 -- =========================================================
 -- 13. OWNER
 -- =========================================================
+
+ALTER TABLE sc_tmp.tterima_dt ADD COLUMN jurnalref CHARACTER VARYING(30) DEFAULT 'NO';
+ALTER TABLE sc_trx.tterima_dt ADD COLUMN jurnalref CHARACTER VARYING(30) DEFAULT 'NO';
+
+ALTER TABLE sc_tmp.tterima_dt ADD COLUMN nilai_ref numeric(18,2) DEFAULT 0;
+ALTER TABLE sc_trx.tterima_dt ADD COLUMN nilai_ref numeric(18,2) DEFAULT 0;
 
 ALTER TABLE sc_tmp.tterima_hd OWNER TO postgres;
 ALTER TABLE sc_tmp.tterima_dt OWNER TO postgres;

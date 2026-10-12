@@ -53,7 +53,7 @@
                                             <th style="min-width:10px; text-align:center; vertical-align:middle;">Action</th>
                                             <th style="min-width:100px; text-align:center; vertical-align:middle;">Docno</th>
                                             <th style="min-width:100px; text-align:center; vertical-align:middle;">Tanggal</th>
-                                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Status</th>
+
                                             <th style="min-width:100px; text-align:center; vertical-align:middle;">Supplier</th>
                                             <th style="min-width:100px; text-align:center; vertical-align:middle;">Nama Supplier</th>
                                             <th style="min-width:100px; text-align:center; vertical-align:middle;">Alamat Supplier</th>
@@ -66,6 +66,7 @@
                                             <!-- <th style="min-width:80px; text-align:center; vertical-align:middle;">Status</th> -->
                                             <th style="min-width:600px; text-align:center; vertical-align:middle;">Keterangan</th>
                                             <th style="min-width:150px; text-align:center; vertical-align:middle;">Cost Center</th>
+                                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Status</th>
                                         </tr>
                                     </thead>
                                     <tbody>

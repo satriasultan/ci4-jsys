@@ -62,6 +62,23 @@ BEGIN;
    INTERNAL FK TRIGGER tetap aktif.
    ============================================================================ */
 
+
+BEGIN;
+
+TRUNCATE TABLE
+    sc_trx.tterima_dt,
+    sc_trx.tterima_hd,
+    sc_trx.ndk,
+    sc_trx.lpb_dtl,
+    sc_trx.lpb,
+    sc_trx.po_dtl,
+    sc_trx.po,
+    sc_trx.pp_dtl,
+    sc_trx.pp
+CASCADE;
+
+COMMIT;
+
 ALTER TABLE sc_trx.jurnal_dt
     DISABLE TRIGGER USER;
 

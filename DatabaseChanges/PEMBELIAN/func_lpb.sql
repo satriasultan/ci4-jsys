@@ -1,3 +1,11 @@
+DROP TRIGGER tr_lpb_dtl_to_transaction;
+
+/* JANGAN DI PAKAI ADA SALAH 
+
+total	nilai + pajak	nilai (= dpp + pajak, sama)
+bruto	harga * qty ✅ benar	nilai (DPP+pajak) ❌ salah
+descriptionpp/descriptionpo	✅ Di-handle	❌ Tidak
+
 CREATE OR REPLACE FUNCTION sc_trx.fn_sync_lpb_dtl_to_transaction(
     p_docno TEXT,
     p_uniqueid TEXT
@@ -177,3 +185,6 @@ AFTER INSERT
 ON sc_trx.lpb_dtl
 FOR EACH ROW
 EXECUTE FUNCTION sc_trx.fn_lpb_dtl_to_transaction();
+
+
+*/

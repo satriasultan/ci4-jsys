@@ -234,7 +234,9 @@ function documentReadable() {
                 $.trim(data.docno || '');
 
             $('#docno').val(docno);
-
+// No BK Revisi
+            const nobkrev = $.trim(data.nobkrev || '');
+            $('#nobkrev').val(nobkrev);
             // Prefix / infix / suffix
             if (docno !== '') {
 
@@ -1333,112 +1335,43 @@ $(document).on('input', '.jtsseparator', function () {
 var tableTterimaTrx = null;
 
 function initTableTterimaTrx() {
-
-    // ============================================================
-    // CEK TABLE
-    // ============================================================
-
     if (!$('#tableTterimaTrx').length) {
-        console.error(
-            'Element #tableTterimaTrx tidak ditemukan.'
-        );
+        console.error('Element #tableTterimaTrx tidak ditemukan.');
         return;
     }
 
-
-    // ============================================================
-    // HINDARI DOUBLE INITIALIZATION
-    // ============================================================
-
     if ($.fn.DataTable.isDataTable('#tableTterimaTrx')) {
-
-        $('#tableTterimaTrx')
-            .DataTable()
-            .destroy();
-
+        $('#tableTterimaTrx').DataTable().destroy();
         $('#tableTterimaTrx tbody').empty();
     }
 
-
-    // ============================================================
-    // INIT DATATABLE
-    // ============================================================
-
     tableTterimaTrx = $('#tableTterimaTrx').DataTable({
-
         processing: true,
         serverSide: true,
-
         responsive: false,
         autoWidth: false,
         scrollX: false,
-
         pageLength: 10,
-
         order: [
             [3, 'desc']
         ],
 
-
-        // ========================================================
-        // AJAX
-        // ========================================================
-
         ajax: {
-
             url: HOST_URL + 'arap/transaksi/listTterimaTrx',
-
             type: 'POST',
 
-
             data: function (d) {
-
-                d.tglrange =
-                    $('#tglrange').val() || '';
-
-                d.status_filter =
-                    $('#status_filter').val() || '';
-
-                d.kdsupplier =
-                    $('#kdsupplier').val() || '';
-
-                d.noinvoice =
-                    $('#noinvoice').val() || '';
-
+                d.tglrange = $('#tglrange').val() || '';
+                d.status_filter = $('#status_filter').val() || '';
+                d.kdsupplier = $('#kdsupplier_filter').val() || '';
+                d.noinvoice = $('#noinvoice_filter').val() || '';
             },
 
-
-            // ====================================================
-            // RESPONSE
-            // ====================================================
-
             dataSrc: function (json) {
-
-                console.log(
-                    '=== RESPONSE TTERIMA ==='
-                );
-
+                console.log('=== RESPONSE TTERIMA ===');
                 console.log(json);
 
-
-                // =================================================
-                // RESPONSE DARI BACKEND ANDA:
-                //
-                // {
-                //     dataTables: {
-                //         draw: ...,
-                //         recordsTotal: ...,
-                //         recordsFiltered: ...,
-                //         data: [...]
-                //     }
-                // }
-                // =================================================
-
-                if (
-                    json &&
-                    json.dataTables
-                ) {
-
+                if (json && json.dataTables) {
                     console.log(
                         'DataTables data:',
                         json.dataTables
@@ -1451,11 +1384,6 @@ function initTableTterimaTrx() {
                             : 0
                     );
 
-
-                    // PENTING:
-                    // Karena response dibungkus dataTables,
-                    // pindahkan properti DataTables ke root.
-
                     json.draw =
                         json.dataTables.draw;
 
@@ -1465,32 +1393,16 @@ function initTableTterimaTrx() {
                     json.recordsFiltered =
                         json.dataTables.recordsFiltered;
 
-
                     return json.dataTables.data || [];
                 }
 
-
-                // =================================================
-                // FALLBACK
-                // Kalau suatu saat backend sudah mengirim:
-                //
-                // {
-                //     draw: 1,
-                //     recordsTotal: 3,
-                //     recordsFiltered: 3,
-                //     data: [...]
-                // }
-                // =================================================
-
                 if (json && Array.isArray(json.data)) {
-
                     console.log(
                         'Response menggunakan format root data.'
                     );
 
                     return json.data;
                 }
-
 
                 console.error(
                     'Format response DataTables tidak dikenali:',
@@ -1500,13 +1412,7 @@ function initTableTterimaTrx() {
                 return [];
             },
 
-
-            // ====================================================
-            // ERROR
-            // ====================================================
-
             error: function (xhr) {
-
                 console.error(
                     'ERROR LIST TTERIMA:',
                     xhr.status,
@@ -1518,21 +1424,12 @@ function initTableTterimaTrx() {
                     title: 'Gagal',
                     text: 'Gagal mengambil data Tanda Terima.'
                 });
-
             }
-
         },
-
-
-        // ========================================================
-        // COLUMNS
-        // ========================================================
 
         columns: [
 
-            // ========================================================
             // 0 - NO
-            // ========================================================
             {
                 data: 0,
                 orderable: false,
@@ -1541,10 +1438,7 @@ function initTableTterimaTrx() {
                 width: '50px'
             },
 
-
-            // ========================================================
             // 1 - ACTION
-            // ========================================================
             {
                 data: 1,
                 orderable: false,
@@ -1553,133 +1447,101 @@ function initTableTterimaTrx() {
                 width: '100px'
             },
 
-
-            // ========================================================
             // 2 - DOCUMENT
-            // ========================================================
             {
                 data: 2,
                 defaultContent: '',
                 className: 'text-nowrap'
             },
 
-
-            // ========================================================
             // 3 - TANGGAL
-            // ========================================================
             {
                 data: 3,
                 defaultContent: '',
                 className: 'text-center text-nowrap'
             },
 
-
-            // ========================================================
             // 4 - NAMA SUPPLIER
-            // ========================================================
             {
                 data: 4,
                 defaultContent: ''
             },
 
-
-            // ========================================================
             // 5 - CURRENCY
-            // ========================================================
             {
                 data: 5,
                 defaultContent: '',
                 className: 'text-center'
             },
 
-
-            // ========================================================
             // 6 - NILAI
-            // ========================================================
             {
                 data: 6,
                 defaultContent: '',
                 className: 'text-end'
             },
 
-
-            // ========================================================
-            // 7 - KETERANGAN
-            // ========================================================
+            // 7 - BALANCE
             {
                 data: 7,
+                defaultContent: '',
+                className: 'text-center'
+            },
+
+            // 8 - KETERANGAN
+            {
+                data: 8,
                 defaultContent: ''
             },
 
-
-            // ========================================================
-            // 8 - STATUS DOKUMEN
-            // ========================================================
+            // 9 - STATUS DOKUMEN
             {
-                data: 8,
+                data: 9,
                 defaultContent: '',
                 orderable: false,
                 searchable: false,
                 className: 'text-start'
-            }
+            },
 
+            // 10 - INPUT BY
+            {
+                data: 10,
+                defaultContent: '',
+                className: 'text-nowrap'
+            },
+
+            // 11 - INPUT DATE
+            {
+                data: 11,
+                defaultContent: '',
+                className: 'text-center text-nowrap'
+            }
         ],
 
-        // ========================================================
-        // COLUMN DEFINITION
-        // ========================================================
-
         columnDefs: [
-
             {
                 targets: '_all',
                 defaultContent: ''
             }
-
         ],
 
-
-        // ========================================================
-        // LANGUAGE
-        // ========================================================
-
         language: {
-
             processing: 'Memproses...',
-
             search: 'Cari:',
-
-            lengthMenu:
-                'Tampilkan _MENU_ data',
-
-            info:
-                'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
-
-            infoEmpty:
-                'Menampilkan 0 sampai 0 dari 0 data',
-
-            zeroRecords:
-                'Data tidak ditemukan',
-
-            emptyTable:
-                'Belum ada data Tanda Terima',
+            lengthMenu: 'Tampilkan _MENU_ data',
+            info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
+            infoEmpty: 'Menampilkan 0 sampai 0 dari 0 data',
+            zeroRecords: 'Data tidak ditemukan',
+            emptyTable: 'Belum ada data Tanda Terima',
 
             paginate: {
-
                 first: 'Awal',
-
                 last: 'Akhir',
-
                 next: '›',
-
                 previous: '‹'
-
             }
-
         }
-
     });
-
 }
 
 // ============================================================
@@ -3113,6 +2975,7 @@ function addDetailTterima() {
                 header.docno || ''
             );
 
+
             const cabang = $.trim(
                 header.cabang || ''
             );
@@ -4396,6 +4259,9 @@ function editSelectedTterimaDetail() {
         $.trim(
             $('#docno').val() || ''
         );
+// No BK Revisi
+    const nobkrev = $.trim(row.nobkrev || '');
+    $('#nobkrev').val(nobkrev);
 
     $('#detail_idurut')
         .val(idurutHeader);
@@ -4475,6 +4341,18 @@ function editSelectedTterimaDetail() {
             .empty()
             .append(option)
             .trigger('change');
+
+        /*baru*/
+        $('#nilai_ref')
+            .val(
+                tterimaFormatNumber(row.nilai)
+            );
+        $('#jurnalref')
+            .val(
+                row.jurnalref
+            );
+
+
     } else {
 
         $('#perkiraan')
@@ -4731,6 +4609,27 @@ function saveTterimaDetail() {
             return;
         }
 
+        /* saat mengambil dari jurnal nilai tidak boleh lebih */
+        const jurnalref = (
+            $('#jurnalref').val() || ''
+        ).trim().toUpperCase();
+
+        const nilaiRef = Number(
+            String($('#nilai_ref').val() || '0').replace(/,/g, '')
+        );
+        const nilaiasli = Number(
+            String($('#nilai').val() || '0').replace(/,/g, '')
+        );
+
+        if (jurnalref === 'YES' && Number(nilaiasli) > nilaiRef) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Nilai Melebihi Referensi',
+                text: 'Nilai tidak boleh lebih besar dari nilai referensi: ' +
+                    nilaiRef.toLocaleString('id-ID')
+            });
+            return;
+        }
         // =================================================
         // DETAIL ID
         // =================================================
@@ -5369,6 +5268,7 @@ function finalTterima() {
     // =====================================================
     // NORMALISASI ANGKA
     // =====================================================
+
     function toInteger(value) {
 
         value = String(value || '')
@@ -5396,6 +5296,7 @@ function finalTterima() {
     // =====================================================
     // VALIDASI TOTAL ALOKASI
     // =====================================================
+
     if (nilaiAlokasi < 0) {
 
         Swal.fire({
@@ -5409,25 +5310,8 @@ function finalTterima() {
 
 
     // =====================================================
-    // VALIDASI BALANCE
+    // VALIDASI DOCUMENT
     // =====================================================
-    if (nilaiHeader !== nilaiAlokasi) {
-
-        Swal.fire({
-            icon: 'warning',
-            title: 'Value Not Balance',
-            html:
-                'Total Tagihan : <b>' +
-                tterimaFormatNumber(nilaiHeader) +
-                '</b><br>' +
-                'Total Alokasi : <b>' +
-                tterimaFormatNumber(nilaiAlokasi) +
-                '</b>'
-        });
-
-        return;
-    }
-
 
     if (docno === '') {
 
@@ -5442,20 +5326,67 @@ function finalTterima() {
 
 
     // =====================================================
+    // CEK BALANCE
+    //
+    // Tidak lagi menghentikan proses.
+    // Jika tidak balance, user tetap diberi informasi.
+    // =====================================================
+
+    const isBalance =
+        nilaiHeader === nilaiAlokasi;
+
+
+    // =====================================================
     // KONFIRMASI
     // =====================================================
+
+    let confirmTitle = 'Finalisasi Tanda Terima';
+
+    let confirmText =
+        'Tanda Terima akan difinalisasi dan tidak lagi berstatus draft.';
+
+
+    if (!isBalance) {
+
+        confirmTitle = 'Tanda Terima Tidak Balance';
+
+        confirmText =
+            'Total Tagihan dan Total Alokasi tidak balance. ' +
+            'Apakah Anda tetap ingin melakukan finalisasi?';
+    }
+
+
     Swal.fire({
 
-        icon: 'question',
+        icon: isBalance
+            ? 'question'
+            : 'warning',
 
-        title: 'Finalisasi Tanda Terima',
+        title: confirmTitle,
 
-        text:
-            'Tanda Terima akan difinalisasi dan tidak lagi berstatus draft.',
+        html:
+            confirmText +
+            '<br><br>' +
+            'Total Tagihan : <b>' +
+            tterimaFormatNumber(nilaiHeader) +
+            '</b><br>' +
+            'Total Alokasi : <b>' +
+            tterimaFormatNumber(nilaiAlokasi) +
+            '</b>' +
+            (
+                !isBalance
+                    ? '<br><br><span style="color:#dc3545;font-weight:bold;">' +
+                    'PERHATIAN: Nilai belum balance.' +
+                    '</span>'
+                    : ''
+            ),
 
         showCancelButton: true,
 
-        confirmButtonText: 'Ya, Finalisasi',
+        confirmButtonText:
+            isBalance
+                ? 'Ya, Finalisasi'
+                : 'Ya, Tetap Finalisasi',
 
         cancelButtonText: 'Batal'
 
@@ -5469,6 +5400,7 @@ function finalTterima() {
         // =================================================
         // LOADING
         // =================================================
+
         $('#btnSimpan')
             .prop('disabled', true);
 
@@ -5476,6 +5408,7 @@ function finalTterima() {
         // =================================================
         // POST FINAL
         // =================================================
+
         $.ajax({
 
             type: 'POST',
@@ -5487,9 +5420,17 @@ function finalTterima() {
             dataType: 'json',
 
             data: {
+
                 idurut: idurut,
+
                 docno: docno
+
             },
+
+
+            // =================================================
+            // SUCCESS
+            // =================================================
 
             success: function (res) {
 
@@ -5499,20 +5440,32 @@ function finalTterima() {
                 );
 
 
-                if (!res || res.success !== true) {
+                if (
+                    !res ||
+                    res.success !== true
+                ) {
 
                     Swal.fire({
+
                         icon: 'error',
+
                         title: 'Gagal Finalisasi',
+
                         text:
-                            res && res.message
+                            res &&
+                            res.message
                                 ? res.message
                                 : 'Gagal melakukan finalisasi.'
+
                     });
 
                     return;
                 }
 
+
+                // =================================================
+                // BERHASIL
+                // =================================================
 
                 Swal.fire({
 
@@ -5522,7 +5475,11 @@ function finalTterima() {
 
                     text:
                         res.message ||
-                        'Tanda Terima berhasil difinalisasi.',
+                        (
+                            isBalance
+                                ? 'Tanda Terima berhasil difinalisasi.'
+                                : 'Tanda Terima berhasil difinalisasi meskipun nilai tidak balance.'
+                        ),
 
                     timer: 1500,
 
@@ -5538,6 +5495,11 @@ function finalTterima() {
 
             },
 
+
+            // =================================================
+            // ERROR
+            // =================================================
+
             error: function (
                 jqXHR,
                 textStatus,
@@ -5549,6 +5511,7 @@ function finalTterima() {
                     jqXHR.responseText
                 );
 
+
                 Swal.fire({
 
                     icon: 'error',
@@ -5557,18 +5520,27 @@ function finalTterima() {
 
                     text:
                         'Terjadi kesalahan saat finalisasi Tanda Terima.'
+
                 });
 
             },
+
+
+            // =================================================
+            // COMPLETE
+            // =================================================
 
             complete: function () {
 
                 $('#btnSimpan')
                     .prop('disabled', false);
+
             }
+
         });
 
     });
+
 }
 
 
@@ -5576,6 +5548,7 @@ function finalTterima() {
 function btnTarikPenerimaanTterima() {
 
     const docno = $.trim($('#docno').val() || '');
+    const nobkrev = $.trim($('#nobkrev').val() || '');
     const kdsupplier = $.trim($('#kdsupplier').val() || '');
 
     if (docno === '') {
@@ -5723,6 +5696,2374 @@ function reloadTterimaDetail() {
     });
 }
 
+
+// =============================================================
+// CETAK TANDA TERIMA SUPPLIER
+// Output : Print Preview / Save as PDF
+// =============================================================
+
+/* =========================================================
+ * HELPER
+ * ========================================================= */
+
+function tterimaVal(selector) {
+    return $.trim($(selector).val() || '');
+}
+
+
+function tterimaEsc(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+
+function tterimaNumber(value) {
+
+    let n = String(value ?? '')
+        .replace(/,/g, '')
+        .replace(/[^0-9.\-]/g, '');
+
+    n = Number(n);
+
+    if (!Number.isFinite(n)) {
+        return '0.00';
+    }
+
+    return n.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+
+function tterimaChecked(selector) {
+    return $(selector).is(':checked');
+}
+
+
+/* =========================================================
+ * CHECKLIST DARI FORM
+ * ========================================================= */
+
+function getTterimaChecklistFromForm() {
+
+    return [
+
+        {
+            label: 'Invoice',
+            checked: tterimaChecked('#cekinvoice'),
+            reference: tterimaVal('#noinvoice'),
+            date: tterimaVal('#tglinvoice')
+        },
+
+        {
+            label: 'Surat Jalan',
+            checked: tterimaChecked('#ceksj'),
+            reference: tterimaVal('#nosj'),
+            date: tterimaVal('#tglsj')
+        },
+
+        {
+            label: 'Bukti Penerimaan Barang',
+            checked: tterimaChecked('#cekpenerimaan'),
+            reference: tterimaVal('#noaju'),
+            date: ''
+        },
+
+        {
+            label: 'Faktur Pajak',
+            checked: tterimaChecked('#cekfakturpajak'),
+            reference: tterimaVal('#nofakturpajak'),
+            date: ''
+        },
+
+        {
+            label: 'Bea Import',
+            checked: tterimaChecked('#cekbeaimport'),
+            reference: tterimaVal('#nobl'),
+            date: ''
+        },
+
+        {
+            label: 'Dokumen Pendukung',
+            checked: tterimaChecked('#cekdokumen'),
+            reference: tterimaVal('#nobkrev'),
+            date: ''
+        }
+
+    ];
+}
+
+
+/* =========================================================
+ * CHECKLIST DARI DATA TRANSAKSI
+ * ========================================================= */
+
+function getTterimaChecklistFromData(header) {
+
+    header = header || {};
+
+    const noinvoice =
+        $.trim(header.noinvoice || '');
+
+    const tglinvoice =
+        $.trim(header.tglinvoice || '');
+
+    const nosj =
+        $.trim(header.nosj || '');
+
+    const tglsj =
+        $.trim(header.tglsj || '');
+
+    const noaju =
+        $.trim(header.noaju || '');
+
+    const nobl =
+        $.trim(header.nobl || '');
+
+    const nobkrev =
+        $.trim(header.nobkrev || '');
+
+    const nofakturpajak =
+        $.trim(header.nofakturpajak || '');
+
+    return [
+
+        {
+            label: 'Invoice',
+            checked: noinvoice !== '',
+            reference: noinvoice,
+            date: tglinvoice
+        },
+
+        {
+            label: 'Surat Jalan',
+            checked: nosj !== '',
+            reference: nosj,
+            date: tglsj
+        },
+
+        {
+            label: 'Bukti Penerimaan Barang',
+            checked: noaju !== '',
+            reference: noaju,
+            date: ''
+        },
+
+        {
+            label: 'Faktur Pajak',
+            checked: nofakturpajak !== '',
+            reference: nofakturpajak,
+            date: ''
+        },
+
+        {
+            label: 'Bea Import',
+            checked: nobl !== '',
+            reference: nobl,
+            date: ''
+        },
+
+        {
+            label: 'Dokumen Pendukung',
+            checked: nobkrev !== '',
+            reference: nobkrev,
+            date: ''
+        }
+
+    ];
+}
+
+
+/* =========================================================
+ * RENDER CHECKLIST
+ * ========================================================= */
+
+function renderTterimaChecklist(checklist) {
+
+    let html = '';
+
+    checklist = Array.isArray(checklist)
+        ? checklist
+        : [];
+
+    checklist.forEach(function (item) {
+
+        html += `
+            <tr>
+
+                <td class="check-symbol">
+
+                    ${
+            item.checked
+                ? '<span class="check yes">☑</span>'
+                : '<span class="check no">☐</span>'
+        }
+
+                </td>
+
+                <td>
+                    <strong>
+                        ${tterimaEsc(item.label || '-')}
+                    </strong>
+                </td>
+
+                <td>
+                    ${tterimaEsc(item.reference || '-')}
+                </td>
+
+                <!--td class="text-center">
+                    $budi{tterimaEsc(item.date || '-')}
+                </td-->
+
+                <td class="text-center">
+
+                    ${
+            item.checked
+                ? '<span class="status-ok">ADA</span>'
+                : '<span class="status-no">BELUM</span>'
+        }
+
+                </td>
+
+            </tr>
+        `;
+    });
+
+    return html;
+}
+
+
+/* =========================================================
+ * RENDER DETAIL
+ * ========================================================= */
+
+function renderTterimaDetail(detailRows) {
+
+    let detailHtml = '';
+
+    detailRows = Array.isArray(detailRows)
+        ? detailRows
+        : [];
+
+    if (detailRows.length === 0) {
+
+        return `
+            <tr>
+
+                <td colspan="7"
+                    class="text-center empty">
+
+                    Belum ada data alokasi.
+
+                </td>
+
+            </tr>
+        `;
+    }
+
+
+    detailRows.forEach(function (row, index) {
+
+        row = row || {};
+
+        const dk =
+            String(row.dk || '')
+                .trim()
+                .toUpperCase();
+
+        const costProfitCenter =
+            row.costprofitcenter ||
+            row.costcenter ||
+            '-';
+
+        detailHtml += `
+
+            <tr>
+
+                <td class="text-center">
+                    ${index + 1}
+                </td>
+
+                <td>
+                    ${tterimaEsc(row.nobukti || '-')}
+                </td>
+
+                <td>
+
+                    <strong>
+                        ${tterimaEsc(row.noperkiraan || '-')}
+                    </strong>
+
+                    <br>
+
+                    <span class="small-text">
+                        ${tterimaEsc(row.namaperkiraan || '')}
+                    </span>
+
+                </td>
+
+                <td>
+                    ${tterimaEsc(row.keterangan || '-')}
+                </td>
+
+                <td class="text-center">
+
+                    <strong>
+                        ${tterimaEsc(dk || '-')}
+                    </strong>
+
+                </td>
+
+                <td>
+                    ${tterimaEsc(costProfitCenter)}
+                </td>
+
+                <td class="text-end">
+                    ${tterimaNumber(row.nilai)}
+                </td>
+
+            </tr>
+
+        `;
+    });
+
+    return detailHtml;
+}
+
+
+/* =========================================================
+ * AMBIL HEADER DARI FORM
+ * ========================================================= */
+
+function getTterimaHeaderFromForm() {
+
+    const docno =
+        tterimaVal('#docno');
+
+    let nmsupplier = '';
+
+    if ($('#kdsupplier option:selected').length) {
+
+        nmsupplier =
+            $('#kdsupplier option:selected')
+                .text()
+                .replace(/\s+/g, ' ')
+                .trim();
+    }
+
+    if (nmsupplier.indexOf(' - ') >= 0) {
+
+        nmsupplier =
+            nmsupplier.substring(
+                nmsupplier.indexOf(' - ') + 3
+            );
+    }
+
+
+    return {
+
+        docno: docno,
+
+        docdate:
+            tterimaVal('#docdate'),
+
+        cabang:
+            tterimaVal('#cabang'),
+
+        kdsupplier:
+            tterimaVal('#kdsupplier'),
+
+        nmsupplier:
+        nmsupplier,
+
+        alamatsupplier:
+            tterimaVal('#alamatsupplier'),
+
+        nobkrev:
+            tterimaVal('#nobkrev'),
+
+        noinvoice:
+            tterimaVal('#noinvoice'),
+
+        tglinvoice:
+            tterimaVal('#tglinvoice'),
+
+        nosj:
+            tterimaVal('#nosj'),
+
+        tglsj:
+            tterimaVal('#tglsj'),
+
+        noaju:
+            tterimaVal('#noaju'),
+
+        nobl:
+            tterimaVal('#nobl'),
+
+        noawb:
+            tterimaVal('#noawb'),
+
+        nofakturpajak:
+            tterimaVal('#nofakturpajak'),
+
+        tgljthtempo:
+            tterimaVal('#tgljthtempo'),
+
+        jthtempo:
+            tterimaVal('#jthtempo'),
+
+        currcode:
+            tterimaVal('#currcode') || 'IDR',
+
+        kurs:
+            tterimaVal('#kurs') || '1',
+
+        dpp:
+            tterimaVal('#dpp'),
+
+        jumlahpajak:
+            tterimaVal('#jumlahpajak'),
+
+        total:
+            tterimaVal('#total'),
+
+        totalalokasi:
+            tterimaVal('#totalalokasi'),
+
+        keterangan:
+            tterimaVal('#keterangan'),
+
+        status:
+            tterimaVal('#status')
+
+    };
+}
+
+
+/* =========================================================
+ * CETAK DARI FORM
+ *
+ * Dipanggil tanpa parameter:
+ *
+ * btnCetakTterima()
+ * ========================================================= */
+
+window.btnCetakTterima = function (docnoParam) {
+
+    /*
+     * Jika dipanggil dengan docno,
+     * arahkan ke transaksi final.
+     */
+    if ($.trim(docnoParam || '') !== '') {
+
+        return window.btnCetakTterimaTrx(docnoParam);
+    }
+
+
+    const header =
+        getTterimaHeaderFromForm();
+
+
+    if (!header.docno) {
+
+        Swal.fire({
+
+            icon: 'warning',
+
+            title: 'Dokumen Belum Tersedia',
+
+            text:
+                'Nomor Tanda Terima belum tersedia.'
+
+        });
+
+        return;
+    }
+
+
+    /*
+     * Detail dari halaman/form
+     */
+    let detailRows = [];
+
+    if (
+        window.tterimaDetailRows &&
+        typeof window.tterimaDetailRows === 'object'
+    ) {
+
+        detailRows =
+            Object.values(
+                window.tterimaDetailRows
+            );
+    }
+
+
+    /*
+     * Checklist dari checkbox form
+     */
+    const checklist =
+        getTterimaChecklistFromForm();
+
+
+    /*
+     * Gunakan renderer yang sama
+     */
+    printTterimaFromData(
+        header,
+        detailRows,
+        checklist
+    );
+};
+
+
+/* =========================================================
+ * CETAK DARI LIST TRANSAKSI FINAL
+ *
+ * Dipanggil:
+ *
+ * btnCetakTterimaTrx('DOCNO')
+ * ========================================================= */
+
+window.btnCetakTterimaTrx = function (docnoParam) {
+
+    const docno =
+        $.trim(docnoParam || '');
+
+
+    if (docno === '') {
+
+        Swal.fire({
+
+            icon: 'warning',
+
+            title: 'Nomor Dokumen Kosong',
+
+            text:
+                'Nomor Tanda Terima tidak tersedia.'
+
+        });
+
+        return;
+    }
+
+
+    $.ajax({
+
+        type: 'POST',
+
+        url:
+            HOST_URL +
+            'arap/transaksi/getTterimaPrint',
+
+        data: {
+
+            docno: docno
+
+        },
+
+        dataType: 'json',
+
+
+        success: function (res) {
+
+            console.log(
+                'getTterimaPrint:',
+                res
+            );
+
+
+            if (
+                !res ||
+                res.success !== true ||
+                !res.data
+            ) {
+
+                Swal.fire({
+
+                    icon: 'error',
+
+                    title:
+                        'Data Tidak Ditemukan',
+
+                    text:
+                        res &&
+                        res.message
+                            ? res.message
+                            : 'Data Tanda Terima tidak ditemukan.'
+
+                });
+
+                return;
+            }
+
+
+            const header =
+                res.data.header || {};
+
+
+            const detailRows =
+                Array.isArray(
+                    res.data.detail
+                )
+                    ? res.data.detail
+                    : [];
+
+
+            /*
+             * Checklist transaksi final
+             * dibuat berdasarkan nomor dokumen
+             */
+            const checklist =
+                getTterimaChecklistFromData(
+                    header
+                );
+
+
+            /*
+             * Gunakan renderer yang sama
+             */
+            printTterimaFromData(
+                header,
+                detailRows,
+                checklist
+            );
+        },
+
+
+        error: function (xhr) {
+
+            console.error(
+                'getTterimaPrint error:',
+                xhr.responseText
+            );
+
+
+            Swal.fire({
+
+                icon: 'error',
+
+                title: 'Error',
+
+                text:
+                    'Gagal mengambil data Tanda Terima.'
+
+            });
+        }
+
+    });
+};
+
+
+/* =========================================================
+ * RENDER / PRINT UTAMA
+ *
+ * Semua sumber data masuk ke sini:
+ *
+ * 1. Form
+ * 2. sc_trx.tterima_hd
+ *
+ * Jadi tidak ada lagi masalah scope detailHtml.
+ * ========================================================= */
+
+function printTterimaFromData(
+    header,
+    detailRows,
+    checklist
+) {
+
+    header =
+        header || {};
+
+    detailRows =
+        Array.isArray(detailRows)
+            ? detailRows
+            : [];
+
+    checklist =
+        Array.isArray(checklist)
+            ? checklist
+            : getTterimaChecklistFromData(
+                header
+            );
+
+
+    /* =====================================================
+     * HEADER DATA
+     * ===================================================== */
+
+    const docno =
+        $.trim(
+            header.docno || ''
+        );
+
+    const docdate =
+        $.trim(
+            header.docdate || ''
+        );
+
+    const cabang =
+        $.trim(
+            header.cabang || ''
+        );
+
+    const kdsupplier =
+        $.trim(
+            header.kdsupplier || ''
+        );
+
+    const nmsupplier =
+        $.trim(
+            header.nmsupplier || ''
+        );
+
+    const alamatsupplier =
+        $.trim(
+            header.alamatsupplier || ''
+        );
+
+
+    /* =====================================================
+     * DOCUMENT REFERENCE
+     * ===================================================== */
+
+    const nobkrev =
+        $.trim(
+            header.nobkrev || ''
+        );
+
+    const noinvoice =
+        $.trim(
+            header.noinvoice || ''
+        );
+
+    const tglinvoice =
+        $.trim(
+            header.tglinvoice || ''
+        );
+
+    const nosj =
+        $.trim(
+            header.nosj || ''
+        );
+
+    const tglsj =
+        $.trim(
+            header.tglsj || ''
+        );
+
+    const noaju =
+        $.trim(
+            header.noaju || ''
+        );
+
+    const nobl =
+        $.trim(
+            header.nobl || ''
+        );
+
+    const noawb =
+        $.trim(
+            header.noawb || ''
+        );
+
+    const nofakturpajak =
+        $.trim(
+            header.nofakturpajak || ''
+        );
+
+
+    /* =====================================================
+     * PAYMENT
+     * ===================================================== */
+
+    const tgljthtempo =
+        $.trim(
+            header.tgljthtempo || ''
+        );
+
+    const jthtempo =
+        $.trim(
+            header.jthtempo || ''
+        );
+
+    const currcode =
+        $.trim(
+            header.currcode || 'IDR'
+        );
+
+    const kurs =
+        header.kurs || 1;
+
+    const dpp =
+        header.dpp || 0;
+
+    const jumlahpajak =
+        header.jumlahpajak || 0;
+
+    const total =
+        header.total || 0;
+
+    /*
+     * Untuk data transaksi final,
+     * beberapa query menggunakan balance.
+     */
+    const totalalokasi =
+        header.totalalokasi ??
+        header.balance ??
+        0;
+
+    const keterangan =
+        $.trim(
+            header.keterangan || ''
+        );
+
+
+    /* =====================================================
+     * STATUS
+     * ===================================================== */
+
+    const status =
+        $.trim(
+            header.status || ''
+        ).toUpperCase();
+
+
+    let statusText =
+        'DRAFT';
+
+
+    if (status === 'F') {
+
+        statusText =
+            'FINAL';
+
+    } else if (status === 'P') {
+
+        statusText =
+            'POSTED';
+
+    } else if (status === 'E') {
+
+        statusText =
+            'DRAFT';
+    }
+
+
+    /* =====================================================
+     * HTML CHECKLIST
+     * ===================================================== */
+
+    const checklistHtml =
+        renderTterimaChecklist(
+            checklist
+        );
+
+
+    /* =====================================================
+     * HTML DETAIL
+     *
+     * PENTING:
+     * detailHtml dibuat DI DALAM renderer.
+     * ===================================================== */
+
+    const detailHtml =
+        renderTterimaDetail(
+            detailRows
+        );
+
+
+    /* =====================================================
+     * PRINT WINDOW
+     * ===================================================== */
+
+    const printWindow =
+        window.open(
+            '',
+            '_blank',
+            'width=1100,height=800'
+        );
+
+
+    if (!printWindow) {
+
+        Swal.fire({
+
+            icon: 'warning',
+
+            title: 'Popup Diblokir',
+
+            text:
+                'Izinkan popup browser untuk mencetak Tanda Terima.'
+
+        });
+
+        return;
+    }
+
+
+    /* =====================================================
+     * PRINT HTML
+     * ===================================================== */
+
+    const html = `
+
+<!DOCTYPE html>
+
+<html lang="id">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>
+    Tanda Terima - ${tterimaEsc(docno)}
+</title>
+
+
+<style>
+
+@page {
+
+    size: A4;
+
+    margin:
+        12mm
+        12mm
+        15mm
+        12mm;
+
+}
+
+
+* {
+
+    box-sizing: border-box;
+
+}
+
+
+body {
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    font-size: 10px;
+
+    color: #222;
+
+    margin: 0;
+
+    padding: 0;
+
+    background: #fff;
+
+}
+
+
+/* =====================================================
+   DOCUMENT HEADER
+===================================================== */
+
+.document-header {
+
+    display: table;
+
+    width: 100%;
+
+    border-bottom:
+        2px solid #222;
+
+    padding-bottom: 8px;
+
+    margin-bottom: 12px;
+
+}
+
+
+.company {
+
+    display: table-cell;
+
+    width: 60%;
+
+    vertical-align: middle;
+
+}
+
+
+.company-name {
+
+    font-size: 17px;
+
+    font-weight: bold;
+
+    letter-spacing: .3px;
+
+}
+
+
+.company-subtitle {
+
+    font-size: 9px;
+
+    color: #555;
+
+    margin-top: 3px;
+
+}
+
+
+.document-title {
+
+    display: table-cell;
+
+    width: 40%;
+
+    text-align: right;
+
+    vertical-align: middle;
+
+}
+
+
+.document-title h1 {
+
+    margin: 0;
+
+    font-size: 18px;
+
+    letter-spacing: 1px;
+
+}
+
+
+.document-title .status {
+
+    display: inline-block;
+
+    margin-top: 5px;
+
+    padding:
+        3px 10px;
+
+    border:
+        1px solid #555;
+
+    font-weight: bold;
+
+    font-size: 9px;
+
+}
+
+
+/* =====================================================
+   DOCUMENT INFORMATION
+===================================================== */
+
+.info-grid {
+
+    width: 100%;
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(0, 1fr)
+        minmax(0, 1fr);
+
+    column-gap: 18px;
+
+    margin-bottom: 12px;
+
+}
+
+
+.info-column {
+
+    min-width: 0;
+
+}
+
+
+.info-item {
+
+    display: grid;
+
+    grid-template-columns:
+        78px
+        10px
+        minmax(0, 1fr);
+
+    align-items: start;
+
+    width: 100%;
+
+    min-width: 0;
+
+    font-size: 10px;
+
+    line-height: 1.25;
+
+}
+
+
+.info-label {
+
+    font-weight: bold;
+
+    color: #444;
+
+    white-space: nowrap;
+
+}
+
+
+.info-separator {
+
+    text-align: center;
+
+}
+
+
+.info-value {
+
+    min-width: 0;
+
+    overflow-wrap: break-word;
+
+}
+
+
+/* =====================================================
+   BARCODE
+===================================================== */
+
+.docno-barcode {
+
+    display: block;
+
+    width: 125px;
+
+    height: 28px;
+
+    margin-top: 4px;
+
+    padding: 0;
+
+    line-height: 0;
+
+}
+
+
+.docno-barcode svg {
+
+    display: block;
+
+    width: 125px;
+
+    height: 28px;
+
+    margin: 0;
+
+    padding: 0;
+
+}
+
+
+/* =====================================================
+   SECTION
+===================================================== */
+
+.section-title {
+
+    font-size: 11px;
+
+    font-weight: bold;
+
+    text-transform: uppercase;
+
+    background: #eeeeee;
+
+    border:
+        1px solid #999;
+
+    padding:
+        6px 7px;
+
+    margin-top: 10px;
+
+}
+
+
+/* =====================================================
+   SUPPLIER
+===================================================== */
+
+.supplier-table {
+
+    width: 100%;
+
+    border-collapse:
+        collapse;
+
+    border:
+        1px solid #999;
+
+}
+
+
+.supplier-table td {
+
+    padding:
+        6px 7px;
+
+    border-bottom:
+        1px solid #ddd;
+
+    vertical-align: top;
+
+}
+
+
+.supplier-label {
+
+    width: 18%;
+
+    font-weight: bold;
+
+    background: #f7f7f7;
+
+}
+
+
+.supplier-name {
+
+    font-size: 12px;
+
+    font-weight: bold;
+
+}
+
+
+/* =====================================================
+   CHECKLIST
+===================================================== */
+
+table.document-checklist {
+
+    width: 100%;
+
+    border-collapse:
+        collapse;
+
+}
+
+
+.document-checklist th {
+
+    background: #eeeeee;
+
+    border:
+        1px solid #888;
+
+    padding:
+        6px 5px;
+
+    text-align: left;
+
+    font-size: 9px;
+
+}
+
+
+.document-checklist td {
+
+    border:
+        1px solid #aaa;
+
+    padding:
+        6px 5px;
+
+    vertical-align: middle;
+
+}
+
+
+.check-symbol {
+
+    width: 35px;
+
+    text-align: center;
+
+    font-size: 16px;
+
+}
+
+
+.check {
+
+    font-size: 16px;
+
+    font-weight: bold;
+
+}
+
+
+.check.yes {
+
+    color: #198754;
+
+}
+
+
+.check.no {
+
+    color: #777;
+
+}
+
+
+.status-ok {
+
+    color: #198754;
+
+    font-weight: bold;
+
+}
+
+
+.status-no {
+
+    color: #777;
+
+    font-weight: bold;
+
+}
+
+
+/* =====================================================
+   VALUE
+===================================================== */
+
+.value-table {
+
+    width: 100%;
+
+    border-collapse:
+        collapse;
+
+    margin-top: 8px;
+
+}
+
+
+.value-table td {
+
+    padding:
+        5px 7px;
+
+    border-bottom:
+        1px solid #ddd;
+
+}
+
+
+.value-label {
+
+    width: 75%;
+
+    text-align: right;
+
+    font-weight: bold;
+
+}
+
+
+.value-total {
+
+    font-size: 13px;
+
+    font-weight: bold;
+
+    border-top:
+        2px solid #222 !important;
+
+    border-bottom:
+        2px solid #222 !important;
+
+}
+
+
+/* =====================================================
+   DETAIL
+===================================================== */
+
+.detail-table {
+
+    width: 100%;
+
+    border-collapse:
+        collapse;
+
+}
+
+
+.detail-table th {
+
+    border:
+        1px solid #888;
+
+    background: #eeeeee;
+
+    padding:
+        6px 5px;
+
+    font-size: 9px;
+
+    text-align: center;
+
+}
+
+
+.detail-table td {
+
+    border:
+        1px solid #aaa;
+
+    padding: 5px;
+
+    vertical-align: top;
+
+}
+
+
+.detail-table .text-end {
+
+    text-align: right;
+
+}
+
+
+.detail-table .text-center {
+
+    text-align: center;
+
+}
+
+
+.small-text {
+
+    color: #666;
+
+    font-size: 8px;
+
+}
+
+
+.empty {
+
+    color: #777;
+
+    font-style: italic;
+
+    padding:
+        12px !important;
+
+}
+
+
+/* =====================================================
+   KETERANGAN
+===================================================== */
+
+.remark-box {
+
+    border:
+        1px solid #aaa;
+
+    min-height: 45px;
+
+    padding: 7px;
+
+    margin-top: 5px;
+
+}
+
+
+/* =====================================================
+   SIGNATURE
+===================================================== */
+
+.signature-table {
+
+    width: 100%;
+
+    border-collapse:
+        collapse;
+
+    margin-top: 35px;
+
+    page-break-inside:
+        avoid;
+
+}
+
+
+.signature-table td {
+
+    width: 33.33%;
+
+    text-align: center;
+
+    vertical-align: top;
+
+    padding: 5px;
+
+}
+
+
+.signature-space {
+
+    height: 55px;
+
+}
+
+
+.signature-line {
+
+    border-top:
+        1px solid #333;
+
+    width: 80%;
+
+    margin: 0 auto;
+
+    padding-top: 4px;
+
+}
+
+
+/* =====================================================
+   FOOTER
+===================================================== */
+
+.footer {
+
+    margin-top: 15px;
+
+    border-top:
+        1px solid #aaa;
+
+    padding-top: 5px;
+
+    font-size: 8px;
+
+    color: #666;
+
+    display: flex;
+
+    justify-content: space-between;
+
+}
+
+
+/* =====================================================
+   PRINT
+===================================================== */
+
+@media print {
+
+    body {
+
+        -webkit-print-color-adjust:
+            exact;
+
+        print-color-adjust:
+            exact;
+
+    }
+
+
+    .no-print {
+
+        display: none !important;
+
+    }
+
+
+    .section-title,
+    .document-checklist th,
+    .detail-table th,
+    .supplier-label {
+
+        -webkit-print-color-adjust:
+            exact;
+
+        print-color-adjust:
+            exact;
+
+    }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<!-- =====================================================
+     HEADER
+===================================================== -->
+
+<div class="document-header">
+
+
+    <div class="company">
+
+        <div class="company-name">
+
+            PT JATIM TAMAN STEEL MANUFACTURING
+
+        </div>
+
+
+        <div class="company-subtitle">
+
+            ACCOUNTING DEPARTMENT
+
+        </div>
+
+    </div>
+
+
+    <div class="document-title">
+
+        <h1>
+            TANDA TERIMA SUPPLIER
+        </h1>
+
+
+        <div class="status">
+
+            ${tterimaEsc(statusText)}
+
+        </div>
+
+    </div>
+
+
+</div>
+
+
+<!-- =====================================================
+     DOCUMENT INFORMATION
+===================================================== -->
+
+<div class="info-grid">
+
+
+    <!-- COLUMN 1 -->
+
+    <div class="info-column">
+
+
+        <div class="info-item">
+
+            <div class="info-label">
+                No. Dokumen
+            </div>
+
+            <div class="info-separator">
+                :
+            </div>
+
+            <div class="info-value">
+
+                <strong>
+                    ${tterimaEsc(docno)}
+                </strong>
+
+
+                <div class="docno-barcode">
+
+                    <svg id="barcodeDocno"></svg>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="info-item"
+            style="margin-top: 10px;"
+        >
+
+            <div class="info-label">
+                Cabang / Job
+            </div>
+
+            <div class="info-separator">
+                :
+            </div>
+
+            <div class="info-value">
+                ${tterimaEsc(cabang || '-')}
+            </div>
+
+        </div>
+
+
+        <div
+            class="info-item"
+            style="margin-top: 10px;"
+        >
+
+            <div class="info-label">
+                Currency
+            </div>
+
+            <div class="info-separator">
+                :
+            </div>
+
+            <div class="info-value">
+                ${tterimaEsc(currcode || 'IDR')}
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+    <!-- COLUMN 2 -->
+
+    <div class="info-column">
+
+
+        <div class="info-item">
+
+            <div class="info-label">
+                No. BK Rev
+            </div>
+
+            <div class="info-separator">
+                :
+            </div>
+
+            <div class="info-value">
+
+                <strong>
+                    ${tterimaEsc(nobkrev || '-')}
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="info-item"
+            style="margin-top: 10px;"
+        >
+
+            <div class="info-label">
+                Jatuh Tempo
+            </div>
+
+            <div class="info-separator">
+                :
+            </div>
+
+            <div class="info-value">
+
+                ${tterimaEsc(tgljthtempo || '-')}
+
+                ${
+        jthtempo
+            ? ' (' +
+            tterimaEsc(jthtempo) +
+            ' hari)'
+            : ''
+    }
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="info-item"
+            style="margin-top: 10px;"
+        >
+
+            <div class="info-label">
+                Kurs
+            </div>
+
+            <div class="info-separator">
+                :
+            </div>
+
+            <div class="info-value">
+
+                ${tterimaNumber(kurs || 1)}
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+    <!-- COLUMN 3 -->
+
+    <div class="info-column">
+
+
+        <div class="info-item">
+
+            <div class="info-label">
+                Tanggal
+            </div>
+
+            <div class="info-separator">
+                :
+            </div>
+
+            <div class="info-value">
+
+                ${tterimaEsc(docdate || '-')}
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+</div>
+
+
+<!-- =====================================================
+     SUPPLIER
+===================================================== -->
+
+<div class="section-title">
+
+    A. DATA SUPPLIER
+
+</div>
+
+
+<table class="supplier-table">
+
+
+    <tr>
+
+        <td class="supplier-label">
+            Kode Supplier
+        </td>
+
+        <td>
+            ${tterimaEsc(kdsupplier || '-')}
+        </td>
+
+    </tr>
+
+
+    <tr>
+
+        <td class="supplier-label">
+            Nama Supplier
+        </td>
+
+        <td class="supplier-name">
+            ${tterimaEsc(nmsupplier || '-')}
+        </td>
+
+    </tr>
+
+
+    <tr>
+
+        <td class="supplier-label">
+            Alamat
+        </td>
+
+        <td>
+            ${tterimaEsc(alamatsupplier || '-')}
+        </td>
+
+    </tr>
+
+
+</table>
+
+
+<!-- =====================================================
+     DOKUMEN REFERENSI
+===================================================== -->
+
+<div class="section-title">
+
+    B. DOKUMEN PENDUKUNG
+
+</div>
+
+
+<table class="document-checklist">
+
+
+    <thead>
+
+        <tr>
+
+            <th width="35">
+                Check
+            </th>
+
+            <th width="28%">
+                Dokumen
+            </th>
+
+            <th width="30%">
+                Nomor Referensi
+            </th>
+
+            <!--<th width="15%">
+                Tanggal
+            </th>-->
+
+            <th width="12%">
+                Status
+            </th>
+
+        </tr>
+
+    </thead>
+
+
+    <tbody>
+
+        ${checklistHtml}
+
+    </tbody>
+
+
+</table>
+
+
+<!-- =====================================================
+     NILAI
+===================================================== -->
+
+<div class="section-title">
+
+    C. NILAI TANDA TERIMA
+
+</div>
+
+
+<table class="value-table">
+
+
+    <tr>
+
+        <td class="value-label">
+            DPP
+        </td>
+
+        <td
+            class="text-end"
+            style="text-align:right;"
+        >
+            ${tterimaNumber(dpp)}
+        </td>
+
+    </tr>
+
+
+    <tr>
+
+        <td class="value-label">
+            Pajak
+        </td>
+
+        <td
+            class="text-end"
+            style="text-align:right;"
+        >
+            ${tterimaNumber(jumlahpajak)}
+        </td>
+
+    </tr>
+
+
+    <tr>
+
+        <td class="value-label value-total">
+            TOTAL
+        </td>
+
+        <td
+            class="text-end value-total"
+            style="text-align:right;"
+        >
+            ${tterimaNumber(total)}
+        </td>
+
+    </tr>
+
+
+</table>
+
+
+<!-- =====================================================
+     ALOKASI
+===================================================== -->
+
+<div class="section-title">
+
+    D. BUKTI ALOKASI NILAI
+
+</div>
+
+
+<table class="detail-table">
+
+
+    <thead>
+
+        <tr>
+
+            <th width="5%">
+                No.
+            </th>
+
+            <th width="12%">
+                No. Bukti
+            </th>
+
+            <th width="20%">
+                Perkiraan
+            </th>
+
+            <th width="25%">
+                Keterangan
+            </th>
+
+            <th width="6%">
+                DK
+            </th>
+
+            <th width="15%">
+                Cost / Profit Center
+            </th>
+
+            <th width="17%">
+                Nilai
+            </th>
+
+        </tr>
+
+    </thead>
+
+
+    <tbody>
+
+        ${detailHtml}
+
+    </tbody>
+
+
+    <tfoot>
+
+        <tr>
+
+            <td
+                colspan="6"
+                style="
+                    text-align:right;
+                    font-weight:bold;
+                    padding:7px;
+                    border:1px solid #888;
+                "
+            >
+
+                TOTAL ALOKASI
+
+            </td>
+
+
+            <td
+                style="
+                    text-align:right;
+                    font-weight:bold;
+                    font-size:11px;
+                    padding:7px;
+                    border:1px solid #888;
+                "
+            >
+
+                ${tterimaNumber(totalalokasi)}
+
+            </td>
+
+        </tr>
+
+    </tfoot>
+
+
+</table>
+
+
+<!-- =====================================================
+     KETERANGAN
+===================================================== -->
+
+<div class="section-title">
+
+    E. KETERANGAN
+
+</div>
+
+
+<div class="remark-box">
+
+    ${tterimaEsc(keterangan || '-')}
+
+</div>
+
+
+<!-- =====================================================
+     SIGNATURE
+===================================================== -->
+
+<table class="signature-table">
+
+
+    <tr>
+
+
+        <td>
+
+            Supplier
+
+            <div class="signature-space"></div>
+
+            <div class="signature-line">
+
+                Nama / Tanda Tangan
+
+            </div>
+
+        </td>
+
+
+        <td>
+
+            Accounting
+
+            <div class="signature-space"></div>
+
+            <div class="signature-line">
+
+                Nama / Tanda Tangan
+
+            </div>
+
+        </td>
+
+
+        <td>
+
+            Mengetahui
+
+            <div class="signature-space"></div>
+
+            <div class="signature-line">
+
+                Nama / Tanda Tangan
+
+            </div>
+
+        </td>
+
+
+    </tr>
+
+
+</table>
+
+
+<!-- =====================================================
+     FOOTER
+===================================================== -->
+
+<div class="footer">
+
+    <span>
+        Dokumen Tanda Terima Supplier
+    </span>
+
+    <span>
+        ${tterimaEsc(docno)}
+    </span>
+
+</div>
+
+
+</body>
+
+</html>
+
+`;
+
+
+    /* =====================================================
+     * WRITE DOCUMENT
+     * ===================================================== */
+
+    printWindow.document.open();
+
+    printWindow.document.write(html);
+
+    printWindow.document.close();
+
+
+    /* =====================================================
+     * BARCODE
+     * ===================================================== */
+
+    function generateDocnoBarcode() {
+
+        const barcodeElement =
+            printWindow.document.getElementById(
+                'barcodeDocno'
+            );
+
+
+        if (
+            typeof window.JsBarcode === 'function' &&
+            barcodeElement &&
+            docno !== ''
+        ) {
+
+            try {
+
+                window.JsBarcode(
+                    barcodeElement,
+                    docno,
+                    {
+
+                        format: 'CODE128',
+
+                        width: 1.2,
+
+                        height: 28,
+
+                        displayValue: false,
+
+                        margin: 0
+
+                    }
+                );
+
+
+                return true;
+
+            } catch (error) {
+
+                console.error(
+                    'Gagal membuat barcode Tanda Terima:',
+                    error
+                );
+
+                return false;
+            }
+        }
+
+
+        return false;
+    }
+
+
+    /* =====================================================
+     * WAIT BARCODE
+     * ===================================================== */
+
+    let barcodeTry = 0;
+
+
+    function waitForBarcode() {
+
+        barcodeTry++;
+
+
+        const barcodeReady =
+            generateDocnoBarcode();
+
+
+        if (barcodeReady) {
+
+            setTimeout(
+                function () {
+
+                    printWindow.focus();
+
+                    printWindow.print();
+
+                },
+                300
+            );
+
+            return;
+        }
+
+
+        if (barcodeTry < 50) {
+
+            setTimeout(
+                waitForBarcode,
+                100
+            );
+
+            return;
+        }
+
+
+        console.warn(
+            'JsBarcode tidak tersedia. Dokumen dicetak tanpa barcode.'
+        );
+
+
+        printWindow.focus();
+
+        printWindow.print();
+    }
+
+
+    /* =====================================================
+     * START PRINT
+     * ===================================================== */
+
+    waitForBarcode();
+}
 
 $(document).ready(function() {
     // Handle form submission event
