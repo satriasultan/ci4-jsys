@@ -113,7 +113,7 @@ $('#cabang').on('change', function () {
     if (!idbranch) return;
 
     $.ajax({
-        url: HOST_URL + '/persediaan/trans/getBranch_ajustment_stock',
+        url: HOST_URL + '/production/trans/getBranchInfo_workingorder',
         method: 'GET',
         data: {idbranch: idbranch},
         dataType: 'json',
@@ -125,66 +125,66 @@ $('#cabang').on('change', function () {
             }
 
             currentKodeSuffix = res.kode_suffix;
-
-            $('#infix').val(res.infix);
-
-            // SET PREFIX + TRIGGER CHANGE
-            $('#prefix').val('WO').trigger('change');
-
-            $('#sufix').val(currentKodeSuffix + '0001');
+            $('#infix').val(res.infix);          // YYMM
+            var prefix = res.prefix;
+            $('#prefix').val(prefix);
+            loadNextSuffixWO()
 
             var infix = (res.infix || '').toString();
 
             if (infix.length === 4) {
-
                 $('#docdate').prop('disabled', false);
-
                 var yy = infix.substring(0, 2);
                 var mm = infix.substring(2, 4);
-
                 var year = 2000 + parseInt(yy, 10);
                 var month = parseInt(mm, 10) - 1;
 
-                var today = moment();
+                // Default: logindate dari server, fallback ke hari ini
+                var logindate = res.logindate ? moment(res.logindate, 'DD-MM-YYYY') : moment();
+
                 var startDate = moment([year, month, 1]);
                 var endDate = moment(startDate).endOf('month');
+
+                // Kalau logindate di luar range, pakai startDate
+                var selectedDate = logindate.isBetween(startDate, endDate, 'day', '[]')
+                    ? logindate
+                    : startDate;
 
                 var $el = $('#docdate');
                 var drp = $el.data('daterangepicker');
 
                 if (drp) {
-
                     drp.minDate = startDate;
                     drp.maxDate = endDate;
-                    drp.setStartDate(startDate);
-                    drp.setEndDate(startDate);
-
+                    drp.setStartDate(selectedDate);
+                    drp.setEndDate(selectedDate);
                 } else {
-
                     $el.daterangepicker({
                         autoUpdateInput: false,
                         singleDatePicker: true,
                         showDropdowns: true,
-                        startDate: today,
+                        startDate: selectedDate,
                         minDate: startDate,
                         maxDate: endDate,
-                        locale: {format: 'YYYY-MM-DD'},
+                        locale: { format: 'DD-MM-YYYY' },
                         cancelLabel: 'Clear'
                     });
-
                     $el.on('apply.daterangepicker', function (ev, picker) {
-                        $(this).val(picker.startDate.format('YYYY-MM-DD'));
+                        $(this).val(picker.startDate.format('DD-MM-YYYY'));
+                        $(this).trigger('change');
                     });
-
                     $el.on('cancel.daterangepicker', function (ev, picker) {
                         $(this).val('');
+                        $(this).trigger('change');
                     });
                 }
 
-                $el.val(today.format('YYYY-MM-DD'));
+                $el.val(selectedDate.format('DD-MM-YYYY'));
             }
 
-            generateDocNumber('WO', res.infix, currentKodeSuffix + '0001');
+            $('#docno').val(
+                prefix + '/' + res.infix + '/' + currentKodeSuffix + '0001'
+            );
 
         }
     });
@@ -192,12 +192,11 @@ $('#cabang').on('change', function () {
 });
 
 
-$('#prefix').on('change', function () {
+function loadNextSuffixWO() {
+    
+    let prefix = $.trim($('#prefix').val()).toUpperCase();
+    let infix = $.trim($('#infix').val());
 
-    let prefix = $(this).val().toUpperCase();
-    $(this).val(prefix);
-
-    let infix = $('#infix').val();
 
     if (!prefix || !infix || !currentKodeSuffix) return;
 
@@ -217,15 +216,28 @@ $('#prefix').on('change', function () {
                 return;
             }
 
-            $('#sufix').val(res.suffix);
+            let suffix = $.trim(
+                res.suffix || ''
+            );
 
-            generateDocNumber(prefix, infix, res.suffix);
+            $('#suffix')
+                .val(suffix)
+                .trigger('change');
+
+            $('#docno').val(
+                prefix + '/' + infix + '/' + res.suffix
+            );
 
         }
     });
 
-});
+};
 
+
+
+$('#prefix').on('blur', function () {
+    loadNextSuffixWO();
+});
 
 var defaultInitialBranch = '';
 $("#cabang").select2({
@@ -328,11 +340,17 @@ function documentReadable() {
             let prefixParts = item.docno.trim().split('/');
             $('[name="prefix"]').val(prefixParts[0]).prop('readonly', true);
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
-            $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
+            $('[name="suffix"]').val(prefixParts[2]).prop('readonly', true);
+            loadNextSuffixWO()
             // setJtsValue('[name="buildfor"]', convertToDbNumber(item.buildfor));
             // setJtsValue('[name="minimumqty"]', convertToDbNumber(item.minimumqty));
-            $('[name="docdate"]').val(item.docdate).prop('disabled', true);
-            $('[name="docdatefinish"]').val(item.docdatefinish).prop('disabled', true);
+            $('[name="docdate"]')
+                .val(moment(item.docdate).format('DD-MM-YYYY'))
+                .prop('disabled', true);
+
+            $('[name="docdatefinish"]')
+                .val(moment(item.docdatefinish).format('DD-MM-YYYY'))
+                .prop('disabled', true);
             // $('[name="activedate"]').val(item.activedate).prop('disabled', true);
             // $('[name="docref"]').val(item.docref).prop('disabled', false);
             $('[name="keterangan"]').val(item.keterangan);
@@ -1233,7 +1251,7 @@ function btnDeleteDetailWip(){
     });
 }
 
-var defaultInitialGroupBrng = '';
+var defaultInitialGroupBrng = 'BRG';
 $("#idbarangMaterial").select2({
     placeholder: "Choose Your Item List",
     allowClear: true,
@@ -1304,7 +1322,7 @@ $("#idbarangMaterial").select2({
 
 
 
-var defaultInitialGroupBrng = '';
+var defaultInitialGroupBrng = 'JSA';
 $("#idbarangCost").select2({
     placeholder: "Choose Your Item List",
     allowClear: true,
@@ -1377,7 +1395,7 @@ $("#idbarangCost").select2({
 
 
 
-var defaultInitialGroupBrng = '';
+var defaultInitialGroupBrng = 'WIP';
 $("#idbarangWip").select2({
     placeholder: "Choose Your Item List",
     allowClear: true,
@@ -1519,7 +1537,7 @@ function formatCustomerSelection(repo) {
 var defaultInitialBOM = '';
 $("#docnobom").select2({
     placeholder: "Choose Your BOM",
-    dropdownParent: $('#modalDetailBOM'),
+    dropdownParent: $('#modalDetailBOM .modal-body'),
     allowClear: true,
     width:'100%',
     ajax: {
@@ -1862,7 +1880,7 @@ function saveBOMDetail(formId) {
             'docno',
             $('#prefix').val() + '/' +
             $('#infix').val() + '/' +
-            $('#sufix').val()
+            $('#suffix').val()
         );
 
         // ===============================
@@ -1964,6 +1982,22 @@ function tableWOBOMMst(){
                 }
             },
         });
+
+        $('#tmp_workingorderbommst tbody').on('click', 'tr', function(e) {
+            // Cegah jika yang diklik adalah checkbox itu sendiri (untuk menghindari double trigger)
+            if ($(e.target).is('input[type="checkbox"]')) {
+                return;
+            }
+
+            // Cari checkbox di dalam baris ini
+            var checkbox = $(this).find('input[type="checkbox"].row-check');
+
+            // Toggle status checkbox
+            checkbox.prop('checked', !checkbox.prop('checked'));
+
+            // Trigger event change jika diperlukan
+            checkbox.trigger('change');
+        });
     }
 
     return initTable();
@@ -2030,6 +2064,23 @@ function tabletmpWorkingOrderMaterial() {
                 // updateGrandTotal();
             }
         });
+
+        $('#tmp_workingordermaterialdtl tbody').on('click', 'tr', function(e) {
+            // Cegah jika yang diklik adalah checkbox itu sendiri (untuk menghindari double trigger)
+            if ($(e.target).is('input[type="checkbox"]')) {
+                return;
+            }
+
+            // Cari checkbox di dalam baris ini
+            var checkbox = $(this).find('input[type="checkbox"].row-check');
+
+            // Toggle status checkbox
+            checkbox.prop('checked', !checkbox.prop('checked'));
+
+            // Trigger event change jika diperlukan
+            checkbox.trigger('change');
+        });
+        
     }
 
     return initTable();
@@ -2119,6 +2170,22 @@ function tabletmpWorkingOrderCost() {
                 // Panggil fungsi manual tadi
                 // updateGrandTotal();
             }
+        });
+
+        $('#tmp_workingordercostdtl tbody').on('click', 'tr', function(e) {
+            // Cegah jika yang diklik adalah checkbox itu sendiri (untuk menghindari double trigger)
+            if ($(e.target).is('input[type="checkbox"]')) {
+                return;
+            }
+
+            // Cari checkbox di dalam baris ini
+            var checkbox = $(this).find('input[type="checkbox"].row-check');
+
+            // Toggle status checkbox
+            checkbox.prop('checked', !checkbox.prop('checked'));
+
+            // Trigger event change jika diperlukan
+            checkbox.trigger('change');
         });
     }
 
@@ -2213,6 +2280,23 @@ function tabletmpWorkingOrderWip() {
                 // Panggil fungsi manual tadi
                 // updateGrandTotal();
             }
+        });
+
+
+        $('#tmp_workingorderwipdtl tbody').on('click', 'tr', function(e) {
+            // Cegah jika yang diklik adalah checkbox itu sendiri (untuk menghindari double trigger)
+            if ($(e.target).is('input[type="checkbox"]')) {
+                return;
+            }
+
+            // Cari checkbox di dalam baris ini
+            var checkbox = $(this).find('input[type="checkbox"].row-check');
+
+            // Toggle status checkbox
+            checkbox.prop('checked', !checkbox.prop('checked'));
+
+            // Trigger event change jika diperlukan
+            checkbox.trigger('change');
         });
     }
 

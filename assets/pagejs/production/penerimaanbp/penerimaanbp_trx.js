@@ -329,12 +329,14 @@ function documentReadable() {
             $('[name="prefix"]').val(prefixParts[0]).prop('readonly', true);
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
             $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
-            setJtsValue('[name="buildfor"]', convertToDbNumber(item.buildfor));
+            // setJtsValue('[name="buildfor"]', convertToDbNumber(item.buildfor));
             // setJtsValue('[name="minimumqty"]', convertToDbNumber(item.minimumqty));
-            $('[name="docdate"]').val(item.docdate).prop('disabled', true);
+             $('[name="docdate"]')
+                .val(moment(item.docdate).format('DD-MM-YYYY'))
+                .prop('readonly', true);
             $('[name="pemohon"]').val(item.pemohon).prop('disabled', true);
             $('[name="batchno"]').val(item.batchno).prop('readonly',true);
-            $('[name="buildfor"]').prop('disabled', true).prop('readonly',true);
+            // $('[name="buildfor"]').prop('disabled', true).prop('readonly',true);
             // $('[name="activedate"]').val(item.activedate).prop('disabled', true);
             // $('[name="docref"]').val(item.docref).prop('disabled', false);
             $('[name="keterangan"]').val(item.keterangan).prop('readonly',true);
@@ -439,7 +441,7 @@ function documentReadable() {
             $('[name="tabno"]').prop("disabled", true);
             $('[name="bagian"]').prop("disabled", true);
             $('[name="idbarang_jadi"]').prop("disabled", true);
-            $('[name="buildunit"]').prop("disabled", true);
+            // $('[name="buildunit"]').prop("disabled", true);
             // $('[name="wono"]').prop("disabled", true);
 
             skipRoleChange = true;
@@ -900,13 +902,13 @@ $("#woeno").select2({
     defaultIdbarangJadi = data.idbarang_jadi
     $("#wono").val(data.wono.trim()).trigger('change').prop('disabled',true)
     $("#bomno").val(data.bomno.trim()).trigger('change').prop('disabled',true)
-    $("#buildfor").val(data.buildfor.trim()).prop('readonly',true)
-    $("#buildunit").val('KG').trigger('change').prop('disabled',true)
+    // $("#buildfor").val(data.buildfor.trim()).prop('readonly',true)
+    // $("#buildunit").val('KG').trigger('change').prop('disabled',true)
     $("#idbarang_jadi").val(data.idbarang_jadi.trim()).trigger('change').prop('disabled',true)
     setSelect2Ajax('#wono', data.wono, data.wono);
     setSelect2Ajax('#bomno', data.bomno, data.bomno);
     setSelect2Ajax('#idbarang_jadi', data.idbarang_jadi, data.idbarang_jadi);
-    setSelect2Ajax('#buildunit', 'KG', 'KG');
+    // setSelect2Ajax('#buildunit', 'KG', 'KG');
 
     savePBPFromWO(lastWOENO);
 });
@@ -1005,7 +1007,7 @@ $('#wono').on('select2:clear', function () {
 
 $('#bomno').on('select2:clear', function () {
     // $('[name="desc_bom"]').val('');
-    $('[name="buildfor"]').val('');
+    // $('[name="buildfor"]').val('');
     resetItem();
 });
 
@@ -1079,8 +1081,8 @@ $("#bomno").select2({
     enableItem();
     var data = e.params.data;
     // $('[name="desc_bom"]').val(data.desc_bom.trim()).prop("readonly", true);
-    $('[name="buildfor"]').val(data.buildfor.trim()).prop("readonly", true);
-    $('[name="buildunit"]').val(data.buildunit.trim()).prop("readonly", true);
+    // $('[name="buildfor"]').val(data.buildfor.trim()).prop("readonly", true);
+    // $('[name="buildunit"]').val(data.buildunit.trim()).prop("readonly", true);
     // $('[name="unit"]').val(data.unit.trim()).prop("readonly", true);
     // $("#batch").val(null).trigger('change');
 });
@@ -1355,7 +1357,7 @@ function resetBOM() {
         .prop('disabled', true);
 
     $('[name="desc_bom"]').val('');
-    $('[name="buildfor"]').val('');
+    // $('[name="buildfor"]').val('');
 
     resetItem();
 }
@@ -1456,8 +1458,8 @@ function savePBPFromWO(oldWoeno)
     formData.append('idbarang_jadi', $('#idbarang_jadi').val());
     formData.append('nmbarang_jadi', $('#nmbarang_jadi').val());
 
-    formData.append('buildfor', convertToDbNumber($('#buildfor').val()));
-    formData.append('buildunit', $('#buildunit').val());
+    // formData.append('buildfor', convertToDbNumber($('#buildfor').val()));
+    // formData.append('buildunit', $('#buildunit').val());
 
     formData.append('batchno', $('#batchno').val());
 
@@ -1506,7 +1508,7 @@ function savePBPDetail(formId) {
         // ===============================
         // Ambil dan validasi qty
         // ===============================
-        let buildfor = $('#buildfor').val();
+        // let buildfor = $('#buildfor').val();
         // let minimumqty = $('#minimumqty').val();
 
         // ===============================
@@ -1535,8 +1537,8 @@ function savePBPDetail(formId) {
         formData.append('docdate', $('#docdate').val());
         formData.append('keterangan', $('#keterangan').val());
         // formData.append('minimumqty', convertToDbNumber(minimumqty));
-        formData.append('buildunit', $('#buildunit').val());
-        formData.append('buildfor', convertToDbNumber(buildfor));
+        // formData.append('buildunit', $('#buildunit').val());
+        // formData.append('buildfor', convertToDbNumber(buildfor));
         formData.append(
             'issub',
             $('#issub').is(':checked') ? 'T' : 'F'

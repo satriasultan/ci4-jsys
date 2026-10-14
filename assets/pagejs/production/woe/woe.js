@@ -123,8 +123,8 @@ function documentReadable(){
             let prefixParts = docnoData.split('/'); // ["JTS", "PH", "25", "08"]
             $('[name="prefix"]').val(prefixParts[0]).prop('readonly', true);
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
-            $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
-
+            $('[name="suffix"]').val(prefixParts[2]).prop('readonly', true);
+            loadNextSuffixWOE()
 
 
             //$('[name="idgroup"]').val(json.dataTables.items[0].idgroup);
@@ -147,74 +147,73 @@ function documentReadable(){
                 });
             });
 
-            $.ajax({
-                type: 'GET',
-                url: HOST_URL + 'api/globalmodule/list_wo' + '?var=' + json.dataTables.items[0].wono,
-                dataType: 'json',
-                delay: 250,
-            }).then(function (datax) {
-                // create the option and append to Select2
-                var option = new Option(datax.items[0].keterangan, datax.items[0].docno, true, true);
-                $('[name="wono"]').append(option).trigger('change');
-
-                // manually trigger the `select2:select` event
-                $('[name="wono"]').trigger({
-                    type: 'select2:select',
-                    params: {
-                        data: datax
-                    }
+            setTimeout(function () {
+                $.ajax({
+                    type: 'GET',
+                    url: HOST_URL + 'api/globalmodule/list_costcenter?var=' + json.dataTables.items[0].bagian,
+                    dataType: 'json',
+                }).then(function (datax) {
+                    var option = new Option(datax.items[0].nmcostcenter, datax.items[0].idcostcenter, true, true);
+                    $('[name="bagian"]').append(option).trigger('change');
+                    $('[name="bagian"]').trigger({ type: 'select2:select', params: { data: datax } });
                 });
-            });
+            }, 50);
 
-
-            $.ajax({
-                type: 'GET',
-                url: HOST_URL + 'api/globalmodule/list_bom' + '?var=' + json.dataTables.items[0].bomno,
-                dataType: 'json',
-                delay: 250,
-            }).then(function (datax) {
-                // create the option and append to Select2
-                var option = new Option(datax.items[0].keterangan, datax.items[0].docno, true, true);
-                $('[name="bomno"]').append(option).trigger('change');
-
-                // manually trigger the `select2:select` event
-                $('[name="bomno"]').trigger({
-                    type: 'select2:select',
-                    params: {
-                        data: datax
-                    }
+            setTimeout(function () {
+                $.ajax({
+                    type: 'GET',
+                    url: HOST_URL + 'api/globalmodule/list_wo?var=' + json.dataTables.items[0].wono,
+                    dataType: 'json',
+                }).then(function (datax) {
+                    var option = new Option(datax.items[0].docno, datax.items[0].docno, true, true);
+                    $('[name="wono"]').append(option).trigger('change');
+                    $('[name="wono"]').trigger({ type: 'select2:select', params: { data: datax } });
                 });
-            });
+            }, 100);
 
-
-            
-            $.ajax({
-                type: 'GET',
-                url: HOST_URL + 'api/globalmodule/list_item' + '?var=' + json.dataTables.items[0].idbarang_jadi,
-                dataType: 'json',
-                delay: 250,
-            }).then(function (datax) {
-                // create the option and append to Select2
-                var option = new Option(datax.items[0].nmbarang, datax.items[0].idbarang, true, true);
-                $('[name="idbarang_jadi"]').append(option).trigger('change');
-
-                // manually trigger the `select2:select` event
-                $('[name="idbarang_jadi"]').trigger({
-                    type: 'select2:select',
-                    params: {
-                        data: datax
-                    }
+            setTimeout(function () {
+                $.ajax({
+                    type: 'GET',
+                    url: HOST_URL + 'api/globalmodule/list_bom?var=' + json.dataTables.items[0].bomno,
+                    dataType: 'json',
+                }).then(function (datax) {
+                    var option = new Option(datax.items[0].docno, datax.items[0].docno, true, true);
+                    $('[name="bomno"]').append(option).trigger('change');
+                    $('[name="bomno"]').trigger({ type: 'select2:select', params: { data: datax } });
                 });
-            });
+            }, 300);
+
+            setTimeout(function () {
+                $.ajax({
+                    type: 'GET',
+                    url: HOST_URL + 'api/globalmodule/list_item?var=' + json.dataTables.items[0].idbarang_jadi,
+                    dataType: 'json',
+                }).then(function (datax) {
+                    var option = new Option(datax.items[0].idbarang, datax.items[0].idbarang, true, true);
+                    $('[name="idbarang_jadi"]').append(option).trigger('change');
+                    $('[name="idbarang_jadi"]').trigger({ type: 'select2:select', params: { data: datax } });
+                });
+            }, 500);
+
+            // =============================================
+            // ISI SETELAH SEMUA SELECT SELESAI
+            // =============================================
+            setTimeout(function () {
+                $('[name="desc_bom"]').val(json.dataTables.items[0].desc_bom);
+                $('[name="buildfor"]').val(json.dataTables.items[0].buildfor);
+                $('[name="nmbarang_jadi"]').val(json.dataTables.items[0].nmbarang_jadi);
+            }, 1500);
 
 
             skipRoleChange = true;
-            $('[name="docdate"]').val(json.dataTables.items[0].docdate).prop('readonly', false);
+            $('[name="docdate"]')
+                .val(moment(json.dataTables.items[0].docdate).format('DD-MM-YYYY'))
+                .prop('readonly', true);
             
             $('[name="keterangan"]').val(json.dataTables.items[0].keterangan)
             $('[name="wono"]').val(json.dataTables.items[0].wono)
             $('[name="bomno"]').val(json.dataTables.items[0].bomno)
-            $('[name="bom_desc"]').val(json.dataTables.items[0].bom_desc)
+            $('[name="desc_bom"]').val(json.dataTables.items[0].desc_bom)
             $('[name="idbarang_jadi"]').val(json.dataTables.items[0].idbarang_jadi)
             $('[name="nmbarang_jadi"]').val(json.dataTables.items[0].nmbarang_jadi)
             // $('[name="biayavol"]').val(json.dataTables.items[0].biayavol)
@@ -339,7 +338,7 @@ function saveWOEDetail() {
         // formData.append('estpakai', $('#estpakai').val());
 
         // docno gabungan (lebih aman pakai hidden header)
-        formData.set('docno', $('#prefix').val() + '/' + $('#infix').val() + '/' + $('#sufix').val());
+        formData.set('docno', $('#prefix').val() + '/' + $('#infix').val() + '/' + $('#suffix').val());
         // convert qty ke numeric DB
         let qty = $('#qty').val();
         let qtybonus = $('#qtybonus').val();
@@ -552,7 +551,7 @@ function formatWO(repo) {
     return markup;
 }
 function formatWOSelection(repo) {
-    return repo.keterangan || repo.text;
+    return repo.docno || repo.text;
 }
 
 
@@ -783,58 +782,63 @@ $('#cabang').on('change', function () {
 
                     currentKodeSuffix = res.kode_suffix; // PT / PA / PB
                     $('#infix').val(res.infix);          // YYMM
-                    $('#prefix').val('WOE');             // default
-                    $('#sufix').val(currentKodeSuffix + '0001');
+                    var prefix = res.prefix;
+                    $('#prefix').val(prefix);
+                    loadNextSuffixWOE()
 
                     var infix = (res.infix || '').toString();
                     if (infix.length === 4) {
                         $('#docdate').prop('disabled', false);
-                        var yy = infix.substring(0,2);
-                        var mm = infix.substring(2,4);
-                        var year = 2000 + parseInt(yy,10);
-                        var month = parseInt(mm,10) - 1; // moment month index
+                        var yy = infix.substring(0, 2);
+                        var mm = infix.substring(2, 4);
+                        var year = 2000 + parseInt(yy, 10);
+                        var month = parseInt(mm, 10) - 1;
 
-                        var today = moment();
+                        // Default: logindate dari server, fallback ke hari ini
+                        var logindate = res.logindate ? moment(res.logindate, 'DD-MM-YYYY') : moment();
 
                         var startDate = moment([year, month, 1]);
                         var endDate = moment(startDate).endOf('month');
+
+                        // Kalau logindate di luar range, pakai startDate
+                        var selectedDate = logindate.isBetween(startDate, endDate, 'day', '[]')
+                            ? logindate
+                            : startDate;
 
                         var $el = $('#docdate');
                         var drp = $el.data('daterangepicker');
 
                         if (drp) {
-                            // update limits & selected date
                             drp.minDate = startDate;
                             drp.maxDate = endDate;
-                            drp.setStartDate(startDate);
-                            drp.setEndDate(startDate);
+                            drp.setStartDate(selectedDate);
+                            drp.setEndDate(selectedDate);
                         } else {
-                            // fallback: (re)initialize with limits
                             $el.daterangepicker({
                                 autoUpdateInput: false,
                                 singleDatePicker: true,
                                 showDropdowns: true,
-                                startDate: today,
+                                startDate: selectedDate,
                                 minDate: startDate,
                                 maxDate: endDate,
-                                locale: { format: 'YYYY-MM-DD' },
+                                locale: { format: 'DD-MM-YYYY' },
                                 cancelLabel: 'Clear'
                             });
-                            // rebind handlers jika perlu (apply/cancel)
-                            $el.on('apply.daterangepicker', function(ev, picker) {
-                                $(this).val(picker.startDate.format('YYYY-MM-DD'));
+                            $el.on('apply.daterangepicker', function (ev, picker) {
+                                $(this).val(picker.startDate.format('DD-MM-YYYY'));
+                                $(this).trigger('change');
                             });
-                            $el.on('cancel.daterangepicker', function(ev, picker) {
+                            $el.on('cancel.daterangepicker', function (ev, picker) {
                                 $(this).val('');
+                                $(this).trigger('change');
                             });
                         }
 
-                        // isi input langsung (opsional)
-                        $el.val(today.format('YYYY-MM-DD'));
+                        $el.val(selectedDate.format('DD-MM-YYYY'));
                     }
 
                     $('#docno').val(
-                        'WOE/' + res.infix + '/' + currentKodeSuffix + '0001'
+                        prefix + '/' + res.infix + '/' + currentKodeSuffix + '0001'
                     );
                 }
             });
@@ -843,9 +847,10 @@ $('#cabang').on('change', function () {
 });
 
 
-$('#prefix').on('blur', function () {
-    let prefix = $(this).val().toUpperCase();
-    let infix  = $('#infix').val();
+function loadNextSuffixWOE() {
+    
+    let prefix = $.trim($('#prefix').val()).toUpperCase();
+    let infix = $.trim($('#infix').val());
 
     if (!prefix || !infix || !currentKodeSuffix) return;
 
@@ -864,12 +869,27 @@ $('#prefix').on('blur', function () {
                 return;
             }
 
-            $('#sufix').val(res.suffix);
+            let suffix = $.trim(
+                res.suffix || ''
+            );
+
+            $('#suffix')
+                .val(suffix)
+                .trigger('change');
+
             $('#docno').val(
                 prefix + '/' + infix + '/' + res.suffix
             );
+
         }
     });
+
+};
+
+
+
+$('#prefix').on('blur', function () {
+    loadNextSuffixWOE();
 });
 
 

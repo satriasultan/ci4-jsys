@@ -179,7 +179,7 @@
 
             <!-- LEFT -->
             <div class="col-sm-6">
-                <h1 class="m-0">Standart Cost Produksi</h1>
+                <h1 class="m-0">Detail Biaya Standart Produksi</h1>
             </div>
 
             <!-- RIGHT -->
@@ -235,127 +235,127 @@
                 <!-- /.card-header -->
                 <!-- form start -->
                 <div class="card-body">
-                        <div class="section-block">
-                            <div class="section-header">
-                                <i class="fa fa-address-card"></i> Master
-                            </div>
-                            <div class="row">
+                    <div class="section-block">
+                        <div class="section-header">
+                            <i class="fa fa-address-card"></i> Master
+                        </div>
+                        <div class="row">
 
-                                <!-- LEFT COLUMN -->
-                                <div class="col-md-6" >
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label for="cabang">Cabang / Job</label>
-                                                <select name="cabang" id="cabang" class="form-control" required></select>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label for="pemohon">Pemohon</label>
-                                                <input type="text" name="pemohon" id="pemohon" class="form-control" maxlength="50" placeholder="Pemohon" readonly value="<?= esc(strtoupper($userlogin)) ?>">
-                                            </div>
+                            <!-- LEFT COLUMN -->
+                            <div class="col-md-6" >
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="cabang">Cabang / Job</label>
+                                            <select name="cabang" id="cabang" class="form-control" required></select>
                                         </div>
                                     </div>
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label>No. Jurnal</label>
-                                                <div class="d-flex">
-                                                    <input type="text"
-                                                        name="prefix"
-                                                        id="prefix"
-                                                        class="form-control me-1"
-                                                        maxlength="3"
-                                                        style="text-transform: uppercase;"
-                                                        pattern="[A-Z0-9]+">
-
-                                                    <span class="px-2 align-self-center">/</span>
-
-                                                    <input type="text"
-                                                        name="infix"
-                                                        id="infix"
-                                                        class="form-control mx-1"
-                                                        readonly>
-
-                                                    <span class="px-2 align-self-center">/</span>
-
-                                                    <input type="text"
-                                                        name="sufix"
-                                                        id="sufix"
-                                                        class="form-control ms-1"
-                                                        readonly>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <input type="hidden" name="docno" class="form-control col-sm-12" id="docno" maxlength="20"     value="<?= isset($dtldata['docno']) ? esc(trim($dtldata['docno'])) : '' ?>" style="text-transform: uppercase;" readonly>
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label for="docdate">Tanggal</label>
-                                                    <input type="text"
-                                                    name="docdate"
-                                                    id="docdate"
-                                                    class="form-control"
-                                                    placeholder="Tanggal">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label for="activedate">Active Date</label>
-                                                    <input type="text"
-                                                           name="activedate"
-                                                           id="activedate"
-                                                           class="form-control"
-                                                           placeholder="Active Date">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <label class="form-label">Penyesuaian 1</label>
-                                                <input type="number"
-                                                       name="penyesuaian_a"
-                                                       id="penyesuaian_a"
-                                                       class="form-control"
-                                                       placeholder="Penyesuaian 1" disabled>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <label class="form-label">Penyesuaian 2</label>
-                                                <select name="penyesuaian_b" id="penyesuaian_b" class="form-select select2 getLastStock" style="width:100%" disabled>
-                                                    <option value="">-- Pilih --</option>
-                                                    <option value="Nilai">Nilai</option>
-                                                    <option value="Persen">Persen</option>
-                                                    <option value="Persen Rounded">Persen Rounded</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <label for="from">Dari</label>
-                                                <select name="dari_bagian" id="dari_bagian" class="form-control" disabled>
-                                                    <option value="">-- Pilih --</option>
-                                                    <option value="Actual Cost">Actual Cost</option>
-                                                    <option value="Last Cost">Last Cost</option>
-                                                    <option value="New Cost">New Cost</option>
-
-                                                </select>
-                                            </div>
-                                        <div class="col-md-2 d-flex align-items-end">
-                                            <button type="button" class="btn btn-danger w-100" disabled>
-                                                <i class="fa fa-sliders"></i> Adjustment
-                                            </button>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="pemohon">Pemohon</label>
+                                            <input type="text" name="pemohon" id="pemohon" class="form-control" maxlength="50" placeholder="Pemohon" readonly value="<?= esc(strtoupper($userlogin)) ?>">
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-6  border border-dark" >
-                                    <div class="row">
-                                        <div class="col-md-12">
-                                            <div class="form-group">
-                                                <label for="keterangan">Keterangan</label>
-                                                <textarea name="keterangan" id="keterangan" class="form-control" rows="5" placeholder="Catatan / Informasi..." style="text-transform:uppercase;"></textarea>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>No. Jurnal</label>
+                                            <div class="d-flex">
+                                                <input type="text"
+                                                    name="prefix"
+                                                    id="prefix"
+                                                    class="form-control me-1"
+                                                    maxlength="3"
+                                                    style="text-transform: uppercase;"
+                                                    pattern="[A-Z0-9]+">
+
+                                                <span class="px-2 align-self-center">/</span>
+
+                                                <input type="text"
+                                                    name="infix"
+                                                    id="infix"
+                                                    class="form-control mx-1"
+                                                    readonly>
+
+                                                <span class="px-2 align-self-center">/</span>
+
+                                                <input type="text"
+                                                    name="sufix"
+                                                    id="sufix"
+                                                    class="form-control ms-1"
+                                                    readonly>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                        <input type="hidden" name="docno" class="form-control col-sm-12" id="docno" maxlength="20"     value="<?= isset($dtldata['docno']) ? esc(trim($dtldata['docno'])) : '' ?>" style="text-transform: uppercase;" readonly>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label for="docdate">Tanggal</label>
+                                                <input type="text"
+                                                name="docdate"
+                                                id="docdate"
+                                                class="form-control"
+                                                placeholder="Tanggal">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label for="activedate">Active Date</label>
+                                                <input type="text"
+                                                        name="activedate"
+                                                        id="activedate"
+                                                        class="form-control"
+                                                        placeholder="Active Date">
+                                            </div>
+                                        </div>
+                                        <!-- <div class="col-md-3">
+                                            <label class="form-label">Penyesuaian 1</label>
+                                            <input type="number"
+                                                    name="penyesuaian_a"
+                                                    id="penyesuaian_a"
+                                                    class="form-control"
+                                                    placeholder="Penyesuaian 1" disabled>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Penyesuaian 2</label>
+                                            <select name="penyesuaian_b" id="penyesuaian_b" class="form-select select2 getLastStock" style="width:100%" disabled>
+                                                <option value="">-- Pilih --</option>
+                                                <option value="Nilai">Nilai</option>
+                                                <option value="Persen">Persen</option>
+                                                <option value="Persen Rounded">Persen Rounded</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="from">Dari</label>
+                                            <select name="dari_bagian" id="dari_bagian" class="form-control" disabled>
+                                                <option value="">-- Pilih --</option>
+                                                <option value="Actual Cost">Actual Cost</option>
+                                                <option value="Last Cost">Last Cost</option>
+                                                <option value="New Cost">New Cost</option>
 
-                                </div> <!-- END ROW 2-->
-
+                                            </select>
+                                        </div>
+                                    <div class="col-md-2 d-flex align-items-end">
+                                        <button type="button" class="btn btn-danger w-100" disabled>
+                                            <i class="fa fa-sliders"></i> Adjustment
+                                        </button>
+                                    </div> -->
+                                </div>
                             </div>
+                            <div class="col-md-6" >
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="keterangan">Keterangan</label>
+                                            <textarea name="keterangan" id="keterangan" class="form-control" rows="5" placeholder="Catatan / Informasi..." style="text-transform:uppercase;"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div> <!-- END ROW 2-->
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -577,13 +577,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#docdate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('DD-MM-YYYY'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'docdate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'docdate');
         });
@@ -594,13 +594,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#activedate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('DD-MM-YYYY'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'activedate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'activedate');
         });
@@ -613,13 +613,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#estpakai').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('DD-MM-YYYY'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'estpakai', 'NOT_VALIDATED').bootstrapValidator('validateField', 'estpakai');
         });

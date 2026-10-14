@@ -256,30 +256,20 @@
                                     <div class="col-md-12">
                                         <div class="form-group">
                                             <label>No. Penerimaan Barang Produksi</label>
-                                            <div class="d-flex">
-                                                <input type="text"
-                                                    name="prefix"
-                                                    id="prefix"
-                                                    class="form-control me-1"
-                                                    maxlength="3"
-                                                    style="text-transform: uppercase;"
-                                                    pattern="[A-Z0-9]+">
+                                                <div class="d-flex">
+                                                        <input type="text" name="prefix" id="prefix" class="form-control me-1" maxlength="3" style="text-transform: uppercase;" pattern="[A-Za-z0-9]{1,3}" title="Prefix hanya boleh huruf dan angka, maksimal 3 karakter">
 
-                                                <span class="px-2 align-self-center">/</span>
+                                                        <span class="px-2 align-self-center">/</span>
 
-                                                <input type="text"
-                                                    name="infix"
-                                                    id="infix"
-                                                    class="form-control mx-1"
-                                                    readonly>
+                                                        <input type="text"
+                                                            name="infix"
+                                                            id="infix"
+                                                            class="form-control mx-1"
+                                                            readonly>
 
-                                                <span class="px-2 align-self-center">/</span>
+                                                        <span class="px-2 align-self-center">/</span>
 
-                                                <input type="text"
-                                                    name="sufix"
-                                                    id="sufix"
-                                                    class="form-control ms-1"
-                                                    readonly>
+                                                        <input type="text" name="suffix" id="suffix" class="form-control ms-1" maxlength="6" pattern="^[A-Za-z0-9]{0,2}[0-9]{4}$" title="Maksimal 6 karakter. 4 karakter terakhir wajib angka." style="text-transform: uppercase;">
                                                 </div>
                                             </div>
                                         </div>
@@ -352,11 +342,19 @@
                                             </select>
                                         </div>
                                     </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="form-label">No. Batch Reff</label>
+                                            <div class="form-group">
+                                                <input type="text" name="batchno" id="batchno" class="form-control" placeholder="No. Batch Reff">
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-md-3" >
                                 <div class="row">
-                                    <div class="col-md-6">
+                                    <!-- <div class="col-md-6">
                                         <div class="form-group">
                                             <label class="form-label">Build For</label>
                                             <div class="form-group">
@@ -370,19 +368,18 @@
                                             <select name="buildunit" id="buildunit" class="form-control">
                                             </select>
                                         </div>
-                                    </div>
+                                    </div> -->
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label class="form-label">No. Batch Reff</label>
-                                            <div class="form-group">
-                                                <input type="text" name="batchno" id="batchno" class="form-control" placeholder="No. Batch Reff">
-                                            </div>
+                                            <label for="from">Dari Bagian</label>
+                                            <select name="bagian" id="bagian" class="form-control" required>
+                                            </select>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="from">Untuk Bagian</label>
-                                            <select name="bagian" id="bagian" class="form-control" required>
+                                            <label class="form-label">Ke Gudang</label>
+                                            <select name="idlocation" id="idlocation" class="form-control" required>
                                             </select>
                                         </div>
                                     </div>
@@ -683,13 +680,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#docdate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('DD-MM-YYYY'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'docdate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'docdate');
         });
@@ -700,13 +697,13 @@
         //     autoUpdateInput: false,
         //     singleDatePicker: true,
         //     showDropdowns: true,
-        //     locale: { format: 'YYYY-MM-DD' },
+        //     locale: { format: 'DD-MM-YYYY' },
         //     cancelLabel: 'Clear'
         // });
         //
         // // handler apply/cancel
         // $('#activedate').on('apply.daterangepicker', function(ev, picker) {
-        //     $(this).val(picker.startDate.format('YYYY-MM-DD'));
+        //     $(this).val(picker.startDate.format('DD-MM-YYYY'));
         //     // jika butuh validasi bootstrapValidator:
         //     // $('#formInputTransfers').bootstrapValidator('updateStatus', 'activedate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'activedate');
         // });
@@ -719,13 +716,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#estpakai').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('DD-MM-YYYY'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'estpakai', 'NOT_VALIDATED').bootstrapValidator('validateField', 'estpakai');
         });

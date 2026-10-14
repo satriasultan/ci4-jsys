@@ -331,7 +331,9 @@ function documentReadable() {
             $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
             setJtsValue('[name="buildfor"]', convertToDbNumber(item.buildfor));
             // setJtsValue('[name="minimumqty"]', convertToDbNumber(item.minimumqty));
-            $('[name="docdate"]').val(item.docdate).prop('disabled', true);
+             $('[name="docdate"]')
+                .val(moment(item.docdate).format('DD-MM-YYYY'))
+                .prop('readonly', true);
             $('[name="pemohon"]').val(item.pemohon).prop('disabled', true);
             $('[name="batchno"]').val(item.batchno).prop('readonly',true);
             $('[name="buildfor"]').prop('disabled', true).prop('readonly',true);

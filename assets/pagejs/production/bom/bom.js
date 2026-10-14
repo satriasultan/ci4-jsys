@@ -113,7 +113,7 @@ $('#cabang').on('change', function () {
     if (!idbranch) return;
 
     $.ajax({
-        url: HOST_URL + '/persediaan/trans/getBranch_ajustment_stock',
+        url: HOST_URL + '/production/trans/getBranchInfo_bom',
         method: 'GET',
         data: {idbranch: idbranch},
         dataType: 'json',
@@ -125,66 +125,66 @@ $('#cabang').on('change', function () {
             }
 
             currentKodeSuffix = res.kode_suffix;
-
-            $('#infix').val(res.infix);
-
-            // SET PREFIX + TRIGGER CHANGE
-            $('#prefix').val('BOM').trigger('change');
-
-            $('#sufix').val(currentKodeSuffix + '0001');
+            $('#infix').val(res.infix);          // YYMM
+            var prefix = res.prefix;
+            $('#prefix').val(prefix);
+            loadNextSuffixBOM()
 
             var infix = (res.infix || '').toString();
 
             if (infix.length === 4) {
-
                 $('#docdate').prop('disabled', false);
-
                 var yy = infix.substring(0, 2);
                 var mm = infix.substring(2, 4);
-
                 var year = 2000 + parseInt(yy, 10);
                 var month = parseInt(mm, 10) - 1;
 
-                var today = moment();
+                // Default: logindate dari server, fallback ke hari ini
+                var logindate = res.logindate ? moment(res.logindate, 'DD-MM-YYYY') : moment();
+
                 var startDate = moment([year, month, 1]);
                 var endDate = moment(startDate).endOf('month');
+
+                // Kalau logindate di luar range, pakai startDate
+                var selectedDate = logindate.isBetween(startDate, endDate, 'day', '[]')
+                    ? logindate
+                    : startDate;
 
                 var $el = $('#docdate');
                 var drp = $el.data('daterangepicker');
 
                 if (drp) {
-
                     drp.minDate = startDate;
                     drp.maxDate = endDate;
-                    drp.setStartDate(startDate);
-                    drp.setEndDate(startDate);
-
+                    drp.setStartDate(selectedDate);
+                    drp.setEndDate(selectedDate);
                 } else {
-
                     $el.daterangepicker({
                         autoUpdateInput: false,
                         singleDatePicker: true,
                         showDropdowns: true,
-                        startDate: today,
+                        startDate: selectedDate,
                         minDate: startDate,
                         maxDate: endDate,
-                        locale: {format: 'YYYY-MM-DD'},
+                        locale: { format: 'DD-MM-YYYY' },
                         cancelLabel: 'Clear'
                     });
-
                     $el.on('apply.daterangepicker', function (ev, picker) {
-                        $(this).val(picker.startDate.format('YYYY-MM-DD'));
+                        $(this).val(picker.startDate.format('DD-MM-YYYY'));
+                        $(this).trigger('change');
                     });
-
                     $el.on('cancel.daterangepicker', function (ev, picker) {
                         $(this).val('');
+                        $(this).trigger('change');
                     });
                 }
 
-                $el.val(today.format('YYYY-MM-DD'));
+                $el.val(selectedDate.format('DD-MM-YYYY'));
             }
 
-            generateDocNumber('JBR', res.infix, currentKodeSuffix + '0001');
+            $('#docno').val(
+                prefix + '/' + res.infix + '/' + currentKodeSuffix + '0001'
+            );
 
         }
     });
@@ -192,12 +192,10 @@ $('#cabang').on('change', function () {
 });
 
 
-$('#prefix').on('change', function () {
-
-    let prefix = $(this).val().toUpperCase();
-    $(this).val(prefix);
-
-    let infix = $('#infix').val();
+function loadNextSuffixBOM() {
+    
+    let prefix = $.trim($('#prefix').val()).toUpperCase();
+    let infix = $.trim($('#infix').val());
 
     if (!prefix || !infix || !currentKodeSuffix) return;
 
@@ -217,13 +215,28 @@ $('#prefix').on('change', function () {
                 return;
             }
 
-            $('#sufix').val(res.suffix);
+            
+            let suffix = $.trim(
+                res.suffix || ''
+            );
 
-            generateDocNumber(prefix, infix, res.suffix);
+            $('#suffix')
+                .val(suffix)
+                .trigger('change');
+
+            $('#docno').val(
+                prefix + '/' + infix + '/' + res.suffix
+            );
 
         }
     });
 
+};
+
+
+
+$('#prefix').on('blur', function () {
+    loadNextSuffixBOM();
 });
 
 
@@ -328,10 +341,14 @@ function documentReadable() {
             let prefixParts = item.docno.trim().split('/');
             $('[name="prefix"]').val(prefixParts[0]).prop('readonly', true);
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
-            $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
+            $('[name="suffix"]').val(prefixParts[2]).prop('readonly', true);
+            loadNextSuffixBOM()
             setJtsValue('[name="buildfor"]', convertToDbNumber(item.buildfor));
             setJtsValue('[name="minimumqty"]', convertToDbNumber(item.minimumqty));
-            $('[name="docdate"]').val(item.docdate).prop('disabled', true);
+            $('[name="docdate"]')
+                .val(moment(item.docdate).format('DD-MM-YYYY'))
+                .prop('disabled', true);
+
             // $('[name="activedate"]').val(item.activedate).prop('disabled', true);
             // $('[name="docref"]').val(item.docref).prop('disabled', false);
             $('[name="keterangan"]').val(item.keterangan);
@@ -496,7 +513,7 @@ function btnInputDetailMaterial() {
 
     // reset idurut
     $('#idurut').val('');
-
+    $('#uniqueidMaterial').val('');
     // title modal
     $('#modalDtlBomMaterialTitle').text('Tambah Detail Material');
 
@@ -533,6 +550,7 @@ function btnInputDetailCost() {
     // reset idurut
     $('#idurut').val('');
 
+    $('#uniqueidCost').val('');
     // title modal
     $('#modalDtlBomCostTitle').text('Tambah Detail Cost');
 
@@ -568,7 +586,7 @@ function btnInputDetailWip() {
 
     // reset idurut
     $('#idurut').val('');
-
+    $('#uniqueidWip').val('');
     // title modal
     $('#modalDtlBomWipTitle').text('Tambah Detail Wip');
 
@@ -623,7 +641,7 @@ function updateDetailBomMaterial(){
         dataType: 'json',
         success: function(res){
             if(res.status){
-
+                $('#uniqueidMaterial').val(res.items[0].uniqueid);
                 $('#idurutMaterial').val(res.items[0].idurut);
                 $('#description_detail_material').val(res.items[0].description);
                 $('#docno').val(res.items[0].docno);
@@ -704,7 +722,7 @@ function updateDetailBomCost(){
         dataType: 'json',
         success: function(res){
             if(res.status){
-
+                $('#uniqueidCost').val(res.items[0].uniqueid);
                 $('#idurutCost').val(res.items[0].idurut);
                 $('#description_detail_cost').val(res.items[0].description);
                 $('#docno').val(res.items[0].docno);
@@ -786,6 +804,7 @@ function updateDetailBomWip(){
         success: function(res){
             if(res.status){
 
+                $('#uniqueidWip').val(res.items[0].uniqueid);
                 $('#idurutWip').val(res.items[0].idurut);
                 $('#description_detail_wip').val(res.items[0].description);
                 $('#docno').val(res.items[0].docno);
@@ -1004,13 +1023,13 @@ function btnDeleteDetailWip(){
     });
 }
 
-var defaultInitialGroupBrng = '';
+var defaultInitialGroupBrng = 'BRG';
 $("#idbarangMaterial").select2({
     placeholder: "Choose Your Item List",
     allowClear: true,
     width: '100%',
-    minimumInputLength: 2,
-    dropdownParent: $('#modalDtlBomMaterial'),
+    // minimumInputLength: 2,
+    dropdownParent: $('#modalDtlBomMaterial .modal-body'),
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_item_std_cost',
         type: 'POST',
@@ -1075,13 +1094,13 @@ $("#idbarangMaterial").select2({
 
 
 
-var defaultInitialGroupBrng = '';
+var defaultInitialGroupJSA = 'JSA';
 $("#idbarangCost").select2({
     placeholder: "Choose Your Item List",
     allowClear: true,
     width: '100%',
-    minimumInputLength: 2,
-    dropdownParent: $('#modalDtlBomCost'),
+    // minimumInputLength: 2,
+    dropdownParent: $('#modalDtlBomCost .modal-body'),
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_item_std_cost',
         type: 'POST',
@@ -1095,8 +1114,8 @@ $("#idbarangCost").select2({
                 _draw_: true,
                 _start_: 1,
                 _perpage_: 2,
-                _paramglobal_: defaultInitialGroupBrng,
-                _parameterx_: defaultInitialGroupBrng,
+                _paramglobal_: defaultInitialGroupJSA,
+                _parameterx_: defaultInitialGroupJSA,
                 loccode: '',
                 docdate:  docdate,
                 //loccode: $('[name="idlocation_dtl"]').val(),
@@ -1148,13 +1167,13 @@ $("#idbarangCost").select2({
 
 
 
-var defaultInitialGroupBrng = '';
+var defaultInitialGroupWIP = 'WIP';
 $("#idbarangWip").select2({
     placeholder: "Choose Your Item List",
     allowClear: true,
     width: '100%',
     minimumInputLength: 2,
-    dropdownParent: $('#modalDtlBomWip'),
+    dropdownParent: $('#modalDtlBomWip .modal-body'),
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_item_std_cost',
         type: 'POST',
@@ -1168,8 +1187,8 @@ $("#idbarangWip").select2({
                 _draw_: true,
                 _start_: 1,
                 _perpage_: 2,
-                _paramglobal_: defaultInitialGroupBrng,
-                _parameterx_: defaultInitialGroupBrng,
+                _paramglobal_: defaultInitialGroupWIP,
+                _parameterx_: defaultInitialGroupWIP,
                 loccode: '',
                 docdate:  docdate,
                 //loccode: $('[name="idlocation_dtl"]').val(),
@@ -1424,6 +1443,91 @@ function formatItemSelection(repo) {
 
 
 
+
+
+
+
+function setToReleased(docno) {
+    if (!guardPeriodeTutup()) return;
+
+    Swal.fire({
+        title: 'Set BOM menjadi Approve?',
+        text: "Status dokumen akan diubah menjadi Approve",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Ya, ubah'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: HOST_URL + '/production/trans/updateStatusBOM',
+                type: 'POST',
+                data: { docno: docno, status: 'A' },
+                dataType: 'json',
+                success: function(res) {
+                    if (res.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil',
+                            text: 'Status berhasil diubah menjadi Approve'
+                        }).then(() => {
+                            reload_bom()
+                            // reload_tableBOMApprvTrx()
+                        });
+                    } else {
+                        Swal.fire('Gagal', res.message || 'Terjadi kesalahan', 'error');
+                    }
+                },
+                error: function() {
+                    Swal.fire('Error', 'Tidak dapat terhubung ke server', 'error');
+                }
+            });
+        }
+    });
+}
+
+function setToUnreleased(docno) {
+    if (!guardPeriodeTutup()) return;
+
+    Swal.fire({
+        title: 'Set BOM menjadi Disapprove?',
+        text: "Status dokumen akan diubah menjadi Disapprove",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Ya, ubah'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: HOST_URL + '/production/trans/updateStatusBOM',
+                type: 'POST',
+                data: { docno: docno, status: 'F' },
+                dataType: 'json',
+                success: function(res) {
+                    if (res.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil',
+                            text: 'Status berhasil diubah menjadi Disapprove'
+                        }).then(() => {
+                            reload_bom()
+                            // reload_tableBOMApprvTrx()
+                        });
+                    } else {
+                        Swal.fire('Gagal', res.message || 'Terjadi kesalahan', 'error');
+                    }
+                },
+                error: function() {
+                    Swal.fire('Error', 'Tidak dapat terhubung ke server', 'error');
+                }
+            });
+        }
+    });
+}
+
+
 function saveBomDetail(formId, detailType) {
 
 
@@ -1468,6 +1572,7 @@ function saveBomDetail(formId, detailType) {
             let totalcostmaterial = $('#totalcostmaterial').val();
             formData.set('qtymaterial',convertToDbNumber($('#qtymaterial').val()));
             formData.set('standartcostmaterial',convertToDbNumber($('#standartcostmaterial').val()));
+            formData.set('uniqueidMaterial', $('#uniqueidMaterial').val());
             formData.set('totalcostmaterial',convertToDbNumber($('#totalcostmaterial').val()));
 
         }else if(detailType === 'COST'){
@@ -1476,6 +1581,7 @@ function saveBomDetail(formId, detailType) {
             let totalcostcost = $('#totalcostcost').val();
             formData.set('qtycost',convertToDbNumber($('#qtycost').val()));
             formData.set('standartcostcost',convertToDbNumber($('#standartcostcost').val()));
+            formData.set('uniqueidCost', $('#uniqueidCost').val());
             formData.set('totalcostcost',convertToDbNumber($('#totalcostcost').val()));
         }else if(detailType === 'WIP'){
             let qtywip = $('#qtywip').val();
@@ -1483,6 +1589,7 @@ function saveBomDetail(formId, detailType) {
             let totalcostwip = $('#totalcostwip').val();
             formData.set('qtywip',convertToDbNumber($('#qtywip').val()));
             formData.set('standartcostwip',convertToDbNumber($('#standartcostwip').val()));
+            formData.set('uniqueidWip', $('#uniqueidWip').val());
             formData.set('totalcostwip',convertToDbNumber($('#totalcostwip').val()));
         }
         formData.append('doctype_detail', detailType);
@@ -1491,7 +1598,7 @@ function saveBomDetail(formId, detailType) {
             'docno',
             $('#prefix').val() + '/' +
             $('#infix').val() + '/' +
-            $('#sufix').val()
+            $('#suffix').val()
         );
 
         // ===============================
@@ -1621,6 +1728,22 @@ function tabletmpBOMMaterial() {
                 // updateGrandTotal();
             }
         });
+
+        $('#tmp_bommaterialdtl tbody').on('click', 'tr', function(e) {
+            // Cegah jika yang diklik adalah checkbox itu sendiri (untuk menghindari double trigger)
+            if ($(e.target).is('input[type="checkbox"]')) {
+                return;
+            }
+
+            // Cari checkbox di dalam baris ini
+            var checkbox = $(this).find('input[type="checkbox"].row-check');
+
+            // Toggle status checkbox
+            checkbox.prop('checked', !checkbox.prop('checked'));
+
+            // Trigger event change jika diperlukan
+            checkbox.trigger('change');
+        });
     }
 
     return initTable();
@@ -1725,6 +1848,22 @@ function tabletmpBOMCost() {
                 // Panggil fungsi manual tadi
                 // updateGrandTotal();
             }
+        });
+
+         $('#tmp_bomcostdtl tbody').on('click', 'tr', function(e) {
+            // Cegah jika yang diklik adalah checkbox itu sendiri (untuk menghindari double trigger)
+            if ($(e.target).is('input[type="checkbox"]')) {
+                return;
+            }
+
+            // Cari checkbox di dalam baris ini
+            var checkbox = $(this).find('input[type="checkbox"].row-check');
+
+            // Toggle status checkbox
+            checkbox.prop('checked', !checkbox.prop('checked'));
+
+            // Trigger event change jika diperlukan
+            checkbox.trigger('change');
         });
     }
 
@@ -1834,6 +1973,23 @@ function tabletmpBOMWip() {
                 // Panggil fungsi manual tadi
                 // updateGrandTotal();
             }
+        });
+
+
+         $('#tmp_bomwipdtl tbody').on('click', 'tr', function(e) {
+            // Cegah jika yang diklik adalah checkbox itu sendiri (untuk menghindari double trigger)
+            if ($(e.target).is('input[type="checkbox"]')) {
+                return;
+            }
+
+            // Cari checkbox di dalam baris ini
+            var checkbox = $(this).find('input[type="checkbox"].row-check');
+
+            // Toggle status checkbox
+            checkbox.prop('checked', !checkbox.prop('checked'));
+
+            // Trigger event change jika diperlukan
+            checkbox.trigger('change');
         });
     }
 

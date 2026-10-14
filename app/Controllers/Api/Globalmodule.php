@@ -1602,6 +1602,11 @@ class Globalmodule extends BaseController
         } else {
             $paramglobal2 = "";
         }
+        if (!empty($px) or $px!=='') {
+            $paramglobal3 = " and a.idgroup='$px'"; // tambahkan a.
+        } else {
+            $paramglobal3 = "";
+        }
 
         $parameterx = " and coalesce(a.chold,'NO')!='YES'"; // tambahkan a.
         $page = intval($page);
@@ -1613,8 +1618,8 @@ class Globalmodule extends BaseController
         }
 
         // Build parameter untuk query dengan alias a.
-        $param = " and (a.idbarang like '%$search%' $paramglobal1 $paramglobal2 $parameterx) 
-                or (a.nmbarang like '%$search%' $paramglobal1 $paramglobal2 $parameterx) 
+        $param = " and (a.idbarang like '%$search%' $paramglobal1 $paramglobal2 $parameterx $paramglobal3) 
+                or (a.nmbarang like '%$search%' $paramglobal1 $paramglobal2 $parameterx $paramglobal3) 
                 order by a.nmbarang asc";
         
         // Panggil model dengan parameter docdate

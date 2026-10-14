@@ -486,7 +486,7 @@ group by docno order by docno asc");
                 bom.*, 
                 trim(bom.docno) as id 
             FROM sc_trx.bom_mst bom              
-            WHERE (trim(bom.status) = 'F')
+            WHERE (trim(bom.status) = 'A')
                 $param
         ");
     }

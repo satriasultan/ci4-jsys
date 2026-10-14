@@ -1,7 +1,9 @@
---I.R.A.9
+-- =========================================
+-- I.R.A.9 — PENERIMAAN BARANG PRODUKSI
+-- =========================================
+
 --DELETE FROM sc_mst.trxtype WHERE jenistrx='I.R.A.9';
-insert into sc_mst.trxtype
-(kdtrx,jenistrx,uraian)
+INSERT INTO sc_mst.trxtype (kdtrx, jenistrx, uraian)
 VALUES
 ('I','I.R.A.9','DRAFT'),
 ('E','I.R.A.9','REVISI/EDIT'),
@@ -15,551 +17,420 @@ VALUES
 ('D','I.R.A.9','DELETE');
 
 
-
-
---drop table sc_tmp.penerimaanbp_mst;
-CREATE TABLE IF NOT EXISTS sc_tmp.penerimaanbp_mst
-(
-    docno character(30) COLLATE pg_catalog."default" NOT NULL,
-    doctype character(20) default 'BOM' ,
-	cabang character (30 ) COLLATE pg_catalog."default",    
-    pemohon character(100) COLLATE pg_catalog."default",
-    docdate date,
-    idlocation character(12) COLLATE pg_catalog."default",
-    nmlocation character(50) COLLATE pg_catalog."default",
-    tabno character(50) COLLATE pg_catalog."default",
-    woeno character(30) COLLATE pg_catalog."default",
-    wono character(30) COLLATE pg_catalog."default",
-    bomno character(30) COLLATE pg_catalog."default",
-    desc_bom TEXT,
-    idbarang_jadi character(50) COLLATE pg_catalog."default",
-    nmbarang_jadi TEXT,
-    buildfor numeric(18,2),
-    ttlprice numeric(18,2),
-    buildunit character(30),
-    batchno character(50),
-    bagian character(30) COLLATE pg_catalog."default",
-    docref character(30) COLLATE pg_catalog."default",
-    status character(6) COLLATE pg_catalog."default",
-    keterangan TEXT,
-    inputby character varying(50) COLLATE pg_catalog."default",
-    inputdate timestamp without time zone,
-    updateby character varying(50) COLLATE pg_catalog."default",
-    updatedate timestamp without time zone,
-    docnotmp character(30) COLLATE pg_catalog."default",
-    CONSTRAINT pk_tmp_penerimaanbp_mst PRIMARY KEY (docno)
-)
-
-TABLESPACE pg_default;
-
-ALTER TABLE IF EXISTS sc_tmp.penerimaanbp_mst
-    OWNER to postgres;
-
-
-/** 'MATERIAL, COST, WIP' **/
---drop table sc_tmp.penerimaanbp_dtl;
-CREATE TABLE IF NOT EXISTS sc_tmp.penerimaanbp_dtl
-(
-    docno character(30) COLLATE pg_catalog."default" NOT NULL,
-    doctype character(20) default 'BOM' ,
-    doctype_detail character(20) default 'MATERIAL' ,
-    cabang character (30 ) COLLATE pg_catalog."default",
-    docref character (30 ) COLLATE pg_catalog."default",    
-    pemohon character(100) COLLATE pg_catalog."default",
-    docdate date,
-    idbarang character(50) COLLATE pg_catalog."default",
-    nmbarang text,
-    idbarang_bom character(50) COLLATE pg_catalog."default",
-    nmbarang_bom text,
-    description text,
-	qty numeric(18,2),
-    unit char(20),
-    nilai numeric(18,2),
-    harga numeric(18,2),
-	spec char(100),
-    issub character(6),
-	status character(6) COLLATE pg_catalog."default",
-	inputby character(50) COLLATE pg_catalog."default",
-    inputdate timestamp without time zone,
-    updateby character varying(50) COLLATE pg_catalog."default",
-    updatedate timestamp without time zone,
-    docnotmp character(30) COLLATE pg_catalog."default",
-	idurut bigserial,
-	uniqueid text,
-    CONSTRAINT pk_tmp_penerimaanbp_dtl PRIMARY KEY (docno,uniqueid,idurut)
-)
-
-TABLESPACE pg_default;
-
-ALTER TABLE IF EXISTS sc_tmp.penerimaanbp_dtl
-    OWNER to postgres;
-
-
-/* MST ATAU TRANSAKSI */
-
---drop table sc_trx.penerimaanbp_mst;
-CREATE TABLE IF NOT EXISTS sc_trx.penerimaanbp_mst
-(
-    docno character(30) COLLATE pg_catalog."default" NOT NULL,
-    doctype character(20) default 'BOM' ,
-	cabang character (30 ) COLLATE pg_catalog."default",    
-    pemohon character(100) COLLATE pg_catalog."default",
-    docdate date,
-    idlocation character(12) COLLATE pg_catalog."default",
-    nmlocation character(50) COLLATE pg_catalog."default",
-    tabno character(50) COLLATE pg_catalog."default",
-    woeno character(30) COLLATE pg_catalog."default",
-    wono character(30) COLLATE pg_catalog."default",
-    bomno character(30) COLLATE pg_catalog."default",
-    desc_bom TEXT,
-    idbarang_jadi character(50) COLLATE pg_catalog."default",
-    nmbarang_jadi TEXT,
-    buildfor numeric(18,2),
-    ttlprice numeric(18,2),
-    buildunit character(30),
-    batchno character(50),
-    bagian character(30) COLLATE pg_catalog."default",
-    docref character(30) COLLATE pg_catalog."default",
-    status character(6) COLLATE pg_catalog."default",
-    keterangan TEXT,
-    inputby character varying(50) COLLATE pg_catalog."default",
-    inputdate timestamp without time zone,
-    updateby character varying(50) COLLATE pg_catalog."default",
-    updatedate timestamp without time zone,
-    docnotmp character(30) COLLATE pg_catalog."default",
-    CONSTRAINT pk_tmp_penerimaanbp_mst PRIMARY KEY (docno)
-)
-
-TABLESPACE pg_default;
-
-ALTER TABLE IF EXISTS sc_trx.penerimaanbp_mst
-    OWNER to postgres;
-
-
---drop table sc_trx.penerimaanbp_dtl;
-CREATE TABLE IF NOT EXISTS sc_trx.penerimaanbp_dtl
-(
-	docno character(30) COLLATE pg_catalog."default" NOT NULL,
-    doctype character(20) default 'BOM' ,
-    doctype_detail character(20) default 'MATERIAL' ,
-    cabang character (30 ) COLLATE pg_catalog."default",
-    docref character (30 ) COLLATE pg_catalog."default",        
-    pemohon character(100) COLLATE pg_catalog."default",
-    docdate date,
-    idbarang character(50) COLLATE pg_catalog."default",
-    nmbarang text,
-    idbarang_bom character(50) COLLATE pg_catalog."default",
-    nmbarang_bom text,
-    description text,
-	qty numeric(18,2),
-    unit char(20),
-    nilai numeric(18,2),
-    harga numeric(18,2),
-	spec char(100),
-    issub character(6),
-	status character(6) COLLATE pg_catalog."default",
-	inputby character(50) COLLATE pg_catalog."default",
-    inputdate timestamp without time zone,
-    updateby character varying(50) COLLATE pg_catalog."default",
-    updatedate timestamp without time zone,
-    docnotmp character(30) COLLATE pg_catalog."default",
-	idurut integer,
-	uniqueid text,
-    CONSTRAINT pk_tmp_penerimaanbp_dtl PRIMARY KEY (docno,uniqueid,idurut)
-)
-
-TABLESPACE pg_default;
-
-ALTER TABLE IF EXISTS sc_trx.penerimaanbp_dtl
-    OWNER to postgres;
+-- =========================================
+-- DROP TABLE (urutan: DTL dulu, baru MST)
+-- =========================================
+DROP TABLE IF EXISTS sc_tmp.penerimaanbp_dtl CASCADE;
+DROP TABLE IF EXISTS sc_tmp.penerimaanbp_mst CASCADE;
+DROP TABLE IF EXISTS sc_trx.penerimaanbp_dtl CASCADE;
+DROP TABLE IF EXISTS sc_trx.penerimaanbp_mst CASCADE;
 
 
 -- =========================================
--- DROP TRIGGER & FUNCTION
+-- TMP (DRAFT)
+-- =========================================
+CREATE TABLE IF NOT EXISTS sc_tmp.penerimaanbp_mst
+(
+    docno           character(30) NOT NULL,
+    idurut          bigserial,
+    doctype         character(20) DEFAULT 'BOM',
+    cabang          character(30),
+    pemohon         character(100),
+    docdate         date,
+    idlocation      character(12),
+    nmlocation      character(50),
+    tabno           character(50),
+    woeno           character(30),
+    wono            character(30),
+    bomno           character(30),
+    desc_bom        TEXT,
+    idbarang_jadi   character(50),
+    nmbarang_jadi   TEXT,
+    buildfor        numeric(18,2),
+    ttlprice        numeric(18,2),
+    buildunit       character(30),
+    batchno         character(50),
+    bagian          character(30),
+    docref          character(30),
+    status          character(6),
+    keterangan      TEXT,
+    inputby         varchar(50),
+    inputdate       timestamp without time zone,
+    updateby        varchar(50),
+    updatedate      timestamp without time zone,
+    docnotmp        character(30),
+    CONSTRAINT pk_tmp_penerimaanbp_mst PRIMARY KEY (docno, idurut)
+)
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS sc_tmp.penerimaanbp_mst OWNER TO postgres;
+
+
+CREATE TABLE IF NOT EXISTS sc_tmp.penerimaanbp_dtl
+(
+    docno           character(30) NOT NULL,
+    idurut          bigserial,
+    doctype         character(20) DEFAULT 'BOM',
+    doctype_detail  character(20) DEFAULT 'MATERIAL',
+    cabang          character(30),
+    docref          character(30),
+    pemohon         character(100),
+    docdate         date,
+    idbarang        character(50),
+    nmbarang        TEXT,
+    idbarang_bom    character(50),
+    nmbarang_bom    TEXT,
+    description     TEXT,
+    qty             numeric(18,2),
+    unit            char(20),
+    nilai           numeric(18,2),
+    harga           numeric(18,2),
+    spec            char(100),
+    issub           character(6),
+    status          character(6),
+    inputby         character(50),
+    inputdate       timestamp without time zone,
+    updateby        varchar(50),
+    updatedate      timestamp without time zone,
+    docnotmp        character(30),
+    uniqueid        TEXT,
+    CONSTRAINT pk_tmp_penerimaanbp_dtl PRIMARY KEY (docno, uniqueid, idurut)
+)
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS sc_tmp.penerimaanbp_dtl OWNER TO postgres;
+
+
+-- =========================================
+-- TRX (FINAL)
+-- =========================================
+CREATE TABLE IF NOT EXISTS sc_trx.penerimaanbp_mst
+(
+    docno           character(30) NOT NULL,
+    idurut          bigint,                       -- bigint, bukan bigserial
+    doctype         character(20) DEFAULT 'BOM',
+    cabang          character(30),
+    pemohon         character(100),
+    docdate         date,
+    idlocation      character(12),
+    nmlocation      character(50),
+    tabno           character(50),
+    woeno           character(30),
+    wono            character(30),
+    bomno           character(30),
+    desc_bom        TEXT,
+    idbarang_jadi   character(50),
+    nmbarang_jadi   TEXT,
+    buildfor        numeric(18,2),
+    ttlprice        numeric(18,2),
+    buildunit       character(30),
+    batchno         character(50),
+    bagian          character(30),
+    docref          character(30),
+    status          character(6),
+    keterangan      TEXT,
+    inputby         varchar(50),
+    inputdate       timestamp without time zone,
+    updateby        varchar(50),
+    updatedate      timestamp without time zone,
+    docnotmp        character(30),
+    CONSTRAINT pk_trx_penerimaanbp_mst PRIMARY KEY (docno)
+)
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS sc_trx.penerimaanbp_mst OWNER TO postgres;
+
+
+CREATE TABLE IF NOT EXISTS sc_trx.penerimaanbp_dtl
+(
+    docno           character(30) NOT NULL,
+    idurut          bigint,                       -- bigint, bukan bigserial
+    doctype         character(20) DEFAULT 'BOM',
+    doctype_detail  character(20) DEFAULT 'MATERIAL',
+    cabang          character(30),
+    docref          character(30),
+    pemohon         character(100),
+    docdate         date,
+    idbarang        character(50),
+    nmbarang        TEXT,
+    idbarang_bom    character(50),
+    nmbarang_bom    TEXT,
+    description     TEXT,
+    qty             numeric(18,2),
+    unit            char(20),
+    nilai           numeric(18,2),
+    harga           numeric(18,2),
+    spec            char(100),
+    issub           character(6),
+    status          character(6),
+    inputby         character(50),
+    inputdate       timestamp without time zone,
+    updateby        varchar(50),
+    updatedate      timestamp without time zone,
+    docnotmp        character(30),
+    uniqueid        TEXT,
+    CONSTRAINT pk_trx_penerimaanbp_dtl PRIMARY KEY (docno, uniqueid, idurut)
+)
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS sc_trx.penerimaanbp_dtl OWNER TO postgres;
+
+
+-- =========================================
+-- TRIGGER & FUNCTION: TMP -> TRX
 -- =========================================
 DROP TRIGGER IF EXISTS tr_tmp_penerimaanbp_mst
 ON sc_tmp.penerimaanbp_mst;
 
 DROP FUNCTION IF EXISTS sc_tmp.tr_tmp_penerimaanbp_mst();
 
--- =========================================
--- FUNCTION TMP -> TRX
--- =========================================
 CREATE OR REPLACE FUNCTION sc_tmp.tr_tmp_penerimaanbp_mst()
 RETURNS trigger
 LANGUAGE plpgsql
+COST 100
+VOLATILE NOT LEAKPROOF
 AS $BODY$
 
 DECLARE
-
     v_docno        TEXT;
+    v_inputby      TEXT;
+    v_idurut       BIGINT;
     v_base_docno   TEXT;
     v_new_docno    TEXT;
     v_num          TEXT;
     v_num_int      INTEGER;
+    v_lock_key     BIGINT;
+    v_client_ip    TEXT;
 
 BEGIN
 
-    RAISE NOTICE 'TMP BOM TRIGGER : %, OLD=%, NEW=%',
-        NEW.docno,
-        OLD.status,
-        NEW.status;
+    -- GUARD: hanya proses kalau status berubah
+    IF UPPER(TRIM(OLD.status)) = UPPER(TRIM(NEW.status)) THEN
+        RETURN NEW;
+    END IF;
+
+    -- AMBIL IP
+    v_client_ip := sc_log.fn_get_user_ip(NEW.inputby);
 
     -- =====================================================
-    -- FINAL INSERT
+    -- FINAL INSERT (docnotmp kosong)
     -- =====================================================
-    IF UPPER(TRIM(OLD.status))='E'
-       AND UPPER(TRIM(NEW.status))='F'
-       AND COALESCE(TRIM(NEW.docnotmp),'')='' THEN
+    IF UPPER(TRIM(OLD.status)) = 'E'
+       AND UPPER(TRIM(NEW.status)) = 'F'
+       AND COALESCE(TRIM(NEW.docnotmp), '') = '' THEN
 
-        v_docno := TRIM(NEW.docno);
+        v_docno   := RTRIM(NEW.docno);
+        v_inputby := NEW.inputby;
+        v_idurut  := NEW.idurut;
 
-        -- =================================================
-        -- LOCK DOCNO
-        -- =================================================
+        -- DETEKSI DUPLIKAT (cegah double insert)
+        IF EXISTS (
+            SELECT 1
+            FROM sc_trx.penerimaanbp_mst
+            WHERE idurut = v_idurut
+              AND TRIM(COALESCE(inputby, '')) = TRIM(COALESCE(v_inputby, ''))
+        ) THEN
+            DELETE FROM sc_tmp.penerimaanbp_dtl
+            WHERE TRIM(docno) = TRIM(OLD.docno)
+              AND inputby = v_inputby;
+
+            DELETE FROM sc_tmp.penerimaanbp_mst
+            WHERE TRIM(docno) = TRIM(OLD.docno)
+              AND inputby = v_inputby
+              AND idurut = v_idurut;
+
+            RETURN NEW;
+        END IF;
+
+        -- GENERATE DOCNO (advisory lock + loop increment)
         v_base_docno := regexp_replace(v_docno, '[0-9]+$', '');
+        v_lock_key   := hashtext(v_base_docno);
 
-        PERFORM pg_advisory_xact_lock(hashtext(v_base_docno));
+        PERFORM pg_advisory_xact_lock(v_lock_key);
 
         v_new_docno := v_docno;
 
         LOOP
-
             EXIT WHEN NOT EXISTS (
                 SELECT 1
                 FROM sc_trx.penerimaanbp_mst
-                WHERE TRIM(docno)=TRIM(v_new_docno)
+                WHERE TRIM(docno) = TRIM(v_new_docno)
             );
 
-            v_num := regexp_replace(
-                v_new_docno,
-                '.*?([0-9]+)$',
-                '\1'
-            );
+            v_num := regexp_replace(v_new_docno, '.*?([0-9]+)$', '\1');
+
+            IF COALESCE(v_num, '') = '' THEN
+                RAISE EXCEPTION
+                    'Format DOCNO Penerimaan BP tidak valid: %',
+                    v_new_docno;
+            END IF;
 
             v_num_int := v_num::INTEGER + 1;
 
             v_new_docno :=
                 v_base_docno ||
-                LPAD(v_num_int::TEXT, LENGTH(v_num), '0');
-
+                lpad(v_num_int::TEXT, length(v_num), '0');
         END LOOP;
 
         v_docno := v_new_docno;
 
-        -- =================================================
-        -- INSERT MASTER
-        -- =================================================
+        -- INSERT HEADER (dengan idurut)
         INSERT INTO sc_trx.penerimaanbp_mst (
-
-            docno,
-            doctype,
-            cabang,
-            pemohon,
-            docdate,
-            idlocation,
-            nmlocation,
-            tabno,
-            woeno,
-            wono,
-            bomno,
-            desc_bom,
-            idbarang_jadi,
-            nmbarang_jadi,
-            docref,
-            status,
-            keterangan,
-            batchno,
-            buildfor,
-            ttlprice,
-            buildunit,
-            bagian,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp
-
+            idurut, docno, doctype, cabang, pemohon, docdate,
+            idlocation, nmlocation, tabno, woeno, wono, bomno,
+            desc_bom, idbarang_jadi, nmbarang_jadi,
+            buildfor, ttlprice, buildunit, batchno,
+            bagian, docref, status, keterangan,
+            inputby, inputdate, updateby, updatedate, docnotmp
         )
         SELECT
-
-            v_docno,
-            doctype,
-            cabang,
-            pemohon,
-            docdate,
-            idlocation,
-            nmlocation,
-            tabno,
-            woeno,
-            wono,
-            bomno,
-            desc_bom,
-            idbarang_jadi,
-            nmbarang_jadi,
-            docref,
-            'F',
-            keterangan,
-            batchno,
-            buildfor,
-            ttlprice,
-            buildunit,
-            bagian,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp
-
+            idurut, v_docno, doctype, cabang, pemohon, docdate,
+            idlocation, nmlocation, tabno, woeno, wono, bomno,
+            desc_bom, idbarang_jadi, nmbarang_jadi,
+            buildfor, ttlprice, buildunit, batchno,
+            bagian, docref, 'F', keterangan,
+            inputby, inputdate, updateby, updatedate, docnotmp
         FROM sc_tmp.penerimaanbp_mst
-        WHERE TRIM(docno)=TRIM(OLD.docno);
+        WHERE TRIM(docno) = TRIM(OLD.docno)
+          AND inputby = v_inputby
+          AND idurut = v_idurut;
 
-        -- =================================================
-        -- INSERT DETAIL
-        -- =================================================
+        -- INSERT DETAIL (dengan idurut)
         INSERT INTO sc_trx.penerimaanbp_dtl (
-
-            docno,
-            doctype,
-            doctype_detail,
-            cabang,
-            pemohon,
-            docdate,
-            docref,
-            idbarang,
-            nmbarang,
-            idbarang_bom,
-            nmbarang_bom,
-            description,
-            qty,
-            unit,
-            nilai,
-            harga,
-            spec,
-            issub,
-            status,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp,
-            idurut,
-            uniqueid
-
+            idurut, docno, doctype, doctype_detail, cabang,
+            pemohon, docdate, docref,
+            idbarang, nmbarang, idbarang_bom, nmbarang_bom,
+            description, qty, unit, nilai, harga, spec, issub,
+            status, inputby, inputdate, updateby, updatedate,
+            docnotmp, uniqueid
         )
         SELECT
-
-            v_docno,
-            doctype,
-            doctype_detail,
-            cabang,
-            pemohon,
-            docdate,
-            docref,
-            idbarang,
-            nmbarang,
-            idbarang_bom,
-            nmbarang_bom,
-            description,
-            qty,
-            unit,
-            nilai,
-            harga,
-            spec,
-            issub,
-            'F',
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp,
-            idurut,
-            uniqueid
-
+            idurut, v_docno, doctype, doctype_detail, cabang,
+            pemohon, docdate, docref,
+            idbarang, nmbarang, idbarang_bom, nmbarang_bom,
+            description, qty, unit, nilai, harga, spec, issub,
+            'F', inputby, inputdate, updateby, updatedate,
+            docnotmp, uniqueid
         FROM sc_tmp.penerimaanbp_dtl
-        WHERE TRIM(docno)=TRIM(OLD.docno);
+        WHERE TRIM(docno) = TRIM(OLD.docno)
+          AND inputby = v_inputby;
 
-        -- =================================================
-        -- CLEAN TMP
-        -- =================================================
+        -- LOG: INSERT
+        PERFORM sc_log.fn_log_transaction(
+            v_docno::CHAR(30),
+            NULL,
+            'I.R',
+            'I.R.A.9',
+            'I',
+            v_inputby,
+            v_client_ip,
+            v_inputby
+        );
+
+        -- CLEANUP TMP
         DELETE FROM sc_tmp.penerimaanbp_dtl
-        WHERE TRIM(docno)=TRIM(OLD.docno);
+        WHERE TRIM(docno) = TRIM(OLD.docno)
+          AND inputby = v_inputby;
 
         DELETE FROM sc_tmp.penerimaanbp_mst
-        WHERE TRIM(docno)=TRIM(OLD.docno);
+        WHERE TRIM(docno) = TRIM(OLD.docno)
+          AND inputby = v_inputby
+          AND idurut = v_idurut;
 
     -- =====================================================
-    -- FINAL EDIT
+    -- FINAL EDIT (docnotmp terisi)
     -- =====================================================
-    ELSIF UPPER(TRIM(OLD.status))='E'
-       AND UPPER(TRIM(NEW.status))='F'
-       AND COALESCE(TRIM(NEW.docnotmp),'')<>'' THEN
+    ELSIF UPPER(TRIM(OLD.status)) = 'E'
+          AND UPPER(TRIM(NEW.status)) = 'F'
+          AND COALESCE(TRIM(NEW.docnotmp), '') <> '' THEN
 
-        -- =================================================
+        v_inputby := NEW.inputby;
+
         -- DELETE OLD TRX
-        -- =================================================
         DELETE FROM sc_trx.penerimaanbp_dtl
-        WHERE TRIM(docno)=TRIM(NEW.docnotmp);
+        WHERE TRIM(docno) = TRIM(NEW.docnotmp);
 
         DELETE FROM sc_trx.penerimaanbp_mst
-        WHERE TRIM(docno)=TRIM(NEW.docnotmp);
+        WHERE TRIM(docno) = TRIM(NEW.docnotmp);
 
-        -- =================================================
-        -- INSERT MASTER
-        -- =================================================
+        -- INSERT HEADER (pakai docnotmp, dengan idurut)
         INSERT INTO sc_trx.penerimaanbp_mst (
-
-            docno,
-            doctype,
-            cabang,
-            pemohon,
-            docdate,
-            idlocation,
-            nmlocation,
-            tabno,
-            woeno,
-            wono,
-            bomno,
-            desc_bom,
-            idbarang_jadi,
-            nmbarang_jadi,
-            docref,
-            status,
-            keterangan,
-            batchno,
-            buildfor,
-            ttlprice,
-            buildunit,
-            bagian,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp
-
+            idurut, docno, doctype, cabang, pemohon, docdate,
+            idlocation, nmlocation, tabno, woeno, wono, bomno,
+            desc_bom, idbarang_jadi, nmbarang_jadi,
+            buildfor, ttlprice, buildunit, batchno,
+            bagian, docref, status, keterangan,
+            inputby, inputdate, updateby, updatedate, docnotmp
         )
         SELECT
-
-            NEW.docnotmp,
-            doctype,
-            cabang,
-            pemohon,
-            docdate,
-            idlocation,
-            nmlocation,
-            tabno,
-            woeno,
-            wono,
-            bomno,
-            desc_bom,
-            idbarang_jadi,
-            nmbarang_jadi,
-            docref,
-            'F',
-            keterangan,
-            batchno,
-            buildfor,
-            ttlprice,
-            buildunit,
-            bagian,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp
-
+            idurut, NEW.docnotmp, doctype, cabang, pemohon, docdate,
+            idlocation, nmlocation, tabno, woeno, wono, bomno,
+            desc_bom, idbarang_jadi, nmbarang_jadi,
+            buildfor, ttlprice, buildunit, batchno,
+            bagian, docref, 'F', keterangan,
+            inputby, inputdate, updateby, updatedate, docnotmp
         FROM sc_tmp.penerimaanbp_mst
-        WHERE TRIM(docno)=TRIM(NEW.docno);
+        WHERE TRIM(docno) = TRIM(NEW.docno)
+          AND inputby = v_inputby;
 
-        -- =================================================
         -- INSERT DETAIL
-        -- =================================================
         INSERT INTO sc_trx.penerimaanbp_dtl (
-
-            docno,
-            doctype,
-            doctype_detail,
-            cabang,
-            pemohon,
-            docdate,
-            docref,
-            idbarang,
-            nmbarang,
-            idbarang_bom,
-            nmbarang_bom,
-            description,
-            qty,
-            unit,
-            nilai,
-            harga,
-            spec,
-            issub,
-            status,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp,
-            idurut,
-            uniqueid
-
+            idurut, docno, doctype, doctype_detail, cabang,
+            pemohon, docdate, docref,
+            idbarang, nmbarang, idbarang_bom, nmbarang_bom,
+            description, qty, unit, nilai, harga, spec, issub,
+            status, inputby, inputdate, updateby, updatedate,
+            docnotmp, uniqueid
         )
         SELECT
-
-            NEW.docnotmp,
-            doctype,
-            doctype_detail,
-            cabang,
-            pemohon,
-            docdate,
-            docref,
-            idbarang,
-            nmbarang,
-            idbarang_bom,
-            nmbarang_bom,
-            description,
-            qty,
-            unit,
-            nilai,
-            harga,
-            spec,
-            issub,
-            'F',
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp,
-            idurut,
-            uniqueid
-
+            idurut, NEW.docnotmp, doctype, doctype_detail, cabang,
+            pemohon, docdate, docref,
+            idbarang, nmbarang, idbarang_bom, nmbarang_bom,
+            description, qty, unit, nilai, harga, spec, issub,
+            'F', inputby, inputdate, updateby, updatedate,
+            docnotmp, uniqueid
         FROM sc_tmp.penerimaanbp_dtl
-        WHERE TRIM(docno)=TRIM(NEW.docno);
+        WHERE TRIM(docno) = TRIM(NEW.docno)
+          AND inputby = v_inputby;
 
-        -- =================================================
-        -- CLEAN TMP
-        -- =================================================
+        -- LOG: UPDATE
+        PERFORM sc_log.fn_log_transaction(
+            NEW.docnotmp::CHAR(30),
+            NULL,
+            'I.R',
+            'I.R.A.9',
+            'U',
+            v_inputby,
+            v_client_ip,
+            v_inputby
+        );
+
+        -- CLEANUP TMP
         DELETE FROM sc_tmp.penerimaanbp_dtl
-        WHERE TRIM(docno)=TRIM(NEW.docno);
+        WHERE TRIM(docno) = TRIM(NEW.docno)
+          AND inputby = v_inputby;
 
         DELETE FROM sc_tmp.penerimaanbp_mst
-        WHERE TRIM(docno)=TRIM(NEW.docno);
+        WHERE TRIM(docno) = TRIM(NEW.docno)
+          AND inputby = v_inputby;
 
     -- =====================================================
     -- CANCEL EDIT
     -- =====================================================
-    ELSIF UPPER(TRIM(OLD.status))='E'
-       AND UPPER(TRIM(NEW.status))='C' THEN
+    ELSIF UPPER(TRIM(OLD.status)) = 'E'
+        AND UPPER(TRIM(NEW.status)) = 'C' THEN
 
-        UPDATE sc_trx.penerimaanbp_mst
-        SET status='F'
-        WHERE TRIM(docno)=TRIM(NEW.docnotmp);
+        IF COALESCE(TRIM(NEW.docnotmp), '') <> '' THEN
+            UPDATE sc_trx.penerimaanbp_mst
+            SET status = 'F'
+            WHERE TRIM(docno) = TRIM(NEW.docnotmp);
+        END IF;
 
         DELETE FROM sc_tmp.penerimaanbp_dtl
-        WHERE TRIM(docno)=TRIM(NEW.docno);
+        WHERE TRIM(docno) = TRIM(NEW.docno);
 
         DELETE FROM sc_tmp.penerimaanbp_mst
-        WHERE TRIM(docno)=TRIM(NEW.docno);
+        WHERE TRIM(docno) = TRIM(NEW.docno);
 
     END IF;
 
@@ -568,9 +439,12 @@ BEGIN
 END;
 $BODY$;
 
--- =========================================
--- TRIGGER
--- =========================================
+ALTER FUNCTION sc_tmp.tr_tmp_penerimaanbp_mst() OWNER TO postgres;
+
+
+DROP TRIGGER IF EXISTS tr_tmp_penerimaanbp_mst
+ON sc_tmp.penerimaanbp_mst;
+
 CREATE TRIGGER tr_tmp_penerimaanbp_mst
 AFTER UPDATE
 ON sc_tmp.penerimaanbp_mst
@@ -578,165 +452,101 @@ FOR EACH ROW
 EXECUTE FUNCTION sc_tmp.tr_tmp_penerimaanbp_mst();
 
 
-
 -- =========================================
--- DROP TRIGGER & FUNCTION
+-- TRIGGER & FUNCTION: TRX -> TMP
 -- =========================================
 DROP TRIGGER IF EXISTS tr_mst_penerimaanbp_mst
 ON sc_trx.penerimaanbp_mst;
 
 DROP FUNCTION IF EXISTS sc_trx.tr_mst_penerimaanbp_mst();
 
--- =========================================
--- FUNCTION TRX -> TMP
--- =========================================
 CREATE OR REPLACE FUNCTION sc_trx.tr_mst_penerimaanbp_mst()
 RETURNS trigger
 LANGUAGE plpgsql
+COST 100
+VOLATILE NOT LEAKPROOF
 AS $BODY$
+
+DECLARE
+    v_docno     TEXT;
+    v_inputby   TEXT;
+    v_client_ip TEXT;
 
 BEGIN
 
-    RAISE NOTICE 'TRX BOM TRIGGER : %, OLD=%, NEW=%',
-        NEW.docno,
-        OLD.status,
-        NEW.status;
+    -- GUARD: hanya proses kalau status berubah
+    IF UPPER(TRIM(OLD.status)) = UPPER(TRIM(NEW.status)) THEN
+        RETURN NEW;
+    END IF;
+
+    -- AMBIL IP
+    v_docno     := RTRIM(NEW.docno);
+    v_inputby   := COALESCE(NEW.updateby, NEW.inputby);
+    v_client_ip := sc_log.fn_get_user_ip(v_inputby);
+
+    -- ADVISORY LOCK
+    PERFORM pg_advisory_xact_lock(hashtext(v_docno));
 
     -- =====================================================
-    -- EDIT
+    -- DIBATALKAN (F -> C)
     -- =====================================================
-    IF UPPER(TRIM(OLD.status))='F'
-       AND UPPER(TRIM(NEW.status))='E' THEN
+    IF (OLD.STATUS = 'F' AND NEW.STATUS = 'C') THEN
 
-        -- =================================================
+        PERFORM sc_log.fn_log_transaction(
+            NEW.docno,
+            NULL,
+            'I.R',
+            'I.R.A.9',
+            'C',
+            v_inputby,
+            v_client_ip,
+            v_inputby
+        );
+
+    END IF;
+
+    -- =====================================================
+    -- DIEDIT (F -> E)
+    -- =====================================================
+    IF (OLD.STATUS = 'F' AND NEW.STATUS = 'E') THEN
+
         -- INSERT TMP MASTER
-        -- =================================================
         INSERT INTO sc_tmp.penerimaanbp_mst (
-
-            docno,
-            doctype,
-            cabang,
-            pemohon,
-            docdate,
-            idlocation,
-            nmlocation,
-            tabno,
-            woeno,
-            wono,
-            bomno,
-            desc_bom,
-            idbarang_jadi,
-            nmbarang_jadi,
-            docref,
-            status,
-            keterangan,
-            batchno,
-            buildfor,
-            ttlprice,
-            buildunit,
-            bagian,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp
-
+            docno, doctype, cabang, pemohon, docdate,
+            idlocation, nmlocation, tabno, woeno, wono, bomno,
+            desc_bom, idbarang_jadi, nmbarang_jadi,
+            buildfor, ttlprice, buildunit, batchno,
+            bagian, docref, status, keterangan,
+            inputby, inputdate, updateby, updatedate, docnotmp
         )
         SELECT
-
-            docno,
-            doctype,
-            cabang,
-            pemohon,
-            docdate,
-            idlocation,
-            nmlocation,
-            tabno,
-            woeno,
-            wono,
-            bomno,
-            desc_bom,
-            idbarang_jadi,
-            nmbarang_jadi,
-            docref,
-            'E',
-            keterangan,
-            batchno,
-            buildfor,
-            ttlprice,
-            buildunit,
-            bagian,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docno
-
+            docno, doctype, cabang, pemohon, docdate,
+            idlocation, nmlocation, tabno, woeno, wono, bomno,
+            desc_bom, idbarang_jadi, nmbarang_jadi,
+            buildfor, ttlprice, buildunit, batchno,
+            bagian, docref, 'E', keterangan,
+            inputby, inputdate, updateby, updatedate, v_docno
         FROM sc_trx.penerimaanbp_mst
-        WHERE TRIM(docno)=TRIM(NEW.docno);
+        WHERE TRIM(docno) = TRIM(NEW.docno);
 
-        -- =================================================
         -- INSERT TMP DETAIL
-        -- =================================================
         INSERT INTO sc_tmp.penerimaanbp_dtl (
-
-            docno,
-            doctype,
-            doctype_detail,
-            cabang,
-            pemohon,
-            docdate,
-            docref,
-            idbarang,
-            nmbarang,
-            idbarang_bom,
-            nmbarang_bom,
-            description,
-            qty,
-            unit,
-            nilai,
-            harga,
-            spec,
-            issub,
-            status,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp,
-            uniqueid
-
+            docno, doctype, doctype_detail, cabang,
+            pemohon, docdate, docref,
+            idbarang, nmbarang, idbarang_bom, nmbarang_bom,
+            description, qty, unit, nilai, harga, spec, issub,
+            status, inputby, inputdate, updateby, updatedate,
+            docnotmp, uniqueid
         )
         SELECT
-
-            docno,
-            doctype,
-            doctype_detail,
-            cabang,
-            pemohon,
-            docdate,
-            docref,
-            idbarang,
-            nmbarang,
-            idbarang_bom,
-            nmbarang_bom,
-            description,
-            qty,
-            unit,
-            nilai,
-            harga,
-            spec,
-            issub,
-            'E',
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docno,
-            uniqueid
-
+            docno, doctype, doctype_detail, cabang,
+            pemohon, docdate, docref,
+            idbarang, nmbarang, idbarang_bom, nmbarang_bom,
+            description, qty, unit, nilai, harga, spec, issub,
+            'E', inputby, inputdate, updateby, updatedate,
+            docno, uniqueid
         FROM sc_trx.penerimaanbp_dtl
-        WHERE TRIM(docno)=TRIM(NEW.docno);
+        WHERE TRIM(docno) = TRIM(NEW.docno);
 
     END IF;
 
@@ -745,9 +555,12 @@ BEGIN
 END;
 $BODY$;
 
--- =========================================
--- TRIGGER
--- =========================================
+ALTER FUNCTION sc_trx.tr_mst_penerimaanbp_mst() OWNER TO postgres;
+
+
+DROP TRIGGER IF EXISTS tr_mst_penerimaanbp_mst
+ON sc_trx.penerimaanbp_mst;
+
 CREATE TRIGGER tr_mst_penerimaanbp_mst
 AFTER UPDATE
 ON sc_trx.penerimaanbp_mst

@@ -129,31 +129,21 @@
                                             <div class="form-group">
                                                 <label>No. Jurnal Work Order Execution</label>
 
-                                                <div class="d-flex">
-                                                    <input type="text"
-                                                        name="prefix"
-                                                        id="prefix"
-                                                        class="form-control me-1"
-                                                        maxlength="3"
-                                                        style="text-transform: uppercase;"
-                                                        pattern="[A-Z0-9]+">
+                                                    <div class="d-flex">
+                                                        <input type="text" name="prefix" id="prefix" class="form-control me-1" maxlength="3" style="text-transform: uppercase;" pattern="[A-Za-z0-9]{1,3}" title="Prefix hanya boleh huruf dan angka, maksimal 3 karakter">
 
-                                                    <span class="px-2 align-self-center">/</span>
+                                                        <span class="px-2 align-self-center">/</span>
 
-                                                    <input type="text"
-                                                        name="infix"
-                                                        id="infix"
-                                                        class="form-control mx-1"
-                                                        readonly>
+                                                        <input type="text"
+                                                            name="infix"
+                                                            id="infix"
+                                                            class="form-control mx-1"
+                                                            readonly>
 
-                                                    <span class="px-2 align-self-center">/</span>
+                                                        <span class="px-2 align-self-center">/</span>
 
-                                                    <input type="text"
-                                                        name="sufix"
-                                                        id="sufix"
-                                                        class="form-control ms-1"
-                                                        readonly>
-                                                        
+                                                        <input type="text" name="suffix" id="suffix" class="form-control ms-1" maxlength="6" pattern="^[A-Za-z0-9]{0,2}[0-9]{4}$" title="Maksimal 6 karakter. 4 karakter terakhir wajib angka." style="text-transform: uppercase;">
+                                                            
                                                     </div>
                                                 </div>
                                             </div>
@@ -279,7 +269,7 @@
                         </div>
                 </div>
                 <div class="card-footer bg-light">
-                    <a href="<?= base_url('production/trans/woe') ?>"
+                    <a href="<?= base_url('production/trans/clearEntryWOE') ?>"
                         class="btn btn-default btn-lg">
                         <i class="fa fa-arrow-left mr-2"></i>
                         Kembali
@@ -330,13 +320,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#docdate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('DD-MM-YYYY'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'docdate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'docdate');
         });
@@ -350,13 +340,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#senddate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('DD-MM-YYYY'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'senddate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'senddate');
         });

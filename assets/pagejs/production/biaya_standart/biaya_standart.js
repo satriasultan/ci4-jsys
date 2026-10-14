@@ -113,7 +113,7 @@ $('#cabang').on('change', function () {
     if (!idbranch) return;
 
     $.ajax({
-        url: HOST_URL + '/persediaan/trans/getBranch_ajustment_stock',
+        url: HOST_URL + '/production/trans/getBranchInfo_biaya_standart',
         method: 'GET',
         data: {idbranch: idbranch},
         dataType: 'json',
@@ -125,66 +125,65 @@ $('#cabang').on('change', function () {
             }
 
             currentKodeSuffix = res.kode_suffix;
-
-            $('#infix').val(res.infix);
-
-            // SET PREFIX + TRIGGER CHANGE
-            $('#prefix').val('BSC').trigger('change');
-
-            $('#sufix').val(currentKodeSuffix + '0001');
+            $('#infix').val(res.infix);          // YYMM
+            var prefix = res.prefix;
+            $('#prefix').val(prefix);
+            loadNextSuffixBS()
 
             var infix = (res.infix || '').toString();
-
             if (infix.length === 4) {
-
                 $('#docdate').prop('disabled', false);
-
                 var yy = infix.substring(0, 2);
                 var mm = infix.substring(2, 4);
-
                 var year = 2000 + parseInt(yy, 10);
                 var month = parseInt(mm, 10) - 1;
 
-                var today = moment();
+                // Default: logindate dari server, fallback ke hari ini
+                var logindate = res.logindate ? moment(res.logindate, 'DD-MM-YYYY') : moment();
+
                 var startDate = moment([year, month, 1]);
                 var endDate = moment(startDate).endOf('month');
+
+                // Kalau logindate di luar range, pakai startDate
+                var selectedDate = logindate.isBetween(startDate, endDate, 'day', '[]')
+                    ? logindate
+                    : startDate;
 
                 var $el = $('#docdate');
                 var drp = $el.data('daterangepicker');
 
                 if (drp) {
-
                     drp.minDate = startDate;
                     drp.maxDate = endDate;
-                    drp.setStartDate(startDate);
-                    drp.setEndDate(startDate);
-
+                    drp.setStartDate(selectedDate);
+                    drp.setEndDate(selectedDate);
                 } else {
-
                     $el.daterangepicker({
                         autoUpdateInput: false,
                         singleDatePicker: true,
                         showDropdowns: true,
-                        startDate: today,
+                        startDate: selectedDate,
                         minDate: startDate,
                         maxDate: endDate,
-                        locale: {format: 'YYYY-MM-DD'},
+                        locale: { format: 'DD-MM-YYYY' },
                         cancelLabel: 'Clear'
                     });
-
                     $el.on('apply.daterangepicker', function (ev, picker) {
-                        $(this).val(picker.startDate.format('YYYY-MM-DD'));
+                        $(this).val(picker.startDate.format('DD-MM-YYYY'));
+                        $(this).trigger('change');
                     });
-
                     $el.on('cancel.daterangepicker', function (ev, picker) {
                         $(this).val('');
+                        $(this).trigger('change');
                     });
                 }
 
-                $el.val(today.format('YYYY-MM-DD'));
+                $el.val(selectedDate.format('DD-MM-YYYY'));
             }
 
-            generateDocNumber('JBR', res.infix, currentKodeSuffix + '0001');
+            $('#docno').val(
+                prefix + '/' + res.infix + '/' + currentKodeSuffix + '0001'
+            );
 
         }
     });
@@ -192,12 +191,10 @@ $('#cabang').on('change', function () {
 });
 
 
-$('#prefix').on('change', function () {
-
-    let prefix = $(this).val().toUpperCase();
-    $(this).val(prefix);
-
-    let infix = $('#infix').val();
+function loadNextSuffixBS() {
+    
+    let prefix = $.trim($('#prefix').val()).toUpperCase();
+    let infix = $.trim($('#infix').val());
 
     if (!prefix || !infix || !currentKodeSuffix) return;
 
@@ -217,13 +214,27 @@ $('#prefix').on('change', function () {
                 return;
             }
 
-            $('#sufix').val(res.suffix);
 
-            generateDocNumber(prefix, infix, res.suffix);
+            let suffix = $.trim(
+                res.suffix || ''
+            );
+
+            $('#suffix')
+                .val(suffix)
+                .trigger('change');
+
+            $('#docno').val(
+                prefix + '/' + infix + '/' + res.suffix
+            );
 
         }
     });
 
+};
+
+
+$('#prefix').on('blur', function () {
+    loadNextSuffixBS();
 });
 
 
@@ -328,10 +339,17 @@ function documentReadable() {
             let prefixParts = item.docno.trim().split('/');
             $('[name="prefix"]').val(prefixParts[0]).prop('readonly', true);
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
-            $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
+            $('[name="suffix"]').val(prefixParts[2]).prop('readonly', true);
+            loadNextSuffixBS()
 
-            $('[name="docdate"]').val(item.docdate).prop('disabled', true);
-            $('[name="activedate"]').val(item.activedate).prop('disabled', true);
+            $('[name="docdate"]')
+                .val(moment(item.docdate).format('DD-MM-YYYY'))
+                .prop('disabled', true);
+            $('[name="activedate"]')
+                .val(moment(item.activedate).format('DD-MM-YYYY'))
+                .prop('disabled', true);
+
+            
             $('[name="docref"]').val(item.docref).prop('disabled', false);
             $('[name="keterangan"]').val(item.description);
 
@@ -427,14 +445,14 @@ function btnInputDetail() {
     $('#modalDtlStandartCost').modal('show');
 }
 
-var defaultInitialGroupBrng = '';
+var defaultInitialGroupBrng = 'JSA';
 $("#idbarang").select2({
     placeholder: "Choose Your Item List",
     allowClear: true,
     width: '100%',
-    dropdownParent: $('#modalDtlStandartCost'),
+    dropdownParent: $('#modalDtlStandartCost .modal-body'),
     ajax: {
-        url: HOST_URL + 'api/globalmodule/list_item',
+        url: HOST_URL + 'api/globalmodule/list_item_std_cost',
         type: 'POST',
         dataType: 'json',
         delay: 250,
@@ -487,8 +505,8 @@ $("#idbarang").select2({
 
     $('[name="nmbarang"]').val(data.nmbarang.trim()).prop("readonly", true);
     $('[name="unit"]').val(data.unit.trim()).prop("readonly", true);
-    $('[name="actualcost"]').val().prop("readonly", true);
-    $('[name="lastcost"]').val().prop("readonly", true);
+    $('[name="actualcost"]').val(data.actualcost).prop("readonly", true);
+    $('[name="lastcost"]').val(data.newcost).prop("readonly", true);
 
 });
 
@@ -525,6 +543,7 @@ function save_biaya_standart() {
         let qtyactualcost = $('#actualcost').val();
         let qtylastcost = $('#lastcost').val();
         let qtynewcost = $('#newcost').val();
+        let uniqueid = $('#uniqueid').val();
 
 
 
@@ -561,13 +580,14 @@ function save_biaya_standart() {
             'docno',
             $('#prefix').val() + '/' +
             $('#infix').val() + '/' +
-            $('#sufix').val()
+            $('#suffix').val()
         );
 
         // Set numeric value yang sudah divalidasi
         formData.set('actualcost', actualCost);
         formData.set('lastcost', lastCost);
         formData.set('newcost', newCOst);
+        formData.set('uniqueid', uniqueid);
 
         if (!activedate || activedate.trim() === '') {
             Swal.fire({
@@ -636,6 +656,66 @@ function save_biaya_standart() {
 }
 
 
+function btnDeleteDetail(){
+    const ids = getCheckedDetailIds();
+
+    if(ids.length === 0){
+        Swal.fire({
+            icon: 'warning',
+            title: 'Peringatan',
+            text: 'Pilih data yang akan dihapus'
+        });
+        return;
+    }
+
+    Swal.fire({
+        title: 'Konfirmasi',
+        text: 'Yakin hapus ' + ids.length + ' data terpilih?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Hapus',
+        cancelButtonText: 'Batal',
+        reverseButtons: true
+    }).then((result) => {
+
+        if(!result.isConfirmed) return;
+
+        $.ajax({
+            url: HOST_URL + 'production/trans/delete_biaya_standart_dtl',
+            type: 'POST',
+            data: { ids: ids },
+            dataType: 'json',
+            success: function(res){
+                if(res.status){
+                    //
+                    // Swal.fire({
+                    //     icon: 'success',
+                    //     title: 'Berhasil',
+                    //     text: 'Data berhasil dihapus',
+                    //     timer: 1500,
+                    //     showConfirmButton: false
+                    // });
+
+
+                    $('#tmp_stdcost').DataTable().ajax.reload(null,false);
+                    documentReadable()
+                     // kalau detail kosong → reload halaman
+                    if(res.sisa_detail === 0){
+                        window.location.reload();
+                    }
+
+                }else{
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal',
+                        text: res.message || 'Gagal hapus data'
+                    });
+                }
+            }
+        });
+
+    });
+}
 
 
 /* TABLE PP DETAIL */
@@ -695,6 +775,22 @@ function tabletmpStandartCost() {
                 // Panggil fungsi manual tadi
                 // updateGrandTotal();
             }
+        });
+
+         $('#tmp_stdcost tbody').on('click', 'tr', function(e) {
+            // Cegah jika yang diklik adalah checkbox itu sendiri (untuk menghindari double trigger)
+            if ($(e.target).is('input[type="checkbox"]')) {
+                return;
+            }
+
+            // Cari checkbox di dalam baris ini
+            var checkbox = $(this).find('input[type="checkbox"].row-check');
+
+            // Toggle status checkbox
+            checkbox.prop('checked', !checkbox.prop('checked'));
+
+            // Trigger event change jika diperlukan
+            checkbox.trigger('change');
         });
     }
 
@@ -792,6 +888,7 @@ function updateStandartCost() {
             */
 
             $('#idurut').val(data.idurut);
+            $('#uniqueid').val(data.uniqueid);
             $('#description_detail').val(data.description);
             $('#docno').val(data.docno);
             $('#dk').val(data.dk).trigger('change');

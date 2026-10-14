@@ -352,11 +352,19 @@
                                             </select>
                                         </div>
                                     </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="form-label">No. Batch Reff</label>
+                                            <div class="form-group">
+                                                <input type="text" name="batchno" id="batchno" class="form-control" placeholder="No. Batch Reff">
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-md-3" >
                                 <div class="row">
-                                    <div class="col-md-6">
+                                    <!-- <div class="col-md-6">
                                         <div class="form-group">
                                             <label class="form-label">Build For</label>
                                             <div class="form-group">
@@ -370,19 +378,18 @@
                                             <select name="buildunit" id="buildunit" class="form-control">
                                             </select>
                                         </div>
-                                    </div>
+                                    </div> -->
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label class="form-label">No. Batch Reff</label>
-                                            <div class="form-group">
-                                                <input type="text" name="batchno" id="batchno" class="form-control" placeholder="No. Batch Reff">
-                                            </div>
+                                            <label for="from">Dari Bagian</label>
+                                            <select name="bagian" id="bagian" class="form-control" required>
+                                            </select>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="from">Untuk Bagian</label>
-                                            <select name="bagian" id="bagian" class="form-control" required>
+                                            <label class="form-label">Ke Gudang</label>
+                                            <select name="idlocation" id="idlocation" class="form-control" required>
                                             </select>
                                         </div>
                                     </div>

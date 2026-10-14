@@ -66,6 +66,18 @@ class Production extends BaseController
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_production->q_tmp_standart_cost_mst($param);
         $logindate = trim($this->session->get('logindate'));
+        $periode   = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        $data['periodeTutup'] = false;
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            $data['periodeTutup'] = true;
+            $data['periodeInfo']  = [
+                'periode'    => trim($dtlPeriode['periode']),
+                'keterangan' => trim($dtlPeriode['keterangan']),
+            ];
+        }
+        /* ===================================================== */
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
@@ -144,7 +156,7 @@ class Production extends BaseController
                 $updateBtn = '
                 <a class="dropdown-item bg-warning"
                    href="' . base_url('production/trans/updateStandartCost') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
-                   onclick="return confirm(\'Update Standard Cost : ' . $docno . '\')">
+                   onclick="return guardPeriodeTutup(event) && confirm(\'Update Standard Cost : ' . $docno . '\')">
 
                     <i class="fa fa-edit"></i> Update
 
@@ -177,7 +189,7 @@ class Production extends BaseController
                 <a class="dropdown-item"
                    style="background-color:#FF7C7CD6;"
                    href="' . base_url('production/trans/cancelStandartCost') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
-                   onclick="return confirm(\'Cancel Standard Cost : ' . $docno . '\')">
+                   onclick="return guardPeriodeTutup(event) && confirm(\'Cancel Standard Cost : ' . $docno . '\')">
 
                     <i class="fa fa-trash"></i> Cancel
 
@@ -234,40 +246,35 @@ class Production extends BaseController
             // =====================================
             // STATUS BADGE
             // =====================================
-            $badge = 'secondary';
+            $badgeClass = 'badge-primary'; // Default
 
             switch ($status) {
 
                 case 'C':
                 case 'D':
-                    $badge = 'danger';
+                    $badgeClass = 'badge-danger';
                     break;
 
                 case 'E':
-                    $badge = 'primary';
+                    $badgeClass = 'badge-primary';
                     break;
 
                 case 'F':
-                    $badge = 'success';
+                    $badgeClass = 'badge-success';
                     break;
 
                 case 'P':
-                    $badge = 'warning';
+                    $badgeClass = 'badge-warning';
+                    break;
+
+                default:
+                    $badgeClass = 'badge-secondary';
                     break;
             }
 
-            $statusLabel =
-                isset($lm->nmstatus)
-                    ? $lm->nmstatus
-                    : $status;
-
-            $statusBadge =
-                '<span class="badge bg-' . $badge . ' text-dark w-100"
-                    style="font-size:14px;display:block;padding:6px 8px;">'
-
-                . $statusLabel .
-
-                '</span>';
+            $statusLabel = isset($lm->nmstatus)
+                ? $lm->nmstatus
+                : $status;
 
             // =====================================
             // ROW DATA
@@ -286,13 +293,17 @@ class Production extends BaseController
 
             $row[] = $lm->description;
 
-            $row[] = '<div class="text-center">'.$statusBadge.'</div>';
-
+            
             $row[] = $lm->inputby;
             $row[] = $lm->inputdate1;
-
+            
             $row[] = $lm->updateby;
             $row[] = $lm->updatedate1;
+            $row[] = '<div class="text-center">'
+                . '<span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">'
+                . htmlspecialchars($statusLabel)
+                . '</span>'
+                . '</div>';
 
             $data[] = $row;
         }
@@ -357,6 +368,19 @@ class Production extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_production->q_tmp_standart_cost_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
+        
+         /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('production/trans/standart_cost'));
+        }
+        // =================================
 
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
@@ -373,7 +397,7 @@ class Production extends BaseController
     function showing_tmp_standart_cost_mst(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno='$docno' and inputby = '$nama'";
         $data = $this->m_production->q_tmp_standart_cost_mst($param);
         $output = array(
             'status' => true,
@@ -396,6 +420,65 @@ class Production extends BaseController
             'incomplete_getResults' => false,
         );
         echo $this->fiky_encryption->jDatatable($output);
+    }
+
+     public function getBranchInfo_standart_cost()
+    {
+        $idbranch = trim($this->request->getGet('idbranch'));
+
+        $row = $this->db->table('sc_mst.branchjob')
+            ->select('nmbranch')
+            ->where('idbranch', $idbranch)
+            ->get()
+            ->getRowArray();
+
+        if (!$row) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Cabang tidak ditemukan'
+            ]);
+        }
+
+        // mapping nmbranch → kode suffix
+        $map = [
+            'PT JATIM TAMAN STEEL MFG' => 'PT',
+            'PLANT I'                 => 'PA',
+            'PLANT II'                => 'PB',
+        ];
+
+        $kodeSuffix = $map[trim($row['nmbranch'])] ?? '';
+
+        if ($kodeSuffix === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Mapping cabang belum diset'
+            ]);
+        }
+
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray(); // Ini mengembalikan array of objects/arrays
+
+
+        // Karena hanya 1 row, ambil index ke-0
+        $prefix = trim($konfigurasiUmum[0]['scp']) ?? '';
+        $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
+        $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
+
+        $logindate = $this->session->get('logindate'); // dd-mm-yyyy
+        $infix = date('ym', strtotime($logindate));
+
+        return $this->response->setJSON([
+            'success'      => true,
+            'kode_suffix'  => $kodeSuffix,
+            'infix'        => $infix,
+            'logindate'     => $logindate,
+            'prefix'        => $prefix,
+            'konfigurasi_umum' => $konfigurasiUmum,
+            'currcode'      => $currcode,
+            'idtax'         => $idtax,
+        ]);
     }
 
     public function getNextSuffix_standart_cost_mst()
@@ -531,6 +614,7 @@ class Production extends BaseController
         // =========================
         // AMBIL DATA DETAIL
         // =========================
+        $uniqueid = $this->request->getPost('uniqueid');
 
         $idbarang    = strtoupper(trim($this->request->getPost('idbarang')));
         $nmbarang    = strtoupper(trim($this->request->getPost('nmbarang')));
@@ -561,10 +645,12 @@ class Production extends BaseController
             ->where('idbarang', $idbarang)
             ->where('nmbarang', $nmbarang)
             ->where('unit', $unit)
-            ->where('description', $description_detail);
+            ->where('inputby', $nama)
+            // ->where('description', $description_detail)
+            ;
 
-        if ($idurut) {
-            $builderDuplicate->where('idurut !=', $idurut);
+        if ($uniqueid) {
+            $builderDuplicate->where('uniqueid !=', $uniqueid);
         }
 
         $duplicate = $builderDuplicate->countAllResults();
@@ -574,7 +660,7 @@ class Production extends BaseController
 
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Tidak boleh menginputkan item yang sama dengan keterangan yang sama'
+                'message' => 'Tidak boleh menginputkan item yang sama'
             ]);
         }
 
@@ -584,7 +670,9 @@ class Production extends BaseController
         if ($idurut) {
 
             $updateDetail = $builderDetail
-                ->where('idurut', $idurut)
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->where('uniqueid', $uniqueid)
                 ->update([
                     'doctype'    => 'STDCOST',
                     'idbarang'    => $idbarang,
@@ -749,14 +837,14 @@ class Production extends BaseController
             $no++;
             $row = array();
             // $row[] = $no;
-            $row[] = $lm->idurut;
+            $row[] = $lm->uniqueid;
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->actualcost, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->lastcost, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->newcost, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->actualcost, 5, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->lastcost, 5, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->newcost, 5, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -784,9 +872,9 @@ class Production extends BaseController
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->actualcost, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->lastcost, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->newcost, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->actualcost, 5, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->lastcost, 5, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->newcost, 5, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -887,7 +975,7 @@ class Production extends BaseController
     {
         $id = $this->request->getGet('id');
 
-        $data = $this->m_production->q_tmp_standart_cost_dtl(" and idurut='$id'");
+        $data = $this->m_production->q_tmp_standart_cost_dtl(" and uniqueid='$id'");
 
         $output = array(
             'status' => true,
@@ -898,10 +986,126 @@ class Production extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
+    public function delete_standart_cost_dtl()
+    {
+        $request = service('request');
+        $db      = \Config\Database::connect();
+        $nama    = trim(session()->get('nama'));
+
+        // ambil ids (bisa array atau single) — ini uniqueid/idurut detail
+        $ids = $request->getPost('ids');
+
+        if (empty($ids)) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Parameter ids tidak boleh kosong'
+            ]);
+        }
+
+        if (!is_array($ids)) {
+            $ids = [$ids];
+        }
+
+        $db->transBegin();
+
+        try {
+
+            // =========================
+            // 1. AMBIL DOCNO DARI DETAIL YANG AKAN DIHAPUS
+            // =========================
+            $detailRows = $db->table('sc_tmp.standart_cost_dtl')
+                ->select('docno, uniqueid')
+                ->whereIn('uniqueid', $ids)
+                ->where('inputby', $nama)
+                ->get()
+                ->getResult();
+
+            if (empty($detailRows)) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Data detail tidak ditemukan'
+                ]);
+            }
+
+            // kumpulkan docno unik
+            $docnoList = array_unique(array_column($detailRows, 'docno'));
+
+            // =========================
+            // 2. HAPUS DETAIL YANG DIPILIH SAJA
+            // =========================
+            $db->table('sc_tmp.standart_cost_dtl')
+                ->whereIn('uniqueid', $ids)
+                ->where('inputby', $nama)
+                ->delete();
+
+            if ($db->affectedRows() === 0) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Gagal menghapus detail'
+                ]);
+            }
+
+            // =========================
+            // 3. CEK APAKAH MASIH ADA DETAIL LAIN DI DOCNO TERSEBUT
+            // =========================
+            foreach ($docnoList as $docno) {
+
+                $sisa = $db->table('sc_tmp.standart_cost_dtl')
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->countAllResults();
+
+                // kalau tidak ada sisa detail → hapus header
+                if ($sisa == 0) {
+                    $db->table('sc_tmp.standart_cost_mst')
+                        ->where('docno', $docno)
+                        ->where('inputby', $nama)
+                        ->delete();
+                }
+            }
+
+            $db->transCommit();
+            // setelah transCommit, sebelum return
+            $sisaDetail = $db->table('sc_tmp.standart_cost_dtl')
+                ->where('inputby', $nama)
+                ->countAllResults();
+
+            return $this->response->setJSON([
+                'status'      => true,
+                'message'     => 'Data berhasil dihapus',
+                'sisa_detail' => $sisaDetail
+            ]);
+
+
+        } catch (\Throwable $e) {
+
+            $db->transRollback();
+
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
     public function updateStandartCost()
     {
         $nama = trim(session()->get('nama'));
+        $logindate = trim($this->session->get('logindate'));
 
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('production/trans/standart_cost'));
+        }
         // =====================================
         // GET PARAMETER
         // =====================================
@@ -1050,7 +1254,7 @@ class Production extends BaseController
         $param = " and coalesce(docno,'') = '$decoded_docno'";
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
-        $data['typeform'] = 'INPUT';
+        $data['typeform'] = 'DETAIL';
         $data['userlogin'] = $nama;
         $data['docnoParam'] = $decoded_docno;
         $data['dtldata'] = $this->m_production->q_mst_standart_cost_mst($param)->getRowArray();
@@ -1060,7 +1264,19 @@ class Production extends BaseController
     public function cancelStandartCost()
     {
         $nama = trim(session()->get('nama'));
+        $logindate = trim($this->session->get('logindate'));
 
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('production/trans/standart_cost'));
+        }
         // =====================================
         // GET PARAMETER
         // =====================================
@@ -1217,6 +1433,18 @@ class Production extends BaseController
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_production->q_tmp_biaya_standart_mst($param);
         $logindate = trim($this->session->get('logindate'));
+        $periode   = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        $data['periodeTutup'] = false;
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            $data['periodeTutup'] = true;
+            $data['periodeInfo']  = [
+                'periode'    => trim($dtlPeriode['periode']),
+                'keterangan' => trim($dtlPeriode['keterangan']),
+            ];
+        }
+        /* ===================================================== */
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
@@ -1294,8 +1522,8 @@ class Production extends BaseController
 
                 $updateBtn = '
                 <a class="dropdown-item bg-warning"
-                   href="' . base_url('production/trans/updateStandartCost') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
-                   onclick="return confirm(\'Update Standard Cost : ' . $docno . '\')">
+                   href="' . base_url('production/trans/updateBiayaStandart') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
+                   onclick="return guardPeriodeTutup(event) && confirm(\'Update Biaya Standart Produksi : ' . $docno . '\')">
 
                     <i class="fa fa-edit"></i> Update
 
@@ -1310,8 +1538,8 @@ class Production extends BaseController
                 $detailBtn = '
                 <a class="dropdown-item"
                    style="background-color:#3badf6;"
-                   href="' . base_url('production/trans/detailStandartCost') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
-                   onclick="return confirm(\'View Detail Standard Cost : ' . $docno . '\')">
+                   href="' . base_url('production/trans/detailBiayaStandart') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
+                   onclick="return confirm(\'View Detail Biaya Standart Produksi : ' . $docno . '\')">
 
                     <i class="fa fa-eye"></i> Detail
 
@@ -1327,8 +1555,8 @@ class Production extends BaseController
                 $deleteBtn = '
                 <a class="dropdown-item"
                    style="background-color:#FF7C7CD6;"
-                   href="' . base_url('production/trans/cancelStandartCost') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
-                   onclick="return confirm(\'Cancel Standard Cost : ' . $docno . '\')">
+                   href="' . base_url('production/trans/cancelBiayaStandart') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
+                   onclick="return guardPeriodeTutup(event) && confirm(\'Cancel Biaya Standart Produksi : ' . $docno . '\')">
 
                     <i class="fa fa-trash"></i> Cancel
 
@@ -1385,40 +1613,30 @@ class Production extends BaseController
             // =====================================
             // STATUS BADGE
             // =====================================
-            $badge = 'secondary';
+            $badgeClass = 'badge-primary'; // Default
 
             switch ($status) {
 
                 case 'C':
-                case 'D':
-                    $badge = 'danger';
+                    $badgeClass = 'badge-danger';
                     break;
 
                 case 'E':
-                    $badge = 'primary';
+                    $badgeClass = 'badge-warning';
                     break;
 
                 case 'F':
-                    $badge = 'success';
+                    $badgeClass = 'badge-info';
                     break;
 
-                case 'P':
-                    $badge = 'warning';
+                default:
+                    $badgeClass = 'badge-secondary';
                     break;
             }
 
-            $statusLabel =
-                isset($lm->nmstatus)
-                    ? $lm->nmstatus
-                    : $status;
-
-            $statusBadge =
-                '<span class="badge bg-' . $badge . ' text-dark w-100"
-                    style="font-size:14px;display:block;padding:6px 8px;">'
-
-                . $statusLabel .
-
-                '</span>';
+            $statusLabel = isset($lm->nmstatus)
+                ? $lm->nmstatus
+                : $status;
 
             // =====================================
             // ROW DATA
@@ -1430,20 +1648,27 @@ class Production extends BaseController
             $row[] = $lm->cabang;
             $row[] = $lm->pemohon;
 
-            $row[] = $lm->docdate;
+             $row[] = date(
+                'd-m-Y',
+                strtotime(trim($lm->docdate))
+            );
             $row[] = $lm->activedate;
 
             $row[] = $lm->docref;
 
             $row[] = $lm->description;
 
-            $row[] = '<div class="text-center">'.$statusBadge.'</div>';
-
+            
             $row[] = $lm->inputby;
             $row[] = $lm->inputdate;
-
+            
             $row[] = $lm->updateby;
             $row[] = $lm->updatedate;
+            $row[] = '<div class="text-center">'
+                . '<span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">'
+                . htmlspecialchars($statusLabel)
+                . '</span>'
+                . '</div>';
 
             $data[] = $row;
         }
@@ -1508,6 +1733,19 @@ class Production extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_production->q_tmp_biaya_standart_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
+        
+         /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('production/trans/biaya_standart'));
+        }
+        // =================================s
 
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
@@ -1524,7 +1762,7 @@ class Production extends BaseController
     function showing_tmp_biaya_standart_mst(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno='$docno' and inputby='$nama'";
         $data = $this->m_production->q_tmp_biaya_standart_mst($param);
         $output = array(
             'status' => true,
@@ -1547,6 +1785,65 @@ class Production extends BaseController
             'incomplete_getResults' => false,
         );
         echo $this->fiky_encryption->jDatatable($output);
+    }
+
+     public function getBranchInfo_biaya_standart()
+    {
+        $idbranch = trim($this->request->getGet('idbranch'));
+
+        $row = $this->db->table('sc_mst.branchjob')
+            ->select('nmbranch')
+            ->where('idbranch', $idbranch)
+            ->get()
+            ->getRowArray();
+
+        if (!$row) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Cabang tidak ditemukan'
+            ]);
+        }
+
+        // mapping nmbranch → kode suffix
+        $map = [
+            'PT JATIM TAMAN STEEL MFG' => 'PT',
+            'PLANT I'                 => 'PA',
+            'PLANT II'                => 'PB',
+        ];
+
+        $kodeSuffix = $map[trim($row['nmbranch'])] ?? '';
+
+        if ($kodeSuffix === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Mapping cabang belum diset'
+            ]);
+        }
+
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray(); // Ini mengembalikan array of objects/arrays
+
+
+        // Karena hanya 1 row, ambil index ke-0
+        $prefix = trim($konfigurasiUmum[0]['bs']) ?? '';
+        $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
+        $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
+
+        $logindate = $this->session->get('logindate'); // dd-mm-yyyy
+        $infix = date('ym', strtotime($logindate));
+
+        return $this->response->setJSON([
+            'success'      => true,
+            'kode_suffix'  => $kodeSuffix,
+            'infix'        => $infix,
+            'logindate'     => $logindate,
+            'prefix'        => $prefix,
+            'konfigurasi_umum' => $konfigurasiUmum,
+            'currcode'      => $currcode,
+            'idtax'         => $idtax,
+        ]);
     }
 
     public function getNextSuffix_biaya_standart_mst()
@@ -1585,6 +1882,7 @@ class Production extends BaseController
         $nama = trim($this->session->get('nama'));
         $docno  = strtoupper($this->request->getPost('docno'));
         $idurut = $this->request->getPost('idurut');
+        $cabang = strtoupper(trim($this->request->getPost('cabang')));
 
         if (!$docno) {
             return $this->response->setJSON([
@@ -1616,6 +1914,7 @@ class Production extends BaseController
                 'docref'     => trim($this->request->getPost('docref')),
                 'docdate'    => trim($this->request->getPost('docdate')),
                 'activedate'     => trim($this->request->getPost('activedate')),
+                'cabang'     => $cabang,
                 'penyesuaian_a'    => trim($this->request->getPost('penyesuaian_a')),
                 'penyesuaian_b'   => trim($this->request->getPost('penyesuaian_b')),
                 'pemohon'       => trim($this->request->getPost('pemohon')),
@@ -1645,7 +1944,7 @@ class Production extends BaseController
         // =========================
         // AMBIL DATA DETAIL
         // =========================
-
+        $uniqueid = $this->request->getPost('uniqueid');
         $idbarang    = strtoupper(trim($this->request->getPost('idbarang')));
         $nmbarang    = strtoupper(trim($this->request->getPost('nmbarang')));
         $unit    = strtoupper(trim($this->request->getPost('unit')));
@@ -1675,10 +1974,11 @@ class Production extends BaseController
             ->where('idbarang', $idbarang)
             ->where('nmbarang', $nmbarang)
             ->where('unit', $unit)
+            ->where('inputby', $nama)
             ->where('description', $description_detail);
 
-        if ($idurut) {
-            $builderDuplicate->where('idurut !=', $idurut);
+        if ($uniqueid) {
+            $builderDuplicate->where('uniqueid !=', $uniqueid);
         }
 
         $duplicate = $builderDuplicate->countAllResults();
@@ -1698,7 +1998,9 @@ class Production extends BaseController
         if ($idurut) {
 
             $updateDetail = $builderDetail
-                ->where('idurut', $idurut)
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->where('uniqueid', $uniqueid)
                 ->update([
                     'doctype'    => 'BIAYA_STANDART',
                     'idbarang'    => $idbarang,
@@ -1779,6 +2081,9 @@ class Production extends BaseController
         $nama=trim($this->session->get('nama'));
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_production->q_tmp_biaya_standart_mst($param);
+        if(empty($dtl->getRowArray())){
+            return redirect()->to(base_url('production/trans/biaya_standart'));
+        }
         // if(isEmpty($dtl->getRowArray()['status'])){
         //     return redirect()->to(base_url('production/trans/pp'));
         // }
@@ -1828,14 +2133,14 @@ class Production extends BaseController
             $no++;
             $row = array();
             // $row[] = $no;
-            $row[] = $lm->idurut;
+            $row[] = $lm->uniqueid;
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->actualcost, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->lastcost, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->newcost, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->actualcost, 5, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->lastcost, 5, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->newcost, 5, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -1863,9 +2168,9 @@ class Production extends BaseController
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->actualcost, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->lastcost, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->newcost, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->actualcost, 5, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->lastcost, 5, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->newcost, 5, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -1966,7 +2271,7 @@ class Production extends BaseController
     {
         $id = $this->request->getGet('id');
 
-        $data = $this->m_production->q_tmp_biaya_standart_dtl(" and idurut='$id'");
+        $data = $this->m_production->q_tmp_biaya_standart_dtl(" and uniqueid='$id'");
 
         $output = array(
             'status' => true,
@@ -1977,10 +2282,127 @@ class Production extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
+
+     public function delete_biaya_standart_dtl()
+    {
+        $request = service('request');
+        $db      = \Config\Database::connect();
+        $nama    = trim(session()->get('nama'));
+
+        // ambil ids (bisa array atau single) — ini uniqueid/idurut detail
+        $ids = $request->getPost('ids');
+
+        if (empty($ids)) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Parameter ids tidak boleh kosong'
+            ]);
+        }
+
+        if (!is_array($ids)) {
+            $ids = [$ids];
+        }
+
+        $db->transBegin();
+
+        try {
+
+            // =========================
+            // 1. AMBIL DOCNO DARI DETAIL YANG AKAN DIHAPUS
+            // =========================
+            $detailRows = $db->table('sc_tmp.biaya_standart_dtl')
+                ->select('docno, uniqueid')
+                ->whereIn('uniqueid', $ids)
+                ->where('inputby', $nama)
+                ->get()
+                ->getResult();
+
+            if (empty($detailRows)) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Data detail tidak ditemukan'
+                ]);
+            }
+
+            // kumpulkan docno unik
+            $docnoList = array_unique(array_column($detailRows, 'docno'));
+
+            // =========================
+            // 2. HAPUS DETAIL YANG DIPILIH SAJA
+            // =========================
+            $db->table('sc_tmp.biaya_standart_dtl')
+                ->whereIn('uniqueid', $ids)
+                ->where('inputby', $nama)
+                ->delete();
+
+            if ($db->affectedRows() === 0) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Gagal menghapus detail'
+                ]);
+            }
+
+            // =========================
+            // 3. CEK APAKAH MASIH ADA DETAIL LAIN DI DOCNO TERSEBUT
+            // =========================
+            foreach ($docnoList as $docno) {
+
+                $sisa = $db->table('sc_tmp.biaya_standart_dtl')
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->countAllResults();
+
+                // kalau tidak ada sisa detail → hapus header
+                if ($sisa == 0) {
+                    $db->table('sc_tmp.biaya_standart_mst')
+                        ->where('docno', $docno)
+                        ->where('inputby', $nama)
+                        ->delete();
+                }
+            }
+
+            $db->transCommit();
+            // setelah transCommit, sebelum return
+            $sisaDetail = $db->table('sc_tmp.biaya_standart_dtl')
+                ->where('inputby', $nama)
+                ->countAllResults();
+
+            return $this->response->setJSON([
+                'status'      => true,
+                'message'     => 'Data berhasil dihapus',
+                'sisa_detail' => $sisaDetail
+            ]);
+
+
+        } catch (\Throwable $e) {
+
+            $db->transRollback();
+
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
     public function updateBiayaStandart()
     {
         $nama = trim(session()->get('nama'));
+        $logindate = trim($this->session->get('logindate'));
 
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('production/trans/biaya_standart'));
+        }
         // =====================================
         // GET PARAMETER
         // =====================================
@@ -2129,7 +2551,7 @@ class Production extends BaseController
         $param = " and coalesce(docno,'') = '$decoded_docno'";
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
-        $data['typeform'] = 'INPUT';
+        $data['typeform'] = 'DETAIL';
         $data['userlogin'] = $nama;
         $data['docnoParam'] = $decoded_docno;
         $data['dtldata'] = $this->m_production->q_mst_biaya_standart_mst($param)->getRowArray();
@@ -2139,7 +2561,19 @@ class Production extends BaseController
     public function cancelBiayaStandart()
     {
         $nama = trim(session()->get('nama'));
+        $logindate = trim($this->session->get('logindate'));
 
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('production/trans/biaya_standart'));
+        }
         // =====================================
         // GET PARAMETER
         // =====================================
@@ -2297,6 +2731,18 @@ class Production extends BaseController
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_production->q_tmp_bom_mst($param);
         $logindate = trim($this->session->get('logindate'));
+        $periode   = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        $data['periodeTutup'] = false;
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            $data['periodeTutup'] = true;
+            $data['periodeInfo']  = [
+                'periode'    => trim($dtlPeriode['periode']),
+                'keterangan' => trim($dtlPeriode['keterangan']),
+            ];
+        }
+        /* ===================================================== */
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
@@ -2352,6 +2798,9 @@ class Production extends BaseController
             isset($datadtl['dtl_akses']['a_delete']) &&
             trim($datadtl['dtl_akses']['a_delete']) === 't';
 
+        $canApprove = isset($datadtl['dtl_akses']['a_approve1']) && trim($datadtl['dtl_akses']['a_approve1']) === 't';
+
+
         foreach ($list as $lm) {
 
             $no++;
@@ -2366,16 +2815,19 @@ class Production extends BaseController
             $detailBtn = '';
             $printBtn  = '';
             $deleteBtn = '';
+            $disapproveBtn = '';
+            $approveBtn = '';
+
 
             // =====================================
             // UPDATE
             // =====================================
-            if ($canUpdate) {
+            if ($canUpdate && trim($lm->inputby) == $nama && $status=='F') {
 
                 $updateBtn = '
                 <a class="dropdown-item bg-warning"
                    href="' . base_url('production/trans/update_bom_') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
-                   onclick="return confirm(\'Update Bill of Material : ' . $docno . '\')">
+                   onclick="return guardPeriodeTutup(event) && confirm(\'Update Bill of Material : ' . $docno . '\')">
 
                     <i class="fa fa-edit"></i> Update
 
@@ -2402,17 +2854,27 @@ class Production extends BaseController
             // =====================================
             // CANCEL
             // =====================================
-            if ($canDelete) {
+            if ($canDelete  && trim($lm->inputby) == $nama && $status=='F') {
 
                 $deleteBtn = '
                 <a class="dropdown-item"
                    style="background-color:#FF7C7CD6;"
                    href="' . base_url('production/trans/cancelBOM') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
-                   onclick="return confirm(\'Cancel Bill of Material : ' . $docno . '\')">
+                   onclick="return guardPeriodeTutup(event) && confirm(\'Cancel Bill of Material : ' . $docno . '\')">
 
                     <i class="fa fa-trash"></i> Cancel
 
                 </a>';
+            }
+
+            if (trim($status) == 'A' && $canApprove) {
+                $disapproveBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToUnreleased(\'' . trim($lm->docno) . '\');">
+                    <i class="fa fa-times-circle"></i> Unrelease</a>';
+            }
+
+            if (trim($status) == 'F' && $canApprove) {
+                $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToReleased(\'' . trim($lm->docno) . '\');">
+                    <i class="fa fa-check-circle"></i> Release</a>';
             }
 
             // =====================================
@@ -2432,6 +2894,9 @@ class Production extends BaseController
                 if ($canPrint)  $menuContent .= $printBtn;
                 if ($canView)   $menuContent .= $detailBtn;
                 if ($canDelete) $menuContent .= $deleteBtn;
+                if ($canApprove)   $menuContent .= $disapproveBtn;
+                if ($canApprove)   $menuContent .= $approveBtn;
+
             }
 
             // =====================================
@@ -2465,40 +2930,34 @@ class Production extends BaseController
             // =====================================
             // STATUS BADGE
             // =====================================
-            $badge = 'secondary';
+            $badgeClass = 'badge-primary'; // Default
 
             switch ($status) {
 
                 case 'C':
-                case 'D':
-                    $badge = 'danger';
+                    $badgeClass = 'badge-danger';
                     break;
 
                 case 'E':
-                    $badge = 'primary';
+                    $badgeClass = 'badge-warning';
                     break;
 
                 case 'F':
-                    $badge = 'success';
+                    $badgeClass = 'badge-info';
                     break;
 
-                case 'P':
-                    $badge = 'warning';
+                case 'A':
+                    $badgeClass = 'badge-success';
+                    break;
+
+                default:
+                    $badgeClass = 'badge-secondary';
                     break;
             }
 
-            $statusLabel =
-                isset($lm->nmstatus)
-                    ? $lm->nmstatus
-                    : $status;
-
-            $statusBadge =
-                '<span class="badge bg-' . $badge . ' text-dark w-100"
-                    style="font-size:14px;display:block;padding:6px 8px;">'
-
-                . $statusLabel .
-
-                '</span>';
+            $statusLabel = isset($lm->nmstatus)
+                ? $lm->nmstatus
+                : $status;
 
             // =====================================
             // ROW DATA
@@ -2507,7 +2966,10 @@ class Production extends BaseController
             $row[] = $dropdownMenu;
 
             $row[] = $lm->docno;
-            $row[] = $lm->docdate;
+             $row[] = date(
+                'd-m-Y',
+                strtotime(trim($lm->docdate))
+            );
             $row[] = $lm->idbarang_jadi;
 
             $row[] = $lm->nmbarang;
@@ -2516,9 +2978,14 @@ class Production extends BaseController
             $row[] = $lm->buildunit;
             
             
-            $row[] = '<div class="text-center">'.$statusBadge.'</div>';
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
+            $row[] = '<div class="text-center">'
+                . '<span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">'
+                . htmlspecialchars($statusLabel)
+                . '</span>'
+                . '</div>';
+
 
             // $row[] = $lm->inputby;
             // $row[] = $lm->inputdate;
@@ -2545,6 +3012,53 @@ class Production extends BaseController
         );
 
         echo $this->fiky_encryption->jDatatable($output);
+    }
+
+    public function updateStatusBOM()
+    {
+        $docno = $this->request->getPost('docno');
+        $status = $this->request->getPost('status');
+
+        if (!$docno || !$status) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Parameter tidak lengkap'
+            ]);
+        }
+
+        $db = \Config\Database::connect();
+        $builder = $db->table('sc_trx.bom_mst');
+        $builder->where('docno', $docno);
+        $info = array('status' => $status);
+        $update = $builder->update($info);
+
+        $action = '';
+        switch ($status) {
+            case 'A': $action = 'A'; break;  // APPROVED → 1 huruf
+            case 'F': $action = 'R'; break;  // REJECT → 1 huruf (R)
+            // case 'C': $action = 'C'; break;  // CANCEL → 1 huruf
+            default:
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Status tidak valid'
+                ]);
+        }
+
+        if ($update) {
+            // ===============================
+            // LOG MENGGUNAKAN FUNGSI HELPER
+            // ===============================
+            $this->m_global->insertlogtrans(
+                $docno,
+                $action,           // A / R / C (1 huruf)
+                'I.R',             // kode module dari menuprg
+                'I.R.A.3'          // kode menu untuk BOM
+            );
+
+            return $this->response->setJSON(['success' => true]);
+        } else {
+            return $this->response->setJSON(['success' => false, 'message' => 'Gagal update status']);
+        }
     }
 
     function add_bom(){
@@ -2589,6 +3103,19 @@ class Production extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_production->q_tmp_bom_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
+        
+         /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('production/trans/bom'));
+        }
+        // =================================s
 
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
@@ -2605,7 +3132,7 @@ class Production extends BaseController
     function showing_tmp_bom_mst(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno='$docno' and inputby='$nama'";
         $data = $this->m_production->q_tmp_bom_mst($param);
         $output = array(
             'status' => true,
@@ -2628,6 +3155,65 @@ class Production extends BaseController
             'incomplete_getResults' => false,
         );
         echo $this->fiky_encryption->jDatatable($output);
+    }
+
+     public function getBranchInfo_bom()
+    {
+        $idbranch = trim($this->request->getGet('idbranch'));
+
+        $row = $this->db->table('sc_mst.branchjob')
+            ->select('nmbranch')
+            ->where('idbranch', $idbranch)
+            ->get()
+            ->getRowArray();
+
+        if (!$row) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Cabang tidak ditemukan'
+            ]);
+        }
+
+        // mapping nmbranch → kode suffix
+        $map = [
+            'PT JATIM TAMAN STEEL MFG' => 'PT',
+            'PLANT I'                 => 'PA',
+            'PLANT II'                => 'PB',
+        ];
+
+        $kodeSuffix = $map[trim($row['nmbranch'])] ?? '';
+
+        if ($kodeSuffix === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Mapping cabang belum diset'
+            ]);
+        }
+
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray(); // Ini mengembalikan array of objects/arrays
+
+
+        // Karena hanya 1 row, ambil index ke-0
+        $prefix = trim($konfigurasiUmum[0]['bom']) ?? '';
+        $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
+        $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
+
+        $logindate = $this->session->get('logindate'); // dd-mm-yyyy
+        $infix = date('ym', strtotime($logindate));
+
+        return $this->response->setJSON([
+            'success'      => true,
+            'kode_suffix'  => $kodeSuffix,
+            'infix'        => $infix,
+            'logindate'     => $logindate,
+            'prefix'        => $prefix,
+            'konfigurasi_umum' => $konfigurasiUmum,
+            'currcode'      => $currcode,
+            'idtax'         => $idtax,
+        ]);
     }
 
     public function getNextSuffix_bom_mst()
@@ -2739,7 +3325,7 @@ class Production extends BaseController
         // =========================
 
         if ($doctype_detail == 'MATERIAL') {
-
+            $uniqueid = $this->request->getPost('uniqueidMaterial');
             $idbarang    = strtoupper(trim($this->request->getPost('idbarangMaterial')));
             $nmbarang    = strtoupper(trim($this->request->getPost('nmbarangmaterial')));
             $unit        = strtoupper(trim($this->request->getPost('unitMaterial')));
@@ -2749,7 +3335,7 @@ class Production extends BaseController
             $description = strtoupper(trim($this->request->getPost('description_detail_material')));
 
         } elseif ($doctype_detail == 'COST') {
-
+            $uniqueid = $this->request->getPost('uniqueidCost');
             $idbarang    = strtoupper(trim($this->request->getPost('idbarangCost')));
             $nmbarang    = strtoupper(trim($this->request->getPost('nmbarangcost')));
             $unit        = strtoupper(trim($this->request->getPost('unitCost')));
@@ -2759,7 +3345,7 @@ class Production extends BaseController
             $description = strtoupper(trim($this->request->getPost('description_detail_cost')));
 
         } elseif ($doctype_detail == 'WIP') {
-
+            $uniqueid = $this->request->getPost('uniqueidWip');
             $idbarang    = strtoupper(trim($this->request->getPost('idbarangWip')));
             $nmbarang    = strtoupper(trim($this->request->getPost('nmbarangwip')));
             $unit        = strtoupper(trim($this->request->getPost('unitWip')));
@@ -2798,10 +3384,12 @@ class Production extends BaseController
             ->where('idbarang', $idbarang)
             ->where('nmbarang', $nmbarang)
             ->where('unit', $unit)
-            ->where('description', $description);
+            ->where('inputby', $nama)
+            // ->where('description', $description)
+            ;
 
-        if ($idurut) {
-            $builderDuplicate->where('idurut !=', $idurut);
+        if ($uniqueid) {
+            $builderDuplicate->where('uniqueid !=', $uniqueid);
         }
 
         $duplicate = $builderDuplicate->countAllResults();
@@ -2821,7 +3409,9 @@ class Production extends BaseController
         if ($idurut) {
 
             $updateDetail = $builderDetail
-                ->where('idurut', $idurut)
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->where('uniqueid', $uniqueid)
                 ->update([
                     'doctype_detail' => $doctype_detail,
                     'idbarang'       => $idbarang,
@@ -2873,11 +3463,11 @@ class Production extends BaseController
         $totals = $db->query("
             SELECT
                 COALESCE(SUM(CASE WHEN TRIM(doctype_detail) = 'MATERIAL' THEN totalcost ELSE 0 END),0) AS ttlmaterial,
-                COALESCE(SUM(CASE WHEN TRIM(doctype_detail) = 'COST' THEN totalcost ELSE 0 END),0) AS ttlcost,
-                COALESCE(SUM(CASE WHEN TRIM(doctype_detail) = 'WIP' THEN totalcost ELSE 0 END),0) AS ttlwip
+                COALESCE(SUM(CASE WHEN TRIM(doctype_detail) = 'COST'     THEN totalcost ELSE 0 END),0) AS ttlcost,
+                COALESCE(SUM(CASE WHEN TRIM(doctype_detail) = 'WIP'      THEN totalcost ELSE 0 END),0) AS ttlwip
             FROM sc_tmp.bom_dtl
-            WHERE docno = ?
-        ", [$docno])->getRowArray();
+            WHERE docno = ? AND inputby = ?
+        ", [$docno, $nama])->getRowArray();
 
         $ttlmaterial = (float)$totals['ttlmaterial'];
         $ttlcost     = (float)$totals['ttlcost'];
@@ -2886,6 +3476,7 @@ class Production extends BaseController
 
         $db->table('sc_tmp.bom_mst')
             ->where('docno', $docno)
+            ->where('inputby', $nama)
             ->update([
                 'ttlmaterial' => $ttlmaterial,
                 'ttlcost'     => $ttlcost,
@@ -2917,6 +3508,9 @@ class Production extends BaseController
         $nama=trim($this->session->get('nama'));
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_production->q_tmp_bom_mst($param);
+        if(empty($dtl->getRowArray())){
+            return redirect()->to(base_url('production/trans/bom'));
+        }
         // if(isEmpty($dtl->getRowArray()['status'])){
         //     return redirect()->to(base_url('production/trans/pp'));
         // }
@@ -2970,9 +3564,9 @@ class Production extends BaseController
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 5, '.', ',') . '</div>';
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 5, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
@@ -3000,9 +3594,9 @@ class Production extends BaseController
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 5, '.', ',') . '</div>';
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 5, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
@@ -3031,9 +3625,9 @@ class Production extends BaseController
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 5, '.', ',') . '</div>';
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 5, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
@@ -3061,9 +3655,9 @@ class Production extends BaseController
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 5, '.', ',') . '</div>';
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 5, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
@@ -3093,9 +3687,9 @@ class Production extends BaseController
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 5, '.', ',') . '</div>';
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 5, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
@@ -3123,9 +3717,9 @@ class Production extends BaseController
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 5, '.', ',') . '</div>';
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 5, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
@@ -3308,8 +3902,8 @@ class Production extends BaseController
                     COALESCE(SUM(CASE WHEN TRIM(doctype_detail) = 'COST' THEN totalcost ELSE 0 END),0) AS ttlcost,
                     COALESCE(SUM(CASE WHEN TRIM(doctype_detail) = 'WIP' THEN totalcost ELSE 0 END),0) AS ttlwip
                 FROM sc_tmp.bom_dtl
-                WHERE docno = ?
-            ", [$docno])->getRowArray();
+                WHERE docno = ? AND inputby = ?
+            ", [$docno, $nama])->getRowArray();
 
             $ttlmaterial = (float)$totals['ttlmaterial'];
             $ttlcost     = (float)$totals['ttlcost'];
@@ -3318,6 +3912,7 @@ class Production extends BaseController
 
             $db->table('sc_tmp.bom_mst')
                 ->where('docno', $docno)
+                ->where('inputby', $nama)
                 ->update([
                     'ttlmaterial' => $ttlmaterial,
                     'ttlcost'     => $ttlcost,
@@ -3348,7 +3943,19 @@ class Production extends BaseController
     public function update_bom_()
     {
         $nama = trim(session()->get('nama'));
+        $logindate = trim($this->session->get('logindate'));
 
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('production/trans/bom'));
+        }
         // =====================================
         // GET PARAMETER
         // =====================================
@@ -3507,7 +4114,19 @@ class Production extends BaseController
     public function cancel_bom_()
     {
         $nama = trim(session()->get('nama'));
+        $logindate = trim($this->session->get('logindate'));
 
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('production/trans/bom'));
+        }
         // =====================================
         // GET PARAMETER
         // =====================================
@@ -3667,6 +4286,18 @@ class Production extends BaseController
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_production->q_tmp_workingorder_mst($param);
         $logindate = trim($this->session->get('logindate'));
+        $periode   = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        $data['periodeTutup'] = false;
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            $data['periodeTutup'] = true;
+            $data['periodeInfo']  = [
+                'periode'    => trim($dtlPeriode['periode']),
+                'keterangan' => trim($dtlPeriode['keterangan']),
+            ];
+        }
+        /* ===================================================== */
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
@@ -3740,12 +4371,12 @@ class Production extends BaseController
             // =====================================
             // UPDATE
             // =====================================
-            if ($canUpdate) {
+            if ($canUpdate  && trim($lm->inputby) == $nama && $status=='F') {
 
                 $updateBtn = '
                 <a class="dropdown-item bg-warning"
                    href="' . base_url('production/trans/update_workingorder_') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
-                   onclick="return confirm(\'Update Working Order : ' . $docno . '\')">
+                   onclick="return guardPeriodeTutup(event) && confirm(\'Update Working Order : ' . $docno . '\')">
 
                     <i class="fa fa-edit"></i> Update
 
@@ -3772,13 +4403,13 @@ class Production extends BaseController
             // =====================================
             // CANCEL
             // =====================================
-            if ($canDelete) {
+            if ($canDelete  && trim($lm->inputby) == $nama && $status=='F') {
 
                 $deleteBtn = '
                 <a class="dropdown-item"
                    style="background-color:#FF7C7CD6;"
                    href="' . base_url('production/trans/cancelWO') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
-                   onclick="return confirm(\'Cancel Working Order : ' . $docno . '\')">
+                   onclick="return guardPeriodeTutup(event) && confirm(\'Cancel Working Order : ' . $docno . '\')">
 
                     <i class="fa fa-trash"></i> Cancel
 
@@ -3835,40 +4466,30 @@ class Production extends BaseController
             // =====================================
             // STATUS BADGE
             // =====================================
-            $badge = 'secondary';
+            $badgeClass = 'badge-primary'; // Default
 
             switch ($status) {
 
                 case 'C':
-                case 'D':
-                    $badge = 'danger';
+                    $badgeClass = 'badge-danger';
                     break;
 
                 case 'E':
-                    $badge = 'primary';
+                    $badgeClass = 'badge-warning';
                     break;
 
                 case 'F':
-                    $badge = 'success';
+                    $badgeClass = 'badge-info';
                     break;
 
-                case 'P':
-                    $badge = 'warning';
+                default:
+                    $badgeClass = 'badge-secondary';
                     break;
             }
 
-            $statusLabel =
-                isset($lm->nmstatus)
-                    ? $lm->nmstatus
-                    : $status;
-
-            $statusBadge =
-                '<span class="badge bg-' . $badge . ' text-dark w-100"
-                    style="font-size:14px;display:block;padding:6px 8px;">'
-
-                . $statusLabel .
-
-                '</span>';
+            $statusLabel = isset($lm->nmstatus)
+                ? $lm->nmstatus
+                : $status;
 
             // =====================================
             // ROW DATA
@@ -3877,7 +4498,10 @@ class Production extends BaseController
             $row[] = $dropdownMenu;
 
             $row[] = $lm->docno;
-            $row[] = $lm->docdate;
+             $row[] = date(
+                'd-m-Y',
+                strtotime(trim($lm->docdate))
+            );
             $row[] = $lm->nmcustomer;
 
             $row[] = $lm->alamatcust;
@@ -3887,9 +4511,13 @@ class Production extends BaseController
             $row[] = $lm->docdatefinish;
             
             
-            $row[] = '<div class="text-center">'.$statusBadge.'</div>';
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
+            $row[] = '<div class="text-center">'
+                . '<span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">'
+                . htmlspecialchars($statusLabel)
+                . '</span>'
+                . '</div>';
 
             // $row[] = $lm->inputby;
             // $row[] = $lm->inputdate;
@@ -3960,6 +4588,19 @@ class Production extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_production->q_tmp_workingorder_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
+        
+         /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('production/trans/workingorder'));
+        }
+        // =================================s
 
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
@@ -3976,7 +4617,7 @@ class Production extends BaseController
     function showing_tmp_workingorder_mst(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno='$docno' and inputby='$nama'";
         $data = $this->m_production->q_tmp_workingorder_mst($param);
         $output = array(
             'status' => true,
@@ -3999,6 +4640,65 @@ class Production extends BaseController
             'incomplete_getResults' => false,
         );
         echo $this->fiky_encryption->jDatatable($output);
+    }
+
+     public function getBranchInfo_workingorder()
+    {
+        $idbranch = trim($this->request->getGet('idbranch'));
+
+        $row = $this->db->table('sc_mst.branchjob')
+            ->select('nmbranch')
+            ->where('idbranch', $idbranch)
+            ->get()
+            ->getRowArray();
+
+        if (!$row) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Cabang tidak ditemukan'
+            ]);
+        }
+
+        // mapping nmbranch → kode suffix
+        $map = [
+            'PT JATIM TAMAN STEEL MFG' => 'PT',
+            'PLANT I'                 => 'PA',
+            'PLANT II'                => 'PB',
+        ];
+
+        $kodeSuffix = $map[trim($row['nmbranch'])] ?? '';
+
+        if ($kodeSuffix === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Mapping cabang belum diset'
+            ]);
+        }
+
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray(); // Ini mengembalikan array of objects/arrays
+
+
+        // Karena hanya 1 row, ambil index ke-0
+        $prefix = trim($konfigurasiUmum[0]['workorder']) ?? '';
+        $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
+        $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
+
+        $logindate = $this->session->get('logindate'); // dd-mm-yyyy
+        $infix = date('ym', strtotime($logindate));
+
+        return $this->response->setJSON([
+            'success'      => true,
+            'kode_suffix'  => $kodeSuffix,
+            'infix'        => $infix,
+            'logindate'     => $logindate,
+            'prefix'        => $prefix,
+            'konfigurasi_umum' => $konfigurasiUmum,
+            'currcode'      => $currcode,
+            'idtax'         => $idtax,
+        ]);
     }
 
     public function getNextSuffix_workingorder_mst()
@@ -4082,7 +4782,7 @@ class Production extends BaseController
                 'cabang'     => trim($this->request->getPost('cabang')),
                 'docref'     => trim($this->request->getPost('docref')),
                 'docdate'    => trim($this->request->getPost('docdate')),
-                'docdatefinish'    => trim($this->request->getPost('docdatefinish')),
+                'docdatefinish'    => ($this->request->getPost('docdatefinish')),
                 'kdcustomer'     => strtoupper($kdcustomer),
                 'nmcustomer'     => strtoupper($nmcustomer),
                 'alamatcustomer' => strtoupper($alamatcustomer),
@@ -4156,7 +4856,7 @@ class Production extends BaseController
         $insertBomMst = $bomMst;
 
         unset($insertBomMst['id']);
-        unset($insertBomMst['id']);
+        unset($insertBomMst['idurut']);
         unset($insertBomMst['dari_bagian']);
         unset($insertBomMst['inactive']);
         
@@ -4219,6 +4919,9 @@ class Production extends BaseController
         $nama=trim($this->session->get('nama'));
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_production->q_tmp_workingorder_mst($param);
+         if(empty($dtl->getRowArray())){
+            return redirect()->to(base_url('production/trans/workingorder'));
+        }
         // if(isEmpty($dtl->getRowArray()['status'])){
         //     return redirect()->to(base_url('production/trans/pp'));
         // }
@@ -4864,7 +5567,19 @@ class Production extends BaseController
     public function update_workingorder_()
     {
         $nama = trim(session()->get('nama'));
+        $logindate = trim($this->session->get('logindate'));
 
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('production/trans/workingorder'));
+        }
         // =====================================
         // GET PARAMETER
         // =====================================
@@ -5023,7 +5738,19 @@ class Production extends BaseController
     public function cancel_workingorder_()
     {
         $nama = trim(session()->get('nama'));
+        $logindate = trim($this->session->get('logindate'));
 
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('production/trans/workingorder'));
+        }
         // =====================================
         // GET PARAMETER
         // =====================================
@@ -5184,6 +5911,18 @@ class Production extends BaseController
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_production->q_woe_master_temp($param);
         $logindate = trim($this->session->get('logindate'));
+        $periode   = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        $data['periodeTutup'] = false;
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            $data['periodeTutup'] = true;
+            $data['periodeInfo']  = [
+                'periode'    => trim($dtlPeriode['periode']),
+                'keterangan' => trim($dtlPeriode['keterangan']),
+            ];
+        }
+        /* ===================================================== */
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
@@ -5298,7 +6037,7 @@ class Production extends BaseController
                 $updateBtn = '
                 <a class="dropdown-item bg-warning" 
                     href="' . base_url('production/trans/updateWOE') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Update This Work Order Execution : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Update This Work Order Execution : ' . $docno . '\')">
                     <i class="fa fa-edit"></i> Update Work Order Execution 
                 </a>';
             }
@@ -5318,7 +6057,7 @@ class Production extends BaseController
                 <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
                     href="' . base_url('production/trans/show_po') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'Print Work Order Execution : ' . $docno . '\')">
+                    onclick="return guardPeriodeTutup(event) && confirm(\'Print Work Order Execution : ' . $docno . '\')">
                     <i class="fa fa-print"></i> Print Work Order Execution 
                 </a>';
             }
@@ -5384,7 +6123,7 @@ class Production extends BaseController
 
             $row[] = $lm->docno;
             $row[] = date(
-                'd/m/Y',
+                'd-m-Y',
                 strtotime(trim($lm->docdate))
             );
             $status = $lm->status_desc ?? $lm->status;
@@ -5408,14 +6147,14 @@ class Production extends BaseController
                     break;
             }
 
-            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
-
+            
             $row[] = $lm->bagian;
             $row[] = $lm->idbarang_jadi;
             $row[] = $lm->batchno;
             // $row[] = $lm->buildfor;
             $row[] = '<div class="ratakanan">'. number_format($lm->buildfor, 0, '.', ',') . '</div>';
             $row[] = $lm->keterangan;
+            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
             
 
             $data[] = $row;
@@ -5436,6 +6175,9 @@ class Production extends BaseController
         $nama=trim($this->session->get('nama'));
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_production->q_woe_master_temp($param);
+         if(empty($dtl->getRowArray())){
+            return redirect()->to(base_url('production/trans/woe'));
+        }
         // if(isEmpty($dtl->getRowArray()['status'])){
         //     return redirect()->to(base_url('production/trans/pp'));
         // }
@@ -5512,6 +6254,19 @@ class Production extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_production->q_woe_master_temp($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
+        
+         /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('production/trans/woe'));
+        }
+        // =================================s
 
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
@@ -5559,13 +6314,29 @@ class Production extends BaseController
             ]);
         }
 
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray(); // Ini mengembalikan array of objects/arrays
+
+
+        // Karena hanya 1 row, ambil index ke-0
+        $prefix = trim($konfigurasiUmum[0]['workorderexecution']) ?? '';
+        $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
+        $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
+
         $logindate = $this->session->get('logindate'); // dd-mm-yyyy
         $infix = date('ym', strtotime($logindate));
 
         return $this->response->setJSON([
             'success'      => true,
             'kode_suffix'  => $kodeSuffix,
-            'infix'        => $infix
+            'infix'        => $infix,
+            'logindate'     => $logindate,
+            'prefix'        => $prefix,
+            'konfigurasi_umum' => $konfigurasiUmum,
+            'currcode'      => $currcode,
+            'idtax'         => $idtax,
         ]);
     }
 
@@ -5741,7 +6512,11 @@ class Production extends BaseController
             $idgudang = strtoupper($this->request->getPost('idgudang'));
             $idspec = strtoupper($this->request->getPost('idspec'));
 
-            $builderDetail->where('uniqueid', $uniqueid)->update([
+            $builderDetail
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->where('uniqueid', $uniqueid)
+            ->update([
                 'qty'          => $qty,
                 'qtybonus'     => $qtybonus,
                 'harga'        => $harga,
@@ -5807,6 +6582,7 @@ class Production extends BaseController
 
                 $duplicate = $builderDetail
                     ->where('docno', $docno)
+                    ->where('inputby', $nama)
                     ->where('uniqueid', $row->uniqueid)
                     ->countAllResults();
 
@@ -5841,13 +6617,16 @@ class Production extends BaseController
                         : "Semua item sudah ada sebelumnya";
         }
 
-        $woeHeader = $builderHeader->select('idtax')->where('docno', $docno)->get()->getRowArray();
+        $woeHeader = $builderHeader->select('idtax')
+        ->where('inputby', $nama)
+        ->where('docno', $docno)->get()->getRowArray();
         $idtax = $woeHeader['idtax'] ?? '';
         
         // Hitung total DPP (sum nilai dari po_dtl)
         $builderTotalDpp = $db->table('sc_tmp.woe_dtl');
         $totalDpp = $builderTotalDpp->select('COALESCE(SUM(nilai), 0) as total_dpp')
             ->where('docno', $docno)
+            ->where('inputby', $nama)
             ->get()
             ->getRowArray();
         
@@ -5874,7 +6653,9 @@ class Production extends BaseController
         $total = $dpp + $jumlahPajak;
         
         // Update header WOE
-        $builderHeader->where('docno', $docno)->update([
+        $builderHeader->where('docno', $docno)
+        ->where('inputby', $nama)
+        ->update([
             'dpp' => number_format($dpp, 2, '.', ''),
             'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
             'total' => number_format($total, 2, '.', ''),
@@ -5926,6 +6707,19 @@ class Production extends BaseController
         $param = " and coalesce(docno,'')='$docno'";
         $dtl = $this->m_production->q_woe_master($param)->getRowArray();
         $status = trim($dtl['status']);
+         $logindate = trim($this->session->get('logindate'));
+
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('production/trans/woe'));
+        }
 
         if ($status === 'F' || $status === 'P') {
             // Update hanya status di tabel sc_trx.standart_usage_mst
@@ -5962,7 +6756,7 @@ class Production extends BaseController
     function showing_woetemp(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno='$docno' and inputby='$nama'";
         $data = $this->m_production->q_woe_master_temp($param);
         $output = array(
             'status' => true,
@@ -6003,7 +6797,7 @@ class Production extends BaseController
         
         // Ambil semua data dari POST
         $cabang = trim($this->request->getPost('cabang'));
-        $docdate = trim($this->request->getPost('docdate'));
+        $docdate = date('Y-m-d', strtotime(trim($this->request->getPost('docdate'))));
         $pemohon = trim($this->request->getPost('pemohon'));
         $bagian = strtoupper($this->request->getPost('bagian'));
         $wono = strtoupper($this->request->getPost('wono'));
@@ -6311,6 +7105,19 @@ class Production extends BaseController
         $dtl = $this->m_production->q_tmp_materialrelease_mst($param);
         $logindate = trim($this->session->get('logindate'));
 
+        $periode   = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        $data['periodeTutup'] = false;
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            $data['periodeTutup'] = true;
+            $data['periodeInfo']  = [
+                'periode'    => trim($dtlPeriode['periode']),
+                'keterangan' => trim($dtlPeriode['keterangan']),
+            ];
+        }
+        /* ===================================================== */
+
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
             $urlclear = base_url('production/trans/clear_materialrelease_Tmp');
@@ -6383,12 +7190,12 @@ class Production extends BaseController
             // =====================================
             // UPDATE
             // =====================================
-            if ($canUpdate) {
+            if ($canUpdate && trim($lm->inputby) == $nama && $status=='F') {
 
                 $updateBtn = '
                 <a class="dropdown-item bg-warning"
                    href="' . base_url('production/trans/update_materialrelease_') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
-                   onclick="return confirm(\'Update Material Release : ' . $docno . '\')">
+                   onclick="return guardPeriodeTutup(event) && confirm(\'Update Material Release : ' . $docno . '\')">
 
                     <i class="fa fa-edit"></i> Update
 
@@ -6415,13 +7222,13 @@ class Production extends BaseController
             // =====================================
             // CANCEL
             // =====================================
-            if ($canDelete) {
+            if ($canDelete  && trim($lm->inputby) == $nama && $status=='F') {
 
                 $deleteBtn = '
                 <a class="dropdown-item"
                    style="background-color:#FF7C7CD6;"
                    href="' . base_url('production/trans/cancelMaterial Release') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
-                   onclick="return confirm(\'Cancel Material Release : ' . $docno . '\')">
+                   onclick="return guardPeriodeTutup(event) && confirm(\'Cancel Material Release : ' . $docno . '\')">
 
                     <i class="fa fa-trash"></i> Cancel
 
@@ -6478,40 +7285,34 @@ class Production extends BaseController
             // =====================================
             // STATUS BADGE
             // =====================================
-            $badge = 'secondary';
+             $badgeClass = 'badge-primary'; // Default
 
             switch ($status) {
 
                 case 'C':
-                case 'D':
-                    $badge = 'danger';
+                    $badgeClass = 'badge-danger';
                     break;
 
                 case 'E':
-                    $badge = 'primary';
+                    $badgeClass = 'badge-warning';
                     break;
 
                 case 'F':
-                    $badge = 'success';
+                    $badgeClass = 'badge-info';
                     break;
 
-                case 'P':
-                    $badge = 'warning';
+                case 'A':
+                    $badgeClass = 'badge-success';
+                    break;
+
+                default:
+                    $badgeClass = 'badge-secondary';
                     break;
             }
 
-            $statusLabel =
-                isset($lm->nmstatus)
-                    ? $lm->nmstatus
-                    : $status;
-
-            $statusBadge =
-                '<span class="badge bg-' . $badge . ' text-dark w-100"
-                    style="font-size:14px;display:block;padding:6px 8px;">'
-
-                . $statusLabel .
-
-                '</span>';
+            $statusLabel = isset($lm->nmstatus)
+                ? $lm->nmstatus
+                : $status;
 
             // =====================================
             // ROW DATA
@@ -6520,7 +7321,10 @@ class Production extends BaseController
             $row[] = $dropdownMenu;
 
             $row[] = $lm->docno;
-            $row[] = $lm->docdate;
+             $row[] = date(
+                'd-m-Y',
+                strtotime(trim($lm->docdate))
+            );
             $row[] = $lm->idbarang_jadi;
 
             $row[] = $lm->nmbarang;
@@ -6529,9 +7333,13 @@ class Production extends BaseController
             $row[] = $lm->buildunit;
             
             
-            $row[] = '<div class="text-center">'.$statusBadge.'</div>';
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
+             $row[] = '<div class="text-center">'
+                . '<span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">'
+                . htmlspecialchars($statusLabel)
+                . '</span>'
+                . '</div>';
 
             // $row[] = $lm->inputby;
             // $row[] = $lm->inputdate;
@@ -6603,6 +7411,19 @@ class Production extends BaseController
         $data['mst'] = $this->m_production->q_tmp_materialrelease_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
 
+         /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('production/trans/materialrelease'));
+        }
+        // =================================s
+
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
         $param = " and trim(inputby)='$nama'";
@@ -6618,7 +7439,7 @@ class Production extends BaseController
     function showing_tmp_materialrelease_mst(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno='$docno' and inputby='$nama'";
         $data = $this->m_production->q_tmp_materialrelease_mst($param);
         $output = array(
             'status' => true,
@@ -6641,6 +7462,65 @@ class Production extends BaseController
             'incomplete_getResults' => false,
         );
         echo $this->fiky_encryption->jDatatable($output);
+    }
+
+    public function getBranchInfo_materialrelease()
+    {
+        $idbranch = trim($this->request->getGet('idbranch'));
+
+        $row = $this->db->table('sc_mst.branchjob')
+            ->select('nmbranch')
+            ->where('idbranch', $idbranch)
+            ->get()
+            ->getRowArray();
+
+        if (!$row) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Cabang tidak ditemukan'
+            ]);
+        }
+
+        // mapping nmbranch â†’ kode suffix
+        $map = [
+            'PT JATIM TAMAN STEEL MFG' => 'PT',
+            'PLANT I'                 => 'PA',
+            'PLANT II'                => 'PB',
+        ];
+
+        $kodeSuffix = $map[trim($row['nmbranch'])] ?? '';
+
+        if ($kodeSuffix === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Mapping cabang belum diset'
+            ]);
+        }
+
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray(); // Ini mengembalikan array of objects/arrays
+
+
+        // Karena hanya 1 row, ambil index ke-0
+        $prefix = trim($konfigurasiUmum[0]['materialrelease']) ?? '';
+        $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
+        $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
+
+        $logindate = $this->session->get('logindate'); // dd-mm-yyyy
+        $infix = date('ym', strtotime($logindate));
+
+        return $this->response->setJSON([
+            'success'      => true,
+            'kode_suffix'  => $kodeSuffix,
+            'infix'        => $infix,
+            'logindate'     => $logindate,
+            'prefix'        => $prefix,
+            'konfigurasi_umum' => $konfigurasiUmum,
+            'currcode'      => $currcode,
+            'idtax'         => $idtax,
+        ]);
     }
 
     public function getNextSuffix_materialrelease_mst()
@@ -6794,6 +7674,7 @@ class Production extends BaseController
         if (!empty($oldWoeno)) {
             $delete = $builderDetail
                 ->where('docno', $docno)
+                ->where('inputby', $nama)
                 ->where('docref', $oldWoeno)
                 ->delete();
 
@@ -6962,6 +7843,7 @@ class Production extends BaseController
         // =========================
         // AMBIL DATA DETAIL
         // =========================
+        $uniqueid = $this->request->getPost('uniqueid'); // HAPUS strtoupper, biarkan apa adanya
 
         // $idbarang    = strtoupper(trim($this->request->getPost('idbarang')));
         $nmbarang    = strtoupper(trim($this->request->getPost('nmbarang')));
@@ -7012,10 +7894,11 @@ class Production extends BaseController
             ->where('idbarang', $idbarang)
             ->where('nmbarang', $nmbarang)
             ->where('unit', $unit)
+            ->where('inputby', $nama)
             ->where('description', $description);
 
-        if ($idurut) {
-            $builderDuplicate->where('idurut !=', $idurut);
+        if ($uniqueid) {
+            $builderDuplicate->where('uniqueid !=', $uniqueid);
         }
 
         $duplicate = $builderDuplicate->countAllResults();
@@ -7035,7 +7918,9 @@ class Production extends BaseController
         if ($idurut) {
 
             $updateDetail = $builderDetail
-                ->where('idurut', $idurut)
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->where('uniqueid', $uniqueid)
                 ->update([
                     // 'doctype_detail' => $doctype_detail,
                     'idbarang'       => $idbarang,
@@ -7123,6 +8008,9 @@ class Production extends BaseController
         $nama=trim($this->session->get('nama'));
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_production->q_tmp_materialrelease_mst($param);
+         if(empty($dtl->getRowArray())){
+            return redirect()->to(base_url('production/trans/materialrelease'));
+        }
         // if(isEmpty($dtl->getRowArray()['status'])){
         //     return redirect()->to(base_url('production/trans/pp'));
         // }
@@ -7172,7 +8060,7 @@ class Production extends BaseController
             $no++;
             $row = array();
             // $row[] = $no;
-            $row[] = $lm->idurut;
+            $row[] = $lm->uniqueid;
             //item
             $row[] = '
             <div class="text-center">
@@ -7331,7 +8219,7 @@ class Production extends BaseController
     {
         $id = $this->request->getGet('id');
 
-        $data = $this->m_production->q_tmp_materialrelease_dtl(" and idurut='$id'");
+        $data = $this->m_production->q_tmp_materialrelease_dtl(" and uniqueid='$id'");
 
         if (!$data) {
             return $this->response->setJSON([
@@ -7380,7 +8268,7 @@ class Production extends BaseController
 
             $row = $db->table('sc_tmp.materialrelease_dtl')
                 ->select('docno')
-                ->where('idurut', $firstId)
+                ->where('uniqueid', $firstId)
                 ->get()
                 ->getRow();
 
@@ -7394,7 +8282,7 @@ class Production extends BaseController
             $docno = $row->docno;
 
             $builder
-                ->whereIn('idurut', $ids)
+                ->whereIn('uniqueid', $ids)
                 ->delete();
 
             if ($db->affectedRows() === 0) {
@@ -7452,7 +8340,19 @@ class Production extends BaseController
     public function update_materialrelease_()
     {
         $nama = trim(session()->get('nama'));
+        $logindate = trim($this->session->get('logindate'));
 
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('production/trans/materialrelease'));
+        }
         // =====================================
         // GET PARAMETER
         // =====================================
@@ -7611,7 +8511,19 @@ class Production extends BaseController
     public function cancel_materialrelease_()
     {
         $nama = trim(session()->get('nama'));
+        $logindate = trim($this->session->get('logindate'));
 
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('production/trans/materialrelease'));
+        }
         // =====================================
         // GET PARAMETER
         // =====================================
@@ -7633,7 +8545,7 @@ class Production extends BaseController
         // GET DATA
         // =====================================
         $dtl = $this->db
-            ->table('sc_mst.materialrelease_mst')
+            ->table('sc_trx.materialrelease_mst')
             ->where('docno', trim($docno))
             ->get()
             ->getRowArray();
@@ -7677,7 +8589,7 @@ class Production extends BaseController
 // UPDATE MASTER
 // =====================================
             $this->db
-                ->table('sc_mst.materialrelease_mst')
+                ->table('sc_trx.materialrelease_mst')
                 ->where('docno', trim($docno))
                 ->update($info);
 
@@ -7685,7 +8597,7 @@ class Production extends BaseController
 // UPDATE DETAIL
 // =====================================
             $this->db
-                ->table('sc_mst.materialrelease_dtl')
+                ->table('sc_trx.materialrelease_dtl')
                 ->where('docno', trim($docno))
                 ->update($info);
 
@@ -7784,6 +8696,19 @@ class Production extends BaseController
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_production->q_tmp_penerimaanbp_mst($param);
         $logindate = trim($this->session->get('logindate'));
+        
+        $periode   = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        $data['periodeTutup'] = false;
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            $data['periodeTutup'] = true;
+            $data['periodeInfo']  = [
+                'periode'    => trim($dtlPeriode['periode']),
+                'keterangan' => trim($dtlPeriode['keterangan']),
+            ];
+        }
+        /* ===================================================== */
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
@@ -7857,12 +8782,12 @@ class Production extends BaseController
             // =====================================
             // UPDATE
             // =====================================
-            if ($canUpdate) {
+            if ($canUpdate  && trim($lm->inputby) == $nama && $status=='F') {
 
                 $updateBtn = '
                 <a class="dropdown-item bg-warning"
                    href="' . base_url('production/trans/update_penerimaanbp_') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
-                   onclick="return confirm(\'Update Penerimaan Barang Produksi : ' . $docno . '\')">
+                   onclick="return guardPeriodeTutup(event) && confirm(\'Update Penerimaan Barang Produksi : ' . $docno . '\')">
 
                     <i class="fa fa-edit"></i> Update
 
@@ -7889,13 +8814,13 @@ class Production extends BaseController
             // =====================================
             // CANCEL
             // =====================================
-            if ($canDelete) {
+            if ($canDelete && trim($lm->inputby) == $nama && $status=='F') {
 
                 $deleteBtn = '
                 <a class="dropdown-item"
                    style="background-color:#FF7C7CD6;"
                    href="' . base_url('production/trans/cancelPenerimaan Barang Produksi') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
-                   onclick="return confirm(\'Cancel Penerimaan Barang Produksi : ' . $docno . '\')">
+                   onclick="return guardPeriodeTutup(event) && confirm(\'Cancel Penerimaan Barang Produksi : ' . $docno . '\')">
 
                     <i class="fa fa-trash"></i> Cancel
 
@@ -7952,40 +8877,34 @@ class Production extends BaseController
             // =====================================
             // STATUS BADGE
             // =====================================
-            $badge = 'secondary';
+            $badgeClass = 'badge-primary'; // Default
 
             switch ($status) {
 
                 case 'C':
-                case 'D':
-                    $badge = 'danger';
+                    $badgeClass = 'badge-danger';
                     break;
 
                 case 'E':
-                    $badge = 'primary';
+                    $badgeClass = 'badge-warning';
                     break;
 
                 case 'F':
-                    $badge = 'success';
+                    $badgeClass = 'badge-info';
                     break;
 
-                case 'P':
-                    $badge = 'warning';
+                case 'A':
+                    $badgeClass = 'badge-success';
+                    break;
+
+                default:
+                    $badgeClass = 'badge-secondary';
                     break;
             }
 
-            $statusLabel =
-                isset($lm->nmstatus)
-                    ? $lm->nmstatus
-                    : $status;
-
-            $statusBadge =
-                '<span class="badge bg-' . $badge . ' text-dark w-100"
-                    style="font-size:14px;display:block;padding:6px 8px;">'
-
-                . $statusLabel .
-
-                '</span>';
+            $statusLabel = isset($lm->nmstatus)
+                ? $lm->nmstatus
+                : $status;
 
             // =====================================
             // ROW DATA
@@ -7994,7 +8913,10 @@ class Production extends BaseController
             $row[] = $dropdownMenu;
 
             $row[] = $lm->docno;
-            $row[] = $lm->docdate;
+             $row[] = date(
+                'd-m-Y',
+                strtotime(trim($lm->docdate))
+            );
             $row[] = $lm->idbarang_jadi;
 
             $row[] = $lm->nmbarang;
@@ -8003,9 +8925,13 @@ class Production extends BaseController
             $row[] = $lm->buildunit;
             
             
-            $row[] = '<div class="text-center">'.$statusBadge.'</div>';
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
+            $row[] = '<div class="text-center">'
+                . '<span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">'
+                . htmlspecialchars($statusLabel)
+                . '</span>'
+                . '</div>';
 
             // $row[] = $lm->inputby;
             // $row[] = $lm->inputdate;
@@ -8077,6 +9003,20 @@ class Production extends BaseController
         $data['mst'] = $this->m_production->q_tmp_penerimaanbp_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
 
+        
+         /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('production/trans/penerimaanbp'));
+        }
+        // =================================s
+
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
         $param = " and trim(inputby)='$nama'";
@@ -8092,7 +9032,7 @@ class Production extends BaseController
     function showing_tmp_penerimaanbp_mst(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno='$docno' and inputby='$nama'";
         $data = $this->m_production->q_tmp_penerimaanbp_mst($param);
         $output = array(
             'status' => true,
@@ -8115,6 +9055,65 @@ class Production extends BaseController
             'incomplete_getResults' => false,
         );
         echo $this->fiky_encryption->jDatatable($output);
+    }
+
+    public function getBranchInfo_penerimaanbp()
+    {
+        $idbranch = trim($this->request->getGet('idbranch'));
+
+        $row = $this->db->table('sc_mst.branchjob')
+            ->select('nmbranch')
+            ->where('idbranch', $idbranch)
+            ->get()
+            ->getRowArray();
+
+        if (!$row) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Cabang tidak ditemukan'
+            ]);
+        }
+
+        // mapping nmbranch â†’ kode suffix
+        $map = [
+            'PT JATIM TAMAN STEEL MFG' => 'PT',
+            'PLANT I'                 => 'PA',
+            'PLANT II'                => 'PB',
+        ];
+
+        $kodeSuffix = $map[trim($row['nmbranch'])] ?? '';
+
+        if ($kodeSuffix === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Mapping cabang belum diset'
+            ]);
+        }
+
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray(); // Ini mengembalikan array of objects/arrays
+
+
+        // Karena hanya 1 row, ambil index ke-0
+        $prefix = trim($konfigurasiUmum[0]['penerimaanbarangprod']) ?? '';
+        $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
+        $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
+
+        $logindate = $this->session->get('logindate'); // dd-mm-yyyy
+        $infix = date('ym', strtotime($logindate));
+
+        return $this->response->setJSON([
+            'success'      => true,
+            'kode_suffix'  => $kodeSuffix,
+            'infix'        => $infix,
+            'logindate'     => $logindate,
+            'prefix'        => $prefix,
+            'konfigurasi_umum' => $konfigurasiUmum,
+            'currcode'      => $currcode,
+            'idtax'         => $idtax,
+        ]);
     }
 
     public function getNextSuffix_penerimaanbp_mst()
@@ -8202,11 +9201,11 @@ class Production extends BaseController
                 'bomno'     => trim($this->request->getPost('bomno')),
                 'idbarang_jadi'     => trim($this->request->getPost('idbarang_jadi')),
                 'nmbarang_jadi'     => trim($this->request->getPost('nmbarang_jadi')),
-                'buildfor'    => trim($this->request->getPost('buildfor')),
+                // 'buildfor'    => trim($this->request->getPost('buildfor')),
                 'batchno'    => trim($this->request->getPost('batchno')),
-                'buildunit'    => trim($this->request->getPost('buildunit')),
-                // 'idlocation'    => trim($this->request->getPost('idlocation')),
-                // 'nmlocation'    => trim($this->request->getPost('nmlocation')),
+                // 'buildunit'    => trim($this->request->getPost('buildunit')),
+                'idlocation'    => trim($this->request->getPost('idlocation')),
+                'nmlocation'    => trim($this->request->getPost('nmlocation')),
                 'bagian'    => trim($this->request->getPost('bagian')),
                 'pemohon'       => trim($this->request->getPost('pemohon')),
                 'status'     => 'E',
@@ -8238,12 +9237,12 @@ class Production extends BaseController
                     'bomno'        => trim($this->request->getPost('bomno')),
                     'idbarang_jadi'=> trim($this->request->getPost('idbarang_jadi')),
                     'nmbarang_jadi'=> trim($this->request->getPost('nmbarang_jadi')),
-                    'buildfor'     => trim($this->request->getPost('buildfor')),
-                    'buildunit'    => trim($this->request->getPost('buildunit')),
+                    // 'buildfor'     => trim($this->request->getPost('buildfor')),
+                    // 'buildunit'    => trim($this->request->getPost('buildunit')),
                     'batchno'      => trim($this->request->getPost('batchno')),
                     'bagian'       => trim($this->request->getPost('bagian')),
-                    // 'idlocation'   => trim($this->request->getPost('idlocation')),
-                    // 'nmlocation'   => trim($this->request->getPost('nmlocation')),
+                    'idlocation'   => trim($this->request->getPost('idlocation')),
+                    'nmlocation'   => trim($this->request->getPost('nmlocation')),
                     'keterangan'   => strtoupper(trim($this->request->getPost('keterangan'))),
                     'updateby'     => $nama,
                     'updatedate'   => date('Y-m-d H:i:s')
@@ -8268,6 +9267,7 @@ class Production extends BaseController
         if (!empty($oldWoeno)) {
             $delete = $builderDetail
                 ->where('docno', $docno)
+                ->where('inputby', $nama)
                 ->where('docref', $oldWoeno)
                 ->delete();
 
@@ -8376,11 +9376,12 @@ class Production extends BaseController
         $total = $db->query("
             SELECT COALESCE(SUM(nilai),0) AS ttlprice
             FROM sc_tmp.penerimaanbp_dtl
-            WHERE docno = ?
-        ", [$docno])->getRow();
+            WHERE docno = ? and inputby = ?
+        ", [$docno, $nama])->getRow();
 
         $db->table('sc_tmp.penerimaanbp_mst')
             ->where('docno', $docno)
+            ->where('inputby', $nama)
             ->update([
                 'ttlprice'   => $total->ttlprice,
                 'updateby'   => $nama,
@@ -8453,11 +9454,11 @@ class Production extends BaseController
                 'bomno'     => trim($this->request->getPost('bomno')),
                 'idbarang_jadi'     => trim($this->request->getPost('idbarang_jadi')),
                 'nmbarang_jadi'     => trim($this->request->getPost('nmbarang_jadi')),
-                'buildfor'    => trim($this->request->getPost('buildfor')),
+                // 'buildfor'    => trim($this->request->getPost('buildfor')),
                 'batchno'    => trim($this->request->getPost('batchno')),
-                'buildunit'    => trim($this->request->getPost('buildunit')),
-                // 'idlocation'    => trim($this->request->getPost('idlocation')),
-                // 'nmlocation'    => trim($this->request->getPost('nmlocation')),
+                // 'buildunit'    => trim($this->request->getPost('buildunit')),
+                'idlocation'    => trim($this->request->getPost('idlocation')),
+                'nmlocation'    => trim($this->request->getPost('nmlocation')),
                 'bagian'    => trim($this->request->getPost('bagian')),
                 'pemohon'       => trim($this->request->getPost('pemohon')),
                 'status'     => 'E',
@@ -8482,7 +9483,7 @@ class Production extends BaseController
         // =========================
         // AMBIL DATA DETAIL
         // =========================
-
+        $uniqueid = $this->request->getPost('uniqueid');
         // $idbarang    = strtoupper(trim($this->request->getPost('idbarang')));
         $nmbarang    = strtoupper(trim($this->request->getPost('nmbarang')));
         $unit        = strtoupper(trim($this->request->getPost('unit')));
@@ -8534,10 +9535,11 @@ class Production extends BaseController
             ->where('idbarang', $idbarang)
             ->where('nmbarang', $nmbarang)
             ->where('unit', $unit)
+            ->where('inputby', $nama)
             ->where('description', $description);
 
-        if ($idurut) {
-            $builderDuplicate->where('idurut !=', $idurut);
+        if ($uniqueid) {
+            $builderDuplicate->where('uniqueid !=', $uniqueid);
         }
 
         $duplicate = $builderDuplicate->countAllResults();
@@ -8557,7 +9559,9 @@ class Production extends BaseController
         if ($idurut) {
 
             $updateDetail = $builderDetail
-                ->where('idurut', $idurut)
+                ->where('uniqueid', $uniqueid)
+                ->where('inputby', $nama)
+                ->where('docno', $docno)
                 ->update([
                     // 'doctype_detail' => $doctype_detail,
                     'cabang'=>trim($this->request->getPost('cabang')),
@@ -8650,6 +9654,9 @@ class Production extends BaseController
         $nama=trim($this->session->get('nama'));
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_production->q_tmp_penerimaanbp_mst($param);
+         if(empty($dtl->getRowArray())){
+            return redirect()->to(base_url('production/trans/penerimaanbp'));
+        }
         // if(isEmpty($dtl->getRowArray()['status'])){
         //     return redirect()->to(base_url('production/trans/pp'));
         // }
@@ -8699,7 +9706,7 @@ class Production extends BaseController
             $no++;
             $row = array();
             // $row[] = $no;
-            $row[] = $lm->idurut;
+            $row[] = $lm->uniqueid;
             //item
             $row[] = '
             <div class="text-center">
@@ -8860,7 +9867,7 @@ class Production extends BaseController
     {
         $id = $this->request->getGet('id');
 
-        $data = $this->m_production->q_tmp_penerimaanbp_dtl(" and idurut='$id'");
+        $data = $this->m_production->q_tmp_penerimaanbp_dtl(" and uniqueid='$id'");
 
         if (!$data) {
             return $this->response->setJSON([
@@ -8981,7 +9988,19 @@ class Production extends BaseController
     public function update_penerimaanbp_()
     {
         $nama = trim(session()->get('nama'));
+        $logindate = trim($this->session->get('logindate'));
 
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('production/trans/penerimaanbp'));
+        }
         // =====================================
         // GET PARAMETER
         // =====================================
@@ -9140,7 +10159,19 @@ class Production extends BaseController
     public function cancel_penerimaanbp_()
     {
         $nama = trim(session()->get('nama'));
+        $logindate = trim($this->session->get('logindate'));
 
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('production/trans/penerimaanbp'));
+        }
         // =====================================
         // GET PARAMETER
         // =====================================
@@ -9162,7 +10193,7 @@ class Production extends BaseController
         // GET DATA
         // =====================================
         $dtl = $this->db
-            ->table('sc_mst.penerimaanbp_mst')
+            ->table('sc_trx.penerimaanbp_mst')
             ->where('docno', trim($docno))
             ->get()
             ->getRowArray();
@@ -9206,7 +10237,7 @@ class Production extends BaseController
 // UPDATE MASTER
 // =====================================
             $this->db
-                ->table('sc_mst.penerimaanbp_mst')
+                ->table('sc_trx.penerimaanbp_mst')
                 ->where('docno', trim($docno))
                 ->update($info);
 
@@ -9214,7 +10245,7 @@ class Production extends BaseController
 // UPDATE DETAIL
 // =====================================
             $this->db
-                ->table('sc_mst.penerimaanbp_dtl')
+                ->table('sc_trx.penerimaanbp_dtl')
                 ->where('docno', trim($docno))
                 ->update($info);
 
@@ -9310,6 +10341,19 @@ class Production extends BaseController
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_production->q_tmp_bpnm_mst($param);
         $logindate = trim($this->session->get('logindate'));
+        
+        $periode   = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        $data['periodeTutup'] = false;
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            $data['periodeTutup'] = true;
+            $data['periodeInfo']  = [
+                'periode'    => trim($dtlPeriode['periode']),
+                'keterangan' => trim($dtlPeriode['keterangan']),
+            ];
+        }
+        /* ===================================================== */
 
         if ($dtl->getNumRows()>0) {
             $title = "WARNING !!!";
@@ -9383,12 +10427,12 @@ class Production extends BaseController
             // =====================================
             // UPDATE
             // =====================================
-            if ($canUpdate) {
+            if ($canUpdate && trim($lm->inputby) == $nama && $status=='F') {
 
                 $updateBtn = '
                 <a class="dropdown-item bg-warning"
                    href="' . base_url('production/trans/update_bpnm_') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
-                   onclick="return confirm(\'Update Biaya Produksi Non Material : ' . $docno . '\')">
+                   onclick="return guardPeriodeTutup(event) && confirm(\'Update Biaya Produksi Non Material : ' . $docno . '\')">
 
                     <i class="fa fa-edit"></i> Update
 
@@ -9415,13 +10459,13 @@ class Production extends BaseController
             // =====================================
             // CANCEL
             // =====================================
-            if ($canDelete) {
+            if ($canDelete && trim($lm->inputby) == $nama && $status=='F') {
 
                 $deleteBtn = '
                 <a class="dropdown-item"
                    style="background-color:#FF7C7CD6;"
                    href="' . base_url('production/trans/cancelBiaya Produksi Non Material') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
-                   onclick="return confirm(\'Cancel Biaya Produksi Non Material : ' . $docno . '\')">
+                   onclick="return guardPeriodeTutup(event) && confirm(\'Cancel Biaya Produksi Non Material : ' . $docno . '\')">
 
                     <i class="fa fa-trash"></i> Cancel
 
@@ -9478,40 +10522,34 @@ class Production extends BaseController
             // =====================================
             // STATUS BADGE
             // =====================================
-            $badge = 'secondary';
+            $badgeClass = 'badge-primary'; // Default
 
             switch ($status) {
 
                 case 'C':
-                case 'D':
-                    $badge = 'danger';
+                    $badgeClass = 'badge-danger';
                     break;
 
                 case 'E':
-                    $badge = 'primary';
+                    $badgeClass = 'badge-warning';
                     break;
 
                 case 'F':
-                    $badge = 'success';
+                    $badgeClass = 'badge-info';
                     break;
 
-                case 'P':
-                    $badge = 'warning';
+                case 'A':
+                    $badgeClass = 'badge-success';
+                    break;
+
+                default:
+                    $badgeClass = 'badge-secondary';
                     break;
             }
 
-            $statusLabel =
-                isset($lm->nmstatus)
-                    ? $lm->nmstatus
-                    : $status;
-
-            $statusBadge =
-                '<span class="badge bg-' . $badge . ' text-dark w-100"
-                    style="font-size:14px;display:block;padding:6px 8px;">'
-
-                . $statusLabel .
-
-                '</span>';
+            $statusLabel = isset($lm->nmstatus)
+                ? $lm->nmstatus
+                : $status;
 
             // =====================================
             // ROW DATA
@@ -9520,7 +10558,10 @@ class Production extends BaseController
             $row[] = $dropdownMenu;
 
             $row[] = $lm->docno;
-            $row[] = $lm->docdate;
+             $row[] = date(
+                'd-m-Y',
+                strtotime(trim($lm->docdate))
+            );
             $row[] = $lm->idbarang_jadi;
 
             $row[] = $lm->nmbarang;
@@ -9529,9 +10570,13 @@ class Production extends BaseController
             $row[] = $lm->buildunit;
             
             
-            $row[] = '<div class="text-center">'.$statusBadge.'</div>';
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
+            $row[] = '<div class="text-center">'
+                . '<span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">'
+                . htmlspecialchars($statusLabel)
+                . '</span>'
+                . '</div>';
 
             // $row[] = $lm->inputby;
             // $row[] = $lm->inputdate;
@@ -9602,7 +10647,19 @@ class Production extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_production->q_tmp_bpnm_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
+        
+         /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
 
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('production/trans/bpnm'));
+        }
+        // =================================s
         $data['typeform'] = 'INPUT';
         $data['userlogin'] = $nama;
         $param = " and trim(inputby)='$nama'";
@@ -9618,7 +10675,7 @@ class Production extends BaseController
     function showing_tmp_bpnm_mst(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno='$docno' and inputby='$nama'";
         $data = $this->m_production->q_tmp_bpnm_mst($param);
         $output = array(
             'status' => true,
@@ -9641,6 +10698,65 @@ class Production extends BaseController
             'incomplete_getResults' => false,
         );
         echo $this->fiky_encryption->jDatatable($output);
+    }
+
+    public function getBranchInfo_bpnm()
+    {
+        $idbranch = trim($this->request->getGet('idbranch'));
+
+        $row = $this->db->table('sc_mst.branchjob')
+            ->select('nmbranch')
+            ->where('idbranch', $idbranch)
+            ->get()
+            ->getRowArray();
+
+        if (!$row) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Cabang tidak ditemukan'
+            ]);
+        }
+
+        // mapping nmbranch â†’ kode suffix
+        $map = [
+            'PT JATIM TAMAN STEEL MFG' => 'PT',
+            'PLANT I'                 => 'PA',
+            'PLANT II'                => 'PB',
+        ];
+
+        $kodeSuffix = $map[trim($row['nmbranch'])] ?? '';
+
+        if ($kodeSuffix === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Mapping cabang belum diset'
+            ]);
+        }
+
+        $konfigurasiUmum = $this->db
+            ->table('sc_mst.konfigurasi_umum')
+            ->get()
+            ->getResultArray(); // Ini mengembalikan array of objects/arrays
+
+
+        // Karena hanya 1 row, ambil index ke-0
+        $prefix = trim($konfigurasiUmum[0]['bpnm']) ?? '';
+        $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
+        $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
+
+        $logindate = $this->session->get('logindate'); // dd-mm-yyyy
+        $infix = date('ym', strtotime($logindate));
+
+        return $this->response->setJSON([
+            'success'      => true,
+            'kode_suffix'  => $kodeSuffix,
+            'infix'        => $infix,
+            'logindate'     => $logindate,
+            'prefix'        => $prefix,
+            'konfigurasi_umum' => $konfigurasiUmum,
+            'currcode'      => $currcode,
+            'idtax'         => $idtax,
+        ]);
     }
 
     public function getNextSuffix_bpnm_mst()
@@ -9794,6 +10910,7 @@ class Production extends BaseController
         if (!empty($oldWoeno)) {
             $delete = $builderDetail
                 ->where('docno', $docno)
+                ->where('inputby', $nama)
                 ->where('docref', $oldWoeno)
                 ->delete();
 
@@ -9861,7 +10978,7 @@ class Production extends BaseController
         foreach($list as $row){
 
             $rawUnique = $row->idbarang.'|'.$docno.'|'.microtime(true);
-            $harga = $row->harga;
+            $harga = $row->standartcost;
             $qty   = $row->qty;
             $nilai = $qty * $harga;
 
@@ -9902,11 +11019,12 @@ class Production extends BaseController
         $total = $db->query("
             SELECT COALESCE(SUM(nilai),0) AS ttlprice
             FROM sc_tmp.bpnm_dtl
-            WHERE docno = ?
-        ", [$docno])->getRow();
+            WHERE docno = ? and inputby = ?
+        ", [$docno, $nama])->getRow();
 
         $db->table('sc_tmp.bpnm_mst')
             ->where('docno', $docno)
+            ->where('inputby', $nama)
             ->update([
                 'ttlprice'   => $total->ttlprice,
                 'updateby'   => $nama,
@@ -10008,7 +11126,7 @@ class Production extends BaseController
         // =========================
         // AMBIL DATA DETAIL
         // =========================
-
+        $uniqueid = $this->request->getPost('uniqueid');
         // $idbarang    = strtoupper(trim($this->request->getPost('idbarang')));
         $nmbarang    = strtoupper(trim($this->request->getPost('nmbarang')));
         $unit        = strtoupper(trim($this->request->getPost('unit')));
@@ -10060,10 +11178,11 @@ class Production extends BaseController
             ->where('idbarang', $idbarang)
             ->where('nmbarang', $nmbarang)
             ->where('unit', $unit)
+            ->where('inputby', $nama)
             ->where('description', $description);
 
-        if ($idurut) {
-            $builderDuplicate->where('idurut !=', $idurut);
+        if ($uniqueid) {
+            $builderDuplicate->where('uniqueid !=', $uniqueid);
         }
 
         $duplicate = $builderDuplicate->countAllResults();
@@ -10083,7 +11202,9 @@ class Production extends BaseController
         if ($idurut) {
 
             $updateDetail = $builderDetail
-                ->where('idurut', $idurut)
+                ->where('docno', $docno)
+                ->where('uniqueid', $uniqueid)
+                ->where('inputby', $nama)
                 ->update([
                     // 'doctype_detail' => $doctype_detail,
                     'cabang'=>trim($this->request->getPost('cabang')),
@@ -10156,11 +11277,12 @@ class Production extends BaseController
         $total = $db->query("
             SELECT COALESCE(SUM(nilai),0) AS ttlprice
             FROM sc_tmp.bpnm_dtl
-            WHERE docno = ?
-        ", [$docno])->getRow();
+            WHERE docno = ? and inputby = ?
+        ", [$docno, $nama])->getRow();
 
         $db->table('sc_tmp.bpnm_mst')
             ->where('docno', $docno)
+            ->where('inputby', $nama)
             ->update([
                 'ttlprice'   => $total->ttlprice,
                 'updateby'   => $nama,
@@ -10189,6 +11311,9 @@ class Production extends BaseController
         $nama=trim($this->session->get('nama'));
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_production->q_tmp_bpnm_mst($param);
+        if(empty($dtl->getRowArray())){
+            return redirect()->to(base_url('production/trans/biaya_produksi_non_material'));
+        }
         // if(isEmpty($dtl->getRowArray()['status'])){
         //     return redirect()->to(base_url('production/trans/pp'));
         // }
@@ -10238,7 +11363,7 @@ class Production extends BaseController
             $no++;
             $row = array();
             // $row[] = $no;
-            $row[] = $lm->idurut;
+            $row[] = $lm->uniqueid;
             //item
             $row[] = '
             <div class="text-center">
@@ -10399,7 +11524,7 @@ class Production extends BaseController
     {
         $id = $this->request->getGet('id');
 
-        $data = $this->m_production->q_tmp_bpnm_dtl(" and idurut='$id'");
+        $data = $this->m_production->q_tmp_bpnm_dtl(" and uniqueid='$id'");
 
         if (!$data) {
             return $this->response->setJSON([
@@ -10520,7 +11645,19 @@ class Production extends BaseController
     public function update_bpnm_()
     {
         $nama = trim(session()->get('nama'));
+        $logindate = trim($this->session->get('logindate'));
 
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('production/trans/bpnm'));
+        }
         // =====================================
         // GET PARAMETER
         // =====================================
@@ -10679,7 +11816,19 @@ class Production extends BaseController
     public function cancel_bpnm_()
     {
         $nama = trim(session()->get('nama'));
+        $logindate = trim($this->session->get('logindate'));
 
+        /* ====== GUARD PERIODE TUTUP ====== */
+        $periode = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            // Set pesan error ke session flash, lalu redirect ke list
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            );
+            return redirect()->to(base_url('production/trans/bpnm'));
+        }
         // =====================================
         // GET PARAMETER
         // =====================================
@@ -10701,7 +11850,7 @@ class Production extends BaseController
         // GET DATA
         // =====================================
         $dtl = $this->db
-            ->table('sc_mst.bpnm_mst')
+            ->table('sc_trx.bpnm_mst')
             ->where('docno', trim($docno))
             ->get()
             ->getRowArray();
@@ -10745,7 +11894,7 @@ class Production extends BaseController
 // UPDATE MASTER
 // =====================================
             $this->db
-                ->table('sc_mst.bpnm_mst')
+                ->table('sc_trx.bpnm_mst')
                 ->where('docno', trim($docno))
                 ->update($info);
 
@@ -10753,7 +11902,7 @@ class Production extends BaseController
 // UPDATE DETAIL
 // =====================================
             $this->db
-                ->table('sc_mst.bpnm_dtl')
+                ->table('sc_trx.bpnm_dtl')
                 ->where('docno', trim($docno))
                 ->update($info);
 

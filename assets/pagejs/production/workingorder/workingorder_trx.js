@@ -331,8 +331,13 @@ function documentReadable() {
             $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
             // setJtsValue('[name="buildfor"]', convertToDbNumber(item.buildfor));
             // setJtsValue('[name="minimumqty"]', convertToDbNumber(item.minimumqty));
-            $('[name="docdate"]').val(item.docdate).prop('disabled', true);
-            $('[name="docdatefinish"]').val(item.docdatefinish).prop('disabled', true);
+             $('[name="docdate"]')
+                .val(moment(item.docdate).format('DD-MM-YYYY'))
+                .prop('disabled', true);
+
+            $('[name="docdatefinish"]')
+                .val(moment(item.docdatefinish).format('DD-MM-YYYY'))
+                .prop('disabled', true);
             // $('[name="activedate"]').val(item.activedate).prop('disabled', true);
             // $('[name="docref"]').val(item.docref).prop('disabled', false);
             $('[name="keterangan"]').val(item.keterangan).prop('disabled',true);

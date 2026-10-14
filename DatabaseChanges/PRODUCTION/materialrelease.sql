@@ -21,6 +21,7 @@ VALUES
 CREATE TABLE IF NOT EXISTS sc_tmp.materialrelease_mst
 (
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
+    idurut bigserial,
     doctype character(20) default 'BOM' ,
 	cabang character (30 ) COLLATE pg_catalog."default",    
     pemohon character(100) COLLATE pg_catalog."default",
@@ -46,7 +47,7 @@ CREATE TABLE IF NOT EXISTS sc_tmp.materialrelease_mst
     updateby character varying(50) COLLATE pg_catalog."default",
     updatedate timestamp without time zone,
     docnotmp character(30) COLLATE pg_catalog."default",
-    CONSTRAINT pk_tmp_materialrelease_mst PRIMARY KEY (docno)
+    CONSTRAINT pk_tmp_materialrelease_mst PRIMARY KEY (docno, idurut)
 )
 
 TABLESPACE pg_default;
@@ -60,6 +61,7 @@ ALTER TABLE IF EXISTS sc_tmp.materialrelease_mst
 CREATE TABLE IF NOT EXISTS sc_tmp.materialrelease_dtl
 (
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
+    idurut bigserial,
     doctype character(20) default 'BOM' ,
     doctype_detail character(20) default 'MATERIAL' ,
     cabang character (30 ) COLLATE pg_catalog."default",
@@ -183,355 +185,232 @@ CREATE OR REPLACE FUNCTION sc_tmp.tr_tmp_materialrelease_mst()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $BODY$
-
 DECLARE
-
     v_docno        TEXT;
+    v_inputby      TEXT;
+    v_idurut       INTEGER;
     v_base_docno   TEXT;
     v_new_docno    TEXT;
     v_num          TEXT;
     v_num_int      INTEGER;
-
+    v_lock_key     BIGINT;
+    v_client_ip    TEXT;
 BEGIN
 
-    RAISE NOTICE 'TMP BOM TRIGGER : %, OLD=%, NEW=%',
-        NEW.docno,
-        OLD.status,
-        NEW.status;
+    -- ===============================
+    -- AMBIL IP DARI sc_log.useronline
+    -- ===============================
+    v_client_ip := sc_log.fn_get_user_ip(NEW.inputby);
 
-    -- =====================================================
-    -- FINAL INSERT
-    -- =====================================================
-    IF UPPER(TRIM(OLD.status))='E'
-       AND UPPER(TRIM(NEW.status))='F'
-       AND COALESCE(TRIM(NEW.docnotmp),'')='' THEN
+    -- ===============================
+    -- FINAL INSERT (tmp kosong)
+    -- ===============================
+    IF UPPER(TRIM(OLD.status)) = 'E' AND UPPER(TRIM(NEW.status)) = 'F' AND COALESCE(TRIM(NEW.docnotmp), '') = '' THEN
 
-        v_docno := TRIM(NEW.docno);
+        v_docno   := RTRIM(NEW.docno);
+        v_inputby := NEW.inputby;
+        v_idurut  := NEW.idurut;
 
-        -- =================================================
-        -- LOCK DOCNO
-        -- =================================================
+        -- ================================================
+        -- CEK APAKAH SUDAH PERNAH DIFINALKAN
+        -- ================================================
+        IF EXISTS (
+            SELECT 1
+            FROM sc_trx.materialrelease_mst
+            WHERE idurut = v_idurut
+              AND TRIM(COALESCE(inputby, '')) = TRIM(COALESCE(v_inputby, ''))
+        ) THEN
+
+            DELETE FROM sc_tmp.materialrelease_dtl
+            WHERE TRIM(docno) = TRIM(OLD.docno)
+              AND inputby = v_inputby;
+
+            DELETE FROM sc_tmp.materialrelease_mst
+            WHERE TRIM(docno) = TRIM(OLD.docno)
+              AND inputby = v_inputby
+              AND idurut = v_idurut;
+
+            RETURN NEW;
+        END IF;
+
+        -- ================================================
+        -- GENERATE DOCNO
+        -- ================================================
         v_base_docno := regexp_replace(v_docno, '[0-9]+$', '');
+        v_lock_key   := hashtext(v_base_docno);
 
-        PERFORM pg_advisory_xact_lock(hashtext(v_base_docno));
+        PERFORM pg_advisory_xact_lock(v_lock_key);
 
         v_new_docno := v_docno;
 
         LOOP
-
             EXIT WHEN NOT EXISTS (
-                SELECT 1
-                FROM sc_trx.materialrelease_mst
-                WHERE TRIM(docno)=TRIM(v_new_docno)
+                SELECT 1 FROM sc_trx.materialrelease_mst
+                WHERE TRIM(docno) = TRIM(v_new_docno)
             );
 
-            v_num := regexp_replace(
-                v_new_docno,
-                '.*?([0-9]+)$',
-                '\1'
-            );
+            v_num := regexp_replace(v_new_docno, '.*?([0-9]+)$', '\1');
+
+            IF COALESCE(v_num, '') = '' THEN
+                RAISE EXCEPTION 'Format DOCNO Material Release tidak valid: %', v_new_docno;
+            END IF;
 
             v_num_int := v_num::INTEGER + 1;
 
             v_new_docno :=
                 v_base_docno ||
-                LPAD(v_num_int::TEXT, LENGTH(v_num), '0');
-
+                lpad(v_num_int::TEXT, length(v_num), '0');
         END LOOP;
 
         v_docno := v_new_docno;
 
-        -- =================================================
-        -- INSERT MASTER
-        -- =================================================
+        -- ================================================
+        -- INSERT HEADER
+        -- ================================================
         INSERT INTO sc_trx.materialrelease_mst (
-
-            docno,
-            doctype,
-            cabang,
-            pemohon,
-            docdate,
-            idlocation,
-            nmlocation,
-            tabno,
-            woeno,
-            wono,
-            bomno,
-            desc_bom,
-            idbarang_jadi,
-            nmbarang_jadi,
-            docref,
-            status,
-            keterangan,
-            batchno,
-            buildfor,
-            buildunit,
-            bagian,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp
-
+            docno, doctype, cabang, pemohon, docdate,
+            idlocation, nmlocation, tabno, woeno, wono, bomno,
+            desc_bom, idbarang_jadi, nmbarang_jadi,
+            docref, status, keterangan, batchno, buildfor, buildunit,
+            bagian, inputby, inputdate, updateby, updatedate, docnotmp
         )
         SELECT
-
-            v_docno,
-            doctype,
-            cabang,
-            pemohon,
-            docdate,
-            idlocation,
-            nmlocation,
-            tabno,
-            woeno,
-            wono,
-            bomno,
-            desc_bom,
-            idbarang_jadi,
-            nmbarang_jadi,
-            docref,
-            'F',
-            keterangan,
-            batchno,
-            buildfor,
-            buildunit,
-            bagian,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp
-
+            v_docno, doctype, cabang, pemohon, docdate,
+            idlocation, nmlocation, tabno, woeno, wono, bomno,
+            desc_bom, idbarang_jadi, nmbarang_jadi,
+            docref, 'F', keterangan, batchno, buildfor, buildunit,
+            bagian, inputby, inputdate, updateby, updatedate, docnotmp
         FROM sc_tmp.materialrelease_mst
-        WHERE TRIM(docno)=TRIM(OLD.docno);
+        WHERE TRIM(docno) = TRIM(OLD.docno)
+          AND inputby = v_inputby
+          AND idurut  = v_idurut;
 
-        -- =================================================
+        -- ================================================
         -- INSERT DETAIL
-        -- =================================================
+        -- ================================================
         INSERT INTO sc_trx.materialrelease_dtl (
-
-            docno,
-            doctype,
-            doctype_detail,
-            cabang,
-            pemohon,
-            docdate,
-            docref,
-            idbarang,
-            nmbarang,
-            idbarang_bom,
-            nmbarang_bom,
-            description,
-            qty,
-            unit,
-            spec,
-            issub,
-            status,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp,
-            idurut,
-            uniqueid
-
+            docno, doctype, doctype_detail, cabang, pemohon, docdate,
+            docref, idbarang, nmbarang, idbarang_bom, nmbarang_bom,
+            description, qty, unit, spec, issub, status,
+            inputby, inputdate, updateby, updatedate, docnotmp,
+            idurut, uniqueid
         )
         SELECT
-
-            v_docno,
-            doctype,
-            doctype_detail,
-            cabang,
-            pemohon,
-            docdate,
-            docref,
-            idbarang,
-            nmbarang,
-            idbarang_bom,
-            nmbarang_bom,
-            description,
-            qty,
-            unit,
-            spec,
-            issub,
-            'F',
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp,
-            idurut,
-            uniqueid
-
+            v_docno, doctype, doctype_detail, cabang, pemohon, docdate,
+            docref, idbarang, nmbarang, idbarang_bom, nmbarang_bom,
+            description, qty, unit, spec, issub, 'F',
+            inputby, inputdate, updateby, updatedate, docnotmp,
+            idurut, uniqueid
         FROM sc_tmp.materialrelease_dtl
-        WHERE TRIM(docno)=TRIM(OLD.docno);
+        WHERE TRIM(docno) = TRIM(OLD.docno)
+          AND inputby = v_inputby;
 
-        -- =================================================
-        -- CLEAN TMP
-        -- =================================================
+        -- ================================================
+        -- LOG: INSERT HEADER
+        -- ================================================
+        PERFORM sc_log.fn_log_transaction(
+            v_docno::CHAR(30),
+            NULL,
+            'I.R',                 
+            'I.R.A.8',             
+            'I',
+            v_inputby,
+            v_client_ip,
+            v_inputby
+        );
+
+        -- ================================================
+        -- CLEANUP TMP
+        -- ================================================
         DELETE FROM sc_tmp.materialrelease_dtl
-        WHERE TRIM(docno)=TRIM(OLD.docno);
+        WHERE TRIM(docno) = TRIM(OLD.docno)
+          AND inputby = v_inputby;
 
         DELETE FROM sc_tmp.materialrelease_mst
-        WHERE TRIM(docno)=TRIM(OLD.docno);
+        WHERE TRIM(docno) = TRIM(OLD.docno)
+          AND inputby = v_inputby
+          AND idurut = v_idurut;
 
-    -- =====================================================
-    -- FINAL EDIT
-    -- =====================================================
-    ELSIF UPPER(TRIM(OLD.status))='E'
-       AND UPPER(TRIM(NEW.status))='F'
-       AND COALESCE(TRIM(NEW.docnotmp),'')<>'' THEN
+    -- ================================================
+    -- FINAL EDIT (docnotmp terisi)
+    -- ================================================
+    ELSIF UPPER(TRIM(OLD.status)) = 'E'
+          AND UPPER(TRIM(NEW.status)) = 'F'
+          AND COALESCE(TRIM(NEW.docnotmp), '') <> '' THEN
 
-        -- =================================================
+        v_inputby := NEW.inputby;
+
         -- DELETE OLD TRX
-        -- =================================================
         DELETE FROM sc_trx.materialrelease_dtl
-        WHERE TRIM(docno)=TRIM(NEW.docnotmp);
+        WHERE TRIM(docno) = TRIM(NEW.docnotmp);
 
         DELETE FROM sc_trx.materialrelease_mst
-        WHERE TRIM(docno)=TRIM(NEW.docnotmp);
+        WHERE TRIM(docno) = TRIM(NEW.docnotmp);
 
-        -- =================================================
-        -- INSERT MASTER
-        -- =================================================
+        -- INSERT MASTER (pakai docnotmp = docno lama)
         INSERT INTO sc_trx.materialrelease_mst (
-
-            docno,
-            doctype,
-            cabang,
-            pemohon,
-            docdate,
-            idlocation,
-            nmlocation,
-            tabno,
-            woeno,
-            wono,
-            bomno,
-            desc_bom,
-            idbarang_jadi,
-            nmbarang_jadi,
-            docref,
-            status,
-            keterangan,
-            batchno,
-            buildfor,
-            buildunit,
-            bagian,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp
-
+            docno, doctype, cabang, pemohon, docdate,
+            idlocation, nmlocation, tabno, woeno, wono, bomno,
+            desc_bom, idbarang_jadi, nmbarang_jadi,
+            docref, status, keterangan, batchno, buildfor, buildunit,
+            bagian, inputby, inputdate, updateby, updatedate, docnotmp
         )
         SELECT
-
-            NEW.docnotmp,
-            doctype,
-            cabang,
-            pemohon,
-            docdate,
-            idlocation,
-            nmlocation,
-            tabno,
-            woeno,
-            wono,
-            bomno,
-            desc_bom,
-            idbarang_jadi,
-            nmbarang_jadi,
-            docref,
-            'F',
-            keterangan,
-            batchno,
-            buildfor,
-            buildunit,
-            bagian,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp
-
+            NEW.docnotmp, doctype, cabang, pemohon, docdate,
+            idlocation, nmlocation, tabno, woeno, wono, bomno,
+            desc_bom, idbarang_jadi, nmbarang_jadi,
+            docref, 'F', keterangan, batchno, buildfor, buildunit,
+            bagian, inputby, inputdate, updateby, updatedate, docnotmp
         FROM sc_tmp.materialrelease_mst
-        WHERE TRIM(docno)=TRIM(NEW.docno);
+        WHERE TRIM(docno) = TRIM(NEW.docno)
+          AND inputby = v_inputby;
 
-        -- =================================================
         -- INSERT DETAIL
-        -- =================================================
         INSERT INTO sc_trx.materialrelease_dtl (
-
-            docno,
-            doctype,
-            doctype_detail,
-            cabang,
-            pemohon,
-            docdate,
-            docref,
-            idbarang,
-            nmbarang,
-            idbarang_bom,
-            nmbarang_bom,
-            description,
-            qty,
-            unit,
-            spec,
-            issub,
-            status,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp,
-            idurut,
-            uniqueid
-
+            docno, doctype, doctype_detail, cabang, pemohon, docdate,
+            docref, idbarang, nmbarang, idbarang_bom, nmbarang_bom,
+            description, qty, unit, spec, issub, status,
+            inputby, inputdate, updateby, updatedate, docnotmp,
+            idurut, uniqueid
         )
         SELECT
-
-            NEW.docnotmp,
-            doctype,
-            doctype_detail,
-            cabang,
-            pemohon,
-            docdate,
-            docref,
-            idbarang,
-            nmbarang,
-            idbarang_bom,
-            nmbarang_bom,
-            description,
-            qty,
-            unit,
-            spec,
-            issub,
-            'F',
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp,
-            idurut,
-            uniqueid
-
+            NEW.docnotmp, doctype, doctype_detail, cabang, pemohon, docdate,
+            docref, idbarang, nmbarang, idbarang_bom, nmbarang_bom,
+            description, qty, unit, spec, issub, 'F',
+            inputby, inputdate, updateby, updatedate, docnotmp,
+            idurut, uniqueid
         FROM sc_tmp.materialrelease_dtl
-        WHERE TRIM(docno)=TRIM(NEW.docno);
+        WHERE TRIM(docno) = TRIM(NEW.docno)
+          AND inputby = v_inputby;
 
-        -- =================================================
-        -- CLEAN TMP
-        -- =================================================
+        -- ================================================
+        -- LOG: UPDATE HEADER
+        -- ================================================
+        PERFORM sc_log.fn_log_transaction(
+            NEW.docnotmp::CHAR(30),
+            NULL,
+            'I.R',
+            'I.R.A.8',
+            'U',
+            v_inputby,
+            v_client_ip,
+            v_inputby
+        );
+
+        -- CLEANUP TMP
         DELETE FROM sc_tmp.materialrelease_dtl
-        WHERE TRIM(docno)=TRIM(NEW.docno);
+        WHERE TRIM(docno) = TRIM(NEW.docno)
+          AND inputby = v_inputby;
 
         DELETE FROM sc_tmp.materialrelease_mst
-        WHERE TRIM(docno)=TRIM(NEW.docno);
+        WHERE TRIM(docno) = TRIM(NEW.docno)
+          AND inputby = v_inputby;
 
-    -- =====================================================
+    -- ================================================
     -- CANCEL EDIT
-    -- =====================================================
+    -- ================================================
     ELSIF UPPER(TRIM(OLD.status))='E'
-       AND UPPER(TRIM(NEW.status))='C' THEN
+        AND UPPER(TRIM(NEW.status))='C' THEN
 
         UPDATE sc_trx.materialrelease_mst
         SET status='F'
@@ -577,142 +456,88 @@ RETURNS trigger
 LANGUAGE plpgsql
 AS $BODY$
 
+DECLARE
+    v_docno     TEXT;
+    v_inputby   TEXT;
+    v_client_ip TEXT;
+
 BEGIN
 
-    RAISE NOTICE 'TRX BOM TRIGGER : %, OLD=%, NEW=%',
-        NEW.docno,
-        OLD.status,
-        NEW.status;
+    -- ===============================
+    -- GUARD: hanya proses kalau status berubah
+    -- ===============================
+    IF UPPER(TRIM(OLD.status)) = UPPER(TRIM(NEW.status)) THEN
+        RETURN NEW;
+    END IF;
+
+    -- ===============================
+    -- AMBIL IP
+    -- ===============================
+    v_docno     := RTRIM(NEW.docno);
+    v_inputby   := COALESCE(NEW.updateby, NEW.inputby);
+    v_client_ip := sc_log.fn_get_user_ip(v_inputby);
+
+    -- ===============================
+    -- ADVISORY LOCK
+    -- ===============================
+    PERFORM pg_advisory_xact_lock(hashtext(v_docno));
 
     -- =====================================================
-    -- EDIT
+    -- MATERIAL RELEASE DIBATALKAN (F -> C)
     -- =====================================================
-    IF UPPER(TRIM(OLD.status))='F'
-       AND UPPER(TRIM(NEW.status))='E' THEN
+    IF (OLD.STATUS = 'F' AND NEW.STATUS = 'C') THEN
 
-        -- =================================================
+        PERFORM sc_log.fn_log_transaction(
+            NEW.docno,
+            NULL,
+            'I.R',
+            'I.R.A.8',
+            'C',
+            v_inputby,
+            v_client_ip,
+            v_inputby
+        );
+
+    END IF;
+
+    -- =====================================================
+    -- MATERIAL RELEASE DIEDIT (F -> E)
+    -- =====================================================
+    IF (OLD.STATUS = 'F' AND NEW.STATUS = 'E') THEN
+
         -- INSERT TMP MASTER
-        -- =================================================
         INSERT INTO sc_tmp.materialrelease_mst (
-
-            docno,
-            doctype,
-            cabang,
-            pemohon,
-            docdate,
-            idlocation,
-            nmlocation,
-            tabno,
-            woeno,
-            wono,
-            bomno,
-            desc_bom,
-            idbarang_jadi,
-            nmbarang_jadi,
-            docref,
-            status,
-            keterangan,
-            batchno,
-            buildfor,
-            buildunit,
-            bagian,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp
-
+            docno, doctype, cabang, pemohon, docdate,
+            idlocation, nmlocation, tabno, woeno, wono, bomno,
+            desc_bom, idbarang_jadi, nmbarang_jadi,
+            docref, status, keterangan, batchno, buildfor, buildunit,
+            bagian, inputby, inputdate, updateby, updatedate, docnotmp
         )
         SELECT
-
-            docno,
-            doctype,
-            cabang,
-            pemohon,
-            docdate,
-            idlocation,
-            nmlocation,
-            tabno,
-            woeno,
-            wono,
-            bomno,
-            desc_bom,
-            idbarang_jadi,
-            nmbarang_jadi,
-            docref,
-            'E',
-            keterangan,
-            batchno,
-            buildfor,
-            buildunit,
-            bagian,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docno
-
+            docno, doctype, cabang, pemohon, docdate,
+            idlocation, nmlocation, tabno, woeno, wono, bomno,
+            desc_bom, idbarang_jadi, nmbarang_jadi,
+            docref, 'E', keterangan, batchno, buildfor, buildunit,
+            bagian, inputby, inputdate, updateby, updatedate, v_docno
         FROM sc_trx.materialrelease_mst
-        WHERE TRIM(docno)=TRIM(NEW.docno);
+        WHERE TRIM(docno) = TRIM(NEW.docno);
 
-        -- =================================================
         -- INSERT TMP DETAIL
-        -- =================================================
         INSERT INTO sc_tmp.materialrelease_dtl (
-
-            docno,
-            doctype,
-            doctype_detail,
-            cabang,
-            pemohon,
-            docdate,
-            docref,
-            idbarang,
-            nmbarang,
-            idbarang_bom,
-            nmbarang_bom,
-            description,
-            qty,
-            unit,
-            spec,
-            issub,
-            status,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp,
+            docno, doctype, doctype_detail, cabang, pemohon, docdate,
+            docref, idbarang, nmbarang, idbarang_bom, nmbarang_bom,
+            description, qty, unit, spec, issub, status,
+            inputby, inputdate, updateby, updatedate, docnotmp,
             uniqueid
-
         )
         SELECT
-
-            docno,
-            doctype,
-            doctype_detail,
-            cabang,
-            pemohon,
-            docdate,
-            docref,
-            idbarang,
-            nmbarang,
-            idbarang_bom,
-            nmbarang_bom,
-            description,
-            qty,
-            unit,
-            spec,
-            issub,
-            'E',
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docno,
+            docno, doctype, doctype_detail, cabang, pemohon, docdate,
+            docref, idbarang, nmbarang, idbarang_bom, nmbarang_bom,
+            description, qty, unit, spec, issub, 'E',
+            inputby, inputdate, updateby, updatedate, docno,
             uniqueid
-
         FROM sc_trx.materialrelease_dtl
-        WHERE TRIM(docno)=TRIM(NEW.docno);
+        WHERE TRIM(docno) = TRIM(NEW.docno);
 
     END IF;
 
@@ -720,6 +545,9 @@ BEGIN
 
 END;
 $BODY$;
+
+ALTER FUNCTION sc_trx.tr_mst_materialrelease_mst()
+    OWNER TO postgres;
 
 -- =========================================
 -- TRIGGER

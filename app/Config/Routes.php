@@ -1378,6 +1378,7 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('add_standart_cost', 'Production::add_standart_cost');
     $routes->get('showing_tmp_standart_cost_mst(:any)', 'Production::showing_tmp_standart_cost_mst$1');
     $routes->get('showing_mst_standart_cost_mst(:any)', 'Production::showing_mst_standart_cost_mst$1');
+    $routes->add('getBranchInfo_standart_cost', 'Production::getBranchInfo_standart_cost');
     $routes->add('getNextSuffix_standart_cost_mst', 'Production::getNextSuffix_standart_cost_mst');
     $routes->add('save_standart_cost_dtl', 'Production::save_standart_cost_dtl');
     $routes->add('save_standart_cost_mst', 'Production::save_standart_cost_mst');
@@ -1386,6 +1387,7 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('list_mst_standart_cost_dtl', 'Production::list_mst_standart_cost_dtl');
     $routes->add('get_standart_cost_dtl(:any)', 'Production::get_standart_cost_dtl$1');
     $routes->add('final_input_standart_cost', 'Production::final_input_standart_cost');
+    $routes->add("delete_standart_cost_dtl", "Production::delete_standart_cost_dtl");
 
     /*UPDATE STANDART COST*/
     $routes->add('updateStandartCost(:any)', 'Production::updateStandartCost$1');
@@ -1400,6 +1402,7 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('add_biaya_standart', 'Production::add_biaya_standart');
     $routes->get('showing_tmp_biaya_standart_mst(:any)', 'Production::showing_tmp_biaya_standart_mst$1');
     $routes->get('showing_mst_biaya_standart_mst(:any)', 'Production::showing_mst_biaya_standart_mst$1');
+    $routes->add('getBranchInfo_biaya_standart', 'Production::getBranchInfo_biaya_standart');
     $routes->add('getNextSuffix_biaya_standart_mst', 'Production::getNextSuffix_biaya_standart_mst');
     $routes->add('save_biaya_standart_dtl', 'Production::save_biaya_standart_dtl');
     $routes->add('save_biaya_standart_mst', 'Production::save_biaya_standart_mst');
@@ -1408,6 +1411,7 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('list_mst_biaya_standart_dtl', 'Production::list_mst_biaya_standart_dtl');
     $routes->add('get_biaya_standart_dtl(:any)', 'Production::get_biaya_standart_dtl$1');
     $routes->add('final_input_biaya_standart', 'Production::final_input_biaya_standart');
+    $routes->add("delete_biaya_standart_dtl", "Production::delete_biaya_standart_dtl");
 
     /*UPDATE STANDART COST*/
     $routes->add('updateBiayaStandart(:any)', 'Production::updateBiayaStandart$1');
@@ -1422,6 +1426,7 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('add_bom', 'Production::add_bom');
     $routes->get('showing_tmp_bom_mst(:any)', 'Production::showing_tmp_bom_mst$1');
     $routes->get('showing_mst_bom_mst(:any)', 'Production::showing_mst_bom_mst$1');
+    $routes->add('getBranchInfo_bom', 'Production::getBranchInfo_bom');
     $routes->add('getNextSuffix_bom_mst', 'Production::getNextSuffix_bom_mst');
     $routes->add('save_bom_dtl', 'Production::save_bom_dtl');
     $routes->add('save_bom_mst', 'Production::save_bom_mst');
@@ -1435,6 +1440,7 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('get_bom_dtl(:any)', 'Production::get_bom_dtl$1');
     $routes->add('final_input_bom', 'Production::final_input_bom');
     $routes->add("delete_bom_detail", "Production::delete_bom_detail");
+    $routes->add('updateStatusBOM', 'Production::updateStatusBOM');
 
     /* BUILD OF MATERIAL */
     $routes->add('update_bom_(:any)', 'Production::update_bom_$1');
@@ -1451,6 +1457,7 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('add_workingorder', 'Production::add_workingorder');
     $routes->get('showing_tmp_workingorder_mst(:any)', 'Production::showing_tmp_workingorder_mst$1');
     $routes->get('showing_trx_workingorder_mst(:any)', 'Production::showing_trx_workingorder_mst$1');
+    $routes->add('getBranchInfo_workingorder', 'Production::getBranchInfo_workingorder');
     $routes->add('getNextSuffix_workingorder_mst', 'Production::getNextSuffix_workingorder_mst');
     $routes->add('save_workingorder_dtl', 'Production::save_workingorder_dtl');
     $routes->add('save_workingorder_mst', 'Production::save_workingorder_mst');
@@ -1514,6 +1521,7 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('add_materialrelease', 'Production::add_materialrelease');
     $routes->get('showing_tmp_materialrelease_mst(:any)', 'Production::showing_tmp_materialrelease_mst$1');
     $routes->get('showing_trx_materialrelease_mst(:any)', 'Production::showing_trx_materialrelease_mst$1');
+    $routes->add('getBranchInfo_materialrelease', 'Production::getBranchInfo_materialrelease');
     $routes->add('getNextSuffix_materialrelease_mst', 'Production::getNextSuffix_materialrelease_mst');
     $routes->add('save_materialrelease_dtl', 'Production::save_materialrelease_dtl');
     $routes->add('save_materialrelease_mst', 'Production::save_materialrelease_mst');
@@ -1541,6 +1549,7 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('add_penerimaanbp', 'Production::add_penerimaanbp');
     $routes->get('showing_tmp_penerimaanbp_mst(:any)', 'Production::showing_tmp_penerimaanbp_mst$1');
     $routes->get('showing_trx_penerimaanbp_mst(:any)', 'Production::showing_trx_penerimaanbp_mst$1');
+    $routes->add('getBranchInfo_penerimaanbp', 'Production::getBranchInfo_penerimaanbp');
     $routes->add('getNextSuffix_penerimaanbp_mst', 'Production::getNextSuffix_penerimaanbp_mst');
     $routes->add('save_penerimaanbp_dtl', 'Production::save_penerimaanbp_dtl');
     $routes->add('save_penerimaanbp_mst', 'Production::save_penerimaanbp_mst');
@@ -1570,6 +1579,7 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('add_bpnm', 'Production::add_bpnm');
     $routes->get('showing_tmp_bpnm_mst(:any)', 'Production::showing_tmp_bpnm_mst$1');
     $routes->get('showing_trx_bpnm_mst(:any)', 'Production::showing_trx_bpnm_mst$1');
+    $routes->add('getBranchInfo_bpnm', 'Production::getBranchInfo_bpnm');
     $routes->add('getNextSuffix_bpnm_mst', 'Production::getNextSuffix_bpnm_mst');
     $routes->add('save_bpnm_dtl', 'Production::save_bpnm_dtl');
     $routes->add('save_bpnm_mst', 'Production::save_bpnm_mst');

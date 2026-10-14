@@ -271,31 +271,22 @@
                                     <div class="col-md-8">
                                         <div class="form-group">
                                             <label>No. WO</label>
-                                            <div class="d-flex">
-                                                <input type="text"
-                                                    name="prefix"
-                                                    id="prefix"
-                                                    class="form-control me-1"
-                                                    maxlength="3"
-                                                    style="text-transform: uppercase;"
-                                                    pattern="[A-Z0-9]+">
+                                                <div class="d-flex">
+                                                    <input type="text" name="prefix" id="prefix" class="form-control me-1" maxlength="3" style="text-transform: uppercase;" pattern="[A-Za-z0-9]{1,3}" title="Prefix hanya boleh huruf dan angka, maksimal 3 karakter">
 
-                                                <span class="px-2 align-self-center">/</span>
+                                                    <span class="px-2 align-self-center">/</span>
 
-                                                <input type="text"
-                                                    name="infix"
-                                                    id="infix"
-                                                    class="form-control mx-1"
-                                                    readonly>
+                                                    <input type="text"
+                                                        name="infix"
+                                                        id="infix"
+                                                        class="form-control mx-1"
+                                                        readonly>
 
-                                                <span class="px-2 align-self-center">/</span>
+                                                    <span class="px-2 align-self-center">/</span>
 
-                                                <input type="text"
-                                                    name="sufix"
-                                                    id="sufix"
-                                                    class="form-control ms-1"
-                                                    readonly>
-                                            </div>
+                                                    <input type="text" name="suffix" id="suffix" class="form-control ms-1" maxlength="6" pattern="^[A-Za-z0-9]{0,2}[0-9]{4}$" title="Maksimal 6 karakter. 4 karakter terakhir wajib angka." style="text-transform: uppercase;">
+                                                        
+                                                </div>
                                         </div>
                                         <input type="hidden" name="docno" class="form-control col-sm-12" id="docno" maxlength="20"     value="<?= isset($dtldata['docno']) ? esc(trim($dtldata['docno'])) : '' ?>" style="text-transform: uppercase;" readonly>
                                     </div>
@@ -825,13 +816,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#docdate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('DD-MM-YYYY'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'docdate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'docdate');
         });
@@ -844,13 +835,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#docdatefinish').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('DD-MM-YYYY'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'docdatefinish', 'NOT_VALIDATED').bootstrapValidator('validateField', 'docdatefinish');
         });
@@ -861,13 +852,13 @@
         //     autoUpdateInput: false,
         //     singleDatePicker: true,
         //     showDropdowns: true,
-        //     locale: { format: 'YYYY-MM-DD' },
+        //     locale: { format: 'DD-MM-YYYY' },
         //     cancelLabel: 'Clear'
         // });
         //
         // // handler apply/cancel
         // $('#activedate').on('apply.daterangepicker', function(ev, picker) {
-        //     $(this).val(picker.startDate.format('YYYY-MM-DD'));
+        //     $(this).val(picker.startDate.format('DD-MM-YYYY'));
         //     // jika butuh validasi bootstrapValidator:
         //     // $('#formInputTransfers').bootstrapValidator('updateStatus', 'activedate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'activedate');
         // });
@@ -880,13 +871,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#estpakai').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('DD-MM-YYYY'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'estpakai', 'NOT_VALIDATED').bootstrapValidator('validateField', 'estpakai');
         });

@@ -113,7 +113,7 @@ $('#cabang').on('change', function () {
     if (!idbranch) return;
 
     $.ajax({
-        url: HOST_URL + '/persediaan/trans/getBranch_ajustment_stock',
+        url: HOST_URL + '/production/trans/getBranchInfo_bpnm',
         method: 'GET',
         data: {idbranch: idbranch},
         dataType: 'json',
@@ -127,77 +127,76 @@ $('#cabang').on('change', function () {
             currentKodeSuffix = res.kode_suffix;
 
             $('#infix').val(res.infix);
-
-            // SET PREFIX + TRIGGER CHANGE
-            $('#prefix').val('BNM').trigger('change');
-
-            $('#sufix').val(currentKodeSuffix + '0001');
+            var prefix = res.prefix;
+            $('#prefix').val(prefix);
+            loadNextSuffixBPNM()
 
             var infix = (res.infix || '').toString();
 
             if (infix.length === 4) {
-
                 $('#docdate').prop('disabled', false);
-
                 var yy = infix.substring(0, 2);
                 var mm = infix.substring(2, 4);
-
                 var year = 2000 + parseInt(yy, 10);
                 var month = parseInt(mm, 10) - 1;
 
-                var today = moment();
+                // Default: logindate dari server, fallback ke hari ini
+                var logindate = res.logindate ? moment(res.logindate, 'DD-MM-YYYY') : moment();
+
                 var startDate = moment([year, month, 1]);
                 var endDate = moment(startDate).endOf('month');
+
+                // Kalau logindate di luar range, pakai startDate
+                var selectedDate = logindate.isBetween(startDate, endDate, 'day', '[]')
+                    ? logindate
+                    : startDate;
 
                 var $el = $('#docdate');
                 var drp = $el.data('daterangepicker');
 
                 if (drp) {
-
                     drp.minDate = startDate;
                     drp.maxDate = endDate;
-                    drp.setStartDate(startDate);
-                    drp.setEndDate(startDate);
-
+                    drp.setStartDate(selectedDate);
+                    drp.setEndDate(selectedDate);
                 } else {
-
                     $el.daterangepicker({
                         autoUpdateInput: false,
                         singleDatePicker: true,
                         showDropdowns: true,
-                        startDate: today,
+                        startDate: selectedDate,
                         minDate: startDate,
                         maxDate: endDate,
-                        locale: {format: 'YYYY-MM-DD'},
+                        locale: { format: 'DD-MM-YYYY' },
                         cancelLabel: 'Clear'
                     });
-
                     $el.on('apply.daterangepicker', function (ev, picker) {
-                        $(this).val(picker.startDate.format('YYYY-MM-DD'));
+                        $(this).val(picker.startDate.format('DD-MM-YYYY'));
+                        $(this).trigger('change');
                     });
-
                     $el.on('cancel.daterangepicker', function (ev, picker) {
                         $(this).val('');
+                        $(this).trigger('change');
                     });
                 }
 
-                $el.val(today.format('YYYY-MM-DD'));
+                $el.val(selectedDate.format('DD-MM-YYYY'));
             }
 
-            generateDocNumber('BNM', res.infix, currentKodeSuffix + '0001');
-
+            $('#docno').val(
+                prefix + '/' + res.infix + '/' + currentKodeSuffix + '0001'
+            );
         }
     });
 
 });
 
 
-$('#prefix').on('change', function () {
+function loadNextSuffixBPNM() {
+    
+    let prefix = $.trim($('#prefix').val()).toUpperCase();
+    let infix = $.trim($('#infix').val());
 
-    let prefix = $(this).val().toUpperCase();
-    $(this).val(prefix);
-
-    let infix = $('#infix').val();
 
     if (!prefix || !infix || !currentKodeSuffix) return;
 
@@ -217,14 +216,29 @@ $('#prefix').on('change', function () {
                 return;
             }
 
-            $('#sufix').val(res.suffix);
+            let suffix = $.trim(
+                res.suffix || ''
+            );
 
-            generateDocNumber(prefix, infix, res.suffix);
+            $('#suffix')
+                .val(suffix)
+                .trigger('change');
+
+            $('#docno').val(
+                prefix + '/' + infix + '/' + res.suffix
+            );
 
         }
     });
 
+};
+
+
+
+$('#prefix').on('blur', function () {
+    loadNextSuffixBPNM();
 });
+
 
 
 var defaultInitialBranch = '';
@@ -328,10 +342,12 @@ function documentReadable() {
             let prefixParts = item.docno.trim().split('/');
             $('[name="prefix"]').val(prefixParts[0]).prop('readonly', true);
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
-            $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
+            $('[name="suffix"]').val(prefixParts[2]).prop('readonly', true);
             setJtsValue('[name="buildfor"]', convertToDbNumber(item.buildfor));
             // setJtsValue('[name="minimumqty"]', convertToDbNumber(item.minimumqty));
-            $('[name="docdate"]').val(item.docdate).prop('disabled', true);
+            $('[name="docdate"]')
+                .val(moment(item.docdate).format('DD-MM-YYYY'))
+                .prop('readonly', true);
             $('[name="pemohon"]').val(item.pemohon).prop('disabled', true);
             $('[name="batchno"]').val(item.batchno);
             $('[name="buildfor"]').prop('disabled', true);
@@ -546,6 +562,7 @@ function updateDetailBPNM(){
             if(res.status){
 
                 $('#idurut').val(res.items[0].idurut);
+                $('#uniqueid').val(res.items[0].uniqueid);
                 $('#description').val(res.items[0].description);
                 $('#docno').val(res.items[0].docno);
                 // $('#idbarang').val(res.items[0].idbarang);
@@ -905,11 +922,13 @@ $("#woeno").select2({
     defaultIdbarangJadi = data.idbarang_jadi
     $("#wono").val(data.wono.trim()).trigger('change').prop('disabled',true)
     $("#bomno").val(data.bomno.trim()).trigger('change').prop('disabled',true)
+    $("#bagian").val(data.bagian.trim()).trigger('change').prop('disabled',true)
     $("#buildfor").val(data.buildfor.trim()).prop('readonly',true)
     $("#buildunit").val('KG').trigger('change').prop('disabled',true)
     $("#idbarang_jadi").val(data.idbarang_jadi.trim()).trigger('change').prop('disabled',true)
     setSelect2Ajax('#wono', data.wono, data.wono);
     setSelect2Ajax('#bomno', data.bomno, data.bomno);
+    setSelect2Ajax('#bagian', data.bagian, data.bagian);
     setSelect2Ajax('#idbarang_jadi', data.idbarang_jadi, data.idbarang_jadi);
     setSelect2Ajax('#buildunit', 'KG', 'KG');
 
@@ -1232,6 +1251,15 @@ function formatLocationSelection(repo) {
 
 
 
+function formatCostcenter(repo) {
+    if (repo.loading) return repo.text;
+    var markup ="<div class='select2-result-repository__description'>" + repo.idcostcenter +"   <i class='fa fa-circle-o'></i>   "+ repo.nmcostcenter +"</div>";
+    return markup;
+}
+
+function formatCostcenterSelection(repo) {
+    return repo.nmcostcenter || repo.text;
+}
 
 var defaultInitialBagian = '';
 $("#bagian").select2({
@@ -1239,7 +1267,7 @@ $("#bagian").select2({
     allowClear: true,
     width: '100%',
     ajax: {
-        url: HOST_URL + 'api/globalmodule/list_mlocation',
+        url: HOST_URL + 'api/globalmodule/list_costcenter',
         type: 'POST',
         dataType: 'json',
         delay: 250,
@@ -1273,8 +1301,8 @@ $("#bagian").select2({
         return markup;
     }, // let our custom formatter work
     // minimumInputLength: 1,
-    templateResult: formatLocation, // omitted for brevity, see the source of this page
-    templateSelection: formatLocationSelection // omitted for brevity, see the source of this page
+    templateResult: formatCostcenter, // omitted for brevity, see the source of this page
+    templateSelection: formatCostcenterSelection // omitted for brevity, see the source of this page
 }).on("select2:select", function (e) {
 
     var data = e.params.data;
@@ -1449,7 +1477,7 @@ function saveBPNMFromWO(oldWoeno)
         'docno',
         $('#prefix').val() + '/' +
         $('#infix').val() + '/' +
-        $('#sufix').val()
+        $('#suffix').val()
     );
 
     formData.append('docdate', $('#docdate').val());
@@ -1536,6 +1564,7 @@ function saveBPNMDetail(formId) {
         // formData.append('nmlocation', $('#nmlocation').val());
         formData.append('tabno', $('#tabno').val());
         formData.append('batchno', $('#batchno').val());
+        formData.append('uniqueid', $('#uniqueid').val());
 
         formData.append('docdate', $('#docdate').val());
         formData.append('keterangan', $('#keterangan').val());
@@ -1590,7 +1619,7 @@ function saveBPNMDetail(formId) {
             'docno',
             $('#prefix').val() + '/' +
             $('#infix').val() + '/' +
-            $('#sufix').val()
+            $('#suffix').val()
         );
 
         // ===============================
@@ -1719,6 +1748,22 @@ function tabletmpBPNM() {
                 // Panggil fungsi manual tadi
                 // updateGrandTotal();
             }
+        });
+
+         $('#tmp_bpnmdtl tbody').on('click', 'tr', function(e) {
+            // Cegah jika yang diklik adalah checkbox itu sendiri (untuk menghindari double trigger)
+            if ($(e.target).is('input[type="checkbox"]')) {
+                return;
+            }
+
+            // Cari checkbox di dalam baris ini
+            var checkbox = $(this).find('input[type="checkbox"].row-check');
+
+            // Toggle status checkbox
+            checkbox.prop('checked', !checkbox.prop('checked'));
+
+            // Trigger event change jika diperlukan
+            checkbox.trigger('change');
         });
     }
 

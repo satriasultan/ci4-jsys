@@ -179,7 +179,7 @@
 
             <!-- LEFT -->
             <div class="col-sm-6">
-                <h1 class="m-0">Standart Cost Produksi</h1>
+                <h1 class="m-0">Detail Standart Cost Produksi</h1>
             </div>
 
             <!-- RIGHT -->
@@ -311,7 +311,7 @@
                                                            value="<?= !empty($dtldata['activedate']) ? date('d-m-Y', strtotime($dtldata['activedate'])) : '' ?>">
                                                 </div>
                                             </div>
-                                            <div class="col-md-3">
+                                            <!-- <div class="col-md-3">
                                                 <label class="form-label">Penyesuaian 1</label>
                                                 <input type="number"
                                                        name="penyesuaian_a"
@@ -334,7 +334,7 @@
                                                     <option value="">-- Pilih --</option>
                                                     <option value="Actual Cost">Actual Cost</option>
                                                     <option value="Last Cost">Last Cost</option>
-                                                    <option value="New Cost">New Cost</option>
+                                                <option value="New Cost">New Cost</option>
 
                                                 </select>
                                             </div>
@@ -342,10 +342,10 @@
                                             <button type="button" class="btn btn-danger w-100" disabled>
                                                 <i class="fa fa-sliders"></i> Adjustment
                                             </button>
-                                        </div>
+                                        </div> -->
                                     </div>
                                 </div>
-                                <div class="col-md-6  border border-dark" >
+                                <div class="col-md-6" >
                                     <div class="row">
                                         <div class="col-md-12">
                                             <div class="form-group">
@@ -356,8 +356,8 @@
                                     </div>
 
                                 </div> <!-- END ROW 2-->
-
                             </div>
+                        </div>
                 </div>
             </div>
 

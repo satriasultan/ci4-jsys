@@ -309,7 +309,7 @@ function documentReadable() {
 
     var docno = $('[name="docno"]').val();
 
-    $.getJSON(HOST_URL + 'production/trans/showing_mst_standart_cost_mst', {docno: docno})
+    $.getJSON(HOST_URL + 'production/trans/showing_mst_biaya_standart_mst', {docno: docno})
         .done(function (response) {
 
             if (!response.dataTables || !response.dataTables.items.length) {
@@ -330,10 +330,15 @@ function documentReadable() {
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
             $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
 
-            $('[name="docdate"]').val(item.docdate).prop('disabled', true);
-            $('[name="activedate"]').val(item.activedate).prop('disabled', true);
+            $('[name="docdate"]')
+                .val(moment(item.docdate).format('DD-MM-YYYY'))
+                .prop('disabled', true);
+            $('[name="activedate"]')
+                .val(moment(item.activedate).format('DD-MM-YYYY'))
+                .prop('disabled', true);
+                
             $('[name="docref"]').val(item.docref).prop('disabled', false);
-            $('[name="keterangan"]').val(item.description);
+            $('[name="keterangan"]').val(item.description).prop('readonly',true);
 
             skipRoleChange = true;
 
@@ -380,6 +385,8 @@ function documentReadable() {
             }).always(function () {
                 hideLoader();
             });
+
+            $('[name="cabang"]').prop('disabled',true);
         })
         .fail(function () {
             console.log("Failed To Loading Data");
@@ -657,9 +664,10 @@ function tabletmpStandartCost() {
             "bFilter": true,
             "iDisplayLength": -1,
             "ajax": {
-                "url": HOST_URL + 'production/trans/list_mst_standart_cost_dtl',
+                "url": HOST_URL + 'production/trans/list_mst_biaya_standart_dtl',
                 "type": "POST",
                 "data": function (data) {
+                    data.docno = $('#docno').val(); // tambahkan parameter docno
                     //data.searchfilter = $('#searchitem').val()+'';
                     //data.idbarang = $('#idbarang').val()+'';
                     //data.idposition = $('#idposition').val()+'';

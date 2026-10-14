@@ -261,30 +261,21 @@
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label>No. Jurnal</label>
-                                                <div class="d-flex">
-                                                    <input type="text"
-                                                        name="prefix"
-                                                        id="prefix"
-                                                        class="form-control me-1"
-                                                        maxlength="3"
-                                                        style="text-transform: uppercase;"
-                                                        pattern="[A-Z0-9]+">
+                                                    <div class="d-flex">
+                                                        <input type="text" name="prefix" id="prefix" class="form-control me-1" maxlength="3" style="text-transform: uppercase;" pattern="[A-Za-z0-9]{1,3}" title="Prefix hanya boleh huruf dan angka, maksimal 3 karakter">
 
-                                                    <span class="px-2 align-self-center">/</span>
+                                                        <span class="px-2 align-self-center">/</span>
 
-                                                    <input type="text"
-                                                        name="infix"
-                                                        id="infix"
-                                                        class="form-control mx-1"
-                                                        readonly>
+                                                        <input type="text"
+                                                            name="infix"
+                                                            id="infix"
+                                                            class="form-control mx-1"
+                                                            readonly>
 
-                                                    <span class="px-2 align-self-center">/</span>
+                                                        <span class="px-2 align-self-center">/</span>
 
-                                                    <input type="text"
-                                                        name="sufix"
-                                                        id="sufix"
-                                                        class="form-control ms-1"
-                                                        readonly>
+                                                        <input type="text" name="suffix" id="suffix" class="form-control ms-1" maxlength="6" pattern="^[A-Za-z0-9]{0,2}[0-9]{4}$" title="Maksimal 6 karakter. 4 karakter terakhir wajib angka." style="text-transform: uppercase;">
+                                                            
                                                     </div>
                                                 </div>
                                             </div>
@@ -309,7 +300,7 @@
                                                            placeholder="Active Date">
                                                 </div>
                                             </div>
-                                            <div class="col-md-3">
+                                            <!-- <div class="col-md-3">
                                                 <label class="form-label">Penyesuaian 1</label>
                                                 <input type="number"
                                                        name="penyesuaian_a"
@@ -340,10 +331,10 @@
                                             <button type="button" class="btn btn-danger w-100" disabled>
                                                 <i class="fa fa-sliders"></i> Adjustment
                                             </button>
-                                        </div>
+                                        </div> -->
                                     </div>
                                 </div>
-                                <div class="col-md-6  border border-dark" >
+                                <div class="col-md-6">
                                     <div class="row">
                                         <div class="col-md-12">
                                             <div class="form-group">
@@ -466,6 +457,7 @@
                 <div class="modal-body">
 
                     <input type="hidden" name="idurut" id="idurut">
+                    <input type="hidden" name="uniqueid" id="uniqueid">
 
                     <!-- ROW 1 -->
                     <div class="row g-3">
@@ -519,40 +511,6 @@
                                    class="form-control jtsseparator text-end"
                                    placeholder="0.00" required>
                         </div>
-
-                    </div>
-
-
-                    <!-- ROW 2 -->
-                    <div class="row g-3 mt-1">
-<?php /*
-                        <div class="col-md-2">
-                            <label class="form-label">Debit / Kredit</label>
-                            <select name="dk" id="dk" class="form-select select2" required>
-                                <option value="">-- Pilih --</option>
-                                <option value="D">D</option>
-                                <option value="K">K</option>
-                            </select>
-                        </div>
-
-
-                        <div class="col-md-2">
-                            <label class="form-label">Mata Uang</label>
-                            <input name="currency"
-                                   id="currency"
-                                   class="form-control"
-                                   readonly>
-                        </div>
-
-                        <div class="col-md-2">
-                            <label class="form-label">Harga</label>
-                            <input type="text"
-                                   name="valqty"
-                                   id="valqty"
-                                   class="form-control jtsseparator text-end"
-                                   placeholder="0.00" required>
-                        </div>
- */ ?>
                         <div class="col-md-6">
                             <label class="form-label">Description Detail</label>
                             <textarea name="description_detail"
@@ -561,8 +519,8 @@
                                       class="form-control"
                                       style="text-transform:uppercase"></textarea>
                         </div>
-
                     </div>
+
 
                 </div>
 

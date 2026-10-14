@@ -187,7 +187,10 @@
                     </button>
                     <div class="dropdown-menu">
                         <?php if (isset($dtl_akses['a_input']) && trim($dtl_akses['a_input']) === 't'): ?>
-                            <a class="dropdown-item" href="<?= base_url('production/trans/add_workingorder') ?>"><i class="fa fa-plus"></i><?php echo '   Input'; ?> </a>
+                            <a class="dropdown-item" href="<?= base_url('production/trans/add_workingorder') ?>"
+                                onclick="return guardPeriodeTutup(event)">
+                                <i class="fa fa-plus"></i><?php echo '   Input'; ?> 
+                            </a>
                         <?php endif; ?>
                         <!-- <a class="dropdown-item disabled" data-bs-toggle="modal" data-bs-target="#filter"  href="#"><i class="fa fa-filter"></i><?php echo '   Filter'; ?></a> -->
                         <a class="dropdown-item" href="#"  onclick="reload_workingorder()"><i class="fa fa-refresh"></i><?php echo '    Reload'; ?> </a>
@@ -213,9 +216,9 @@
 
                         
                         
-                        <th>Status</th>
                         <th>Remark</th>
                         <th>Job</th>
+                        <th>Status</th>
 
                         <!-- <th>Input By</th>
                         <th>Input Date</th>
@@ -320,13 +323,13 @@
         autoUpdateInput: false,
         singleDatePicker: true,
         showDropdowns: true,
-        locale: { format: 'YYYY-MM-DD' },
+        locale: { format: 'DD-MM-YYYY' },
         cancelLabel: 'Clear'
     });
 
     // handler apply/cancel
     $('#activedate').on('apply.daterangepicker', function(ev, picker) {
-        $(this).val(picker.startDate.format('YYYY-MM-DD'));
+        $(this).val(picker.startDate.format('DD-MM-YYYY'));
         // jika butuh validasi bootstrapValidator:
         // $('#formInputTransfers').bootstrapValidator('updateStatus', 'activedate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'activedate');
     });

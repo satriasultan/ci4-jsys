@@ -668,6 +668,8 @@ function tabletmpStandartCost() {
                 "url": HOST_URL + 'production/trans/list_mst_standart_cost_dtl',
                 "type": "POST",
                 "data": function (data) {
+                    data.docno = $('#docno').val(); // tambahkan parameter docno
+
                     //data.searchfilter = $('#searchitem').val()+'';
                     //data.idbarang = $('#idbarang').val()+'';
                     //data.idposition = $('#idposition').val()+'';

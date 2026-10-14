@@ -271,30 +271,21 @@
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label>No. BOM</label>
-                                            <div class="d-flex">
-                                                <input type="text"
-                                                    name="prefix"
-                                                    id="prefix"
-                                                    class="form-control me-1"
-                                                    maxlength="3"
-                                                    style="text-transform: uppercase;"
-                                                    pattern="[A-Z0-9]+">
+                                                <div class="d-flex">
+                                                    <input type="text" name="prefix" id="prefix" class="form-control me-1" maxlength="3" style="text-transform: uppercase;" pattern="[A-Za-z0-9]{1,3}" title="Prefix hanya boleh huruf dan angka, maksimal 3 karakter">
 
-                                                <span class="px-2 align-self-center">/</span>
+                                                    <span class="px-2 align-self-center">/</span>
 
-                                                <input type="text"
-                                                    name="infix"
-                                                    id="infix"
-                                                    class="form-control mx-1"
-                                                    readonly>
+                                                    <input type="text"
+                                                        name="infix"
+                                                        id="infix"
+                                                        class="form-control mx-1"
+                                                        readonly>
 
-                                                <span class="px-2 align-self-center">/</span>
+                                                    <span class="px-2 align-self-center">/</span>
 
-                                                <input type="text"
-                                                    name="sufix"
-                                                    id="sufix"
-                                                    class="form-control ms-1"
-                                                    readonly>
+                                                    <input type="text" name="suffix" id="suffix" class="form-control ms-1" maxlength="6" pattern="^[A-Za-z0-9]{0,2}[0-9]{4}$" title="Maksimal 6 karakter. 4 karakter terakhir wajib angka." style="text-transform: uppercase;">
+                                                        
                                                 </div>
                                             </div>
                                         </div>
@@ -345,201 +336,192 @@
             </div>
 
             <div class="card mt-3 card-primary">
-
-                <!-- NAVIGATION TAB -->
+                <!-- ============================================================
+                    NAVIGATION TAB
+                    ============================================================ -->
                 <div class="card-header p-0">
-
                     <ul class="nav nav-tabs" id="detailBarangTab" role="tablist">
 
                         <li class="nav-item">
                             <a class="nav-link active"
-                                id="material-tab"
-                                data-bs-toggle="tab"
-                                href="#material"
-                                role="tab">
-
+                            id="material-tab"
+                            data-bs-toggle="tab"
+                            href="#material"
+                            role="tab">
                                 <i class="fa fa-cubes mr-1"></i>
                                 Material
-
                             </a>
                         </li>
 
                         <li class="nav-item">
                             <a class="nav-link"
-                                id="cost-tab"
-                                data-bs-toggle="tab"
-                                href="#cost"
-                                role="tab">
-
+                            id="cost-tab"
+                            data-bs-toggle="tab"
+                            href="#cost"
+                            role="tab">
                                 <i class="fa fa-money-bill mr-1"></i>
                                 Cost
-
                             </a>
                         </li>
 
                         <li class="nav-item">
                             <a class="nav-link"
-                                id="wip-tab"
-                                data-bs-toggle="tab"
-                                href="#wip"
-                                role="tab">
-
+                            id="wip-tab"
+                            data-bs-toggle="tab"
+                            href="#wip"
+                            role="tab">
                                 <i class="fa fa-industry mr-1"></i>
                                 Barang WIP
-
                             </a>
                         </li>
 
                     </ul>
-
                 </div>
 
+                <!-- ============================================================
+                    TAB CONTENT
+                    ============================================================ -->
                 <div class="card-body">
-                    <!-- TAB CONTENT -->
                     <div class="tab-content">
-    
-                        <!-- TAB MATERIAL -->
+
+                        <!-- ====================================================
+                            TAB MATERIAL
+                            ==================================================== -->
                         <div class="tab-pane fade show active"
-                                id="material"
-                                role="tabpanel">
+                            id="material"
+                            role="tabpanel">
+
                             <div class="card-body p-4">
-                            <div class="card-header clearfix">
-    
-                                <h3 class="card-title">
-                                    Detail Barang - Material
-                                </h3>
-    
-                                <div class="float-right d-flex align-items-center gap-2">
-    
-                                    <button type="button"
-                                            class="btn btn-success btn-lg action-btn"
-                                            title="Input Data (Ctrl + Q)"
-                                            id="btnAddDetailMaterial">
-    
-                                        <i class="fa fa-plus"></i>
-    
-                                    </button>
-    
-                                    <button type="button"
-                                            id="btnUpdateDetail"
-                                            class="btn btn-warning btn-lg action-btn"
-                                            title="Update Data"
-                                            onclick="updateDetailBomMaterial()">
-    
-                                        <i class="fa fa-edit"></i>
-    
-                                    </button>
-    
-                                    <button type="button"
-                                            class="btn btn-danger btn-lg action-btn"
-                                            title="Hapus Data"
-                                            onclick="btnDeleteDetailMaterial()">
-    
-                                        <i class="fa fa-trash"></i>
-    
-                                    </button>
-    
+
+                                <!-- Header -->
+                                <div class="card-header clearfix">
+                                    <h3 class="card-title">
+                                        Detail Barang - Material
+                                    </h3>
+
+                                    <div class="float-right d-flex align-items-center gap-2">
+
+                                        <button type="button"
+                                                class="btn btn-success btn-lg action-btn"
+                                                title="Input Data (Ctrl + Q)"
+                                                id="btnAddDetailMaterial">
+                                            <i class="fa fa-plus"></i>
+                                        </button>
+
+                                        <button type="button"
+                                                id="btnUpdateDetail"
+                                                class="btn btn-warning btn-lg action-btn"
+                                                title="Update Data"
+                                                onclick="updateDetailBomMaterial()">
+                                            <i class="fa fa-edit"></i>
+                                        </button>
+
+                                        <button type="button"
+                                                class="btn btn-danger btn-lg action-btn"
+                                                title="Hapus Data"
+                                                onclick="btnDeleteDetailMaterial()">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+
+                                    </div>
                                 </div>
-    
-                            </div>
-    
-                            <div class="card-body p-3">
-    
-                                <div class="table-responsive">
-    
-                                    <table id="tmp_bommaterialdtl"
+
+                                <!-- Body -->
+                                <div class="card-body p-3">
+                                    <div class="table-responsive">
+
+                                        <table id="tmp_bommaterialdtl"
                                             class="table table-hover align-middle custom-table">
-    
-                                        <thead>
-                                        <tr>
-                                            <th class="text-center" width="40">
-                                                <input type="checkbox" id="checkAll">
-                                            </th>
-                                            <th>ID Barang</th>
-                                            <th>Nama Barang</th>
-                                            <th>Qty</th>
-                                            <th>Satuan</th>
-                                            <th class="text-end">Standart Cost</th>
-                                            <th class="text-end">Total Cost</th>
-                                            <th>Keterangan</th>
-                                        </tr>
-                                        </thead>
-    
-                                        <tbody>
-                                        </tbody>
-                                        <tfoot>
-                                            <tr>
-                                                <th colspan="6" style="background-color: #d5d5d5;text-align: right!important;">
-                                                    TOTAL NILAI MATERIAL
-                                                </th>
-                                                <th id="ttlmaterial" class="text-right" style="font-weight: bold;">
-                                                    0
-                                                </th>
-                                            </tr>
-                                        </tfoot>
-    
-                                    </table>
-    
+
+                                            <thead>
+                                                <tr>
+                                                    <th class="text-center" width="40">
+                                                        <input type="checkbox" id="checkAll">
+                                                    </th>
+                                                    <th>ID Barang</th>
+                                                    <th>Nama Barang</th>
+                                                    <th>Qty</th>
+                                                    <th>Satuan</th>
+                                                    <th class="text-end">Standart Cost</th>
+                                                    <th class="text-end">Total Cost</th>
+                                                    <th>Keterangan</th>
+                                                </tr>
+                                            </thead>
+
+                                            <tbody>
+                                            </tbody>
+
+                                            <tfoot>
+                                                <tr>
+                                                    <th colspan="6"
+                                                        style="background-color: #d5d5d5; text-align: right !important;">
+                                                        TOTAL NILAI MATERIAL
+                                                    </th>
+                                                    <th id="ttlmaterial"
+                                                        class="text-right"
+                                                        style="font-weight: bold;">
+                                                        0
+                                                    </th>
+                                                </tr>
+                                            </tfoot>
+
+                                        </table>
+
+                                    </div>
                                 </div>
-    
-                            </div>
+
                             </div>
                         </div>
-    
-                        <!-- TAB COST -->
+
+                        <!-- ====================================================
+                            TAB COST
+                            ==================================================== -->
                         <div class="tab-pane fade"
-                                id="cost"
-                                role="tabpanel">
-    
+                            id="cost"
+                            role="tabpanel">
+
                             <div class="card-body p-4">
-    
+
+                                <!-- Header -->
                                 <div class="card-header clearfix">
-    
                                     <h3 class="card-title">
                                         Detail - COST
                                     </h3>
-    
+
                                     <div class="float-right d-flex align-items-center gap-2">
-    
+
                                         <button type="button"
                                                 class="btn btn-success btn-lg action-btn"
                                                 title="Input Data (Ctrl + Q)"
                                                 id="btnAddDetailCost">
-    
                                             <i class="fa fa-plus"></i>
-    
                                         </button>
-    
+
                                         <button type="button"
-                                            id="btnUpdateDetailCost"
-                                            class="btn btn-warning btn-lg action-btn"
-                                            title="Update Data"
-                                            onclick="updateDetailBomCost()">
-    
+                                                id="btnUpdateDetailCost"
+                                                class="btn btn-warning btn-lg action-btn"
+                                                title="Update Data"
+                                                onclick="updateDetailBomCost()">
                                             <i class="fa fa-edit"></i>
-        
                                         </button>
-        
+
                                         <button type="button"
                                                 class="btn btn-danger btn-lg action-btn"
                                                 title="Hapus Data"
                                                 onclick="btnDeleteDetailCost()">
-        
                                             <i class="fa fa-trash"></i>
-        
                                         </button>
-    
+
                                     </div>
-    
                                 </div>
-    
+
+                                <!-- Body -->
                                 <div class="card-body p-3">
-    
                                     <div class="table-responsive">
-    
+
                                         <table id="tmp_bomcostdtl"
-                                                class="table table-hover align-middle custom-table">
-    
+                                            class="table table-hover align-middle custom-table">
+
                                             <thead>
                                                 <tr>
                                                     <th class="text-center" width="40">
@@ -554,83 +536,81 @@
                                                     <th>Keterangan</th>
                                                 </tr>
                                             </thead>
-    
+
                                             <tbody>
                                             </tbody>
+
                                             <tfoot>
                                                 <tr>
-                                                    <th colspan="6" style="background-color: #d5d5d5; text-align: right!important;" >
+                                                    <th colspan="6"
+                                                        style="background-color: #d5d5d5; text-align: right !important;">
                                                         TOTAL NILAI COST
                                                     </th>
-                                                    <th id="ttlcost" class="text-right" style="font-weight: bold;">
+                                                    <th id="ttlcost"
+                                                        class="text-right"
+                                                        style="font-weight: bold;">
                                                         0
                                                     </th>
                                                 </tr>
                                             </tfoot>
+
                                         </table>
-    
+
                                     </div>
-    
                                 </div>
-    
+
                             </div>
-    
                         </div>
-    
-                        <!-- TAB WIP -->
+
+                        <!-- ====================================================
+                            TAB WIP
+                            ==================================================== -->
                         <div class="tab-pane fade"
-                                id="wip"
-                                role="tabpanel">
-    
+                            id="wip"
+                            role="tabpanel">
+
                             <div class="card-body p-4">
-    
+
+                                <!-- Header -->
                                 <div class="card-header clearfix">
-    
                                     <h3 class="card-title">
                                         Detail - Barang WIP
                                     </h3>
-    
+
                                     <div class="float-right d-flex align-items-center gap-2">
-    
+
                                         <button type="button"
                                                 class="btn btn-success btn-lg action-btn"
                                                 title="Input Data (Ctrl + Q)"
                                                 id="btnAddDetailWip">
-    
                                             <i class="fa fa-plus"></i>
-    
                                         </button>
-    
+
                                         <button type="button"
-                                            id="btnUpdateDetailWip"
-                                            class="btn btn-warning btn-lg action-btn"
-                                            title="Update Data"
-                                            onclick="updateDetailBomWip()">
-    
+                                                id="btnUpdateDetailWip"
+                                                class="btn btn-warning btn-lg action-btn"
+                                                title="Update Data"
+                                                onclick="updateDetailBomWip()">
                                             <i class="fa fa-edit"></i>
-        
                                         </button>
-        
+
                                         <button type="button"
                                                 class="btn btn-danger btn-lg action-btn"
                                                 title="Hapus Data"
                                                 onclick="btnDeleteDetailWip()">
-        
                                             <i class="fa fa-trash"></i>
-        
                                         </button>
-    
+
                                     </div>
-    
                                 </div>
-    
+
+                                <!-- Body -->
                                 <div class="card-body p-3">
-    
                                     <div class="table-responsive">
-    
+
                                         <table id="tmp_bomwipdtl"
-                                                class="table table-hover align-middle custom-table">
-    
+                                            class="table table-hover align-middle custom-table">
+
                                             <thead>
                                                 <tr>
                                                     <th class="text-center" width="40">
@@ -645,58 +625,61 @@
                                                     <th>Keterangan</th>
                                                 </tr>
                                             </thead>
-    
+
                                             <tbody>
                                             </tbody>
+
                                             <tfoot>
                                                 <tr>
-                                                    <th colspan="6" style="background-color: #d5d5d5; text-align: right!important;" >
+                                                    <th colspan="6"
+                                                        style="background-color: #d5d5d5; text-align: right !important;">
                                                         TOTAL NILAI WIP
                                                     </th>
-                                                    <th id="ttlwip" class="text-right" style="font-weight: bold;">
+                                                    <th id="ttlwip"
+                                                        class="text-right"
+                                                        style="font-weight: bold;">
                                                         0
                                                     </th>
                                                 </tr>
                                             </tfoot>
+
                                         </table>
-    
+
                                     </div>
-    
                                 </div>
-    
+
                             </div>
-    
                         </div>
-    
+
+                        <!-- ====================================================
+                            TOTAL BOM
+                            ==================================================== -->
                         <div class="alert alert-info text-right text-bold">
                             <strong>TOTAL BOM :</strong>
                             <span id="ttlprice">0</span>
                         </div>
+
                     </div>
                 </div>
 
-                <!-- FOOTER -->
+                <!-- ============================================================
+                    FOOTER
+                    ============================================================ -->
                 <div class="card-footer bg-light">
 
                     <a href="<?= base_url('production/trans/clear_bom_Tmp') ?>"
-                        class="btn btn-default btn-lg">
-
+                    class="btn btn-default btn-lg">
                         <i class="fa fa-arrow-left mr-2"></i>
                         Kembali
-
                     </a>
 
                     <?php if ($typeform != 'DETAIL' && $dtldata != null): ?>
-
                         <button type="submit"
                                 onclick="return confirm('Simpan Data?')"
                                 class="btn btn-success btn-lg float-right">
-
                             <i class="fa fa-save"></i>
                             Simpan Final Data
-
                         </button>
-
                     <?php endif; ?>
 
                 </div>
@@ -735,6 +718,7 @@
                 <div class="modal-body">
 
                     <input type="hidden" name="idurut" id="idurutMaterial">
+                    <input type="hidden" name="uniqueidMaterial" id="uniqueidMaterial">
 
                     <!-- ROW 1 -->
                     <div class="row g-3">
@@ -861,6 +845,7 @@
                 <div class="modal-body">
 
                     <input type="hidden" name="idurut" id="idurutCost">
+                    <input type="hidden" name="uniqueidCost" id="uniqueidCost">
 
                     <!-- ROW 1 -->
                     <div class="row g-3">
@@ -986,6 +971,7 @@
                 <div class="modal-body">
 
                     <input type="hidden" name="idurut" id="idurutWip">
+                    <input type="hidden" name="uniqueidWip" id="uniqueidWip">
 
                     <!-- ROW 1 -->
                     <div class="row g-3">

@@ -21,6 +21,7 @@ VALUES
 CREATE TABLE IF NOT EXISTS sc_tmp.workingorder_mst
 (
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
+    idurut bigserial,
     doctype character(20) default 'WO',
 	cabang character (30 ) COLLATE pg_catalog."default",    
     pemohon character(100) COLLATE pg_catalog."default",
@@ -38,7 +39,7 @@ CREATE TABLE IF NOT EXISTS sc_tmp.workingorder_mst
     updateby character varying(50) COLLATE pg_catalog."default",
     updatedate timestamp without time zone,
     docnotmp character(30) COLLATE pg_catalog."default",
-    CONSTRAINT pk_tmp_workingorder_mst PRIMARY KEY (docno)
+    CONSTRAINT pk_tmp_workingorder_mst PRIMARY KEY (docno, idurut)
 )
 
 TABLESPACE pg_default;
@@ -125,6 +126,7 @@ ALTER TABLE IF EXISTS sc_tmp.workingorder_bom_dtl
 CREATE TABLE IF NOT EXISTS sc_trx.workingorder_mst
 (
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
+    idurut bigserial,
     doctype character(20) default 'WO' ,
 	cabang character (30 ) COLLATE pg_catalog."default",    
     pemohon character(100) COLLATE pg_catalog."default",
@@ -237,473 +239,343 @@ DROP FUNCTION IF EXISTS sc_tmp.tr_tmp_workingorder_mst();
 CREATE OR REPLACE FUNCTION sc_tmp.tr_tmp_workingorder_mst()
 RETURNS trigger
 LANGUAGE plpgsql
+COST 100
+VOLATILE NOT LEAKPROOF
 AS $BODY$
 
 DECLARE
-
     v_docno        TEXT;
+    v_inputby      TEXT;
+    v_idurut       INTEGER;
     v_base_docno   TEXT;
     v_new_docno    TEXT;
     v_num          TEXT;
     v_num_int      INTEGER;
+    v_lock_key     BIGINT;
+    v_client_ip    TEXT;
 
 BEGIN
 
-    RAISE NOTICE 'TMP WO TRIGGER : %, OLD=%, NEW=%',
-        NEW.docno,
-        OLD.status,
-        NEW.status;
+    -- ===============================
+    -- GUARD: hanya proses kalau status berubah
+    -- ===============================
+    IF UPPER(TRIM(OLD.status)) = UPPER(TRIM(NEW.status)) THEN
+        RETURN NEW;
+    END IF;
+
+    -- ===============================
+    -- AMBIL IP DARI sc_log.useronline
+    -- ===============================
+    v_client_ip := sc_log.fn_get_user_ip(NEW.inputby);
 
     -- =====================================================
-    -- FINAL INSERT
+    -- FINAL INSERT (tmp kosong / docnotmp kosong)
     -- =====================================================
-    IF UPPER(TRIM(OLD.status))='E'
-       AND UPPER(TRIM(NEW.status))='F'
-       AND COALESCE(TRIM(NEW.docnotmp),'')='' THEN
+    IF UPPER(TRIM(OLD.status)) = 'E'
+       AND UPPER(TRIM(NEW.status)) = 'F'
+       AND COALESCE(TRIM(NEW.docnotmp), '') = '' THEN
 
-        v_docno := TRIM(NEW.docno);
+        v_docno   := RTRIM(NEW.docno);
+        v_inputby := NEW.inputby;
+        v_idurut  := NEW.idurut;
 
-        -- =================================================
-        -- LOCK DOCNO
-        -- =================================================
+        -- ================================================
+        -- DETEKSI DUPLIKAT (cegah double insert)
+        -- ================================================
+        IF EXISTS (
+            SELECT 1
+            FROM sc_trx.workingorder_mst
+            WHERE idurut = v_idurut
+              AND TRIM(COALESCE(inputby, '')) = TRIM(COALESCE(v_inputby, ''))
+        ) THEN
+
+            DELETE FROM sc_tmp.workingorder_bom_dtl
+            WHERE TRIM(docref) = TRIM(OLD.docno)
+              AND inputby = v_inputby;
+
+            DELETE FROM sc_tmp.workingorder_bom_mst
+            WHERE TRIM(docref) = TRIM(OLD.docno)
+              AND inputby = v_inputby;
+
+            DELETE FROM sc_tmp.workingorder_mst
+            WHERE TRIM(docno) = TRIM(OLD.docno)
+              AND inputby = v_inputby
+              AND idurut = v_idurut;
+
+            RETURN NEW;
+        END IF;
+
+        -- ================================================
+        -- GENERATE DOCNO (advisory lock + loop increment)
+        -- ================================================
         v_base_docno := regexp_replace(v_docno, '[0-9]+$', '');
+        v_lock_key   := hashtext(v_base_docno);
 
-        PERFORM pg_advisory_xact_lock(hashtext(v_base_docno));
+        PERFORM pg_advisory_xact_lock(v_lock_key);
 
         v_new_docno := v_docno;
 
         LOOP
-
             EXIT WHEN NOT EXISTS (
                 SELECT 1
                 FROM sc_trx.workingorder_mst
-                WHERE TRIM(docno)=TRIM(v_new_docno)
+                WHERE TRIM(docno) = TRIM(v_new_docno)
             );
 
-            v_num := regexp_replace(
-                v_new_docno,
-                '.*?([0-9]+)$',
-                '\1'
-            );
+            v_num := regexp_replace(v_new_docno, '.*?([0-9]+)$', '\1');
+
+            IF COALESCE(v_num, '') = '' THEN
+                RAISE EXCEPTION
+                    'Format DOCNO Working Order tidak valid: %',
+                    v_new_docno;
+            END IF;
 
             v_num_int := v_num::INTEGER + 1;
 
             v_new_docno :=
                 v_base_docno ||
-                LPAD(v_num_int::TEXT, LENGTH(v_num), '0');
-
+                lpad(v_num_int::TEXT, length(v_num), '0');
         END LOOP;
 
         v_docno := v_new_docno;
 
-        -- =================================================
-        -- INSERT MASTER
-        -- =================================================
+        -- ================================================
+        -- INSERT HEADER MASTER (dengan idurut)
+        -- ================================================
         INSERT INTO sc_trx.workingorder_mst (
-
-            docno,
-            doctype,
-            cabang,
-            pemohon,
-            docdate,
-            docdatefinish,
-            kdcustomer,
-            nmcustomer,
-            alamatcustomer,
-            docref,
-            status,
-            keterangan,
-            noso,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp
-
+            idurut, docno, doctype, cabang, pemohon, docdate, docdatefinish,
+            kdcustomer, nmcustomer, alamatcustomer, docref,
+            status, keterangan, noso,
+            inputby, inputdate, updateby, updatedate, docnotmp
         )
         SELECT
-
-            v_docno,
-            doctype,
-            cabang,
-            pemohon,
-            docdate,
-            docdatefinish,
-            kdcustomer,
-            nmcustomer,
-            alamatcustomer,
-            docref,
-            'F',
-            keterangan,
-            noso,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp
-
+            idurut, v_docno, doctype, cabang, pemohon, docdate, docdatefinish,
+            kdcustomer, nmcustomer, alamatcustomer, docref,
+            'F', keterangan, noso,
+            inputby, inputdate, updateby, updatedate, docnotmp
         FROM sc_tmp.workingorder_mst
-        WHERE TRIM(docno)=TRIM(OLD.docno);
+        WHERE TRIM(docno) = TRIM(OLD.docno)
+          AND inputby = v_inputby
+          AND idurut = v_idurut;
 
-
-        -- =================================================
+        -- ================================================
         -- INSERT BOM HEADER
-        -- =================================================
+        -- ================================================
         INSERT INTO sc_trx.workingorder_bom_mst (
-
-            docno,
-            doctype,
-            cabang,
-            pemohon,
-            docdate,
-            idbarang_jadi,
-            nmbarang_jadi,
-            docref,
-            buildfor,
-            ttlmaterial,
-            ttlcost,
-            ttlwip,
-            ttlprice,
-            buildunit,
-            minimumqty,
-            status,
-            desc_bom,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp
-
+            docno, doctype, cabang, pemohon, docdate,
+            idbarang_jadi, nmbarang_jadi, docref,
+            buildfor, ttlmaterial, ttlcost, ttlwip, ttlprice,
+            buildunit, minimumqty, status, desc_bom,
+            inputby, inputdate, updateby, updatedate, docnotmp
         )
         SELECT
-
-            docno,
-            doctype,
-            cabang,
-            pemohon,
-            docdate,
-            idbarang_jadi,
-            nmbarang_jadi,
-            v_docno,
-            buildfor,
-            ttlmaterial,
-            ttlcost,
-            ttlwip,
-            ttlprice,
-            buildunit,
-            minimumqty,
-            'F',
-            desc_bom,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp
-
+            docno, doctype, cabang, pemohon, docdate,
+            idbarang_jadi, nmbarang_jadi, v_docno,
+            buildfor, ttlmaterial, ttlcost, ttlwip, ttlprice,
+            buildunit, minimumqty, 'F', desc_bom,
+            inputby, inputdate, updateby, updatedate, docnotmp
         FROM sc_tmp.workingorder_bom_mst
-        WHERE TRIM(docref)=TRIM(OLD.docno);
+        WHERE TRIM(docref) = TRIM(OLD.docno)
+          AND inputby = v_inputby;
 
-        -- =================================================
-        -- INSERT DETAIL
-        -- =================================================
+        -- ================================================
+        -- INSERT BOM DETAIL
+        -- ================================================
         INSERT INTO sc_trx.workingorder_bom_dtl (
-
-            docno,
-            doctype,
-            doctype_detail,
-            cabang,
-            docref,
-            pemohon,
-            docdate,
-            
-            idbarang,
-            nmbarang,
-            description,
-            qty,
-            unit,
-            standartcost,
-            totalcost,
-            newcost,
-            currcode,
-            idbagian,
-            nmbagian,
-            status,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp,
-            idurut,
-            uniqueid
-
+            docno, doctype, doctype_detail, cabang, docref,
+            pemohon, docdate,
+            idbarang, nmbarang, description, qty, unit,
+            standartcost, totalcost, newcost, currcode,
+            idbagian, nmbagian, status,
+            inputby, inputdate, updateby, updatedate,
+            docnotmp, idurut, uniqueid
         )
         SELECT
-
-            docno,
-            doctype,
-            doctype_detail,
-            cabang,
-            v_docno,
-            pemohon,
-            docdate,
-            
-            idbarang,
-            nmbarang,
-            description,
-            qty,
-            unit,
-            COALESCE(standartcost,0),
-            COALESCE(totalcost,0),
-            COALESCE(newcost,0),
+            docno, doctype, doctype_detail, cabang, v_docno,
+            pemohon, docdate,
+            idbarang, nmbarang, description, qty, unit,
+            COALESCE(standartcost, 0),
+            COALESCE(totalcost, 0),
+            COALESCE(newcost, 0),
             currcode,
-            idbagian,
-            nmbagian,
-            'F',
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp,
-            idurut,
-            uniqueid
-
+            idbagian, nmbagian, 'F',
+            inputby, inputdate, updateby, updatedate,
+            docnotmp, idurut, uniqueid
         FROM sc_tmp.workingorder_bom_dtl
-        WHERE TRIM(docref)=TRIM(OLD.docno);
+        WHERE TRIM(docref) = TRIM(OLD.docno)
+          AND inputby = v_inputby;
 
-        -- =================================================
-        -- CLEAN TMP
-        -- =================================================
+        -- ================================================
+        -- LOG: INSERT HEADER WO
+        -- ================================================
+        PERFORM sc_log.fn_log_transaction(
+            v_docno::CHAR(30),
+            NULL,
+            'I.R',
+            'I.R.A.4',
+            'I',
+            v_inputby,
+            v_client_ip,
+            v_inputby
+        );
+
+        -- ================================================
+        -- CLEANUP TMP
+        -- ================================================
         DELETE FROM sc_tmp.workingorder_bom_dtl
-        WHERE TRIM(docref)=TRIM(OLD.docno);
+        WHERE TRIM(docref) = TRIM(OLD.docno)
+          AND inputby = v_inputby;
 
         DELETE FROM sc_tmp.workingorder_bom_mst
-        WHERE TRIM(docref)=TRIM(OLD.docno);
+        WHERE TRIM(docref) = TRIM(OLD.docno)
+          AND inputby = v_inputby;
 
         DELETE FROM sc_tmp.workingorder_mst
-        WHERE TRIM(docno)=TRIM(OLD.docno);
+        WHERE TRIM(docno) = TRIM(OLD.docno)
+          AND inputby = v_inputby
+          AND idurut = v_idurut;
 
     -- =====================================================
-    -- FINAL EDIT
+    -- FINAL EDIT (docnotmp terisi)
     -- =====================================================
-    ELSIF UPPER(TRIM(OLD.status))='E'
-       AND UPPER(TRIM(NEW.status))='F'
-       AND COALESCE(TRIM(NEW.docnotmp),'')<>'' THEN
+    ELSIF UPPER(TRIM(OLD.status)) = 'E'
+          AND UPPER(TRIM(NEW.status)) = 'F'
+          AND COALESCE(TRIM(NEW.docnotmp), '') <> '' THEN
 
-        -- =================================================
+        v_inputby := NEW.inputby;
+
+        -- ================================================
         -- DELETE OLD TRX
-        -- =================================================
+        -- ================================================
         DELETE FROM sc_trx.workingorder_bom_dtl
-        WHERE TRIM(docref)=TRIM(NEW.docnotmp);
+        WHERE TRIM(docref) = TRIM(NEW.docnotmp);
 
         DELETE FROM sc_trx.workingorder_bom_mst
-        WHERE TRIM(docref)=TRIM(NEW.docnotmp);
+        WHERE TRIM(docref) = TRIM(NEW.docnotmp);
 
         DELETE FROM sc_trx.workingorder_mst
-        WHERE TRIM(docno)=TRIM(NEW.docnotmp);
+        WHERE TRIM(docno) = TRIM(NEW.docnotmp);
 
-        -- =================================================
-        -- INSERT MASTER
-        -- =================================================
+        -- ================================================
+        -- INSERT HEADER MASTER (pakai docnotmp, dengan idurut)
+        -- ================================================
         INSERT INTO sc_trx.workingorder_mst (
-
-            docno,
-            doctype,
-            cabang,
-            pemohon,
-            docdate,
-            docdatefinish,
-            kdcustomer,
-            nmcustomer,
-            alamatcustomer,
-            docref,
-            status,
-            keterangan,
-            noso,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp
-
+            idurut, docno, doctype, cabang, pemohon, docdate, docdatefinish,
+            kdcustomer, nmcustomer, alamatcustomer, docref,
+            status, keterangan, noso,
+            inputby, inputdate, updateby, updatedate, docnotmp
         )
         SELECT
-
-            NEW.docnotmp,
-            doctype,
-            cabang,
-            pemohon,
-            docdate,
-            docdatefinish,
-            kdcustomer,
-            nmcustomer,
-            alamatcustomer,
-            docref,
-            'F',
-            keterangan,
-            noso,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp
-
+            idurut, NEW.docnotmp, doctype, cabang, pemohon, docdate, docdatefinish,
+            kdcustomer, nmcustomer, alamatcustomer, docref,
+            'F', keterangan, noso,
+            inputby, inputdate, updateby, updatedate, docnotmp
         FROM sc_tmp.workingorder_mst
-        WHERE TRIM(docno)=TRIM(NEW.docno);
+        WHERE TRIM(docno) = TRIM(NEW.docno)
+          AND inputby = v_inputby;
 
-        -- =================================================
+        -- ================================================
         -- INSERT BOM HEADER
-        -- =================================================
+        -- ================================================
         INSERT INTO sc_trx.workingorder_bom_mst (
-
-            docno,
-            doctype,
-            cabang,
-            pemohon,
-            docdate,
-            idbarang_jadi,
-            nmbarang_jadi,
-            docref,
-            buildfor,
-            ttlmaterial,
-            ttlcost,
-            ttlwip,
-            ttlprice,
-            buildunit,
-            minimumqty,
-            status,
-            desc_bom,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp
-
+            docno, doctype, cabang, pemohon, docdate,
+            idbarang_jadi, nmbarang_jadi, docref,
+            buildfor, ttlmaterial, ttlcost, ttlwip, ttlprice,
+            buildunit, minimumqty, status, desc_bom,
+            inputby, inputdate, updateby, updatedate, docnotmp
         )
         SELECT
-
-            docno,
-            doctype,
-            cabang,
-            pemohon,
-            docdate,
-            idbarang_jadi,
-            nmbarang_jadi,
-            NEW.docnotmp,
-            buildfor,
-            ttlmaterial,
-            ttlcost,
-            ttlwip,
-            ttlprice,
-            buildunit,
-            minimumqty,
-            'F',
-            desc_bom,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp
-
+            docno, doctype, cabang, pemohon, docdate,
+            idbarang_jadi, nmbarang_jadi, NEW.docnotmp,
+            buildfor, ttlmaterial, ttlcost, ttlwip, ttlprice,
+            buildunit, minimumqty, 'F', desc_bom,
+            inputby, inputdate, updateby, updatedate, docnotmp
         FROM sc_tmp.workingorder_bom_mst
-        WHERE TRIM(docref)=TRIM(OLD.docno);
+        WHERE TRIM(docref) = TRIM(NEW.docno)
+          AND inputby = v_inputby;
 
-        -- =================================================
-        -- INSERT DETAIL
-        -- =================================================
+        -- ================================================
+        -- INSERT BOM DETAIL
+        -- ================================================
         INSERT INTO sc_trx.workingorder_bom_dtl (
-
-            docno,
-            doctype,
-            doctype_detail,
-            cabang,
-            docref,
-            pemohon,
-            docdate,
-            
-            idbarang,
-            nmbarang,
-            description,
-            qty,
-            unit,
-            standartcost,
-            totalcost,
-            newcost,
-            currcode,
-            idbagian,
-            nmbagian,
-            status,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp,
-            idurut,
-            uniqueid
-
+            docno, doctype, doctype_detail, cabang, docref,
+            pemohon, docdate,
+            idbarang, nmbarang, description, qty, unit,
+            standartcost, totalcost, newcost, currcode,
+            idbagian, nmbagian, status,
+            inputby, inputdate, updateby, updatedate,
+            docnotmp, idurut, uniqueid
         )
         SELECT
-
-            docno,
-            doctype,
-            doctype_detail,
-            cabang,
-            NEW.docnotmp,
-            pemohon,
-            docdate,
-            
-            idbarang,
-            nmbarang,
-            description,
-            qty,
-            unit,
-            COALESCE(standartcost,0),
-            COALESCE(totalcost,0),
-            COALESCE(newcost,0),
+            docno, doctype, doctype_detail, cabang, NEW.docnotmp,
+            pemohon, docdate,
+            idbarang, nmbarang, description, qty, unit,
+            COALESCE(standartcost, 0),
+            COALESCE(totalcost, 0),
+            COALESCE(newcost, 0),
             currcode,
-            idbagian,
-            nmbagian,
-            'F',
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp,
-            idurut,
-            uniqueid
-
+            idbagian, nmbagian, 'F',
+            inputby, inputdate, updateby, updatedate,
+            docnotmp, idurut, uniqueid
         FROM sc_tmp.workingorder_bom_dtl
-        WHERE TRIM(docref)=TRIM(NEW.docno);
+        WHERE TRIM(docref) = TRIM(NEW.docno)
+          AND inputby = v_inputby;
 
-        -- =================================================
-        -- CLEAN TMP
-        -- =================================================
+        -- ================================================
+        -- LOG: UPDATE HEADER WO
+        -- ================================================
+        PERFORM sc_log.fn_log_transaction(
+            NEW.docnotmp::CHAR(30),
+            NULL,
+            'I.R',
+            'I.R.A.4',
+            'U',
+            v_inputby,
+            v_client_ip,
+            v_inputby
+        );
+
+        -- ================================================
+        -- CLEANUP TMP
+        -- ================================================
         DELETE FROM sc_tmp.workingorder_bom_dtl
-        WHERE TRIM(docref)=TRIM(NEW.docno);
+        WHERE TRIM(docref) = TRIM(NEW.docno)
+          AND inputby = v_inputby;
 
         DELETE FROM sc_tmp.workingorder_bom_mst
-        WHERE TRIM(docref)=TRIM(NEW.docno);
+        WHERE TRIM(docref) = TRIM(NEW.docno)
+          AND inputby = v_inputby;
 
         DELETE FROM sc_tmp.workingorder_mst
-        WHERE TRIM(docno)=TRIM(NEW.docno);
+        WHERE TRIM(docno) = TRIM(NEW.docno)
+          AND inputby = v_inputby;
 
     -- =====================================================
     -- CANCEL EDIT
     -- =====================================================
-    ELSIF UPPER(TRIM(OLD.status))='E'
-       AND UPPER(TRIM(NEW.status))='C' THEN
+    ELSIF UPPER(TRIM(OLD.status)) = 'E'
+        AND UPPER(TRIM(NEW.status)) = 'C' THEN
 
-        UPDATE sc_trx.workingorder_mst
-        SET status='F'
-        WHERE TRIM(docno)=TRIM(NEW.docnotmp);
+        -- ================================================
+        -- KEMBALIKAN STATUS TRX KE 'F'
+        -- ================================================
+        IF COALESCE(TRIM(NEW.docnotmp), '') <> '' THEN
+            UPDATE sc_trx.workingorder_mst
+            SET status = 'F'
+            WHERE TRIM(docno) = TRIM(NEW.docnotmp);
+        END IF;
 
+        -- ================================================
+        -- CLEANUP TMP
+        -- ================================================
         DELETE FROM sc_tmp.workingorder_bom_dtl
-        WHERE TRIM(docref)=TRIM(NEW.docno);
+        WHERE TRIM(docref) = TRIM(NEW.docno);
 
         DELETE FROM sc_tmp.workingorder_bom_mst
-        WHERE TRIM(docref)=TRIM(NEW.docno);
+        WHERE TRIM(docref) = TRIM(NEW.docno);
 
         DELETE FROM sc_tmp.workingorder_mst
-        WHERE TRIM(docref)=TRIM(NEW.docno);
+        WHERE TRIM(docno) = TRIM(NEW.docno);
 
     END IF;
 
@@ -712,9 +584,15 @@ BEGIN
 END;
 $BODY$;
 
+ALTER FUNCTION sc_tmp.tr_tmp_workingorder_mst()
+    OWNER TO postgres;
+
 -- =========================================
 -- TRIGGER
 -- =========================================
+DROP TRIGGER IF EXISTS tr_tmp_workingorder_mst
+ON sc_tmp.workingorder_mst;
+
 CREATE TRIGGER tr_tmp_workingorder_mst
 AFTER UPDATE
 ON sc_tmp.workingorder_mst
@@ -739,189 +617,116 @@ RETURNS trigger
 LANGUAGE plpgsql
 AS $BODY$
 
+DECLARE
+    v_docno     TEXT;
+    v_inputby   TEXT;
+    v_client_ip TEXT;
+
 BEGIN
 
-    RAISE NOTICE 'TRX WO TRIGGER : %, OLD=%, NEW=%',
-        NEW.docno,
-        OLD.status,
-        NEW.status;
+    -- ===============================
+    -- GUARD: hanya proses kalau status berubah
+    -- ===============================
+    IF UPPER(TRIM(OLD.status)) = UPPER(TRIM(NEW.status)) THEN
+        RETURN NEW;
+    END IF;
+
+    -- ===============================
+    -- AMBIL IP DARI sc_log.useronline
+    -- ===============================
+    v_docno    := RTRIM(NEW.docno);
+    v_inputby  := NEW.inputby;
+    v_client_ip := sc_log.fn_get_user_ip(v_inputby);
+
+    -- ===============================
+    -- ADVISORY LOCK (CEGAH RACE CONDITION)
+    -- ===============================
+    PERFORM pg_advisory_xact_lock(hashtext(NEW.docno));
 
     -- =====================================================
-    -- EDIT
+    -- WO DIBATALKAN (F -> C)
     -- =====================================================
-    IF UPPER(TRIM(OLD.status))='F'
-       AND UPPER(TRIM(NEW.status))='E' THEN
+    IF (OLD.STATUS = 'F' AND NEW.STATUS = 'C') THEN
+
+        -- ===============================
+        -- LOG: CANCEL WO
+        -- ===============================
+        PERFORM sc_log.fn_log_transaction(
+            NEW.docno,
+            NULL,
+            'I.R',                  -- kode module (sesuaikan)
+            'I.R.A.4',              -- kode menu WO (sesuaikan)
+            'C',                    -- action: CANCEL
+            COALESCE(NEW.updateby, NEW.inputby),
+            v_client_ip,
+            COALESCE(NEW.updateby, NEW.inputby)
+        );
+
+    END IF;
+
+    -- =====================================================
+    -- WO DIEDIT (F -> E)
+    -- =====================================================
+    IF (OLD.STATUS = 'F' AND NEW.STATUS = 'E') THEN
 
         -- =================================================
         -- INSERT TMP MASTER
         -- =================================================
         INSERT INTO sc_tmp.workingorder_mst (
-
-            docno,
-            doctype,
-            cabang,
-            pemohon,
-            docdate,
-            docdatefinish,
-            kdcustomer,
-            nmcustomer,
-            alamatcustomer,
-            docref,
-            status,
-            keterangan,
-            noso,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp
-
+            docno, doctype, cabang, pemohon, docdate, docdatefinish,
+            kdcustomer, nmcustomer, alamatcustomer, docref,
+            status, keterangan, noso,
+            inputby, inputdate, updateby, updatedate, docnotmp
         )
         SELECT
-
-            docno,
-            doctype,
-            cabang,
-            pemohon,
-            docdate,
-            docdatefinish,
-            kdcustomer,
-            nmcustomer,
-            alamatcustomer,
-            docref,
-            'E',
-            keterangan,
-            noso,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docno
-
+            docno, doctype, cabang, pemohon, docdate, docdatefinish,
+            kdcustomer, nmcustomer, alamatcustomer, docref,
+            'E', keterangan, noso,
+            inputby, inputdate, updateby, updatedate, docno
         FROM sc_trx.workingorder_mst
-        WHERE TRIM(docno)=TRIM(NEW.docno);
+        WHERE TRIM(docno) = TRIM(NEW.docno);
 
         -- =================================================
         -- INSERT TMP BOM MASTER
         -- =================================================
         INSERT INTO sc_tmp.workingorder_bom_mst (
-
-            docno,
-            doctype,
-            cabang,
-            pemohon,
-            docdate,
-            idbarang_jadi,
-            nmbarang_jadi,
-            docref,
-            buildfor,
-            ttlmaterial,
-            ttlcost,
-            ttlwip,
-            ttlprice,
-            buildunit,
-            minimumqty,
-            status,
-            desc_bom,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp
-
+            docno, doctype, cabang, pemohon, docdate,
+            idbarang_jadi, nmbarang_jadi, docref,
+            buildfor, ttlmaterial, ttlcost, ttlwip, ttlprice,
+            buildunit, minimumqty, status, desc_bom,
+            inputby, inputdate, updateby, updatedate, docnotmp
         )
         SELECT
-
-            docno,
-            doctype,
-            cabang,
-            pemohon,
-            docdate,
-            idbarang_jadi,
-            nmbarang_jadi,
-            docref,
-            buildfor,
-            ttlmaterial,
-            ttlcost,
-            ttlwip,
-            ttlprice,
-            buildunit,
-            minimumqty,
-            'E',
-            desc_bom,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docref
-
+            docno, doctype, cabang, pemohon, docdate,
+            idbarang_jadi, nmbarang_jadi, docref,
+            buildfor, ttlmaterial, ttlcost, ttlwip, ttlprice,
+            buildunit, minimumqty, 'E', desc_bom,
+            inputby, inputdate, updateby, updatedate, docno
         FROM sc_trx.workingorder_bom_mst
-        WHERE TRIM(docref)=TRIM(NEW.docno);
+        WHERE TRIM(docref) = TRIM(NEW.docno);
 
         -- =================================================
         -- INSERT TMP BOM DETAIL
         -- =================================================
         INSERT INTO sc_tmp.workingorder_bom_dtl (
-
-            docno,
-            doctype,
-            doctype_detail,
-            cabang,
-            docref,
-            pemohon,
-            docdate,
-            
-            idbarang,
-            nmbarang,
-            description,
-            qty,
-            unit,
-            standartcost,
-            totalcost,
-            newcost,
-            currcode,
-            idbagian,
-            nmbagian,
-            status,
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docnotmp,
-            uniqueid
-
+            docno, doctype, doctype_detail, cabang, docref,
+            pemohon, docdate,
+            idbarang, nmbarang, description, qty, unit,
+            standartcost, totalcost, newcost, currcode,
+            idbagian, nmbagian, status,
+            inputby, inputdate, updateby, updatedate,
+            docnotmp, uniqueid
         )
         SELECT
-
-            docno,
-            doctype,
-            doctype_detail,
-            cabang,
-            docref,
-            pemohon,
-            docdate,
-            
-            idbarang,
-            nmbarang,
-            description,
-            qty,
-            unit,
-            standartcost,
-            totalcost,
-            newcost,
-            currcode,
-            idbagian,
-            nmbagian,
-            'E',
-            inputby,
-            inputdate,
-            updateby,
-            updatedate,
-            docref,
-            uniqueid
-
+            docno, doctype, doctype_detail, cabang, docref,
+            pemohon, docdate,
+            idbarang, nmbarang, description, qty, unit,
+            standartcost, totalcost, newcost, currcode,
+            idbagian, nmbagian, 'E',
+            inputby, inputdate, updateby, updatedate,
+            docno, uniqueid
         FROM sc_trx.workingorder_bom_dtl
-        WHERE TRIM(docref)=TRIM(NEW.docno);
+        WHERE TRIM(docref) = TRIM(NEW.docno);
 
     END IF;
 
@@ -930,11 +735,5 @@ BEGIN
 END;
 $BODY$;
 
--- =========================================
--- TRIGGER
--- =========================================
-CREATE TRIGGER tr_mst_workingorder_mst
-AFTER UPDATE
-ON sc_trx.workingorder_mst
-FOR EACH ROW
-EXECUTE FUNCTION sc_trx.tr_mst_workingorder_mst();
+ALTER FUNCTION sc_trx.tr_mst_workingorder_mst()
+    OWNER TO postgres;

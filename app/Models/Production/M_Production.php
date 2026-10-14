@@ -250,7 +250,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
         $i = 0;
 
         // $builder->where("docno = '$docno'");
-        $builder->where("inputby = '$nama'");
+        $builder->where("docno = '$docno'");
         foreach ($this->mst_standart_cost_dtl_view_column as $mrp)
         {
             if($_POST['search']['value']) // if datatable send POST for search
@@ -530,7 +530,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
         $i = 0;
 
         // $builder->where("docno = '$docno'");
-        $builder->where("inputby = '$nama'");
+        $builder->where("docno = '$docno'");
         foreach ($this->mst_biaya_standart_dtl_view_column as $mrp)
         {
             if($_POST['search']['value']) // if datatable send POST for search
@@ -3362,4 +3362,17 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
         $query = $builder->get();
         return $query->getRow();
     }
+
+    
+
+    public function q_cek_periode($periode)
+    {
+        $sql = "SELECT idurut, periode, flagproses, keterangan
+                    FROM sc_trx.closeperiod
+                    WHERE TRIM(periode) = ?
+                    ORDER BY idurut DESC
+                    LIMIT 1";
+        return $this->db->query($sql, [$periode]);
+    }
+
 }

@@ -330,7 +330,10 @@ function documentReadable() {
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
             $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
 
-            $('[name="docdate"]').val(item.docdate).prop('disabled', true);
+            $('[name="docdate"]')
+                .val(moment(item.docdate).format('DD-MM-YYYY'))
+                .prop('disabled', true);
+
             setJtsValue('[name="buildfor"]', convertToDbNumber(item.buildfor));
             setJtsValue('[name="minimumqty"]', convertToDbNumber(item.minimumqty));
             $('[name="keterangan"]').val(item.keterangan).prop('readonly', true);

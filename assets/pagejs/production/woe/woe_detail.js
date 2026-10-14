@@ -154,7 +154,7 @@ function documentReadable(){
                 delay: 250,
             }).then(function (datax) {
                 // create the option and append to Select2
-                var option = new Option(datax.items[0].keterangan, datax.items[0].docno, true, true);
+                var option = new Option(datax.items[0].docno, datax.items[0].docno, true, true);
                 $('[name="wono"]').append(option).trigger('change');
 
                 // manually trigger the `select2:select` event
@@ -174,7 +174,7 @@ function documentReadable(){
                 delay: 250,
             }).then(function (datax) {
                 // create the option and append to Select2
-                var option = new Option(datax.items[0].keterangan, datax.items[0].docno, true, true);
+                var option = new Option(datax.items[0].docno, datax.items[0].docno, true, true);
                 $('[name="bomno"]').append(option).trigger('change');
 
                 // manually trigger the `select2:select` event
@@ -195,7 +195,7 @@ function documentReadable(){
                 delay: 250,
             }).then(function (datax) {
                 // create the option and append to Select2
-                var option = new Option(datax.items[0].nmbarang, datax.items[0].idbarang, true, true);
+                var option = new Option(datax.items[0].idbarang, datax.items[0].idbarang, true, true);
                 $('[name="idbarang_jadi"]').append(option).trigger('change');
 
                 // manually trigger the `select2:select` event
@@ -228,14 +228,16 @@ function documentReadable(){
 
 
             skipRoleChange = true;
-            $('[name="docdate"]').val(json.dataTables.items[0].docdate).prop('readonly', true);
+            $('[name="docdate"]')
+                .val(moment(json.dataTables.items[0].docdate).format('DD-MM-YYYY'))
+                .prop('disabled', true);
             
             $('[name="pemohon"]').val(json.dataTables.items[0].pemohon).prop('readonly',true)
             $('[name="keterangan"]').val(json.dataTables.items[0].keterangan).prop('readonly',true)
             $('[name="bagian"]').val(json.dataTables.items[0].bagian).prop('disabled',true)
             $('[name="wono"]').val(json.dataTables.items[0].wono).prop('disabled',true)
             $('[name="bomno"]').val(json.dataTables.items[0].bomno).prop('disabled',true)
-            $('[name="bom_desc"]').val(json.dataTables.items[0].bom_desc).prop('readonly',true)
+            $('[name="desc_bom"]').val(json.dataTables.items[0].desc_bom).prop('readonly',true)
             $('[name="idbarang_jadi"]').val(json.dataTables.items[0].idbarang_jadi).prop('disabled',true)
             $('[name="nmbarang_jadi"]').val(json.dataTables.items[0].nmbarang_jadi).prop('disabled',true)
             // $('[name="biayavol"]').val(json.dataTables.items[0].biayavol).prop('readonly',true)
@@ -778,12 +780,12 @@ $('#cabang').on('change', function () {
                                 startDate: today,
                                 minDate: startDate,
                                 maxDate: endDate,
-                                locale: { format: 'YYYY-MM-DD' },
+                                locale: { format: 'DD-MM-YYYY' },
                                 cancelLabel: 'Clear'
                             });
                             // rebind handlers jika perlu (apply/cancel)
                             $el.on('apply.daterangepicker', function(ev, picker) {
-                                $(this).val(picker.startDate.format('YYYY-MM-DD'));
+                                $(this).val(picker.startDate.format('DD-MM-YYYY'));
                             });
                             $el.on('cancel.daterangepicker', function(ev, picker) {
                                 $(this).val('');
@@ -791,7 +793,7 @@ $('#cabang').on('change', function () {
                         }
 
                         // isi input langsung (opsional)
-                        $el.val(today.format('YYYY-MM-DD'));
+                        $el.val(today.format('DD-MM-YYYY'));
                     }
 
                     $('#docno').val(
