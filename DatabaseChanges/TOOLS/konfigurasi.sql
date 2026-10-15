@@ -412,3 +412,12 @@ DO UPDATE SET
 
 alter table sc_mst.konfigurasi_umum add column tt character(10);
 update sc_mst.konfigurasi_umum set tt='TTS';
+
+alter table sc_mst.konfigurasi_umum add column scp character(10);
+update sc_mst.konfigurasi_umum set scp='HSC';
+
+alter table sc_mst.konfigurasi_umum add column bs character(10);
+update sc_mst.konfigurasi_umum set bs='BSC';
+
+alter table sc_mst.konfigurasi_umum add column bom character(10);
+update sc_mst.konfigurasi_umum set bom='BOM';
