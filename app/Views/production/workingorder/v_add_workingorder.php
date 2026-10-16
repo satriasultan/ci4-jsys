@@ -172,6 +172,144 @@
          border-radius: 4px;                   /* Membuat sudut sedikit melengkung */
      }
 
+
+
+
+    /* =========================================================
+    TAB DETAIL — ELEGAN MODERN
+    ========================================================= */
+    .detail-tab-wrapper {
+        padding: 0;
+        background: #ffffff;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+
+    .detail-tab-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .detail-tab-header .tab-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .detail-tab-header .tab-title i {
+        color: #3b82f6;
+        font-size: 1.1rem;
+    }
+
+    .detail-tab-body {
+        padding: 0;
+    }
+
+    .detail-tab-body .table-responsive {
+        border-radius: 0;
+        overflow: hidden;
+    }
+
+    /* Table modern */
+    .table-modern {
+        margin-bottom: 0;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 13.5px;
+    }
+
+    .table-modern thead th {
+        background: linear-gradient(135deg, #1e293b, #334155);
+        color: #fff;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 12px 14px;
+        border: none;
+        white-space: nowrap;
+    }
+
+    .table-modern tbody td {
+        padding: 12px 14px;
+        vertical-align: middle;
+        border-top: 1px solid #f1f5f9;
+        color: #334155;
+    }
+
+    .table-modern tbody tr {
+        transition: background 0.15s ease;
+    }
+
+    .table-modern tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    .table-modern input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+        accent-color: #3b82f6;
+    }
+
+    /* Footer total */
+    .table-modern tfoot th {
+        background: #f1f5f9;
+        color: #1e293b;
+        font-weight: 700;
+        font-size: 0.85rem;
+        padding: 14px;
+        border-top: 2px solid #e2e8f0;
+        letter-spacing: 0.3px;
+    }
+
+    .table-modern tfoot th.text-end {
+        text-align: right;
+    }
+
+    .table-modern tfoot th.total-value {
+        background: #dbeafe;
+        color: #1e40af;
+        font-size: 0.95rem;
+        text-align: right;
+    }
+
+    /* Total BOM box */
+    .total-bom-box {
+        margin-top: 20px;
+        padding: 16px 24px;
+        background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+        border-left: 4px solid #3b82f6;
+        border-radius: 8px;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+    }
+
+    .total-bom-box .label {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #1e40af;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .total-bom-box .value {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #1e3a8a;
+    }
 </style>
 <div class="content-header">
     <div class="container-fluid">
@@ -446,146 +584,32 @@
                 <div class="card-body">
                     <!-- TAB CONTENT -->
                     <div class="tab-content">
-    
-                        <!-- TAB MATERIAL -->
+
+                        <!-- ====================================================
+                            TAB MATERIAL
+                            ==================================================== -->
                         <div class="tab-pane fade show active"
-                                id="material"
-                                role="tabpanel">
-                            <div class="card-body p-4">
-                            <div class="card-header clearfix">
-    
-                                <h3 class="card-title">
-                                    Detail Barang - Material
-                                </h3>
-    
-                                <!-- <div class="float-right d-flex align-items-center gap-2">
-    
-                                    <button type="button"
-                                            class="btn btn-success btn-lg action-btn"
-                                            title="Input Data (Ctrl + Q)"
-                                            id="btnAddDetailMaterial">
-    
-                                        <i class="fa fa-plus"></i>
-    
-                                    </button>
-    
-                                    <button type="button"
-                                            id="btnUpdateDetail"
-                                            class="btn btn-warning btn-lg action-btn"
-                                            title="Update Data"
-                                            onclick="updateDetailBomMaterial()">
-    
-                                        <i class="fa fa-edit"></i>
-    
-                                    </button>
-    
-                                    <button type="button"
-                                            class="btn btn-danger btn-lg action-btn"
-                                            title="Hapus Data"
-                                            onclick="btnDeleteDetailMaterial()">
-    
-                                        <i class="fa fa-trash"></i>
-    
-                                    </button>
-    
-                                </div> -->
-    
-                            </div>
-    
-                            <div class="card-body p-3">
-    
-                                <div class="table-responsive">
-    
-                                    <table id="tmp_workingordermaterialdtl"
-                                            class="table table-hover align-middle custom-table">
-    
-                                        <thead>
-                                        <tr>
-                                            <!-- <th class="text-center" width="40">
-                                                <input type="checkbox" id="checkAll">
-                                            </th> -->
-                                            <th>Doc No. WO</th>
-                                            <th>Doc No. BOM</th>
-                                            <th>ID Barang</th>
-                                            <th>Nama Barang</th>
-                                            <th>Qty</th>
-                                            <th>Satuan</th>
-                                            <th class="text-end">Standart Cost</th>
-                                            <th class="text-end">Total Cost</th>
-                                            <th>Keterangan</th>
-                                        </tr>
-                                        </thead>
-    
-                                        <tbody>
-                                        </tbody>
-    
-                                    </table>
-    
-                                </div>
-    
-                            </div>
-                            </div>
-                        </div>
-    
-                        <!-- TAB COST -->
-                        <div class="tab-pane fade"
-                                id="cost"
-                                role="tabpanel">
-    
-                            <div class="card-body p-4">
-    
-                                <div class="card-header clearfix">
-    
-                                    <h3 class="card-title">
-                                        Detail - COST
+                            id="material"
+                            role="tabpanel">
+
+                            <div class="detail-tab-wrapper">
+
+                                <!-- HEADER -->
+                                <div class="detail-tab-header">
+                                    <h3 class="tab-title">
+                                        <i class="fa fa-cubes"></i>
+                                        Detail Barang - Material
                                     </h3>
-    
-                                    <!-- <div class="float-right d-flex align-items-center gap-2">
-    
-                                        <button type="button"
-                                                class="btn btn-success btn-lg action-btn"
-                                                title="Input Data (Ctrl + Q)"
-                                                id="btnAddDetailCost">
-    
-                                            <i class="fa fa-plus"></i>
-    
-                                        </button>
-    
-                                        <button type="button"
-                                            id="btnUpdateDetailCost"
-                                            class="btn btn-warning btn-lg action-btn"
-                                            title="Update Data"
-                                            onclick="updateDetailBomCost()">
-    
-                                            <i class="fa fa-edit"></i>
-        
-                                        </button>
-        
-                                        <button type="button"
-                                                class="btn btn-danger btn-lg action-btn"
-                                                title="Hapus Data"
-                                                onclick="btnDeleteDetailCost()">
-        
-                                            <i class="fa fa-trash"></i>
-        
-                                        </button>
-    
-                                    </div> -->
-    
                                 </div>
-    
-                                <div class="card-body p-3">
-    
+
+                                <!-- BODY -->
+                                <div class="detail-tab-body">
                                     <div class="table-responsive">
-    
-                                        <table id="tmp_workingordercostdtl"
-                                                class="table table-hover align-middle custom-table">
-    
+                                        <table id="tmp_workingordermaterialdtl"
+                                            class="table table-modern">
+
                                             <thead>
                                                 <tr>
-                                                    <!-- <th class="text-center" width="40">
-                                                        <input type="checkbox" id="checkAllCost">
-                                                    </th> -->
                                                     <th>Doc No. WO</th>
                                                     <th>Doc No. BOM</th>
                                                     <th>ID Barang</th>
@@ -597,78 +621,89 @@
                                                     <th>Keterangan</th>
                                                 </tr>
                                             </thead>
-    
+
                                             <tbody>
                                             </tbody>
+
                                         </table>
-    
                                     </div>
-    
                                 </div>
-    
+
                             </div>
-    
                         </div>
-    
-                        <!-- TAB WIP -->
+
+                        <!-- ====================================================
+                            TAB COST
+                            ==================================================== -->
                         <div class="tab-pane fade"
-                                id="wip"
-                                role="tabpanel">
-    
-                            <div class="card-body p-4">
-    
-                                <div class="card-header clearfix">
-    
-                                    <h3 class="card-title">
+                            id="cost"
+                            role="tabpanel">
+
+                            <div class="detail-tab-wrapper">
+
+                                <!-- HEADER -->
+                                <div class="detail-tab-header">
+                                    <h3 class="tab-title">
+                                        <i class="fa fa-money-bill"></i>
+                                        Detail - Cost
+                                    </h3>
+                                </div>
+
+                                <!-- BODY -->
+                                <div class="detail-tab-body">
+                                    <div class="table-responsive">
+                                        <table id="tmp_workingordercostdtl"
+                                            class="table table-modern">
+
+                                            <thead>
+                                                <tr>
+                                                    <th>Doc No. WO</th>
+                                                    <th>Doc No. BOM</th>
+                                                    <th>ID Barang</th>
+                                                    <th>Nama Barang</th>
+                                                    <th>Qty</th>
+                                                    <th>Satuan</th>
+                                                    <th class="text-end">Standart Cost</th>
+                                                    <th class="text-end">Total Cost</th>
+                                                    <th>Keterangan</th>
+                                                </tr>
+                                            </thead>
+
+                                            <tbody>
+                                            </tbody>
+
+                                        </table>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- ====================================================
+                            TAB WIP
+                            ==================================================== -->
+                        <div class="tab-pane fade"
+                            id="wip"
+                            role="tabpanel">
+
+                            <div class="detail-tab-wrapper">
+
+                                <!-- HEADER -->
+                                <div class="detail-tab-header">
+                                    <h3 class="tab-title">
+                                        <i class="fa fa-industry"></i>
                                         Detail - Barang WIP
                                     </h3>
-    
-                                    <!-- <div class="float-right d-flex align-items-center gap-2">
-    
-                                        <button type="button"
-                                                class="btn btn-success btn-lg action-btn"
-                                                title="Input Data (Ctrl + Q)"
-                                                id="btnAddDetailWip">
-    
-                                            <i class="fa fa-plus"></i>
-    
-                                        </button>
-    
-                                        <button type="button"
-                                            id="btnUpdateDetailWip"
-                                            class="btn btn-warning btn-lg action-btn"
-                                            title="Update Data"
-                                            onclick="updateDetailBomWip()">
-    
-                                            <i class="fa fa-edit"></i>
-        
-                                        </button>
-        
-                                        <button type="button"
-                                                class="btn btn-danger btn-lg action-btn"
-                                                title="Hapus Data"
-                                                onclick="btnDeleteDetailWip()">
-        
-                                            <i class="fa fa-trash"></i>
-        
-                                        </button>
-    
-                                    </div> -->
-    
                                 </div>
-    
-                                <div class="card-body p-3">
-    
+
+                                <!-- BODY -->
+                                <div class="detail-tab-body">
                                     <div class="table-responsive">
-    
                                         <table id="tmp_workingorderwipdtl"
-                                                class="table table-hover align-middle custom-table">
-    
+                                            class="table table-modern">
+
                                             <thead>
                                                 <tr>
-                                                    <!-- <th class="text-center" width="40">
-                                                        <input type="checkbox" id="checkAllWip">
-                                                    </th> -->
                                                     <th>Doc No. WO</th>
                                                     <th>Doc No. BOM</th>
                                                     <th>ID Barang</th>
@@ -680,18 +715,17 @@
                                                     <th>Keterangan</th>
                                                 </tr>
                                             </thead>
-    
+
                                             <tbody>
                                             </tbody>
+
                                         </table>
-    
                                     </div>
-    
                                 </div>
-    
+
                             </div>
-    
                         </div>
+
                     </div>
                 </div>
 

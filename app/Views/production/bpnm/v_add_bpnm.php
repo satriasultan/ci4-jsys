@@ -534,6 +534,7 @@
                 <div class="modal-body">
 
                     <input type="hidden" name="idurut" id="idurut">
+                    <input type="hidden" name="uniqueid" id="uniqueid">
 
                     <!-- ROW 1 -->
                     <div class="row g-3">

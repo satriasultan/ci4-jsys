@@ -259,8 +259,26 @@ group by idunit);");
     }
 
 
-    function q_item_std_cost_param($param, $docdate){
-    // Query untuk mengambil data dari mbarang yang join dengan standart_cost_dtl
+function q_item_std_cost_param($param, $docdate){
+
+    // =========================
+    // NORMALISASI FORMAT TANGGAL
+    // =========================
+    if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $docdate)) {
+        $dt = \DateTime::createFromFormat('d-m-Y', $docdate);
+        if ($dt === false) {
+            throw new \Exception('Format docdate tidak valid: ' . $docdate);
+        }
+        $docdate = $dt->format('Y-m-d');
+    }
+
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $docdate)) {
+        throw new \Exception('Format docdate tidak valid: ' . $docdate);
+    }
+
+    // =========================
+    // QUERY
+    // =========================
     $query = "
         SELECT 
             trim(a.idbarang) as id,
@@ -301,46 +319,126 @@ group by idunit);");
             b.nmgroup,
             to_char(a.mfgdate,'dd-mm-yyyy hh24:mi:ss') as mfgdate1,
             
-            -- Ambil data dari standart_cost_dtl
-            COALESCE(s.docno, '') as docno,
-            COALESCE(s.doctype, '') as doctype,
-            COALESCE(s.cabang, '') as cabang,
-            COALESCE(s.pemohon, '') as pemohon,
-            COALESCE(to_char(s.docdate, 'yyyy-mm-dd'), '') as docdate_std,
-            COALESCE(to_char(s.activedate, 'yyyy-mm-dd'), '') as activedate,
-            COALESCE(s.actualcost, a.actualcost) as actualcost,
-            COALESCE(s.lastcost, a.lastcost) as lastcost,
-            COALESCE(s.newcost, 0) as newcost,
-            COALESCE(s.currcode, '') as currcode,
-            COALESCE(s.status, '') as status_std,
-            COALESCE(s.inputby, '') as inputby_std,
-            COALESCE(to_char(s.inputdate, 'yyyy-mm-dd hh24:mi:ss'), '') as inputdate_std,
-            COALESCE(s.updateby, '') as updateby_std,
-            COALESCE(to_char(s.updatedate, 'yyyy-mm-dd hh24:mi:ss'), '') as updatedate_std,
-            COALESCE(s.docnotmp, '') as docnotmp,
-            COALESCE(s.idurut, 0) as idurut,
-            COALESCE(s.uniqueid, '') as uniqueid
+            -- =========================
+            -- AMBIL DATA STD COST
+            -- Prioritas:
+            --   1. Kalau idgroup = 'JSA' → dari biaya_standart_dtl (bs)
+            --   2. Selain itu            → dari standart_cost_dtl (s)
+            -- =========================
+            COALESCE(
+                CASE WHEN a.idgroup = 'JSA' THEN bs.docno ELSE s.docno END, ''
+            ) as docno,
+            COALESCE(
+                CASE WHEN a.idgroup = 'JSA' THEN bs.doctype ELSE s.doctype END, ''
+            ) as doctype,
+            COALESCE(
+                CASE WHEN a.idgroup = 'JSA' THEN bs.cabang ELSE s.cabang END, ''
+            ) as cabang,
+            COALESCE(
+                CASE WHEN a.idgroup = 'JSA' THEN bs.pemohon ELSE s.pemohon END, ''
+            ) as pemohon,
+            COALESCE(
+                CASE WHEN a.idgroup = 'JSA' 
+                     THEN to_char(bs.docdate, 'yyyy-mm-dd') 
+                     ELSE to_char(s.docdate, 'yyyy-mm-dd') 
+                END, ''
+            ) as docdate_std,
+            COALESCE(
+                CASE WHEN a.idgroup = 'JSA' 
+                     THEN to_char(bs.activedate, 'yyyy-mm-dd') 
+                     ELSE to_char(s.activedate, 'yyyy-mm-dd') 
+                END, ''
+            ) as activedate,
+            COALESCE(
+                CASE WHEN a.idgroup = 'JSA' THEN bs.actualcost ELSE s.actualcost END,
+                a.actualcost
+            ) as actualcost,
+            COALESCE(
+                CASE WHEN a.idgroup = 'JSA' THEN bs.lastcost ELSE s.lastcost END,
+                a.lastcost
+            ) as lastcost,
+            COALESCE(
+                CASE WHEN a.idgroup = 'JSA' THEN bs.newcost ELSE s.newcost END,
+                0
+            ) as newcost,
+            COALESCE(
+                CASE WHEN a.idgroup = 'JSA' THEN bs.currcode ELSE s.currcode END, ''
+            ) as currcode,
+            COALESCE(
+                CASE WHEN a.idgroup = 'JSA' THEN bs.status ELSE s.status END, ''
+            ) as status_std,
+            COALESCE(
+                CASE WHEN a.idgroup = 'JSA' THEN bs.inputby ELSE s.inputby END, ''
+            ) as inputby_std,
+            COALESCE(
+                CASE WHEN a.idgroup = 'JSA' 
+                     THEN to_char(bs.inputdate, 'yyyy-mm-dd hh24:mi:ss') 
+                     ELSE to_char(s.inputdate, 'yyyy-mm-dd hh24:mi:ss') 
+                END, ''
+            ) as inputdate_std,
+            COALESCE(
+                CASE WHEN a.idgroup = 'JSA' THEN bs.updateby ELSE s.updateby END, ''
+            ) as updateby_std,
+            COALESCE(
+                CASE WHEN a.idgroup = 'JSA' 
+                     THEN to_char(bs.updatedate, 'yyyy-mm-dd hh24:mi:ss') 
+                     ELSE to_char(s.updatedate, 'yyyy-mm-dd hh24:mi:ss') 
+                END, ''
+            ) as updatedate_std,
+            COALESCE(
+                CASE WHEN a.idgroup = 'JSA' THEN bs.docnotmp ELSE s.docnotmp END, ''
+            ) as docnotmp,
+            COALESCE(
+                CASE WHEN a.idgroup = 'JSA' THEN bs.idurut ELSE s.idurut END,
+                0
+            ) as idurut,
+            COALESCE(
+                CASE WHEN a.idgroup = 'JSA' THEN bs.uniqueid ELSE s.uniqueid END, ''
+            ) as uniqueid
             
         FROM sc_mst.mbarang a 
         LEFT OUTER JOIN sc_mst.mgroup b ON a.idgroup = b.idgroup
         LEFT OUTER JOIN sc_mst.mlocation c ON a.deflocation = c.idlocation
         LEFT OUTER JOIN sc_mst.marea d ON a.defarea = d.idarea
         
-        -- LEFT JOIN dengan standart_cost_dtl dengan kondisi activedate <= docdate
+        -- =========================
+        -- JOIN KE standart_cost_dtl (untuk NON-JSA)
+        -- =========================
         LEFT JOIN (
             SELECT 
                 s.*,
                 ROW_NUMBER() OVER (
                     PARTITION BY s.idbarang 
-                    ORDER BY s.activedate DESC
+                    ORDER BY 
+                        s.activedate DESC,
+                        s.inputdate DESC,
+                        s.uniqueid DESC
                 ) as rn
             FROM sc_mst.standart_cost_dtl s
             WHERE s.activedate <= TO_DATE('$docdate', 'YYYY-MM-DD')
-                AND s.status = 'F' -- hanya ambil yang approved/final
+                AND s.status = 'F'
         ) s ON a.idbarang = s.idbarang AND s.rn = 1
         
-        WHERE a.id IS NOT NULL 
-            AND a.status = 'F' -- hanya barang aktif
+        -- =========================
+        -- JOIN KE biaya_standart_dtl (untuk JSA)
+        -- =========================
+        LEFT JOIN (
+            SELECT 
+                bs.*,
+                ROW_NUMBER() OVER (
+                    PARTITION BY bs.idbarang 
+                    ORDER BY 
+                        bs.activedate DESC,
+                        bs.inputdate DESC,
+                        bs.uniqueid DESC
+                ) as rn
+            FROM sc_mst.biaya_standart_dtl bs
+            WHERE bs.activedate <= TO_DATE('$docdate', 'YYYY-MM-DD')
+                AND bs.status = 'F'
+        ) bs ON a.idbarang = bs.idbarang AND bs.rn = 1 AND a.idgroup = 'JSA'
+        
+        WHERE a.idbarang IS NOT NULL 
+            AND a.status = 'F'
             $param
     ";
     
@@ -349,6 +447,21 @@ group by idunit);");
 
     public function q_item_bom_param($param,$docdate,$wono)
     {
+        // =========================
+        // NORMALISASI FORMAT TANGGAL
+        // =========================
+        if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $docdate)) {
+            $dt = \DateTime::createFromFormat('d-m-Y', $docdate);
+            if ($dt === false) {
+                throw new \Exception('Format docdate tidak valid: ' . $docdate);
+            }
+            $docdate = $dt->format('Y-m-d');
+        }
+
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $docdate)) {
+            throw new \Exception('Format docdate tidak valid: ' . $docdate);
+        }
+
         $query="
         SELECT
             trim(a.idbarang) as id,

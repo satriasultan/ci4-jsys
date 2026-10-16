@@ -132,6 +132,7 @@ system/*
 writable/*
 vendor/*
 public/*
+Plugins/*
 /soap/*
 
 
@@ -150,6 +151,7 @@ app/*
 app/Libraries
 # !app/Libraries/Default_style.php
 !app\Libraries\Default_style.php
+!app\Libraries\Fiky_report.php
 
 # Abaikan semua file di folder assets
 assets/*
@@ -171,4 +173,8 @@ assets/*
 
 # Termasuk semua file dalam assets/mrt
 !assets/mrt/**
+
+
+# Kecualikan folder assets/mrt
+!assets\css\fiky-selectize.css
 

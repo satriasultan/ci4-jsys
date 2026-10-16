@@ -5144,4 +5144,556 @@ ORDER BY
         unset($spreadsheet);
         exit;
     }
+
+
+
+
+
+
+    /* =========================================================
+    LAPORAN BUKU BESAR DETAIL
+    ========================================================= */
+    public function bukubesar()
+    {
+        $data = $this->commonData();
+        $data['title']        = "Laporan Buku Besar Detail";
+        $data['jenisLaporan'] = 'bukubesar';
+        $data['pagejs']       = 'report/report.js';
+        return $this->template->render('report/trans/v_bukubesar', $data);
+    }
+
+    private function buildQueryBukuBesarDetail()
+    {
+        // ============================================
+        // TODO: ISI QUERY DARI ATASAN
+        // ============================================
+        // Kolom output yang diharapkan:
+        // nmprk, kdprk, docdate, docno, keterangan,
+        // debet, kredit, namajobchild
+        // ============================================
+
+        $sql = "SELECT
+                    '' AS nmprk,
+                    '' AS kdprk,
+                    NULL AS docdate,
+                    '' AS docno,
+                    '' AS keterangan,
+                    0 AS debet,
+                    0 AS kredit,
+                    '' AS namajobchild
+                WHERE 1=0";
+
+        return rtrim($sql, " \t\n\r\0\x0B;");
+    }
+
+    public function previewLaporanBukuBesarDetail()
+    {
+        $tglrange = $this->request->getPost('tglrange');
+        $cabang   = $this->request->getPost('cabang');
+        $kdprk    = $this->request->getPost('kdprk');
+
+        $page    = max(1, (int)($this->request->getPost('page') ?? 1));
+        $perpage = (int)($this->request->getPost('perpage') ?? 25);
+        if ($perpage < 1 || $perpage > 200) $perpage = 25;
+
+        // ⚠️ SEMENTARA: query placeholder tanpa ? → bindBase kosong
+        // Setelah query asli datang, isi: [$tglAwal, $tglAkhir, $cabang, $kdprk]
+        $bindBase = [];
+
+        $sql = $this->buildQueryBukuBesarDetail();
+
+        // COUNT
+        $sqlCount = "SELECT COUNT(*) AS total FROM (" . $sql . ") x";
+        $totalRow = $this->db->query($sqlCount, $bindBase)->getRowArray();
+        $total    = (int)($totalRow['total'] ?? 0);
+        $totalPage = $perpage > 0 ? (int)ceil($total / $perpage) : 0;
+
+        // DATA
+        $offset   = ($page - 1) * $perpage;
+        $bindData = array_merge($bindBase, [$perpage, $offset]);
+        $rows = $this->db->query($sql . " LIMIT ? OFFSET ?", $bindData)->getResultArray();
+
+        return $this->response->setJSON([
+            'status'     => 'ok',
+            'data'       => $rows,
+            'page'       => $page,
+            'perpage'    => $perpage,
+            'total'      => $total,
+            'total_page' => $totalPage,
+        ]);
+    }
+
+    public function downloadLaporanBukuBesarDetail()
+    {
+        $tglrange = $this->request->getPost('tglrange');
+        $cabang   = $this->request->getPost('cabang');
+        $kdprk    = $this->request->getPost('kdprk');
+
+        // ⚠️ SEMENTARA: kosong
+        $bind = [];
+
+        $sql = $this->buildQueryBukuBesarDetail();
+
+        ini_set('memory_limit', '512M');
+        set_time_limit(0);
+        if (ob_get_length()) ob_end_clean();
+
+        $query = $this->db->query($sql, $bind);
+        if ($query === false) {
+            log_message('error', 'Buku Besar Detail query failed: ' . print_r($this->db->error(), true));
+            exit('Query gagal. Hubungi administrator.');
+        }
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setCellValue('A1', 'LAPORAN BUKU BESAR DETAIL');
+        $sheet->mergeCells('A1:H1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal('center');
+
+        // Header
+        $headers = [
+            'Nama Akun', 'Kode Akun', 'Tanggal', 'No.Jurnal',
+            'Keterangan', 'Debet', 'Kredit', 'Nama JobChild'
+        ];
+        $sheet->fromArray($headers, null, 'A3');
+        $sheet->getStyle('A3:H3')->getFont()->setBold(true);
+        $sheet->getStyle('A3:H3')->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FFCCE5FF');
+
+        $rowNum = 4; $rowCount = 0;
+        while ($r = $query->getUnbufferedRow('array')) {
+            $sheet->fromArray([
+                $r['nmprk'],
+                $r['kdprk'],
+                $r['docdate'],
+                $r['docno'],
+                $r['keterangan'],
+                $r['debet'],
+                $r['kredit'],
+                $r['namajobchild']
+            ], null, 'A' . $rowNum);
+            $rowNum++; $rowCount++;
+        }
+        if ($rowCount === 0) {
+            $sheet->setCellValue('A4', 'Tidak ada data.');
+            $sheet->mergeCells('A4:H4');
+        }
+
+        $colLetter = 'A';
+        foreach ($headers as $h) {
+            $sheet->getColumnDimension($colLetter)->setWidth(max(12, min(40, mb_strlen($h) + 4)));
+            $colLetter++;
+        }
+
+        // Format angka: F=Debet, G=Kredit
+        $firstData = 4; $lastData = max(4, $rowNum - 1);
+        foreach (['F','G'] as $col) {
+            $sheet->getStyle("{$col}{$firstData}:{$col}{$lastData}")
+                ->getNumberFormat()->setFormatCode('#,##0.00');
+        }
+        $sheet->freezePane('A4');
+
+        $namaFile = 'Laporan_BukuBesarDetail_' . date('Ymd_His') . '.xlsx';
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $namaFile . '"');
+        header('Cache-Control: max-age=0');
+        header('Pragma: public');
+        $writer->save('php://output');
+        $spreadsheet->disconnectWorksheets();
+        unset($spreadsheet);
+        exit;
+    }
+
+
+
+
+    /* =========================================================
+    LAPORAN LABA RUGI
+    ========================================================= */
+    public function labarugi()
+    {
+        $data = $this->commonData();
+        $data['title']        = "Laporan Laba Rugi";
+        $data['jenisLaporan'] = 'labarugi';
+        $data['pagejs']       = 'report/report.js';
+
+        // =========================
+        // AUTO-FILL: tanggal akhir bulan dari logindate
+        // =========================
+        $logindate = session()->get('logindate') ?? date('Y-m-d');
+        $tglAkhirBulan = date('Y-m-t', strtotime($logindate));  // 'Y-m-t' = last day of month
+        $data['tglAkhirBulan'] = $tglAkhirBulan;
+
+        return $this->template->render('report/trans/v_labarugi', $data);
+    }
+
+    private function buildQueryLabaRugi()
+    {
+        // ============================================
+        // TODO: ISI QUERY DARI ATASAN
+        // ============================================
+        // Kolom output yang diharapkan:
+        // parent, description, bulan_lalu, bulan_berjalan,
+        // tahun_berjalan, job
+        // ============================================
+
+        $sql = "SELECT
+                    '' AS parent,
+                    '' AS description,
+                    0 AS bulan_lalu,
+                    0 AS bulan_berjalan,
+                    0 AS tahun_berjalan,
+                    '' AS job
+                WHERE 1=0";
+
+        return rtrim($sql, " \t\n\r\0\x0B;");
+    }
+
+    public function previewLaporanLabaRugi()
+    {
+        $tglrange = $this->request->getPost('tglrange'); // single date, format dd-mm-yyyy
+        $cabang   = $this->request->getPost('cabang');
+
+        // =========================
+        // NORMALISASI TANGGAL
+        // =========================
+        $tgl = null;
+        if (!empty($tglrange)) {
+            // terima dd-mm-yyyy
+            if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $tglrange)) {
+                $dt = \DateTime::createFromFormat('d-m-Y', $tglrange);
+                if ($dt !== false) {
+                    $tgl = $dt->format('Y-m-d');
+                }
+            }
+            // terima yyyy-mm-dd
+            elseif (preg_match('/^\d{4}-\d{2}-\d{2}$/', $tglrange)) {
+                $tgl = $tglrange;
+            }
+        }
+
+        if (empty($tgl)) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Tanggal wajib diisi.',
+            ]);
+        }
+
+        $page    = max(1, (int)($this->request->getPost('page') ?? 1));
+        $perpage = (int)($this->request->getPost('perpage') ?? 25);
+        if ($perpage < 1 || $perpage > 200) $perpage = 25;
+
+        // ⚠️ SEMENTARA: query placeholder tanpa ? → bindBase kosong
+        // Setelah query asli datang, isi: [$tgl, $cabang]
+        $bindBase = [];
+
+        $sql = $this->buildQueryLabaRugi();
+
+        // COUNT
+        $sqlCount = "SELECT COUNT(*) AS total FROM (" . $sql . ") x";
+        $totalRow = $this->db->query($sqlCount, $bindBase)->getRowArray();
+        $total    = (int)($totalRow['total'] ?? 0);
+        $totalPage = $perpage > 0 ? (int)ceil($total / $perpage) : 0;
+
+        // DATA
+        $offset   = ($page - 1) * $perpage;
+        $bindData = array_merge($bindBase, [$perpage, $offset]);
+        $rows = $this->db->query($sql . " LIMIT ? OFFSET ?", $bindData)->getResultArray();
+
+        return $this->response->setJSON([
+            'status'     => 'ok',
+            'data'       => $rows,
+            'page'       => $page,
+            'perpage'    => $perpage,
+            'total'      => $total,
+            'total_page' => $totalPage,
+        ]);
+    }
+
+    public function downloadLaporanLabaRugi()
+    {
+        $tglrange = $this->request->getPost('tglrange');
+        $cabang   = $this->request->getPost('cabang');
+
+        // Normalisasi tanggal
+        $tgl = null;
+        if (!empty($tglrange)) {
+            if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $tglrange)) {
+                $dt = \DateTime::createFromFormat('d-m-Y', $tglrange);
+                if ($dt !== false) $tgl = $dt->format('Y-m-d');
+            } elseif (preg_match('/^\d{4}-\d{2}-\d{2}$/', $tglrange)) {
+                $tgl = $tglrange;
+            }
+        }
+
+        if (empty($tgl)) {
+            exit('Tanggal wajib diisi.');
+        }
+
+        // ⚠️ SEMENTARA: kosong
+        $bind = [];
+
+        $sql = $this->buildQueryLabaRugi();
+
+        ini_set('memory_limit', '512M');
+        set_time_limit(0);
+        if (ob_get_length()) ob_end_clean();
+
+        $query = $this->db->query($sql, $bind);
+        if ($query === false) {
+            log_message('error', 'Laba Rugi query failed: ' . print_r($this->db->error(), true));
+            exit('Query gagal. Hubungi administrator.');
+        }
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setCellValue('A1', 'LAPORAN LABA RUGI');
+        $sheet->mergeCells('A1:F1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal('center');
+
+        $headers = [
+            'Parent', 'Description', 'Bulan Lalu', 'Bulan Berjalan',
+            'Tahun Berjalan', 'Job'
+        ];
+        $sheet->fromArray($headers, null, 'A3');
+        $sheet->getStyle('A3:F3')->getFont()->setBold(true);
+        $sheet->getStyle('A3:F3')->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FFCCE5FF');
+
+        $rowNum = 4; $rowCount = 0;
+        while ($r = $query->getUnbufferedRow('array')) {
+            $sheet->fromArray([
+                $r['parent'],
+                $r['description'],
+                $r['bulan_lalu'],
+                $r['bulan_berjalan'],
+                $r['tahun_berjalan'],
+                $r['job']
+            ], null, 'A' . $rowNum);
+            $rowNum++; $rowCount++;
+        }
+        if ($rowCount === 0) {
+            $sheet->setCellValue('A4', 'Tidak ada data.');
+            $sheet->mergeCells('A4:F4');
+        }
+
+        $colLetter = 'A';
+        foreach ($headers as $h) {
+            $sheet->getColumnDimension($colLetter)->setWidth(max(12, min(45, mb_strlen($h) + 4)));
+            $colLetter++;
+        }
+
+        $firstData = 4; $lastData = max(4, $rowNum - 1);
+        foreach (['C','D','E'] as $col) {
+            $sheet->getStyle("{$col}{$firstData}:{$col}{$lastData}")
+                ->getNumberFormat()->setFormatCode('#,##0.00');
+        }
+        $sheet->freezePane('A4');
+
+        $namaFile = 'Laporan_LabaRugi_' . date('Ymd_His') . '.xlsx';
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $namaFile . '"');
+        header('Cache-Control: max-age=0');
+        header('Pragma: public');
+        $writer->save('php://output');
+        $spreadsheet->disconnectWorksheets();
+        unset($spreadsheet);
+        exit;
+    }
+
+
+    
+
+    // ========================= LAPORAN WO ==========================
+
+
+    public function wo()
+    {
+        $data = $this->commonData();
+        $data['title']        = "Laporan Working Order";
+        $data['jenisLaporan'] = 'laporanwo';
+        $data['pagejs']       = 'report/report.js';
+        return $this->template->render('report/trans/v_laporanwo', $data);
+    }
+
+    public function previewLaporanWO()
+    {
+        $tglrange = $this->request->getPost('tglrange');
+        $cabang   = $this->request->getPost('cabang');
+        $wono     = $this->request->getPost('wono');
+        $statusWo = $this->request->getPost('status_wo');
+
+        $page    = max(1, (int)($this->request->getPost('page') ?? 1));
+        $perpage = (int)($this->request->getPost('perpage') ?? 25);
+        if ($perpage < 1 || $perpage > 200) $perpage = 25;
+
+        // --- parse tanggal ---
+        $tglAwal  = null;
+        $tglAkhir = null;
+        if (!empty($tglrange)) {
+            $parts = explode(' - ', $tglrange);
+            if (count($parts) == 2) {
+                $tglAwal  = date('Y-m-d', strtotime($parts[0]));
+                $tglAkhir = date('Y-m-d', strtotime($parts[1]));
+            }
+        }
+
+        if (empty($tglAwal) || empty($tglAkhir)) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Tanggal wajib diisi.',
+            ]);
+        }
+
+        $sql = $this->m_report->buildQueryLaporanWO();
+
+        // --- hitung total ---
+        $sqlCount = "SELECT COUNT(*) AS total FROM (" . rtrim($sql, ';') . ") x";
+        $bindBase = [$tglAwal, $tglAkhir, $cabang ?: null, $wono ?: null, $statusWo ?: null];
+
+        $totalRow  = $this->db->query($sqlCount, $bindBase)->getRowArray();
+        $total     = (int)($totalRow['total'] ?? 0);
+        $totalPage = $perpage > 0 ? (int)ceil($total / $perpage) : 0;
+
+        // --- data halaman ini ---
+        $offset   = ($page - 1) * $perpage;
+        $bindData = array_merge($bindBase, [$perpage, $offset]);
+
+        $rows = $this->db->query($sql . " LIMIT ? OFFSET ?", $bindData)->getResultArray();
+
+        return $this->response->setJSON([
+            'status'     => 'ok',
+            'data'       => $rows,
+            'page'       => $page,
+            'perpage'    => $perpage,
+            'total'      => $total,
+            'total_page' => $totalPage,
+        ]);
+    }
+
+
+    /* =========================================================
+    DOWNLOAD EXCEL — LAPORAN WO
+   ========================================================= */
+    public function downloadLaporanWO()
+    {
+        $tglrange = $this->request->getPost('tglrange');
+        $cabang   = $this->request->getPost('cabang');
+        $wono     = $this->request->getPost('wono');
+        $statusWo = $this->request->getPost('status_wo');
+
+        $tglAwal  = null;
+        $tglAkhir = null;
+        if (!empty($tglrange)) {
+            $parts = explode(' - ', $tglrange);
+            if (count($parts) == 2) {
+                $tglAwal  = date('Y-m-d', strtotime($parts[0]));
+                $tglAkhir = date('Y-m-d', strtotime($parts[1]));
+            }
+        }
+
+        if (empty($tglAwal) || empty($tglAkhir)) {
+            exit('Tanggal wajib diisi.');
+        }
+
+        $sql  = $this->m_report->buildQueryLaporanWO();
+        $bind = [$tglAwal, $tglAkhir, $cabang ?: null, $wono ?: null, $statusWo ?: null];
+
+        ini_set('memory_limit', '512M');
+        set_time_limit(0);
+        if (ob_get_length()) ob_end_clean();
+
+        $query = $this->db->query($sql, $bind);
+        if ($query === false) {
+            log_message('error', 'Laporan WO query failed: ' . print_r($this->db->error(), true));
+            exit('Query gagal. Hubungi administrator.');
+        }
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setCellValue('A1', 'LAPORAN WORKING ORDER (WO)');
+        $sheet->mergeCells('A1:P1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal('center');
+
+        $headers = [
+            'No.WO', 'No.BOM', 'Keterangan BOM', 'Spec/No.Batch',
+            'Kode Barang', 'Nama Barang', 'Qty', 'DK', 'Satuan',
+            'Hrg StdCost', 'JNS', 'Finish Date', 'Status WO',
+            'Jenis Transaksi', 'No. Realisasi', 'Input By'
+        ];
+        $sheet->fromArray($headers, null, 'A3');
+
+        $lastCol = 'P';
+        $sheet->getStyle("A3:{$lastCol}3")->getFont()->setBold(true);
+        $sheet->getStyle("A3:{$lastCol}3")->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FFCCE5FF');
+
+        $rowNum   = 4;
+        $rowCount = 0;
+
+        while ($r = $query->getUnbufferedRow('array')) {
+            $sheet->fromArray([
+                $r['wono'],
+                $r['bomno'],
+                $r['keterangan_bom'],
+                $r['batchno'] ?: $r['spec'],
+                $r['idbarang'],
+                $r['nmbarang'],
+                $r['qty'],
+                $r['dk'],
+                $r['unit'],
+                $r['hrg_stdcost'],
+                $r['jns'],
+                $r['finish_date'],
+                $r['status_wo'],
+                $r['jenis_transaksi'],
+                $r['docno_realisasi'],
+                $r['inputby'],
+            ], null, 'A' . $rowNum);
+            $rowNum++;
+            $rowCount++;
+        }
+
+        if ($rowCount === 0) {
+            $sheet->setCellValue('A4', 'Tidak ada data sesuai filter.');
+            $sheet->mergeCells("A4:{$lastCol}4");
+        }
+
+        // auto width
+        $colLetter = 'A';
+        foreach ($headers as $h) {
+            $sheet->getColumnDimension($colLetter)->setWidth(max(12, min(35, mb_strlen($h) + 4)));
+            $colLetter++;
+        }
+
+        // format angka
+        $firstData = 4;
+        $lastData  = max(4, $rowNum - 1);
+        foreach (['G','J'] as $col) {
+            $sheet->getStyle("{$col}{$firstData}:{$col}{$lastData}")
+                ->getNumberFormat()->setFormatCode('#,##0.00');
+        }
+
+        $sheet->freezePane('A4');
+
+        $namaFile = 'Laporan_WO_' . date('Ymd_His') . '.xlsx';
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $namaFile . '"');
+        header('Cache-Control: max-age=0');
+        header('Pragma: public');
+        $writer->save('php://output');
+        $spreadsheet->disconnectWorksheets();
+        unset($spreadsheet);
+        exit;
+    }
+    
 }

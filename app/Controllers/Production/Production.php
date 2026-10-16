@@ -3399,7 +3399,7 @@ class Production extends BaseController
 
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Tidak boleh menginputkan item yang sama dengan keterangan yang sama'
+                'message' => 'Tidak boleh menginputkan item yang sama'
             ]);
         }
 
@@ -4353,6 +4353,9 @@ class Production extends BaseController
             isset($datadtl['dtl_akses']['a_delete']) &&
             trim($datadtl['dtl_akses']['a_delete']) === 't';
 
+        $canApprove = isset($datadtl['dtl_akses']['a_approve1']) && trim($datadtl['dtl_akses']['a_approve1']) === 't';
+
+
         foreach ($list as $lm) {
 
             $no++;
@@ -4367,6 +4370,9 @@ class Production extends BaseController
             $detailBtn = '';
             $printBtn  = '';
             $deleteBtn = '';
+            $disapproveBtn = '';
+            $approveBtn = '';
+
 
             // =====================================
             // UPDATE
@@ -4416,6 +4422,16 @@ class Production extends BaseController
                 </a>';
             }
 
+            if (trim($status) == 'A' && $canApprove) {
+                $disapproveBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToProgress(\'' . trim($lm->docno) . '\');">
+                    <i class="fa fa-times-circle"></i> Progress</a>';
+            }
+
+            if (trim($status) == 'F' && $canApprove) {
+                $approveBtn = '<a class="dropdown-item bg-success" href="#" onclick="setToCompleted(\'' . trim($lm->docno) . '\');">
+                    <i class="fa fa-check-circle"></i> Complete</a>';
+            }
+
             // =====================================
             // RULE STATUS
             // =====================================
@@ -4433,6 +4449,8 @@ class Production extends BaseController
                 if ($canPrint)  $menuContent .= $printBtn;
                 if ($canView)   $menuContent .= $detailBtn;
                 if ($canDelete) $menuContent .= $deleteBtn;
+                if ($canApprove)   $menuContent .= $disapproveBtn;
+                if ($canApprove)   $menuContent .= $approveBtn;
             }
 
             // =====================================
@@ -4481,7 +4499,9 @@ class Production extends BaseController
                 case 'F':
                     $badgeClass = 'badge-info';
                     break;
-
+                case 'A':
+                    $badgeClass = 'badge-success';
+                    break;
                 default:
                     $badgeClass = 'badge-secondary';
                     break;
@@ -4544,6 +4564,54 @@ class Production extends BaseController
         );
 
         echo $this->fiky_encryption->jDatatable($output);
+    }
+
+    
+    public function updateStatusWO()
+    {
+        $docno = $this->request->getPost('docno');
+        $status = $this->request->getPost('status');
+
+        if (!$docno || !$status) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Parameter tidak lengkap'
+            ]);
+        }
+
+        $db = \Config\Database::connect();
+        $builder = $db->table('sc_trx.workingorder_mst');
+        $builder->where('docno', $docno);
+        $info = array('status' => $status);
+        $update = $builder->update($info);
+
+        $action = '';
+        switch ($status) {
+            case 'A': $action = 'A'; break;  // APPROVED → 1 huruf
+            case 'F': $action = 'R'; break;  // REJECT → 1 huruf (R)
+            // case 'C': $action = 'C'; break;  // CANCEL → 1 huruf
+            default:
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Status tidak valid'
+                ]);
+        }
+
+        if ($update) {
+            // ===============================
+            // LOG MENGGUNAKAN FUNGSI HELPER
+            // ===============================
+            $this->m_global->insertlogtrans(
+                $docno,
+                $action,           // A / R / C (1 huruf)
+                'I.R',             // kode module dari menuprg
+                'I.R.A.4'          // kode menu untuk BOM
+            );
+
+            return $this->response->setJSON(['success' => true]);
+        } else {
+            return $this->response->setJSON(['success' => false, 'message' => 'Gagal update status']);
+        }
     }
 
     function add_workingorder(){
@@ -4782,7 +4850,9 @@ class Production extends BaseController
                 'cabang'     => trim($this->request->getPost('cabang')),
                 'docref'     => trim($this->request->getPost('docref')),
                 'docdate'    => trim($this->request->getPost('docdate')),
-                'docdatefinish'    => ($this->request->getPost('docdatefinish')),
+                'docdatefinish' => !empty(trim($this->request->getPost('docdatefinish') ?? ''))
+                    ? date('Y-m-d', strtotime($this->request->getPost('docdatefinish')))
+                    : null,
                 'kdcustomer'     => strtoupper($kdcustomer),
                 'nmcustomer'     => strtoupper($nmcustomer),
                 'alamatcustomer' => strtoupper($alamatcustomer),
@@ -9631,6 +9701,21 @@ class Production extends BaseController
             }
         }
 
+        $total = $db->query("
+            SELECT COALESCE(SUM(nilai),0) AS ttlprice
+            FROM sc_tmp.penerimaanbp_dtl
+            WHERE docno = ? and inputby = ?
+        ", [$docno, $nama])->getRow();
+
+        $db->table('sc_tmp.penerimaanbp_mst')
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->update([
+                'ttlprice'   => $total->ttlprice,
+                'updateby'   => $nama,
+                'updatedate' => date('Y-m-d H:i:s')
+            ]);
+
 
         $db->transComplete();
 
@@ -9811,6 +9896,8 @@ class Production extends BaseController
             // $idlocation = strtoupper(trim($this->request->getPost('idlocation')));
             // $nmlocation = strtoupper(trim($this->request->getPost('nmlocation')));
             $bagian = strtoupper(trim($this->request->getPost('bagian')));
+            $idlocation = strtoupper(trim($this->request->getPost('idlocation')));
+            $nmlocation = strtoupper(trim($this->request->getPost('nmlocation')));
             $tabno = strtoupper(trim($this->request->getPost('tabno')));
 //
 
@@ -9821,8 +9908,8 @@ class Production extends BaseController
                 'keterangan'       => $keterangan,
                 'batchno'           => $batchno,
                 'bagian'           => $bagian,
-                // 'idlocation'           => $idlocation,
-                // 'nmlocation'           => $nmlocation,
+                'idlocation'           => $idlocation,
+                'nmlocation'           => $nmlocation,
                 'tabno'           => $tabno,
 
 //                'estpakai' => $estpakaiph,
@@ -9885,17 +9972,17 @@ class Production extends BaseController
     }
 
     
+    
     public function delete_penerimaanbp_detail()
     {
         $request = service('request');
         $db      = \Config\Database::connect();
-        $builder = $db->table('sc_tmp.penerimaanbp_dtl');
-        $nama = trim(session()->get('nama'));
+        $nama    = trim(session()->get('nama'));
 
-        // ambil ids (bisa array atau single)
+        // Ambil IDs (bisa array atau single)
         $ids = $request->getPost('ids');
 
-        // normalisasi: pastikan array
+        // Normalisasi: pastikan array
         if (empty($ids)) {
             return $this->response->setJSON([
                 'status'  => false,
@@ -9907,83 +9994,148 @@ class Production extends BaseController
             $ids = [$ids];
         }
 
+        $ids = array_values(array_filter($ids, function ($id) {
+            return is_string($id) && trim($id) !== '';
+        }));
+
+        if (empty($ids)) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Parameter ids tidak valid'
+            ]);
+        }
+
         $db->transBegin();
 
         try {
-
-            // Ambil docno dari salah satu detail yang akan dihapus
-            $firstId = $ids[0];
-
-            $row = $db->table('sc_tmp.penerimaanbp_dtl')
-                ->select('docno')
-                ->where('idurut', $firstId)
+            // Ambil docno dari detail yang akan dihapus
+            $rows = $db->table('sc_tmp.penerimaanbp_dtl')
+                ->select('uniqueid, docno')
+                ->whereIn('uniqueid', $ids)
                 ->get()
-                ->getRow();
+                ->getResultArray();
 
-            if (!$row) {
+            if (empty($rows)) {
+                $db->transRollback();
+
                 return $this->response->setJSON([
                     'status'  => false,
                     'message' => 'Data detail tidak ditemukan'
                 ]);
             }
 
-            $docno = $row->docno;
+            // Pastikan seluruh detail berasal dari dokumen yang sama
+            $docnos = array_unique(array_column($rows, 'docno'));
 
-            $builder
-                ->whereIn('idurut', $ids)
+            if (count($docnos) !== 1) {
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Detail yang dihapus harus berasal dari dokumen yang sama'
+                ]);
+            }
+
+            $docno = $docnos[0];
+
+            // Hapus detail
+            $db->table('sc_tmp.penerimaanbp_dtl')
+                ->whereIn('uniqueid', $ids)
+                ->where('docno', $docno)
                 ->delete();
 
             if ($db->affectedRows() === 0) {
                 $db->transRollback();
+
                 return $this->response->setJSON([
                     'status'  => false,
-                    'message' => 'Data tidak ditemukan'
+                    'message' => 'Data gagal dihapus atau tidak ditemukan'
                 ]);
             }
 
+            // Hitung ulang nilai detail yang masih tersisa
+            $totals = $db->query("
+                SELECT
+                    COALESCE(
+                        SUM(
+                            CASE
+                                WHEN TRIM(doctype_detail) = 'MATERIAL'
+                                THEN COALESCE(nilai, 0)
+                                ELSE 0
+                            END
+                        ), 0
+                    ) AS ttlmaterial,
 
-            // $totals = $db->query("
-            //     SELECT
-            //         COALESCE(SUM(CASE WHEN TRIM(doctype_detail) = 'MATERIAL' THEN totalcost ELSE 0 END),0) AS ttlmaterial,
-            //         COALESCE(SUM(CASE WHEN TRIM(doctype_detail) = 'COST' THEN totalcost ELSE 0 END),0) AS ttlcost,
-            //         COALESCE(SUM(CASE WHEN TRIM(doctype_detail) = 'WIP' THEN totalcost ELSE 0 END),0) AS ttlwip
-            //     FROM sc_tmp.penerimaanbp_dtl
-            //     WHERE docno = ?
-            // ", [$docno])->getRowArray();
+                    COALESCE(
+                        SUM(
+                            CASE
+                                WHEN TRIM(doctype_detail) = 'COST'
+                                THEN COALESCE(nilai, 0)
+                                ELSE 0
+                            END
+                        ), 0
+                    ) AS ttlcost,
 
-            // $ttlmaterial = (float)$totals['ttlmaterial'];
-            // $ttlcost     = (float)$totals['ttlcost'];
-            // $ttlwip      = (float)$totals['ttlwip'];
-            // $ttlprice    = $ttlmaterial + $ttlcost + $ttlwip;
+                    COALESCE(
+                        SUM(
+                            CASE
+                                WHEN TRIM(doctype_detail) = 'WIP'
+                                THEN COALESCE(nilai, 0)
+                                ELSE 0
+                            END
+                        ), 0
+                    ) AS ttlwip
 
-            // $db->table('sc_tmp.penerimaanbp_mst')
-            //     ->where('docno', $docno)
-            //     ->update([
-            //         'ttlmaterial' => $ttlmaterial,
-            //         'ttlcost'     => $ttlcost,
-            //         'ttlwip'      => $ttlwip,
-            //         'ttlprice'    => $ttlprice,
-            //         'updateby'    => $nama,
-            //         'updatedate'  => date('Y-m-d H:i:s')
-            //     ]);
+                FROM sc_tmp.penerimaanbp_dtl
+                WHERE docno = ?
+            ", [$docno])->getRowArray();
+
+            $ttlmaterial = (float) ($totals['ttlmaterial'] ?? 0);
+            $ttlcost    = (float) ($totals['ttlcost'] ?? 0);
+            $ttlwip      = (float) ($totals['ttlwip'] ?? 0);
+
+            // Total akhir
+            $ttlprice = $ttlmaterial + $ttlcost + $ttlwip;
+
+            // Update header
+            $db->table('sc_tmp.penerimaanbp_mst')
+                ->where('docno', $docno)
+                ->update([
+                    'ttlprice'   => $ttlprice,
+                    'updateby'   => $nama,
+                    'updatedate' => date('Y-m-d H:i:s')
+                ]);
+
+            if ($db->transStatus() === false) {
+                throw new \RuntimeException('Gagal memperbarui total header');
+            }
 
             $db->transCommit();
 
             return $this->response->setJSON([
                 'status'  => true,
-                'message' => 'Data Penerimaan Barang Produksi Detail berhasil dihapus'
+                'message' => 'Data Penerimaan Barang Produksi Detail berhasil dihapus',
+                'data'    => [
+                    'docno'       => trim($docno),
+                    'ttlmaterial' => $ttlmaterial,
+                    'ttlcost'    => $ttlcost,
+                    'ttlwip'      => $ttlwip,
+                    'ttlprice'    => $ttlprice
+                ]
             ]);
 
         } catch (\Throwable $e) {
-
             $db->transRollback();
+
+            log_message('error', 'delete_penerimaanbp_detail: ' . $e->getMessage());
 
             return $this->response->setJSON([
                 'status'  => false,
-                'message' => $e->getMessage()
+                'message' => 'Terjadi kesalahan saat menghapus detail penerimaan barang'
             ]);
         }
     }
+
 
     public function update_penerimaanbp_()
     {
@@ -11573,7 +11725,7 @@ class Production extends BaseController
 
             $row = $db->table('sc_tmp.bpnm_dtl')
                 ->select('docno')
-                ->where('idurut', $firstId)
+                ->where('uniqueid', $firstId)
                 ->get()
                 ->getRow();
 
@@ -11587,7 +11739,7 @@ class Production extends BaseController
             $docno = $row->docno;
 
             $builder
-                ->whereIn('idurut', $ids)
+                ->whereIn('uniqueid', $ids)
                 ->delete();
 
             if ($db->affectedRows() === 0) {

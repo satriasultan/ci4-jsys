@@ -97,6 +97,89 @@ $('#btn-reset-tx').click(function () { //button reset event click
 /*-------- PENTING DI SETIAP MENU ---------*/
 
 
+
+
+function setToCompleted(docno) {
+    if (!guardPeriodeTutup()) return;
+
+    Swal.fire({
+        title: 'Set WO menjadi Complete?',
+        text: "Status dokumen akan diubah menjadi Complete",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Ya, ubah'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: HOST_URL + '/production/trans/updateStatusWO',
+                type: 'POST',
+                data: { docno: docno, status: 'A' },
+                dataType: 'json',
+                success: function(res) {
+                    if (res.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil',
+                            text: 'Status berhasil diubah menjadi Complete'
+                        }).then(() => {
+                            reload_workingorder()
+                            // reload_tableWOApprvTrx()
+                        });
+                    } else {
+                        Swal.fire('Gagal', res.message || 'Terjadi kesalahan', 'error');
+                    }
+                },
+                error: function() {
+                    Swal.fire('Error', 'Tidak dapat terhubung ke server', 'error');
+                }
+            });
+        }
+    });
+}
+
+function setToProgress(docno) {
+    if (!guardPeriodeTutup()) return;
+
+    Swal.fire({
+        title: 'Set WO menjadi In Progress?',
+        text: "Status dokumen akan diubah menjadi In Progress",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Ya, ubah'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: HOST_URL + '/production/trans/updateStatusWO',
+                type: 'POST',
+                data: { docno: docno, status: 'F' },
+                dataType: 'json',
+                success: function(res) {
+                    if (res.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil',
+                            text: 'Status berhasil diubah menjadi In Progress'
+                        }).then(() => {
+                            reload_workingorder()
+                            // reload_tableWOApprvTrx()
+                        });
+                    } else {
+                        Swal.fire('Gagal', res.message || 'Terjadi kesalahan', 'error');
+                    }
+                },
+                error: function() {
+                    Swal.fire('Error', 'Tidak dapat terhubung ke server', 'error');
+                }
+            });
+        }
+    });
+}
+
+
 let currentKodeSuffix = '';
 
 function generateDocNumber(prefix, infix, suffix) {
@@ -349,7 +432,11 @@ function documentReadable() {
                 .prop('disabled', true);
 
             $('[name="docdatefinish"]')
-                .val(moment(item.docdatefinish).format('DD-MM-YYYY'))
+                .val(
+                    item.docdatefinish
+                        ? moment(item.docdatefinish).format('DD-MM-YYYY')
+                        : ''
+                )
                 .prop('disabled', true);
             // $('[name="activedate"]').val(item.activedate).prop('disabled', true);
             // $('[name="docref"]').val(item.docref).prop('disabled', false);
@@ -731,6 +818,19 @@ function btnDeleteDetail(ids){
 // });
 function btnInputDetailBOM() {
 
+    let cabang = $('#cabang').val();
+
+    if (!cabang || cabang.trim() === '') {
+        Swal.fire({
+            title: 'Peringatan',
+            text: 'Cabang harus dipilih terlebih dahulu.',
+            icon: 'warning',
+            confirmButtonText: 'OK'
+        });
+
+        $('#cabang').focus();
+        return;
+    }
     // reset form
     $('#formBOMDetail')[0].reset();
 

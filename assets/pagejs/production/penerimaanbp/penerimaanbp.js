@@ -737,7 +737,7 @@ $("#idbarang").select2({
     allowClear: true,
     width: '100%',
     minimumInputLength: 2,
-    dropdownParent: $('#modalDtlPBP'),
+    dropdownParent: $('#modalDtlPBP .modal-body'),
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_item_std_cost',
         type: 'POST',

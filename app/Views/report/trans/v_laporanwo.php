@@ -1,0 +1,184 @@
+<style>
+    .btn-excel-modern {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none; color: #fff; font-weight: 600;
+        border-radius: 8px; padding: 10px 20px;
+        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+        transition: all 0.25s ease;
+    }
+    .btn-excel-modern:hover {
+        background: linear-gradient(135deg, #34d399, #10b981);
+        color: #fff; transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.45);
+    }
+    .btn-excel-modern:disabled {
+        background: #cbd5e1; box-shadow: none;
+        transform: none; cursor: not-allowed;
+    }
+    .btn-tarik-modern {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        border: none; color: #fff; font-weight: 600;
+        border-radius: 8px; padding: 10px 20px;
+        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+        transition: all 0.25s ease;
+    }
+    .btn-tarik-modern:hover {
+        background: linear-gradient(135deg, #60a5fa, #3b82f6);
+        color: #fff; transform: translateY(-2px);
+    }
+    .btn-tarik-modern:disabled {
+        background: #cbd5e1; box-shadow: none;
+        transform: none; cursor: not-allowed;
+    }
+    #tblPreviewWO_wrapper { overflow-x: auto; }
+    #tblPreviewWO { font-size: 12.5px; }
+    #tblPreviewWO thead th {
+        white-space: nowrap;
+        background: linear-gradient(135deg, #1f2937, #374151) !important;
+    }
+    #tblPreviewWO tbody td { white-space: nowrap; }
+    .preview-info {
+        font-size: 12px; color: #64748b;
+        padding: 6px 10px; background: #f8fafc;
+        border-radius: 6px; display: inline-block;
+    }
+    /* warna baris per jenis transaksi */
+    #tblPreviewWO tbody tr.row-teoritis      { background: #ede9fe; }  /* ungu muda */
+    #tblPreviewWO tbody tr.row-matrelease    { background: #dcfce7; }  /* hijau muda */
+    #tblPreviewWO tbody tr.row-bpnm          { background: #dbeafe; }  /* biru muda */
+    #tblPreviewWO tbody tr.row-penerimaanbp  { background: #fef9c3; }  /* kuning muda */
+</style>
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0"><?= ucwords(strtolower(trim($title))) ?></h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <div class="float-right" style="margin-right:10px; vertical-align:middle; padding-top:0.7%;">
+                        <i style="color:transparent;"><?= $t ?></i> Menu ID <?= $version ?>
+                    </div>
+                    <?php foreach ($y as $y1) { ?>
+                        <?php if (trim($y1->kodemenu) != trim($kodemenu)) { ?>
+                            <li class="breadcrumb-item"><a href="<?= base_url(trim($y1->linkmenu)) ?>"><i class="fa <?= trim($y1->iconmenu) ?>"></i> <?= trim($y1->namamenu) ?></a></li>
+                        <?php } else { ?>
+                            <li class="breadcrumb-item active"><i class="fa <?= trim($y1->iconmenu) ?>"></i> <?= trim($y1->namamenu) ?></li>
+                        <?php } ?>
+                    <?php } ?>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?= $message ?>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title mb-0" style="color:white;"><i class="fa fa-filter"></i> Filter</h3>
+            </div>
+            <div class="card-body">
+                <form id="formLaporanParam"
+                      action="<?= base_url('report/trans/downloadLaporanWO') ?>"
+                      method="post" target="downloadFrame">
+
+                    <input type="hidden" id="jenisLaporan" name="jenisLaporan" value="<?= esc($jenisLaporan) ?>">
+
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Tanggal <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="lapTglRange"
+                                       name="tglrange" placeholder="dd-mm-yyyy - dd-mm-yyyy" autocomplete="off">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>No. WO</label>
+                                <select name="wono" id="lapWono" class="form-control select2" style="width:100%"></select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Cabang / Job</label>
+                                <select name="cabang" id="lapCabang" class="form-control select2" style="width:100%"></select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Status WO</label>
+                                <select name="status_wo" id="lapStatusWo" class="form-control">
+                                    <option value="">-- Semua --</option>
+                                    <option value="CO">Complete (CO)</option>
+                                    <option value="NC">Not Complete</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer d-flex flex-wrap" style="gap:8px;">
+                <button type="button" class="btn btn-tarik-modern" id="btnTarikData" onclick="tarikData()">
+                    <i class="fa fa-search"></i> Tarik Data
+                </button>
+                <button type="button" class="btn btn-excel-modern" id="btnCetakExcel" onclick="submitLaporan()" disabled>
+                    <i class="fa fa-file-excel-o"></i> Cetak Excel
+                </button>
+                <button type="button" class="btn btn-default" onclick="resetLaporanParam()">
+                    <i class="fa fa-refresh"></i> Reset
+                </button>
+            </div>
+
+            <div class="card-body" id="previewWrapper" style="display:none;">
+                <div style="overflow-x:auto;">
+                    <table id="tblPreviewWO" class="table table-bordered table-striped table-hover" style="width:100%;font-size:12.5px;">
+                        <thead class="bg-primary text-white">
+                            <tr style="background:#f1f5f9;">
+                                <th>No</th>
+                                <th>No.WO</th>
+                                <th>No.BOM</th>
+                                <th>Keterangan BOM</th>
+                                <th>Spec/No.Batch</th>
+                                <th>Kode Barang</th>
+                                <th>Nama Barang</th>
+                                <th>Qty</th>
+                                <th>DK</th>
+                                <th>Satuan</th>
+                                <th>Hrg StdCost</th>
+                                <th>JNS</th>
+                                <th>Finish Date</th>
+                                <th>Status WO</th>
+                                <th>Jenis Transaksi</th>
+                                <th>No. Realisasi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tblPreviewWOBody">
+                            <tr><td colspan="16" class="text-center text-muted">Belum ada data.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-2 flex-wrap">
+                    <div>
+                        <label class="mr-2 mb-0">Baris per halaman:</label>
+                        <select id="perpageSelect" class="form-control form-control-sm d-inline-block"
+                                style="width:80px;" onchange="changePerpage()">
+                            <option value="25" selected>25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="200">200</option>
+                        </select>
+                    </div>
+                    <nav><ul class="pagination pagination-sm mb-0" id="pagerPP"></ul></nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<iframe name="downloadFrame" style="display:none;"></iframe>
+<script src="<?= base_url('assets/pagejs/' . $pagejs) ?>"></script>

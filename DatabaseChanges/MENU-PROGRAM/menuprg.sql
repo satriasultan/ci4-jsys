@@ -185,7 +185,7 @@ INSERT INTO sc_mst.menuprg (
 ('JTS', 1,  'I.R.A.1',  'STANDART COST',               'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o','production/trans/standart_cost',        'LEFT', 'NO'),
 ('JTS', 2,  'I.R.A.2',  'BIAYA STANDART COST',         'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o','production/trans/biaya_standart',       'LEFT', 'NO'),
 ('JTS', 3,  'I.R.A.3',  'BILL OF MATERIAL (BOM)',      'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o','production/trans/bom',                  'LEFT', 'NO'),
-('JTS', 4,  'I.R.A.4',  'WORK ORDER',                  'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o','production/trans/wo',                   'LEFT', 'NO'),
+('JTS', 4,  'I.R.A.4',  'WORK ORDER',                  'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o','production/trans/workingorder',                   'LEFT', 'NO'),
 ('JTS', 5,  'I.R.A.5',  'WORK ORDER EXECUTION',        'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o','production/trans/woe',                  'LEFT', 'NO'),
 ('JTS', 8,  'I.R.A.8',  'MATERIAL RELEASE',            'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o','production/trans/materialrelease',      'LEFT', 'NO'),
 ('JTS', 9,  'I.R.A.9',  'PENERIMAAN BRG PRODUKSI',     'I.R', 'I.R.A', 'P', false, 'fa-lightbulb-o','production/trans/penerimaanbp',         'LEFT', 'NO'),

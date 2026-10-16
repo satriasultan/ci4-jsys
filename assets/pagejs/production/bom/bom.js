@@ -501,6 +501,19 @@ $('#btnAddDetailMaterial').on('click', function (e) {
 });
 function btnInputDetailMaterial() {
 
+    let cabang = $('#cabang').val();
+
+    if (!cabang || cabang.trim() === '') {
+        Swal.fire({
+            title: 'Peringatan',
+            text: 'Cabang harus dipilih terlebih dahulu.',
+            icon: 'warning',
+            confirmButtonText: 'OK'
+        });
+
+        $('#cabang').focus();
+        return;
+    }
     // reset form
     $('#formBOMMaterialDtl')[0].reset();
 
@@ -537,6 +550,19 @@ $('#btnAddDetailCost').on('click', function (e) {
 
 function btnInputDetailCost() {
 
+    let cabang = $('#cabang').val();
+
+    if (!cabang || cabang.trim() === '') {
+        Swal.fire({
+            title: 'Peringatan',
+            text: 'Cabang harus dipilih terlebih dahulu.',
+            icon: 'warning',
+            confirmButtonText: 'OK'
+        });
+
+        $('#cabang').focus();
+        return;
+    }
     // reset form
     $('#formBOMCostDtl')[0].reset();
 
@@ -574,6 +600,19 @@ $('#btnAddDetailWip').on('click', function (e) {
 
 function btnInputDetailWip() {
 
+    let cabang = $('#cabang').val();
+
+    if (!cabang || cabang.trim() === '') {
+        Swal.fire({
+            title: 'Peringatan',
+            text: 'Cabang harus dipilih terlebih dahulu.',
+            icon: 'warning',
+            confirmButtonText: 'OK'
+        });
+
+        $('#cabang').focus();
+        return;
+    }
     // reset form
     $('#formBOMWipDtl')[0].reset();
 
@@ -1451,8 +1490,8 @@ function setToReleased(docno) {
     if (!guardPeriodeTutup()) return;
 
     Swal.fire({
-        title: 'Set BOM menjadi Approve?',
-        text: "Status dokumen akan diubah menjadi Approve",
+        title: 'Set BOM menjadi Release?',
+        text: "Status dokumen akan diubah menjadi Release",
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#3085d6',
@@ -1470,7 +1509,7 @@ function setToReleased(docno) {
                         Swal.fire({
                             icon: 'success',
                             title: 'Berhasil',
-                            text: 'Status berhasil diubah menjadi Approve'
+                            text: 'Status berhasil diubah menjadi Release'
                         }).then(() => {
                             reload_bom()
                             // reload_tableBOMApprvTrx()
@@ -1491,8 +1530,8 @@ function setToUnreleased(docno) {
     if (!guardPeriodeTutup()) return;
 
     Swal.fire({
-        title: 'Set BOM menjadi Disapprove?',
-        text: "Status dokumen akan diubah menjadi Disapprove",
+        title: 'Set BOM menjadi Unreleased?',
+        text: "Status dokumen akan diubah menjadi Unreleased",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#3085d6',
@@ -1510,7 +1549,7 @@ function setToUnreleased(docno) {
                         Swal.fire({
                             icon: 'success',
                             title: 'Berhasil',
-                            text: 'Status berhasil diubah menjadi Disapprove'
+                            text: 'Status berhasil diubah menjadi Unreleased'
                         }).then(() => {
                             reload_bom()
                             // reload_tableBOMApprvTrx()

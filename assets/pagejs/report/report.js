@@ -181,6 +181,35 @@ function getMode() {
             colspan: 9
         };
     }
+     /* ====== LAPORAN WO ====== */
+    if (jenis === 'laporanwo') {
+        return {
+            type:       'WO',
+            previewUrl: HOST_URL + 'report/trans/previewLaporanWO',
+            bodyId:     'tblPreviewWOBody',
+            colspan:    16
+        };
+    }
+
+    /* ====== BUKU BESAR DETAIL ====== */
+    if (jenis === 'bukubesar') {
+        return {
+            type:       'BB',
+            previewUrl: HOST_URL + 'report/trans/previewLaporanBukuBesarDetail',
+            bodyId:     'tblPreviewBBBody',
+            colspan:    9
+        };
+    }
+
+    /* ====== LABA RUGI ====== */
+    if (jenis === 'labarugi') {
+        return {
+            type:       'LR',
+            previewUrl: HOST_URL + 'report/trans/previewLaporanLabaRugi',
+            bodyId:     'tblPreviewLRBody',
+            colspan:    7
+        };
+    }
 
     return {
         type:       'PP',
@@ -205,6 +234,12 @@ function tarikData(page) {
     var cabang     = $('#lapCabang').val();
     var idlocation = $('#lapIdlocation').val();
     var kdcust     = $('#lapKdcustomer').val();
+    var wono       = $('#lapWono').val();       
+    var statusWo   = $('#lapStatusWo').val();   
+    // kalau LR, pakai input single date
+    if (mode.type === 'LR') {
+        tgl = $('#lapTglSingle').val();
+    }
     
 
     var filterKhusus = (mode.type === 'PP') ? idbarang
@@ -773,6 +808,65 @@ function renderPreview(rows, page, perpage, mode) {
                 '<td class="text-right">' + fmtNum(r.kredit) + '</td>' +
                 '<td class="text-right">' + fmtNum(r.saldo_akhir) + '</td>' +
             '</tr>';
+        }  else if (mode.type === 'WO') {
+            /* ---------- LAPORAN WO: 16 kolom ---------- */
+
+            // tentukan class warna berdasarkan jenis transaksi
+            var rowClass = '';
+            var jt = (r.jenis_transaksi || '').toUpperCase();
+            if (jt.indexOf('TEORITIS') !== -1)              rowClass = 'row-teoritis';
+            else if (jt.indexOf('MATERIAL RELEASE') !== -1) rowClass = 'row-matrelease';
+            else if (jt.indexOf('BPNM') !== -1)             rowClass = 'row-bpnm';
+            else if (jt.indexOf('PENERIMAAN') !== -1)       rowClass = 'row-penerimaanbp';
+
+            var dkClass = (r.dk === 'D') ? 'text-primary' : 'text-danger';
+
+            html += '<tr class="' + rowClass + '">' +
+                '<td>' + (startNo + i) + '</td>' +
+                '<td>' + escapeHtml(r.wono) + '</td>' +
+                '<td>' + escapeHtml(r.bomno) + '</td>' +
+                '<td>' + escapeHtml(r.keterangan_bom) + '</td>' +
+                '<td>' + escapeHtml(r.batchno || r.spec) + '</td>' +
+                '<td>' + escapeHtml(r.idbarang) + '</td>' +
+                '<td>' + escapeHtml(r.nmbarang) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.qty) + '</td>' +
+                '<td class="text-center ' + dkClass + '"><b>' + escapeHtml(r.dk) + '</b></td>' +
+                '<td>' + escapeHtml(r.unit) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.hrg_stdcost) + '</td>' +
+                '<td>' + escapeHtml(r.jns) + '</td>' +
+                '<td>' + escapeHtml(r.finish_date) + '</td>' +
+                '<td>' + escapeHtml(r.status_wo) + '</td>' +
+                '<td>' + escapeHtml(r.jenis_transaksi) + '</td>' +
+                '<td>' + escapeHtml(r.docno_realisasi) + '</td>' +
+            '</tr>';
+        } else if (mode.type === 'BB') {
+            /* ---------- BUKU BESAR DETAIL: 9 kolom ---------- */
+            html += '<tr>' +
+                '<td>' + (startNo + i) + '</td>' +
+                '<td>' + escapeHtml(r.nmprk) + '</td>' +
+                '<td>' + escapeHtml(r.kdprk) + '</td>' +
+                '<td>' + escapeHtml(r.docdate) + '</td>' +
+                '<td>' + escapeHtml(r.docno) + '</td>' +
+                '<td>' + escapeHtml(r.keterangan) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.debet) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.kredit) + '</td>' +
+                '<td>' + escapeHtml(r.namajobchild) + '</td>' +
+            '</tr>';
+        } else if (mode.type === 'LR') {
+            /* ---------- LABA RUGI: 7 kolom ---------- */
+
+            var isParent = (r.bulan_lalu == 0 && r.bulan_berjalan == 0 && r.tahun_berjalan == 0);
+            var rowClass = isParent ? 'row-parent' : '';
+
+            html += '<tr class="' + rowClass + '">' +
+                '<td>' + (startNo + i) + '</td>' +
+                '<td>' + escapeHtml(r.parent) + '</td>' +
+                '<td>' + escapeHtml(r.description) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.bulan_lalu) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.bulan_berjalan) + '</td>' +
+                '<td class="text-right">' + fmtNum(r.tahun_berjalan) + '</td>' +
+                '<td>' + escapeHtml(r.job) + '</td>' +
+            '</tr>';
         }
         else {
             /* ---------- PP OUTSTANDING: 15 kolom ---------- */
@@ -1092,7 +1186,7 @@ $(function () {
     /* =====================================================
     Select2 COA — untuk Umur Hutang & Umur Piutang
     ===================================================== */
-    if ((jenis === 'umurhutang' || jenis === 'umurpiutang' || jenis === 'posisihutang' || jenis === 'posisipiutang') && $('#lapKdprk').length) {
+    if ((jenis === 'umurhutang' || jenis === 'umurpiutang' || jenis === 'posisihutang' || jenis === 'posisipiutang' || jenis === 'bukubesar') && $('#lapKdprk').length) {
         var defaultInitialCOA = '';
         $('#lapKdprk').select2({
             dropdownParent: $(document.body),

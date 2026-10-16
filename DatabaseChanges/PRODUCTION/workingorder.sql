@@ -6,7 +6,7 @@ VALUES
 ('I','I.R.A.4','DRAFT'),
 ('E','I.R.A.4','REVISI/EDIT'),
 ('F','I.R.A.4','FINAL USER'),
-('A','I.R.A.4','APPROVE'),
+('A','I.R.A.4','COMPLETED'),
 ('A2','I.R.A.4','APPROVE 2'),
 ('A3','I.R.A.4','APPROVE 3'),
 ('P','I.R.A.4','CETAK/PRINT'),
