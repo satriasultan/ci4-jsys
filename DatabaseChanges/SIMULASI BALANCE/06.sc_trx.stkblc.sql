@@ -1,12 +1,12 @@
 /* ============================================================
    JSYS ERP
    TAHAP 06 - STOCK LEDGER : sc_trx.stkblc
-   FINAL REPAIR / RERUN-SAFE
+   FINAL - TRANSFER SAFE
    ============================================================
 
    FIX UTAMA:
    1. Tidak DROP stkblc.
-   2. Tidak DROP / CREATE ulang function milik TAHAP 04.
+   2. Tidak DROP / CREATE ulang function TAHAP 04.
    3. Tidak membuat ulang function TAHAP 01.
    4. Kolom yang hilang pada stkblc (termasuk journal_type)
       akan ditambahkan hanya bila memang belum ada.
@@ -17,6 +17,13 @@
       tidak masuk stkblc.
    8. Cost OUT tidak ditentukan dari harga jual; TAHAP 07
       menangani costing OUT / average cost.
+
+   TRANSFER SAFE:
+   9. Transfer (TRFWHS, BINMOV, BRNTRF) TIDAK mengubah nilai
+      persediaan perusahaan.
+   10. OUT transfer: nilai = avg cost saat ini × qty.
+   11. IN transfer: nilai = totalcost OUT pasangan (source_uniqueid).
+   12. Nilai IN transfer = Nilai OUT transfer.
    ============================================================ */
 
 
@@ -171,13 +178,6 @@ $$;
 
 /* ============================================================
    2. TAMBAH KOLOM YANG BELUM ADA
-   ============================================================
-
-   Dynamic check digunakan supaya TIDAK muncul:
-       column "... " already exists, skipping
-
-   Khusus kasus user saat ini:
-       journal_type memang pernah hilang dari table lama.
    ============================================================ */
 
 DO $$
@@ -329,10 +329,6 @@ DECLARE
     v_invalid BIGINT;
 BEGIN
 
-    /* --------------------------------------------------------
-       UNIQUE transaction identity
-       -------------------------------------------------------- */
-
     IF NOT EXISTS
     (
         SELECT 1
@@ -341,7 +337,6 @@ BEGIN
           AND conname = 'uq_stkblc_uniqueid'
     )
     THEN
-
         SELECT COUNT(*)
         INTO v_invalid
         FROM
@@ -361,13 +356,8 @@ BEGIN
                 'uq_stkblc_uniqueid tidak ditambahkan karena ada % duplicate uniqueid.',
                 v_invalid;
         END IF;
-
     END IF;
 
-
-    /* --------------------------------------------------------
-       JOURNAL TYPE FK
-       -------------------------------------------------------- */
 
     IF NOT EXISTS
     (
@@ -377,7 +367,6 @@ BEGIN
           AND conname = 'fk_stkblc_journal_type'
     )
     THEN
-
         SELECT COUNT(*)
         INTO v_invalid
         FROM sc_trx.stkblc sb
@@ -395,13 +384,8 @@ BEGIN
                 'fk_stkblc_journal_type tidak ditambahkan karena ada % journal_type yang tidak ada di master.',
                 v_invalid;
         END IF;
-
     END IF;
 
-
-    /* --------------------------------------------------------
-       TYPE
-       -------------------------------------------------------- */
 
     IF NOT EXISTS
     (
@@ -410,7 +394,6 @@ BEGIN
           AND conname = 'chk_stkblc_type_in_out'
     )
     THEN
-
         SELECT COUNT(*)
         INTO v_invalid
         FROM sc_trx.stkblc
@@ -425,13 +408,8 @@ BEGIN
                 'chk_stkblc_type_in_out tidak ditambahkan karena ada % data invalid.',
                 v_invalid;
         END IF;
-
     END IF;
 
-
-    /* --------------------------------------------------------
-       QTY IN
-       -------------------------------------------------------- */
 
     IF NOT EXISTS
     (
@@ -440,7 +418,6 @@ BEGIN
           AND conname = 'chk_stkblc_qty_in'
     )
     THEN
-
         SELECT COUNT(*)
         INTO v_invalid
         FROM sc_trx.stkblc
@@ -451,13 +428,8 @@ BEGIN
                 ADD CONSTRAINT chk_stkblc_qty_in
                 CHECK (qty_in >= 0);
         END IF;
-
     END IF;
 
-
-    /* --------------------------------------------------------
-       QTY OUT
-       -------------------------------------------------------- */
 
     IF NOT EXISTS
     (
@@ -466,7 +438,6 @@ BEGIN
           AND conname = 'chk_stkblc_qty_out'
     )
     THEN
-
         SELECT COUNT(*)
         INTO v_invalid
         FROM sc_trx.stkblc
@@ -477,13 +448,8 @@ BEGIN
                 ADD CONSTRAINT chk_stkblc_qty_out
                 CHECK (qty_out >= 0);
         END IF;
-
     END IF;
 
-
-    /* --------------------------------------------------------
-       QTY DIRECTION
-       -------------------------------------------------------- */
 
     IF NOT EXISTS
     (
@@ -492,7 +458,6 @@ BEGIN
           AND conname = 'chk_stkblc_qty_direction'
     )
     THEN
-
         SELECT COUNT(*)
         INTO v_invalid
         FROM sc_trx.stkblc
@@ -533,13 +498,8 @@ BEGIN
                 'chk_stkblc_qty_direction tidak ditambahkan karena ada % data invalid.',
                 v_invalid;
         END IF;
-
     END IF;
 
-
-    /* --------------------------------------------------------
-       UNIT COST / TOTAL COST / KURS / LINE
-       -------------------------------------------------------- */
 
     IF NOT EXISTS
     (
@@ -597,7 +557,7 @@ $$;
 
 
 /* ============================================================
-   6. INDEX TANPA NOTICE
+   6. INDEX
    ============================================================ */
 
 DO $$
@@ -684,16 +644,12 @@ $$;
 /* ============================================================
    7. POST TRANSACTION_DT -> STKBLc
    ============================================================
-
-   IMPORTANT:
-   effective stock route = transaction_dt.stock_effect
-
-   Bukan langsung:
-       journal_type.stock_effect
-
-   Karena TAHAP 04 sudah menerapkan:
-       JSA -> NONE
-       BRG -> mengikuti stock route
+   
+   TRANSFER SAFE:
+   - Untuk TRFWHS, BINMOV, BRNTRF:
+     * OUT: nilai = avg cost saat ini × qty
+     * IN : nilai = totalcost dari OUT pasangan (source_uniqueid)
+   - Untuk non-transfer: perilaku lama (nilai dari transaksi).
    ============================================================ */
 
 CREATE OR REPLACE FUNCTION sc_trx.fn_post_stkblc_from_transaction
@@ -704,30 +660,33 @@ RETURNS VOID
 LANGUAGE plpgsql
 AS $$
 DECLARE
-
     v_stock_uniqueid TEXT;
-    v_stock_key CHAR(32);
+    v_stock_key      CHAR(32);
+    v_totalcost      NUMERIC(18,2);
+    v_unitcost       NUMERIC(18,6);
+    v_idgroup        VARCHAR(20);
+    v_grouptype      VARCHAR(20);
+    v_idlocation     VARCHAR(50);
+    v_trxdate        TIMESTAMP;
 
-    v_totalcost NUMERIC(18,2);
-    v_unitcost NUMERIC(18,6);
-
+    /* Variabel untuk TRANSFER */
+    v_is_transfer    BOOLEAN := FALSE;
+    v_avg_cost_src   NUMERIC(18,6);
+    v_out_cost       NUMERIC(18,2);
 BEGIN
 
     /* --------------------------------------------------------
-       1. EFFECTIVE STOCK
+       Hanya stock transaction
        -------------------------------------------------------- */
-
     IF COALESCE(TRIM(p_transaction.stock_effect), 'NONE')
        NOT IN ('IN','OUT','INOUT')
     THEN
         RETURN;
     END IF;
 
-
     /* --------------------------------------------------------
-       2. BARANG WAJIB ADA
+       Barang wajib
        -------------------------------------------------------- */
-
     IF NULLIF(BTRIM(COALESCE(p_transaction.idbarang,'')), '') IS NULL
     THEN
         RAISE EXCEPTION
@@ -735,11 +694,44 @@ BEGIN
             p_transaction.uniqueid;
     END IF;
 
+    /* --------------------------------------------------------
+       Location wajib
+       -------------------------------------------------------- */
+    v_idlocation := NULLIF(BTRIM(COALESCE(p_transaction.warehouse,'')), '');
+
+    IF v_idlocation IS NULL
+    THEN
+        RAISE EXCEPTION
+            'Stock transaction % tidak mempunyai warehouse/idlocation',
+            p_transaction.uniqueid;
+    END IF;
 
     /* --------------------------------------------------------
-       3. STOCK IDENTITY
+       Tanggal transaksi legacy
        -------------------------------------------------------- */
+    v_trxdate :=
+        COALESCE(p_transaction.docdate, CURRENT_DATE)::DATE
+        + CURRENT_TIME;
 
+    /* --------------------------------------------------------
+       Master barang
+       -------------------------------------------------------- */
+    SELECT
+        COALESCE(mb.idgroup, ''),
+        COALESCE(mb.grouptype, 'STOCK')
+    INTO
+        v_idgroup,
+        v_grouptype
+    FROM sc_mst.mbarang mb
+    WHERE mb.idbarang = p_transaction.idbarang
+    LIMIT 1;
+
+    v_idgroup   := COALESCE(v_idgroup, '');
+    v_grouptype := COALESCE(NULLIF(BTRIM(v_grouptype), ''), 'STOCK');
+
+    /* --------------------------------------------------------
+       Stock identity
+       -------------------------------------------------------- */
     v_stock_uniqueid :=
         sc_trx.fn_stock_uniqueid
         (
@@ -764,105 +756,144 @@ BEGIN
             p_transaction.lotno::TEXT
         );
 
+    /* --------------------------------------------------------
+       DETEKSI TRANSFER
+       -------------------------------------------------------- */
+    v_is_transfer :=
+        TRIM(p_transaction.journal_type::TEXT) IN
+        ('TRFWHS','BINMOV','BRNTRF');
 
     /* --------------------------------------------------------
-       4. INITIAL COST
-
-       IN:
-          gunakan nilai transaksi sebagai nilai awal stock.
-
-       OUT:
-          0 pada TAHAP 06.
-          TAHAP 07 akan mengisi costing OUT berdasarkan
-          average cost / inventory valuation.
+       HITUNG COST
        -------------------------------------------------------- */
+    IF v_is_transfer THEN
 
-    IF p_transaction.type_in_out = 'IN'
-    THEN
+        IF p_transaction.type_in_out = 'OUT' THEN
 
-        v_totalcost :=
-            COALESCE
-            (
-                NULLIF(p_transaction.nilai, 0),
-                NULLIF(
-                    p_transaction.bruto - p_transaction.discount,
-                    0
-                ),
-                NULLIF(
-                    p_transaction.harga * p_transaction.qty,
-                    0
-                ),
-                0
+            /* OUT: avg cost saat ini × qty */
+            SELECT COALESCE(ac.avg_cost, 0)
+            INTO v_avg_cost_src
+            FROM sc_trx.stkblc_avgcost ac
+            WHERE BTRIM(ac.idbarang::TEXT)
+                    = BTRIM(p_transaction.idbarang::TEXT)
+              AND BTRIM(ac.idlocation::TEXT)
+                    = BTRIM(p_transaction.warehouse::TEXT)
+              AND BTRIM(COALESCE(ac.batch,''))
+                    = BTRIM(COALESCE(p_transaction.batch::TEXT,''))
+            LIMIT 1;
+
+            v_avg_cost_src := COALESCE(v_avg_cost_src, 0);
+            v_unitcost     := v_avg_cost_src;
+            v_totalcost    := ROUND(
+                v_avg_cost_src * COALESCE(p_transaction.qty, 0),
+                2
             );
 
-        v_totalcost := ROUND(v_totalcost, 2);
-
-        IF p_transaction.qty > 0
-        THEN
-            v_unitcost :=
-                ROUND(
-                    v_totalcost / p_transaction.qty,
-                    6
-                );
         ELSE
-            v_unitcost := 0;
+
+            /* IN: totalcost dari OUT pasangan */
+            SELECT COALESCE(SUM(sb.totalcost), 0)
+            INTO v_out_cost
+            FROM sc_trx.stkblc sb
+            WHERE sb.source_uniqueid = p_transaction.source_uniqueid
+              AND sb.type_in_out = 'OUT'
+              AND BTRIM(sb.idbarang::TEXT)
+                    = BTRIM(p_transaction.idbarang::TEXT);
+
+            v_out_cost  := COALESCE(v_out_cost, 0);
+            v_totalcost := v_out_cost;
+
+            IF COALESCE(p_transaction.qty,0) > 0 THEN
+                v_unitcost := ROUND(v_totalcost / p_transaction.qty, 6);
+            ELSE
+                v_unitcost := 0;
+            END IF;
+
         END IF;
 
     ELSE
 
-        v_totalcost := 0;
-        v_unitcost := 0;
+        /* Non-transfer: perilaku lama */
+        IF p_transaction.type_in_out = 'IN' THEN
+            v_totalcost :=
+                ROUND(
+                    COALESCE
+                    (
+                        NULLIF(p_transaction.nilai, 0),
+                        NULLIF(p_transaction.bruto - p_transaction.discount, 0),
+                        NULLIF(p_transaction.harga * p_transaction.qty, 0),
+                        0
+                    ),
+                    2
+                );
+
+            IF COALESCE(p_transaction.qty,0) > 0 THEN
+                v_unitcost := ROUND(v_totalcost / p_transaction.qty, 6);
+            ELSE
+                v_unitcost := 0;
+            END IF;
+        ELSE
+            v_totalcost := 0;
+            v_unitcost  := 0;
+        END IF;
 
     END IF;
 
-
     /* --------------------------------------------------------
-       5. INSERT STOCK LEDGER
+       INSERT STOCK LEDGER
        -------------------------------------------------------- */
-
     INSERT INTO sc_trx.stkblc
     (
-        uniqueid,
-        source_uniqueid,
-        docno,
-        doctype,
-        journal_type,
-        line_no,
-        docdate,
-        ref_docno,
-        ref_doctype,
-        type_in_out,
-        idbranch,
-        cabang,
-        idarea,
-        warehouse,
-        bin,
-        idbarang,
-        idunit,
-        batch,
-        lotno,
-        stock_uniqueid,
-        stock_key,
-        qty_in,
-        qty_out,
-        unitcost,
-        totalcost,
-        currcode,
-        kurs,
-        source_table,
-        source_id,
-        source_line_id,
-        idcoa,
-        keterangan,
-        createdby,
-        createddate
+        idlocation, idarea, batch, idbarang, trxdate,
+        doctype, docno, docref, hist, ctype,
+
+        qty_in, qty_out, pricelst_in, pricelst_out, pricelst_sld,
+        currcode, currvalue, tax, disc, biaya,
+        idgroup, grouptype, is_posted, posted_at, picby,
+        unit, description, created_at, created_by, status,
+
+        uniqueid, source_uniqueid, journal_type, line_no, docdate,
+        ref_docno, ref_doctype, type_in_out, idbranch, cabang,
+        warehouse, bin, idunit, lotno, stock_uniqueid, stock_key,
+        unitcost, totalcost, kurs, source_table, source_id,
+        source_line_id, idcoa, keterangan, createdby, createddate
     )
     VALUES
     (
+        v_idlocation,
+        COALESCE(p_transaction.idarea, ''),
+        COALESCE(p_transaction.batch, ''),
+        p_transaction.idbarang,
+        v_trxdate,
+        COALESCE(p_transaction.doctype, ''),
+        p_transaction.docno,
+        COALESCE(p_transaction.ref_docno, ''),
+        COALESCE(NULLIF(BTRIM(p_transaction.journal_type), ''), p_transaction.doctype),
+        COALESCE(p_transaction.type_in_out, 'IN'),
+
+        CASE WHEN p_transaction.type_in_out = 'IN'  THEN COALESCE(p_transaction.qty,0) ELSE 0 END,
+        CASE WHEN p_transaction.type_in_out = 'OUT' THEN COALESCE(p_transaction.qty,0) ELSE 0 END,
+        CASE WHEN p_transaction.type_in_out = 'IN'  THEN v_unitcost ELSE 0 END,
+        0,
+        0,
+        COALESCE(NULLIF(BTRIM(p_transaction.currcode), ''), 'IDR'),
+        COALESCE(p_transaction.kurs, 1),
+        COALESCE(p_transaction.pajak, 0),
+        COALESCE(p_transaction.discount, 0),
+        0,
+        v_idgroup,
+        v_grouptype,
+        FALSE,
+        NULL,
+        p_transaction.createdby,
+        p_transaction.idunit,
+        COALESCE(p_transaction.keterangan, ''),
+        COALESCE(p_transaction.createddate, CURRENT_TIMESTAMP),
+        p_transaction.createdby,
+        'F',
+
         p_transaction.uniqueid,
         COALESCE(p_transaction.source_uniqueid, ''),
-        p_transaction.docno,
-        p_transaction.doctype,
         p_transaction.journal_type,
         p_transaction.line_no,
         p_transaction.docdate,
@@ -871,28 +902,14 @@ BEGIN
         p_transaction.type_in_out,
         COALESCE(p_transaction.idbranch, ''),
         COALESCE(p_transaction.cabang, ''),
-        COALESCE(p_transaction.idarea, ''),
         COALESCE(p_transaction.warehouse, ''),
         COALESCE(p_transaction.bin, ''),
-        p_transaction.idbarang,
         COALESCE(p_transaction.idunit, ''),
-        COALESCE(p_transaction.batch, ''),
         COALESCE(p_transaction.lotno, ''),
         v_stock_uniqueid,
         v_stock_key,
-        CASE
-            WHEN p_transaction.type_in_out = 'IN'
-            THEN p_transaction.qty
-            ELSE 0
-        END,
-        CASE
-            WHEN p_transaction.type_in_out = 'OUT'
-            THEN p_transaction.qty
-            ELSE 0
-        END,
         v_unitcost,
         v_totalcost,
-        COALESCE(NULLIF(BTRIM(p_transaction.currcode), ''), 'IDR'),
         COALESCE(p_transaction.kurs, 1),
         COALESCE(p_transaction.source_table, ''),
         p_transaction.source_id,
@@ -900,7 +917,7 @@ BEGIN
         COALESCE(p_transaction.idcoa, ''),
         COALESCE(p_transaction.keterangan, ''),
         p_transaction.createdby,
-        CURRENT_TIMESTAMP
+        COALESCE(p_transaction.createddate, CURRENT_TIMESTAMP)
     );
 
 END;
@@ -939,29 +956,18 @@ BEGIN
 
     IF TG_OP = 'INSERT'
     THEN
-
-        PERFORM
-            sc_trx.fn_post_stkblc_from_transaction(NEW);
-
+        PERFORM sc_trx.fn_post_stkblc_from_transaction(NEW);
         RETURN NEW;
 
     ELSIF TG_OP = 'DELETE'
     THEN
-
-        PERFORM
-            sc_trx.fn_delete_stkblc_from_transaction(OLD.uniqueid);
-
+        PERFORM sc_trx.fn_delete_stkblc_from_transaction(OLD.uniqueid);
         RETURN OLD;
 
     ELSIF TG_OP = 'UPDATE'
     THEN
-
-        PERFORM
-            sc_trx.fn_delete_stkblc_from_transaction(OLD.uniqueid);
-
-        PERFORM
-            sc_trx.fn_post_stkblc_from_transaction(NEW);
-
+        PERFORM sc_trx.fn_delete_stkblc_from_transaction(OLD.uniqueid);
+        PERFORM sc_trx.fn_post_stkblc_from_transaction(NEW);
         RETURN NEW;
 
     END IF;
@@ -984,79 +990,21 @@ EXECUTE FUNCTION sc_trx.fn_transaction_stock();
 
 
 /* ============================================================
-   11. AUDIT ROUTING
+   11. VERIFIKASI
    ============================================================ */
 
-SELECT
-    td.uniqueid,
-    td.journal_type,
-    td.type_in_out,
-    td.stock_effect,
-    td.idbranch,
-    td.warehouse,
-    td.bin,
-    td.idbarang,
-    td.batch,
-    td.lotno,
-    td.qty
-FROM sc_trx.transaction_dt td
-LEFT JOIN sc_trx.stkblc sb
-       ON sb.uniqueid = td.uniqueid
-WHERE td.stock_effect IN ('IN','OUT','INOUT')
-  AND sb.uniqueid IS NULL
-ORDER BY td.docdate, td.id;
-
-
-/* ============================================================
-   12. AUDIT ORPHAN STKBLc
-   ============================================================ */
-
-SELECT
-    sb.uniqueid,
-    sb.source_uniqueid,
-    sb.docno,
-    sb.doctype,
-    sb.journal_type,
-    sb.type_in_out,
-    sb.idbranch,
-    sb.idbarang,
-    sb.qty_in,
-    sb.qty_out
-FROM sc_trx.stkblc sb
-LEFT JOIN sc_trx.transaction_dt td
-       ON td.uniqueid = sb.uniqueid
-WHERE td.uniqueid IS NULL
-ORDER BY sb.docdate, sb.id;
-
-
-/* ============================================================
-   13. CEK JOURNAL TYPE
-   ============================================================ */
-
-SELECT
-    journal_type,
-    COUNT(*) AS row_count
-FROM sc_trx.stkblc
-GROUP BY journal_type
-ORDER BY journal_type;
-
-
-/* ============================================================
-   14. CEK STRUKTUR
-   ============================================================ */
-
-SELECT
-    column_name,
-    data_type,
-    character_maximum_length,
-    numeric_precision,
-    numeric_scale,
-    is_nullable,
-    column_default
-FROM information_schema.columns
-WHERE table_schema = 'sc_trx'
-  AND table_name = 'stkblc'
-ORDER BY ordinal_position;
+DO $$
+BEGIN
+    RAISE NOTICE '============================================================';
+    RAISE NOTICE 'TAHAP 06 INSTALL : OK';
+    RAISE NOTICE '  - stkblc table        : READY';
+    RAISE NOTICE '  - fn_post_stkblc      : READY (TRANSFER SAFE)';
+    RAISE NOTICE '  - fn_delete_stkblc    : READY';
+    RAISE NOTICE '  - fn_transaction_stock: READY';
+    RAISE NOTICE '  - trigger trg_transaction_stock : ACTIVE';
+    RAISE NOTICE '============================================================';
+END;
+$$;
 
 
 /* ============================================================
@@ -1078,291 +1026,7 @@ ORDER BY ordinal_position;
        - valuation
        - cost OUT
        - return cost
-       - transfer cost
+       - transfer cost (rebuild IN transfer dari OUT pasangan)
        - production cost
 
    ============================================================ */
-/* ============================================================
-   PATCH TAHAP 06 - COMPATIBLE LEGACY STKBLC
-   Fix:
-     - idlocation NOT NULL
-     - trxdate NOT NULL
-     - docref NOT NULL
-     - hist NOT NULL
-     - ctype NOT NULL
-
-   Mapping:
-     idlocation = transaction_dt.warehouse
-     idarea     = transaction_dt.idarea
-     trxdate    = transaction_dt.docdate + current time
-     docref     = transaction_dt.ref_docno
-     hist       = transaction_dt.journal_type
-     ctype      = transaction_dt.type_in_out
-
-   JANGAN DROP TABLE.
-   ============================================================ */
-
-CREATE OR REPLACE FUNCTION sc_trx.fn_post_stkblc_from_transaction
-(
-    p_transaction sc_trx.transaction_dt
-)
-RETURNS VOID
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    v_stock_uniqueid TEXT;
-    v_stock_key      CHAR(32);
-    v_totalcost      NUMERIC(18,2);
-    v_unitcost       NUMERIC(18,6);
-    v_idgroup        VARCHAR(20);
-    v_grouptype      VARCHAR(20);
-    v_idlocation     VARCHAR(50);
-    v_trxdate        TIMESTAMP;
-BEGIN
-
-    /* Hanya stock transaction */
-    IF COALESCE(TRIM(p_transaction.stock_effect), 'NONE')
-       NOT IN ('IN','OUT','INOUT')
-    THEN
-        RETURN;
-    END IF;
-
-    /* Barang wajib */
-    IF NULLIF(BTRIM(COALESCE(p_transaction.idbarang,'')), '') IS NULL
-    THEN
-        RAISE EXCEPTION
-            'Stock transaction % tidak mempunyai idbarang',
-            p_transaction.uniqueid;
-    END IF;
-
-    /* Location wajib untuk stkblc legacy */
-    v_idlocation := NULLIF(BTRIM(COALESCE(p_transaction.warehouse,'')), '');
-
-    IF v_idlocation IS NULL
-    THEN
-        RAISE EXCEPTION
-            'Stock transaction % tidak mempunyai warehouse/idlocation',
-            p_transaction.uniqueid;
-    END IF;
-
-    /* Tanggal transaksi legacy */
-    v_trxdate :=
-        COALESCE(p_transaction.docdate, CURRENT_DATE)::DATE
-        + CURRENT_TIME;
-
-    /* Master barang */
-    SELECT
-        COALESCE(mb.idgroup, ''),
-        COALESCE(mb.grouptype, 'STOCK')
-    INTO
-        v_idgroup,
-        v_grouptype
-    FROM sc_mst.mbarang mb
-    WHERE mb.idbarang = p_transaction.idbarang
-    LIMIT 1;
-
-    v_idgroup   := COALESCE(v_idgroup, '');
-    v_grouptype := COALESCE(NULLIF(BTRIM(v_grouptype), ''), 'STOCK');
-
-    /* Stock identity */
-    v_stock_uniqueid :=
-        sc_trx.fn_stock_uniqueid
-        (
-            p_transaction.idbranch::TEXT,
-            p_transaction.warehouse::TEXT,
-            p_transaction.bin::TEXT,
-            p_transaction.idbarang::TEXT,
-            p_transaction.idunit::TEXT,
-            p_transaction.batch::TEXT,
-            p_transaction.lotno::TEXT
-        );
-
-    v_stock_key :=
-        sc_trx.fn_stock_key
-        (
-            p_transaction.idbranch::TEXT,
-            p_transaction.warehouse::TEXT,
-            p_transaction.bin::TEXT,
-            p_transaction.idbarang::TEXT,
-            p_transaction.idunit::TEXT,
-            p_transaction.batch::TEXT,
-            p_transaction.lotno::TEXT
-        );
-
-    /* Cost IN = nilai transaksi. Cost OUT sementara 0; TAHAP 07 menghitung HPP. */
-    IF p_transaction.type_in_out = 'IN'
-    THEN
-        v_totalcost :=
-            ROUND(
-                COALESCE
-                (
-                    NULLIF(p_transaction.nilai, 0),
-                    NULLIF(p_transaction.bruto - p_transaction.discount, 0),
-                    NULLIF(p_transaction.harga * p_transaction.qty, 0),
-                    0
-                ),
-                2
-            );
-
-        IF COALESCE(p_transaction.qty,0) > 0
-        THEN
-            v_unitcost := ROUND(v_totalcost / p_transaction.qty, 6);
-        ELSE
-            v_unitcost := 0;
-        END IF;
-    ELSE
-        v_totalcost := 0;
-        v_unitcost  := 0;
-    END IF;
-
-    /*
-       INSERT kompatibel dengan STKBLC legacy + kolom TAHAP 06 baru.
-    */
-    INSERT INTO sc_trx.stkblc
-    (
-        /* LEGACY REQUIRED */
-        idlocation,
-        idarea,
-        batch,
-        idbarang,
-        trxdate,
-        doctype,
-        docno,
-        docref,
-        hist,
-        ctype,
-
-        /* LEGACY STOCK VALUE */
-        qty_in,
-        qty_out,
-        pricelst_in,
-        pricelst_out,
-        pricelst_sld,
-        currcode,
-        currvalue,
-        tax,
-        disc,
-        biaya,
-        idgroup,
-        grouptype,
-        is_posted,
-        posted_at,
-        picby,
-        unit,
-        description,
-        created_at,
-        created_by,
-        status,
-
-        /* TAHAP 06 */
-        uniqueid,
-        source_uniqueid,
-        journal_type,
-        line_no,
-        docdate,
-        ref_docno,
-        ref_doctype,
-        type_in_out,
-        idbranch,
-        cabang,
-        warehouse,
-        bin,
-        idunit,
-        lotno,
-        stock_uniqueid,
-        stock_key,
-        unitcost,
-        totalcost,
-        kurs,
-        source_table,
-        source_id,
-        source_line_id,
-        idcoa,
-        keterangan,
-        createdby,
-        createddate
-    )
-    VALUES
-    (
-        /* LEGACY REQUIRED */
-        v_idlocation,
-        COALESCE(p_transaction.idarea, ''),
-        COALESCE(p_transaction.batch, ''),
-        p_transaction.idbarang,
-        v_trxdate,
-        COALESCE(p_transaction.doctype, ''),
-        p_transaction.docno,
-        COALESCE(p_transaction.ref_docno, ''),
-        COALESCE(NULLIF(BTRIM(p_transaction.journal_type), ''), p_transaction.doctype),
-        COALESCE(p_transaction.type_in_out, 'IN'),
-
-        /* LEGACY STOCK VALUE */
-        CASE WHEN p_transaction.type_in_out = 'IN'  THEN COALESCE(p_transaction.qty,0) ELSE 0 END,
-        CASE WHEN p_transaction.type_in_out = 'OUT' THEN COALESCE(p_transaction.qty,0) ELSE 0 END,
-        CASE WHEN p_transaction.type_in_out = 'IN'  THEN v_unitcost ELSE 0 END,
-        0,
-        0,
-        COALESCE(NULLIF(BTRIM(p_transaction.currcode), ''), 'IDR'),
-        COALESCE(p_transaction.kurs, 1),
-        COALESCE(p_transaction.pajak, 0),
-        COALESCE(p_transaction.discount, 0),
-        0,
-        v_idgroup,
-        v_grouptype,
-        FALSE,
-        NULL,
-        p_transaction.createdby,
-        p_transaction.idunit,
-        COALESCE(p_transaction.keterangan, ''),
-        COALESCE(p_transaction.createddate, CURRENT_TIMESTAMP),
-        p_transaction.createdby,
-        'F',
-
-        /* TAHAP 06 */
-        p_transaction.uniqueid,
-        COALESCE(p_transaction.source_uniqueid, ''),
-        p_transaction.journal_type,
-        p_transaction.line_no,
-        p_transaction.docdate,
-        COALESCE(p_transaction.ref_docno, ''),
-        COALESCE(p_transaction.ref_doctype, ''),
-        p_transaction.type_in_out,
-        COALESCE(p_transaction.idbranch, ''),
-        COALESCE(p_transaction.cabang, ''),
-        COALESCE(p_transaction.warehouse, ''),
-        COALESCE(p_transaction.bin, ''),
-        COALESCE(p_transaction.idunit, ''),
-        COALESCE(p_transaction.lotno, ''),
-        v_stock_uniqueid,
-        v_stock_key,
-        v_unitcost,
-        v_totalcost,
-        COALESCE(p_transaction.kurs, 1),
-        COALESCE(p_transaction.source_table, ''),
-        p_transaction.source_id,
-        p_transaction.source_line_id,
-        COALESCE(p_transaction.idcoa, ''),
-        COALESCE(p_transaction.keterangan, ''),
-        p_transaction.createdby,
-        COALESCE(p_transaction.createddate, CURRENT_TIMESTAMP)
-    );
-
-END;
-$$;
-
-/* ============================================================
-   CEK
-   ============================================================ */
-SELECT
-    column_name,
-    is_nullable,
-    column_default
-FROM information_schema.columns
-WHERE table_schema = 'sc_trx'
-  AND table_name = 'stkblc'
-  AND column_name IN
-  (
-      'idlocation','idarea','trxdate','docref',
-      'hist','ctype','uniqueid','stock_uniqueid','stock_key'
-  )
-ORDER BY ordinal_position;

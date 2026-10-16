@@ -138,7 +138,8 @@
                                 <th>Saldo Nilai</th>
                                 <th>Job</th>
                                 <th>Principal</th>
-                                <th>Perkiraan</th>
+                                <th>ID Perkiraan</th>
+                                <th>Nama Perkiraan</th>
                             </tr>
                         </thead>
                         <tbody id="tblPreviewAMBody">

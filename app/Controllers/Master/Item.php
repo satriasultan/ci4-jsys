@@ -1,4 +1,6 @@
 <?php
+/* Item.php */
+
 
 namespace App\Controllers\Master;
 
@@ -84,11 +86,15 @@ class Item extends BaseController
             }
 
             if ($canUpdate) {
-                $btnActions .= '<a class="dropdown-item" href="#" onclick="editItem('."'".trim($lm->id)."'".');"><i class="fa fa-gear"></i> Update</a>';
+                $btnActions .= '<a class="dropdown-item" href="' . base_url('master/item/edit/' . trim($lm->id)) . '"><i class="fa fa-gear"></i> Update</a>';
             }
 
             if ($canView) {
-                $btnActions .= '<a class="dropdown-item" href="#" onclick="detailItem('."'".trim($lm->id)."'".');"><i class="fa fa-eye"></i> Detail</a>';
+                $btnActions .= '<a class="dropdown-item" href="' . base_url('master/item/detail/' . trim($lm->id)) . '"><i class="fa fa-eye"></i> Detail</a>';
+            }
+
+            if ($canDelete) {
+                $btnActions .= '<a class="dropdown-item text-danger" href="#" onclick="deleteItem(\'' . trim($lm->id) . '\',\'' . trim($lm->idbarang) . '\');return false;"><i class="fa fa-trash"></i> Delete</a>';
             }
 
 
@@ -174,356 +180,366 @@ class Item extends BaseController
         return $this->template->render('master/item/v_input',$data);
     }
 
-    function edit(){
+    // =========================================================
+    // EDIT — perbaikan: ambil parameter dari segment URI
+    // Route: master/item/edit/(:any)
+    // =========================================================
+    public function edit($id = null)
+    {
+        $dtlbranch = $this->m_global->q_branch()->getRowArray();
+        $branch = $dtlbranch['branch'];
 
-        $dtlbranch=$this->m_global->q_branch()->getRowArray();
-        $branch=$dtlbranch['branch'];
-        /* CODE UNTUK VERSI*/
-        $nama=trim($this->session->get('nama'));
-        $kodemenu='I.M.B.10'; $versirelease='I.M.B.10/01'; $releasedate=date('2020-04-12 00:00:00');
-        $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
-        $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
-        $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
-        $data['kodemenu']=$kodemenu; $data['version']=$versidb;
-        /* END CODE UNTUK VERSI */
-
-        $paramerror=" and userid='$nama' and modul='I.M.B.10'";
-        $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
-        $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
-        if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
-        if(isset($dtlerror['nomorakhir1'])) { $nomorakhir1=trim($dtlerror['nomorakhir1']); } else { $nomorakhir1='';  }
-        if(isset($dtlerror['errorcode'])) { $errorcode=trim($dtlerror['errorcode']); } else { $errorcode='';  }
-
-        if($count_err>0 and $errordesc<>''){
-            if ($dtlerror['errorcode']==0){
-                $data['message']="<div class='alert alert-info'>DATA SUKSES DIPROSES $nomorakhir1 </div>";
-            } else {
-                $data['message']="<div class='alert alert-info'>$errordesc</div>";
-            }
-
-        }else {
-            if ($errorcode=='0'){
-                $data['message']="<div class='alert alert-info'>DATA SUKSES DIPROSES $nomorakhir1 </div>";
-            } else {
-                $data['message']="";
-            }
-
-        }
-        $data['title']="EDIT DATA MASTER ITEM";
-        $var = trim($this->request->getGet('var'));
-        $data['type']="EDIT";
-        $data['nama']=$nama;
-        $data['id']=$var;
-        $pterror = " and userid='$nama'";
-        $this->m_trxerror->q_deltrxerror($pterror);
-        return $this->template->render('master/item/v_input',$data);
-    }
-
-
-     function detail(){
-
-        $dtlbranch=$this->m_global->q_branch()->getRowArray();
-        $branch=$dtlbranch['branch'];
-        /* CODE UNTUK VERSI*/
-        $nama=trim($this->session->get('nama'));
-        $kodemenu='I.M.B.10'; $versirelease='I.M.B.10/01'; $releasedate=date('2020-04-12 00:00:00');
-        $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
-        $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
-        $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
-        $data['kodemenu']=$kodemenu; $data['version']=$versidb;
-        /* END CODE UNTUK VERSI */
-
-        $paramerror=" and userid='$nama' and modul='I.M.B.10'";
-        $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
-        $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
-        if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
-        if(isset($dtlerror['nomorakhir1'])) { $nomorakhir1=trim($dtlerror['nomorakhir1']); } else { $nomorakhir1='';  }
-        if(isset($dtlerror['errorcode'])) { $errorcode=trim($dtlerror['errorcode']); } else { $errorcode='';  }
-
-        if($count_err>0 and $errordesc<>''){
-            if ($dtlerror['errorcode']==0){
-                $data['message']="<div class='alert alert-info'>DATA SUKSES DIPROSES $nomorakhir1 </div>";
-            } else {
-                $data['message']="<div class='alert alert-info'>$errordesc</div>";
-            }
-
-        }else {
-            if ($errorcode=='0'){
-                $data['message']="<div class='alert alert-info'>DATA SUKSES DIPROSES $nomorakhir1 </div>";
-            } else {
-                $data['message']="";
-            }
-
-        }
-        $data['title']="DETAIL DATA MASTER ITEM";
-        $var = trim($this->request->getGet('var'));
-        $data['type']="DETAIL";
-        $data['nama']=$nama;
-        $data['id']=$var;
-        $pterror = " and userid='$nama'";
-        $this->m_trxerror->q_deltrxerror($pterror);
-        return $this->template->render('master/item/v_input',$data);
-    }
-
-    function del_item(){
         $nama = trim($this->session->get('nama'));
-        $id = trim($this->request->getGet('var'));
-        $builder = $this->db->table('sc_mst.mbarang');
-        $builder_trxerror = $this->db->table('sc_mst.trxerror');
+        $kodemenu = 'I.M.B.10';
+        $versirelease = 'I.M.B.10/01';
+        $releasedate = date('2020-04-12 00:00:00');
 
-        $builder->where('id',$id);
-        $builder->delete();
-        //INSERT TRX ERROR
-        $builder_trxerror->where('userid',$nama);
-        $builder_trxerror->where('modul','I.M.B.10');
+        $versidb = $this->fiky_version->version($kodemenu, $versirelease, $releasedate, $nama);
+        $x = $this->fiky_menu->menus($kodemenu, $versirelease, $releasedate);
+        $data['x'] = $x['rows'];
+        $data['y'] = $x['res'];
+        $data['t'] = $x['xn'];
+        $data['kodemenu'] = $kodemenu;
+        $data['version'] = $versidb;
+
+        $data['message'] = $this->buildMessage($nama);
+        $data['title'] = "EDIT DATA MASTER ITEM";
+        $data['type'] = "EDIT";
+        $data['nama'] = $nama;
+        // FIX: ambil dari segment URI, fallback ke GET
+        $data['id'] = $id ?? trim($this->request->getGet('var'));
+
+        $pterror = " and userid='$nama'";
+        $this->m_trxerror->q_deltrxerror($pterror);
+        return $this->template->render('master/item/v_input', $data);
+    }
+
+    // =========================================================
+    // DETAIL — perbaikan sama
+    // =========================================================
+    public function detail($id = null)
+    {
+        $dtlbranch = $this->m_global->q_branch()->getRowArray();
+        $branch = $dtlbranch['branch'];
+
+        $nama = trim($this->session->get('nama'));
+        $kodemenu = 'I.M.B.10';
+        $versirelease = 'I.M.B.10/01';
+        $releasedate = date('2020-04-12 00:00:00');
+
+        $versidb = $this->fiky_version->version($kodemenu, $versirelease, $releasedate, $nama);
+        $x = $this->fiky_menu->menus($kodemenu, $versirelease, $releasedate);
+        $data['x'] = $x['rows'];
+        $data['y'] = $x['res'];
+        $data['t'] = $x['xn'];
+        $data['kodemenu'] = $kodemenu;
+        $data['version'] = $versidb;
+
+        $data['message'] = $this->buildMessage($nama);
+        $data['title'] = "DETAIL DATA MASTER ITEM";
+        $data['type'] = "DETAIL";
+        $data['nama'] = $nama;
+        $data['id'] = $id ?? trim($this->request->getGet('var'));
+
+        $pterror = " and userid='$nama'";
+        $this->m_trxerror->q_deltrxerror($pterror);
+        return $this->template->render('master/item/v_input', $data);
+    }
+
+    // =========================================================
+    // Helper: bangun pesan error/sukses (dipakai berulang)
+    // =========================================================
+    private function buildMessage($nama)
+    {
+        $paramerror = " and userid='$nama' and modul='I.M.B.10'";
+        $dtlerror = $this->m_trxerror->q_trxerror($paramerror)->getRowArray();
+        $count_err = $this->m_trxerror->q_trxerror($paramerror)->getNumRows();
+
+        $errordesc   = isset($dtlerror['description'])  ? trim($dtlerror['description'])  : '';
+        $nomorakhir1 = isset($dtlerror['nomorakhir1'])  ? trim($dtlerror['nomorakhir1'])  : '';
+        $errorcode   = isset($dtlerror['errorcode'])    ? trim($dtlerror['errorcode'])    : '';
+
+        if ($count_err > 0 && $errordesc <> '') {
+            return ($dtlerror['errorcode'] == 0)
+                ? "<div class='alert alert-info'>DATA SUKSES DIPROSES $nomorakhir1 </div>"
+                : "<div class='alert alert-info'>$errordesc</div>";
+        }
+        return ($errorcode == '0')
+            ? "<div class='alert alert-info'>DATA SUKSES DIPROSES $nomorakhir1 </div>"
+            : "";
+    }
+
+    // =========================================================
+    // DELETE — perbaikan: cek dependensi + konfirmasi
+    // =========================================================
+    public function del_item()
+    {
+        $nama = trim($this->session->get('nama'));
+        // FIX: terima dari GET maupun POST
+        $id = trim($this->request->getGet('var') ?? $this->request->getPost('var'));
+
+        if ($id === '') {
+            return redirect()->to(base_url('master/item'))
+                ->with('message', 'ID Barang tidak ditemukan.');
+        }
+
+        // Ambil idbarang asli dari tabel master
+        $row = $this->db->table('sc_mst.mbarang')
+            ->select('idbarang')
+            ->where('id', $id)
+            ->get()->getRowArray();
+
+        if (!$row) {
+            return redirect()->to(base_url('master/item'))
+                ->with('message', 'Data tidak ditemukan.');
+        }
+        $idbarang = trim($row['idbarang']);
+
+        // =====================================================
+        // BLOCKING: cek apakah barang sudah dipakai transaksi
+        // =====================================================
+        $dipakai = $this->db->query("
+            SELECT 1 FROM sc_mst.stkgdw WHERE TRIM(idbarang) = ? LIMIT 1
+        ", [$idbarang])->getNumRows();
+
+        if ($dipakai > 0) {
+            return redirect()->to(base_url('master/item'))
+                ->with('message', "Barang [$idbarang] tidak bisa dihapus karena sudah ada di kartu stock.");
+        }
+
+        $this->db->transStart();
+
+        // Hapus unit terkait dulu (foreign key)
+        $this->db->table('sc_mst.mbarang_unit')
+            ->where('idbarang', $idbarang)
+            ->delete();
+
+        // Hapus master
+        $this->db->table('sc_mst.mbarang')
+            ->where('id', $id)
+            ->delete();
+
+        $this->db->transComplete();
+
+        if ($this->db->transStatus() === false) {
+            return redirect()->to(base_url('master/item'))
+                ->with('message', 'Gagal menghapus data.');
+        }
+
+        // Insert trx error
+        $builder_trxerror = $this->db->table('sc_mst.trxerror');
+        $builder_trxerror->where('userid', $nama);
+        $builder_trxerror->where('modul', 'I.M.B.10');
         $builder_trxerror->delete();
-        $infotrxerror = array (
-            'userid' => $nama,
-            'errorcode' => 0,
-            'nomorakhir1' => $id,
+        $builder_trxerror->insert([
+            'userid'      => $nama,
+            'errorcode'   => 0,
+            'nomorakhir1' => $idbarang,
             'nomorakhir2' => '',
-            'modul' => 'I.M.B.10',
-        );
-        $builder_trxerror->insert($infotrxerror);
+            'modul'       => 'I.M.B.10',
+        ]);
+
         return redirect()->to(base_url('master/item'));
     }
 
-    function showDetailItem () {
-        $nama = $this->session->get('nama');
-        //parsing biar tidak sama dengan nik
-        $var = $this->request->getGet('var');
-        $nik = $this->request->getGet('nik');
-
-        $param = " and id='$var'";
-        $dtl = $this->m_item->q_item_param($param);
-
-        $output = array(
-            'status' => true,
-            'total_count' => $dtl->getNumRows(),
-            'items' => $dtl->getResult(),
-            'incomplete_getResults' => false,
-        );
-        echo $this->fiky_encryption->jDatatable($output);
-
-    }
-    function saveDataItem(){
+    // =========================================================
+    // SAVE DATA ITEM — perbaikan: BLOCKING SIMPAN
+    // =========================================================
+    public function saveDataItem()
+    {
         $nama = trim($this->session->get('nama'));
         $type = trim($this->request->getPost('type'));
-        $docno = trim($this->request->getPost('docno'));
-        $id = trim($this->request->getPost('id'));
-        $idbarang = trim(strtoupper($this->request->getPost('idbarang')));
-        $nmbarang = trim(strtoupper($this->request->getPost('nmbarang')));
-        $idgroup = trim($this->request->getPost('idgroup'));
+        $id   = trim($this->request->getPost('id'));
+
+        // =====================================================
+        // Ambil semua input
+        // =====================================================
+        $idbarang    = strtoupper(trim($this->request->getPost('idbarang')));
+        $nmbarang    = strtoupper(trim($this->request->getPost('nmbarang')));
+        $idgroup     = trim($this->request->getPost('idgroup'));
         $subunitenable = trim($this->request->getPost('subunitenable'));
-        $unit = trim($this->request->getPost('unit'));
-        $subunit = trim($this->request->getPost('subunit'));
-        $idbarcode = trim($this->request->getPost('idbarcode'));
-        $maks_daystock = str_replace('.','',trim($this->request->getPost('maks_daystock')));
+        // Ambil dari field utama; kalau kosong (karena disabled), ambil dari hidden backup
+        $unit    = trim($this->request->getPost('unit')    ?? '');
+        $subunit = trim($this->request->getPost('subunit') ?? '');
+
+        if ($unit === '') {
+            $unit = trim($this->request->getPost('unit_hidden') ?? '');
+        }
+        if ($subunit === '') {
+            $subunit = trim($this->request->getPost('subunit_hidden') ?? '');
+        }
+        $idbarcode   = trim($this->request->getPost('idbarcode'));
+        $maks_daystock = str_replace('.', '', trim($this->request->getPost('maks_daystock')));
         $deflocation = trim($this->request->getPost('deflocation'));
-        $defarea = trim($this->request->getPost('defarea'));
-        $chold = trim($this->request->getPost('chold'));
+        $defarea     = trim($this->request->getPost('defarea'));
+        $chold       = trim($this->request->getPost('chold'));
 
+        $kdtax       = trim($this->request->getPost('kdtax'));
+        $originalno  = trim($this->request->getPost('originalno'));
+        $satuantax   = trim($this->request->getPost('satuantax'));
 
-        $kdtax = trim($this->request->getPost('kdtax'));
-        $originalno = trim($this->request->getPost('originalno'));
-        $satuantax = trim($this->request->getPost('satuantax'));
-
-        $volume = trim($this->request->getPost('volume'));
-        $berat = trim($this->request->getPost('berat'));
-        $gw = trim($this->request->getPost('gw'));
-        $psize = trim($this->request->getPost('psize'));
-        $lsize = trim($this->request->getPost('lsize'));
-        $tsize = trim($this->request->getPost('tsize'));
+        $volume  = trim($this->request->getPost('volume'));
+        $berat   = trim($this->request->getPost('berat'));
+        $gw      = trim($this->request->getPost('gw'));
+        $psize   = trim($this->request->getPost('psize'));
+        $lsize   = trim($this->request->getPost('lsize'));
+        $tsize   = trim($this->request->getPost('tsize'));
         $lokasireff = trim($this->request->getPost('lokasireff'));
 
-        $idgolonganbarang = trim($this->request->getPost('idgolonganbarang'));
-        $idjenisproduk = trim($this->request->getPost('idjenisproduk'));
-        $idkelompokbarang = trim($this->request->getPost('idkelompokbarang'));
-        $idprincipal = trim($this->request->getPost('idprincipal'));
+        $idgolonganbarang  = trim($this->request->getPost('idgolonganbarang'));
+        $idjenisproduk     = trim($this->request->getPost('idjenisproduk'));
+        $idkelompokbarang  = trim($this->request->getPost('idkelompokbarang'));
+        $idprincipal       = trim($this->request->getPost('idprincipal'));
 
-        $ppersediaan  = trim($this->request->getPost('ppersediaan') ?? '');
-        $psj          = trim($this->request->getPost('psj') ?? '');
-        $salesakun    = trim($this->request->getPost('salesakun') ?? '');
-        $pcogs        = trim($this->request->getPost('pcogs') ?? '');
-        $phpproduksi  = trim($this->request->getPost('phpproduksi') ?? '');
-        $pjasa        = trim($this->request->getPost('pjasa') ?? '');
-        $pwaste       = trim($this->request->getPost('pwaste') ?? '');
-        $grouptype       = trim($this->request->getPost('grouptype') ?? '');
+        $ppersediaan = trim($this->request->getPost('ppersediaan') ?? '');
+        $psj         = trim($this->request->getPost('psj') ?? '');
+        $salesakun   = trim($this->request->getPost('salesakun') ?? '');
+        $pcogs       = trim($this->request->getPost('pcogs') ?? '');
+        $phpproduksi = trim($this->request->getPost('phpproduksi') ?? '');
+        $pjasa       = trim($this->request->getPost('pjasa') ?? '');
+        $pwaste      = trim($this->request->getPost('pwaste') ?? '');
+        $grouptype   = trim($this->request->getPost('grouptype') ?? 'STOCK');
 
         $discontinue = strtoupper(trim($this->request->getPost('discontinue') ?? 'NO'));
-        $issn = strtoupper(trim($this->request->getPost('issn') ?? 'NO'));
-
+        $issn        = strtoupper(trim($this->request->getPost('issn') ?? 'NO'));
 
         $setminstock = trim($this->request->getPost('setminstock'));
-        $minstock = str_replace('.','',trim($this->request->getPost('minstock')));
-        $description = trim(strtoupper($this->request->getPost('description')));
-        $expdate = !$this->request->getPost('expdate') ? null : date('Y-m-d',strtotime($this->request->getPost('expdate')));
-        $mfgdate = !$this->request->getPost('mfgdate') ? null : date('Y-m-d',strtotime($this->request->getPost('mfgdate')));
+        $minstock    = str_replace('.', '', trim($this->request->getPost('minstock')));
+        $description = strtoupper(trim($this->request->getPost('description')));
+        $expdate = !$this->request->getPost('expdate') ? null : date('Y-m-d', strtotime($this->request->getPost('expdate')));
+        $mfgdate = !$this->request->getPost('mfgdate') ? null : date('Y-m-d', strtotime($this->request->getPost('mfgdate')));
 
-        $inputby = $nama;
+        $inputby   = $nama;
         $inputdate = date('Y-m-d H:i:s');
 
-        $builder_mbarang = $this->db->table('sc_mst.mbarang');
-        $builder_trxerror = $this->db->table('sc_mst.trxerror');
+        // =====================================================
+        // 🔒 BLOCKING SIMPAN — VALIDASI WAJIB
+        // =====================================================
+        $errors = [];
 
-            if ($type==='INPUT'){
-                $info = array(
-                    'idbarang' => $idbarang,
-                    'nmbarang' => $nmbarang,
-                    'idgroup' => $idgroup,
-                    'subunitenable' => $subunitenable,
-                    'unit' => $unit,
-                    'subunit' => $subunit,
-                    'idbarcode' => $idbarcode,
-                    'maks_daystock' => $maks_daystock,
-                    'setminstock' => $setminstock,
-                    'minstock' => $minstock,
-                    'chold' => $chold,
-                    'description' => $description,
-                    'expdate' => $expdate,
-                    'mfgdate' => $mfgdate,
-                    'deflocation' => $deflocation,
-                    'defarea' => $defarea,
+        if ($idbarang === '') {
+            $errors[] = 'Item ID wajib diisi.';
+        }
+        if ($nmbarang === '') {
+            $errors[] = 'Item Name wajib diisi.';
+        }
+        if ($unit === '') {
+            $errors[] = 'Unit wajib dipilih.';
+        }
 
-                    'kdtax'           => $kdtax,
-                    'originalno'      => $originalno,
-                    'satuantax'       => $satuantax,
+        // Cek duplikat untuk INPUT
+        if ($type === 'INPUT' && $idbarang !== '') {
+            $cek = $this->db->table('sc_mst.mbarang')
+                ->where('TRIM(idbarang)', $idbarang)
+                ->countAllResults();
 
-                    // === DIMENSI & BERAT ===
-                    'volume'          => $volume,
-                    'berat'           => $berat,
-                    'gw'              => $gw,
-                    'psize'           => $psize,
-                    'lsize'           => $lsize,
-                    'tsize'           => $tsize,
-                    'lokasireff'      => $lokasireff,
+            // PostgreSQL pakai TRIM, jadi gunakan query manual
+            $cek = $this->db->query(
+                "SELECT 1 FROM sc_mst.mbarang WHERE TRIM(idbarang) = ? LIMIT 1",
+                [$idbarang]
+            )->getNumRows();
 
-                    // === MASTER RELATION ===
-                    'idgolonganbarang'=> $idgolonganbarang,
-                    'idjenisproduk'   => $idjenisproduk,
-                    'idkelompokbarang'=> $idkelompokbarang,
-                    'idprincipal'     => $idprincipal,
-
-                    // === ACCOUNTING / COA ===
-                    'ppersediaan'     => $ppersediaan,
-                    'psj'             => $psj,
-                    'salesakun'       => $salesakun,
-                    'pcogs'           => $pcogs,
-                    'phpproduksi'     => $phpproduksi,
-                    'pjasa'           => $pjasa,
-                    'pwaste'          => $pwaste,
-
-                    // === STATUS FLAG ===
-                    'discontinue'     => $discontinue,
-                    'issn'            => $issn,
-                    'inputby' => $inputby,
-                    'inputdate' => $inputdate,
-                    'grouptype' => $grouptype,
-                );
-
-                if ($builder_mbarang->insert($info)) {
-                    //INSERT TRX ERROR
-                    $builder_trxerror->where('userid',$nama);
-                    $builder_trxerror->where('modul','I.M.B.10');
-                    $builder_trxerror->delete();
-                    $infotrxerror = array (
-                        'userid' => $nama,
-                        'errorcode' => 0,
-                        'nomorakhir1' => $idbarang,
-                        'nomorakhir2' => '',
-                        'modul' => 'I.M.B.10',
-                    );
-                    $builder_trxerror->insert($infotrxerror);
-
-                    $paramerror=" and userid='$nama' and modul='I.M.B.10'";
-                    $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
-                    $getResult = array('status' => true, 'messages' => 'Sukses Di Proses'.' Nomor: '.trim($dtlerror['nomorakhir1']));
-                    echo json_encode($getResult);
-                } else {
-                    $paramerror=" and userid='$nama' and modul='I.M.B.10'";
-                    $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
-                    $getResult = array('status' => false, 'messages' => trim($dtlerror['description']));
-                    echo json_encode($getResult);
-                }
-            } else if ($type==='EDIT'){
-                $infoX = array(
-                    'nmbarang' => $nmbarang,
-                    'idgroup' => $idgroup,
-                    'subunitenable' => $subunitenable,
-                    'unit' => $unit,
-                    'subunit' => $subunit,
-                    'idbarcode' => $idbarcode,
-                    'maks_daystock' => $maks_daystock,
-                    'setminstock' => $setminstock,
-                    'minstock' => $minstock,
-                    'chold' => $chold,
-                    'description' => $description,
-                    'expdate' => $expdate,
-                    'mfgdate' => $mfgdate,
-                    'deflocation' => $deflocation,
-                    'defarea' => $defarea,
-
-                    'kdtax'           => $kdtax,
-                    'originalno'      => $originalno,
-                    'satuantax'       => $satuantax,
-
-                    // === DIMENSI & BERAT ===
-                    'volume'          => $volume,
-                    'berat'           => $berat,
-                    'gw'              => $gw,
-                    'psize'           => $psize,
-                    'lsize'           => $lsize,
-                    'tsize'           => $tsize,
-                    'lokasireff'      => $lokasireff,
-
-                    // === MASTER RELATION ===
-                    'idgolonganbarang'=> $idgolonganbarang,
-                    'idjenisproduk'   => $idjenisproduk,
-                    'idkelompokbarang'=> $idkelompokbarang,
-                    'idprincipal'     => $idprincipal,
-
-                    // === ACCOUNTING / COA ===
-                    'ppersediaan'     => $ppersediaan,
-                    'psj'             => $psj,
-                    'salesakun'       => $salesakun,
-                    'pcogs'           => $pcogs,
-                    'phpproduksi'     => $phpproduksi,
-                    'pjasa'           => $pjasa,
-                    'pwaste'          => $pwaste,
-
-                    // === STATUS FLAG ===
-                    'discontinue'     => $discontinue,
-                    'issn'            => $issn,
-                    'inputby' => $inputby,
-                    'inputdate' => $inputdate,
-                    'grouptype' => $grouptype,
-                );
-                $builder_mbarang->where('id',$id);
-                if ($builder_mbarang->update($infoX)) {
-                    //INSERT TRX ERROR
-                    $builder_trxerror->where('userid',$nama);
-                    $builder_trxerror->where('modul','I.T.A.1');
-                    $builder_trxerror->delete();
-                    $infotrxerror = array (
-                        'userid' => $nama,
-                        'errorcode' => 0,
-                        'nomorakhir1' => $idbarang,
-                        'nomorakhir2' => '',
-                        'modul' => 'I.T.A.1',
-                    );
-                    $builder_trxerror->insert($infotrxerror);
-
-                    $paramerror=" and userid='$nama' and modul='I.T.A.1'";
-                    $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
-                    $getResult = array('status' => true, 'messages' => 'Sukses Di Proses'.' Nomor: '.trim($dtlerror['nomorakhir1']));
-                    echo json_encode($getResult);
-                } else {
-                    $paramerror=" and userid='$nama' and modul='I.M.B.10'";
-                    $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
-                    $getResult = array('status' => false, 'messages' => trim($dtlerror['description']));
-                    echo json_encode($getResult);
+            if ($cek > 0) {
+                $errors[] = "Item ID [$idbarang] sudah terdaftar.";
             }
         }
+
+        if (!empty($errors)) {
+            return $this->response->setJSON([
+                'status'   => false,
+                'messages' => implode(' ', $errors),
+            ]);
+        }
+
+        // =====================================================
+        // PROSES SIMPAN
+        // =====================================================
+        $builder_mbarang  = $this->db->table('sc_mst.mbarang');
+        $builder_trxerror = $this->db->table('sc_mst.trxerror');
+
+        $payload = [
+            'nmbarang'         => $nmbarang,
+            'idgroup'          => $idgroup,
+            'subunitenable'    => $subunitenable,
+            'unit'             => $unit,
+            'subunit'          => $subunit,
+            'idbarcode'        => $idbarcode,
+            'maks_daystock'    => $maks_daystock,
+            'setminstock'      => $setminstock,
+            'minstock'         => $minstock,
+            'chold'            => $chold,
+            'description'      => $description,
+            'expdate'          => $expdate,
+            'mfgdate'          => $mfgdate,
+            'deflocation'      => $deflocation,
+            'defarea'          => $defarea,
+            'kdtax'            => $kdtax,
+            'originalno'       => $originalno,
+            'satuantax'        => $satuantax,
+            'volume'           => $volume,
+            'berat'            => $berat,
+            'gw'               => $gw,
+            'psize'            => $psize,
+            'lsize'            => $lsize,
+            'tsize'            => $tsize,
+            'lokasireff'       => $lokasireff,
+            'idgolonganbarang' => $idgolonganbarang,
+            'idjenisproduk'    => $idjenisproduk,
+            'idkelompokbarang' => $idkelompokbarang,
+            'idprincipal'      => $idprincipal,
+            'ppersediaan'      => $ppersediaan,
+            'psj'              => $psj,
+            'salesakun'        => $salesakun,
+            'pcogs'            => $pcogs,
+            'phpproduksi'      => $phpproduksi,
+            'pjasa'            => $pjasa,
+            'pwaste'           => $pwaste,
+            'discontinue'      => $discontinue,
+            'issn'             => $issn,
+            'inputby'          => $inputby,
+            'inputdate'        => $inputdate,
+            'grouptype'        => $grouptype,
+        ];
+
+        $this->db->transStart();
+
+        if ($type === 'INPUT') {
+            $payload['idbarang'] = $idbarang;
+            $sukses = $builder_mbarang->insert($payload);
+            $modul  = 'I.M.B.10';
+        } else {
+            // EDIT: idbarang tidak boleh diubah (primary key)
+            $builder_mbarang->where('id', $id);
+            $sukses = $builder_mbarang->update($payload);
+            $modul  = 'I.M.B.10';
+        }
+
+        // Insert trx error (untuk info sukses)
+// Insert trx error (untuk info sukses)
+        $builder_trxerror->where('userid', $nama);
+        $builder_trxerror->where('modul', $modul);
+        $builder_trxerror->delete();
+        $builder_trxerror->insert([
+            'userid'      => $nama,
+            'errorcode'   => $sukses ? 0 : 1,
+            'nomorakhir1' => $idbarang,
+            'nomorakhir2' => '',
+            'modul'       => $modul,
+        ]);
+
+        $this->db->transComplete();
+
+        if ($this->db->transStatus() === false || !$sukses) {
+            return $this->response->setJSON([
+                'status'   => false,
+                'messages' => 'Gagal menyimpan data. Silakan coba lagi.',
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'status'   => true,
+            'messages' => 'Sukses Di Proses Nomor: ' . $idbarang,
+        ]);
     }
 
     function import(){
@@ -790,6 +806,71 @@ class Item extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
+    // =========================================================
+    // SHOW DETAIL ITEM — untuk mengisi form EDIT / DETAIL
+    // Route: master/item/showDetailItem/(:any)
+    // =========================================================
+    public function showDetailItem($id = null)
+    {
+        $id = $id ?? trim($this->request->getGet('var'));
+
+        if ($id === '' || $id === null) {
+            return $this->response->setJSON([
+                'dataTables' => [
+                    'status' => false,
+                    'total_count' => 0,
+                    'items' => [],
+                    'incomplete_getResults' => false,
+                ]
+            ]);
+        }
+
+        // =================== HEADER ITEM ===================
+        $param = " and id='" . $this->db->escapeString($id) . "'";
+        $dtl = $this->m_item->q_item_param($param);
+        $items = $dtl->getResult();
+
+        // Trim semua string (buang trailing space char(12))
+        foreach ($items as $it) {
+            foreach ($it as $k => $v) {
+                if (is_string($v)) {
+                    $it->$k = trim($v);
+                }
+            }
+        }
+
+        // =================== UNITS ===================
+        $units = [];
+        if (!empty($items)) {
+            $idbarang = trim($items[0]->idbarang);
+            $units = $this->db->table('sc_mst.mbarang_unit')
+                ->select('idbarang, idunit, idunit_tax, basic_value, conv_value, cdefault')
+                ->where('idbarang', $idbarang)
+                ->orderBy('idunit', 'ASC')
+                ->get()->getResultArray();
+
+            // Trim setiap field
+            foreach ($units as &$u) {
+                $u['idbarang']   = trim($u['idbarang']);
+                $u['idunit']     = trim($u['idunit']);
+                $u['idunit_tax'] = trim($u['idunit_tax'] ?? '');
+                $u['cdefault']   = trim($u['cdefault'] ?? 'NO');
+            }
+            unset($u);
+        }
+
+        // =================== RESPONSE ===================
+        return $this->response->setJSON([
+            'dataTables' => [
+                'status' => true,
+                'total_count' => count($items),
+                'items' => $items,
+                'incomplete_getResults' => false,
+            ],
+            'units' => $units,
+            'status' => true,
+        ]);
+    }
 
     function saveUnit(){
         $nama = trim($this->session->get('nama'));

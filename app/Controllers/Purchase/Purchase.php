@@ -1,5 +1,5 @@
 <?php
-
+/* Purchase.php */
 
 namespace App\Controllers\Purchase;
 

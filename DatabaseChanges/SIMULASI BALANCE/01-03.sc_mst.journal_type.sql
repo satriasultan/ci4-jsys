@@ -230,13 +230,13 @@ VALUES
  'PEMBALIKAN SALDO AWAL PERSEDIAAN'),
 
 /* TRANSFER */
-('TRFWHS','WAREHOUSE TRANSFER','INOUT','INVENTORY','INOUT','YES','NONE',
+('TRFWHS','WAREHOUSE TRANSFER','INOUT','INVENTORY','INOUT','NO','NONE',
  'TRANSFER ANTAR GUDANG'),
 
-('BINMOV','BIN MOVEMENT','INOUT','INVENTORY','INOUT','YES','NONE',
+('BINMOV','BIN MOVEMENT','INOUT','INVENTORY','INOUT','NO','NONE',
  'PERPINDAHAN LOKASI BIN'),
 
-('BRNTRF','BRANCH TRANSFER','INOUT','INVENTORY','INOUT','YES','NONE',
+('BRNTRF','BRANCH TRANSFER','INOUT','INVENTORY','INOUT','NO','NONE',
  'TRANSFER ANTAR CABANG'),
 
 /* MANUFACTURING */
@@ -882,7 +882,7 @@ BEGIN
     END LOOP;
 
 
-    /* ================================================================
+        /* ================================================================
        INVENTORY
        ================================================================ */
 
@@ -919,20 +919,36 @@ BEGIN
             ('OPNSTR','INVENTORY','','K','NILAI',2,
              'OPNSTR - Pembalikan persediaan'),
 
-            ('TRFWHS','INVENTORY','','D','NILAI',1,
-             'TRFWHS - Persediaan tujuan'),
-            ('TRFWHS','INVENTORY','','K','NILAI',2,
-             'TRFWHS - Persediaan asal'),
+            /* --------------------------------------------------------
+               TRANSFER - WAJIB value_source = 'COST'
+               --------------------------------------------------------
+               
+               Transfer HANYA memindahkan lokasi, TIDAK mengubah
+               nilai persediaan. Nilai harus diambil dari average
+               cost (TAHAP 07), bukan dari input transaksi.
+               
+               Orientasi mapping: IN (tujuan bertambah)
+                   seq 1 = D  Inventory tujuan
+                   seq 2 = K  Inventory asal
+               
+               Arah D/K untuk OUT akan di-flip oleh TAHAP 16
+               berdasarkan transaction_dt.type_in_out.
+               -------------------------------------------------------- */
 
-            ('BINMOV','INVENTORY','','D','NILAI',1,
-             'BINMOV - Perpindahan lokasi persediaan'),
-            ('BINMOV','INVENTORY','','K','NILAI',2,
-             'BINMOV - Perpindahan lokasi persediaan'),
+            ('TRFWHS','INVENTORY','','D','COST',1,
+             'TRFWHS - Persediaan tujuan (nilai dari average cost, bukan input)'),
+            ('TRFWHS','INVENTORY','','K','COST',2,
+             'TRFWHS - Persediaan asal (nilai dari average cost, bukan input)'),
 
-            ('BRNTRF','INVENTORY','','D','NILAI',1,
-             'BRNTRF - Persediaan cabang tujuan'),
-            ('BRNTRF','INVENTORY','','K','NILAI',2,
-             'BRNTRF - Persediaan cabang asal')
+            ('BINMOV','INVENTORY','','D','COST',1,
+             'BINMOV - Persediaan bin tujuan (nilai dari average cost, bukan input)'),
+            ('BINMOV','INVENTORY','','K','COST',2,
+             'BINMOV - Persediaan bin asal (nilai dari average cost, bukan input)'),
+
+            ('BRNTRF','INVENTORY','','D','COST',1,
+             'BRNTRF - Persediaan cabang tujuan (nilai dari average cost, bukan input)'),
+            ('BRNTRF','INVENTORY','','K','COST',2,
+             'BRNTRF - Persediaan cabang asal (nilai dari average cost, bukan input)')
         ) AS x(
             journal_type, account_role, idcoa, debit_credit,
             value_source, seq, description

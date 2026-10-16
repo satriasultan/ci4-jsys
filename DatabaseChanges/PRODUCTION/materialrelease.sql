@@ -1,6 +1,15 @@
 --I.R.A.8
---DELETE FROM sc_mst.trxtype WHERE jenistrx='I.R.A.8';
-insert into sc_mst.trxtype
+BEGIN;
+--materialrelease.sql
+-- Pastikan schema utama tersedia. Fungsi sc_log tetap harus sudah ada.
+CREATE SCHEMA IF NOT EXISTS sc_mst;
+CREATE SCHEMA IF NOT EXISTS sc_tmp;
+CREATE SCHEMA IF NOT EXISTS sc_trx;
+
+-- Reset definisi status khusus Material Release agar script bisa dijalankan ulang.
+DELETE FROM sc_mst.trxtype WHERE jenistrx = 'I.R.A.8';
+
+INSERT INTO sc_mst.trxtype
 (kdtrx,jenistrx,uraian)
 VALUES
 ('I','I.R.A.8','DRAFT'),
@@ -83,8 +92,7 @@ CREATE TABLE IF NOT EXISTS sc_tmp.materialrelease_dtl
     updateby character varying(50) COLLATE pg_catalog."default",
     updatedate timestamp without time zone,
     docnotmp character(30) COLLATE pg_catalog."default",
-	idurut bigserial,
-	uniqueid text,
+    uniqueid text,
     CONSTRAINT pk_tmp_materialrelease_dtl PRIMARY KEY (docno,uniqueid,idurut)
 )
 
@@ -188,11 +196,11 @@ AS $BODY$
 DECLARE
     v_docno        TEXT;
     v_inputby      TEXT;
-    v_idurut       INTEGER;
+    v_idurut       BIGINT;
     v_base_docno   TEXT;
     v_new_docno    TEXT;
     v_num          TEXT;
-    v_num_int      INTEGER;
+    v_num_int      BIGINT;
     v_lock_key     BIGINT;
     v_client_ip    TEXT;
 BEGIN
@@ -212,28 +220,6 @@ BEGIN
         v_idurut  := NEW.idurut;
 
         -- ================================================
-        -- CEK APAKAH SUDAH PERNAH DIFINALKAN
-        -- ================================================
-        IF EXISTS (
-            SELECT 1
-            FROM sc_trx.materialrelease_mst
-            WHERE idurut = v_idurut
-              AND TRIM(COALESCE(inputby, '')) = TRIM(COALESCE(v_inputby, ''))
-        ) THEN
-
-            DELETE FROM sc_tmp.materialrelease_dtl
-            WHERE TRIM(docno) = TRIM(OLD.docno)
-              AND inputby = v_inputby;
-
-            DELETE FROM sc_tmp.materialrelease_mst
-            WHERE TRIM(docno) = TRIM(OLD.docno)
-              AND inputby = v_inputby
-              AND idurut = v_idurut;
-
-            RETURN NEW;
-        END IF;
-
-        -- ================================================
         -- GENERATE DOCNO
         -- ================================================
         v_base_docno := regexp_replace(v_docno, '[0-9]+$', '');
@@ -249,17 +235,20 @@ BEGIN
                 WHERE TRIM(docno) = TRIM(v_new_docno)
             );
 
-            v_num := regexp_replace(v_new_docno, '.*?([0-9]+)$', '\1');
-
-            IF COALESCE(v_num, '') = '' THEN
-                RAISE EXCEPTION 'Format DOCNO Material Release tidak valid: %', v_new_docno;
+            IF v_new_docno !~ '[0-9]+$' THEN
+                RAISE EXCEPTION 'Format DOCNO Material Release harus diakhiri angka: %', v_new_docno;
             END IF;
 
-            v_num_int := v_num::INTEGER + 1;
+            v_num := regexp_replace(v_new_docno, '.*?([0-9]+)$', '\\1');
+            v_num_int := v_num::BIGINT + 1;
 
             v_new_docno :=
                 v_base_docno ||
-                lpad(v_num_int::TEXT, length(v_num), '0');
+                lpad(
+                    v_num_int::TEXT,
+                    GREATEST(length(v_num), length(v_num_int::TEXT)),
+                    '0'
+                );
         END LOOP;
 
         v_docno := v_new_docno;
@@ -557,3 +546,5 @@ AFTER UPDATE
 ON sc_trx.materialrelease_mst
 FOR EACH ROW
 EXECUTE FUNCTION sc_trx.tr_mst_materialrelease_mst();
+
+COMMIT;

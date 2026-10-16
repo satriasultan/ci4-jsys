@@ -293,10 +293,10 @@ class Production extends BaseController
 
             $row[] = $lm->description;
 
-            
+
             $row[] = $lm->inputby;
             $row[] = $lm->inputdate1;
-            
+
             $row[] = $lm->updateby;
             $row[] = $lm->updatedate1;
             $row[] = '<div class="text-center">'
@@ -368,8 +368,8 @@ class Production extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_production->q_tmp_standart_cost_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
-        
-         /* ====== GUARD PERIODE TUTUP ====== */
+
+        /* ====== GUARD PERIODE TUTUP ====== */
         $periode = date('ym', strtotime($logindate));
         $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
 
@@ -422,7 +422,7 @@ class Production extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-     public function getBranchInfo_standart_cost()
+    public function getBranchInfo_standart_cost()
     {
         $idbranch = trim($this->request->getGet('idbranch'));
 
@@ -480,7 +480,6 @@ class Production extends BaseController
             'idtax'         => $idtax,
         ]);
     }
-
     public function getNextSuffix_standart_cost_mst()
     {
         $prefix      = trim($this->request->getGet('prefix'));
@@ -647,7 +646,7 @@ class Production extends BaseController
             ->where('unit', $unit)
             ->where('inputby', $nama)
             // ->where('description', $description_detail)
-            ;
+        ;
 
         if ($uniqueid) {
             $builderDuplicate->where('uniqueid !=', $uniqueid);
@@ -769,19 +768,19 @@ class Production extends BaseController
 
         // JIKA DOCNO ATAU DATA TIDAK ADA
         // ... existing code ...
-        
-                    if (!empty(trim($_POST['f_docno'] ?? ''))) {
-                        $builder->like('trim(upper(docno))', strtoupper(trim($_POST['f_docno'])));
-                    }
-        
-                    if (!empty(trim($_POST['f_cabang'] ?? ''))) {
-                        $builder->like('trim(upper(cabang))', strtoupper(trim($_POST['f_cabang'])));
-                    }
-        
-                    if (!empty(trim($_POST['f_pemohon'] ?? ''))) {
-                        $builder->like('trim(upper(pemohon))', strtoupper(trim($_POST['f_pemohon'])));
-                    }
-        
+
+        if (!empty(trim($_POST['f_docno'] ?? ''))) {
+            $builder->like('trim(upper(docno))', strtoupper(trim($_POST['f_docno'])));
+        }
+
+        if (!empty(trim($_POST['f_cabang'] ?? ''))) {
+            $builder->like('trim(upper(cabang))', strtoupper(trim($_POST['f_cabang'])));
+        }
+
+        if (!empty(trim($_POST['f_pemohon'] ?? ''))) {
+            $builder->like('trim(upper(pemohon))', strtoupper(trim($_POST['f_pemohon'])));
+        }
+
         // ... existing code ...
 
         $status = trim($row['status'] ?? '');
@@ -1327,11 +1326,11 @@ class Production extends BaseController
         if ($status === 'F' || $status === 'P') {
             $info = [
 
-            'status'     => 'C',
-            'updatedate' => date('Y-m-d H:i:s'),
-            'updateby'   => $nama,
+                'status'     => 'C',
+                'updatedate' => date('Y-m-d H:i:s'),
+                'updateby'   => $nama,
 
-        ];
+            ];
 
 // =====================================
 // START TRANSACTION
@@ -1392,7 +1391,7 @@ class Production extends BaseController
     }
 
 
-/* BIAYA STANDART PRODUKSI  I.R.A.2*/
+    /* BIAYA STANDART PRODUKSI  I.R.A.2*/
     public function biaya_standart()
     {
         $data['title']="Biaya Standart Production";
@@ -1648,7 +1647,7 @@ class Production extends BaseController
             $row[] = $lm->cabang;
             $row[] = $lm->pemohon;
 
-             $row[] = date(
+            $row[] = date(
                 'd-m-Y',
                 strtotime(trim($lm->docdate))
             );
@@ -1658,10 +1657,10 @@ class Production extends BaseController
 
             $row[] = $lm->description;
 
-            
+
             $row[] = $lm->inputby;
             $row[] = $lm->inputdate;
-            
+
             $row[] = $lm->updateby;
             $row[] = $lm->updatedate;
             $row[] = '<div class="text-center">'
@@ -1733,8 +1732,8 @@ class Production extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_production->q_tmp_biaya_standart_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
-        
-         /* ====== GUARD PERIODE TUTUP ====== */
+
+        /* ====== GUARD PERIODE TUTUP ====== */
         $periode = date('ym', strtotime($logindate));
         $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
 
@@ -1787,7 +1786,7 @@ class Production extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-     public function getBranchInfo_biaya_standart()
+    public function getBranchInfo_biaya_standart()
     {
         $idbranch = trim($this->request->getGet('idbranch'));
 
@@ -2283,7 +2282,7 @@ class Production extends BaseController
     }
 
 
-     public function delete_biaya_standart_dtl()
+    public function delete_biaya_standart_dtl()
     {
         $request = service('request');
         $db      = \Config\Database::connect();
@@ -2966,18 +2965,18 @@ class Production extends BaseController
             $row[] = $dropdownMenu;
 
             $row[] = $lm->docno;
-             $row[] = date(
+            $row[] = date(
                 'd-m-Y',
                 strtotime(trim($lm->docdate))
             );
             $row[] = $lm->idbarang_jadi;
 
             $row[] = $lm->nmbarang;
-            
+
             $row[] = $lm->buildfor;
             $row[] = $lm->buildunit;
-            
-            
+
+
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
             $row[] = '<div class="text-center">'
@@ -3103,8 +3102,8 @@ class Production extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_production->q_tmp_bom_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
-        
-         /* ====== GUARD PERIODE TUTUP ====== */
+
+        /* ====== GUARD PERIODE TUTUP ====== */
         $periode = date('ym', strtotime($logindate));
         $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
 
@@ -3157,7 +3156,7 @@ class Production extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-     public function getBranchInfo_bom()
+    public function getBranchInfo_bom()
     {
         $idbranch = trim($this->request->getGet('idbranch'));
 
@@ -3253,7 +3252,7 @@ class Production extends BaseController
         $docno  = strtoupper($this->request->getPost('docno'));
         $idurut = $this->request->getPost('idurut');
         $doctype_detail = strtoupper(trim($this->request->getPost('doctype_detail')));
-        
+
         if (!$docno) {
             return $this->response->setJSON([
                 'success' => false,
@@ -3386,7 +3385,7 @@ class Production extends BaseController
             ->where('unit', $unit)
             ->where('inputby', $nama)
             // ->where('description', $description)
-            ;
+        ;
 
         if ($uniqueid) {
             $builderDuplicate->where('uniqueid !=', $uniqueid);
@@ -3831,14 +3830,14 @@ class Production extends BaseController
         }
 
         return $this->response->setJSON([
-            'status' => true,   
+            'status' => true,
             'total_count' => $data->getNumRows(),
             'items' => $data->getResult(),
             'incomplete_getResults' => false,
         ]);
     }
 
-    
+
     public function delete_bom_detail()
     {
         $request = service('request');
@@ -4243,7 +4242,7 @@ class Production extends BaseController
 
 
 
-    
+
     /* Working Order  */
 
     public function workingorder()
@@ -4518,19 +4517,19 @@ class Production extends BaseController
             $row[] = $dropdownMenu;
 
             $row[] = $lm->docno;
-             $row[] = date(
+            $row[] = date(
                 'd-m-Y',
                 strtotime(trim($lm->docdate))
             );
             $row[] = $lm->nmcustomer;
 
             $row[] = $lm->alamatcust;
-            
+
             $row[] = $lm->nmkota;
             $row[] = $lm->noso;
             $row[] = $lm->docdatefinish;
-            
-            
+
+
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
             $row[] = '<div class="text-center">'
@@ -4656,8 +4655,8 @@ class Production extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_production->q_tmp_workingorder_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
-        
-         /* ====== GUARD PERIODE TUTUP ====== */
+
+        /* ====== GUARD PERIODE TUTUP ====== */
         $periode = date('ym', strtotime($logindate));
         $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
 
@@ -4710,7 +4709,7 @@ class Production extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-     public function getBranchInfo_workingorder()
+    public function getBranchInfo_workingorder()
     {
         $idbranch = trim($this->request->getGet('idbranch'));
 
@@ -4807,7 +4806,7 @@ class Production extends BaseController
         $docnoBom = trim($this->request->getPost('docnobom'));
         // $idurut = $this->request->getPost('idurut');
         // $doctype_detail = strtoupper(trim($this->request->getPost('doctype_detail')));
-        
+
         if (!$docnoWo) {
             return $this->response->setJSON([
                 'success' => false,
@@ -4929,7 +4928,7 @@ class Production extends BaseController
         unset($insertBomMst['idurut']);
         unset($insertBomMst['dari_bagian']);
         unset($insertBomMst['inactive']);
-        
+
         $insertBomMst['docref']    = $docnoWo;
         $insertBomMst['desc_bom']    = $insertBomMst['keterangan'];
         $insertBomMst['inputby']   = $nama;
@@ -4989,7 +4988,7 @@ class Production extends BaseController
         $nama=trim($this->session->get('nama'));
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_production->q_tmp_workingorder_mst($param);
-         if(empty($dtl->getRowArray())){
+        if(empty($dtl->getRowArray())){
             return redirect()->to(base_url('production/trans/workingorder'));
         }
         // if(isEmpty($dtl->getRowArray()['status'])){
@@ -5105,7 +5104,7 @@ class Production extends BaseController
             $row = array();
             // $row[] = $no;
             // $row[] = $lm->idurut;
-            
+
             //item
             $row[] = $lm->docno;
             $row[] = $lm->desc_bom;
@@ -5139,7 +5138,7 @@ class Production extends BaseController
             // $row[] = $no;
             $row[] = $lm->docref;
             $row[] = $lm->docno;
-            
+
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
@@ -5171,7 +5170,7 @@ class Production extends BaseController
             // $row[] = $no;
             $row[] = $lm->docref;
             $row[] = $lm->docno;
-            
+
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
@@ -5204,7 +5203,7 @@ class Production extends BaseController
             // $row[] = $no;
             $row[] = $lm->docref;
             $row[] = $lm->docno;
-            
+
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
@@ -5236,7 +5235,7 @@ class Production extends BaseController
             // $row[] = $no;
             $row[] = $lm->docref;
             $row[] = $lm->docno;
-            
+
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
@@ -5270,7 +5269,7 @@ class Production extends BaseController
             // $row[] = $no;
             $row[] = $lm->docref;
             $row[] = $lm->docno;
-            
+
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
@@ -5302,7 +5301,7 @@ class Production extends BaseController
             // $row[] = $no;
             $row[] = $lm->docref;
             $row[] = $lm->docno;
-            
+
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
@@ -5428,7 +5427,7 @@ class Production extends BaseController
         }
 
         return $this->response->setJSON([
-            'status' => true,   
+            'status' => true,
             'total_count' => $data->getNumRows(),
             'items' => $data->getResult(),
             'incomplete_getResults' => false,
@@ -5549,7 +5548,7 @@ class Production extends BaseController
         }
     }
 
-    
+
     public function delete_workingorder_detail()
     {
         $request = service('request');
@@ -5596,8 +5595,8 @@ class Production extends BaseController
             $docno = $row->docno;
 
             $builder->whereIn('docno', $ids)
-            ->where('inputby', $nama)
-            ->delete();
+                ->where('inputby', $nama)
+                ->delete();
 
             $row = $db->table('sc_tmp.workingorder_bom_dtl')
                 ->select('docno')
@@ -5614,7 +5613,7 @@ class Production extends BaseController
             }
 
 
-            
+
 
             $db->transCommit();
 
@@ -5940,8 +5939,8 @@ class Production extends BaseController
     // ======================= WORK ORDER EXECUTION
 
 
-    
-     public function woe()
+
+    public function woe()
     {
         $data['title']="Work Order Execution";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
@@ -6004,7 +6003,7 @@ class Production extends BaseController
 
         $kmenu = 'I.R.A.5';
         $role = trim($this->session->get('roleid'));
-        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
+        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();
         //auto insert unit
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
@@ -6092,7 +6091,7 @@ class Production extends BaseController
             $docno  = trim($lm->docno);
             $docnoHex = bin2hex($docno);
 
-            
+
             $updateBtn = '';
             $detailBtn = '';
             $printBtn  = '';
@@ -6113,8 +6112,8 @@ class Production extends BaseController
             }
 
             if($canView){
-                $detailBtn = 
-                '<a class="dropdown-item" 
+                $detailBtn =
+                    '<a class="dropdown-item" 
                     style="background-color:#3badf6;" 
                     href="' . base_url('production/trans/detailWOE') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return confirm(\'View Detail Work Order Execution : ' . $docno . '\')">
@@ -6217,7 +6216,7 @@ class Production extends BaseController
                     break;
             }
 
-            
+
             $row[] = $lm->bagian;
             $row[] = $lm->idbarang_jadi;
             $row[] = $lm->batchno;
@@ -6225,7 +6224,7 @@ class Production extends BaseController
             $row[] = '<div class="ratakanan">'. number_format($lm->buildfor, 0, '.', ',') . '</div>';
             $row[] = $lm->keterangan;
             $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
-            
+
 
             $data[] = $row;
         }
@@ -6245,7 +6244,7 @@ class Production extends BaseController
         $nama=trim($this->session->get('nama'));
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_production->q_woe_master_temp($param);
-         if(empty($dtl->getRowArray())){
+        if(empty($dtl->getRowArray())){
             return redirect()->to(base_url('production/trans/woe'));
         }
         // if(isEmpty($dtl->getRowArray()['status'])){
@@ -6274,9 +6273,9 @@ class Production extends BaseController
                 echo json_encode($result);
             }
         } else {
-                // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                // echo json_encode($result);
-                return redirect()->to(base_url('production/trans/woe'));
+            // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
+            // echo json_encode($result);
+            return redirect()->to(base_url('production/trans/woe'));
         }
 
     }
@@ -6324,8 +6323,8 @@ class Production extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_production->q_woe_master_temp($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
-        
-         /* ====== GUARD PERIODE TUTUP ====== */
+
+        /* ====== GUARD PERIODE TUTUP ====== */
         $periode = date('ym', strtotime($logindate));
         $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
 
@@ -6351,7 +6350,7 @@ class Production extends BaseController
     }
 
 
-   public function getBranchInfoWOE()
+    public function getBranchInfoWOE()
     {
         $idbranch = trim($this->request->getGet('idbranch'));
 
@@ -6496,7 +6495,7 @@ class Production extends BaseController
         $docno  = strtoupper(trim($this->request->getPost('docno')));
         $docnopo = strtoupper(trim($this->request->getPost('docnopo')));
         $idurut = $this->request->getPost('idurut'); // HAPUS strtoupper, biarkan apa adanya
-        
+
         // Tambahkan mode untuk membedakan add/edit dengan lebih jelas
         // $mode = $this->request->getPost('mode'); // 'add' atau 'edit'
 
@@ -6522,11 +6521,11 @@ class Production extends BaseController
 
         $reload = false;
         // Untuk pengambilan data dari POST
-        
+
         if ($exists == 0) {
             $isinclusive = strtoupper(trim(
-                $this->request->getPost('isinclusive') 
-                ?? $dataprocess->isinclusive 
+                $this->request->getPost('isinclusive')
+                ?? $dataprocess->isinclusive
                 ?? 'NO'
             ));
 
@@ -6539,7 +6538,7 @@ class Production extends BaseController
                 // 'senddate'   => date('Y-m-d', strtotime(trim($this->request->getPost('senddate')))),
                 'jthtempo'     => $this->request->getPost('jthtempo'),
                 'isinclusive'     => $isinclusive,
-                
+
                 'kdsupplier'    => strtoupper($this->request->getPost('kdsupplier')),
                 'alamatsupplier'    => strtoupper($this->request->getPost('alamatsupplier')),
                 // 'alamatkirim'    => strtoupper($this->request->getPost('alamatkirim')),
@@ -6583,34 +6582,34 @@ class Production extends BaseController
             $idspec = strtoupper($this->request->getPost('idspec'));
 
             $builderDetail
-            ->where('docno', $docno)
-            ->where('inputby', $nama)
-            ->where('uniqueid', $uniqueid)
-            ->update([
-                'qty'          => $qty,
-                'qtybonus'     => $qtybonus,
-                'harga'        => $harga,
-                'multidisc'    => $multidisc,
-                'nilai'        => $nilai,
-                'volitem'      => $volitem,
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->where('uniqueid', $uniqueid)
+                ->update([
+                    'qty'          => $qty,
+                    'qtybonus'     => $qtybonus,
+                    'harga'        => $harga,
+                    'multidisc'    => $multidisc,
+                    'nilai'        => $nilai,
+                    'volitem'      => $volitem,
 
-                'biaya'      => $biaya,
-                'biaya2'      => $biaya2,
-                'idprincipal'      => $idprincipal,
-                'idgudang'      => $idgudang,
-                'idspec'      => $idspec,
+                    'biaya'      => $biaya,
+                    'biaya2'      => $biaya2,
+                    'idprincipal'      => $idprincipal,
+                    'idgudang'      => $idgudang,
+                    'idspec'      => $idspec,
 
-                'descriptionpo' => $descriptionpo,
-                'updateby'     => $nama,
-                'updatedate'   => date('Y-m-d H:i:s')
-            ]);
+                    'descriptionpo' => $descriptionpo,
+                    'updateby'     => $nama,
+                    'updatedate'   => date('Y-m-d H:i:s')
+                ]);
 
 
 
-            
-            
+
+
             $message = 'Data berhasil diupdate';
-            
+
         } else {
             // =====================================================
             // MODE ADD - INSERT DATA DARI PP
@@ -6634,7 +6633,7 @@ class Production extends BaseController
             ", [$docnopo])->getResult();
 
             if (empty($poDetails)) {
-                $db->transRollback();   
+                $db->transRollback();
                 return $this->response->setJSON([
                     'success' => false,
                     'message' => 'Data PO tidak ditemukan'
@@ -6681,17 +6680,17 @@ class Production extends BaseController
                     $insertCount++;
                 }
             }
-            
-            $message = $insertCount > 0 
-                        ? "$insertCount item berhasil ditambahkan"
-                        : "Semua item sudah ada sebelumnya";
+
+            $message = $insertCount > 0
+                ? "$insertCount item berhasil ditambahkan"
+                : "Semua item sudah ada sebelumnya";
         }
 
         $woeHeader = $builderHeader->select('idtax')
-        ->where('inputby', $nama)
-        ->where('docno', $docno)->get()->getRowArray();
+            ->where('inputby', $nama)
+            ->where('docno', $docno)->get()->getRowArray();
         $idtax = $woeHeader['idtax'] ?? '';
-        
+
         // Hitung total DPP (sum nilai dari po_dtl)
         $builderTotalDpp = $db->table('sc_tmp.woe_dtl');
         $totalDpp = $builderTotalDpp->select('COALESCE(SUM(nilai), 0) as total_dpp')
@@ -6699,12 +6698,12 @@ class Production extends BaseController
             ->where('inputby', $nama)
             ->get()
             ->getRowArray();
-        
+
         $dpp = $totalDpp['total_dpp'] ?? 0;
-        
+
         // Hitung jumlah pajak berdasarkan idtax
         $jumlahPajak = 0;
-        
+
         if (!empty($idtax) && trim($idtax) !== 'NON'  && $dpp > 0) {
             // Ambil detail tax dari sc_mst.tax_dtl
             $builderTaxDtl = $db->table('sc_mst.tax_dtl');
@@ -6712,26 +6711,26 @@ class Production extends BaseController
                 ->where('idtax', $idtax)
                 ->get()
                 ->getResultArray();
-            
+
             foreach ($taxDetails as $tax) {
                 $persentase = $tax['percentation'] ?? 0;
                 $jumlahPajak += $dpp * ($persentase / 100);
             }
         }
-        
+
         // Hitung total (DPP + Jumlah Pajak)
         $total = $dpp + $jumlahPajak;
-        
+
         // Update header WOE
         $builderHeader->where('docno', $docno)
-        ->where('inputby', $nama)
-        ->update([
-            'dpp' => number_format($dpp, 2, '.', ''),
-            'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
-            'total' => number_format($total, 2, '.', ''),
-            'updateby' => $nama,
-            'updatedate' => date('Y-m-d H:i:s')
-        ]);
+            ->where('inputby', $nama)
+            ->update([
+                'dpp' => number_format($dpp, 2, '.', ''),
+                'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
+                'total' => number_format($total, 2, '.', ''),
+                'updateby' => $nama,
+                'updatedate' => date('Y-m-d H:i:s')
+            ]);
 
         $db->transComplete();
 
@@ -6777,7 +6776,7 @@ class Production extends BaseController
         $param = " and coalesce(docno,'')='$docno'";
         $dtl = $this->m_production->q_woe_master($param)->getRowArray();
         $status = trim($dtl['status']);
-         $logindate = trim($this->session->get('logindate'));
+        $logindate = trim($this->session->get('logindate'));
 
         /* ====== GUARD PERIODE TUTUP ====== */
         $periode = date('ym', strtotime($logindate));
@@ -6847,7 +6846,7 @@ class Production extends BaseController
     function finalEntryWOE() {
         $nama = trim($this->session->get('nama'));
         $docno = trim($this->request->getPost('docno'));
-        
+
         // Hapus data error sebelumnya
         $builder_trxerror = $this->db->table('sc_mst.trxerror');
         $builder_trxerror->where('userid', $nama);
@@ -6864,7 +6863,7 @@ class Production extends BaseController
             $builder_trxerror->insert($infotrxerror);
             return redirect()->to(base_url('/production/trans/addWOE'));
         }
-        
+
         // Ambil semua data dari POST
         $cabang = trim($this->request->getPost('cabang'));
         $docdate = date('Y-m-d', strtotime(trim($this->request->getPost('docdate'))));
@@ -6877,25 +6876,25 @@ class Production extends BaseController
         $desc_bom = strtoupper($this->request->getPost('desc_bom'));
         $batchno = strtoupper($this->request->getPost('batchno'));
         $keterangan = strtoupper($this->request->getPost('keterangan'));
-        
+
         // Bersihkan format angka
         $buildfor_clean = $this->cleanNumber($this->request->getPost('buildfor'));
         // $dpp_clean = $this->cleanNumber($this->request->getPost('dpp'));
         // $jumlahpajak_clean = $this->cleanNumber($this->request->getPost('jumlahpajak'));
         // $total_clean = $this->cleanNumber($this->request->getPost('total'));
-        
+
         // Convert date
         $docdateph = !empty($docdate) ? date('Y-m-d', strtotime(str_replace('-', '/', $docdate))) : null;
-        
+
         // **CEK APAKAH DATA SUDAH ADA**
         $existingData = $this->db->table('sc_tmp.woe')
             ->where('inputby', $nama)
             ->where('docno', $docno)
             ->get()
             ->getRowArray();
-        
+
         $builder = $this->db->table('sc_tmp.woe');
-        
+
         if ($existingData) {
             // **UPDATE DATA YANG SUDAH ADA**
             $updateHeader = [
@@ -6913,10 +6912,10 @@ class Production extends BaseController
                 'updateby' => $nama,
                 'updatedate' => date('Y-m-d H:i:s'),
             ];
-            
+
             $builder->where('inputby', $nama)
-                    ->where('docno', $docno)
-                    ->update($updateHeader);
+                ->where('docno', $docno)
+                ->update($updateHeader);
         } else {
             // **INSERT DATA BARU**
             $insertHeader = [
@@ -6937,16 +6936,16 @@ class Production extends BaseController
                 'inputdate' => date('Y-m-d H:i:s'),
                 'status' => 'E' // Status awal E
             ];
-            
+
             $builder->insert($insertHeader);
         }
-        
+
         // **UPDATE STATUS MENJADI F** (untuk trigger)
         $updateStatus = $builder
             ->where('inputby', $nama)
             ->where('docno', $docno)
             ->update(['status' => 'F']);
-        
+
         if ($updateStatus) {
             // Berhasil update status
             $paramerror=" and userid='$nama' and modul='I.R.A.5'";
@@ -6987,7 +6986,7 @@ class Production extends BaseController
         $docno = hex2bin($docno);
         $builder = $this->db->table('sc_trx.woe');
 
-       $builder = $builder
+        $builder = $builder
             ->where('docno', $docno)
             ->update([
                 'status'=> 'P',
@@ -6995,9 +6994,9 @@ class Production extends BaseController
                 'printdate' => date('Y-m-d H:i:s')
             ]);
 
-        
+
         $enc_docno = $this->fiky_encryption->sealed($docno);
-        
+
         //$enc_docdate= $this->fiky_encryption->sealed($docdate);
         // $enc_idlocation = $this->fiky_encryption->sealed($idlocation);
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
@@ -7009,7 +7008,7 @@ class Production extends BaseController
         $datajson =  base_url("production/trans/api_woe/?enc_docno=$enc_docno") ;
 
         // if($formheader==="HEADER"){
-            $datamrt =  base_url("assets/mrt/report_woe.mrt") ;
+        $datamrt =  base_url("assets/mrt/report_woe.mrt") ;
         // } else {
         //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
         // }
@@ -7028,9 +7027,9 @@ class Production extends BaseController
         // $idgroup=trim($this->fiky_encryption->unseal($this->request->getGet('enc_idgroup')));
         //$docno=trim($this->request->getGet('enc_docno'));
 
-       // $ddate = explode(' - ',$docdate);
-       // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
-       // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
+        // $ddate = explode(' - ',$docdate);
+        // $tgl1 = date('Y-m-d',strtotime($ddate[0]));
+        // $tgl2 = date('Y-m-d',strtotime($ddate[1]));
 
         if (empty($docno) or $docno==='') {
             $param_brg = "";
@@ -7049,22 +7048,22 @@ class Production extends BaseController
         $datamst = $this->m_production->q_woe_master($param);
         $datadtl = $this->m_production->q_woe_dtl($param);
         $tampungdtl = $datamst->getResult();
-        $detail = $tampungdtl[0] ?? null;        
+        $detail = $tampungdtl[0] ?? null;
         if ($detail) {
 
             $tujuan = isset($detail->tujuan) ? trim($detail->tujuan) : '';
-        
+
             // Tambahkan properti baru isPindah
             $detail->isPindah = false; // Default value
             if ($tujuan === 'pindah') {
                 $detail->isPindah = true;
             }
 
-             // Tambahkan properti baru isPembuangan
-             $detail->isPembuangan = false; // Default value
-             if ($tujuan === 'pembuangan') {
-                 $detail->isPembuangan = true;
-             }
+            // Tambahkan properti baru isPembuangan
+            $detail->isPembuangan = false; // Default value
+            if ($tujuan === 'pembuangan') {
+                $detail->isPembuangan = true;
+            }
 
             // Tambahkan properti baru isPinjam
             $detail->isPinjam = false; // Default value
@@ -7073,35 +7072,35 @@ class Production extends BaseController
             }
 
             $isreturn = isset($detail->isreturn) ? trim($detail->isreturn) : '';
-             // Tambahkan properti baru iskembali
-             $detail->iskembali = false; // Default value
-             if ($isreturn === 'kembali') {
-                 $detail->iskembali = true;
-             }
+            // Tambahkan properti baru iskembali
+            $detail->iskembali = false; // Default value
+            if ($isreturn === 'kembali') {
+                $detail->iskembali = true;
+            }
 
-             $detail->istidakkembali = false; // Default value
-             if ($isreturn === 'tidak_kembali') {
-                 $detail->istidakkembali = true;
-             }
+            $detail->istidakkembali = false; // Default value
+            if ($isreturn === 'tidak_kembali') {
+                $detail->istidakkembali = true;
+            }
 
-             $jenisbarang = isset($detail->jenisbarang) ? trim($detail->jenisbarang) : '';
-              // Tambahkan properti baru isAset
-              $detail->isAset = false; // Default value
-              if ($jenisbarang === 'aset') {
-                  $detail->isAset = true;
-              }
+            $jenisbarang = isset($detail->jenisbarang) ? trim($detail->jenisbarang) : '';
+            // Tambahkan properti baru isAset
+            $detail->isAset = false; // Default value
+            if ($jenisbarang === 'aset') {
+                $detail->isAset = true;
+            }
 
-              // Tambahkan properti baru isPersediaan
-              $detail->isPersediaan = false; // Default value
-              if ($jenisbarang === 'persediaan') {
-                  $detail->isPersediaan = true;
-              }
+            // Tambahkan properti baru isPersediaan
+            $detail->isPersediaan = false; // Default value
+            if ($jenisbarang === 'persediaan') {
+                $detail->isPersediaan = true;
+            }
 
-              // Tambahkan properti baru isLainlain
-              $detail->isLainlain = false; // Default value
-              if ($jenisbarang === 'lainlain') {
-                  $detail->isLainlain = true;
-              }
+            // Tambahkan properti baru isLainlain
+            $detail->isLainlain = false; // Default value
+            if ($jenisbarang === 'lainlain') {
+                $detail->isLainlain = true;
+            }
         }
 
         header("Content-Type: text/json");
@@ -7117,7 +7116,7 @@ class Production extends BaseController
                     'userid' => $nama,
                     'param' => $param,
 
-                    ]
+                ]
                 ),
                 'branch' => $databranch->getResult(),
                 'master' => $datamst->getResult(),
@@ -7355,7 +7354,7 @@ class Production extends BaseController
             // =====================================
             // STATUS BADGE
             // =====================================
-             $badgeClass = 'badge-primary'; // Default
+            $badgeClass = 'badge-primary'; // Default
 
             switch ($status) {
 
@@ -7391,21 +7390,21 @@ class Production extends BaseController
             $row[] = $dropdownMenu;
 
             $row[] = $lm->docno;
-             $row[] = date(
+            $row[] = date(
                 'd-m-Y',
                 strtotime(trim($lm->docdate))
             );
             $row[] = $lm->idbarang_jadi;
 
             $row[] = $lm->nmbarang;
-            
+
             $row[] = $lm->buildfor;
             $row[] = $lm->buildunit;
-            
-            
+
+
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
-             $row[] = '<div class="text-center">'
+            $row[] = '<div class="text-center">'
                 . '<span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">'
                 . htmlspecialchars($statusLabel)
                 . '</span>'
@@ -7481,7 +7480,7 @@ class Production extends BaseController
         $data['mst'] = $this->m_production->q_tmp_materialrelease_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
 
-         /* ====== GUARD PERIODE TUTUP ====== */
+        /* ====== GUARD PERIODE TUTUP ====== */
         $periode = date('ym', strtotime($logindate));
         $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
 
@@ -7630,7 +7629,7 @@ class Production extends BaseController
         $docno  = strtoupper($this->request->getPost('docno'));
         $idurut = $this->request->getPost('idurut');
         // $doctype_detail = strtoupper(trim($this->request->getPost('doctype_detail')));
-        
+
         if (!$docno) {
             return $this->response->setJSON([
                 'success' => false,
@@ -7736,11 +7735,11 @@ class Production extends BaseController
             }
         }
 
-        
+
         // =========================
         // HAPUS DETAIL GENERATE WOE LAMA
         // =========================
-        
+
         if (!empty($oldWoeno)) {
             $delete = $builderDetail
                 ->where('docno', $docno)
@@ -7760,7 +7759,7 @@ class Production extends BaseController
                 ]);
             }
         }
-        
+
         // =========================
         // AMBIL DATA DETAIL
         // =========================
@@ -7840,7 +7839,7 @@ class Production extends BaseController
         $docno  = strtoupper($this->request->getPost('docno'));
         $idurut = $this->request->getPost('idurut');
         // $doctype_detail = strtoupper(trim($this->request->getPost('doctype_detail')));
-        
+
         if (!$docno) {
             return $this->response->setJSON([
                 'success' => false,
@@ -8078,7 +8077,7 @@ class Production extends BaseController
         $nama=trim($this->session->get('nama'));
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_production->q_tmp_materialrelease_mst($param);
-         if(empty($dtl->getRowArray())){
+        if(empty($dtl->getRowArray())){
             return redirect()->to(base_url('production/trans/materialrelease'));
         }
         // if(isEmpty($dtl->getRowArray()['status'])){
@@ -8299,14 +8298,14 @@ class Production extends BaseController
         }
 
         return $this->response->setJSON([
-            'status' => true,   
+            'status' => true,
             'total_count' => $data->getNumRows(),
             'items' => $data->getResult(),
             'incomplete_getResults' => false,
         ]);
     }
 
-    
+
     public function delete_materialrelease_detail()
     {
         $request = service('request');
@@ -8766,7 +8765,7 @@ class Production extends BaseController
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_production->q_tmp_penerimaanbp_mst($param);
         $logindate = trim($this->session->get('logindate'));
-        
+
         $periode   = date('ym', strtotime($logindate));
         $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
 
@@ -8983,18 +8982,18 @@ class Production extends BaseController
             $row[] = $dropdownMenu;
 
             $row[] = $lm->docno;
-             $row[] = date(
+            $row[] = date(
                 'd-m-Y',
                 strtotime(trim($lm->docdate))
             );
             $row[] = $lm->idbarang_jadi;
 
             $row[] = $lm->nmbarang;
-            
+
             $row[] = $lm->buildfor;
             $row[] = $lm->buildunit;
-            
-            
+
+
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
             $row[] = '<div class="text-center">'
@@ -9073,8 +9072,8 @@ class Production extends BaseController
         $data['mst'] = $this->m_production->q_tmp_penerimaanbp_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
 
-        
-         /* ====== GUARD PERIODE TUTUP ====== */
+
+        /* ====== GUARD PERIODE TUTUP ====== */
         $periode = date('ym', strtotime($logindate));
         $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
 
@@ -9329,11 +9328,11 @@ class Production extends BaseController
             }
         }
 
-        
+
         // =========================
         // HAPUS DETAIL GENERATE WOE LAMA
         // =========================
-        
+
         if (!empty($oldWoeno)) {
             $delete = $builderDetail
                 ->where('docno', $docno)
@@ -9353,7 +9352,7 @@ class Production extends BaseController
                 ]);
             }
         }
-        
+
         // =========================
         // AMBIL DATA DETAIL
         // =========================
@@ -9480,7 +9479,7 @@ class Production extends BaseController
         $docno  = strtoupper($this->request->getPost('docno'));
         $idurut = $this->request->getPost('idurut');
         // $doctype_detail = strtoupper(trim($this->request->getPost('doctype_detail')));
-        
+
         if (!$docno) {
             return $this->response->setJSON([
                 'success' => false,
@@ -9739,7 +9738,7 @@ class Production extends BaseController
         $nama=trim($this->session->get('nama'));
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_production->q_tmp_penerimaanbp_mst($param);
-         if(empty($dtl->getRowArray())){
+        if(empty($dtl->getRowArray())){
             return redirect()->to(base_url('production/trans/penerimaanbp'));
         }
         // if(isEmpty($dtl->getRowArray()['status'])){
@@ -9964,15 +9963,19 @@ class Production extends BaseController
         }
 
         return $this->response->setJSON([
-            'status' => true,   
+            'status' => true,
             'total_count' => $data->getNumRows(),
             'items' => $data->getResult(),
             'incomplete_getResults' => false,
         ]);
     }
 
+<<<<<<< Updated upstream
     
     
+=======
+
+>>>>>>> Stashed changes
     public function delete_penerimaanbp_detail()
     {
         $request = service('request');
@@ -10449,7 +10452,7 @@ class Production extends BaseController
 
 
 
-    
+
 
     /* BIAYA PRODUKSI NON MATERIAL  */
 
@@ -10493,7 +10496,7 @@ class Production extends BaseController
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_production->q_tmp_bpnm_mst($param);
         $logindate = trim($this->session->get('logindate'));
-        
+
         $periode   = date('ym', strtotime($logindate));
         $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
 
@@ -10710,18 +10713,18 @@ class Production extends BaseController
             $row[] = $dropdownMenu;
 
             $row[] = $lm->docno;
-             $row[] = date(
+            $row[] = date(
                 'd-m-Y',
                 strtotime(trim($lm->docdate))
             );
             $row[] = $lm->idbarang_jadi;
 
             $row[] = $lm->nmbarang;
-            
+
             $row[] = $lm->buildfor;
             $row[] = $lm->buildunit;
-            
-            
+
+
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
             $row[] = '<div class="text-center">'
@@ -10799,8 +10802,8 @@ class Production extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_production->q_tmp_bpnm_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
-        
-         /* ====== GUARD PERIODE TUTUP ====== */
+
+        /* ====== GUARD PERIODE TUTUP ====== */
         $periode = date('ym', strtotime($logindate));
         $dtlPeriode = $this->m_production->q_cek_periode($periode)->getRowArray();
 
@@ -11054,11 +11057,11 @@ class Production extends BaseController
             }
         }
 
-        
+
         // =========================
         // HAPUS DETAIL GENERATE WOE LAMA
         // =========================
-        
+
         if (!empty($oldWoeno)) {
             $delete = $builderDetail
                 ->where('docno', $docno)
@@ -11078,7 +11081,7 @@ class Production extends BaseController
                 ]);
             }
         }
-        
+
         // =========================
         // AMBIL DATA DETAIL
         // =========================
@@ -11205,7 +11208,7 @@ class Production extends BaseController
         $docno  = strtoupper($this->request->getPost('docno'));
         $idurut = $this->request->getPost('idurut');
         // $doctype_detail = strtoupper(trim($this->request->getPost('doctype_detail')));
-        
+
         if (!$docno) {
             return $this->response->setJSON([
                 'success' => false,
@@ -11686,14 +11689,14 @@ class Production extends BaseController
         }
 
         return $this->response->setJSON([
-            'status' => true,   
+            'status' => true,
             'total_count' => $data->getNumRows(),
             'items' => $data->getResult(),
             'incomplete_getResults' => false,
         ]);
     }
 
-    
+
     public function delete_bpnm_detail()
     {
         $request = service('request');

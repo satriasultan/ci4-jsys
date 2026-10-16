@@ -1,3 +1,5 @@
+<!-- v_transfer_location  -->
+
 <div class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
@@ -185,7 +187,7 @@
                         <th>Docdate</th>
                         <th>From-WH</th>
                         <th>To-WH</th>
-                        <th>Transit</th>
+
                         <th>Description</th>
                         <th>Status</th>
 

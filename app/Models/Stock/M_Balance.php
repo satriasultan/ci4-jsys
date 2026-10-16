@@ -443,7 +443,7 @@ function q_item_std_cost_param($param, $docdate){
     ";
     
     return $this->db->query($query);
-}
+    }
 
     public function q_item_bom_param($param,$docdate,$wono)
     {
@@ -1657,8 +1657,304 @@ FROM (
     }
 
 
+    /**
+     * Stock on-hand per batch untuk gudang tertentu
+     * Sumber: sc_trx.stkblc (stock ledger)
+     */
+    /**
+     * Stock on-hand per batch untuk gudang tertentu.
+     * Sumber:
+     *   - sc_trx.stkblc                     → on_hand
+     *   - sc_tmp.v_all_tmp_reservation      → reserved dari TMP draft
+     *
+     * qty_display = on_hand - reserved_tmp
+     */
+    public function q_stock_onhand_by_location(
+        $idlocation, $idbranch = '', $search = '', $limit = 30, $offset = 0
+    )
+    {
+        $builder = $this->db->table('sc_trx.stkblc sb');
+
+        /* ⚠️ Gunakan ekspresi SQL untuk subquery reserved */
+        $builder->select("
+        (TRIM(sb.idbarang) 
+         || '|' || TRIM(COALESCE(sb.batch,'')) 
+         || '|' || TRIM(COALESCE(sb.lotno,'')) 
+         || '|' || TRIM(COALESCE(sb.bin,'')) 
+         || '|' || TRIM(sb.idlocation)) AS id,
+
+        TRIM(sb.idbarang)                     AS idbarang,
+        TRIM(COALESCE(sb.unit,''))            AS unit,
+        TRIM(COALESCE(sb.batch,''))           AS batch,
+        TRIM(COALESCE(sb.lotno,''))           AS lotno,
+        TRIM(sb.idbranch)                     AS idbranch,
+        TRIM(sb.idlocation)                   AS idlocation,
+        TRIM(COALESCE(sb.idarea,''))          AS idarea,
+        TRIM(COALESCE(sb.bin,''))             AS bin,
+
+        SUM(COALESCE(sb.qty_in,0)) 
+            - SUM(COALESCE(sb.qty_out,0))     AS on_hand,
+
+        COALESCE((
+            SELECT SUM(tmp.qty_reserved)
+            FROM sc_tmp.v_all_tmp_reservation tmp
+            WHERE TRIM(tmp.idlocation) = TRIM(sb.idlocation)
+              AND TRIM(tmp.idbarang)   = TRIM(sb.idbarang)
+              AND TRIM(COALESCE(tmp.batch,'')) 
+                    = TRIM(COALESCE(sb.batch,''))
+              AND TRIM(COALESCE(tmp.lotno,'')) 
+                    = TRIM(COALESCE(sb.lotno,''))
+        ), 0)                                  AS qty_reserved,
+
+        SUM(COALESCE(sb.qty_in,0)) 
+            - SUM(COALESCE(sb.qty_out,0))
+            - COALESCE((
+                SELECT SUM(tmp.qty_reserved)
+                FROM sc_tmp.v_all_tmp_reservation tmp
+                WHERE TRIM(tmp.idlocation) = TRIM(sb.idlocation)
+                  AND TRIM(tmp.idbarang)   = TRIM(sb.idbarang)
+                  AND TRIM(COALESCE(tmp.batch,'')) 
+                        = TRIM(COALESCE(sb.batch,''))
+                  AND TRIM(COALESCE(tmp.lotno,'')) 
+                        = TRIM(COALESCE(sb.lotno,''))
+            ), 0)                              AS sisaonhand,
+
+        MAX(sb.docdate)                        AS last_movement
+    ");
+
+        $builder->where('TRIM(sb.idlocation)', $idlocation);
+        $builder->where('TRIM(sb.idbarang) <>', '');
+
+        if (!empty($idbranch)) {
+            $builder->where('TRIM(sb.idbranch)', $idbranch);
+        }
+
+        if (!empty($search)) {
+            $escaped = $this->db->escape('%' . $search . '%');
+            $builder->where("(
+            TRIM(sb.idbarang) ILIKE {$escaped}
+            OR TRIM(COALESCE(sb.batch,'')) ILIKE {$escaped}
+            OR TRIM(COALESCE(sb.lotno,'')) ILIKE {$escaped}
+        )", null, false);
+        }
+
+        $builder->groupBy(
+            'sb.idbarang, sb.unit, sb.batch, sb.lotno, '
+            . 'sb.idbranch, sb.idlocation, sb.idarea, sb.bin'
+        );
+
+        /* HANYA tampil kalau qty_display > 0 */
+        $builder->having(
+            "SUM(COALESCE(sb.qty_in,0)) 
+         - SUM(COALESCE(sb.qty_out,0))
+         - COALESCE((
+             SELECT SUM(tmp.qty_reserved)
+             FROM sc_tmp.v_all_tmp_reservation tmp
+             WHERE TRIM(tmp.idlocation) = TRIM(sb.idlocation)
+               AND TRIM(tmp.idbarang)   = TRIM(sb.idbarang)
+               AND TRIM(COALESCE(tmp.batch,'')) 
+                     = TRIM(COALESCE(sb.batch,''))
+               AND TRIM(COALESCE(tmp.lotno,'')) 
+                     = TRIM(COALESCE(sb.lotno,''))
+         ), 0) > 0",
+            null, false
+        );
+
+        $builder->orderBy('sb.idbarang', 'ASC')
+            ->orderBy('sb.batch',    'ASC')
+            ->limit($limit, $offset);
+
+        return $builder->get()->getResultArray();
+    }
+
+    /**
+     * Count total untuk pagination
+     */
+    public function q_stock_onhand_by_location_count(
+        $idlocation, $idbranch = '', $search = ''
+    )
+    {
+        $db = $this->db;
+
+        $where  = "TRIM(sb.idlocation) = " . $db->escape($idlocation);
+        $where .= " AND TRIM(sb.idbarang) <> ''";
+
+        if (!empty($idbranch)) {
+            $where .= " AND TRIM(sb.idbranch) = " . $db->escape($idbranch);
+        }
+
+        if (!empty($search)) {
+            $s = $db->escape('%' . $search . '%');
+            $where .= " AND (
+            TRIM(sb.idbarang) ILIKE {$s}
+            OR TRIM(COALESCE(sb.batch,'')) ILIKE {$s}
+            OR TRIM(COALESCE(sb.lotno,'')) ILIKE {$s}
+        )";
+        }
+
+        $sql = "
+        SELECT COUNT(*) AS total FROM (
+            SELECT
+                sb.idbarang,
+                sb.unit,
+                sb.batch,
+                sb.lotno,
+                sb.bin
+            FROM sc_trx.stkblc sb
+            WHERE {$where}
+            GROUP BY
+                sb.idbarang,
+                sb.unit,
+                sb.batch,
+                sb.lotno,
+                sb.bin
+            HAVING 
+                SUM(COALESCE(sb.qty_in,0))
+                - SUM(COALESCE(sb.qty_out,0))
+                - COALESCE((
+                    SELECT SUM(tmp.qty_reserved)
+                    FROM sc_tmp.v_all_tmp_reservation tmp
+                    WHERE TRIM(tmp.idlocation) = TRIM(sb.idlocation)
+                      AND TRIM(tmp.idbarang)   = TRIM(sb.idbarang)
+                      AND TRIM(COALESCE(tmp.batch,'')) 
+                            = TRIM(COALESCE(sb.batch,''))
+                      AND TRIM(COALESCE(tmp.lotno,'')) 
+                            = TRIM(COALESCE(sb.lotno,''))
+                ), 0) > 0
+        ) x
+    ";
+
+        $query = $db->query($sql);
+        if ($query === false) {
+            log_message('error',
+                '[q_stock_onhand_by_location_count] SQL Error: '
+                . json_encode($db->error()));
+            return 0;
+        }
+
+        $row = $query->getRowArray();
+        return (int) ($row['total'] ?? 0);
+    }
+
+    /**
+     * Ambil stock by location DENGAN include barang walau stok 0.
+     * Khusus untuk mode edit: paksa tampil idbarang yang dipilih.
+     */
+    public function q_stock_by_location_with_zero(
+        $idlocation, $idbarang, $search = '', $limit = 30, $offset = 0
+    )
+    {
+        $builder = $this->db->table('sc_trx.stkblc sb');
+
+        $builder->select("
+        (TRIM(sb.idbarang) || '|' || TRIM(COALESCE(sb.batch,'')) || '|' 
+         || TRIM(COALESCE(sb.lotno,'')) || '|' || TRIM(sb.bin) || '|' 
+         || TRIM(sb.warehouse)) AS id,
+        TRIM(sb.idbarang)  AS idbarang,
+        TRIM(sb.idunit)    AS unit,
+        TRIM(sb.batch)     AS batch,
+        TRIM(sb.lotno)     AS lotno,
+        TRIM(sb.idbranch)  AS idbranch,
+        TRIM(sb.warehouse) AS idlocation,
+        TRIM(sb.bin)       AS bin,
+        SUM(COALESCE(sb.qty_in,0)) - SUM(COALESCE(sb.qty_out,0)) AS sisaonhand,
+        MAX(sb.docdate)    AS last_movement
+    ");
+
+        $builder->where('TRIM(sb.warehouse)', $idlocation);
+        $builder->where('TRIM(sb.idbarang)',  $idbarang);   // ← fokus 1 barang
+
+        if (!empty($search)) {
+            $escaped = $this->db->escape('%' . $search . '%');
+            $builder->where("(
+            TRIM(sb.idbarang) ILIKE {$escaped}
+            OR TRIM(COALESCE(sb.batch,'')) ILIKE {$escaped}
+            OR TRIM(COALESCE(sb.lotno,'')) ILIKE {$escaped}
+        )", null, false);
+        }
+
+        $builder->groupBy('sb.idbarang, sb.idunit, sb.batch, sb.lotno, sb.idbranch, sb.warehouse, sb.bin');
+        // ❌ TIDAK ada HAVING > 0 — biarkan muncul walau 0
+        $builder->orderBy('sb.idbarang', 'ASC')
+            ->orderBy('sb.batch',    'ASC')
+            ->limit($limit, $offset);
+
+        $rows = $builder->get()->getResultArray();
+
+        /* -----------------------------------------------------
+           Jika tidak ada baris stkblc sama sekali → fallback
+           ke master barang (untuk edit awal)
+           ----------------------------------------------------- */
+        if (empty($rows)) {
+
+            $barang = $this->db->table('sc_mst.mbarang')
+                ->select('idbarang, nmbarang, idunit')
+                ->where('TRIM(idbarang)', $idbarang)
+                ->get()
+                ->getRowArray();
+
+            if ($barang) {
+                $rows[] = [
+                    'id'         => $idbarang . '|||' . $idlocation,   // dummy id
+                    'idbarang'   => $barang['idbarang'],
+                    'unit'       => $barang['idunit'] ?? '',
+                    'batch'      => '',
+                    'lotno'      => '',
+                    'idbranch'   => '',
+                    'idlocation' => $idlocation,
+                    'bin'        => '',
+                    'sisaonhand' => 0,
+                    'last_movement' => null,
+                ];
+            }
+        }
+
+        return $rows;
+    }
 
 
+    /**
+     * Count untuk q_stock_by_location_with_zero
+     */
+    public function q_stock_by_location_with_zero_count(
+        $idlocation, $idbarang, $search = ''
+    )
+    {
+        $db = $this->db;
 
+        $where  = "TRIM(sb.warehouse) = " . $db->escape($idlocation);
+        $where .= " AND TRIM(sb.idbarang) = " . $db->escape($idbarang);
+
+        if (!empty($search)) {
+            $s = $db->escape('%' . $search . '%');
+            $where .= " AND (
+            TRIM(sb.idbarang) ILIKE {$s}
+            OR TRIM(COALESCE(sb.batch,'')) ILIKE {$s}
+            OR TRIM(COALESCE(sb.lotno,'')) ILIKE {$s}
+        )";
+        }
+
+        $sql = "
+        SELECT COUNT(*) AS total FROM (
+            SELECT
+                sb.idbarang, sb.idunit, sb.batch, sb.lotno, sb.bin
+            FROM sc_trx.stkblc sb
+            WHERE {$where}
+            GROUP BY sb.idbarang, sb.idunit, sb.batch, sb.lotno, sb.bin
+        ) x
+    ";
+
+        $query = $db->query($sql);
+
+        if ($query === false) {
+            log_message('error',
+                '[q_stock_by_location_with_zero_count] SQL Error: '
+                . json_encode($db->error()));
+            return 0;
+        }
+
+        $row = $query->getRowArray();
+        return (int) ($row['total'] ?? 0);
+    }
 
 }

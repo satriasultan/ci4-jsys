@@ -1,94 +1,41 @@
-
-/* 
-   1 JOURNAL_TYPE
-      =
-   1 TEST INSERT
-
-   sehingga misalnya:
-
-   PURCHS  -> INSERT
-   PURRET  -> INSERT
-   GRNREC  -> INSERT
-   GRNRET  -> INSERT
-
-   SALESX  -> INSERT
-   SALRET  -> INSERT
-
-   STKINX  -> INSERT
-   STKOUT  -> INSERT
-   ADJINX  -> INSERT
-   ADJOUT  -> INSERT
-
-   WOISSU  -> INSERT
-   WORETN  -> INSERT
-   WORECV  -> INSERT
-   WORETR  -> INSERT
-
-   dst...
-
-   Untuk INOUT:
-       1 source_uniqueid
-       + 2 transaction_dt
-       = OUT + IN
-*/
-
-
-/* ============================================================
-   TEST DATA sc_trx.transaction_dt
-   BERDASARKAN sc_mst.journal_type
+/* ============================================================================
+   JSYS ERP - TEST DATA
+   FOKUS: TRANSFER (TRFWHS, BINMOV, BRNTRF)
 
    TUJUAN:
    ------------------------------------------------------------
-   1. Menguji seluruh GROUP / MODULE journal_type.
-   2. INSERT langsung ke sc_trx.transaction_dt.
-   3. Menguji arah IN / OUT / INOUT.
-   4. Menguji batch + lot.
-   5. Menguji source_uniqueid.
-   6. Menguji currency dan tax.
-   7. Data menggunakan source_uniqueid berbeda.
-   8. Bisa dijalankan dengan BEGIN / ROLLBACK
-      sehingga tidak merusak data produksi.
+   1. Menguji 3 jenis transfer:
+      - TRFWHS : Transfer antar gudang
+      - BINMOV : Pindah bin
+      - BRNTRF : Transfer antar cabang
 
-   CATATAN:
+   2. Memastikan nilai persediaan TIDAK berubah setelah transfer.
+
+   3. Memastikan jurnal accounting:
+      - OUT → KREDIT Inventory
+      - IN  → DEBIT Inventory
+      - 1 baris jurnal_dt per transaction_dt
+      - Balance per header boleh ≠ 0 (transfer)
+      - Balance OUT + IN = 0
+
+   4. Bisa dijalankan dengan BEGIN/ROLLBACK untuk simulasi.
+
+   PRASYARAT:
    ------------------------------------------------------------
-   uniqueid           = identitas transaksi detail
-   source_uniqueid    = identitas source document
-
-   source_uniqueid TIDAK UNIQUE karena satu source document
-   dapat menghasilkan beberapa transaksi.
-   ============================================================ */
-
-
-/* ============================================================
-   TEST ALL - FIXED
-   ------------------------------------------------------------
-   FIXES:
-   1. Semua uniqueid dan source_uniqueid test menggunakan MD5().
-   2. GRNREC BATCH001 dinaikkan menjadi 200 KG agar seluruh
-      transaksi OUT pada batch tersebut tidak menghasilkan negative stock.
-   3. REWORK OUT menggunakan BATCH001/LOT001 yang sudah mempunyai stock.
-   4. SBISSU/SBRETN menggunakan BATCH001/LOT001 yang sudah mempunyai avg cost.
-   5. Blok patch SBISSU lama dihapus; test cukup satu kali dan satu BEGIN/ROLLBACK.
-   ============================================================ */
+   - TAHAP 01-19 sudah dijalankan
+   - Master: mbarang BRG001, currency IDR, journal_type TRFWHS/BINMOV/BRNTRF
+   - Minimal ada 1 batch/LOT dengan avg cost established
+   ============================================================================ */
 
 BEGIN;
 
-/* ============================================================
-   CLEANUP TEST SEBELUM INSERT
-   ------------------------------------------------------------
-   Hapus test lama melalui transaction_dt agar trigger reverse
-   melakukan cleanup stock/accounting secara normal.
-
-   Legacy test dapat memakai uniqueid plain text, sedangkan versi
-   fixed memakai MD5(). Keduanya dibersihkan.
-   Penghapusan dilakukan dari id terbesar ke terkecil agar costing
-   tidak membaca transaksi lanjutan sebagai stock yang masih ada.
-   ============================================================ */
+/* ============================================================================
+   STEP 0: CLEANUP TEST LAMA
+   ============================================================================ */
 
 DO $$
 DECLARE
     r RECORD;
-    v_ndk_count INTEGER := 0;
 BEGIN
     FOR r IN
         SELECT id
@@ -96,45 +43,22 @@ BEGIN
         WHERE uniqueid = ANY
         (
             ARRAY[
-                'TX-JOURNAL-UPD-001', MD5('TX-JOURNAL-UPD-001'),
-                'TX-JV-PERKIRAAN-001', MD5('TX-JV-PERKIRAAN-001'),
-                'TX-JV-PERKIRAAN-002', MD5('TX-JV-PERKIRAAN-002'),
-                'TX-NDKAPD-001', MD5('TX-NDKAPD-001'),
-                'TX-NDKAPK-001', MD5('TX-NDKAPK-001'),
-                'TX-NDKARD-001', MD5('TX-NDKARD-001'),
-                'TX-NDKARK-001', MD5('TX-NDKARK-001'),
-                'TX-GRNREC-001', MD5('TX-GRNREC-001'),
-                'TX-PURRET-001', MD5('TX-PURRET-001'),
-                'TX-SALESX-001', MD5('TX-SALESX-001'),
-                'TX-SALRET-001', MD5('TX-SALRET-001'),
-                'TX-STKINX-001', MD5('TX-STKINX-001'),
-                'TX-STKOUT-001', MD5('TX-STKOUT-001'),
-                'TX-ADJINX-001', MD5('TX-ADJINX-001'),
-                'TX-ADJOUT-001', MD5('TX-ADJOUT-001'),
-                'TX-OPENST-001', MD5('TX-OPENST-001'),
-                'TX-OPNSTR-001', MD5('TX-OPNSTR-001'),
-                'TX-WOISSU-001', MD5('TX-WOISSU-001'),
-                'TX-WORETN-001', MD5('TX-WORETN-001'),
-                'TX-WORECV-001', MD5('TX-WORECV-001'),
-                'TX-WORETR-001', MD5('TX-WORETR-001'),
-                'TX-SCRAPP-001', MD5('TX-SCRAPP-001'),
-                'TX-SCRREV-001', MD5('TX-SCRREV-001'),
-                'TX-REWORK-001-OUT', MD5('TX-REWORK-001-OUT'),
-                'TX-REWORK-001-IN', MD5('TX-REWORK-001-IN'),
-                'TX-BYPROD-001', MD5('TX-BYPROD-001'),
-                'TX-COPROD-001', MD5('TX-COPROD-001'),
-                'TX-SBISSU-001', MD5('TX-SBISSU-001'),
-                'TX-SBRETN-001', MD5('TX-SBRETN-001'),
-                'TX-QHOLDX-001-OUT', MD5('TX-QHOLDX-001-OUT'),
-                'TX-QHOLDX-001-IN', MD5('TX-QHOLDX-001-IN'),
-                'TX-QRELSX-001-OUT', MD5('TX-QRELSX-001-OUT'),
-                'TX-QRELSX-001-IN', MD5('TX-QRELSX-001-IN'),
-                'TX-BRNTRF-TEST-OUT', MD5('TX-BRNTRF-TEST-OUT'),
-                'TX-BRNTRF-TEST-IN', MD5('TX-BRNTRF-TEST-IN'),
-                'TX-PURCHS-001', MD5('TX-PURCHS-001'),
-                'TX-GRNRET-001', MD5('TX-GRNRET-001'),
-                'TX-DELIVR-001', MD5('TX-DELIVR-001'),
-                'TX-DELRET-001', MD5('TX-DELRET-001')
+                -- Setup avg cost
+                MD5('TEST-SETUP-GRNREC-BRG001-WH01'),
+                MD5('TEST-SETUP-GRNREC-BRG001-WH02'),
+                MD5('TEST-SETUP-GRNREC-BRG001-WH03'),
+
+                -- TRFWHS: Transfer WH01 → WH02
+                MD5('TEST-TRFWHS-001-OUT'),
+                MD5('TEST-TRFWHS-001-IN'),
+
+                -- BINMOV: Pindah bin A01 → A02 (WH01)
+                MD5('TEST-BINMOV-001-OUT'),
+                MD5('TEST-BINMOV-001-IN'),
+
+                -- BRNTRF: Transfer JTS1 → JTS2
+                MD5('TEST-BRNTRF-001-OUT'),
+                MD5('TEST-BRNTRF-001-IN')
             ]::TEXT[]
         )
         ORDER BY id DESC
@@ -146,19 +70,19 @@ END;
 $$;
 
 
-/* ============================================================
-   GROUP 01
-   PURCHASE ORDER
+/* ============================================================================
+   STEP 1: SETUP AVG COST UNTUK TEST
+   ============================================================================
+   
+   Setup persediaan di:
+   - WH01 (JTS1): 100 kg BRG001 BATCH001 @ 10.000 = 1.000.000
+   - WH02 (JTS1): 50 kg BRG001 BATCH002 @ 12.000 = 600.000
+   
+   Untuk transfer antar-cabang, butuh stok di JTS2 juga? Tidak.
+   BRNTRF akan transfer dari JTS1 ke JTS2 (JTS2 mulai dari 0).
+   ============================================================================ */
 
-   PURCHS
-   IN
-
-   PURCHS hanya mewakili dokumen purchase/order.
-   Routing yang diuji:
-       stock_effect      = NONE
-       accounting_effect = NO
-   ============================================================ */
-
+/* --- Setup 1: GRNREC ke WH01 (JTS1) --- */
 INSERT INTO sc_trx.transaction_dt
 (
     uniqueid, source_uniqueid, docno, doctype, journal_type, line_no,
@@ -172,3679 +96,665 @@ INSERT INTO sc_trx.transaction_dt
 )
 VALUES
 (
-    MD5('TX-PURCHS-001'),
-    MD5('PURCHS-TEST-001-DTL-001'),
-    'PURCHS-TEST-001',
-    'PURCHASE_ORDER',
-    'PURCHS',
+    MD5('TEST-SETUP-GRNREC-BRG001-WH01'),
+    MD5('TEST-SETUP-GRNREC-BRG001-WH01-SRC'),
+    'TEST-SETUP-GRN-001',
+    'GRN',
+    'GRNREC',
     1,
+    CURRENT_DATE - INTERVAL '10 days',
+    'JTS',
+    'JTS1',
+    'IN',
+    '', '',
+    'test_setup', 9001, 1,
+    'SUP001', 'SUPPLIER TEST',
+    'BRG001', 'BARANG TEST', 'KG', 'AREA01', 'WH01', 'A01',
+    'BATCH001', 'LOT001',
+    100, 10000, 1000000, 0, 1000000, 1000000, 110000, 1110000,
+    'PPN11', 'NO', 'IDR', 1, 'TEST'
+);
+
+/* --- Setup 2: GRNREC ke WH02 (JTS1) --- */
+INSERT INTO sc_trx.transaction_dt
+(
+    uniqueid, source_uniqueid, docno, doctype, journal_type, line_no,
+    docdate, idbranch, cabang, type_in_out,
+    ref_docno, ref_doctype,
+    source_table, source_id, source_line_id,
+    kdsupplier, nsupplier,
+    idbarang, namabarang, idunit, idarea, warehouse, bin, batch, lotno,
+    qty, harga, bruto, discount, nilai, dpp, pajak, total,
+    idtax, isinclusive, currcode, kurs, createdby
+)
+VALUES
+(
+    MD5('TEST-SETUP-GRNREC-BRG001-WH02'),
+    MD5('TEST-SETUP-GRNREC-BRG001-WH02-SRC'),
+    'TEST-SETUP-GRN-002',
+    'GRN',
+    'GRNREC',
+    1,
+    CURRENT_DATE - INTERVAL '10 days',
+    'JTS',
+    'JTS1',
+    'IN',
+    '', '',
+    'test_setup', 9002, 1,
+    'SUP001', 'SUPPLIER TEST',
+    'BRG001', 'BARANG TEST', 'KG', 'AREA01', 'WH02', 'A01',
+    'BATCH002', 'LOT002',
+    50, 12000, 600000, 0, 600000, 600000, 66000, 666000,
+    'PPN11', 'NO', 'IDR', 1, 'TEST'
+);
+
+
+/* ============================================================================
+   STEP 2: CATAT NILAI PERSEDIAAN SEBELUM TRANSFER
+   ============================================================================
+   
+   Simpan total nilai perusahaan sebelum transfer.
+   ============================================================================ */
+
+SELECT
+    'SEBELUM TRANSFER' AS fase,
+    SUM(ac.qty) AS total_qty,
+    SUM(ac.total_value) AS total_value,
+    CASE
+        WHEN SUM(ac.qty) > 0 
+        THEN ROUND(SUM(ac.total_value) / SUM(ac.qty), 2)
+        ELSE 0
+    END AS avg_cost_global
+FROM sc_trx.stkblc_avgcost ac
+WHERE ac.idbarang = 'BRG001';
+
+
+/* ============================================================================
+   TEST 1: TRFWHS - TRANSFER ANTAR GUDANG (WH01 → WH03)
+   ============================================================================
+   
+   Skenario:
+   - Transfer 30 kg BRG001 BATCH001 dari WH01 ke WH03
+   - Avg cost di WH01 diharapkan = 10.000
+   - Nilai transfer = 30 × 10.000 = 300.000
+   
+   Sumber: WH01 (JTS1)
+   Tujuan: WH03 (JTS1)
+   ============================================================================ */
+
+/* --- TRFWHS OUT: dari WH01 --- */
+INSERT INTO sc_trx.transaction_dt
+(
+    uniqueid, source_uniqueid, docno, doctype, journal_type, line_no,
+    docdate, idbranch, cabang, type_in_out,
+    ref_docno, ref_doctype,
+    source_table, source_id, source_line_id,
+    idbarang, namabarang, idunit, idarea, warehouse, bin, batch, lotno,
+    qty, harga, nilai, currcode, kurs, createdby
+)
+VALUES
+(
+    MD5('TEST-TRFWHS-001-OUT'),
+    MD5('TEST-TRFWHS-001-SRC'),
+    'TEST-TRFWHS-001',
+    'TRANSFER_WAREHOUSE',
+    'TRFWHS',
+    1,
+    CURRENT_DATE,
+    'JTS',
+    'JTS1',
+    'OUT',
+    '', '',
+    'test_transfer', 9101, 1,
+    'BRG001', 'BARANG TEST', 'KG', 'AREA01', 'WH01', 'A01',
+    'BATCH001', 'LOT001',
+    30, 10000, 300000, 'IDR', 1, 'TEST'
+);
+
+/* --- TRFWHS IN: ke WH03 --- */
+INSERT INTO sc_trx.transaction_dt
+(
+    uniqueid, source_uniqueid, docno, doctype, journal_type, line_no,
+    docdate, idbranch, cabang, type_in_out,
+    ref_docno, ref_doctype,
+    source_table, source_id, source_line_id,
+    idbarang, namabarang, idunit, idarea, warehouse, bin, batch, lotno,
+    qty, harga, nilai, currcode, kurs, createdby
+)
+VALUES
+(
+    MD5('TEST-TRFWHS-001-IN'),
+    MD5('TEST-TRFWHS-001-SRC'),
+    'TEST-TRFWHS-001',
+    'TRANSFER_WAREHOUSE',
+    'TRFWHS',
+    2,
     CURRENT_DATE,
     'JTS',
     'JTS1',
     'IN',
     '', '',
-    'test_purchase_order', 1000, 1,
-    'SUP001', 'SUPPLIER TEST',
-    'BRG001', 'BARANG TEST', 'KG', 'AREA01', 'WH01', 'A01',
+    'test_transfer', 9101, 2,
+    'BRG001', 'BARANG TEST', 'KG', 'AREA01', 'WH03', 'A01',
     'BATCH001', 'LOT001',
-    20, 10000, 200000, 0, 200000, 200000, 22000, 222000,
-    'PPN11', 'NO', 'IDR', 1, 'TEST'
+    30, 10000, 300000, 'IDR', 1, 'TEST'
 );
 
 
-/* ============================================================
-   GROUP 01
-   PURCHASE
-   ============================================================
+/* ============================================================================
+   TEST 2: BINMOV - PINDAH BIN (A01 → A02 di WH02)
+   ============================================================================
+   
+   Skenario:
+   - Pindah 20 kg BRG001 BATCH002 dari bin A01 ke A02 di WH02
+   - Avg cost di WH02 diharapkan = 12.000
+   - Nilai = 20 × 12.000 = 240.000
+   ============================================================================ */
 
-   GRNREC
-   GOODS RECEIPT
-   IN
-
-   Simulasi:
-   Barang diterima dari supplier.
-
-   Qty       = 200 KG
-   Harga     = 10.000
-   Nilai     = 2.000.000
-   PPN       = 220.000
-   Total     = 2.220.000
-
-   PPN menggunakan INCLUDE = NO
-   ============================================================ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    ref_docno,
-    ref_doctype,
-    source_table,
-    source_id,
-    source_line_id,
-    kdsupplier,
-    nsupplier,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    discount,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    idtax,
-    isinclusive,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-GRNREC-001'),
-    MD5('GRN-TEST-001-DTL-001'),
-    'GRN-TEST-001',
-    'GRN',
-    'GRNREC',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'IN',
-    'PO-TEST-001',
-    'PO',
-    'test_grn',
-    1001,
-    1,
-    'SUP001',
-    'SUPPLIER TEST',
-    'BRG001',
-    'BARANG TEST',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCH001',
-    'LOT001',
-    200,
-    10000,
-    2000000,
-    0,
-    2000000,
-    2000000,
-    220000,
-    2220000,
-    'PPN11',
-    'NO',
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-/* ============================================================
-   GROUP 01
-   PURCHASE RETURN
-
-   PURRET
-   OUT
-
-   PURRET = dokumen return/request purchase.
-   Routing master:
-       stock_effect      = NONE
-       accounting_effect = NO
-
-   Actual goods return diuji menggunakan GRNRET.
-   ============================================================ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    ref_docno,
-    ref_doctype,
-    source_table,
-    source_id,
-    source_line_id,
-    kdsupplier,
-    nsupplier,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    discount,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    idtax,
-    isinclusive,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-PURRET-001'),
-    MD5('PURRET-TEST-001-DTL-001'),
-    'PURRET-TEST-001',
-    'PURCHASE_RETURN',
-    'PURRET',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'OUT',
-    'GRN-TEST-001',
-    'GRN',
-    'test_purchase_return',
-    2001,
-    1,
-    'SUP001',
-    'SUPPLIER TEST',
-    'BRG001',
-    'BARANG TEST',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCH001',
-    'LOT001',
-    20,
-    10000,
-    200000,
-    0,
-    200000,
-    200000,
-    22000,
-    222000,
-    'PPN11',
-    'NO',
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-/* ============================================================
-   GROUP 01
-   GOODS RECEIPT RETURN
-
-   GRNRET
-   OUT
-
-   Actual barang dikembalikan ke supplier.
-   Routing yang diuji:
-       stock_effect      = OUT
-       accounting_effect = YES
-   ============================================================ */
-
+/* --- BINMOV OUT: dari WH02 A01 --- */
 INSERT INTO sc_trx.transaction_dt
 (
     uniqueid, source_uniqueid, docno, doctype, journal_type, line_no,
     docdate, idbranch, cabang, type_in_out,
     ref_docno, ref_doctype,
     source_table, source_id, source_line_id,
-    kdsupplier, nsupplier,
     idbarang, namabarang, idunit, idarea, warehouse, bin, batch, lotno,
-    qty, harga, bruto, discount, nilai, dpp, pajak, total,
-    idtax, isinclusive, currcode, kurs, createdby
+    qty, harga, nilai, currcode, kurs, createdby
 )
 VALUES
 (
-    MD5('TX-GRNRET-001'),
-    MD5('GRNRET-TEST-001-DTL-001'),
-    'GRNRET-TEST-001',
-    'GRN_RETURN',
-    'GRNRET',
+    MD5('TEST-BINMOV-001-OUT'),
+    MD5('TEST-BINMOV-001-SRC'),
+    'TEST-BINMOV-001',
+    'BIN_MOVEMENT',
+    'BINMOV',
     1,
     CURRENT_DATE,
     'JTS',
     'JTS1',
     'OUT',
-    'GRN-TEST-001',
-    'GRN',
-    'test_grn_return', 2002, 1,
-    'SUP001', 'SUPPLIER TEST',
-    'BRG001', 'BARANG TEST', 'KG', 'AREA01', 'WH01', 'A01',
-    'BATCH001', 'LOT001',
-    5, 10000, 50000, 0, 50000, 50000, 5500, 55500,
-    'PPN11', 'NO', 'IDR', 1, 'TEST'
+    '', '',
+    'test_binmov', 9201, 1,
+    'BRG001', 'BARANG TEST', 'KG', 'AREA01', 'WH02', 'A01',
+    'BATCH002', 'LOT002',
+    20, 12000, 240000, 'IDR', 1, 'TEST'
 );
 
-
-/* ============================================================
-   GROUP 02
-   SALES
-
-   SALESX
-   OUT
-   ============================================================ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    ref_docno,
-    ref_doctype,
-    source_table,
-    source_id,
-    source_line_id,
-    kdcustomer,
-    ncustomer,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    discount,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    idtax,
-    isinclusive,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-SALESX-001'),
-    MD5('SALES-TEST-001-DTL-001'),
-    'SALES-TEST-001',
-    'SALES',
-    'SALESX',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'OUT',
-    '',
-    '',
-    'test_sales',
-    3001,
-    1,
-    'CUS001',
-    'CUSTOMER TEST',
-    'BRG001',
-    'BARANG TEST',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCH001',
-    'LOT001',
-    10,
-    15000,
-    150000,
-    0,
-    150000,
-    150000,
-    16500,
-    166500,
-    'PPN11',
-    'NO',
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-/* ============================================================
-   GROUP 02
-   DELIVERY
-
-   DELIVR
-   OUT
-
-   Delivery hanya menggerakkan stock.
-   Tidak membuat journal accounting.
-   ============================================================ */
-
+/* --- BINMOV IN: ke WH02 A02 --- */
 INSERT INTO sc_trx.transaction_dt
 (
     uniqueid, source_uniqueid, docno, doctype, journal_type, line_no,
     docdate, idbranch, cabang, type_in_out,
     ref_docno, ref_doctype,
     source_table, source_id, source_line_id,
-    kdcustomer, ncustomer,
     idbarang, namabarang, idunit, idarea, warehouse, bin, batch, lotno,
-    qty, harga, bruto, discount, nilai, dpp, pajak, total,
-    idtax, isinclusive, currcode, kurs, createdby
+    qty, harga, nilai, currcode, kurs, createdby
 )
 VALUES
 (
-    MD5('TX-DELIVR-001'),
-    MD5('DELIVR-TEST-001-DTL-001'),
-    'DELIVR-TEST-001',
-    'DELIVERY',
-    'DELIVR',
-    1,
+    MD5('TEST-BINMOV-001-IN'),
+    MD5('TEST-BINMOV-001-SRC'),
+    'TEST-BINMOV-001',
+    'BIN_MOVEMENT',
+    'BINMOV',
+    2,
     CURRENT_DATE,
     'JTS',
     'JTS1',
-    'OUT',
-    'SALES-TEST-001',
-    'SALES',
-    'test_delivery', 3002, 1,
-    'CUS001', 'CUSTOMER TEST',
-    'BRG001', 'BARANG TEST', 'KG', 'AREA01', 'WH01', 'A01',
-    'BATCH001', 'LOT001',
-    5, 15000, 75000, 0, 75000, 75000, 8250, 83250,
-    'PPN11', 'NO', 'IDR', 1, 'TEST'
+    'IN',
+    '', '',
+    'test_binmov', 9201, 2,
+    'BRG001', 'BARANG TEST', 'KG', 'AREA01', 'WH02', 'A02',
+    'BATCH002', 'LOT002',
+    20, 12000, 240000, 'IDR', 1, 'TEST'
 );
 
 
-/* ============================================================
-   GROUP 02
-   DELIVERY RETURN
+/* ============================================================================
+   TEST 3: BRNTRF - TRANSFER ANTAR CABANG (JTS1 → JTS2)
+   ============================================================================
+   
+   Skenario:
+   - Transfer 25 kg BRG001 BATCH001 dari JTS1/WH01 ke JTS2/WH01
+   - Avg cost di JTS1/WH01 = 10.000 (setelah TRFWHS keluar 30 kg)
+   - Nilai = 25 × 10.000 = 250.000
+   
+   Catatan:
+   - Cabang berbeda (JTS vs JTS)
+   - Lokasi warehouse sama (WH01)
+   - Batch/LOT sama (BATCH001/LOT001)
+   ============================================================================ */
 
-   DELRET
-   IN
-
-   Return delivery mengembalikan stock,
-   tanpa journal accounting.
-   ============================================================ */
-
+/* --- BRNTRF OUT: dari JTS1/WH01 --- */
 INSERT INTO sc_trx.transaction_dt
 (
     uniqueid, source_uniqueid, docno, doctype, journal_type, line_no,
     docdate, idbranch, cabang, type_in_out,
     ref_docno, ref_doctype,
     source_table, source_id, source_line_id,
-    kdcustomer, ncustomer,
     idbarang, namabarang, idunit, idarea, warehouse, bin, batch, lotno,
-    qty, harga, bruto, discount, nilai, dpp, pajak, total,
-    idtax, isinclusive, currcode, kurs, createdby
+    qty, harga, nilai, currcode, kurs, createdby
 )
 VALUES
 (
-    MD5('TX-DELRET-001'),
-    MD5('DELRET-TEST-001-DTL-001'),
-    'DELRET-TEST-001',
-    'DELIVERY_RETURN',
-    'DELRET',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'IN',
-    'DELIVR-TEST-001',
-    'DELIVERY',
-    'test_delivery_return', 4002, 1,
-    'CUS001', 'CUSTOMER TEST',
-    'BRG001', 'BARANG TEST', 'KG', 'AREA01', 'WH01', 'A01',
-    'BATCH001', 'LOT001',
-    2, 15000, 30000, 0, 30000, 30000, 3300, 33300,
-    'PPN11', 'NO', 'IDR', 1, 'TEST'
-);
-
-
-/* ============================================================
-   GROUP 02
-   SALES RETURN
-
-   SALRET
-   IN
-   ============================================================ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    ref_docno,
-    ref_doctype,
-    source_table,
-    source_id,
-    source_line_id,
-    kdcustomer,
-    ncustomer,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    discount,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    idtax,
-    isinclusive,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-SALRET-001'),
-    MD5('SALRET-TEST-001-DTL-001'),
-    'SALRET-TEST-001',
-    'SALES_RETURN',
-    'SALRET',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'IN',
-    'SALES-TEST-001',
-    'SALES',
-    'test_sales_return',
-    4001,
-    1,
-    'CUS001',
-    'CUSTOMER TEST',
-    'BRG001',
-    'BARANG TEST',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCH001',
-    'LOT001',
-    2,
-    15000,
-    30000,
-    0,
-    30000,
-    30000,
-    3300,
-    33300,
-    'PPN11',
-    'NO',
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-/* ============================================================
-   GROUP 03
-   INVENTORY
-   ============================================================
-
-   STKINX
-   STOCK IN
-   ============================================================ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-STKINX-001'),
-    MD5('STKIN-TEST-001-DTL-001'),
-    'STKIN-TEST-001',
-    'STOCK_ADJUSTMENT',
-    'STKINX',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'IN',
-    'BRG001',
-    'BARANG TEST',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCH002',
-    'LOT002',
-    50,
-    10000,
-    500000,
-    500000,
-    500000,
-    0,
-    500000,
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-/* ============================================================
-   INVENTORY OUT
-   ============================================================ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-STKOUT-001'),
-    MD5('STKOUT-TEST-001-DTL-001'),
-    'STKOUT-TEST-001',
-    'STOCK_ADJUSTMENT',
-    'STKOUT',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'OUT',
-    'BRG001',
-    'BARANG TEST',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCH002',
-    'LOT002',
-    10,
-    10000,
-    100000,
-    100000,
-    100000,
-    0,
-    100000,
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-/* ============================================================
-   ADJUSTMENT IN
-   ============================================================ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-ADJINX-001'),
-    MD5('ADJIN-TEST-001-DTL-001'),
-    'ADJIN-TEST-001',
-    'ADJUSTMENT',
-    'ADJINX',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'IN',
-    'BRG001',
-    'BARANG TEST',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCH003',
-    'LOT003',
-    5,
-    10000,
-    50000,
-    50000,
-    50000,
-    0,
-    50000,
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-/* ============================================================
-   ADJUSTMENT OUT
-   ============================================================ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-ADJOUT-001'),
-    MD5('ADJOUT-TEST-001-DTL-001'),
-    'ADJOUT-TEST-001',
-    'ADJUSTMENT',
-    'ADJOUT',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'OUT',
-    'BRG001',
-    'BARANG TEST',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCH003',
-    'LOT003',
-    3,
-    10000,
-    30000,
-    30000,
-    30000,
-    0,
-    30000,
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-/* ============================================================
-   GROUP 04
-   OPENING STOCK
-
-   OPENST
-   IN
-   ============================================================ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-OPENST-001'),
-    MD5('OPENST-TEST-001-DTL-001'),
-    'OPENST-TEST-001',
-    'OPENING_STOCK',
-    'OPENST',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'IN',
-    'BRG002',
-    'BARANG OPENING',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCHOPEN',
-    'LOTOPEN',
-    100,
-    9000,
-    900000,
-    900000,
-    900000,
-    0,
-    900000,
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-/* ============================================================
-   OPENING STOCK REVERSE
-
-   OPNSTR
-   OUT
-   ============================================================ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    ref_docno,
-    ref_doctype,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-OPNSTR-001'),
-    MD5('OPNSTR-TEST-001-DTL-001'),
-    'OPNSTR-TEST-001',
-    'OPENING_STOCK_REV',
-    'OPNSTR',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'OUT',
-    'OPENST-TEST-001',
-    'OPENING_STOCK',
-    'BRG002',
-    'BARANG OPENING',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCHOPEN',
-    'LOTOPEN',
-    20,
-    9000,
-    180000,
-    180000,
-    180000,
-    0,
-    180000,
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-/* ============================================================
-   GROUP 05
-   MANUFACTURING
-   ============================================================
-
-   WOISSU
-   MATERIAL ISSUE
-   OUT
-
-   Material keluar dari warehouse menuju produksi.
-   ============================================================ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    ref_docno,
-    ref_doctype,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-WOISSU-001'),
-    MD5('WO-TEST-001-MAT-001'),
-    'WO-TEST-001',
-    'WORK_ORDER',
-    'WOISSU',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'OUT',
-    'WO-TEST-001',
-    'WORK_ORDER',
-    'BRG001',
-    'BAHAN BAKU TEST',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCH001',
-    'LOT001',
-    50,
-    10000,
-    500000,
-    500000,
-    500000,
-    0,
-    500000,
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-/* ============================================================
-   MATERIAL RETURN
-
-   WORETN
-   IN
-   ============================================================ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    ref_docno,
-    ref_doctype,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-WORETN-001'),
-    MD5('WO-TEST-001-RET-001'),
-    'WO-TEST-001-RET',
-    'WORK_ORDER',
-    'WORETN',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'IN',
-    'WO-TEST-001',
-    'WORK_ORDER',
-    'BRG001',
-    'BAHAN BAKU TEST',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCH001',
-    'LOT001',
-    5,
-    10000,
-    50000,
-    50000,
-    50000,
-    0,
-    50000,
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-/* ============================================================
-   PRODUCTION RECEIPT
-
-   WORECV
-   IN
-
-   Produk jadi masuk ke warehouse.
-   ============================================================ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    ref_docno,
-    ref_doctype,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-WORECV-001'),
-    MD5('WO-TEST-001-RECV-001'),
-    'WO-TEST-001-RECV',
-    'WORK_ORDER',
-    'WORECV',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'IN',
-    'WO-TEST-001',
-    'WORK_ORDER',
-    'FG001',
-    'FINISHED GOOD TEST',
-    'KG',
-    'AREA01',
-    'WH01',
-    'FG01',
-    'BATCHFG001',
-    'LOT-FG-001',
-    40,
-    15000,
-    600000,
-    600000,
-    600000,
-    0,
-    600000,
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-/* ============================================================
-   PRODUCTION RETURN
-
-   WORETR
-   OUT
-   ============================================================ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    ref_docno,
-    ref_doctype,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-WORETR-001'),
-    MD5('WO-TEST-001-RETR-001'),
-    'WO-TEST-001-RETR',
-    'WORK_ORDER',
-    'WORETR',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'OUT',
-    'WO-TEST-001-RECV',
-    'WORK_ORDER',
-    'FG001',
-    'FINISHED GOOD TEST',
-    'KG',
-    'AREA01',
-    'WH01',
-    'FG01',
-    'BATCHFG001',
-    'LOT-FG-001',
-    2,
-    15000,
-    30000,
-    30000,
-    30000,
-    0,
-    30000,
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-/* ============================================================
-   GROUP 06
-   SCRAP
-
-   SCRAPP
-   OUT
-   ============================================================ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    ref_docno,
-    ref_doctype,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-SCRAPP-001'),
-    MD5('SCRAP-TEST-001-DTL-001'),
-    'SCRAP-TEST-001',
-    'SCRAP',
-    'SCRAPP',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'OUT',
-    'WO-TEST-001',
-    'WORK_ORDER',
-    'BRG001',
-    'BAHAN BAKU TEST',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCH001',
-    'LOT001',
-    3,
-    10000,
-    30000,
-    30000,
-    30000,
-    0,
-    30000,
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-/* ============================================================
-   SCRAP REVERSE
-
-   SCRREV
-   IN
-   ============================================================ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    ref_docno,
-    ref_doctype,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-SCRREV-001'),
-    MD5('SCRREV-TEST-001-DTL-001'),
-    'SCRREV-TEST-001',
-    'SCRAP_REVERSE',
-    'SCRREV',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'IN',
-    'SCRAP-TEST-001',
-    'SCRAP',
-    'BRG001',
-    'BAHAN BAKU TEST',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCH001',
-    'LOT001',
-    1,
-    10000,
-    10000,
-    10000,
-    10000,
-    0,
-    10000,
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-/* ============================================================
-   GROUP 07
-   REWORK
-
-   REWORK = INOUT
-
-   Karena INOUT:
-       LINE 1 = OUT
-       LINE 2 = IN
-   ============================================================ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    ref_docno,
-    ref_doctype,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-REWORK-001-OUT'),
-    MD5('REWORK-TEST-001'),
-    'REWORK-TEST-001',
-    'REWORK',
-    'REWORK',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'OUT',
-    'WO-TEST-001',
-    'WORK_ORDER',
-    'BRG001',
-    'BARANG REWORK',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCH001',
-    'LOT001',
-    10,
-    10000,
-    100000,
-    100000,
-    100000,
-    0,
-    100000,
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    ref_docno,
-    ref_doctype,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-REWORK-001-IN'),
-    MD5('REWORK-TEST-001'),
-    'REWORK-TEST-001',
-    'REWORK',
-    'REWORK',
-    2,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'IN',
-    'WO-TEST-001',
-    'WORK_ORDER',
-    'FG001',
-    'HASIL REWORK',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCHRW002',
-    'LOT-RW-002',
-    8,
-    12500,
-    100000,
-    100000,
-    100000,
-    0,
-    100000,
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-/* ============================================================
-   GROUP 08
-   BY PRODUCT / CO PRODUCT
-
-   BYPROD
-   IN
-
-   COPROD
-   IN
-   ============================================================ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    ref_docno,
-    ref_doctype,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-BYPROD-001'),
-    MD5('BYPROD-TEST-001'),
-    'BYPROD-TEST-001',
-    'BY_PRODUCT',
-    'BYPROD',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'IN',
-    'WO-TEST-001',
-    'WORK_ORDER',
-    'BY001',
-    'BY PRODUCT TEST',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCHBY001',
-    'LOT-BY-001',
-    5,
-    5000,
-    25000,
-    25000,
-    25000,
-    0,
-    25000,
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    ref_docno,
-    ref_doctype,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-COPROD-001'),
-    MD5('COPROD-TEST-001'),
-    'COPROD-TEST-001',
-    'CO_PRODUCT',
-    'COPROD',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'IN',
-    'WO-TEST-001',
-    'WORK_ORDER',
-    'CO001',
-    'CO PRODUCT TEST',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCHCO001',
-    'LOT-CO-001',
-    3,
-    7000,
-    21000,
-    21000,
-    21000,
-    0,
-    21000,
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-/* ============================================================
-   GROUP 09
-   SUBCONTRACT
-
-   SBISSU
-   OUT
-   ============================================================ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    ref_docno,
-    ref_doctype,
-    kdsupplier,
-    nsupplier,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    idtax,
-    isinclusive,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-SBISSU-001'),
-    MD5('SB-TEST-001-ISSU'),
-    'SB-TEST-001',
-    'SUBCONTRACT',
-    'SBISSU',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'OUT',
-    'PO-SUB-001',
-    'PO_SUBCONTRACT',
-    'SUP002',
-    'SUBCONTRACTOR TEST',
-    'BRG001',
-    'BAHAN SUBCONTRACT',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCH001',
-    'LOT001',
-    30,
-    10000,
-    300000,
-    300000,
-    300000,
-    0,
-    300000,
-    '',
-    'NO',
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-/* ============================================================
-   SUBCONTRACT RETURN
-
-   SBRETN
-   IN
-   ============================================================ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    ref_docno,
-    ref_doctype,
-    kdsupplier,
-    nsupplier,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-SBRETN-001'),
-    MD5('SB-TEST-001-RETN'),
-    'SB-TEST-001-RETN',
-    'SUBCONTRACT',
-    'SBRETN',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'IN',
-    'SB-TEST-001',
-    'SUBCONTRACT',
-    'SUP002',
-    'SUBCONTRACTOR TEST',
-    'BRG001',
-    'BAHAN SUBCONTRACT',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCH001',
-    'LOT001',
-    5,
-    10000,
-    50000,
-    50000,
-    50000,
-    0,
-    50000,
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-/* ============================================================
-   GROUP 10
-   QUALITY
-
-   QHOLDX
-   INOUT
-
-   Untuk INOUT wajib ada OUT dan IN.
-   ============================================================ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    ref_docno,
-    ref_doctype,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-QHOLDX-001-OUT'),
-    MD5('QHOLD-TEST-001'),
-    'QHOLD-TEST-001',
-    'QUALITY_HOLD',
-    'QHOLDX',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'OUT',
-    'GRN-TEST-001',
-    'GRN',
-    'BRG001',
-    'BARANG TEST',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCH001',
-    'LOT001',
-    10,
-    10000,
-    100000,
-    100000,
-    100000,
-    0,
-    100000,
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    ref_docno,
-    ref_doctype,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-QHOLDX-001-IN'),
-    MD5('QHOLD-TEST-001'),
-    'QHOLD-TEST-001',
-    'QUALITY_HOLD',
-    'QHOLDX',
-    2,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'IN',
-    'GRN-TEST-001',
-    'GRN',
-    'BRG001',
-    'BARANG TEST',
-    'KG',
-    'AREA01',
-    'WH-QC',
-    'QC01',
-    'BATCH001',
-    'LOT001',
-    10,
-    10000,
-    100000,
-    100000,
-    100000,
-    0,
-    100000,
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-/* ============================================================
-   QUALITY RELEASE
-   QRELSX
-   INOUT
-   ============================================================ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    ref_docno,
-    ref_doctype,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-QRELSX-001-OUT'),
-    MD5('QRELS-TEST-001'),
-    'QRELS-TEST-001',
-    'QUALITY_RELEASE',
-    'QRELSX',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'OUT',
-    'QHOLD-TEST-001',
-    'QUALITY_HOLD',
-    'BRG001',
-    'BARANG TEST',
-    'KG',
-    'AREA01',
-    'WH-QC',
-    'QC01',
-    'BATCH001',
-    'LOT001',
-    10,
-    10000,
-    100000,
-    100000,
-    100000,
-    0,
-    100000,
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    ref_docno,
-    ref_doctype,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-QRELSX-001-IN'),
-    MD5('QRELS-TEST-001'),
-    'QRELS-TEST-001',
-    'QUALITY_RELEASE',
-    'QRELSX',
-    2,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'IN',
-    'QHOLD-TEST-001',
-    'QUALITY_HOLD',
-    'BRG001',
-    'BARANG TEST',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCH001',
-    'LOT001',
-    10,
-    10000,
-    100000,
-    100000,
-    100000,
-    0,
-    100000,
-    'IDR',
-    1,
-    'TEST'
-);
-
-
-/* ============================================================
-   GROUP 11
-   BRANCH TRANSFER
-
-   BRNTRF
-   INOUT
-
-   OUT dari JTS1
-   IN ke JTS2
-
-   Ini sama dengan konsep transfer pada baseline.
-   ============================================================ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    nilai,
-    currcode,
-    kurs,
-    createdby
-)
-VALUES
-(
-    MD5('TX-BRNTRF-TEST-OUT'),
-    MD5('BRNTRF-TEST-001-DTL-001'),
-    'BRNTRF-TEST-001',
-    'TRANSFER',
+    MD5('TEST-BRNTRF-001-OUT'),
+    MD5('TEST-BRNTRF-001-SRC'),
+    'TEST-BRNTRF-001',
+    'BRANCH_TRANSFER',
     'BRNTRF',
     1,
     CURRENT_DATE,
     'JTS',
     'JTS1',
     'OUT',
-    'BRG001',
-    'BARANG TEST',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCH001',
-    'LOT001',
-    25,
-    10000,
-    250000,
-    'IDR',
-    1,
-    'TEST'
+    '', '',
+    'test_brntrf', 9301, 1,
+    'BRG001', 'BARANG TEST', 'KG', 'AREA01', 'WH01', 'A01',
+    'BATCH001', 'LOT001',
+    25, 10000, 250000, 'IDR', 1, 'TEST'
 );
 
-
+/* --- BRNTRF IN: ke JTS2/WH01 --- */
 INSERT INTO sc_trx.transaction_dt
 (
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    nilai,
-    currcode,
-    kurs,
-    createdby
+    uniqueid, source_uniqueid, docno, doctype, journal_type, line_no,
+    docdate, idbranch, cabang, type_in_out,
+    ref_docno, ref_doctype,
+    source_table, source_id, source_line_id,
+    idbarang, namabarang, idunit, idarea, warehouse, bin, batch, lotno,
+    qty, harga, nilai, currcode, kurs, createdby
 )
 VALUES
 (
-    MD5('TX-BRNTRF-TEST-IN'),
-    MD5('BRNTRF-TEST-001-DTL-001'),
-    'BRNTRF-TEST-001',
-    'TRANSFER',
+    MD5('TEST-BRNTRF-001-IN'),
+    MD5('TEST-BRNTRF-001-SRC'),
+    'TEST-BRNTRF-001',
+    'BRANCH_TRANSFER',
     'BRNTRF',
     2,
     CURRENT_DATE,
     'JTS',
     'JTS2',
     'IN',
-    'BRG001',
-    'BARANG TEST',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCH001',
-    'LOT001',
-    25,
-    10000,
-    250000,
-    'IDR',
-    1,
-    'TEST'
+    '', '',
+    'test_brntrf', 9301, 2,
+    'BRG001', 'BARANG TEST', 'KG', 'AREA01', 'WH01', 'A01',
+    'BATCH001', 'LOT001',
+    25, 10000, 250000, 'IDR', 1, 'TEST'
 );
 
 
+/* ============================================================================
+   VALIDASI 1: STKBLc — CEK NILAI IN = NILAI OUT
+   ============================================================================
+   
+   Untuk setiap pasangan transfer:
+   - totalcost OUT (stkblc) harus SAMA dengan totalcost IN (stkblc)
+   ============================================================================ */
 
-/* ============================================================
-   TAHAP 28
-   END TEST DATA V9 - JVGENL / NDK FULL FIX - PEMBARUAN JURNAL + MANUAL ACCOUNTING V4
-   ============================================================
-
-   TUJUAN:
-   ------------------------------------------------------------
-   1. Menguji UPDATE transaction_dt yang sudah pernah INSERT.
-   2. Memastikan reverse transaksi lama + post transaksi baru.
-   3. Menguji perubahan ITEM, QTY, HARGA, dan NILAI.
-   4. Menguji perubahan stock identity akibat perubahan item.
-   5. Memastikan accounting mengikuti nilai jurnal terbaru.
-   6. Tetap menggunakan idbranch = JTS.
-      Cabang test = JTS1 atau JTS2.
-   7. Menguji manual accounting JVGENL (jurnal perkiraan).
-   8. Menguji NDKAPD / NDKAPK / NDKARD / NDKARK.
-   9. Menguji perkiraan asal, perkiraan lawan, debit/kredit, dan pajak.
-   ============================================================ */
-
-/* ------------------------------------------------------------
-   INSERT JURNAL AWAL
-   ------------------------------------------------------------ */
-
-INSERT INTO sc_trx.transaction_dt
+SELECT
+    sb.source_uniqueid,
+    sb.docno,
+    sb.journal_type,
+    sb.type_in_out,
+    sb.idbranch,
+    sb.cabang,
+    sb.warehouse,
+    sb.bin,
+    sb.idbarang,
+    sb.batch,
+    sb.qty_in,
+    sb.qty_out,
+    sb.unitcost,
+    sb.totalcost
+FROM sc_trx.stkblc sb
+WHERE sb.source_uniqueid IN
 (
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    ref_docno,
-    ref_doctype,
-    source_table,
-    source_id,
-    source_line_id,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    discount,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    idtax,
-    isinclusive,
-    currcode,
-    kurs,
-    createdby
+    MD5('TEST-TRFWHS-001-SRC'),
+    MD5('TEST-BINMOV-001-SRC'),
+    MD5('TEST-BRNTRF-001-SRC')
 )
-VALUES
-(
-    MD5('TX-JOURNAL-UPD-001'),
-    MD5('JOURNAL-UPD-TEST-001-DTL-001'),
-    'JOURNAL-UPD-TEST-001',
-    'JOURNAL_UPDATE',
-    'GRNREC',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'IN',
-    'PO-UPD-TEST-001',
-    'PO',
-    'test_journal_update',
-    9801,
-    1,
-    'BRG001',
-    'BARANG TEST',
-    'KG',
-    'AREA01',
-    'WH01',
-    'A01',
-    'BATCHUPD001',
-    'LOT-UPD-001',
-    15,
-    10000,
-    150000,
-    0,
-    150000,
-    150000,
-    16500,
-    166500,
-    'PPN11',
-    'NO',
-    'IDR',
-    1,
-    'TEST'
-);
+ORDER BY sb.source_uniqueid, sb.type_in_out, sb.id;
 
-/* ------------------------------------------------------------
-   SNAPSHOT SEBELUM UPDATE
-   ------------------------------------------------------------ */
 
-SELECT
-    uniqueid,
-    docno,
-    journal_type,
-    idbranch,
-    cabang,
-    idbarang,
-    namabarang,
-    batch,
-    lotno,
-    qty,
-    harga,
-    nilai,
-    pajak,
-    total
-FROM sc_trx.transaction_dt
-WHERE uniqueid = MD5('TX-JOURNAL-UPD-001');
-
-/* ------------------------------------------------------------
-   UPDATE JURNAL SEBELUMNYA
-   ------------------------------------------------------------
-
-   Perubahan:
-   BRG001 -> BRG002
-   Qty    : 15 -> 18
-   Harga  : 10.000 -> 12.500
-   Nilai  : 150.000 -> 225.000
-   PPN    : 16.500 -> 24.750
-   Total  : 166.500 -> 249.750
-
-   Batch dan lot tetap agar fokus pengujian
-   perubahan ITEM + VALUE pada jurnal yang sama.
-   ------------------------------------------------------------ */
-
-UPDATE sc_trx.transaction_dt
-SET
-    idbarang  = 'BRG002',
-    namabarang = 'BARANG OPENING',
-    qty       = 18,
-    harga     = 12500,
-    bruto     = 225000,
-    discount  = 0,
-    nilai     = 225000,
-    dpp       = 225000,
-    pajak     = 24750,
-    total     = 249750,
-    idtax     = 'PPN11',
-    isinclusive = 'NO',
-    currcode  = 'IDR',
-    kurs      = 1
-WHERE uniqueid = MD5('TX-JOURNAL-UPD-001');
-
-/* ------------------------------------------------------------
-   SNAPSHOT SESUDAH UPDATE
-   ------------------------------------------------------------ */
-
-SELECT
-    uniqueid,
-    docno,
-    journal_type,
-    idbranch,
-    cabang,
-    idbarang,
-    namabarang,
-    batch,
-    lotno,
-    qty,
-    harga,
-    nilai,
-    pajak,
-    total
-FROM sc_trx.transaction_dt
-WHERE uniqueid = MD5('TX-JOURNAL-UPD-001');
-
-/* ------------------------------------------------------------
-   VALIDASI HASIL UPDATE
-   ------------------------------------------------------------ */
-
-SELECT
-    td.uniqueid,
-    td.source_uniqueid,
-    td.docno,
-    td.journal_type,
-    td.idbranch,
-    td.cabang,
-    td.idbarang,
-    td.namabarang,
-    td.qty,
-    td.harga,
-    td.nilai,
-    td.pajak,
-    td.total,
-    jh.uniqueid AS jurnal_uniqueid,
-    jh.total_debet,
-    jh.total_kredit,
-    jh.status AS jurnal_status
-FROM sc_trx.transaction_dt td
-LEFT JOIN sc_trx.jurnal_hd jh
-       ON jh.source_uniqueid = td.uniqueid
-      OR jh.uniqueid = td.source_uniqueid
-WHERE td.uniqueid = MD5('TX-JOURNAL-UPD-001');
-
-/* ------------------------------------------------------------
-   STATUS JOURNAL SETELAH UPDATE
-   ------------------------------------------------------------
-   Model final:
-       journal lama  = CANCELLED
-       journal baru  = POSTED
-   Tidak membuat JRNL-REV untuk update biasa.
-   ------------------------------------------------------------ */
+/* ============================================================================
+   VALIDASI 2: JURNAL_HD — CEK 2 HEADER PER TRANSFER
+   ============================================================================
+   
+   Setiap transfer harus menghasilkan:
+   - 1 header OUT (total_kredit = X, total_debet = 0)
+   - 1 header IN  (total_debet = X, total_kredit = 0)
+   ============================================================================ */
 
 SELECT
     jh.docno,
     jh.journal_type,
+    jh.type_in_out,
+    jh.idbranch,
+    jh.cabang,
+    jh.total_debet,
+    jh.total_kredit,
+    jh.balance,
     jh.status,
-    COUNT(jd.id) AS detail_count,
-    COALESCE(SUM(jd.debet),0) AS detail_debet,
-    COALESCE(SUM(jd.kredit),0) AS detail_kredit,
-    COALESCE(SUM(jd.debet),0) - COALESCE(SUM(jd.kredit),0) AS detail_balance
+    jh.source_uniqueid
 FROM sc_trx.jurnal_hd jh
-LEFT JOIN sc_trx.jurnal_dt jd
-       ON jd.jurnal_id = jh.id
-WHERE jh.source_uniqueid = MD5('TX-JOURNAL-UPD-001')
+WHERE jh.docno IN
+(
+    'TEST-TRFWHS-001',
+    'TEST-BINMOV-001',
+    'TEST-BRNTRF-001'
+)
   AND jh.uniqueid NOT LIKE 'JRNL-REV-%'
-GROUP BY jh.id, jh.docno, jh.journal_type, jh.status
-ORDER BY jh.id;
-
-/* ============================================================
-   SAMPLE JURNAL PERKIRAAN / GENERAL JOURNAL
-   ============================================================
-
-   JOURNAL TYPE : JVGENL
-   DOCUMENT     : JV-PERKIRAAN-001
-   CABANG       : JTS1
-
-   ATURAN:
-       Satu docno JVGENL dapat memiliki beberapa line.
-       Setiap line:
-           idcoa         = perkiraan yang diinput
-           debet_kredit  = D/K
-           counter_idcoa = TIDAK WAJIB
-
-       Semua line:
-           docno + doctype + journal_type + idbranch
-       -> SATU jurnal_hd
-
-       Setiap line
-       -> SATU jurnal_dt
-
-   Contoh:
-       722103     D  84.627.273
-       213201     K  84.627.273
-
-   TOTAL:
-       DEBET  = 84.627.273
-       KREDIT = 84.627.273
-       BALANCE = 0
-   ============================================================ */
-
-
-/* ------------------------------------------------------------
-   PREFLIGHT COA JVGENL
-   ------------------------------------------------------------ */
-
-DO $$
-BEGIN
-
-    IF NOT EXISTS
-    (
-        SELECT 1
-        FROM sc_mst.coa c
-        WHERE BTRIM(c.idcoa::TEXT) = '722103'
-    )
-    THEN
-        RAISE EXCEPTION
-            'TEST JVGENL GAGAL: COA 722103 tidak ditemukan.';
-    END IF;
-
-
-    IF NOT EXISTS
-    (
-        SELECT 1
-        FROM sc_mst.coa c
-        WHERE BTRIM(c.idcoa::TEXT) = '213201'
-    )
-    THEN
-        RAISE EXCEPTION
-            'TEST JVGENL GAGAL: COA 213201 tidak ditemukan.';
-    END IF;
-
-END;
-$$;
-
-
-/* ------------------------------------------------------------
-   LINE 1 - DEBET
-   ------------------------------------------------------------ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    source_table,
-    source_id,
-    source_line_id,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    discount,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    idtax,
-    isinclusive,
-    currcode,
-    kurs,
-    idcoa,
-    counter_idcoa,
-    debet_kredit,
-    createdby
-)
-VALUES
-(
-    MD5('TX-JV-PERKIRAAN-001'),
-    MD5('JV-PERKIRAAN-TEST-001'),
-    'JV-PERKIRAAN-001',
-    'GENERAL_JOURNAL',
-    'JVGENL',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'IN',
-    'test_journal_perkiraan',
-    9901,
-    1,
-    '',
-    'JURNAL UMUM TEST - DEBET',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    1,
-    84627273,
-    84627273,
-    0,
-    84627273,
-    84627273,
-    0,
-    84627273,
-    'NON',
-    'NO',
-    'IDR',
-    1,
-    '722103',
-    '',
-    'D',
-    'TEST'
-);
-
-
-/* ------------------------------------------------------------
-   LINE 2 - KREDIT
-   ------------------------------------------------------------ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid,
-    source_uniqueid,
-    docno,
-    doctype,
-    journal_type,
-    line_no,
-    docdate,
-    idbranch,
-    cabang,
-    type_in_out,
-    source_table,
-    source_id,
-    source_line_id,
-    idbarang,
-    namabarang,
-    idunit,
-    idarea,
-    warehouse,
-    bin,
-    batch,
-    lotno,
-    qty,
-    harga,
-    bruto,
-    discount,
-    nilai,
-    dpp,
-    pajak,
-    total,
-    idtax,
-    isinclusive,
-    currcode,
-    kurs,
-    idcoa,
-    counter_idcoa,
-    debet_kredit,
-    createdby
-)
-VALUES
-(
-    MD5('TX-JV-PERKIRAAN-002'),
-    MD5('JV-PERKIRAAN-TEST-001'),
-    'JV-PERKIRAAN-001',
-    'GENERAL_JOURNAL',
-    'JVGENL',
-    2,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'IN',
-    'test_journal_perkiraan',
-    9901,
-    2,
-    '',
-    'JURNAL UMUM TEST - KREDIT',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    1,
-    84627273,
-    84627273,
-    0,
-    84627273,
-    84627273,
-    0,
-    84627273,
-    'NON',
-    'NO',
-    'IDR',
-    1,
-    '213201',
-    '',
-    'K',
-    'TEST'
-);
-
-
-/* ------------------------------------------------------------
-   VALIDASI JVGENL DOCUMENT + DETAIL
-   ------------------------------------------------------------ */
-
-SELECT
-    td.docno,
-    td.line_no,
-    td.idcoa,
-    td.counter_idcoa,
-    td.debet_kredit,
-    td.nilai,
-    jh.id AS jurnal_id,
-    jh.status AS jurnal_status,
-    jh.total_debet,
-    jh.total_kredit,
-    jh.balance,
-    jd.seq AS jurnal_dt_seq,
-    jd.idcoa AS jurnal_dt_coa,
-    jd.debet,
-    jd.kredit,
-    jd.ref_docno,
-    jd.ref_doctype
-FROM sc_trx.transaction_dt td
-LEFT JOIN sc_trx.jurnal_hd jh
-       ON BTRIM(jh.docno::TEXT) = BTRIM(td.docno::TEXT)
-      AND BTRIM(jh.doctype::TEXT) = BTRIM(td.doctype::TEXT)
-      AND BTRIM(jh.journal_type::TEXT) = BTRIM(td.journal_type::TEXT)
-      AND BTRIM(jh.idbranch::TEXT) = BTRIM(td.idbranch::TEXT)
-      AND jh.uniqueid NOT LIKE 'JRNL-REV-%'
-      AND jh.status = 'POSTED'
-LEFT JOIN sc_trx.jurnal_dt jd
-       ON jd.jurnal_id = jh.id
-      AND jd.source_uniqueid = td.uniqueid
-WHERE td.docno = 'JV-PERKIRAAN-001'
-  AND BTRIM(td.journal_type::TEXT) = 'JVGENL'
-ORDER BY td.line_no;
-
-
-/* ------------------------------------------------------------
-   EXPECTED:
-       2 transaction_dt
-       1 jurnal_hd POSTED
-       2 jurnal_dt
-       jurnal_dt.ref_docno = JV-PERKIRAAN-001
-       total_debet = total_kredit
-       balance = 0
-   ------------------------------------------------------------ */
-
-
-/* ============================================================
-   SAMPLE NOTA DEBIT / KREDIT SUPPLIER & CUSTOMER
-   ============================================================
-
-   Masing-masing menguji mapping manual:
-
-       NDKAPD  = Nota Debit Supplier
-       NDKAPK  = Nota Kredit Supplier
-       NDKARD  = Nota Debit Customer
-       NDKARK  = Nota Kredit Customer
-
-   Nilai test:
-       DPP     = 100.000
-       PPN 11% = 11.000
-       TOTAL   = 111.000
-
-   Supplier menggunakan JTS1.
-   Customer menggunakan JTS2.
-
-   ACCOUNT / COUNTER_ACCOUNT menggunakan COA master:
-       Supplier:
-          ACCOUNT         = currency.IDR.phutang
-          COUNTER_ACCOUNT = mbarang.BRG001.ppersediaan
-
-       Customer:
-          ACCOUNT         = currency.IDR.ppiutang
-          COUNTER_ACCOUNT = currency.IDR.ppendapatan
-   ============================================================ */
-
-
-/* ------------------------------------------------------------
-   PREFLIGHT COA MANUAL NDK
-   ------------------------------------------------------------
-   COA manual diambil mengikuti resolver accounting yang sama
-   dengan TAHAP 16, sehingga fallback master/config tetap konsisten.
-
-   Supplier:
-       ACCOUNT         = AP / HUTANG
-       COUNTER_ACCOUNT = INVENTORY
-
-   Customer:
-       ACCOUNT         = AR / PIUTANG
-       COUNTER_ACCOUNT = SALES / INCOME
-   ------------------------------------------------------------ */
-
-DO $$
-DECLARE
-    v_supplier_account TEXT;
-    v_supplier_counter TEXT;
-    v_customer_account TEXT;
-    v_customer_counter TEXT;
-BEGIN
-    /* Supplier ACCOUNT */
-    v_supplier_account :=
-        sc_trx.fn_resolve_accounting_coa(
-            'AP',
-            NULL::CHAR(20),
-            'IDR'::CHAR(3),
-            NULL::VARCHAR(20)
-        );
-
-    IF NULLIF(BTRIM(COALESCE(v_supplier_account,'')), '') IS NULL THEN
-        SELECT jd.idcoa::TEXT
-          INTO v_supplier_account
-          FROM sc_trx.jurnal_dt jd
-         WHERE jd.source_uniqueid = MD5('TX-GRNREC-001')
-           AND UPPER(TRIM(COALESCE(jd.account_role,''))) IN ('AP','HUTANG')
-           AND NULLIF(BTRIM(jd.idcoa::TEXT),'') IS NOT NULL
-         ORDER BY jd.id
-         LIMIT 1;
-    END IF;
-
-    /* Supplier COUNTER_ACCOUNT */
-    v_supplier_counter :=
-        sc_trx.fn_resolve_accounting_coa(
-            'INVENTORY',
-            'BRG001'::CHAR(20),
-            'IDR'::CHAR(3),
-            NULL::VARCHAR(20)
-        );
-
-    IF NULLIF(BTRIM(COALESCE(v_supplier_counter,'')), '') IS NULL THEN
-        SELECT t2.idcoa::TEXT
-          INTO v_supplier_counter
-          FROM sc_trx.transaction_dt t2
-         WHERE t2.uniqueid = MD5('TX-GRNREC-001')
-           AND NULLIF(BTRIM(t2.idcoa::TEXT),'') IS NOT NULL
-         LIMIT 1;
-    END IF;
-
-    IF NULLIF(BTRIM(COALESCE(v_supplier_counter,'')), '') IS NULL THEN
-        SELECT jd.idcoa::TEXT
-          INTO v_supplier_counter
-          FROM sc_trx.jurnal_dt jd
-         WHERE jd.source_uniqueid = MD5('TX-GRNREC-001')
-           AND UPPER(TRIM(COALESCE(jd.account_role,''))) IN ('INVENTORY','STOCK')
-           AND NULLIF(BTRIM(jd.idcoa::TEXT),'') IS NOT NULL
-         ORDER BY jd.id
-         LIMIT 1;
-    END IF;
-
-    /* Customer ACCOUNT */
-    v_customer_account :=
-        sc_trx.fn_resolve_accounting_coa(
-            'AR',
-            NULL::CHAR(20),
-            'IDR'::CHAR(3),
-            NULL::VARCHAR(20)
-        );
-
-    IF NULLIF(BTRIM(COALESCE(v_customer_account,'')), '') IS NULL THEN
-        SELECT jd.idcoa::TEXT
-          INTO v_customer_account
-          FROM sc_trx.jurnal_dt jd
-         WHERE jd.source_uniqueid = MD5('TX-SALESX-001')
-           AND UPPER(TRIM(COALESCE(jd.account_role,''))) IN ('AR','PIUTANG')
-           AND NULLIF(BTRIM(jd.idcoa::TEXT),'') IS NOT NULL
-         ORDER BY jd.id
-         LIMIT 1;
-    END IF;
-
-    /* Customer COUNTER_ACCOUNT */
-    v_customer_counter :=
-        sc_trx.fn_resolve_accounting_coa(
-            'SALES',
-            NULL::CHAR(20),
-            'IDR'::CHAR(3),
-            NULL::VARCHAR(20)
-        );
-
-    IF NULLIF(BTRIM(COALESCE(v_customer_counter,'')), '') IS NULL THEN
-        SELECT t2.idcoa::TEXT
-          INTO v_customer_counter
-          FROM sc_trx.transaction_dt t2
-         WHERE t2.uniqueid = MD5('TX-SALESX-001')
-           AND NULLIF(BTRIM(t2.idcoa::TEXT),'') IS NOT NULL
-         LIMIT 1;
-    END IF;
-
-    IF NULLIF(BTRIM(COALESCE(v_customer_counter,'')), '') IS NULL THEN
-        SELECT jd.idcoa::TEXT
-          INTO v_customer_counter
-          FROM sc_trx.jurnal_dt jd
-         WHERE jd.source_uniqueid = MD5('TX-SALESX-001')
-           AND UPPER(TRIM(COALESCE(jd.account_role,''))) IN ('SALES','INCOME')
-           AND NULLIF(BTRIM(jd.idcoa::TEXT),'') IS NOT NULL
-         ORDER BY jd.id
-         LIMIT 1;
-    END IF;
-
-    /* Pastikan keempat COA benar-benar ada di master COA */
-    IF NULLIF(BTRIM(COALESCE(v_supplier_account,'')), '') IS NULL
-       OR NOT EXISTS (
-            SELECT 1 FROM sc_mst.coa c
-             WHERE BTRIM(c.idcoa::TEXT)=BTRIM(v_supplier_account)
-       )
-    THEN
-        RAISE EXCEPTION 'TEST NDK GAGAL: COA ACCOUNT supplier tidak dapat di-resolve / tidak ada di sc_mst.coa: %', v_supplier_account;
-    END IF;
-
-    IF NULLIF(BTRIM(COALESCE(v_supplier_counter,'')), '') IS NULL
-       OR NOT EXISTS (
-            SELECT 1 FROM sc_mst.coa c
-             WHERE BTRIM(c.idcoa::TEXT)=BTRIM(v_supplier_counter)
-       )
-    THEN
-        RAISE EXCEPTION 'TEST NDK GAGAL: COA counter supplier tidak dapat di-resolve / tidak ada di sc_mst.coa: %', v_supplier_counter;
-    END IF;
-
-    IF NULLIF(BTRIM(COALESCE(v_customer_account,'')), '') IS NULL
-       OR NOT EXISTS (
-            SELECT 1 FROM sc_mst.coa c
-             WHERE BTRIM(c.idcoa::TEXT)=BTRIM(v_customer_account)
-       )
-    THEN
-        RAISE EXCEPTION 'TEST NDK GAGAL: COA ACCOUNT customer tidak dapat di-resolve / tidak ada di sc_mst.coa: %', v_customer_account;
-    END IF;
-
-    IF NULLIF(BTRIM(COALESCE(v_customer_counter,'')), '') IS NULL
-       OR NOT EXISTS (
-            SELECT 1 FROM sc_mst.coa c
-             WHERE BTRIM(c.idcoa::TEXT)=BTRIM(v_customer_counter)
-       )
-    THEN
-        RAISE EXCEPTION 'TEST NDK GAGAL: COA counter customer tidak dapat di-resolve / tidak ada di sc_mst.coa: %', v_customer_counter;
-    END IF;
-
-    RAISE NOTICE
-        'PREFLIGHT NDK OK : supplier AP=% / counter=% ; customer AR=% / counter=%',
-        v_supplier_account,
-        v_supplier_counter,
-        v_customer_account,
-        v_customer_counter;
-END $$;
-
-
-/* ------------------------------------------------------------
-   NDKAPD - NOTA DEBIT SUPPLIER
-   ------------------------------------------------------------ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid, source_uniqueid, docno, doctype, journal_type, line_no,
-    docdate, idbranch, cabang, type_in_out,
-    ref_docno, ref_doctype,
-    source_table, source_id, source_line_id,
-    kdsupplier, nsupplier,
-    idbarang, namabarang, idunit, idarea, warehouse, bin, batch, lotno,
-    qty, harga, bruto, discount, nilai, dpp, pajak, total,
-    idtax, isinclusive, currcode, kurs,
-    idcoa, counter_idcoa, debet_kredit,
-    createdby
-)
-VALUES
-(
-    MD5('TX-NDKAPD-001'),
-    MD5('NDKAPD-TEST-001-DTL-001'),
-    'NDKAPD-TEST-001',
-    'NOTA_DEBIT_SUP',
-    'NDKAPD',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'IN',
-    'GRN-TEST-001',
-    'GRN',
-    'test_ndk_supplier',
-    9911,
-    1,
-    'SUP001',
-    'SUPPLIER TEST',
-    'BRG001',
-    'BARANG TEST',
-    'KG', 'AREA01', 'WH01', 'A01', 'BATCHNDK001', 'LOT-NDK-001',
-    10, 10000, 100000, 0, 100000, 100000, 11000, 111000,
-    'PPN11', 'NO', 'IDR', 1,
-    COALESCE(
-        sc_trx.fn_resolve_accounting_coa('AP', NULL::CHAR(20), 'IDR'::CHAR(3), NULL::VARCHAR(20)),
-        (SELECT jd.idcoa::TEXT
-           FROM sc_trx.jurnal_dt jd
-          WHERE jd.source_uniqueid = MD5('TX-GRNREC-001')
-            AND UPPER(TRIM(COALESCE(jd.account_role,''))) IN ('AP','HUTANG')
-            AND NULLIF(BTRIM(jd.idcoa::TEXT),'') IS NOT NULL
-          ORDER BY jd.id
-          LIMIT 1)
-    ),
-    COALESCE(
-        sc_trx.fn_resolve_accounting_coa('INVENTORY', 'BRG001'::CHAR(20), 'IDR'::CHAR(3), NULL::VARCHAR(20)),
-        (SELECT t2.idcoa::TEXT
-           FROM sc_trx.transaction_dt t2
-          WHERE t2.uniqueid = MD5('TX-GRNREC-001')
-            AND NULLIF(BTRIM(t2.idcoa::TEXT),'') IS NOT NULL
-          LIMIT 1),
-        (SELECT jd.idcoa::TEXT
-           FROM sc_trx.jurnal_dt jd
-          WHERE jd.source_uniqueid = MD5('TX-GRNREC-001')
-            AND UPPER(TRIM(COALESCE(jd.account_role,''))) IN ('INVENTORY','STOCK')
-            AND NULLIF(BTRIM(jd.idcoa::TEXT),'') IS NOT NULL
-          ORDER BY jd.id
-          LIMIT 1)
-    ),
-    'D',
-    'TEST'
-);
-
-
-/* ------------------------------------------------------------
-   NDKAPK - NOTA KREDIT SUPPLIER
-   ------------------------------------------------------------ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid, source_uniqueid, docno, doctype, journal_type, line_no,
-    docdate, idbranch, cabang, type_in_out,
-    ref_docno, ref_doctype,
-    source_table, source_id, source_line_id,
-    kdsupplier, nsupplier,
-    idbarang, namabarang, idunit, idarea, warehouse, bin, batch, lotno,
-    qty, harga, bruto, discount, nilai, dpp, pajak, total,
-    idtax, isinclusive, currcode, kurs,
-    idcoa, counter_idcoa, debet_kredit,
-    createdby
-)
-VALUES
-(
-    MD5('TX-NDKAPK-001'),
-    MD5('NDKAPK-TEST-001-DTL-001'),
-    'NDKAPK-TEST-001',
-    'NOTA_KREDIT_SUP',
-    'NDKAPK',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS1',
-    'OUT',
-    'GRN-TEST-001',
-    'GRN',
-    'test_ndk_supplier',
-    9912,
-    1,
-    'SUP001',
-    'SUPPLIER TEST',
-    'BRG001',
-    'BARANG TEST',
-    'KG', 'AREA01', 'WH01', 'A01', 'BATCHNDK002', 'LOT-NDK-002',
-    10, 10000, 100000, 0, 100000, 100000, 11000, 111000,
-    'PPN11', 'NO', 'IDR', 1,
-    COALESCE(
-        sc_trx.fn_resolve_accounting_coa('AP', NULL::CHAR(20), 'IDR'::CHAR(3), NULL::VARCHAR(20)),
-        (SELECT jd.idcoa::TEXT
-           FROM sc_trx.jurnal_dt jd
-          WHERE jd.source_uniqueid = MD5('TX-GRNREC-001')
-            AND UPPER(TRIM(COALESCE(jd.account_role,''))) IN ('AP','HUTANG')
-            AND NULLIF(BTRIM(jd.idcoa::TEXT),'') IS NOT NULL
-          ORDER BY jd.id
-          LIMIT 1)
-    ),
-    COALESCE(
-        sc_trx.fn_resolve_accounting_coa('INVENTORY', 'BRG001'::CHAR(20), 'IDR'::CHAR(3), NULL::VARCHAR(20)),
-        (SELECT t2.idcoa::TEXT
-           FROM sc_trx.transaction_dt t2
-          WHERE t2.uniqueid = MD5('TX-GRNREC-001')
-            AND NULLIF(BTRIM(t2.idcoa::TEXT),'') IS NOT NULL
-          LIMIT 1),
-        (SELECT jd.idcoa::TEXT
-           FROM sc_trx.jurnal_dt jd
-          WHERE jd.source_uniqueid = MD5('TX-GRNREC-001')
-            AND UPPER(TRIM(COALESCE(jd.account_role,''))) IN ('INVENTORY','STOCK')
-            AND NULLIF(BTRIM(jd.idcoa::TEXT),'') IS NOT NULL
-          ORDER BY jd.id
-          LIMIT 1)
-    ),
-    'K',
-    'TEST'
-);
-
-
-/* ------------------------------------------------------------
-   NDKARD - NOTA DEBIT CUSTOMER
-   ------------------------------------------------------------ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid, source_uniqueid, docno, doctype, journal_type, line_no,
-    docdate, idbranch, cabang, type_in_out,
-    ref_docno, ref_doctype,
-    source_table, source_id, source_line_id,
-    kdcustomer, ncustomer,
-    idbarang, namabarang, idunit, idarea, warehouse, bin, batch, lotno,
-    qty, harga, bruto, discount, nilai, dpp, pajak, total,
-    idtax, isinclusive, currcode, kurs,
-    idcoa, counter_idcoa, debet_kredit,
-    createdby
-)
-VALUES
-(
-    MD5('TX-NDKARD-001'),
-    MD5('NDKARD-TEST-001-DTL-001'),
-    'NDKARD-TEST-001',
-    'NOTA_DEBIT_CUS',
-    'NDKARD',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS2',
-    'IN',
-    'SALES-TEST-001',
-    'SALES',
-    'test_ndk_customer',
-    9921,
-    1,
-    'CUS001',
-    'CUSTOMER TEST',
-    'BRG001',
-    'BARANG TEST',
-    'KG', 'AREA01', 'WH01', 'A01', 'BATCHNDK003', 'LOT-NDK-003',
-    10, 10000, 100000, 0, 100000, 100000, 11000, 111000,
-    'PPN11', 'NO', 'IDR', 1,
-    COALESCE(
-        sc_trx.fn_resolve_accounting_coa('AR', NULL::CHAR(20), 'IDR'::CHAR(3), NULL::VARCHAR(20)),
-        (SELECT jd.idcoa::TEXT
-           FROM sc_trx.jurnal_dt jd
-          WHERE jd.source_uniqueid = MD5('TX-SALESX-001')
-            AND UPPER(TRIM(COALESCE(jd.account_role,''))) IN ('AR','PIUTANG')
-            AND NULLIF(BTRIM(jd.idcoa::TEXT),'') IS NOT NULL
-          ORDER BY jd.id
-          LIMIT 1)
-    ),
-    COALESCE(
-        sc_trx.fn_resolve_accounting_coa('SALES', NULL::CHAR(20), 'IDR'::CHAR(3), NULL::VARCHAR(20)),
-        (SELECT t2.idcoa::TEXT
-           FROM sc_trx.transaction_dt t2
-          WHERE t2.uniqueid = MD5('TX-SALESX-001')
-            AND NULLIF(BTRIM(t2.idcoa::TEXT),'') IS NOT NULL
-          LIMIT 1),
-        (SELECT jd.idcoa::TEXT
-           FROM sc_trx.jurnal_dt jd
-          WHERE jd.source_uniqueid = MD5('TX-SALESX-001')
-            AND UPPER(TRIM(COALESCE(jd.account_role,''))) IN ('SALES','INCOME')
-            AND NULLIF(BTRIM(jd.idcoa::TEXT),'') IS NOT NULL
-          ORDER BY jd.id
-          LIMIT 1)
-    ),
-    'D',
-    'TEST'
-);
-
-
-/* ------------------------------------------------------------
-   NDKARK - NOTA KREDIT CUSTOMER
-   ------------------------------------------------------------ */
-
-INSERT INTO sc_trx.transaction_dt
-(
-    uniqueid, source_uniqueid, docno, doctype, journal_type, line_no,
-    docdate, idbranch, cabang, type_in_out,
-    ref_docno, ref_doctype,
-    source_table, source_id, source_line_id,
-    kdcustomer, ncustomer,
-    idbarang, namabarang, idunit, idarea, warehouse, bin, batch, lotno,
-    qty, harga, bruto, discount, nilai, dpp, pajak, total,
-    idtax, isinclusive, currcode, kurs,
-    idcoa, counter_idcoa, debet_kredit,
-    createdby
-)
-VALUES
-(
-    MD5('TX-NDKARK-001'),
-    MD5('NDKARK-TEST-001-DTL-001'),
-    'NDKARK-TEST-001',
-    'NOTA_KREDIT_CUS',
-    'NDKARK',
-    1,
-    CURRENT_DATE,
-    'JTS',
-    'JTS2',
-    'OUT',
-    'SALES-TEST-001',
-    'SALES',
-    'test_ndk_customer',
-    9922,
-    1,
-    'CUS001',
-    'CUSTOMER TEST',
-    'BRG001',
-    'BARANG TEST',
-    'KG', 'AREA01', 'WH01', 'A01', 'BATCHNDK004', 'LOT-NDK-004',
-    10, 10000, 100000, 0, 100000, 100000, 11000, 111000,
-    'PPN11', 'NO', 'IDR', 1,
-    COALESCE(
-        sc_trx.fn_resolve_accounting_coa('AR', NULL::CHAR(20), 'IDR'::CHAR(3), NULL::VARCHAR(20)),
-        (SELECT jd.idcoa::TEXT
-           FROM sc_trx.jurnal_dt jd
-          WHERE jd.source_uniqueid = MD5('TX-SALESX-001')
-            AND UPPER(TRIM(COALESCE(jd.account_role,''))) IN ('AR','PIUTANG')
-            AND NULLIF(BTRIM(jd.idcoa::TEXT),'') IS NOT NULL
-          ORDER BY jd.id
-          LIMIT 1)
-    ),
-    COALESCE(
-        sc_trx.fn_resolve_accounting_coa('SALES', NULL::CHAR(20), 'IDR'::CHAR(3), NULL::VARCHAR(20)),
-        (SELECT t2.idcoa::TEXT
-           FROM sc_trx.transaction_dt t2
-          WHERE t2.uniqueid = MD5('TX-SALESX-001')
-            AND NULLIF(BTRIM(t2.idcoa::TEXT),'') IS NOT NULL
-          LIMIT 1),
-        (SELECT jd.idcoa::TEXT
-           FROM sc_trx.jurnal_dt jd
-          WHERE jd.source_uniqueid = MD5('TX-SALESX-001')
-            AND UPPER(TRIM(COALESCE(jd.account_role,''))) IN ('SALES','INCOME')
-            AND NULLIF(BTRIM(jd.idcoa::TEXT),'') IS NOT NULL
-          ORDER BY jd.id
-          LIMIT 1)
-    ),
-    'K',
-    'TEST'
-);
-
-
-/* ============================================================
-   VALIDASI SAMPLE MANUAL ACCOUNTING / NDK
-   ============================================================ */
-
-SELECT
-    td.docno,
-    td.journal_type,
-    td.idbranch,
-    td.cabang,
-    td.idcoa AS perkiraan_utama,
-    td.counter_idcoa AS perkiraan_lawan,
-    td.debet_kredit,
-    td.idtax,
-    td.dpp,
-    td.pajak,
-    td.total,
-    jh.uniqueid AS jurnal_uniqueid,
-    jh.total_debet,
-    jh.total_kredit,
-    jh.balance,
-    jh.status
-FROM sc_trx.transaction_dt td
-LEFT JOIN sc_trx.jurnal_hd jh
-       ON jh.source_uniqueid = td.uniqueid
-WHERE td.uniqueid IN
-(
-    MD5('TX-JV-PERKIRAAN-001'),
-    MD5('TX-NDKAPD-001'),
-    MD5('TX-NDKAPK-001'),
-    MD5('TX-NDKARD-001'),
-    MD5('TX-NDKARK-001')
-)
-ORDER BY td.journal_type, td.docno;
-
-
-/* ============================================================
-   DETAIL HASIL POSTING MANUAL
-
-   Memastikan hasil generator benar-benar membentuk:
-       - perkiraan utama
-       - perkiraan lawan
-       - pajak
-       - debet
-       - kredit
-   ============================================================ */
+ORDER BY jh.docno, jh.type_in_out;
+
+
+/* ============================================================================
+   VALIDASI 3: JURNAL_DT — CEK 1 BARIS PER TRANSACTION
+   ============================================================================
+   
+   Untuk transfer:
+   - Header OUT: 1 baris jurnal_dt (KREDIT Inventory)
+   - Header IN : 1 baris jurnal_dt (DEBIT Inventory)
+   ============================================================================ */
 
 SELECT
     jh.docno,
     jh.journal_type,
+    jh.type_in_out,
     jd.seq,
     jd.account_role,
     jd.value_source,
     jd.idcoa,
     jd.debet,
     jd.kredit,
-    jd.source_uniqueid,
-    jd.keterangan
+    jd.source_uniqueid
 FROM sc_trx.jurnal_hd jh
 JOIN sc_trx.jurnal_dt jd
   ON jd.jurnal_id = jh.id
-WHERE jh.source_uniqueid IN
+WHERE jh.docno IN
 (
-    MD5('TX-JV-PERKIRAAN-001'),
-    MD5('TX-NDKAPD-001'),
-    MD5('TX-NDKAPK-001'),
-    MD5('TX-NDKARD-001'),
-    MD5('TX-NDKARK-001')
+    'TEST-TRFWHS-001',
+    'TEST-BINMOV-001',
+    'TEST-BRNTRF-001'
 )
-ORDER BY jh.docno, jd.seq, jd.id;
+  AND jh.uniqueid NOT LIKE 'JRNL-REV-%'
+ORDER BY jh.docno, jh.type_in_out, jd.seq;
 
 
-/* ============================================================
-   VALIDASI HASIL INSERT
-   ============================================================ */
+/* ============================================================================
+   VALIDASI 4: AVG COST — NILAI PERSEDIAAN SETELAH TRANSFER
+   ============================================================================
+   
+   Total nilai perusahaan TIDAK BOLEH BERUBAH.
+   ============================================================================ */
 
-SELECT uniqueid, source_uniqueid, docno, doctype, journal_type, line_no, docdate, idbranch, cabang, type_in_out, ref_docno, ref_doctype, idbarang, namabarang, idunit, idarea, warehouse, bin, batch, lotno, qty, harga, bruto, discount, nilai, dpp, pajak, total, idtax, isinclusive, currcode, kurs, debet, kredit, createdby, createddate
-FROM sc_trx.transaction_dt
-WHERE createdby = 'TEST'
-  AND docno LIKE '%-TEST-%'
-ORDER BY id;
-
-
-/* ============================================================
-   VALIDASI JOURNAL TYPE YANG SUDAH DITES
-   ============================================================ */
-
-SELECT journal_type, COUNT(*) AS jumlah_detail, SUM(CASE WHEN type_in_out = 'IN' THEN qty ELSE 0 END) AS qty_in, SUM(CASE WHEN type_in_out = 'OUT' THEN qty ELSE 0 END) AS qty_out, SUM(nilai) AS total_nilai
-FROM sc_trx.transaction_dt
-WHERE createdby = 'TEST'
-  AND docno LIKE '%-TEST-%'
-GROUP BY journal_type
-ORDER BY journal_type;
+SELECT
+    'SESUDAH TRANSFER' AS fase,
+    SUM(ac.qty) AS total_qty,
+    SUM(ac.total_value) AS total_value,
+    CASE
+        WHEN SUM(ac.qty) > 0 
+        THEN ROUND(SUM(ac.total_value) / SUM(ac.qty), 2)
+        ELSE 0
+    END AS avg_cost_global
+FROM sc_trx.stkblc_avgcost ac
+WHERE ac.idbarang = 'BRG001';
 
 
-/* ============================================================
-   VALIDASI STOCK IDENTITY
+/* ============================================================================
+   VALIDASI 5: AVG COST PER LOKASI
+   ============================================================================
+   
+   Cek distribusi persediaan per lokasi setelah transfer.
+   ============================================================================ */
 
-   Kombinasi:
-       idbranch
-       warehouse
-       bin
-       idbarang
-       idunit
-       batch
-       lotno
-
-   Barang + batch + lot yang sama tetap boleh mempunyai
-   banyak transaction uniqueid.
-   ============================================================ */
-
-SELECT uniqueid, journal_type, type_in_out, idbranch, warehouse, bin, idbarang, idunit, batch, lotno, qty, nilai
-FROM sc_trx.transaction_dt
-WHERE createdby = 'TEST'
-  AND docno LIKE '%-TEST-%'
-ORDER BY idbarang, batch, lotno, docdate, id;
+SELECT
+    ac.idbarang,
+    ac.idlocation,
+    ac.batch,
+    ac.qty,
+    ac.total_value,
+    ac.avg_cost
+FROM sc_trx.stkblc_avgcost ac
+WHERE ac.idbarang = 'BRG001'
+ORDER BY ac.idlocation, ac.batch;
 
 
-/* ============================================================
-   JIKA SEMUA TEST HANYA SIMULASI:
-   gunakan ROLLBACK.
+/* ============================================================================
+   VALIDASI 6: ASSERTION — TOTAL NILAI TIDAK BERUBAH
+   ============================================================================
+   
+   Bandingkan total_value sebelum dan sesudah transfer.
+   Karena kita tidak simpan snapshot sebelum, kita hitung ulang
+   dari setup GRNREC.
+   
+   Total setup:
+   - GRNREC WH01: 100 kg × 10.000 = 1.000.000
+   - GRNREC WH02: 50 kg × 12.000 = 600.000
+   Total: 1.600.000
+   
+   Setelah transfer, total harus TETAP 1.600.000.
+   ============================================================================ */
 
-   Jika ingin menyimpan test:
-   ganti ROLLBACK menjadi COMMIT.
-   ============================================================ */
---COMMIT
-
-/* ============================================================
-   FINAL ASSERTION TAHAP 28
-   ============================================================ */
-
-/* JVGENL harus menjadi satu header POSTED dengan dua detail. */
 DO $$
 DECLARE
-    v_hd_count INTEGER;
-    v_dt_count INTEGER;
-    v_balance NUMERIC;
+    v_total_value NUMERIC;
+    v_expected_total NUMERIC := 1600000;
+    v_selisih NUMERIC;
 BEGIN
+    SELECT COALESCE(SUM(ac.total_value), 0)
+    INTO v_total_value
+    FROM sc_trx.stkblc_avgcost ac
+    WHERE ac.idbarang = 'BRG001';
 
-    SELECT COUNT(*)
-    INTO v_hd_count
-    FROM sc_trx.jurnal_hd
-    WHERE BTRIM(docno::TEXT) = 'JV-PERKIRAAN-001'
-      AND BTRIM(journal_type::TEXT) = 'JVGENL'
-      AND BTRIM(idbranch::TEXT) = 'JTS'
-      AND status = 'POSTED'
-      AND uniqueid NOT LIKE 'JRNL-REV-%';
+    v_selisih := ABS(v_total_value - v_expected_total);
 
-
-    SELECT COUNT(*), COALESCE(SUM(debet) - SUM(kredit), 0)
-    INTO v_dt_count, v_balance
-    FROM sc_trx.jurnal_dt jd
-    JOIN sc_trx.jurnal_hd jh
-      ON jh.id = jd.jurnal_id
-    WHERE BTRIM(jh.docno::TEXT) = 'JV-PERKIRAAN-001'
-      AND BTRIM(jh.journal_type::TEXT) = 'JVGENL'
-      AND BTRIM(jh.idbranch::TEXT) = 'JTS'
-      AND jh.status = 'POSTED'
-      AND jh.uniqueid NOT LIKE 'JRNL-REV-%';
-
-
-    IF v_hd_count <> 1 THEN
-        RAISE EXCEPTION
-            'TEST JVGENL GAGAL: expected 1 POSTED jurnal_hd, actual %',
-            v_hd_count;
+    IF v_selisih > 0.01 THEN
+        RAISE EXCEPTION 
+            '❌ TEST TRANSFER GAGAL: total nilai persediaan berubah! Expected=%, Actual=%, Selisih=%',
+            v_expected_total, v_total_value, v_selisih;
     END IF;
 
-
-    IF v_dt_count <> 2 THEN
-        RAISE EXCEPTION
-            'TEST JVGENL GAGAL: expected 2 jurnal_dt, actual %',
-            v_dt_count;
-    END IF;
-
-
-    IF ABS(v_balance) > 0.01 THEN
-        RAISE EXCEPTION
-            'TEST JVGENL GAGAL: detail tidak balance, balance=%',
-            v_balance;
-    END IF;
-
-
-    IF EXISTS
-    (
-        SELECT 1
-        FROM sc_trx.jurnal_dt jd
-        JOIN sc_trx.jurnal_hd jh
-          ON jh.id = jd.jurnal_id
-        WHERE BTRIM(jh.docno::TEXT) = 'JV-PERKIRAAN-001'
-          AND BTRIM(jh.journal_type::TEXT) = 'JVGENL'
-          AND jh.status = 'POSTED'
-          AND jh.uniqueid NOT LIKE 'JRNL-REV-%'
-          AND BTRIM(COALESCE(jd.ref_docno, '')) <> 'JV-PERKIRAAN-001'
-    )
-    THEN
-        RAISE EXCEPTION
-            'TEST JVGENL GAGAL: jurnal_dt.ref_docno tidak sama dengan docno.';
-    END IF;
-
-
-    RAISE NOTICE
-        'TEST JVGENL OK: 1 jurnal_hd, 2 jurnal_dt, balance=0, ref_docno benar.';
-
+    RAISE NOTICE 
+        '✅ TEST TRANSFER OK: total nilai persediaan TIDAK BERUBAH. Total=%',
+        v_total_value;
 END;
 $$;
 
 
-/* NDK harus mempunyai detail dan ref_docno = docno NDK. */
+/* ============================================================================
+   VALIDASI 7: ASSERTION — NILAI IN = NILAI OUT PER TRANSFER
+   ============================================================================ */
+
+DO $$
+DECLARE
+    r RECORD;
+    v_selisih NUMERIC;
+    v_source_list TEXT[] := ARRAY[
+        MD5('TEST-TRFWHS-001-SRC'),
+        MD5('TEST-BINMOV-001-SRC'),
+        MD5('TEST-BRNTRF-001-SRC')
+    ];
+BEGIN
+    FOR r IN
+        SELECT 
+            source_uniqueid,
+            docno,
+            SUM(CASE WHEN type_in_out = 'OUT' THEN totalcost ELSE 0 END) AS out_total,
+            SUM(CASE WHEN type_in_out = 'IN'  THEN totalcost ELSE 0 END) AS in_total
+        FROM sc_trx.stkblc
+        WHERE source_uniqueid = ANY(v_source_list)
+        GROUP BY source_uniqueid, docno
+    LOOP
+        v_selisih := ABS(COALESCE(r.out_total, 0) - COALESCE(r.in_total, 0));
+        
+        IF v_selisih > 0.01 THEN
+            RAISE EXCEPTION 
+                '❌ TEST TRANSFER GAGAL: nilai IN ≠ OUT untuk %. OUT=%, IN=%, Selisih=%',
+                r.docno, r.out_total, r.in_total, v_selisih;
+        END IF;
+        
+        RAISE NOTICE 
+            '✅ % OK: OUT=% = IN=%',
+            r.docno, r.out_total, r.in_total;
+    END LOOP;
+END;
+$$;
+
+
+/* ============================================================================
+   VALIDASI 8: ASSERTION — JURNAL_DT 1 BARIS PER TRANSACTION
+   ============================================================================ */
+
 DO $$
 DECLARE
     r RECORD;
 BEGIN
-
     FOR r IN
-        SELECT
+        SELECT 
             jh.docno,
+            jh.type_in_out,
             COUNT(jd.id) AS detail_count,
-            COUNT(*) FILTER (
-                WHERE BTRIM(COALESCE(jd.ref_docno,'')) <> BTRIM(jh.docno::TEXT)
-            ) AS wrong_ref
+            SUM(jd.debet) AS total_debet,
+            SUM(jd.kredit) AS total_kredit
         FROM sc_trx.jurnal_hd jh
-        LEFT JOIN sc_trx.jurnal_dt jd
-          ON jd.jurnal_id = jh.id
-        WHERE BTRIM(jh.docno::TEXT) IN
+        JOIN sc_trx.jurnal_dt jd ON jd.jurnal_id = jh.id
+        WHERE jh.docno IN
         (
-            'NDKAPD-TEST-001',
-            'NDKAPK-TEST-001',
-            'NDKARD-TEST-001',
-            'NDKARK-TEST-001'
+            'TEST-TRFWHS-001',
+            'TEST-BINMOV-001',
+            'TEST-BRNTRF-001'
         )
-          AND jh.status = 'POSTED'
           AND jh.uniqueid NOT LIKE 'JRNL-REV-%'
-        GROUP BY jh.id, jh.docno
-        ORDER BY jh.docno
+        GROUP BY jh.id, jh.docno, jh.type_in_out
     LOOP
-
-        IF r.detail_count = 0 THEN
-            RAISE EXCEPTION
-                'TEST NDK GAGAL: % tidak mempunyai jurnal_dt.',
-                r.docno;
+        IF r.detail_count <> 1 THEN
+            RAISE EXCEPTION 
+                '❌ TEST GAGAL: % (%) punya % baris jurnal_dt, harusnya 1.',
+                r.docno, r.type_in_out, r.detail_count;
         END IF;
-
-
-        IF r.wrong_ref > 0 THEN
-            RAISE EXCEPTION
-                'TEST NDK GAGAL: % mempunyai % jurnal_dt dengan ref_docno salah.',
-                r.docno,
-                r.wrong_ref;
+        
+        IF r.type_in_out = 'OUT' THEN
+            IF r.total_debet <> 0 OR r.total_kredit <= 0 THEN
+                RAISE EXCEPTION 
+                    '❌ TEST GAGAL: % OUT harusnya total_debet=0, total_kredit>0. Actual: D=%, K=%',
+                    r.docno, r.total_debet, r.total_kredit;
+            END IF;
+        ELSIF r.type_in_out = 'IN' THEN
+            IF r.total_kredit <> 0 OR r.total_debet <= 0 THEN
+                RAISE EXCEPTION 
+                    '❌ TEST GAGAL: % IN harusnya total_debet>0, total_kredit=0. Actual: D=%, K=%',
+                    r.docno, r.total_debet, r.total_kredit;
+            END IF;
         END IF;
-
+        
+        RAISE NOTICE 
+            '✅ % (%) OK: 1 baris jurnal_dt, D=%, K=%',
+            r.docno, r.type_in_out, r.total_debet, r.total_kredit;
     END LOOP;
-
-
-    RAISE NOTICE
-        'TEST NDK OK: detail jurnal dan ref_docno seluruh NDK benar.';
-
 END;
 $$;
 
 
-/* ============================================================
-   ASSERTION NDK DEBIT / CREDIT
-   ============================================================
-   Ekspektasi manual accounting:
-       NDKAPD = ACCOUNT AP D
-       NDKAPK = ACCOUNT AP K
-       NDKARD = ACCOUNT AR D
-       NDKARK = ACCOUNT AR K
+/* ============================================================================
+   VALIDASI 9: ASSERTION — TRANSACTION_HD HEADER COUNT
+   ============================================================================ */
 
-   COUNTER_ACCOUNT selalu kebalikan dari ACCOUNT.
-   ============================================================ */
+SELECT
+    th.docno,
+    th.journal_type,
+    th.type_in_out,
+    th.idbranch,
+    th.cabang,
+    th.total_qty,
+    th.total_qty_in,
+    th.total_qty_out,
+    th.total_nilai,
+    th.total_debet,
+    th.total_kredit,
+    th.balance
+FROM sc_trx.transaction_hd th
+WHERE th.docno IN
+(
+    'TEST-TRFWHS-001',
+    'TEST-BINMOV-001',
+    'TEST-BRNTRF-001'
+)
+ORDER BY th.docno, th.type_in_out;
+
+
+/* ============================================================================
+   VALIDASI 10: RINGKASAN — SEMUA TRANSFER
+   ============================================================================ */
 
 DO $$
 DECLARE
-    r RECORD;
-    v_ndk_count INTEGER := 0;
+    v_count_transfer INTEGER;
 BEGIN
-    FOR r IN
-        SELECT
-            td.docno,
-            td.journal_type,
-            td.debet_kredit,
-            td.idcoa AS source_coa,
-            td.counter_idcoa AS counter_coa,
-            SUM(COALESCE(jd.debet,0)) FILTER (
-                WHERE BTRIM(jd.idcoa::TEXT) = BTRIM(td.idcoa::TEXT)
-            ) AS source_debet,
-            SUM(COALESCE(jd.kredit,0)) FILTER (
-                WHERE BTRIM(jd.idcoa::TEXT) = BTRIM(td.idcoa::TEXT)
-            ) AS source_kredit,
-            SUM(COALESCE(jd.debet,0)) FILTER (
-                WHERE BTRIM(jd.idcoa::TEXT) = BTRIM(td.counter_idcoa::TEXT)
-            ) AS counter_debet,
-            SUM(COALESCE(jd.kredit,0)) FILTER (
-                WHERE BTRIM(jd.idcoa::TEXT) = BTRIM(td.counter_idcoa::TEXT)
-            ) AS counter_kredit
-        FROM sc_trx.transaction_dt td
-        JOIN sc_trx.jurnal_hd jh
-          ON jh.source_uniqueid = td.uniqueid
-         AND jh.uniqueid NOT LIKE 'JRNL-REV-%'
-         AND jh.status = 'POSTED'
-        JOIN sc_trx.jurnal_dt jd
-          ON jd.jurnal_id = jh.id
-        WHERE td.journal_type IN ('NDKAPD','NDKAPK','NDKARD','NDKARK')
-        GROUP BY
-            td.docno,
-            td.journal_type,
-            td.debet_kredit,
-            td.idcoa,
-            td.counter_idcoa
-        ORDER BY td.docno
-    LOOP
+    SELECT COUNT(DISTINCT docno)
+    INTO v_count_transfer
+    FROM sc_trx.transaction_dt
+    WHERE docno IN
+    (
+        'TEST-TRFWHS-001',
+        'TEST-BINMOV-001',
+        'TEST-BRNTRF-001'
+    );
 
-        IF (
-            r.journal_type IN ('NDKAPD','NDKARD')
-            AND BTRIM(COALESCE(r.debet_kredit,'')) <> 'D'
-        )
-        OR (
-            r.journal_type IN ('NDKAPK','NDKARK')
-            AND BTRIM(COALESCE(r.debet_kredit,'')) <> 'K'
-        )
-        THEN
-            RAISE EXCEPTION
-                'TEST NDK GAGAL: arah debet_kredit salah untuk % = %',
-                r.docno,
-                r.debet_kredit;
-        END IF;
-
-        IF BTRIM(COALESCE(r.debet_kredit,'')) = 'D' THEN
-            IF COALESCE(r.source_debet,0) <= 0
-               OR COALESCE(r.source_kredit,0) <> 0
-               OR COALESCE(r.counter_kredit,0) <= 0
-               OR COALESCE(r.counter_debet,0) <> 0
-            THEN
-                RAISE EXCEPTION
-                    'TEST NDK GAGAL: D/K jurnal tidak sesuai pada %',
-                    r.docno;
-            END IF;
-        ELSE
-            IF COALESCE(r.source_kredit,0) <= 0
-               OR COALESCE(r.source_debet,0) <> 0
-               OR COALESCE(r.counter_debet,0) <= 0
-               OR COALESCE(r.counter_kredit,0) <> 0
-            THEN
-                RAISE EXCEPTION
-                    'TEST NDK GAGAL: D/K jurnal tidak sesuai pada %',
-                    r.docno;
-            END IF;
-        END IF;
-
-        v_ndk_count := v_ndk_count + 1;
-    END LOOP;
-
-    IF v_ndk_count <> 4 THEN
-        RAISE EXCEPTION
-            'TEST NDK GAGAL: expected 4 POSTED journal NDK, actual %',
-            v_ndk_count;
-    END IF;
-
-    RAISE NOTICE
-        'TEST NDK OK: 4 journal NDK, arah ACCOUNT / COUNTER_ACCOUNT sesuai D/K.';
+    RAISE NOTICE '============================================================';
+    RAISE NOTICE 'TEST DATA TRANSFER SELESAI';
+    RAISE NOTICE '============================================================';
+    RAISE NOTICE 'Total dokumen transfer : %', v_count_transfer;
+    RAISE NOTICE 'Detail per dokumen     : 2 baris (OUT + IN)';
+    RAISE NOTICE 'Total transaction_dt   : 6 baris';
+    RAISE NOTICE 'Total jurnal_hd        : 6 header';
+    RAISE NOTICE 'Total jurnal_dt        : 6 baris (1 per transaction)';
+    RAISE NOTICE '';
+    RAISE NOTICE 'EXPECTED RESULTS:';
+    RAISE NOTICE '  - Total nilai persediaan TIDAK BERUBAH';
+    RAISE NOTICE '  - Nilai IN transfer = Nilai OUT transfer';
+    RAISE NOTICE '  - 1 baris jurnal_dt per transaction';
+    RAISE NOTICE '  - Balance OUT + IN = 0';
+    RAISE NOTICE '============================================================';
 END;
 $$;
 
 
-/* ============================================================
-   CATATAN TEST DELETE
-   ------------------------------------------------------------
-   Test DELETE / CANCELLED dilakukan manual setelah data test
-   terlihat di database. Tidak ada SAVEPOINT / ROLLBACK test
-   cancellation di dalam script ini.
+/* ============================================================================
+   AKHIR TEST DATA
+
+   ============================================================
+   CARA PAKAI:
+
+   1. UNTUK SIMULASI (tidak menyimpan):
+      - Biarkan COMMIT di bawah sebagai komentar
+      - Jalankan: ROLLBACK;
+      - Data akan dibatalkan
+
+   2. UNTUK MENYIMPAN TEST DATA:
+      - Ubah ROLLBACK menjadi COMMIT
+      - Data akan tersimpan permanen
+
+   PRASYARAT:
+   - TAHAP 01-19 sudah dijalankan
+   - Master data: BRG001, currency IDR, journal_type siap
+   - COA persediaan BRG001 sudah terdaftar di mbarang
+
+   YANG DIUJI:
+   1. TRFWHS - Transfer antar gudang (WH01 → WH03, JTS1)
+   2. BINMOV - Pindah bin (WH02 A01 → A02, JTS1)
+   3. BRNTRF - Transfer antar cabang (JTS1 → JTS2)
+
+   SETIAP TEST DIVERIFIKASI:
+   - stkblc: nilai IN = nilai OUT
+   - jurnal_hd: OUT → K, IN → D (balance per header ≠ 0)
+   - jurnal_dt: 1 baris per transaction_dt
+   - Total nilai perusahaan tidak berubah
    ============================================================ */
 
-COMMIT;
+-- ROLLBACK;  -- Aktifkan untuk simulasi (tidak menyimpan)
+COMMIT;       -- Aktifkan untuk menyimpan test data
 
-/* ============================================================
+/* ============================================================================
    SELESAI
-   ============================================================ */
+   ============================================================================ */

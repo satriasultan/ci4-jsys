@@ -1,5 +1,7 @@
+<!-- v_add_transfer_location -->
+
 <style>
-    
+
     .section-block {
         background-color: #e8e8e8;
         border-left: 4px solid #007bff;
@@ -252,7 +254,7 @@
                                             <input type="hidden" name="docno" class="form-control col-sm-12" id="docno" maxlength="20"     value="<?= isset($dtldata['docno']) ? esc(trim($dtldata['docno'])) : '' ?>" style="text-transform: uppercase;" readonly>
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label for="docdate">Tanggal</label>
+                                                    <label for="docdate">Tanggal Transfer</label>
                                                     <input type="text"
                                                     name="docdate"
                                                     id="docdate"
@@ -265,31 +267,31 @@
                                                 <select name="idlocation_from" id="idlocation_from" class="form-control" required></select>
                                             </div>
                                             <div class="col-md-6">
-                                                <label for="docref">NO SPKT</label>
+                                                <label for="docref">NO Referensi/SPKB</label>
                                                 <input name="docref" id="docref" class="form-control">
                                             </div>
                                     </div>
                                 </div>
                                 <div class="col-md-6  border border-dark" >
                                     <div class="row">
-                                        <div class="col-md-12">
+                                       <!-- <div class="col-md-12">
                                             <div class="form-group">
                                                 <label for="cabang_sent">Cabang / Job</label>
                                                 <select name="cabang_sent" id="cabang_sent" class="form-control" required></select>
                                             </div>
-                                        </div>
+                                        </div>-->
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label for="idlocation">Gudang Kirim</label>
                                                 <select name="idlocation_to" id="idlocation_to" class="form-control" required></select>
                                             </div>
                                         </div>
-                                        <div class="col-md-6">
+                                        <!--<div class="col-md-6">
                                             <div class="form-group">
                                                 <label for="idlocation_transit">Transit</label>
                                                 <select name="idlocation_transit" id="idlocation_transit" class="form-control" required></select>
                                             </div>
-                                        </div>
+                                        </div>-->
                                         <div class="col-md-12">
                                             <div class="form-group">
                                                 <label for="keterangan">Keterangan</label>
@@ -350,7 +352,28 @@
                                 <th>ID Barang</th>
                                 <th>Nama Barang</th>
                                 <th class="text-center">Satuan</th>
-                                <th class="text-end">Quantity</th>
+
+                                <!-- 🔥 Kolom baru: Qty Input -->
+                                <th class="text-end">
+                                    Qty Input
+                                    <i class="bi bi-info-circle"
+                                       title="Quantity sesuai satuan input user"></i>
+                                </th>
+
+                                <!-- 🔥 Kolom baru: Unit Default -->
+                                <th class="text-center">
+                                    Unit Default
+                                    <i class="bi bi-info-circle"
+                                       title="Satuan default untuk stock (base unit)"></i>
+                                </th>
+
+                                <!-- 🔥 Kolom baru: Qty Base -->
+                                <th class="text-end">
+                                    Qty Base
+                                    <i class="bi bi-info-circle"
+                                       title="Qty setelah konversi ke unit default (yang dipakai untuk reserve stock)"></i>
+                                </th>
+
                                 <th>Keterangan</th>
                             </tr>
                             </thead>
@@ -411,6 +434,9 @@
                     <!-- hidden -->
                     <input type="hidden" name="idurut" id="idurut">
                     <input type="hidden" name="iduniq" id="iduniq">
+                    <!-- Hidden fields -->
+                    <input type="hidden" name="unit_default" id="unit_default">
+                    <input type="hidden" name="qty_base"     id="qty_base">
                     <!--<input type="hidden" name="docno" id="docno">-->
                     <!-- <input type="hidden" name="status" id="status" value="P">
                     <input type="hidden" name="chold" id="chold" value="NO"> -->
@@ -420,9 +446,8 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label>ID Barang</label>
-                                <select name="idbarang" id="idbarang"
-                                        class="form-control select2"
-                                        style="width:100%"></select>
+                                <!-- ✅ BENAR -->
+                                <select name="idbarang" id="idbarang" class="form-control select2" style="width:100%"></select>
                             </div>
                         </div>
 
@@ -463,35 +488,25 @@
 
                     <!-- ROW 2 -->
                     <div class="row">
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Satuan</label>
-                                <input name="unit" id="unit"
-                                        class="form-control select2"
-                                        style="width:100%" readonly>
-                            </div>
+                        <div class="col-md-3">
+                            <label>Satuan</label>
+                            <select name="unit" id="unit" class="form-control" style="width:100%"></select>
                         </div>
 
                         <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Qty Sent</label>
-                                <input type="text"
-                                        name="qty"
-                                        id="qty"
-                                        class="form-control jtsseparator ratakanan"
-                                        placeholder="0.00">
-                            </div>
+                            <label>Konversi</label>
+                            <input name="conversion_factor" id="conversion_factor" class="form-control" readonly>
+                            <input type="hidden" name="qtystock_raw" id="qtystock_raw" value="0">
                         </div>
-                        <div class="col-md-8">
-                            <div class="form-group">
-                                <label>Keterangan</label>
-                                <textarea type="text"
-                                        name="description"
-                                        rows="4"
-                                        style="text-transform: uppercase;"
-                                        id="description"
-                                        class="form-control"></textarea>
-                            </div>
+
+                        <div class="col-md-2">
+                            <label>Qty Sent</label>
+                            <input name="qty" id="qty" class="form-control jtsseparator ratakanan">
+                        </div>
+
+                        <div class="col-md-5">   <!-- 🔥 3+2+2+5 = 12 -->
+                            <label>Keterangan</label>
+                            <textarea name="description" id="description" class="form-control" rows="2"></textarea>
                         </div>
                     </div>
                 </div>

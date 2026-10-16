@@ -320,7 +320,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
     }
 
 
-/* BIAYA STANDART */
+    /* BIAYA STANDART */
 
     var $mst_biaya_standart_mst_view = "(select A.*,z.uraian as nmstatus,kdtrx,z.jenistrx,z.uraian as nmstatus from sc_mst.biaya_standart_mst a 
 left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and trim(a.status)=trim(z.kdtrx)) as x";
@@ -1252,7 +1252,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
 
 
-    
+
 
     /******************************************************* WO WORKING ORDER  ****************************************************************************************/
 
@@ -1376,7 +1376,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
     //BOM WO
 
-    
+
 
     var $tmp_workingorder_bom_mst_view = "sc_tmp.workingorder_bom_mst";
     var $tmp_workingorder_bom_mst_view_column = array('urut','kdcustomer','nmcustomer','unit','actualcost','lastcost','newcost');
@@ -2084,8 +2084,8 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
 
     // ================================== WORK ORDER EXECUTION ==================================================
-    
-    
+
+
     /* UNTUK LIST DEPAN WO*/
     /* TRX WO*/
     var $t_woe_view = "sc_trx.woe";
@@ -2230,7 +2230,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
         return $query->getResult();
     }
 
-    
+
 
 
     function t_woe_dtl_view_count_filtered($docnoParam)
@@ -2380,11 +2380,11 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
         $builder = $this->db->table($this->t_front_woe_view);
         // $builder->join(
-        //     "(SELECT DISTINCT ON (kdtrx) kdtrx, uraian 
-        //     FROM sc_mst.trxtype 
-        //     WHERE jenistrx = 'I.P.A.2' 
-        //     ORDER BY kdtrx, uraian DESC) AS trx", 
-        //     "COALESCE(x.status, '') = COALESCE(trx.kdtrx, '')", 
+        //     "(SELECT DISTINCT ON (kdtrx) kdtrx, uraian
+        //     FROM sc_mst.trxtype
+        //     WHERE jenistrx = 'I.P.A.2'
+        //     ORDER BY kdtrx, uraian DESC) AS trx",
+        //     "COALESCE(x.status, '') = COALESCE(trx.kdtrx, '')",
         //     "left"
         // );
         $builder->select("x.*");
@@ -3069,7 +3069,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
 
 
-    
+
 
     /******************************************************* BIAYA PRODUKSI NON MATERIAL  ****************************************************************************************/
 
@@ -3363,7 +3363,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
         return $query->getRow();
     }
 
-    
+
 
     public function q_cek_periode($periode)
     {

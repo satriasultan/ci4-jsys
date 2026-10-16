@@ -2,22 +2,11 @@
    JSYS ERP
    TAHAP 07 - STOCK AVERAGE COST
    TABLE : sc_trx.stkblc_avgcost
-   ============================================================
 
-   FINAL REPAIR - COMPATIBLE WITH ACTUAL LEGACY SCHEMA
+   FINAL - TRANSFER SAFE
    ------------------------------------------------------------
-   sc_trx.stkblc_avgcost ACTUAL:
-       idbarang       VARCHAR(20) / CHAR(20)
-       idlocation     VARCHAR(12) / CHAR(12)
-       batch          VARCHAR(100) / CHAR(100)
-       qty            NUMERIC(18,4)
-       total_value    NUMERIC(18,4)
-       avg_cost       NUMERIC(18,4)
-       unit           VARCHAR(12)
-       updated_at     TIMESTAMP
-
-   IMPORTANT:
-   ------------------------------------------------------------
+   
+   PRINSIP:
    1. TAHAP 06 sc_trx.stkblc TIDAK DIUBAH.
    2. Tidak menambahkan stock_uniqueid ke stkblc_avgcost.
    3. Tidak menambahkan idbranch / warehouse / bin / lotno
@@ -30,8 +19,19 @@
    7. IN  : tambah qty + nilai stock.
    8. OUT : memakai average cost sebelum OUT.
    9. Cost OUT ditulis ke stkblc.unitcost / totalcost.
-  10. INSERT / UPDATE / DELETE pada stkblc otomatis recalculate.
-  11. Jika histori menghasilkan negative stock, proses dihentikan.
+   10. INSERT / UPDATE / DELETE pada stkblc otomatis recalculate.
+   11. Jika histori menghasilkan negative stock, proses dihentikan.
+   
+   TRANSFER SAFE:
+   12. IN transfer (TRFWHS/BINMOV/BRNTRF) menggunakan
+       totalcost dari OUT pasangan (bukan pricelst_in × qty).
+   13. Nilai IN transfer = Nilai OUT transfer.
+   14. Total nilai persediaan perusahaan TIDAK berubah.
+   
+   LOCK SAFE:
+   15. Menggunakan session_replication_role = 'replica'
+       (bukan ALTER TABLE DISABLE TRIGGER) untuk mencegah
+       recursive trigger. Tidak butuh lock eksklusif.
    ============================================================ */
 
 
@@ -74,23 +74,17 @@ CREATE TABLE IF NOT EXISTS sc_trx.stkblc_avgcost
 
 
 /* ============================================================
-   3. INDEX
-      PK SUDAH MENUTUPI LOOKUP UTAMA:
-          idbarang + idlocation + batch
-   ============================================================ */
-
--- Tidak membuat index tambahan yang tidak diperlukan.
-
-
-/* ============================================================
-   4. CORE RECALCULATE
-
+   3. CORE RECALCULATE — fn_recalculate_avgcost_group
+   ============================================================
+   
    Fungsi ini menghitung ulang SATU stock group legacy:
-
        idbarang + idlocation + batch
-
-   BUKAN berdasarkan stock_uniqueid pada tabel avgcost,
-   karena kolom tersebut memang tidak ada pada schema aktual.
+   
+   TRANSFER SAFE:
+   - Untuk IN transfer, gunakan totalcost yang tersimpan di
+     stkblc (yang sudah dihitung TAHAP 06 dari OUT pasangan).
+   - Untuk OUT transfer, tetap pakai avg cost saat itu.
+   - Untuk non-transfer, gunakan pricelst_in × qty_in (perilaku lama).
    ============================================================ */
 
 CREATE OR REPLACE FUNCTION sc_trx.fn_recalculate_avgcost_group
@@ -104,265 +98,235 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
     r RECORD;
-
     v_qty            NUMERIC(18,6) := 0;
     v_value          NUMERIC(18,6) := 0;
     v_avg_cost       NUMERIC(18,6) := 0;
-
-    v_qty_in         NUMERIC(18,6) := 0;
-    v_qty_out        NUMERIC(18,6) := 0;
-
-    v_value_in       NUMERIC(18,6) := 0;
-    v_value_out      NUMERIC(18,6) := 0;
-
     v_cost_out       NUMERIC(18,6) := 0;
     v_out_avg        NUMERIC(18,6) := 0;
-
     v_unit           VARCHAR(12);
     v_found          BOOLEAN := FALSE;
+
+    /* Guard untuk restore session_replication_role */
+    v_old_replica    TEXT;
 BEGIN
 
-    /* --------------------------------------------------------
-       VALIDASI INPUT
-       -------------------------------------------------------- */
     IF NULLIF(BTRIM(p_idbarang), '') IS NULL THEN
-        RAISE EXCEPTION
-            'TAHAP 07 GAGAL: idbarang kosong.';
+        RAISE EXCEPTION 'TAHAP 07: idbarang kosong.';
     END IF;
 
     IF NULLIF(BTRIM(p_idlocation), '') IS NULL THEN
         RAISE EXCEPTION
-            'TAHAP 07 GAGAL: idlocation kosong untuk idbarang=%',
+            'TAHAP 07: idlocation kosong untuk idbarang=%',
             p_idbarang;
     END IF;
 
+    /* =========================================================
+       LOCK SAFE: Pakai session_replication_role = 'replica'
+       untuk mematikan trigger sementara DI SESSION INI.
+       Tidak butuh lock eksklusif seperti ALTER TABLE.
+       ========================================================= */
+    v_old_replica := current_setting('session_replication_role', true);
 
-    /* --------------------------------------------------------
-       HITUNG ULANG SECARA KRONOLOGIS
+    IF v_old_replica IS DISTINCT FROM 'replica' THEN
+        PERFORM set_config('session_replication_role', 'replica', true);
+    END IF;
 
-       docdate = urutan bisnis
-       id      = tie breaker tanggal yang sama
-       -------------------------------------------------------- */
+    /* =========================================================
+       LOOP HITUNG KRONOLOGIS
+       ========================================================= */
     FOR r IN
         SELECT
             sb.id,
             sb.uniqueid,
             sb.docdate,
             sb.trxdate,
+            sb.journal_type,      -- ✅ untuk deteksi transfer
             sb.type_in_out,
             sb.qty_in,
             sb.qty_out,
             sb.pricelst_in,
+            sb.totalcost,          -- ✅ untuk IN transfer
             sb.unit,
-            sb.docno,
-            sb.journal_type
+            sb.docno
         FROM sc_trx.stkblc sb
-        WHERE BTRIM(sb.idbarang::TEXT) = BTRIM(p_idbarang)
+        WHERE BTRIM(sb.idbarang::TEXT)   = BTRIM(p_idbarang)
           AND BTRIM(sb.idlocation::TEXT) = BTRIM(p_idlocation)
           AND BTRIM(COALESCE(sb.batch::TEXT, ''))
                 = BTRIM(COALESCE(p_batch, ''))
-          AND COALESCE(BTRIM(sb.grouptype::TEXT), 'STOCK')
-                <> 'NON STOCK'
+          AND COALESCE(BTRIM(sb.grouptype::TEXT), 'STOCK') <> 'NON STOCK'
         ORDER BY
             COALESCE(sb.docdate, sb.trxdate::DATE),
             sb.id
     LOOP
-
         v_found := TRUE;
-        v_unit := NULLIF(BTRIM(COALESCE(r.unit::TEXT, '')), '');
+        v_unit  := NULLIF(BTRIM(COALESCE(r.unit::TEXT, '')), '');
 
-
-        /* ----------------------------------------------------
+        /* ====================================================
            IN
-           ---------------------------------------------------- */
-        IF BTRIM(COALESCE(r.type_in_out::TEXT, '')) = 'IN'
-        THEN
+           ==================================================== */
+        IF BTRIM(COALESCE(r.type_in_out::TEXT, '')) = 'IN' THEN
 
-            v_qty_in :=
-                v_qty_in + COALESCE(r.qty_in, 0);
+            v_qty := v_qty + COALESCE(r.qty_in, 0);
 
-            v_value_in :=
-                v_value_in
-                + ROUND(
-                    COALESCE(r.qty_in, 0)
-                    * COALESCE(r.pricelst_in, 0),
+            /* --------------------------------------------------
+               TRANSFER SAFE:
+               - IN transfer  → pakai totalcost dari stkblc
+                                (sudah dihitung TAHAP 06 dari
+                                OUT pasangan)
+               - IN non-transfer → pakai pricelst_in × qty
+               -------------------------------------------------- */
+            IF TRIM(COALESCE(r.journal_type::TEXT, '')) IN
+               ('TRFWHS','BINMOV','BRNTRF')
+            THEN
+                v_value := v_value + COALESCE(r.totalcost, 0);
+            ELSE
+                v_value := v_value + ROUND(
+                    COALESCE(r.qty_in, 0) * COALESCE(r.pricelst_in, 0),
                     6
-                  );
-
-            v_qty :=
-                v_qty + COALESCE(r.qty_in, 0);
-
-            v_value :=
-                v_value
-                + ROUND(
-                    COALESCE(r.qty_in, 0)
-                    * COALESCE(r.pricelst_in, 0),
-                    6
-                  );
+                );
+            END IF;
 
             IF v_qty > 0 THEN
-                v_avg_cost :=
-                    ROUND(v_value / v_qty, 6);
+                v_avg_cost := ROUND(v_value / v_qty, 6);
             ELSE
                 v_avg_cost := 0;
             END IF;
 
-
-        /* ----------------------------------------------------
+        /* ====================================================
            OUT
-           ---------------------------------------------------- */
-        ELSIF BTRIM(COALESCE(r.type_in_out::TEXT, '')) = 'OUT'
-        THEN
+           ==================================================== */
+        ELSIF BTRIM(COALESCE(r.type_in_out::TEXT, '')) = 'OUT' THEN
 
-            /* Average cost SEBELUM transaksi OUT */
+            /* Avg cost SEBELUM OUT */
             v_out_avg := v_avg_cost;
 
-            v_cost_out :=
-                ROUND(
-                    COALESCE(r.qty_out, 0) * v_out_avg,
-                    2
-                );
+            /* Cost OUT = qty × avg cost saat itu */
+            v_cost_out := ROUND(
+                COALESCE(r.qty_out, 0) * v_out_avg,
+                2
+            );
 
-            v_qty_out :=
-                v_qty_out + COALESCE(r.qty_out, 0);
+            v_qty   := v_qty   - COALESCE(r.qty_out, 0);
+            v_value := v_value - v_cost_out;
 
-            v_value_out :=
-                v_value_out + v_cost_out;
-
-            v_qty :=
-                v_qty - COALESCE(r.qty_out, 0);
-
-            v_value :=
-                v_value - v_cost_out;
-
-            /* ------------------------------------------------
-               NEGATIVE STOCK = INVALID STATE
-               ------------------------------------------------ */
+            /* ------------------------------------------
+               NEGATIVE STOCK = INVALID
+               ------------------------------------------ */
             IF v_qty < -0.000001 THEN
+                PERFORM set_config(
+                    'session_replication_role',
+                    COALESCE(v_old_replica, 'origin'),
+                    true
+                );
                 RAISE EXCEPTION
-                    'NEGATIVE STOCK: idbarang=%, idlocation=%, batch=%, qty_balance=%, uniqueid=%, docno=%',
-                    p_idbarang,
-                    p_idlocation,
-                    COALESCE(p_batch, ''),
-                    v_qty,
-                    r.uniqueid,
-                    r.docno;
+                    'NEGATIVE STOCK: idbarang=%, idlocation=%, batch=%, qty_balance=%, docno=%',
+                    p_idbarang, p_idlocation, COALESCE(p_batch, ''),
+                    v_qty, r.docno;
             END IF;
 
             IF v_value < -0.01 THEN
+                PERFORM set_config(
+                    'session_replication_role',
+                    COALESCE(v_old_replica, 'origin'),
+                    true
+                );
                 RAISE EXCEPTION
-                    'NEGATIVE STOCK VALUE: idbarang=%, idlocation=%, batch=%, value_balance=%, uniqueid=%, docno=%',
-                    p_idbarang,
-                    p_idlocation,
-                    COALESCE(p_batch, ''),
-                    v_value,
-                    r.uniqueid,
-                    r.docno;
+                    'NEGATIVE STOCK VALUE: idbarang=%, idlocation=%, batch=%, value_balance=%, docno=%',
+                    p_idbarang, p_idlocation, COALESCE(p_batch, ''),
+                    v_value, r.docno;
             END IF;
 
-            /* Hilangkan noise pembulatan */
-            IF ABS(v_qty) < 0.000001 THEN
-                v_qty := 0;
-            END IF;
-
-            IF ABS(v_value) < 0.01 THEN
-                v_value := 0;
-            END IF;
+            /* Noise cleanup */
+            IF ABS(v_qty)   < 0.000001 THEN v_qty   := 0; END IF;
+            IF ABS(v_value) < 0.01     THEN v_value := 0; END IF;
 
             IF v_qty > 0 THEN
-                v_avg_cost :=
-                    ROUND(v_value / v_qty, 6);
+                v_avg_cost := ROUND(v_value / v_qty, 6);
             ELSE
                 v_avg_cost := 0;
             END IF;
 
-            /* ------------------------------------------------
-               TAHAP 07 menetapkan cost OUT.
-               TAHAP 06 tidak diubah.
-               ------------------------------------------------ */
+            /* ------------------------------------------
+               Update unitcost & totalcost OUT
+               (trigger dimatikan oleh replica)
+               ------------------------------------------ */
             UPDATE sc_trx.stkblc
             SET
-                unitcost = ROUND(v_out_avg, 6),
+                unitcost  = ROUND(v_out_avg, 6),
                 totalcost = ROUND(v_cost_out, 2)
             WHERE id = r.id
-              AND
-              (
-                  unitcost IS DISTINCT FROM ROUND(v_out_avg, 6)
+              AND (
+                  unitcost  IS DISTINCT FROM ROUND(v_out_avg, 6)
                   OR totalcost IS DISTINCT FROM ROUND(v_cost_out, 2)
               );
 
         END IF;
-
     END LOOP;
 
+    /* =========================================================
+       RESTORE session_replication_role
+       ========================================================= */
+    IF v_old_replica IS NOT NULL THEN
+        PERFORM set_config('session_replication_role', v_old_replica, true);
+    END IF;
 
     /* --------------------------------------------------------
-       Tidak ada transaksi stock untuk group ini.
-       Hapus current avgcost row jika masih tersisa.
+       Group kosong → hapus avgcost
        -------------------------------------------------------- */
     IF NOT v_found THEN
-
         DELETE FROM sc_trx.stkblc_avgcost
-        WHERE BTRIM(idbarang) = BTRIM(p_idbarang)
+        WHERE BTRIM(idbarang)   = BTRIM(p_idbarang)
           AND BTRIM(idlocation) = BTRIM(p_idlocation)
-          AND BTRIM(COALESCE(batch, ''))
-                = BTRIM(COALESCE(p_batch, ''));
-
+          AND BTRIM(COALESCE(batch, '')) = BTRIM(COALESCE(p_batch, ''));
         RETURN;
     END IF;
 
-
     /* --------------------------------------------------------
-       Simpan current average cost.
-       Schema actual hanya mempunyai:
-           idbarang
-           idlocation
-           batch
-           qty
-           total_value
-           avg_cost
-           unit
-           updated_at
+       Simpan avg cost akhir
        -------------------------------------------------------- */
     INSERT INTO sc_trx.stkblc_avgcost
-    (
-        idbarang,
-        idlocation,
-        batch,
-        qty,
-        total_value,
-        avg_cost,
-        unit,
-        updated_at
-    )
+        (idbarang, idlocation, batch,
+         qty, total_value, avg_cost, unit, updated_at)
     VALUES
-    (
-        BTRIM(p_idbarang),
-        BTRIM(p_idlocation),
-        BTRIM(COALESCE(p_batch, '')),
-        ROUND(v_qty, 4),
-        ROUND(v_value, 4),
-        ROUND(v_avg_cost, 4),
-        v_unit,
-        CURRENT_TIMESTAMP
-    )
+        (BTRIM(p_idbarang),
+         BTRIM(p_idlocation),
+         BTRIM(COALESCE(p_batch, '')),
+         ROUND(v_qty, 4),
+         ROUND(v_value, 4),
+         ROUND(v_avg_cost, 4),
+         v_unit,
+         CURRENT_TIMESTAMP)
     ON CONFLICT (idbarang, idlocation, batch)
     DO UPDATE SET
-        qty = EXCLUDED.qty,
+        qty         = EXCLUDED.qty,
         total_value = EXCLUDED.total_value,
-        avg_cost = EXCLUDED.avg_cost,
-        unit = EXCLUDED.unit,
-        updated_at = CURRENT_TIMESTAMP;
+        avg_cost    = EXCLUDED.avg_cost,
+        unit        = EXCLUDED.unit,
+        updated_at  = CURRENT_TIMESTAMP;
 
+EXCEPTION
+    WHEN OTHERS THEN
+        /* Safety: restore session_replication_role */
+        IF v_old_replica IS NOT NULL THEN
+            PERFORM set_config(
+                'session_replication_role',
+                v_old_replica,
+                true
+            );
+        ELSE
+            PERFORM set_config(
+                'session_replication_role',
+                'origin',
+                true
+            );
+        END IF;
+        RAISE;
 END;
 $$;
 
 
 /* ============================================================
-   5. COMPATIBILITY WRAPPER
-
-   TAHAP 06 menggunakan stkblc.stock_uniqueid.
-   Wrapper ini mencari group legacy dari row stkblc tersebut.
+   4. COMPATIBILITY WRAPPER
    ============================================================ */
 
 CREATE OR REPLACE FUNCTION sc_trx.fn_recalculate_avgcost
@@ -391,12 +355,6 @@ BEGIN
     ORDER BY sb.id
     LIMIT 1;
 
-    /*
-       Jika transaction/stock row sudah tidak ada,
-       tidak bisa menentukan group dari stock_uniqueid.
-       Caller DELETE harus menggunakan helper group trigger
-       yang menyimpan OLD dimensions.
-    */
     IF v_idbarang IS NULL THEN
         RETURN;
     END IF;
@@ -411,10 +369,7 @@ $$;
 
 
 /* ============================================================
-   6. REBUILD SEMUA AVG COST
-
-   Rebuild mengikuti schema legacy:
-       idbarang + idlocation + batch
+   5. REBUILD SEMUA AVG COST
    ============================================================ */
 
 CREATE OR REPLACE FUNCTION sc_trx.fn_recalculate_all_avgcost()
@@ -451,20 +406,7 @@ $$;
 
 
 /* ============================================================
-   7. TRIGGER STKBLc -> AVGCOST
-
-   INSERT:
-       recalculate group
-
-   DELETE:
-       recalculate OLD group
-
-   UPDATE:
-       OLD group direcalculate
-       NEW group direcalculate
-
-   pg_trigger_depth() > 1 mencegah recursive recalculate
-   ketika TAHAP 07 mengubah unitcost / totalcost OUT.
+   6. TRIGGER STKBLc -> AVGCOST
    ============================================================ */
 
 CREATE OR REPLACE FUNCTION sc_trx.fn_stkblc_avgcost_trigger()
@@ -529,8 +471,6 @@ BEGIN
         IF COALESCE(BTRIM(NEW.grouptype::TEXT), 'STOCK')
                <> 'NON STOCK'
         THEN
-            /* Jika group sama, hitung sekali lagi tetap aman;
-               trigger depth mencegah recursive costing. */
             PERFORM sc_trx.fn_recalculate_avgcost_group(
                 BTRIM(NEW.idbarang::TEXT),
                 BTRIM(NEW.idlocation::TEXT),
@@ -547,7 +487,7 @@ $$;
 
 
 /* ============================================================
-   8. TRIGGER
+   7. TRIGGER
    ============================================================ */
 
 DROP TRIGGER IF EXISTS trg_stkblc_avgcost
@@ -561,39 +501,66 @@ EXECUTE FUNCTION sc_trx.fn_stkblc_avgcost_trigger();
 
 
 /* ============================================================
-   9. VALIDASI STRUCTURE ACTUAL
+   8. VERIFIKASI
    ============================================================ */
 
-SELECT
-    ordinal_position,
-    column_name,
-    data_type,
-    character_maximum_length,
-    numeric_precision,
-    numeric_scale,
-    is_nullable
-FROM information_schema.columns
-WHERE table_schema = 'sc_trx'
-  AND table_name = 'stkblc_avgcost'
-ORDER BY ordinal_position;
+DO $$
+DECLARE
+    v_table_ok   BOOLEAN;
+    v_trig_ok    BOOLEAN;
+    v_func_ok    INTEGER;
+BEGIN
+
+    SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'sc_trx'
+          AND table_name   = 'stkblc_avgcost'
+    ) INTO v_table_ok;
+
+    SELECT EXISTS (
+        SELECT 1 FROM pg_trigger
+        WHERE tgrelid = 'sc_trx.stkblc'::regclass
+          AND tgname   = 'trg_stkblc_avgcost'
+          AND NOT tgisinternal
+    ) INTO v_trig_ok;
+
+    SELECT COUNT(*)
+    INTO v_func_ok
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'sc_trx'
+      AND p.proname IN (
+          'fn_recalculate_avgcost_group',
+          'fn_recalculate_avgcost',
+          'fn_recalculate_all_avgcost',
+          'fn_stkblc_avgcost_trigger'
+      );
+
+    RAISE NOTICE '============================================================';
+    RAISE NOTICE 'TAHAP 07 INSTALL : OK';
+    RAISE NOTICE '  Table    : %', v_table_ok;
+    RAISE NOTICE '  Trigger  : %', v_trig_ok;
+    RAISE NOTICE '  Function : % (harus 4)', v_func_ok;
+    RAISE NOTICE '============================================================';
+
+    IF NOT v_table_ok THEN
+        RAISE EXCEPTION 'Table stkblc_avgcost tidak ada.';
+    END IF;
+
+    IF NOT v_trig_ok THEN
+        RAISE EXCEPTION 'Trigger trg_stkblc_avgcost tidak aktif.';
+    END IF;
+
+    IF v_func_ok <> 4 THEN
+        RAISE EXCEPTION 'Function terpasang hanya %, harus 4', v_func_ok;
+    END IF;
+
+END;
+$$;
 
 
 /* ============================================================
-   10. CEK PRIMARY KEY ACTUAL
-   ============================================================ */
-
-SELECT
-    conname,
-    pg_get_constraintdef(oid)
-FROM pg_constraint
-WHERE conrelid = 'sc_trx.stkblc_avgcost'::regclass
-  AND contype = 'p';
-
-
-/* ============================================================
-   11. REBUILD MANUAL
-
-   Tidak dijalankan otomatis.
+   9. REBUILD MANUAL (TIDAK DIJALANKAN OTOMATIS)
 
    Setelah instalasi / perbaikan, bila ingin membangun ulang
    seluruh current average cost berdasarkan histori stkblc:
@@ -605,7 +572,7 @@ WHERE conrelid = 'sc_trx.stkblc_avgcost'::regclass
    serta transaksi penyebabnya.
    ============================================================ */
 
-/* SELECT sc_trx.fn_recalculate_all_avgcost(); */
+-- SELECT sc_trx.fn_recalculate_all_avgcost();
 
 
 /* ============================================================
@@ -628,6 +595,10 @@ WHERE conrelid = 'sc_trx.stkblc_avgcost'::regclass
 
    INSERT / UPDATE / DELETE stkblc
        -> recalculation otomatis
+
+   IN
+       -> transfer     : pakai totalcost OUT pasangan
+       -> non-transfer : pakai pricelst_in × qty
 
    OUT
        -> memakai average cost sebelum OUT

@@ -1,6 +1,11 @@
 -- ============================================================
--- PP.SQL - ONE RUN INSTALL SCRIPT
--- Semua object PP dibuat ulang dalam 1 transaction.
+-- PP.SQL - ONE RUN INSTALL SCRIPT (FINAL REBUILD)
+-- Inisialisasi awal: semua object PP dibuat ulang.
+-- Perubahan:
+--   - Tambah kolom: batch character(100)
+--   - Tambah kolom: uniqueid text (dari VARCHAR(64))
+--   - Tambah kolom: source_uniqueid text
+--   - Trigger finalize & edit ikut copy kolom baru
 -- Jika ada error, PostgreSQL akan melakukan ROLLBACK.
 -- ============================================================
 
@@ -15,12 +20,15 @@ DROP TABLE IF EXISTS sc_tmp.pp_dtl CASCADE;
 DROP TABLE IF EXISTS sc_trx.pp CASCADE;
 DROP TABLE IF EXISTS sc_tmp.pp CASCADE;
 
+-- ============================================================
+-- TABLE: sc_tmp.pp (HEADER TMP)
+-- ============================================================
 CREATE TABLE sc_tmp.pp
 (
     idurut serial NOT NULL,
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
     docdate DATE,
-    cabang character (30 ) COLLATE pg_catalog."default",    
+    cabang character(30) COLLATE pg_catalog."default",
     pemohon character(100) COLLATE pg_catalog."default",
     estpakai DATE,
     status character(6) COLLATE pg_catalog."default",
@@ -35,22 +43,20 @@ CREATE TABLE sc_tmp.pp
     docnotmp character(30) COLLATE pg_catalog."default",
     CONSTRAINT pk_tmp_pp PRIMARY KEY (idurut, docno)
 )
-
 TABLESPACE pg_default;
 
 ALTER TABLE IF EXISTS sc_tmp.pp
     OWNER to postgres;
 
-
-
-
-
+-- ============================================================
+-- TABLE: sc_trx.pp (HEADER TRX)
+-- ============================================================
 CREATE TABLE sc_trx.pp
 (
     idurut serial NOT NULL,
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
     docdate DATE,
-    cabang character (30 ) COLLATE pg_catalog."default",    
+    cabang character(30) COLLATE pg_catalog."default",
     pemohon character(100) COLLATE pg_catalog."default",
     estpakai DATE,
     status character(6) COLLATE pg_catalog."default",
@@ -65,15 +71,14 @@ CREATE TABLE sc_trx.pp
     docnotmp character(30) COLLATE pg_catalog."default",
     CONSTRAINT pk_trx_pp PRIMARY KEY (idurut, docno)
 )
-
 TABLESPACE pg_default;
 
 ALTER TABLE IF EXISTS sc_trx.pp
     OWNER to postgres;
 
-
-
-
+-- ============================================================
+-- TABLE: sc_tmp.pp_dtl (DETAIL TMP)
+-- ============================================================
 CREATE TABLE sc_tmp.pp_dtl
 (
     idurut SERIAL PRIMARY KEY,
@@ -89,7 +94,7 @@ CREATE TABLE sc_tmp.pp_dtl
     updateby CHARACTER VARYING(50) COLLATE pg_catalog."default",
     updatedate TIMESTAMP WITHOUT TIME ZONE,
     docnotmp character(30),
-    uniqueid VARCHAR(64),
+    uniqueid text,
     capexno CHARACTER(30),
     idtax CHARACTER(20),
     currcode CHARACTER(3),
@@ -97,15 +102,18 @@ CREATE TABLE sc_tmp.pp_dtl
     nilaikonversi NUMERIC(18,2),
     nilaipajak NUMERIC(18,2),
     qtypo NUMERIC(18,2) DEFAULT 0,
-    qtyvoid NUMERIC(18,2) DEFAULT 0
+    qtyvoid NUMERIC(18,2) DEFAULT 0,
+    batch character(100),
+    source_uniqueid text
 )
 TABLESPACE pg_default;
 
 ALTER TABLE IF EXISTS sc_tmp.pp_dtl
-    OWNER TO postgres;
+    OWNER to postgres;
 
-
-
+-- ============================================================
+-- TABLE: sc_trx.pp_dtl (DETAIL TRX)
+-- ============================================================
 CREATE TABLE sc_trx.pp_dtl
 (
     idurut SERIAL PRIMARY KEY,
@@ -121,7 +129,7 @@ CREATE TABLE sc_trx.pp_dtl
     updateby CHARACTER VARYING(50) COLLATE pg_catalog."default",
     updatedate TIMESTAMP WITHOUT TIME ZONE,
     docnotmp character(30),
-    uniqueid VARCHAR(64),
+    uniqueid text,
     capexno CHARACTER(30),
     idtax CHARACTER(20),
     currcode CHARACTER(3),
@@ -129,37 +137,33 @@ CREATE TABLE sc_trx.pp_dtl
     nilaikonversi NUMERIC(18,2),
     nilaipajak NUMERIC(18,2),
     qtypo NUMERIC(18,2) DEFAULT 0,
-    qtyvoid NUMERIC(18,2) DEFAULT 0
+    qtyvoid NUMERIC(18,2) DEFAULT 0,
+    batch character(100),
+    source_uniqueid text
 )
 TABLESPACE pg_default;
 
 ALTER TABLE IF EXISTS sc_trx.pp_dtl
-    OWNER TO postgres;
+    OWNER to postgres;
 
-
-
-
-
+-- ============================================================
 -- FUNCTION: sc_tmp.tr_pp_finalize()
-
--- DROP FUNCTION IF EXISTS sc_tmp.tr_pp_finalize();
+-- ============================================================
 CREATE OR REPLACE FUNCTION sc_tmp.tr_pp_finalize()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $BODY$
 DECLARE
-    v_docno     TEXT;
-    v_inputby   TEXT;
-    v_idurut    INTEGER;
-    v_prefix    TEXT;
-    v_num       TEXT;
-    v_num_int   INTEGER;
-    v_lock_key  BIGINT;
+    v_docno      TEXT;
+    v_inputby    TEXT;
+    v_idurut     INTEGER;
+    v_num        TEXT;
+    v_num_int    INTEGER;
+    v_lock_key   BIGINT;
     v_base_docno TEXT;
     v_new_docno  TEXT;
-    
-    v_client_ip TEXT;
-    v_uniqueid  VARCHAR(64);
+
+    v_client_ip  TEXT;
 BEGIN
 
     -- ===============================
@@ -171,23 +175,18 @@ BEGIN
 
         -- ===============================
         -- NORMALISASI
-        v_docno := rtrim(NEW.docno);
+        v_docno   := rtrim(NEW.docno);
         v_inputby := NEW.inputby;
         v_idurut  := NEW.idurut;
-        -- ambil base docno (tanpa angka belakang)
-        -- contoh:
-        -- 05M/2601/PA0001 -> 05M/2601/PA
-        -- PPB/2601/PT0025 -> PPB/2601/PT
-        /* ========================================================
-        CEK APAKAH SUDAH PERNAH DIFINALKAN
-        ======================================================== */
 
+        /* ========================================================
+           CEK APAKAH SUDAH PERNAH DIFINALKAN
+        ======================================================== */
         IF EXISTS (
             SELECT 1
             FROM sc_trx.pp
             WHERE idurut = v_idurut
-                AND TRIM(COALESCE(inputby, '')) =
-                    TRIM(COALESCE(v_inputby, ''))
+                AND TRIM(COALESCE(inputby, '')) = TRIM(COALESCE(v_inputby, ''))
         ) THEN
 
             DELETE FROM sc_tmp.pp
@@ -197,14 +196,11 @@ BEGIN
             RETURN NEW;
         END IF;
 
-
         /* ========================================================
-        GENERATE DOCNO
+           GENERATE DOCNO
         ======================================================== */
-
         v_base_docno := regexp_replace(v_docno, '[0-9]+$', '');
-
-        v_lock_key := hashtext(v_base_docno);
+        v_lock_key   := hashtext(v_base_docno);
 
         PERFORM pg_advisory_xact_lock(v_lock_key);
 
@@ -225,11 +221,9 @@ BEGIN
             );
 
             IF COALESCE(v_num, '') = '' THEN
-
                 RAISE EXCEPTION
                     'Format DOCNO PP tidak valid: %',
                     v_new_docno;
-
             END IF;
 
             v_num_int := v_num::INTEGER + 1;
@@ -245,7 +239,6 @@ BEGIN
         END LOOP;
 
         v_docno := v_new_docno;
-
 
         -- ===============================
         -- INSERT HEADER
@@ -265,19 +258,20 @@ BEGIN
           AND idurut = v_idurut;
 
         -- ===============================
-        -- INSERT DETAIL
+        -- INSERT DETAIL (dengan kolom baru)
         -- ===============================
         INSERT INTO sc_trx.pp_dtl (
             idurut, docno, idbarang, capexno, uniqueid, nmbarang, unit, qty, description,
-            inputby, inputdate, status, updateby, updatedate
+            inputby, inputdate, status, updateby, updatedate,
+            batch, source_uniqueid
         )
         SELECT
             idurut, v_docno, idbarang, capexno, uniqueid, nmbarang, unit, qty, description,
-            inputby, inputdate, status, updateby, updatedate
+            inputby, inputdate, status, updateby, updatedate,
+            batch, source_uniqueid
         FROM sc_tmp.pp_dtl
         WHERE rtrim(docno) = rtrim(OLD.docno)
           AND inputby = v_inputby;
-
 
         -- ===============================
         -- LOG: INSERT HEADER PP
@@ -292,6 +286,7 @@ BEGIN
             v_client_ip,
             v_inputby
         );
+
         -- ===============================
         -- CLEANUP TMP
         -- ===============================
@@ -309,15 +304,17 @@ BEGIN
     -- ===============================
     ELSIF OLD.status = 'E' AND NEW.status = 'F' AND COALESCE(NEW.docnotmp, '') <> '' THEN
 
-        DELETE FROM sc_trx.pp WHERE docno = NEW.docnotmp;
+        DELETE FROM sc_trx.pp     WHERE docno = NEW.docnotmp;
         DELETE FROM sc_trx.pp_dtl WHERE docno = NEW.docnotmp;
 
         INSERT INTO sc_trx.pp_dtl
         (idurut, docno, idbarang, capexno, uniqueid, nmbarang, unit, qty, description,
-         inputby, inputdate, status, updateby, updatedate, docnotmp)
+         inputby, inputdate, status, updateby, updatedate, docnotmp,
+         batch, source_uniqueid)
         SELECT
             idurut, NEW.docnotmp, idbarang, capexno, uniqueid, nmbarang, unit, qty, description,
-            inputby, inputdate, status, updateby, updatedate, docnotmp
+            inputby, inputdate, status, updateby, updatedate, docnotmp,
+            batch, source_uniqueid
         FROM sc_tmp.pp_dtl
         WHERE rtrim(docno) = rtrim(NEW.docno);
 
@@ -332,158 +329,122 @@ BEGIN
         FROM sc_tmp.pp
         WHERE rtrim(docno) = rtrim(NEW.docno);
 
-         -- ===============================
-        -- LOG: INSERT HEADER PP
+        -- ===============================
+        -- LOG: UPDATE HEADER PP
         -- ===============================
         PERFORM sc_log.fn_log_transaction(
             NEW.docno,
             NULL,
-            'I.P',                  -- kode module dari menuprg
-            'I.P.A.1',              -- kode menu untuk PP
-            'U',                    -- action: UPDATE (1 huruf)
+            'I.P',
+            'I.P.A.1',
+            'U',
             COALESCE(NEW.updateby, NEW.inputby),
             v_client_ip,
             COALESCE(NEW.updateby, NEW.inputby)
         );
 
-        DELETE FROM sc_tmp.pp WHERE rtrim(docno) = rtrim(NEW.docno);
+        DELETE FROM sc_tmp.pp     WHERE rtrim(docno) = rtrim(NEW.docno);
         DELETE FROM sc_tmp.pp_dtl WHERE rtrim(docno) = rtrim(NEW.docno);
 
+    ELSIF (OLD.STATUS = 'E' AND NEW.STATUS = 'C') THEN
 
-    ELSEIF (OLD.STATUS = 'E' AND NEW.STATUS = 'C') THEN
         IF NEW.printby IS NOT NULL AND NEW.printby <> '' AND NEW.printdate IS NOT NULL THEN
             UPDATE sc_trx.pp SET status = 'P' WHERE docno = NEW.docnotmp;
         ELSE
             UPDATE sc_trx.pp SET status = 'F' WHERE docno = NEW.docnotmp;
         END IF;
 
-            
-        DELETE FROM sc_tmp.pp WHERE docno = NEW.docno;
+        DELETE FROM sc_tmp.pp     WHERE docno = NEW.docno;
         DELETE FROM sc_tmp.pp_dtl WHERE docno = NEW.docno;
-    
+
     END IF;
 
     RETURN NEW;
 END;
 $BODY$;
 
-
-
 CREATE OR REPLACE TRIGGER tr_pp_finalize
     AFTER UPDATE ON sc_tmp.pp
     FOR EACH ROW
     EXECUTE FUNCTION sc_tmp.tr_pp_finalize();
 
-
-
-
-
-
-
--- DROP FUNCTION IF EXISTS sc_trx.tr_pp();
-
+-- ============================================================
+-- FUNCTION: sc_trx.tr_pp()
+-- ============================================================
 CREATE OR REPLACE FUNCTION sc_trx.tr_pp()
-    RETURNS trigger 
+    RETURNS trigger
     LANGUAGE 'plpgsql'
     COST 100
     VOLATILE NOT LEAKPROOF
 AS $BODY$
 
-DECLARE 
-	vr_nomor char(15); 
-	vr_cekprefix char(15);
-	vr_nowprefix char(15);  
-	vr_id_dtl numeric;
-	vr_lastdoc NUMERIC(18);
-    v_docno     TEXT;
-    v_client_ip TEXT;
-    v_inputby   TEXT;
-BEGIN		
+DECLARE
+    v_docno      TEXT;
+    v_client_ip  TEXT;
+    v_inputby    TEXT;
+BEGIN
+    -- ===============================
+    -- AMBIL IP DARI sc_log.useronline
+    -- ===============================
+    v_docno    := rtrim(NEW.docno);
+    v_inputby  := NEW.inputby;
+
+    v_client_ip := sc_log.fn_get_user_ip(v_inputby);
+
+    IF (OLD.STATUS = 'F' AND NEW.STATUS = 'C') THEN
         -- ===============================
-        -- AMBIL IP DARI sc_log.useronline
+        -- LOG: FINALIZE PP
         -- ===============================
-        v_docno := rtrim(NEW.docno);
-        v_inputby := NEW.inputby;
+        PERFORM sc_log.fn_log_transaction(
+            NEW.docno,
+            NULL,
+            'I.P',
+            'I.P.A.1',
+            'C',
+            COALESCE(NEW.updateby, NEW.inputby),
+            v_client_ip,
+            COALESCE(NEW.updateby, NEW.inputby)
+        );
+    END IF;
 
-        v_client_ip := sc_log.fn_get_user_ip(v_inputby);
+    IF (OLD.STATUS = 'F' AND NEW.STATUS = 'E') THEN
+        -- Insert into pp_dtl with new columns
+        INSERT INTO sc_tmp.pp_dtl
+        ( idurut, docno, idbarang, capexno, uniqueid, nmbarang, unit, qty, description,
+          inputby, inputdate, status, updateby, updatedate, docnotmp,
+          batch, source_uniqueid)
+        SELECT idurut, NEW.docno, idbarang, capexno, uniqueid, nmbarang, unit, qty, description,
+          inputby, inputdate, status, updateby, updatedate, NEW.docno,
+          batch, source_uniqueid
+        FROM sc_trx.pp_dtl
+        WHERE docno = NEW.docno;
 
-        
-        IF (OLD.STATUS='F' AND NEW.STATUS='C') THEN
-            -- ===============================
-            -- LOG: INSERT HEADER PP
-            -- ===============================
-            PERFORM sc_log.fn_log_transaction(
-                NEW.docno,
-                NULL,
-                'I.P',                  -- kode module dari menuprg
-                'I.P.A.1',              -- kode menu untuk PP
-                'C',                    -- action: UPDATE (1 huruf)
-                COALESCE(NEW.updateby, NEW.inputby),
-                v_client_ip,
-                COALESCE(NEW.updateby, NEW.inputby)
-            );
-
-        END IF;
-
-
-		IF (OLD.STATUS='F' AND NEW.STATUS='E') THEN
-			-- Insert into pp_dtl with new columns
-			INSERT INTO sc_tmp.pp_dtl
-			( idurut, docno, idbarang, capexno, uniqueid,nmbarang, unit, qty, description,
-            inputby, inputdate, status, updateby, updatedate, docnotmp)
-			SELECT idurut, NEW.docno, idbarang, capexno, uniqueid,nmbarang, unit, qty, description,
-            inputby, inputdate, status, updateby, updatedate, NEW.docno
-			FROM sc_trx.pp_dtl 
-			WHERE docno = NEW.docno;
-
-			-- Insert into pp with new columns
-			INSERT INTO sc_tmp.pp
-            (
-                idurut, docno, cabang, docdate, pemohon, estpakai,
-                keterangan, status, inputby, inputdate, updateby, updatedate,
-                printby, printdate, printcount, docnotmp
-            )
-			SELECT  idurut, NEW.docno, cabang, docdate, pemohon, estpakai,
-            keterangan, status , inputby, inputdate, updateby, updatedate,
+        -- Insert into pp with new columns
+        INSERT INTO sc_tmp.pp
+        (
+            idurut, docno, cabang, docdate, pemohon, estpakai,
+            keterangan, status, inputby, inputdate, updateby, updatedate,
+            printby, printdate, printcount, docnotmp
+        )
+        SELECT idurut, NEW.docno, cabang, docdate, pemohon, estpakai,
+            keterangan, status, inputby, inputdate, updateby, updatedate,
             printby, printdate, printcount, NEW.docno
-			FROM sc_trx.pp 
-			WHERE docno = NEW.docno;
+        FROM sc_trx.pp
+        WHERE docno = NEW.docno;
+    END IF;
 
-
-            -- -- ===============================
-            -- -- LOG: INSERT HEADER PP
-            -- -- ===============================
-            -- PERFORM sc_log.fn_log_transaction(
-            --     NEW.docno,
-            --     NULL,
-            --     'I.P',                  -- kode module dari menuprg
-            --     'I.P.A.1',              -- kode menu untuk PP
-            --     'E',                    -- action: UPDATE (1 huruf)
-            --     COALESCE(NEW.updateby, NEW.inputby),
-            --     v_client_ip,
-            --     COALESCE(NEW.updateby, NEW.inputby)
-            -- );
-
-		END IF;	
-			
-		RETURN NEW;
-
+    RETURN NEW;
 END;
 $BODY$;
 
 ALTER FUNCTION sc_trx.tr_pp()
     OWNER TO postgres;
 
-
-    
-
--- FUNCTION: sc_trx.tr_pp()
--- Trigger: tr_pp
-
--- DROP TRIGGER IF EXISTS tr_pp ON sc_trx.pp;
-
+-- ============================================================
+-- TRIGGER: tr_pp
+-- ============================================================
 CREATE OR REPLACE TRIGGER tr_pp
-    AFTER UPDATE 
+    AFTER UPDATE
     ON sc_trx.pp
     FOR EACH ROW
     EXECUTE FUNCTION sc_trx.tr_pp();
@@ -491,5 +452,31 @@ CREATE OR REPLACE TRIGGER tr_pp
 -- ============================================================
 -- SELESAI
 -- ============================================================
-
 COMMIT;
+
+
+
+
+
+-- Cek struktur kolom detail PP
+SELECT table_schema, column_name, data_type, character_maximum_length
+FROM information_schema.columns
+WHERE table_name = 'pp_dtl'
+  AND table_schema IN ('sc_tmp','sc_trx')
+ORDER BY table_schema, ordinal_position;
+
+-- Cek kolom baru
+SELECT table_schema, column_name, data_type
+FROM information_schema.columns
+WHERE table_name = 'pp_dtl'
+  AND column_name IN ('batch','uniqueid','source_uniqueid')
+ORDER BY table_schema, column_name;
+
+-- Cek trigger
+SELECT event_object_schema, event_object_table, trigger_name
+FROM information_schema.triggers
+WHERE trigger_name IN ('tr_pp','tr_pp_finalize');
+
+-- Cek isi
+SELECT * FROM sc_tmp.pp_dtl;
+SELECT * FROM sc_trx.pp_dtl;

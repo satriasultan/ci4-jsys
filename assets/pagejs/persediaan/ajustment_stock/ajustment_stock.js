@@ -1,28 +1,35 @@
 /*
+ * ajustment_stock.js
  * Created by PhpStorm.
- *  * User: FIKY-PC
- *  * Date: 12/2/20, 2:32 PM
- *  * Last Modified: 12/2/20, 2:32 PM.
- *  Developed By: Fiky Ashariza Powered By PhpStorm
- *  Copyright© 2020 .All rights reserved.
+ * User: FIKY-PC
+ * Date: 12/2/20, 2:32 PM
+ * Last Modified: 12/2/20, 2:32 PM
+ * Developed By: Fiky Ashariza Powered By PhpStorm
+ * Copyright © 2020. All rights reserved.
  *
+ * ---------------------------------------------------------------
+ * REVISI:
+ * - Fix handler #idbarang agar selalu trigger getSisaStock()
+ * - Fix autoFillHargaPersediaan() agar tetap jalan walau stok 0
+ * - Fix reset Select2 pakai .val(null).trigger('change.select2')
+ * - Fix updateAjustmentStockDetail() agar trigger change dengan benar
+ * ---------------------------------------------------------------
  */
 
-
-var save_method; //for save method string
+var save_method; // for save method string
 var table;
 var initTable;
-//"use strict";
 
-/* VIUW UTAMA*/
+/* ============================================================
+ * VIEW UTAMA
+ * ============================================================ */
 function table_trx_ajustment_stock_mst() {
-    // var lg = languageDatatable;
     var initTable = function () {
         var table = $('#tTrxAjustmentStock');
         table.DataTable({
-            "processing": true, //Feature control the processing indicator.
-            "serverSide": true, //Feature control DataTables' server-side processing mode.
-            "order": [], //Initial no order.
+            "processing": true,
+            "serverSide": true,
+            "order": [],
             "language": languageDatatable(),
             "paging": true,
             "lengthChange": false,
@@ -37,9 +44,7 @@ function table_trx_ajustment_stock_mst() {
                 ['10 rows', '25 rows', '50 rows', 'Show all']
             ],
             "dom": 'Bfrtip',
-            "buttons": [
-                'pageLength', 'excel'
-            ],
+            "buttons": ['pageLength', 'excel'],
             "ajax": {
                 "url": HOST_URL + 'persediaan/trans/list_trx_ajustment_stock_mst',
                 "type": "POST",
@@ -47,7 +52,7 @@ function table_trx_ajustment_stock_mst() {
                     data.tglrange = $('#tglrange').val();
                     data.idbarang = $('#idbarang_filter').val();
                     data.namasupplier = $('#namasupplier').val();
-                    data.status = $('#status_filter').val(); //A,P,S,ALL
+                    data.status = $('#status_filter').val();
                 },
                 "dataFilter": function (data) {
                     var json = jQuery.parseJSON(data);
@@ -55,55 +60,44 @@ function table_trx_ajustment_stock_mst() {
                     json.recordsTotal = json.dataTables.recordsTotal;
                     json.recordsFiltered = json.dataTables.recordsFiltered;
                     json.data = json.dataTables.data;
-                    return JSON.stringify(json); // return JSON string
+                    return JSON.stringify(json);
                 }
             },
-
-            //Set column definition initialisation properties.
             "columnDefs": [
-                {
-                    "targets": [-1], //last column
-                    "orderable": false, //set not orderable
-                },
-            ],
-
+                { "targets": [-1], "orderable": false }
+            ]
         });
-
     };
-
-
     return initTable();
 }
 
 function reload_tablePPTrx() {
     var table = $('#tTrxAjustmentStock');
-    table.DataTable().ajax.reload(); //reload datatable ajax
-    //console.log('HALO HALO BANDUNG');
+    table.DataTable().ajax.reload();
 }
 
-$('#btn-filter-tx').click(function () { //button filter event click
+$('#btn-filter-tx').click(function () {
     var table = $('#tTrxAjustmentStock');
-    table.DataTable().ajax.reload(); //reload datatable ajax
+    table.DataTable().ajax.reload();
     $('#filter').modal('hide');
 });
-$('#btn-reset-tx').click(function () { //button reset event click
+
+$('#btn-reset-tx').click(function () {
     $('#form-filter')[0].reset();
     var table = $('#tTrxAjustmentStock');
-    table.DataTable().ajax.reload(); //reload datatable ajax
+    table.DataTable().ajax.reload();
     $('#filter').modal('hide');
 });
 
 let skipRoleChange = false;
 
-
-//EDIT ITEM
+/* ============================================================
+ * EDIT / READ DATA MASTER
+ * ============================================================ */
 function documentReadable() {
-
-    //showLoader();
-
     var docno = $('[name="docno"]').val();
 
-    $.getJSON(HOST_URL + 'persediaan/trans/showing_ajustment_stock_mst_tmp', {docno: docno})
+    $.getJSON(HOST_URL + 'persediaan/trans/showing_ajustment_stock_mst_tmp', { docno: docno })
         .done(function (response) {
 
             if (!response.dataTables || !response.dataTables.items.length) {
@@ -114,9 +108,6 @@ function documentReadable() {
 
             const item = response.dataTables.items[0];
 
-            // ===============================
-            // SET BASIC FIELD (langsung saja)
-            // ===============================
             $('[name="docno"]').val(item.docno).prop('readonly', true);
 
             let prefixParts = item.docno.trim().split('/');
@@ -130,29 +121,18 @@ function documentReadable() {
 
             skipRoleChange = true;
 
-            // ===============================
-            // LOAD SEMUA MASTER DATA PARALEL
-            // ===============================
-
-            const branch1 = $.getJSON(HOST_URL + 'api/globalmodule/list_branchjob', {var: item.cabang});
-            const branch2 = $.getJSON(HOST_URL + 'api/globalmodule/list_branchjob', {var: item.cabang_sent});
-            const locFrom = $.getJSON(HOST_URL + 'api/globalmodule/list_mlocation', {var: item.idlocation_dtl});
-            const locTo = $.getJSON(HOST_URL + 'api/globalmodule/list_mlocation', {var: item.idlocation_to});
-            const locTransit = $.getJSON(HOST_URL + 'api/globalmodule/list_mlocation', {var: item.idlocation_transit});
+            const branch1 = $.getJSON(HOST_URL + 'api/globalmodule/list_branchjob', { var: item.cabang });
+            const branch2 = $.getJSON(HOST_URL + 'api/globalmodule/list_branchjob', { var: item.cabang_sent });
+            const locFrom = $.getJSON(HOST_URL + 'api/globalmodule/list_mlocation', { var: item.idlocation_dtl });
+            const locTo = $.getJSON(HOST_URL + 'api/globalmodule/list_mlocation', { var: item.idlocation_to });
+            const locTransit = $.getJSON(HOST_URL + 'api/globalmodule/list_mlocation', { var: item.idlocation_transit });
 
             $.when(branch1, branch2, locFrom, locTo, locTransit)
                 .done(function (b1, b2, l1, l2, l3) {
-
                     setSelect2('[name="cabang"]', b1[0].items[0], 'nmbranch', 'idbranch');
-                    // setSelect2('[name="cabang_sent"]', b2[0].items[0], 'nmbranch', 'idbranch');
-                    // setSelect2('[name="idlocation_dtl"]', l1[0].items[0], 'nmlocation', 'idlocation');
-                    // setSelect2('[name="idlocation_to"]', l2[0].items[0], 'nmlocation', 'idlocation');
-                    // setSelect2('[name="idlocation_transit"]', l3[0].items[0], 'nmlocation', 'idlocation');
-
-
                     hideLoader();
-
                 });
+
             hideLoader();
         })
         .fail(function () {
@@ -166,13 +146,11 @@ function documentReadable() {
     hideLoader();
 }
 
-
-// ===============================
-// Helper Function (Lebih Bersih)
-// ===============================
+/* ============================================================
+ * HELPER: set Select2 value (readonly)
+ * ============================================================ */
 function setSelect2(selector, data, textField, valueField) {
     if (!data) return;
-
     var option = new Option(data[textField], data[valueField], true, true);
     $(selector)
         .append(option)
@@ -180,12 +158,18 @@ function setSelect2(selector, data, textField, valueField) {
         .prop('disabled', true);
 }
 
-/* FOR INPUT FUNCTION */
+/* ============================================================
+ * HELPER: reset Select2 dengan benar (bukan .empty())
+ * ============================================================ */
+function resetSelect2(selector) {
+    $(selector).val(null).trigger('change.select2');
+}
 
-
-// +++++++++++++++++++++++++++++++++++++++++++++++++++++ RANAH GROUP ++++++++++++++++++++++++++++++++++++++++//
-
+/* ============================================================
+ * RANAH GROUP — #idbarang
+ * ============================================================ */
 var defaultInitialGroupBrng = '';
+
 $("#idbarang").select2({
     placeholder: "Choose Your Item List",
     allowClear: true,
@@ -197,7 +181,7 @@ $("#idbarang").select2({
         delay: 250,
         data: function (params) {
             return {
-                _search_: params.term, // search term
+                _search_: params.term,
                 _page_: params.page,
                 _draw_: true,
                 _start_: 1,
@@ -209,154 +193,216 @@ $("#idbarang").select2({
             };
         },
         processResults: function (data, params) {
-            // var searchTerm = $("#idbarang").data("select2").$dropdown.find("input").val();
-            // if (data.items.length === 1 && data.items[0].text === searchTerm) {
-            //     var option = new Option(data.items[0].nmbarang, data.items[0].idbarang, true, true);
-            //     $('#idbarang').append(option).trigger('change').select2("close");
-            //     // manually trigger the `select2:select` event
-            //     $('#idbarang').trigger({
-            //         type: 'select2:select',
-            //         params: {
-            //             data: data
-            //         }
-            //     });
-            // }
             params.page = params.page || 1;
             return {
                 results: data.items,
-                pagination: {
-                    more: (params.page * 30) < data.total_count
-                }
+                pagination: { more: (params.page * 30) < data.total_count }
             };
         },
-
         cache: false
     },
-    escapeMarkup: function (markup) {
-        return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatItem, // omitted for brevity, see the source of this page
-    templateSelection: formatItemSelection // omitted for brevity, see the source of this page
-}).on("select2:select", function (e) {
+    escapeMarkup: function (markup) { return markup; },
+    templateResult: formatItem,
+    templateSelection: formatItemSelection
+})
+    .on("select2:select", function (e) {
+        handleItemSelected(e.params.data);
+    })
+    .on("change", function () {
+        // Fallback: kalau di-set via .val() programatik / select2:select kadang tidak fire
+        let data = $('#idbarang').select2('data')[0];
+        if (data && !data.loading) {
+            handleItemSelected(data);
+        }
+    });
+
+/* ============================================================
+ * HANDLER: setelah item dipilih
+ * ============================================================ */
+function handleItemSelected(data) {
+    if (!data) return;
+
     var idlocation = $('[name="idlocation_dtl"]').val();
 
     if (!idlocation || idlocation.trim() === '') {
-
         Swal.fire({
             icon: 'warning',
             title: 'Peringatan',
             text: 'Silakan pilih gudang terlebih dahulu.'
         });
-
         $('#saveAjusment').prop('disabled', true);
-
-        return; // hentikan proses
-
-    } else {
-        $('#saveAjusment').prop('disabled', false);
+        return;
     }
 
+    $('#saveAjusment').prop('disabled', false);
 
-    var data = e.params.data;
-
-    $('[name="nmbarang"]').val(data.nmbarang.trim()).prop("readonly", true);
-    $('[name="unit"]').val(data.unit.trim()).prop("readonly", true);
-    //$('[name="batch"]').val(data.batch.trim()).prop("readonly", true);
+    // Guard || '' supaya tidak error saat field undefined
+    $('[name="nmbarang"]').val((data.nmbarang || '').trim()).prop("readonly", true);
+    $('[name="unit"]').val((data.unit || '').trim()).prop("readonly", true);
 
     let qty = (data.sisaonhand && data.sisaonhand !== '') ? data.sisaonhand : 0;
     $('[name="qtystock"]').val(qty).prop("readonly", true);
-});
 
+    // ✅ Panggil getSisaStock() juga — karena select2:select kadang tidak trigger blur
+    getSisaStock();
+}
 
+/* ============================================================
+ * DETEKSI PERUBAHAN: getLastStock
+ * ============================================================ */
 let isLoadingUpdate = false;
+
 $(document).on("change blur", ".getLastStock", function () {
     if (isLoadingUpdate) return;
     getSisaStock();
 });
-//class getLastStock setiap ada pergerakan dari getLastStock class , input on blur on select selalu menjalankan fungsi getSisaStock(), dan fix ajax saya
-function getSisaStock() {
 
+// Fallback tambahan untuk Select2 (#idbarang, #batch)
+$(document).on("change", "#idbarang, #batch, #idlocation_dtl", function () {
+    if (isLoadingUpdate) return;
+    getSisaStock();
+});
+
+/* ============================================================
+ * AMBIL SISA STOCK + AUTO-FILL HARGA
+ * ============================================================ */
+function getSisaStock() {
     let idbarang       = $('[name="idbarang"]').val();
     let batch          = $('[name="batch"]').val();
     let idlocation_dtl = $('[name="idlocation_dtl"]').val();
 
-    if (!idbarang || !idlocation_dtl) {
-        return;
-    }
+    if (!idbarang || !idlocation_dtl) return;
 
     $.ajax({
         url: HOST_URL + 'api/globalmodule/list_batch_item',
         type: 'POST',
         dataType: 'json',
-
         data: {
             _parameterx_: idbarang,
             _var_: batch,
             loccode: idlocation_dtl
         },
-
         success: function (response) {
 
             if (!response || !response.items || response.items.length === 0) {
-
                 $('[name="qtystock"]').val(0).prop("readonly", true);
+                // ✅ Tetap coba ambil harga walau stok 0
+                autoFillHargaPersediaan(idbarang, idlocation_dtl, batch);
                 return;
             }
 
             let data = response.items[0];
 
             $('[name="nmbarang"]').val((data.nmbarang || '').trim()).prop("readonly", true);
-
             $('[name="unit"]').val((data.unit || '').trim()).prop("readonly", true);
             $('[name="currency"]').val((data.defaultcurrency || '').trim()).prop("readonly", true);
 
-     /*       if (data.batch) {
-                $('#batch').val(data.batch).trigger('change');
-            }*/
-
             let qty = (data.sisaonhand && data.sisaonhand !== '') ? data.sisaonhand : 0;
-
             $('[name="qtystock"]').val(qty).prop("readonly", true);
 
+            // ✅ AUTO-FILL HARGA PERSEDIAAN
+            autoFillHargaPersediaan(idbarang, idlocation_dtl, batch);
         },
-
         error: function () {
-
-            console.log("Failed get stock data");
-
             $('[name="qtystock"]').val(0).prop("readonly", true);
-
+            autoFillHargaPersediaan(idbarang, idlocation_dtl, batch);
         }
-
     });
-
 }
 
+/* ============================================================
+ * AUTO-FILL HARGA PERSEDIAAN (dari list_avg_stock)
+ * Hanya isi kalau valqty masih kosong / 0
+ * ============================================================ */
+function autoFillHargaPersediaan(idbarang, idlocation, batch) {
+    if (!idbarang || !idlocation) return;
 
-/* Format Group */
+    $.ajax({
+        url: HOST_URL + 'api/globalmodule/list_avg_stock',
+        type: 'POST',
+        dataType: 'json',
+        data: {
+            _parameterx_: idbarang,
+            loccode:      idlocation,
+            _var_:        batch || ''
+        },
+        success: function (res) {
+
+            console.log('[autoFill] RAW response:', res);
+
+            if (!res) return;
+
+            // Ambil item pertama dari berbagai struktur response
+            let item = null;
+            if (Array.isArray(res.items) && res.items.length > 0)      item = res.items[0];
+            else if (Array.isArray(res.data) && res.data.length > 0)   item = res.data[0];
+            else if (res.data && typeof res.data === 'object')         item = res.data;
+            else if (typeof res === 'object')                          item = res;
+
+            if (!item) {
+                console.log('[autoFill] item kosong');
+                return;
+            }
+
+            let raw = item.avg_cost ?? item.avgcost ?? item.avgCost
+                ?? item.harga ?? item.val ?? item.cost ?? 0;
+
+            let avg_cost = parseFloat(
+                String(raw).replace(/[^\d.-]/g, '')
+            ) || 0;
+
+            console.log('[autoFill] raw =', raw, ' parsed =', avg_cost);
+
+            if (avg_cost <= 0) {
+                console.log('[autoFill] avg_cost 0, skip');
+                return;
+            }
+
+            let $valqty = $('[name="valqty"]');
+            let currentVal = parseFloat(convertToDbNumber($valqty.val())) || 0;
+
+            if (currentVal === 0) {
+                $valqty.val(avg_cost);
+                if (typeof _jtsseparator === 'function') {
+                    _jtsseparator($valqty[0]);
+                }
+                console.log('[autoFill] Filled valqty =', avg_cost);
+            } else {
+                console.log('[autoFill] valqty sudah ada, skip. current =', currentVal);
+            }
+        },
+        error: function (xhr) {
+            console.log('[autoFill] Error:', xhr.status, xhr.responseText);
+        }
+    });
+}
+
+/* ============================================================
+ * FORMAT ITEM
+ * ============================================================ */
 function formatItem(repo) {
     if (repo.loading) return repo.text;
-    var markup = "<div class='select2-result-repository__description'>" + repo.idbarang + "   <i class='fa fa-circle-o'></i>   " + repo.nmbarang + "</div>";
-    return markup;
+    return "<div class='select2-result-repository__description'>" +
+        repo.idbarang + "   <i class='fa fa-circle-o'></i>   " + repo.nmbarang +
+        "</div>";
 }
 
 function formatItemSelection(repo) {
     return repo.nmbarang || repo.text;
 }
 
-
+/* ============================================================
+ * RANAH BATCH
+ * ============================================================ */
 $("#batch").select2({
     placeholder: "Choose Your Specification / Batch",
     allowClear: true,
     width: "100%",
-
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_batch_item',
         type: 'POST',
         dataType: 'json',
         delay: 250,
-
         data: function (params) {
             var idbarang = $("#idbarang").val();
             var loccode = $("#idlocation_dtl").val();
@@ -366,61 +412,43 @@ $("#batch").select2({
                 loccode: loccode,
             };
         },
-
         processResults: function (data) {
-
             var results = $.map(data.items, function (item) {
-                return {
-                    id: item.batch,
-                    text: item.batch
-                };
+                return { id: item.batch, text: item.batch };
             });
-
-            return {
-                results: results
-            };
+            return { results: results };
         },
-
         cache: true
     },
-
     templateResult: formatBatch,
     templateSelection: formatBatchSelection,
-
-    escapeMarkup: function (markup) {
-        return markup;
-    }
-
+    escapeMarkup: function (markup) { return markup; }
 });
 
-
 function formatBatch(repo) {
-
     if (repo.loading) return repo.text;
-
-    return '<div class="select2-result-repository__description">' +
-        repo.text +
-        '</div>';
+    return '<div class="select2-result-repository__description">' + repo.text + '</div>';
 }
-
 
 function formatBatchSelection(repo) {
-
     return repo.text || repo.id || '';
-
 }
 
-
+/* ============================================================
+ * UTIL: JTS separator
+ * ============================================================ */
 function setJtsValue(selector, value) {
     $(selector).val(value);
     _jtsseparator($(selector)[0]);
 }
 
-
 $(document).on('input', '.jtsseparator', function () {
     _jtsseparator(this);
 });
 
+/* ============================================================
+ * NEW SPEC / BATCH
+ * ============================================================ */
 function new_spec() {
     Swal.fire({
         title: 'New Batch/Specification',
@@ -428,17 +456,16 @@ function new_spec() {
         confirmButtonText: 'Process',
         focusConfirm: false,
         preConfirm: () => {
-            const newbatch = Swal.getPopup().querySelector('#newbatch').value
-            //const password = Swal.getPopup().querySelector('#password').value
+            const newbatch = Swal.getPopup().querySelector('#newbatch').value;
             if (!newbatch) {
-                Swal.showValidationMessage(`Fill The New Batch`)
+                Swal.showValidationMessage(`Fill The New Batch`);
             }
-            return {newbatch: newbatch}
+            return { newbatch: newbatch };
         }
     }).then((result) => {
         $.ajax({
             type: "POST",
-            url: HOST_URL + 'api/globalmodule/add_newbatch' + '',
+            url: HOST_URL + 'api/globalmodule/add_newbatch',
             dataType: 'json',
             data: {
                 'loccode': $('[name="idlocation_dtl"]').val(),
@@ -448,39 +475,29 @@ function new_spec() {
             success: function (datax) {
                 if (datax.status) {
                     Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil',
-                        text: datax.messages,
-                        backdrop: true,
-                        allowOutsideClick: false,
+                        icon: 'success', title: 'Berhasil', text: datax.messages,
+                        backdrop: true, allowOutsideClick: false,
                     });
                 } else {
                     Swal.fire({
-                        icon: 'error',
-                        title: 'Oops...',
-                        text: datax.messages,
-                        backdrop: true,
-                        allowOutsideClick: false,
-                    })
+                        icon: 'error', title: 'Oops...', text: datax.messages,
+                        backdrop: true, allowOutsideClick: false,
+                    });
                 }
-
             },
-            error: function (jqXHR, textStatus, errorThrown) {
+            error: function () {
                 Swal.fire({
-                    icon: 'error',
-                    title: 'Oops...',
-                    text: 'Unable To Response Data',
-                    backdrop: true,
-                    allowOutsideClick: false,
-                })
-
+                    icon: 'error', title: 'Oops...', text: 'Unable To Response Data',
+                    backdrop: true, allowOutsideClick: false,
+                });
             }
         });
-
-    })
+    });
 }
 
-
+/* ============================================================
+ * EDIT ITEM (external)
+ * ============================================================ */
 function editsearchitem(e) {
     Swal.fire({
         title: 'Peringatan..!!!',
@@ -492,26 +509,24 @@ function editsearchitem(e) {
         showCancelButton: false,
         confirmButtonText: `Ok`,
         icon: 'question',
-        //denyButtonText: `Don't save`,
     }).then((result) => {
-        /* Read more about isConfirmed, isDenied below */
         if (result.isConfirmed) {
-            window.location.replace(HOST_URL + 'master/item/edit' + '/?var=' + e)
+            window.location.replace(HOST_URL + 'master/item/edit/?var=' + e);
         } else if (result.isDenied) {
             return false;
         }
-    })
+    });
 }
 
-
-/* TABLE PP DETAIL */
+/* ============================================================
+ * TABLE DETAIL
+ * ============================================================ */
 function tabletmpSPKDetail() {
-    /* Tabel PP Detail */
     var initTable = function () {
         var table = $('#tmptabspktransfersdtl');
         table.DataTable({
-            "processing": true, //Feature control the processing indicator.
-            "serverSide": true, //Feature control DataTables' server-side processing mode.
+            "processing": true,
+            "serverSide": true,
             "language": languageDatatable(),
             "paging": false,
             "lengthChange": true,
@@ -525,21 +540,16 @@ function tabletmpSPKDetail() {
             "ajax": {
                 "url": HOST_URL + 'persediaan/trans/list_tmp_ajustment_stock_dtl',
                 "type": "POST",
-                "data": function (data) {
-                    //data.searchfilter = $('#searchitem').val()+'';
-                    //data.idbarang = $('#idbarang').val()+'';
-                    //data.idposition = $('#idposition').val()+'';
-                },
+                "data": function (data) { /* no-op */ },
                 "dataFilter": function (data) {
                     var json = jQuery.parseJSON(data);
                     json.draw = json.dataTables.draw;
                     json.recordsTotal = json.dataTables.recordsTotal;
                     json.recordsFiltered = json.dataTables.recordsFiltered;
                     json.data = json.dataTables.data;
-                    return JSON.stringify(json); // return JSON string
+                    return JSON.stringify(json);
                 }
             },
-            //Set column definition initialisation properties.
             "columnDefs": [
                 {
                     "targets": 0,
@@ -547,53 +557,86 @@ function tabletmpSPKDetail() {
                     "searchable": false,
                     "className": "text-center",
                     "render": function (data, type, row) {
-                        // row[1] = kolom ID (ID Tax)
                         return '<input type="checkbox" class="row-check" value="' + row[0] + '">';
                     }
                 },
-                {
-                    "targets": [-1],
-                    "orderable": false
-                }
+                { "targets": [-1], "orderable": false }
             ]
         });
-    }
-
+    };
     return initTable();
-
 }
-
 
 function reload_table_transfer_dtl() {
     var table = $('#tmptabspktransfersdtl');
-    table.DataTable().ajax.reload(); //reload datatable ajax
+    table.DataTable().ajax.reload();
 }
 
-
-// CHECK ALL
+/* ============================================================
+ * CHECK ALL
+ * ============================================================ */
 $('#tmptabspktransfersdtl thead').on('change', '#checkAll', function () {
     const checked = this.checked;
-
     $('#tmptabspktransfersdtl tbody .row-check').prop('checked', checked);
 });
 
-// JIKA SALAH SATU ROW UNCHECK → CHECKALL MATI
 $('#tmptabspktransfersdtl tbody').on('change', '.row-check', function () {
     const total = $('#tmptabspktransfersdtl tbody .row-check').length;
     const checked = $('#tmptabspktransfersdtl tbody .row-check:checked').length;
-
     $('#checkAll').prop('checked', total === checked);
 });
 
 $('#tmptabspktransfersdtl').on('draw.dt', function () {
     $('#checkAll').prop('checked', false);
 });
+/* ============================================================
+   KLIK BODY ROW → TOGGLE CHECKBOX
+   ============================================================ */
+/* ============================================================
+   ROW SELECT — Klik row untuk centang + highlight
+   ============================================================ */
+$('#tmptabspktransfersdtl tbody').on('click', 'tr', function (e) {
 
+    // Skip kalau yang diklik checkbox atau tombol
+    if ($(e.target).is('input[type="checkbox"], button, a, i.fa, .btn')) {
+        return;
+    }
+
+    let $chk = $(this).find('.row-check');
+    if ($chk.length === 0) return;
+
+    let newState = !$chk.prop('checked');
+    $chk.prop('checked', newState);
+
+    // Toggle class highlight
+    $(this).toggleClass('row-selected', newState);
+
+    // Sinkronisasi checkAll
+    syncCheckAll();
+});
+
+/* Sync status checkAll */
+function syncCheckAll() {
+    let total   = $('#tmptabspktransfersdtl tbody .row-check').length;
+    let checked = $('#tmptabspktransfersdtl tbody .row-check:checked').length;
+
+    $('#checkAll').prop('checked', total === checked && total > 0);
+}
+
+/* Pastikan checkbox manual juga update highlight */
+$('#tmptabspktransfersdtl tbody').on('change', '.row-check', function () {
+    $(this).closest('tr').toggleClass('row-selected', this.checked);
+    syncCheckAll();
+});
+
+/* Setelah redraw DataTable, reset checkAll */
+$('#tmptabspktransfersdtl').on('draw.dt', function () {
+    $('#checkAll').prop('checked', false);
+    $('.row-selected').removeClass('row-selected');
+});
 function getSelectedPPDetail() {
     return $('#tmptabspktransfersdtl tbody .row-check:checked')
-        .map(function () {
-            return $(this).val();
-        }).get();
+        .map(function () { return $(this).val(); }).get();
 }
 
 function getCheckedDetailIds() {
@@ -604,23 +647,16 @@ function getCheckedDetailIds() {
     return ids;
 }
 
-
-function setSelect2Ajax(selector, value, text) {
-    if (!value) return;
-
-    let option = new Option(text || value, value, true, true);
-    $(selector).append(option).trigger('change');
-}
-
-
+/* ============================================================
+ * UPDATE DETAIL
+ * ============================================================ */
 function updateAjustmentStockDetail() {
     isLoadingUpdate = true;
     const ids = getCheckedDetailIds();
 
     if (!ids || ids.length === 0) {
         Swal.fire({
-            icon: 'warning',
-            title: 'Peringatan',
+            icon: 'warning', title: 'Peringatan',
             text: 'Pilih satu data yang akan diupdate'
         });
         return;
@@ -628,8 +664,7 @@ function updateAjustmentStockDetail() {
 
     if (ids.length > 1) {
         Swal.fire({
-            icon: 'warning',
-            title: 'Peringatan',
+            icon: 'warning', title: 'Peringatan',
             text: 'Update hanya boleh satu data'
         });
         return;
@@ -642,20 +677,19 @@ function updateAjustmentStockDetail() {
         dataType: 'json',
         success: function (json) {
 
-            $('[name="idlocation_dtl"]').empty().trigger('change');
-            $('#idbarang').empty().trigger('change');
-            $('#batch').empty().trigger('change');
+            // ✅ Reset Select2 dengan cara yang benar
+            resetSelect2('[name="idlocation_dtl"]');
+            resetSelect2('#idbarang');
+            resetSelect2('#batch');
 
-            if (!json.dataTables.status) return;
+            if (!json.dataTables.status) {
+                isLoadingUpdate = false;
+                return;
+            }
 
             let data = json.dataTables.items[0];
 
-            /*
-            =========================
-            TRIM DATA (CHAR FIX)
-            =========================
-            */
-
+            // Trim
             data.idbarang   = (data.idbarang || '').trim();
             data.idlocation = (data.idlocation || '').trim();
             data.batch      = (data.batch || '').trim();
@@ -664,12 +698,8 @@ function updateAjustmentStockDetail() {
             data.nmbarang   = (data.nmbarang || '').trim();
             data.unit       = (data.unit || '').trim();
 
-            /*
-            =========================
-            SET FORM
-            =========================
-            */
-            $('#iduniq').val(res.data.iduniq);
+            // SET FORM
+            $('#iduniq').val(data.iduniq);
             $('#idurut').val(data.idurut);
             $('#description').val(data.description);
             $('#docno').val(data.docno);
@@ -677,25 +707,14 @@ function updateAjustmentStockDetail() {
 
             $('#valqty').val(data.valqty);
             $('#qtystock').val(data.qtystock);
-
             $('#nmbarang').val(data.nmbarang);
             $('#unit').val(data.unit);
             $('#qty').val(data.qty);
             $('#currency').val(data.currency);
 
             /*
-            =========================
-            RESET SELECT2
-            =========================
-            */
-
-
-            /*
-            =========================
-            1. LOAD LOCATION
-            =========================
-            */
-
+             * 1. LOAD LOCATION
+             */
             $.ajax({
                 type: 'GET',
                 url: HOST_URL + 'api/globalmodule/list_mlocation',
@@ -706,28 +725,18 @@ function updateAjustmentStockDetail() {
                 if (!resLocation.items || resLocation.items.length === 0) return;
 
                 let loc = resLocation.items[0];
-
                 loc.idlocation = (loc.idlocation || '').trim();
 
                 let optionLoc = new Option(loc.nmlocation, loc.idlocation, true, true);
-
-                $('[name="idlocation_dtl"]')
-                    .append(optionLoc)
-                    .trigger('change');
+                $('[name="idlocation_dtl"]').append(optionLoc).trigger('change');
 
                 /*
-                =========================
-                2. LOAD ITEM
-                =========================
-                */
-
+                 * 2. LOAD ITEM
+                 */
                 return $.ajax({
                     type: 'POST',
                     url: HOST_URL + 'api/globalmodule/list_item',
-                    data: {
-                        var: data.idbarang,
-                        //loccode: loc.idlocation
-                    },
+                    data: { var: data.idbarang },
                     dataType: 'json'
                 });
 
@@ -736,26 +745,14 @@ function updateAjustmentStockDetail() {
                 if (!resItem || !resItem.items || resItem.items.length === 0) return;
 
                 let item = resItem.items[0];
-
                 item.idbarang = (item.idbarang || '').trim();
 
                 let optionItem = new Option(item.nmbarang, item.idbarang, true, true);
-
-                $('#idbarang')
-                    .append(optionItem)
-                    .trigger('change');
-
-                $('#idbarang').trigger({
-                    type: 'select2:select',
-                    params: { data: item }
-                });
+                $('#idbarang').append(optionItem).trigger('change');
 
                 /*
-                =========================
-                3. LOAD BATCH
-                =========================
-                */
-
+                 * 3. LOAD BATCH
+                 */
                 return $.ajax({
                     type: 'GET',
                     url: HOST_URL + 'api/globalmodule/list_batch_item',
@@ -772,71 +769,60 @@ function updateAjustmentStockDetail() {
                 if (!resBatch || !resBatch.items || resBatch.items.length === 0) return;
 
                 let batch = resBatch.items[0];
-
                 batch.batch = (batch.batch || '').trim();
 
                 let optionBatch = new Option(batch.batch, batch.batch, true, true);
-
-                $('#batch')
-                    .append(optionBatch)
-                    .trigger('change');
-
-                $('#batch').trigger({
-                    type: 'select2:select',
-                    params: { data: batch }
-                });
-
+                $('#batch').append(optionBatch).trigger('change');
             });
 
-            /*
-            =========================
-            SHOW MODAL
-            =========================
-            */
             isLoadingUpdate = false;
             $('#modalDetailPPLabel').text('Update Detail');
             $('#modalDetailSPK').modal('show');
-
-
-
+        },
+        error: function () {
+            isLoadingUpdate = false;
         }
     });
-
 }
 
-
+/* ============================================================
+ * CHECK ALL DETAIL (alternatif)
+ * ============================================================ */
 $('#checkAllDetail').on('change', function () {
     $('.row-check').prop('checked', this.checked);
 });
 
-// auto uncheck checkAll jika salah satu dilepas
 $(document).on('change', '.row-check', function () {
     if (!this.checked) {
         $('#checkAllDetail').prop('checked', false);
     }
 });
 
-
-$('#btn-filter').click(function () { //button filter event click
+/* ============================================================
+ * FILTER (list lain)
+ * ============================================================ */
+$('#btn-filter').click(function () {
     var table = $('#tlistlbm_wacc');
-    table.DataTable().ajax.reload(); //reload datatable ajax
+    table.DataTable().ajax.reload();
     $('#filter').modal('hide');
 });
-$('#btn-reset').click(function () { //button reset event click
+
+$('#btn-reset').click(function () {
     $('#form-filter')[0].reset();
     var table = $('#tlistlbm_wacc');
-    table.DataTable().ajax.reload(); //reload datatable ajax
+    table.DataTable().ajax.reload();
     $('#filter').modal('hide');
 });
 
-
+/* ============================================================
+ * FILTER ITEM (list)
+ * ============================================================ */
 var defaultInitialItem = '';
+
 $("#idbarang_filter").select2({
     placeholder: "Type/ Choose your item",
     allowClear: true,
     dropdownParent: $("#filter"),
-    //minimumInputLength: 2, // only start searching when the user has input 3 or more characters
-    //maximumSelectionLength: 1,
     multiple: false,
     ajax: {
         url: HOST_URL + 'stock/balance/list_item',
@@ -845,7 +831,7 @@ $("#idbarang_filter").select2({
         delay: 250,
         data: function (params) {
             return {
-                _search_: params.term, // search term
+                _search_: params.term,
                 _page_: params.page,
                 _draw_: true,
                 _start_: 1,
@@ -860,53 +846,41 @@ $("#idbarang_filter").select2({
             if (data.items.length === 1 && data.items[0].text === searchTerm) {
                 var option = new Option(data.items[0].nmbarang, data.items[0].idbarang, true, true);
                 $('#idbarang_filter').append(option).trigger('change').select2("close");
-                // manually trigger the `select2:select` event
                 $('#idbarang_filter').trigger({
                     type: 'select2:select',
-                    params: {
-                        data: data
-                    }
+                    params: { data: data }
                 });
             }
             params.page = params.page || 1;
             return {
                 results: data.items,
-                pagination: {
-                    more: (params.page * 30) < data.total_count
-                }
+                pagination: { more: (params.page * 30) < data.total_count }
             };
         },
-
         cache: false
     },
-    escapeMarkup: function (markup) {
-        return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatItemFilter, // omitted for brevity, see the source of this page
-    templateSelection: formatItemSelectionFilter // omitted for brevity, see the source of this page
+    escapeMarkup: function (markup) { return markup; },
+    templateResult: formatItemFilter,
+    templateSelection: formatItemSelectionFilter
 }).on("change", function () {
     console.log('Selecting =>' + $(this).val());
-    //var table = $('#tsearchitem');
-    //table.DataTable().ajax.reload(); //reload datatable ajax
-    ///table.append().search( $(this).val() ).draw();
-    //$('#filter').modal('hide');
 });
 
-/* Format Group */
 function formatItemFilter(repo) {
     if (repo.loading) return repo.text;
-    var markup = "<div class='select2-result-repository__description'>" + repo.idbarang + "   <i class='fa fa-circle-o'></i>   " + repo.nmbarang + "</div>";
-    return markup;
+    return "<div class='select2-result-repository__description'>" +
+        repo.idbarang + "   <i class='fa fa-circle-o'></i>   " + repo.nmbarang +
+        "</div>";
 }
 
 function formatItemSelectionFilter(repo) {
     return repo.nmbarang || repo.text;
 }
 
-
+/* ============================================================
+ * SAVE AJUSTMENT DETAIL
+ * ============================================================ */
 function saveAjustment() {
-
     Swal.fire({
         title: 'Konfirmasi',
         text: 'Simpan data Detail?',
@@ -918,52 +892,32 @@ function saveAjustment() {
 
         if (!result.isConfirmed) return;
 
-        // ===============================
-        // Ambil dan validasi qty
-        // ===============================
-
         let qtyInput = $('#qty').val();
         let stockInput = $('#qtystock').val();
         let valueQty = $('#valqty').val();
-        let vardk = $('#dk').val();
 
         let qty = parseFloat(convertToDbNumber(qtyInput)) || 0;
         let qtystock = parseFloat(convertToDbNumber(stockInput)) || 0;
         let valQty = parseFloat(convertToDbNumber(valueQty)) || 0;
 
-
-        // ===============================
-        // Siapkan FormData
-        // ===============================
-
         let formData = new FormData(document.getElementById('formAjustmentStockDtl'));
 
         formData.append('cabang', $('#cabang').val());
         formData.append('pemohon', $('#pemohon').val());
-        //formData.append('idlocation_dtl', $('#idlocation_dtl').val());
-        // formData.append('cabang_sent', $('#cabang_sent').val());
-        // formData.append('idlocation_to', $('#idlocation_to').val());
-        // formData.append('idlocation_transit', $('#idlocation_transit').val());
         formData.append('description', $('#description').val());
         formData.append('docdate', $('#docdate').val());
         formData.append('docref', $('#docref').val());
 
-        // Gabungkan docno
         formData.set(
             'docno',
-            $('#prefix').val() + '/' +
-            $('#infix').val() + '/' +
-            $('#suffix').val()
+            $('#prefix').val() + '/' + $('#infix').val() + '/' + $('#suffix').val()
         );
 
-        // Set numeric value yang sudah divalidasi
         formData.set('qty', qty);
         formData.set('qtystock', qtystock);
         formData.set('valqty', valQty);
-        formData.set('iduniq', iduniq);
-        // ===============================
-        // AJAX SAVE
-        // ===============================
+        // ⚠️ iduniq diambil dari input hidden — jangan pakai variabel global iduniq
+        formData.set('iduniq', $('#iduniq').val());
 
         $.ajax({
             url: HOST_URL + 'persediaan/trans/save_ajustment_stock_detail',
@@ -974,15 +928,11 @@ function saveAjustment() {
             contentType: false,
 
             success: function (res) {
-
                 if (res.success) {
-
                     Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil',
+                        icon: 'success', title: 'Berhasil',
                         text: res.message || 'Data Detail berhasil disimpan',
-                        timer: 2000,
-                        showConfirmButton: false
+                        timer: 2000, showConfirmButton: false
                     });
 
                     if (res.reload === true) {
@@ -993,12 +943,9 @@ function saveAjustment() {
                     $('#modalDetailSPK').modal('hide');
                     reload_table_transfer_dtl();
                     $('#formAjustmentStockDtl')[0].reset();
-
                 } else {
-
                     Swal.fire({
-                        icon: 'warning',
-                        title: 'Gagal',
+                        icon: 'warning', title: 'Gagal',
                         text: res.message || 'Gagal menyimpan data'
                     });
                 }
@@ -1006,68 +953,36 @@ function saveAjustment() {
 
             error: function (xhr) {
                 console.error(xhr.responseText);
-
                 Swal.fire({
-                    icon: 'error',
-                    title: 'Server Error',
+                    icon: 'error', title: 'Server Error',
                     text: 'Terjadi kesalahan server'
                 });
             }
         });
-
     });
 }
 
-// ===============================
-// VALIDASI BUTTON SAVE
-// ===============================
+/* ============================================================
+ * BUTTON: ADD DETAIL
+ * ============================================================ */
 $('#btnAddDetail').on('click', function (e) {
     btnInputDetail();
-    // var idlocation_dtl = $('[name="idlocation_dtl"]').val();
-    // console.log(idlocation_dtl + "STRING")
-    // if (!idlocation_dtl) {
-    //     e.preventDefault();
-    //
-    //     Swal.fire({
-    //         icon: 'warning',
-    //         title: 'Oops...',
-    //         text: 'Semua Inputan Master Tidak Boleh Kosong!',
-    //         confirmButtonColor: '#3085d6'
-    //     });
-    //     return false; // berhenti di sini
-    //
-    //
-    // } else {
-    //     // ✅ kalau valid jalankan function
-    //
-    //
-    //
-    //
-    //
-    //
-    // }
-
 });
 
-
-// ===============================
-// FUNCTION BUKA MODAL
-// ===============================
 function btnInputDetail() {
-    console.log(" INI KENAPA DI SISI ");
-
-
     $('#formAjustmentStockDtl')[0].reset();
-    // Clear select2
-    $('#idlocation_dtl').val(null).trigger('change');
-    $('#batch').val(null).trigger('change');
-    $('#idbarang').val(null).trigger('change');
+    resetSelect2('#idlocation_dtl');
+    resetSelect2('#batch');
+    resetSelect2('#idbarang');
     $('#idurut').val('');
+    $('#iduniq').val('');
     $('#modalDetailPPLabel').text('Tambah Item Detail');
     $('#modalDetailSPK').modal('show');
 }
 
-
+/* ============================================================
+ * DOC NUMBER
+ * ============================================================ */
 let currentKodeSuffix = '';
 
 function generateDocNumber(prefix, infix, suffix) {
@@ -1076,27 +991,23 @@ function generateDocNumber(prefix, infix, suffix) {
 }
 
 $('#cabang').on('change', function () {
-
     if (skipRoleChange) return;
 
     let idbranch = $(this).val();
-
     if (!idbranch) return;
 
     $.ajax({
         url: HOST_URL + '/persediaan/trans/getBranch_ajustment_stock',
         method: 'GET',
-        data: {idbranch: idbranch},
+        data: { idbranch: idbranch },
         dataType: 'json',
         success: function (res) {
-
             if (!res.success) {
                 Swal.fire('Error', res.message, 'warning');
                 return;
             }
 
             currentKodeSuffix = res.kode_suffix;
-
             $('#infix').val(res.infix);
 
             var prefix = res.prefix;
@@ -1105,36 +1016,29 @@ $('#cabang').on('change', function () {
 
             var infix = (res.infix || '').toString();
 
-             if (infix.length === 4) {
+            if (infix.length === 4) {
                 $('#docdate').prop('disabled', false);
-                var yy = infix.substring(0,2);
-                var mm = infix.substring(2,4);
-                var year = 2000 + parseInt(yy,10);
-                var month = parseInt(mm,10) - 1; // moment month index
+                var yy = infix.substring(0, 2);
+                var mm = infix.substring(2, 4);
+                var year = 2000 + parseInt(yy, 10);
+                var month = parseInt(mm, 10) - 1;
 
-                // Gunakan logindate dari response sebagai default
                 var logindate = res.logindate ? moment(res.logindate, 'DD-MM-YYYY') : moment();
-                
-                // Pastikan logindate dalam range bulan infix
                 var startDate = moment([year, month, 1]);
                 var endDate = moment(startDate).endOf('month');
-                
-                // Jika logindate dalam range, gunakan logindate,否则 gunakan startDate
-                var selectedDate = logindate.isBetween(startDate, endDate, 'day', '[]') 
-                    ? logindate 
-                    : startDate;
+
+                var selectedDate = logindate.isBetween(startDate, endDate, 'day', '[]')
+                    ? logindate : startDate;
 
                 var $el = $('#docdate');
                 var drp = $el.data('daterangepicker');
 
                 if (drp) {
-                    // update limits & selected date
                     drp.minDate = startDate;
                     drp.maxDate = endDate;
                     drp.setStartDate(selectedDate);
                     drp.setEndDate(selectedDate);
                 } else {
-                    // fallback: (re)initialize with limits
                     $el.daterangepicker({
                         autoUpdateInput: false,
                         singleDatePicker: true,
@@ -1145,20 +1049,16 @@ $('#cabang').on('change', function () {
                         locale: { format: 'DD-MM-YYYY' },
                         cancelLabel: 'Clear'
                     });
-                    // rebind handlers
-                    $el.on('apply.daterangepicker', function(ev, picker) {
+                    $el.on('apply.daterangepicker', function (ev, picker) {
                         $(this).val(picker.startDate.format('DD-MM-YYYY'));
-                        // Trigger change untuk update kurs
                         $(this).trigger('change');
                     });
-                    $el.on('cancel.daterangepicker', function(ev, picker) {
+                    $el.on('cancel.daterangepicker', function () {
                         $(this).val('');
-                        // Trigger change untuk reset kurs
                         $(this).trigger('change');
                     });
                 }
 
-                // isi input dengan selectedDate
                 $el.val(selectedDate.format('DD-MM-YYYY'));
             }
 
@@ -1167,15 +1067,11 @@ $('#cabang').on('change', function () {
             );
         }
     });
-
 });
 
-
 function loadNextSuffixAdj() {
-    
     let prefix = $.trim($('#prefix').val()).toUpperCase();
     let infix = $.trim($('#infix').val());
-
 
     if (!prefix || !infix || !currentKodeSuffix) return;
 
@@ -1189,34 +1085,29 @@ function loadNextSuffixAdj() {
         },
         dataType: 'json',
         success: function (res) {
-
             if (!res.success) {
                 Swal.fire('Error', res.message, 'warning');
                 return;
             }
-
             $('#suffix').val(res.suffix);
-
             generateDocNumber(prefix, infix, res.suffix);
-
         }
     });
-
-};
-
-
+}
 
 $('#prefix').on('blur', function () {
     loadNextSuffixAdj();
 });
 
-
+/* ============================================================
+ * BRANCH
+ * ============================================================ */
 var defaultInitialBranch = '';
+
 $("#cabang").select2({
     placeholder: "Type/ Choose your Branch",
     allowClear: true,
     width: '100%',
-    //minimumInputLength: 2, // only start searching when the user has input 3 or more characters
     maximumSelectionLength: 1,
     multiple: false,
     ajax: {
@@ -1226,7 +1117,7 @@ $("#cabang").select2({
         delay: 250,
         data: function (params) {
             return {
-                _search_: params.term, // search term
+                _search_: params.term,
                 _page_: params.page,
                 _draw_: true,
                 _start_: 1,
@@ -1241,57 +1132,46 @@ $("#cabang").select2({
             if (data.items.length === 1 && data.items[0].text === searchTerm) {
                 var option = new Option(data.items[0].nmbranch, data.items[0].idbranch, true, true);
                 $('#cabang').append(option).trigger('change').select2("close");
-                // manually trigger the `select2:select` event
                 $('#cabang').trigger({
                     type: 'select2:select',
-                    params: {
-                        data: data
-                    }
+                    params: { data: data }
                 });
             }
             params.page = params.page || 1;
             return {
                 results: data.items,
-                pagination: {
-                    more: (params.page * 30) < data.total_count
-                }
+                pagination: { more: (params.page * 30) < data.total_count }
             };
         },
-
         cache: false
     },
-    escapeMarkup: function (markup) {
-        return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatBranch, // omitted for brevity, see the source of this page
-    templateSelection: formatBranchSelection // omitted for brevity, see the source of this page
+    escapeMarkup: function (markup) { return markup; },
+    templateResult: formatBranch,
+    templateSelection: formatBranchSelection
 }).on("change", function () {
     console.log('Selecting =>' + $(this).val());
-    //var table = $('#tsearchitem');
-    //table.DataTable().ajax.reload(); //reload datatable ajax
-    ///table.append().search( $(this).val() ).draw();
-    //$('#filter').modal('hide');
 });
 
-/* Format Group */
 function formatBranch(repo) {
     if (repo.loading) return repo.text;
-    var markup = "<div class='select2-result-repository__description'>" + repo.idbranch + "   <i class='fa fa-circle-o'></i>   " + repo.nmbranch + "</div>";
-    return markup;
+    return "<div class='select2-result-repository__description'>" +
+        repo.idbranch + "   <i class='fa fa-circle-o'></i>   " + repo.nmbranch +
+        "</div>";
 }
 
 function formatBranchSelection(repo) {
     return repo.nmbranch || repo.text;
 }
 
-
+/* ============================================================
+ * CABANG SENT
+ * ============================================================ */
 var defaultInitialCabangSent = '';
+
 $("#cabang_sent").select2({
     placeholder: "Type/ Choose your Branch",
     allowClear: true,
     width: '100%',
-    //minimumInputLength: 2, // only start searching when the user has input 3 or more characters
     maximumSelectionLength: 1,
     multiple: false,
     ajax: {
@@ -1301,7 +1181,7 @@ $("#cabang_sent").select2({
         delay: 250,
         data: function (params) {
             return {
-                _search_: params.term, // search term
+                _search_: params.term,
                 _page_: params.page,
                 _draw_: true,
                 _start_: 1,
@@ -1316,92 +1196,61 @@ $("#cabang_sent").select2({
             if (data.items.length === 1 && data.items[0].text === searchTerm) {
                 var option = new Option(data.items[0].nmbranch, data.items[0].idbranch, true, true);
                 $('#cabang_sent').append(option).trigger('change').select2("close");
-                // manually trigger the `select2:select` event
                 $('#cabang_sent').trigger({
                     type: 'select2:select',
-                    params: {
-                        data: data
-                    }
+                    params: { data: data }
                 });
             }
             params.page = params.page || 1;
             return {
                 results: data.items,
-                pagination: {
-                    more: (params.page * 30) < data.total_count
-                }
+                pagination: { more: (params.page * 30) < data.total_count }
             };
         },
-
         cache: false
     },
-    escapeMarkup: function (markup) {
-        return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatBranch, // omitted for brevity, see the source of this page
-    templateSelection: formatBranchSelection // omitted for brevity, see the source of this page
+    escapeMarkup: function (markup) { return markup; },
+    templateResult: formatBranch,
+    templateSelection: formatBranchSelection
 }).on("change", function () {
     console.log('Selecting =>' + $(this).val());
-    //var table = $('#tsearchitem');
-    //table.DataTable().ajax.reload(); //reload datatable ajax
-    ///table.append().search( $(this).val() ).draw();
-    //$('#filter').modal('hide');
 });
 
-
-/* TABEL LIST PO FINAL */
-
-
-//OPEN SCANNER
+/* ============================================================
+ * QR SCANNER
+ * ============================================================ */
 function open_scan() {
-    //$('[name="dob"]').datepicker('update',data.dob);
     read_qrcode();
-    $('#open_scan').modal('show'); // show bootstrap modal when complete loaded
-    $('.modal-title').text('Open Scanner'); // Set title to Bootstrap modal title
+    $('#open_scan').modal('show');
+    $('.modal-title').text('Open Scanner');
 }
 
 function read_qrcode() {
-    function onScanSuccess(decodedText, decodedResult) {
+    function onScanSuccess(decodedText) {
         play();
-        //alert(`Code scanned = ${decodedText}`, decodedResult);
-        //alert('Code scanned Kintil= ' + decodedText + '');
-        //$('#searchitem').val(decodedText).trigger('keyup');
-
         $('#searchitem').val(decodedText);
         $('#open_scan').modal('hide');
         var table = $('#tsearchitem');
         table.DataTable().ajax.reload();
-
-        //
-        // var _this = $(decodedText); // copy of this object for further usage
-        // clearTimeout(timer);
-        // timer = setTimeout(function() {
-        //     //$('#searchitem').val('');
-        //     $('#searchitem').val(decodedText);
-        //     $('#open_scan').modal('hide');
-        //     var table = $('#tsearchitem');
-        //     table.DataTable().ajax.reload();
-        // }, 1000);
         html5QrcodeScanner.clear();
     }
-
-    var html5QrcodeScanner = new Html5QrcodeScanner(
-        "qr-reader", {fps: 10, qrbox: 250});
+    var html5QrcodeScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 250 });
     html5QrcodeScanner.render(onScanSuccess);
-
 }
 
 var audio = document.getElementById('chatAudio');
-
 function play() {
-    audio.play()
+    if (audio) audio.play();
 }
 
+/* ============================================================
+ * DEPARTEMEN
+ * ============================================================ */
 function formatNewdept(repo) {
     if (repo.loading) return repo.text;
-    var markup = "<div class='select2-result-repository__description'>" + repo.kddept + "   <i class='fa fa-circle-o'></i>   " + repo.nmdept + "  </div>";
-    return markup;
+    return "<div class='select2-result-repository__description'>" +
+        repo.kddept + "   <i class='fa fa-circle-o'></i>   " + repo.nmdept +
+        "</div>";
 }
 
 function formatNewdeptSelection(repo) {
@@ -1409,6 +1258,7 @@ function formatNewdeptSelection(repo) {
 }
 
 var defaultInitialNewDept = '';
+
 $("#iddept").select2({
     placeholder: "Pilih Bagian",
     allowClear: true,
@@ -1419,7 +1269,7 @@ $("#iddept").select2({
         delay: 250,
         data: function (params) {
             return {
-                _search_: params.term, // search term
+                _search_: params.term,
                 _page_: params.page,
                 _draw_: true,
                 _start_: 1,
@@ -1428,60 +1278,48 @@ $("#iddept").select2({
             };
         },
         processResults: function (data, params) {
-            // parse the results into the format expected by Select2
-            // since we are using custom formatting functions we do not need to
-            // alter the remote JSON data, except to indicate that infinite
-            // scrolling can be used
             params.page = params.page || 1;
-
             return {
                 results: data.items,
-                pagination: {
-                    more: (params.page * 30) < data.total_count
-                }
+                pagination: { more: (params.page * 30) < data.total_count }
             };
         },
         cache: false
     },
-    escapeMarkup: function (markup) {
-        return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatNewdept, // omitted for brevity, see the source of this page
-    templateSelection: formatNewdeptSelection // omitted for brevity, see the source of this page
-}).on("select2:selecting", function () {
+    escapeMarkup: function (markup) { return markup; },
+    templateResult: formatNewdept,
+    templateSelection: formatNewdeptSelection
 });
 
+/* ============================================================
+ * JURNAL / DOC REF
+ * ============================================================ */
 $("#fjurnal").on("change", function () {
-    //$("#njurnal").val('00011');
-    //Ajax Load data from ajax
     $.ajax({
-        url: HOST_URL + 'purchase/purchaseorder/njurnal' + '/?var=' + $("#fjurnal").val(),
+        url: HOST_URL + 'purchase/purchaseorder/njurnal/?var=' + $("#fjurnal").val(),
         type: "GET",
         dataType: "JSON",
         success: function (data) {
             $("#njurnal").val(data.njurnal);
         },
-        error: function (jqXHR, textStatus, errorThrown) {
+        error: function () {
             alert('Error get data from ajax');
         }
     });
 });
 
-
 $("#docjns").on("change", function () {
-    console.log($(this).val() + 'H');
     if ($(this).val() === 'PO') {
-
         $('.sref').remove();
-        $('.sreference').append('<div class="sref"> <label for="description">Reference ID/PO Number</label><select name="docref" id="docref2" class="form-control" required></select></div>');
+        $('.sreference').append(
+            '<div class="sref"> <label for="description">Reference ID/PO Number</label>' +
+            '<select name="docref" id="docref2" class="form-control" required></select></div>'
+        );
 
-        //LOAD PO
         var defaultInitialPO = $("#docref2").val();
         $("#docref2").select2({
             placeholder: "Ketik PO Outstanding",
             allowClear: true,
-            //minimumInputLength: 2, // only start searching when the user has input 3 or more characters
             maximumSelectionLength: 1,
             multiple: false,
             ajax: {
@@ -1491,7 +1329,7 @@ $("#docjns").on("change", function () {
                 delay: 250,
                 data: function (params) {
                     return {
-                        _search_: params.term, // search term
+                        _search_: params.term,
                         _page_: params.page,
                         _draw_: true,
                         _start_: 1,
@@ -1502,46 +1340,31 @@ $("#docjns").on("change", function () {
                     };
                 },
                 processResults: function (data, params) {
-
                     var searchTerm = $("#docref2").data("select2").$dropdown.find("input").val();
                     if (data.items.length === 1 && data.items[0].text === searchTerm) {
                         var option = new Option(data.items[0].docno, data.items[0].docno, true, true);
                         $('#docref2').append(option).trigger('change').select2("close");
-                        // manually trigger the `select2:select` event
                         $('#docref2').trigger({
                             type: 'select2:select',
-                            params: {
-                                data: data
-                            }
+                            params: { data: data }
                         });
                     }
                     params.page = params.page || 1;
-
                     return {
                         results: data.items,
-                        pagination: {
-                            more: (params.page * 30) < data.total_count
-                        }
+                        pagination: { more: (params.page * 30) < data.total_count }
                     };
                 },
                 cache: true
             },
-            escapeMarkup: function (markup) {
-                return markup;
-            }, // let our custom formatter work
-            // minimumInputLength: 1,
-            templateResult: formatOutstandingPO, // omitted for brevity, see the source of this page
-            templateSelection: formatOutstandingPOSelection // omitted for brevity, see the source of this page
-        }).on("change", function () {
-
+            escapeMarkup: function (markup) { return markup; },
+            templateResult: formatOutstandingPO,
+            templateSelection: formatOutstandingPOSelection
         });
 
-
-        /* Format Group */
         function formatOutstandingPO(repo) {
             if (repo.loading) return repo.text;
-            var markup = "<div class='select2-result-repository__description'>" + repo.docno + "</div>";
-            return markup;
+            return "<div class='select2-result-repository__description'>" + repo.docno + "</div>";
         }
 
         function formatOutstandingPOSelection(repo) {
@@ -1549,24 +1372,28 @@ $("#docjns").on("change", function () {
         }
     } else {
         $('.sref').remove();
-        $('.sreference').append('<div class="sref"> <label for="description">Reference ID/PO Number</label> <input type="text" name="docref" class="form-control" id="docref1"  style="text-transform: uppercase" placeholder="Reference ID" required></div>');
+        $('.sreference').append(
+            '<div class="sref"> <label for="description">Reference ID/PO Number</label>' +
+            '<input type="text" name="docref" class="form-control" id="docref1" ' +
+            'style="text-transform: uppercase" placeholder="Reference ID" required></div>'
+        );
     }
-
-
 });
 
-// COST CENTER
+/* ============================================================
+ * COST CENTER
+ * ============================================================ */
 function formatCostcenter(repo) {
     if (repo.loading) return repo.text;
-    var markup = "<div class='select2-result-repository__description'>" + repo.idcostcenter + "   <i class='fa fa-circle-o'></i>   " + repo.nmcostcenter + "</div>";
-    return markup;
+    return "<div class='select2-result-repository__description'>" +
+        repo.idcostcenter + "   <i class='fa fa-circle-o'></i>   " + repo.nmcostcenter +
+        "</div>";
 }
 
 function formatCostcenterSelection(repo) {
     return repo.nmcostcenter || repo.text;
 }
 
-//var defaultInitialDivision = $("#newdept").val();
 $("#idcostcenter").select2({
     placeholder: "Ketik/Pilih Cost Center",
     allowClear: true,
@@ -1577,7 +1404,7 @@ $("#idcostcenter").select2({
         delay: 250,
         data: function (params) {
             return {
-                _search_: params.term, // search term
+                _search_: params.term,
                 _page_: params.page,
                 _draw_: true,
                 _start_: 1,
@@ -1586,36 +1413,27 @@ $("#idcostcenter").select2({
             };
         },
         processResults: function (data, params) {
-            // parse the results into the format expected by Select2
-            // since we are using custom formatting functions we do not need to
-            // alter the remote JSON data, except to indicate that infinite
-            // scrolling can be used
             params.page = params.page || 1;
-
             return {
                 results: data.items,
-                pagination: {
-                    more: (params.page * 30) < data.total_count
-                }
+                pagination: { more: (params.page * 30) < data.total_count }
             };
         },
         cache: true
     },
-    escapeMarkup: function (markup) {
-        return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatCostcenter, // omitted for brevity, see the source of this page
-    templateSelection: formatCostcenterSelection // omitted for brevity, see the source of this page
+    escapeMarkup: function (markup) { return markup; },
+    templateResult: formatCostcenter,
+    templateSelection: formatCostcenterSelection
 });
 
-
-//ID LOCATION PEMILIHAN GUDANG ASAL
+/* ============================================================
+ * LOCATION (Gudang Asal)
+ * ============================================================ */
 var defaultInitialLocationFrom = '';
+
 $("#idlocation_dtl").select2({
     placeholder: " -- Pilih Gudang Asal -- ",
     allowClear: true,
-    // minimumInputLength: 2, // only start searching when the user has input 3 or more characters
     maximumSelectionLength: 1,
     multiple: false,
     ajax: {
@@ -1625,7 +1443,7 @@ $("#idlocation_dtl").select2({
         delay: 250,
         data: function (params) {
             return {
-                _search_: params.term, // search term
+                _search_: params.term,
                 _page_: params.page,
                 _draw_: true,
                 _start_: 1,
@@ -1636,70 +1454,61 @@ $("#idlocation_dtl").select2({
             };
         },
         processResults: function (data, params) {
-
             var searchTerm = $("#idlocation_dtl").data("select2").$dropdown.find("input").val();
             if (data.items.length === 1 && data.items[0].text === searchTerm) {
                 var option = new Option(data.items[0].nmlocation, data.items[0].idlocation, true, true);
                 $('#idlocation_dtl').append(option).trigger('change').select2("close");
-                // manually trigger the `select2:select` event
                 $('#idlocation_dtl').trigger({
                     type: 'select2:select',
-                    params: {
-                        data: data
-                    }
+                    params: { data: data }
                 });
             }
             params.page = params.page || 1;
-
             return {
                 results: data.items,
-                pagination: {
-                    more: (params.page * 30) < data.total_count
-                }
+                pagination: { more: (params.page * 30) < data.total_count }
             };
         },
         cache: true
     },
-    escapeMarkup: function (markup) {
-        return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatLocation, // omitted for brevity, see the source of this page
-    templateSelection: formatLocationSelection // omitted for brevity, see the source of this page
+    escapeMarkup: function (markup) { return markup; },
+    templateResult: formatLocation,
+    templateSelection: formatLocationSelection
 }).on("change", function () {
-    /*Sementara TUtup Location */
     if ($(this).val()) {
         $('#saveAjusment').prop('disabled', false);
     } else {
         $('#saveAjusment').prop('disabled', true);
     }
 
-    $('#idbarang').val(null).trigger('change');
-    $('#batch').val(null).trigger('change');
+    resetSelect2('#idbarang');
+    resetSelect2('#batch');
 
     $('[name="nmbarang"]').val('');
     $('[name="unit"]').val('');
     $('[name="qtystock"]').val(0);
-
+    $('[name="valqty"]').val('');
 });
 
-/* Format Group */
 function formatLocation(repo) {
     if (repo.loading) return repo.text;
-    var markup = "<div class='select2-result-repository__description'>" + repo.idlocation + "   <i class='fa fa-circle-o'></i>   " + repo.nmlocation + "</div>";
-    return markup;
+    return "<div class='select2-result-repository__description'>" +
+        repo.idlocation + "   <i class='fa fa-circle-o'></i>   " + repo.nmlocation +
+        "</div>";
 }
 
 function formatLocationSelection(repo) {
     return repo.nmlocation || repo.text;
 }
 
-//ID LOCATION PEMILIHAN GUDANG TUJUAN
+/* ============================================================
+ * LOCATION (Gudang Tujuan)
+ * ============================================================ */
 var defaultInitialLocationTo = '';
+
 $("#idlocation_to").select2({
     placeholder: " -- Pilih Gudang Tujuan -- ",
     allowClear: true,
-    // minimumInputLength: 2, // only start searching when the user has input 3 or more characters
     maximumSelectionLength: 1,
     multiple: false,
     ajax: {
@@ -1709,7 +1518,7 @@ $("#idlocation_to").select2({
         delay: 250,
         data: function (params) {
             return {
-                _search_: params.term, // search term
+                _search_: params.term,
                 _page_: params.page,
                 _draw_: true,
                 _start_: 1,
@@ -1720,47 +1529,38 @@ $("#idlocation_to").select2({
             };
         },
         processResults: function (data, params) {
-
             var searchTerm = $("#idlocation_to").data("select2").$dropdown.find("input").val();
             if (data.items.length === 1 && data.items[0].text === searchTerm) {
                 var option = new Option(data.items[0].nmlocation, data.items[0].idlocation, true, true);
                 $('#idlocation_to').append(option).trigger('change').select2("close");
-                // manually trigger the `select2:select` event
                 $('#idlocation_to').trigger({
                     type: 'select2:select',
-                    params: {
-                        data: data
-                    }
+                    params: { data: data }
                 });
             }
             params.page = params.page || 1;
-
             return {
                 results: data.items,
-                pagination: {
-                    more: (params.page * 30) < data.total_count
-                }
+                pagination: { more: (params.page * 30) < data.total_count }
             };
         },
         cache: true
     },
-    escapeMarkup: function (markup) {
-        return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatLocation, // omitted for brevity, see the source of this page
-    templateSelection: formatLocationSelection // omitted for brevity, see the source of this page
+    escapeMarkup: function (markup) { return markup; },
+    templateResult: formatLocation,
+    templateSelection: formatLocationSelection
 }).on("change", function () {
-    /*Sementara TUtup Location */
+    /* Sementara ditutup */
 });
 
-
-//ID LOCATION PEMILIHAN GUDANG TUJUAN
+/* ============================================================
+ * LOCATION (Gudang Transit)
+ * ============================================================ */
 var defaultInitialLocationTransit = '';
+
 $("#idlocation_transit").select2({
     placeholder: " -- Pilih Gudang Tujuan -- ",
     allowClear: true,
-    // minimumInputLength: 2, // only start searching when the user has input 3 or more characters
     maximumSelectionLength: 1,
     multiple: false,
     ajax: {
@@ -1770,7 +1570,7 @@ $("#idlocation_transit").select2({
         delay: 250,
         data: function (params) {
             return {
-                _search_: params.term, // search term
+                _search_: params.term,
                 _page_: params.page,
                 _draw_: true,
                 _start_: 1,
@@ -1781,60 +1581,44 @@ $("#idlocation_transit").select2({
             };
         },
         processResults: function (data, params) {
-
             var searchTerm = $("#idlocation_transit").data("select2").$dropdown.find("input").val();
             if (data.items.length === 1 && data.items[0].text === searchTerm) {
                 var option = new Option(data.items[0].nmlocation, data.items[0].idlocation, true, true);
                 $('#idlocation_transit').append(option).trigger('change').select2("close");
-                // manually trigger the `select2:select` event
                 $('#idlocation_transit').trigger({
                     type: 'select2:select',
-                    params: {
-                        data: data
-                    }
+                    params: { data: data }
                 });
             }
             params.page = params.page || 1;
-
             return {
                 results: data.items,
-                pagination: {
-                    more: (params.page * 30) < data.total_count
-                }
+                pagination: { more: (params.page * 30) < data.total_count }
             };
         },
         cache: true
     },
-    escapeMarkup: function (markup) {
-        return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatLocation, // omitted for brevity, see the source of this page
-    templateSelection: formatLocationSelection // omitted for brevity, see the source of this page
+    escapeMarkup: function (markup) { return markup; },
+    templateResult: formatLocation,
+    templateSelection: formatLocationSelection
 }).on("change", function () {
-    /*Sementara TUtup Location */
+    /* Sementara ditutup */
 });
 
-
+/* ============================================================
+ * DELETE DETAIL
+ * ============================================================ */
 function btnDeleteDetail() {
-
     const ids = getCheckedDetailIds();
 
-    // ===============================
-    // Validasi pilihan
-    // ===============================
     if (!ids || ids.length === 0) {
         Swal.fire({
-            icon: 'warning',
-            title: 'Peringatan',
+            icon: 'warning', title: 'Peringatan',
             text: 'Pilih minimal satu data yang akan dihapus'
         });
         return;
     }
 
-    // ===============================
-    // Konfirmasi Hapus
-    // ===============================
     Swal.fire({
         title: 'Konfirmasi Hapus',
         text: 'Data yang dihapus. Lanjutkan?',
@@ -1847,36 +1631,23 @@ function btnDeleteDetail() {
 
         if (!result.isConfirmed) return;
 
-        // ===============================
-        // AJAX DELETE
-        // ===============================
         $.ajax({
             url: HOST_URL + 'persediaan/trans/deleteAjustmentStockDetail',
             type: 'POST',
-            data: {
-                ids: ids   // kirim array id
-            },
+            data: { ids: ids },
             dataType: 'json',
 
             success: function (res) {
-
                 if (res.success) {
-
                     Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil',
+                        icon: 'success', title: 'Berhasil',
                         text: res.message || 'Data berhasil dihapus',
-                        timer: 2000,
-                        showConfirmButton: false
+                        timer: 2000, showConfirmButton: false
                     });
-
                     reload_table_transfer_dtl();
-
                 } else {
-
                     Swal.fire({
-                        icon: 'warning',
-                        title: 'Gagal',
+                        icon: 'warning', title: 'Gagal',
                         text: res.message || 'Gagal menghapus data'
                     });
                 }
@@ -1884,66 +1655,46 @@ function btnDeleteDetail() {
 
             error: function (xhr) {
                 console.error(xhr.responseText);
-
                 Swal.fire({
-                    icon: 'error',
-                    title: 'Server Error',
+                    icon: 'error', title: 'Server Error',
                     text: 'Terjadi kesalahan server'
                 });
             }
         });
-
     });
 }
 
+/* ============================================================
+ * DOCUMENT READY
+ * ============================================================ */
 $(document).ready(function () {
-    // Handle form submission event
-    // Fix SweetAlert input tidak bisa diketik di atas Bootstrap modal
+
+    // Fix SweetAlert di atas Bootstrap modal
     if ($.fn.modal) {
-        $.fn.modal.Constructor.prototype._enforceFocus = function () {
-        };
+        $.fn.modal.Constructor.prototype._enforceFocus = function () { };
     }
-
-
-    // Fix SweetAlert input tidak bisa diketik di atas Bootstrap modal
-
 
     table_trx_ajustment_stock_mst();
     tabletmpSPKDetail();
-    // tableItem();
-    //read_qrcode();
+
     $('#checkboxnik').change(function () {
-        // this will contain a reference to the checkbox
         if (this.checked) {
             var valnik = $('#nik').val();
-            // the checkbox is now checked
-            //alert('Checked');
             $('#username').prop('readonly', true);
             $('#username').val(valnik);
         } else {
-            // the checkbox is now no longer checked
-            //alert('Un Checked');
             $('#username').prop('readonly', false);
             $('#username').val('');
         }
     });
+
     $('#nik').change(function () {
         if ($('#checkboxnik').is(':checked')) {
             var valnik = $(this).val();
             $('#username').val(valnik);
         }
     });
-    //* input form */
-    // var valueToScroll = 80;
-    // $(".card").scrollTop(valueToScroll);
-    // if ($('[name="type"]').val() === 'EDIT') {
-    //     documentReadable();
-    // }
-    //console.log($('[name="type"]').val());
-    // if ($('[name="typeform"]').val() === 'INPUT' || $('[name="typeform"]').val() === 'UPDATE' || $('[name="typeform"]').val() === 'DELETE' ) {
+
     documentReadable();
-    // }
     $("#loadMe").modal("hide");
-
-
 });

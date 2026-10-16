@@ -1,5 +1,5 @@
 <?php
-
+/* persediaan\m_persediaan.php */
 namespace App\Models\Persediaan;
 
 use CodeIgniter\Model;
@@ -485,65 +485,114 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.Q.A.1' and 
 
     /* WO DETAIL */
     var $tmp_transfer_location_dtl_view = "sc_tmp.transfer_location_dtl";
-    var $tmp_transfer_location_dtl_view_column = array('idurut','idbarang','nmbarang','unit','qty','description');
-    var $tmp_transfer_location_dtl_view_order = array("idurut" => 'desc'); // default order
+
+    var $tmp_transfer_location_dtl_view_column = array(
+        'iduniq',
+        'idurut',
+        'idbarang',
+        'nmbarang',
+        'unit',
+        'unit_default',   /* BARU */
+        'qty',
+        'qty_base',       /* BARU */
+        'description'
+    );
+
+    var $tmp_transfer_location_dtl_view_order = array("idurut" => 'desc');
+
+
     private function _get_query_tmp_transfer_location_dtl($docno)
     {
         $this->session = \Config\Services::session();
-        $loccode=trim($this->session->get('loccode'));
-        $nama=trim($this->session->get('nama'));
+        $loccode = trim($this->session->get('loccode'));
+        $nama    = trim($this->session->get('nama'));
 
         $builder = $this->db->table($this->tmp_transfer_location_dtl_view);
+
+        /* SELECT EKSPLISIT — tambahkan iduniq */
+        $builder->select(
+            'idurut, iduniq, docno, idbarang, nmbarang, '
+            . 'unit, unit_default, conversion_factor, '
+            . 'qty, qty_base, batch, lotno, description'
+        );
+
         $builder->orderBy('idurut');
 
         $i = 0;
 
         // $builder->where("docno = '$docno'");
         $builder->where("inputby = '$nama'");
+
         foreach ($this->tmp_transfer_location_dtl_view_column as $mrp)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if (!empty($_POST['search']['value']))
             {
-
-                if($i===0) // first loop
+                if ($i === 0)
                 {
-                    $builder->groupStart(); // open bracket. query Where with OR clause better with bracket. because maybe can combine with other WHERE with AND.
-                    $builder->like("upper(cast(" . strtoupper($mrp) . " as varchar))", strtoupper($_POST['search']['value']));
+                    $builder->groupStart();
+                    $builder->like(
+                        "upper(cast(" . strtoupper($mrp) . " as varchar))",
+                        strtoupper($_POST['search']['value'])
+                    );
                 }
                 else
                 {
-                    $builder->orLike("upper(cast(" . strtoupper($mrp) . " as varchar))", strtoupper($_POST['search']['value']));
+                    $builder->orLike(
+                        "upper(cast(" . strtoupper($mrp) . " as varchar))",
+                        strtoupper($_POST['search']['value'])
+                    );
                 }
 
-                if(count($this->tmp_transfer_location_dtl_view_column) - 1 == $i) //last loop
-                    $builder->groupEnd(); //close bracket
+                if (count($this->tmp_transfer_location_dtl_view_column) - 1 == $i)
+                    $builder->groupEnd();
             }
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
+        if (isset($_POST['order']))
         {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->tmp_transfer_location_dtl_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+            if ($_POST['order']['0']['column'] != 0)
+            {
+                $col_index = (int) $_POST['order']['0']['column'] - 1;
+
+                if (isset($this->tmp_transfer_location_dtl_view_column[$col_index]))
+                {
+                    $builder->orderBy(
+                        $this->tmp_transfer_location_dtl_view_column[$col_index],
+                        $_POST['order']['0']['dir']
+                    );
+                }
             }
         }
-        else if(isset($this->tmp_transfer_location_dtl_view_order))
+        else if (isset($this->tmp_transfer_location_dtl_view_order))
         {
             $order = $this->tmp_transfer_location_dtl_view_order;
-            foreach ($order as $key => $mrp){
+            foreach ($order as $key => $mrp) {
                 $builder->orderBy($key, $mrp);
             }
         }
+
         return $builder;
     }
 
 
-    function get_tmp_transfer_location_dtl_view($docno){
+    function get_tmp_transfer_location_dtl_view($docno)
+    {
         $builder = $this->_get_query_tmp_transfer_location_dtl($docno);
-        ////$this->_get_query_tmp_transfer_location_dtl($docno);
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+
+        if (isset($_POST['length']) && $_POST['length'] != -1)
+            $builder->limit((int) $_POST['length'], (int) $_POST['start']);
+
         $query = $builder->get();
+
+        /* GUARD: query gagal → jangan crash */
+        if ($query === false) {
+            log_message('error',
+                '[get_tmp_transfer_location_dtl_view] Error: '
+                . json_encode($this->db->error()));
+            return [];
+        }
+
         return $query->getResult();
     }
 
@@ -551,20 +600,38 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.Q.A.1' and 
     function tmp_transfer_location_dtl_view_count_filtered($docno)
     {
         $builder = $this->_get_query_tmp_transfer_location_dtl($docno);
-        ////$this->_get_query_tmp_transfer_location_dtl($docno);
+
         $query = $builder->get();
+
+        if ($query === false) {
+            log_message('error',
+                '[tmp_transfer_location_dtl_view_count_filtered] Error: '
+                . json_encode($this->db->error()));
+            return 0;
+        }
+
         return $query->getNumRows();
     }
+
+
     public function tmp_transfer_location_dtl_view_count_all($docno)
     {
         $builder = $this->_get_query_tmp_transfer_location_dtl($docno);
-        return $builder->countAllResults();
+        return (int) $builder->countAllResults();
     }
-    public function get_tmp_transfer_location_dtl_view_by_id($id,$docno)
+
+
+    public function get_tmp_transfer_location_dtl_view_by_id($id, $docno)
     {
         $builder = $this->_get_query_tmp_transfer_location_dtl($docno);
-        //$builder->where('idmrpgroup',$id);
+        // $builder->where('idmrpgroup', $id);
+
         $query = $builder->get();
+
+        if ($query === false) {
+            return null;
+        }
+
         return $query->getRow();
     }
 

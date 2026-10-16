@@ -162,9 +162,25 @@
     {
         text-align: center;
     }
+    /* Row yang terpilih */
+    #tmptabspktransfersdtl tbody tr.row-selected {
+        background-color: #dbeafe !important;
+        transition: background-color 0.15s ease-in-out;
+    }
 
+    /* Cursor pointer supaya user tahu row bisa diklik */
+    #tmptabspktransfersdtl tbody tr {
+        cursor: pointer;
+    }
+
+    /* Hover */
+    #tmptabspktransfersdtl tbody tr:hover {
+        background-color: #eef4ff;
+    }
 
 </style>
+
+
 <div class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">

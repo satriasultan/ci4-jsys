@@ -3166,149 +3166,210 @@ class Report extends BaseController
     private function buildQueryAnalisaMutasi($withLimit = false, $perpage = 25, $offset = 0)
     {
         $sql = "WITH parameter AS (
-                SELECT
-                    ?::date  AS tanggal_awal,
-                    ?::date  AS tanggal_akhir,
-                    ?        AS cabang,
-                    ?        AS idbarang
-            ),
+    SELECT
+        ?::date  AS tanggal_awal,
+        ?::date  AS tanggal_akhir,
+        ?        AS cabang,
+        ?        AS idbarang
+),
 
-            saldo_sebelumnya AS (
-                SELECT
-                    s.idlocation, s.idarea, s.idbarang, s.warehouse,
-                    s.cabang, s.unit, s.subunit, s.idunit, s.idbranch,
-                    SUM(COALESCE(s.qty_in, 0)) - SUM(COALESCE(s.qty_out, 0)) AS saldo_qty,
-                    SUM(CASE WHEN COALESCE(s.qty_in, 0)  > 0 THEN COALESCE(s.totalcost, 0) ELSE 0 END)
-                    -
-                    SUM(CASE WHEN COALESCE(s.qty_out, 0) > 0 THEN COALESCE(s.totalcost, 0) ELSE 0 END)
-                    AS saldo_cost
-                FROM sc_trx.stkblc s
-                CROSS JOIN parameter p
-                WHERE s.trxdate::date < p.tanggal_awal
-                AND (p.cabang   IS NULL OR TRIM(p.cabang)   = '' OR TRIM(s.cabang)   = TRIM(p.cabang))
-                AND (p.idbarang IS NULL OR TRIM(p.idbarang) = '' OR TRIM(s.idbarang) = TRIM(p.idbarang))
-                GROUP BY
-                    s.idlocation, s.idarea, s.idbarang, s.warehouse,
-                    s.cabang, s.unit, s.subunit, s.idunit, s.idbranch
-            ),
+/* ============================================================
+   SALDO SEBELUMNYA — SUMMARY per idbarang + unit + cabang
+   
+   ✅ EXCLUDE TRANSFER (TRFWHS, BINMOV, BRNTRF)
+   ============================================================ */
+saldo_sebelumnya AS (
+    SELECT
+        TRIM(s.idbarang)         AS idbarang,
+        TRIM(COALESCE(s.unit,'')) AS unit,
+        TRIM(COALESCE(s.cabang,'')) AS cabang,
+        TRIM(COALESCE(s.idbranch,'')) AS idbranch,
 
-            transaksi AS (
-                SELECT
-                    s.*,
-                    CASE WHEN COALESCE(s.qty_in, 0)  > 0 THEN COALESCE(s.totalcost, 0) ELSE 0 END AS cost_in,
-                    CASE WHEN COALESCE(s.qty_out, 0) > 0 THEN COALESCE(s.totalcost, 0) ELSE 0 END AS cost_out
-                FROM sc_trx.stkblc s
-                CROSS JOIN parameter p
-                WHERE s.trxdate::date >= p.tanggal_awal
-                AND s.trxdate::date <= p.tanggal_akhir
-                AND (p.cabang   IS NULL OR TRIM(p.cabang)   = '' OR TRIM(s.cabang)   = TRIM(p.cabang))
-                AND (p.idbarang IS NULL OR TRIM(p.idbarang) = '' OR TRIM(s.idbarang) = TRIM(p.idbarang))
-            ),
+        SUM(COALESCE(s.qty_in, 0)) - SUM(COALESCE(s.qty_out, 0)) AS saldo_qty,
 
-            stock_list AS (
-                SELECT idlocation, idarea, idbarang, warehouse, cabang, unit, subunit, idunit, idbranch
-                FROM saldo_sebelumnya
-                UNION
-                SELECT idlocation, idarea, idbarang, warehouse, cabang, unit, subunit, idunit, idbranch
-                FROM transaksi
-            ),
+        SUM(CASE WHEN COALESCE(s.qty_in, 0)  > 0 THEN COALESCE(s.totalcost, 0) ELSE 0 END)
+        - SUM(CASE WHEN COALESCE(s.qty_out, 0) > 0 THEN COALESCE(s.totalcost, 0) ELSE 0 END)
+        AS saldo_cost
 
-            saldo_awal AS (
-                SELECT
-                    1 AS urut,
-                    sl.idlocation, sl.idarea, sl.idbarang, sl.warehouse,
-                    sl.cabang, sl.unit, sl.subunit, sl.idunit, sl.idbranch,
-                    p.tanggal_awal AS trxdate,
-                    p.tanggal_awal AS docdate,
-                    'SALDO AWAL'::varchar AS doctype,
-                    NULL::varchar AS docno,
-                    NULL::varchar AS docref,
-                    COALESCE(ss.saldo_qty, 0)  AS qty_in,
-                    0::numeric                 AS qty_out,
-                    COALESCE(ss.saldo_cost, 0) AS cost_in,
-                    0::numeric                 AS cost_out,
-                    NULL::numeric AS unitcost,
-                    NULL::numeric AS totalcost,
-                    'SALDO AWAL'::text AS keterangan,
-                    NULL::varchar AS batch
-                FROM stock_list sl
-                CROSS JOIN parameter p
-                LEFT JOIN saldo_sebelumnya ss
-                    ON  ss.idlocation = sl.idlocation
-                    AND ss.idarea     = sl.idarea
-                    AND ss.idbarang   = sl.idbarang
-                    AND ss.warehouse  = sl.warehouse
-                    AND ss.cabang     = sl.cabang
-                    AND ss.unit       = sl.unit
-                    AND COALESCE(ss.subunit, '') = COALESCE(sl.subunit, '')
-                    AND ss.idunit     = sl.idunit
-                    AND ss.idbranch   = sl.idbranch
-            ),
+    FROM sc_trx.stkblc s
+    CROSS JOIN parameter p
+    WHERE s.trxdate::date < p.tanggal_awal
+      AND (p.cabang   IS NULL OR TRIM(p.cabang)   = '' OR TRIM(s.cabang)   = TRIM(p.cabang))
+      AND (p.idbarang IS NULL OR TRIM(p.idbarang) = '' OR TRIM(s.idbarang) = TRIM(p.idbarang))
+      -- ✅ EXCLUDE TRANSFER
+      AND UPPER(TRIM(COALESCE(s.journal_type::TEXT, ''))) NOT IN
+          ('TRFWHS', 'BINMOV', 'BRNTRF')
+    GROUP BY
+        TRIM(s.idbarang),
+        TRIM(COALESCE(s.unit,'')),
+        TRIM(COALESCE(s.cabang,'')),
+        TRIM(COALESCE(s.idbranch,''))
+),
 
-            trx AS (
-                SELECT
-                    2 AS urut,
-                    t.idlocation, t.idarea, t.idbarang, t.warehouse,
-                    t.cabang, t.unit, t.subunit, t.idunit, t.idbranch,
-                    t.trxdate, t.docdate,
-                    t.doctype, t.docno, t.docref,
-                    COALESCE(t.qty_in, 0)   AS qty_in,
-                    COALESCE(t.qty_out, 0)  AS qty_out,
-                    COALESCE(t.cost_in, 0)  AS cost_in,
-                    COALESCE(t.cost_out, 0) AS cost_out,
-                    t.unitcost, t.totalcost,
-                    t.keterangan,
-                    t.batch
-                FROM transaksi t
-            ),
+/* ============================================================
+   TRANSAKSI — detail per baris
+   
+   ✅ EXCLUDE TRANSFER (TRFWHS, BINMOV, BRNTRF)
+   ============================================================ */
+transaksi AS (
+    SELECT
+        s.*,
+        CASE WHEN COALESCE(s.qty_in, 0)  > 0 THEN COALESCE(s.totalcost, 0) ELSE 0 END AS cost_in,
+        CASE WHEN COALESCE(s.qty_out, 0) > 0 THEN COALESCE(s.totalcost, 0) ELSE 0 END AS cost_out
+    FROM sc_trx.stkblc s
+    CROSS JOIN parameter p
+    WHERE s.trxdate::date >= p.tanggal_awal
+      AND s.trxdate::date <= p.tanggal_akhir
+      AND (p.cabang   IS NULL OR TRIM(p.cabang)   = '' OR TRIM(s.cabang)   = TRIM(p.cabang))
+      AND (p.idbarang IS NULL OR TRIM(p.idbarang) = '' OR TRIM(s.idbarang) = TRIM(p.idbarang))
+      -- ✅ EXCLUDE TRANSFER
+      AND UPPER(TRIM(COALESCE(s.journal_type::TEXT, ''))) NOT IN
+          ('TRFWHS', 'BINMOV', 'BRNTRF')
+),
 
-            gabung AS (
-                SELECT * FROM saldo_awal
-                UNION ALL
-                SELECT * FROM trx
-            ),
+/* ============================================================
+   STOCK LIST
+   ============================================================ */
+stock_list AS (
+    SELECT
+        idbarang,
+        unit,
+        cabang,
+        idbranch
+    FROM saldo_sebelumnya
 
-            final AS (
-                SELECT
-                    g.*,
-                    SUM(COALESCE(g.qty_in, 0) - COALESCE(g.qty_out, 0)) OVER (
-                        PARTITION BY g.idlocation, g.idarea, g.idbarang, g.warehouse,
-                                    g.cabang, g.unit, g.subunit, g.idunit, g.idbranch
-                        ORDER BY g.urut, g.trxdate, g.docno NULLS FIRST
-                        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-                    ) AS saldo_qty_akhir,
-                    SUM(COALESCE(g.cost_in, 0) - COALESCE(g.cost_out, 0)) OVER (
-                        PARTITION BY g.idlocation, g.idarea, g.idbarang, g.warehouse,
-                                    g.cabang, g.unit, g.subunit, g.idunit, g.idbranch
-                        ORDER BY g.urut, g.trxdate, g.docno NULLS FIRST
-                        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-                    ) AS saldo_cost_akhir
-                FROM gabung g
-            )
+    UNION
 
-            SELECT
-                TRIM(f.idbarang)                 AS idbarang,
-                TRIM(mb.nmbarang)                AS nmbarang,
-                TRIM(f.unit)                     AS unit,
-                TO_CHAR(f.trxdate, 'DD/MM/YYYY') AS trxdate,
-                TRIM(f.docno)                    AS docno,
-                TRIM(f.keterangan)               AS keterangan,
-                COALESCE(f.qty_in, 0)            AS qty_debet,
-                COALESCE(f.cost_in, 0)           AS nilai_debet,
-                COALESCE(f.qty_out, 0)           AS qty_kredit,
-                COALESCE(f.cost_out, 0)          AS nilai_kredit,
-                COALESCE(f.saldo_qty_akhir, 0)   AS saldo_qty_akhir,
-                COALESCE(f.saldo_cost_akhir, 0)  AS saldo_cost_akhir,
-                TRIM(f.idbranch)                 AS job,
-                COALESCE(NULLIF(TRIM(pr.nmprincipal), ''), TRIM(mb.idprincipal), '') AS principal,
-                TRIM(mb.ppersediaan)             AS perkiraan,
-                TRIM(f.batch)                    AS batch,
-                ''                               AS expdate
-            FROM final f
-            LEFT JOIN sc_mst.mbarang   mb ON TRIM(mb.idbarang)    = TRIM(f.idbarang)
-            LEFT JOIN sc_mst.principal pr ON TRIM(pr.idprincipal) = TRIM(mb.idprincipal)
-            ORDER BY
-                f.idbarang, f.unit, f.urut, f.trxdate, f.docno";  // tempel query di atas
+    SELECT DISTINCT
+        TRIM(COALESCE(idbarang, '')) AS idbarang,
+        TRIM(COALESCE(unit, ''))     AS unit,
+        TRIM(COALESCE(cabang, ''))   AS cabang,
+        TRIM(COALESCE(idbranch, '')) AS idbranch
+    FROM transaksi
+),
+
+/* ============================================================
+   SALDO AWAL
+   ============================================================ */
+saldo_awal AS (
+    SELECT
+        1 AS urut,
+        NULL::varchar AS idlocation,
+        NULL::varchar AS idarea,
+        sl.idbarang,
+        NULL::varchar AS warehouse,
+        sl.cabang,
+        sl.unit,
+        NULL::varchar AS subunit,
+        NULL::varchar AS idunit,
+        sl.idbranch,
+        p.tanggal_awal AS trxdate,
+        p.tanggal_awal AS docdate,
+        'SALDO AWAL'::varchar AS doctype,
+        NULL::varchar AS docno,
+        NULL::varchar AS docref,
+        COALESCE(ss.saldo_qty, 0)  AS qty_in,
+        0::numeric                 AS qty_out,
+        COALESCE(ss.saldo_cost, 0) AS cost_in,
+        0::numeric                 AS cost_out,
+        NULL::numeric AS unitcost,
+        NULL::numeric AS totalcost,
+        'SALDO AWAL'::text AS keterangan,
+        NULL::varchar AS batch
+    FROM stock_list sl
+    CROSS JOIN parameter p
+    LEFT JOIN saldo_sebelumnya ss
+        ON  ss.idbarang = sl.idbarang
+        AND ss.unit     = sl.unit
+        AND ss.cabang   = sl.cabang
+        AND ss.idbranch = sl.idbranch
+),
+
+/* ============================================================
+   TRX
+   ============================================================ */
+trx AS (
+    SELECT
+        2 AS urut,
+        COALESCE(t.idlocation, '') AS idlocation,
+        COALESCE(t.idarea, '')     AS idarea,
+        TRIM(COALESCE(t.idbarang, '')) AS idbarang,
+        COALESCE(t.warehouse, '')  AS warehouse,
+        COALESCE(t.cabang, '')     AS cabang,
+        COALESCE(t.unit, '')       AS unit,
+        COALESCE(t.subunit, '')    AS subunit,
+        COALESCE(t.idunit, '')     AS idunit,
+        COALESCE(t.idbranch, '')   AS idbranch,
+        t.trxdate, t.docdate,
+        t.doctype, t.docno, t.docref,
+        COALESCE(t.qty_in, 0)   AS qty_in,
+        COALESCE(t.qty_out, 0)  AS qty_out,
+        COALESCE(t.cost_in, 0)  AS cost_in,
+        COALESCE(t.cost_out, 0) AS cost_out,
+        t.unitcost, t.totalcost,
+        t.keterangan,
+        COALESCE(t.batch, '')   AS batch
+    FROM transaksi t
+),
+
+gabung AS (
+    SELECT * FROM saldo_awal
+    UNION ALL
+    SELECT * FROM trx
+),
+
+/* ============================================================
+   FINAL — running sum
+   ============================================================ */
+final AS (
+    SELECT
+        g.*,
+        SUM(COALESCE(g.qty_in, 0) - COALESCE(g.qty_out, 0)) OVER (
+            PARTITION BY g.idbarang, g.unit, g.cabang, g.idbranch
+            ORDER BY g.urut, g.trxdate, g.docno NULLS FIRST
+            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS saldo_qty_akhir,
+        SUM(COALESCE(g.cost_in, 0) - COALESCE(g.cost_out, 0)) OVER (
+            PARTITION BY g.idbarang, g.unit, g.cabang, g.idbranch
+            ORDER BY g.urut, g.trxdate, g.docno NULLS FIRST
+            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS saldo_cost_akhir
+    FROM gabung g
+)
+
+SELECT
+    TRIM(f.idbarang)                 AS idbarang,
+    TRIM(mb.nmbarang)                AS nmbarang,
+    TRIM(f.unit)                     AS unit,
+    -- ✅ FORMAT TANGGAL DD-MM-YYYY
+    TO_CHAR(f.trxdate, 'DD-MM-YYYY') AS trxdate,
+    TRIM(f.docno)                    AS docno,
+    TRIM(f.keterangan)               AS keterangan,
+    COALESCE(f.qty_in, 0)            AS qty_debet,
+    COALESCE(f.cost_in, 0)           AS nilai_debet,
+    COALESCE(f.qty_out, 0)           AS qty_kredit,
+    COALESCE(f.cost_out, 0)          AS nilai_kredit,
+    COALESCE(f.saldo_qty_akhir, 0)   AS saldo_qty_akhir,
+    COALESCE(f.saldo_cost_akhir, 0)  AS saldo_cost_akhir,
+    TRIM(f.idbranch)                 AS job,
+    COALESCE(NULLIF(TRIM(pr.nmprincipal), ''), TRIM(mb.idprincipal), '') AS principal,
+
+    -- ============================================================
+    -- ✅ KOLOM COA LENGKAP
+    -- ============================================================
+    TRIM(mb.ppersediaan)             AS perkiraan,        -- kode COA
+    COALESCE(TRIM(coa.nmcoa), '')    AS nama_perkiraan,   -- nama COA
+    
+    TRIM(f.batch)                    AS batch,
+    ''                               AS expdate
+FROM final f
+LEFT JOIN sc_mst.mbarang   mb  ON TRIM(mb.idbarang)    = TRIM(f.idbarang)
+LEFT JOIN sc_mst.principal pr  ON TRIM(pr.idprincipal) = TRIM(mb.idprincipal)
+-- ✅ JOIN KE sc_mst.coa (kolom: idcoa & nmcoa)
+LEFT JOIN sc_mst.coa       coa ON TRIM(coa.idcoa)      = TRIM(mb.ppersediaan)
+ORDER BY
+    f.idbarang, f.unit, f.urut, f.trxdate, f.docno";
+
         if ($withLimit) {
             $sql .= " LIMIT ? OFFSET ?";
         }
@@ -3411,18 +3472,20 @@ class Report extends BaseController
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setCellValue('A1', 'LAPORAN ANALISA MUTASI STOCK');
-        $sheet->mergeCells('A1:O1');
+        $sheet->mergeCells('A1:P1');   // ✅ dari O ke P
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
         $sheet->getStyle('A1')->getAlignment()->setHorizontal('center');
 
+        // ✅ TAMBAH 'Nama Perkiraan'
         $headers = [
             'Kode Barang', 'Nama Barang', 'Satuan', 'Tanggal', 'No. Jurnal',
             'Keterangan', 'Qty Debet', 'Nilai Debet', 'Qty Kredit', 'Nilai Kredit',
-            'Saldo Qty', 'Saldo Nilai', 'Job', 'Principal', 'Perkiraan'
+            'Saldo Qty', 'Saldo Nilai', 'Job', 'Principal',
+            'Perkiraan', 'Nama Perkiraan'
         ];
         $sheet->fromArray($headers, null, 'A3');
 
-        $lastCol = 'O';
+        $lastCol = 'P';   // ✅ dari O ke P
         $sheet->getStyle("A3:{$lastCol}3")->getFont()->setBold(true);
         $sheet->getStyle("A3:{$lastCol}3")->getFill()
             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
@@ -3448,6 +3511,7 @@ class Report extends BaseController
                 $r['job'],
                 $r['principal'],
                 $r['perkiraan'],
+                $r['nama_perkiraan'],   // ✅ TAMBAH
             ], null, 'A' . $rowNum);
             $rowNum++;
             $rowCount++;
@@ -3465,7 +3529,7 @@ class Report extends BaseController
             $colLetter++;
         }
 
-        // format angka
+        // format angka — kolom G sampai L (qty/nilai)
         $firstData = 4;
         $lastData  = max(4, $rowNum - 1);
         foreach (['G','H','I','J','K','L'] as $col) {
@@ -3504,119 +3568,120 @@ class Report extends BaseController
     private function buildQueryKartuStock()
     {
         $sql = "WITH parameter AS (
-                SELECT
-                    ?::date  AS tanggal_awal,
-                    ?::date  AS tanggal_akhir,
-                    ?        AS cabang,
-                    ?        AS idlocation,
-                    ?        AS idbarang
-            ),
-
-            saldo_sebelumnya AS (
-                SELECT
-                    s.idlocation, s.idarea, s.idbarang, s.warehouse,
-                    s.cabang, s.unit, s.subunit, s.idunit, s.idbranch,
-                    SUM(COALESCE(s.qty_in, 0)) - SUM(COALESCE(s.qty_out, 0)) AS saldo_qty
-                FROM sc_trx.stkblc s
-                CROSS JOIN parameter p
-                WHERE s.trxdate::date < p.tanggal_awal
-                AND (p.cabang     IS NULL OR TRIM(p.cabang)     = '' OR TRIM(s.cabang)     = TRIM(p.cabang))
-                AND (p.idlocation IS NULL OR TRIM(p.idlocation) = '' OR TRIM(s.idlocation) = TRIM(p.idlocation))
-                AND (p.idbarang   IS NULL OR TRIM(p.idbarang)   = '' OR TRIM(s.idbarang)   = TRIM(p.idbarang))
-                GROUP BY
-                    s.idlocation, s.idarea, s.idbarang, s.warehouse,
-                    s.cabang, s.unit, s.subunit, s.idunit, s.idbranch
-            ),
-
-            transaksi AS (
-                SELECT
-                    s.*,
-                    CASE WHEN COALESCE(s.qty_in, 0)  > 0 THEN COALESCE(s.totalcost, 0) ELSE 0 END AS cost_in,
-                    CASE WHEN COALESCE(s.qty_out, 0) > 0 THEN COALESCE(s.totalcost, 0) ELSE 0 END AS cost_out
-                FROM sc_trx.stkblc s
-                CROSS JOIN parameter p
-                WHERE s.trxdate::date >= p.tanggal_awal
-                AND s.trxdate::date <= p.tanggal_akhir
-                AND (p.cabang     IS NULL OR TRIM(p.cabang)     = '' OR TRIM(s.cabang)     = TRIM(p.cabang))
-                AND (p.idlocation IS NULL OR TRIM(p.idlocation) = '' OR TRIM(s.idlocation) = TRIM(p.idlocation))
-                AND (p.idbarang   IS NULL OR TRIM(p.idbarang)   = '' OR TRIM(s.idbarang)   = TRIM(p.idbarang))
-            ),
-
-            stock_list AS (
-                SELECT idlocation, idarea, idbarang, warehouse, cabang, unit, subunit, idunit, idbranch
-                FROM saldo_sebelumnya
-                UNION
-                SELECT idlocation, idarea, idbarang, warehouse, cabang, unit, subunit, idunit, idbranch
-                FROM transaksi
-            ),
-
-            saldo_awal AS (
-                SELECT
-                    1 AS urut,
-                    sl.idlocation, sl.idarea, sl.idbarang, sl.warehouse,
-                    sl.cabang, sl.unit, sl.subunit, sl.idunit, sl.idbranch,
-                    p.tanggal_awal AS trxdate,
-                    'SALDO AWAL'::varchar AS doctype,
-                    NULL::varchar AS docno,
-                    COALESCE(ss.saldo_qty, 0) AS qty_in,
-                    0::numeric                AS qty_out,
-                    'SALDO AWAL'::text        AS keterangan,
-                    NULL::varchar             AS batch
-                FROM stock_list sl
-                CROSS JOIN parameter p
-                LEFT JOIN saldo_sebelumnya ss
-                    ON  ss.idlocation = sl.idlocation
-                    AND ss.idarea     = sl.idarea
-                    AND ss.idbarang   = sl.idbarang
-                    AND ss.warehouse  = sl.warehouse
-                    AND ss.cabang     = sl.cabang
-                    AND ss.unit       = sl.unit
-                    AND COALESCE(ss.subunit, '') = COALESCE(sl.subunit, '')
-                    AND ss.idunit     = sl.idunit
-                    AND ss.idbranch   = sl.idbranch
-            ),
-
-            trx AS (
-                SELECT
-                    2 AS urut,
-                    t.idlocation, t.idarea, t.idbarang, t.warehouse,
-                    t.cabang, t.unit, t.subunit, t.idunit, t.idbranch,
-                    t.trxdate,
-                    t.doctype, t.docno,
-                    COALESCE(t.qty_in, 0)  AS qty_in,
-                    COALESCE(t.qty_out, 0) AS qty_out,
-                    t.keterangan,
-                    t.batch
-                FROM transaksi t
-            ),
-
-            gabung AS (
-                SELECT * FROM saldo_awal
-                UNION ALL
-                SELECT * FROM trx
-            )
-
             SELECT
-                TRIM(f.idlocation)               AS idlocation,
-                TRIM(ml.nmlocation)              AS nmgudang,
-                TRIM(f.idbarang)                 AS idbarang,
-                TRIM(mb.nmbarang)                AS nmbarang,
-                TRIM(f.unit)                     AS unit,
-                TO_CHAR(f.trxdate, 'DD/MM/YYYY') AS trxdate,
-                TRIM(f.docno)                    AS docno,
-                TRIM(f.keterangan)               AS keterangan,
-                COALESCE(f.qty_in, 0)            AS qty_debet,
-                COALESCE(f.qty_out, 0)           AS qty_kredit,
-                TRIM(f.idbranch)                 AS job,
-                COALESCE(NULLIF(TRIM(pr.nmprincipal), ''), TRIM(mb.idprincipal), '') AS principal,
-                TRIM(f.batch)                    AS batch,
-                ''                               AS expdate
-            FROM gabung f
-            LEFT JOIN sc_mst.mbarang   mb ON TRIM(mb.idbarang)    = TRIM(f.idbarang)
-            LEFT JOIN sc_mst.principal pr ON TRIM(pr.idprincipal) = TRIM(mb.idprincipal)
-            LEFT JOIN sc_mst.mlocation ml ON TRIM(ml.idlocation)  = TRIM(f.idlocation)
-            ORDER BY
-                f.idlocation, f.idbarang, f.unit, f.urut, f.trxdate, f.docno";
+                ?::date  AS tanggal_awal,
+                ?::date  AS tanggal_akhir,
+                ?        AS cabang,
+                ?        AS idlocation,
+                ?        AS idbarang
+        ),
+
+        saldo_sebelumnya AS (
+            SELECT
+                s.idlocation, s.idarea, s.idbarang, s.warehouse,
+                s.cabang, s.unit, s.subunit, s.idunit, s.idbranch,
+                SUM(COALESCE(s.qty_in, 0)) - SUM(COALESCE(s.qty_out, 0)) AS saldo_qty
+            FROM sc_trx.stkblc s
+            CROSS JOIN parameter p
+            WHERE s.trxdate::date < p.tanggal_awal
+            AND (p.cabang     IS NULL OR TRIM(p.cabang)     = '' OR TRIM(s.cabang)     = TRIM(p.cabang))
+            AND (p.idlocation IS NULL OR TRIM(p.idlocation) = '' OR TRIM(s.idlocation) = TRIM(p.idlocation))
+            AND (p.idbarang   IS NULL OR TRIM(p.idbarang)   = '' OR TRIM(s.idbarang)   = TRIM(p.idbarang))
+            GROUP BY
+                s.idlocation, s.idarea, s.idbarang, s.warehouse,
+                s.cabang, s.unit, s.subunit, s.idunit, s.idbranch
+        ),
+
+        transaksi AS (
+            SELECT
+                s.*,
+                CASE WHEN COALESCE(s.qty_in, 0)  > 0 THEN COALESCE(s.totalcost, 0) ELSE 0 END AS cost_in,
+                CASE WHEN COALESCE(s.qty_out, 0) > 0 THEN COALESCE(s.totalcost, 0) ELSE 0 END AS cost_out
+            FROM sc_trx.stkblc s
+            CROSS JOIN parameter p
+            WHERE s.trxdate::date >= p.tanggal_awal
+            AND s.trxdate::date <= p.tanggal_akhir
+            AND (p.cabang     IS NULL OR TRIM(p.cabang)     = '' OR TRIM(s.cabang)     = TRIM(p.cabang))
+            AND (p.idlocation IS NULL OR TRIM(p.idlocation) = '' OR TRIM(s.idlocation) = TRIM(p.idlocation))
+            AND (p.idbarang   IS NULL OR TRIM(p.idbarang)   = '' OR TRIM(s.idbarang)   = TRIM(p.idbarang))
+        ),
+
+        stock_list AS (
+            SELECT idlocation, idarea, idbarang, warehouse, cabang, unit, subunit, idunit, idbranch
+            FROM saldo_sebelumnya
+            UNION
+            SELECT idlocation, idarea, idbarang, warehouse, cabang, unit, subunit, idunit, idbranch
+            FROM transaksi
+        ),
+
+        saldo_awal AS (
+            SELECT
+                1 AS urut,
+                sl.idlocation, sl.idarea, sl.idbarang, sl.warehouse,
+                sl.cabang, sl.unit, sl.subunit, sl.idunit, sl.idbranch,
+                p.tanggal_awal AS trxdate,
+                'SALDO AWAL'::varchar AS doctype,
+                NULL::varchar AS docno,
+                COALESCE(ss.saldo_qty, 0) AS qty_in,
+                0::numeric                AS qty_out,
+                'SALDO AWAL'::text        AS keterangan,
+                NULL::varchar             AS batch
+            FROM stock_list sl
+            CROSS JOIN parameter p
+            LEFT JOIN saldo_sebelumnya ss
+                ON  ss.idlocation = sl.idlocation
+                AND ss.idarea     = sl.idarea
+                AND ss.idbarang   = sl.idbarang
+                AND ss.warehouse  = sl.warehouse
+                AND ss.cabang     = sl.cabang
+                AND ss.unit       = sl.unit
+                AND COALESCE(ss.subunit, '') = COALESCE(sl.subunit, '')
+                AND ss.idunit     = sl.idunit
+                AND ss.idbranch   = sl.idbranch
+        ),
+
+        trx AS (
+            SELECT
+                2 AS urut,
+                t.idlocation, t.idarea, t.idbarang, t.warehouse,
+                t.cabang, t.unit, t.subunit, t.idunit, t.idbranch,
+                t.trxdate,
+                t.doctype, t.docno,
+                COALESCE(t.qty_in, 0)  AS qty_in,
+                COALESCE(t.qty_out, 0) AS qty_out,
+                t.keterangan,
+                t.batch
+            FROM transaksi t
+        ),
+
+        gabung AS (
+            SELECT * FROM saldo_awal
+            UNION ALL
+            SELECT * FROM trx
+        )
+
+        SELECT
+            TRIM(f.idlocation)               AS idlocation,
+            TRIM(ml.nmlocation)              AS nmgudang,
+            TRIM(f.idbarang)                 AS idbarang,
+            TRIM(mb.nmbarang)                AS nmbarang,
+            TRIM(f.unit)                     AS unit,
+            -- ✅ FORMAT TANGGAL DD-MM-YYYY
+            TO_CHAR(f.trxdate, 'DD-MM-YYYY') AS trxdate,
+            TRIM(f.docno)                    AS docno,
+            TRIM(f.keterangan)               AS keterangan,
+            COALESCE(f.qty_in, 0)            AS qty_debet,
+            COALESCE(f.qty_out, 0)           AS qty_kredit,
+            TRIM(f.idbranch)                 AS job,
+            COALESCE(NULLIF(TRIM(pr.nmprincipal), ''), TRIM(mb.idprincipal), '') AS principal,
+            TRIM(f.batch)                    AS batch,
+            ''                               AS expdate
+        FROM gabung f
+        LEFT JOIN sc_mst.mbarang   mb ON TRIM(mb.idbarang)    = TRIM(f.idbarang)
+        LEFT JOIN sc_mst.principal pr ON TRIM(pr.idprincipal) = TRIM(mb.idprincipal)
+        LEFT JOIN sc_mst.mlocation ml ON TRIM(ml.idlocation)  = TRIM(f.idlocation)
+        ORDER BY
+            f.idlocation, f.idbarang, f.unit, f.urut, f.trxdate, f.docno";
 
         return rtrim($sql, " \t\n\r\0\x0B;");
     }

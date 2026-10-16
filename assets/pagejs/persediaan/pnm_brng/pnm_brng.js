@@ -1068,13 +1068,13 @@ function savePnmBrg() {
 
                 if (res.success) {
 
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil',
-                        text: res.message || 'Data Detail berhasil disimpan',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
+                    // Swal.fire({
+                    //     icon: 'success',
+                    //     title: 'Berhasil',
+                    //     text: res.message || 'Data Detail berhasil disimpan',
+                    //     timer: 2000,
+                    //     showConfirmButton: false
+                    // });
 
                     if (res.reload === true) {
                         window.location.reload();
@@ -2078,15 +2078,28 @@ $("#idcostcenter").select2({
     /*Sementara TUtup Location */
 });
 
-function formatCostcenter(repo) {
-    if (repo.loading) return repo.text;
-    var markup = "<div class='select2-result-repository__description'>" + repo.idcostcenter + "   <i class='fa fa-circle-o'></i>   " + repo.nmcostcenter + "</div>";
-    return markup;
-}
+console.log('PNM_BRNG.JS berhasil dimuat');
 
-function formatCostcenterSelection(repo) {
-    return repo.nmcostcenter || repo.text;
-}
+$(document).on('input change', '#qty, #val', function () {
+    console.log('Input berubah:', this.id, $(this).val());
+
+    function toNumber(value) {
+        return parseFloat(
+            String(value || '').replace(/\./g, '').replace(',', '.')
+        ) || 0;
+    }
+
+    const qty = toNumber($('#qty').val());
+    const harga = toNumber($('#val').val());
+    const total = qty * harga;
+
+    $('#valsum').val(total.toLocaleString('id-ID', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }));
+
+    console.log('Hasil perhitungan:', total);
+});
 
 
 $(document).ready(function () {

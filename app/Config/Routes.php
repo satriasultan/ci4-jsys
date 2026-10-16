@@ -1,5 +1,5 @@
 <?php
-
+/* Config/Routes.php */
 namespace Config;
 
 // Create a new instance of our RouteCollection class.
@@ -1096,17 +1096,20 @@ $routes->group('/master/data', ["namespace" => "App\Controllers\Master"], functi
     $routes->add("list_principal", "Principal::list_principal");
     $routes->post("savePrincipal", "Principal::savePrincipal");
     $routes->get("showing_data_principal(:any)", "Principal::showing_data_principal$1");
+
+    $routes->add("edit/(:any)", "Item::edit/$1");
+    $routes->add("detail/(:any)", "Item::detail/$1");
+    $routes->add("del_item/(:any)", "Item::del_item/$1");
 });
 
-
-/* MASTER ITEM */
 $routes->group('/master/item', ["namespace" => "App\Controllers\Master"], function ($routes) {
     $routes->add('/', 'Item::index');
     $routes->post("list_mitem", "Item::list_mitem");
     $routes->post("saveDataItem", "Item::saveDataItem");
     $routes->add("showDetailItem(:any)", "Item::showDetailItem$1");
-    $routes->add("edit(:any)", "Item::edit$1");
-    $routes->add("del_item(:any)", "Item::del_item$1");
+    $routes->add("edit/(:any)", "Item::edit/$1");         // FIX: pakai /$1
+    $routes->add("detail/(:any)", "Item::detail/$1");     // FIX: pakai /$1
+    $routes->add("del_item/(:any)", "Item::del_item/$1"); // FIX: tambah delete
     $routes->add("input", "Item::input");
     $routes->add("import", "Item::import");
     $routes->post("proses_upload", "Item::proses_upload");
@@ -1218,6 +1221,8 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
     $routes->add('globalmodule/updatePrintStatus', 'Globalmodule::updatePrintStatus');
     $routes->add('globalmodule/list_avg_stock', 'Globalmodule::list_avg_stock');
 
+    /* LIST STOCK BY LOCATION */
+    $routes->add('globalmodule/list_stock_by_location', 'Globalmodule::list_stock_by_location');
 
     /*unit conversion per item*/
     $routes->add('globalmodule/list_unit_item', 'Globalmodule::list_unit_item');
@@ -1280,7 +1285,7 @@ $routes->group('/persediaan/trans', ["namespace" => "App\Controllers\Persediaan"
     $routes->add('clearTransferLokasi', 'Persediaan::clearTransferLokasi');
     $routes->add('list_tmp_transfer_location_dtl', 'Persediaan::list_tmp_transfer_location_dtl');
     $routes->add('get_tmp_transfer_location_dtl(:any)', 'Persediaan::get_tmp_transfer_location_dtl$1');
-    $routes->add('deleteSPKTransferDetail', 'Persediaan::deleteSPKTransferDetail');
+    $routes->add('deleteTransferLokasiDetail', 'Persediaan::deleteTransferLokasiDetail');
     $routes->add('finalTransferLocation', 'Persediaan::finalTransferLocation');
     $routes->add('list_trx_transfer_location', 'Persediaan::list_trx_transfer_location');
     $routes->add('updateTransfersLocation', 'Persediaan::updateTransfersLocation');
@@ -1314,7 +1319,7 @@ $routes->group('/persediaan/trans', ["namespace" => "App\Controllers\Persediaan"
     $routes->add('list_trx_ajustment_stock_dtl', 'Persediaan::list_trx_ajustment_stock_dtl');
     $routes->add('getBranch_ajustment_stock', 'Persediaan::getBranch_ajustment_stock');
     $routes->add('getNextSuffix_ajustment_stock', 'Persediaan::getNextSuffix_ajustment_stock');
-
+    $routes->add('getHargaPersediaan', 'Persediaan::getHargaPersediaan');
 
     /* ajustment item value  */
     $routes->add('ajustment_item_value', 'Persediaan::ajustment_item_value');
@@ -1427,6 +1432,7 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->get('showing_tmp_bom_mst(:any)', 'Production::showing_tmp_bom_mst$1');
     $routes->get('showing_mst_bom_mst(:any)', 'Production::showing_mst_bom_mst$1');
     $routes->add('getBranchInfo_bom', 'Production::getBranchInfo_bom');
+
     $routes->add('getNextSuffix_bom_mst', 'Production::getNextSuffix_bom_mst');
     $routes->add('save_bom_dtl', 'Production::save_bom_dtl');
     $routes->add('save_bom_mst', 'Production::save_bom_mst');
@@ -1522,8 +1528,8 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('add_materialrelease', 'Production::add_materialrelease');
     $routes->get('showing_tmp_materialrelease_mst(:any)', 'Production::showing_tmp_materialrelease_mst$1');
     $routes->get('showing_trx_materialrelease_mst(:any)', 'Production::showing_trx_materialrelease_mst$1');
-    $routes->add('getBranchInfo_materialrelease', 'Production::getBranchInfo_materialrelease');
     $routes->add('getNextSuffix_materialrelease_mst', 'Production::getNextSuffix_materialrelease_mst');
+    $routes->add('getBranchInfo_materialrelease', 'Production::getBranchInfo_materialrelease');
     $routes->add('save_materialrelease_dtl', 'Production::save_materialrelease_dtl');
     $routes->add('save_materialrelease_mst', 'Production::save_materialrelease_mst');
     $routes->add('save_materialrelease_from_wo', 'Production::save_materialrelease_from_wo');
@@ -1550,8 +1556,8 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('add_penerimaanbp', 'Production::add_penerimaanbp');
     $routes->get('showing_tmp_penerimaanbp_mst(:any)', 'Production::showing_tmp_penerimaanbp_mst$1');
     $routes->get('showing_trx_penerimaanbp_mst(:any)', 'Production::showing_trx_penerimaanbp_mst$1');
-    $routes->add('getBranchInfo_penerimaanbp', 'Production::getBranchInfo_penerimaanbp');
     $routes->add('getNextSuffix_penerimaanbp_mst', 'Production::getNextSuffix_penerimaanbp_mst');
+    $routes->add('getBranchInfo_penerimaanbp', 'Production::getBranchInfo_penerimaanbp');
     $routes->add('save_penerimaanbp_dtl', 'Production::save_penerimaanbp_dtl');
     $routes->add('save_penerimaanbp_mst', 'Production::save_penerimaanbp_mst');
     $routes->add('save_penerimaanbp_from_wo', 'Production::save_penerimaanbp_from_wo');

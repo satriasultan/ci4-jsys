@@ -101,7 +101,7 @@ function getMode() {
             type:       'AM',
             previewUrl: HOST_URL + 'report/trans/previewLaporanAnalisaMutasi',
             bodyId:     'tblPreviewAMBody',
-            colspan:    16
+            colspan:    17
         };
     }
 
@@ -604,6 +604,7 @@ function renderPreview(rows, page, perpage, mode) {
                 '<td>' + escapeHtml(r.job) + '</td>' +
                 '<td>' + escapeHtml(r.principal) + '</td>' +
                 '<td>' + escapeHtml(r.perkiraan) + '</td>' +
+                '<td>' + escapeHtml(r.nama_perkiraan) + '</td>' +
             '</tr>';
         } else if (mode.type === 'KS') {
             html += '<tr>' +

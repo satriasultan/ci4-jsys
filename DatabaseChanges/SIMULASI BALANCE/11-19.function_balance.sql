@@ -1,6 +1,6 @@
 /* ============================================================================
    JSYS ERP / ACCOUNTING
-   TAHAP 11 - 19 : FINAL RECOMPILE REV11
+   TAHAP 11 - 19 : FINAL RECOMPILE REV12 - TRANSFER SAFE
    ============================================================================
 
    TAHAP 06  : transaction_dt -> stkblc
@@ -37,6 +37,16 @@
        - POSTED hanya bila jurnal balance.
        - tidak ada TEST INSERT / rebuild massal.
 
+   TRANSFER SAFE (REV12):
+       - TRFWHS / BINMOV / BRNTRF dideteksi via v_is_transfer.
+       - Untuk transfer:
+           * 1 transaction_dt (OUT atau IN) → 1 baris jurnal_dt
+           * OUT → hanya seq 2 (KREDIT Inventory asal)
+           * IN  → hanya seq 1 (DEBIT  Inventory tujuan)
+           * Balance check di-relax: per header tidak harus balance,
+             karena balance terjadi saat OUT + IN digabung.
+       - Nilai dari TAHAP 07 / stkblc (value_source = 'COST').
+       - Total nilai perusahaan TIDAK berubah.
    ============================================================================ */
 
 BEGIN;
@@ -134,19 +144,6 @@ $$;
 /* ============================================================================
    TAHAP 15
    CANCEL ACCOUNTING SAAT TRANSACTION DIHAPUS / DIGANTI
-   ============================================================================
-
-   ATURAN FINAL:
-       DRAFT  -> CANCELLED
-       POSTED -> CANCELLED
-
-   Tidak membuat jurnal reversal otomatis dan tidak membuat JVREVS.
-   Tidak membalik debit / kredit.
-   jurnal_hd dan jurnal_dt tetap disimpan sebagai audit trail.
-
-   GL aktif hanya membaca status POSTED.
-
-   STOCK dan ASSET TIDAK diubah di tahap ini.
    ============================================================================ */
 
 CREATE OR REPLACE FUNCTION sc_trx.fn_cancel_accounting_transaction(
@@ -199,20 +196,6 @@ $$;
 /* ============================================================================
    TAHAP 16
    HELPER : RESOLVE ACCOUNTING COA
-   ============================================================================
-
-   Priority:
-       1. mbarang / currency
-       2. konfigurasi_umum
-       3. journal_type_coa.idcoa
-
-   Manual accounting:
-       COA ACCOUNT          -> transaction_dt.idcoa
-       COA COUNTER_ACCOUNT  -> transaction_dt.counter_idcoa
-
-   WASTE / SCRAP:
-       pwaste -> cfg.pwaste -> pcogs -> cfg.hpp -> mapping fallback
-       tidak fallback ke ppersediaan.
    ============================================================================ */
 
 CREATE OR REPLACE FUNCTION sc_trx.fn_resolve_accounting_coa(
@@ -542,57 +525,7 @@ $$;
 
 
 /* ============================================================================
-   TAHAP 16
-   POST / GENERATE ACCOUNTING
-   ============================================================================
-
-   Operational:
-       transaction_dt
-           -> journal_type_coa
-           -> resolver COA
-           -> jurnal_hd
-           -> jurnal_dt
-
-   Manual:
-       ACCOUNT          -> transaction_dt.idcoa
-       COUNTER_ACCOUNT  -> transaction_dt.counter_idcoa
-       TAX              -> sc_mst.tax_dtl
-
-   COST:
-       1. stkblc.uniqueid
-       2. stkblc.docno/ref_docno
-       3. stkblc_avgcost.idbarang + idlocation + batch
-
-   Tidak bergantung pada transaction_dt.stock_uniqueid.
-   ============================================================================ */
-
-/* ============================================================================
-   TAHAP 16
-   JVGENL DOCUMENT-LEVEL ACCOUNTING
-   ============================================================================
-
-   JVGENL / JURNAL UMUM:
-       - satu docno dapat memiliki banyak line perkiraan
-       - setiap line transaction_dt = satu jurnal_dt
-       - semua line dalam docno yang sama = satu jurnal_hd
-       - idcoa + debet_kredit mengikuti input setiap line
-       - counter_idcoa tidak diwajibkan per line JVGENL
-
-   REF:
-       jurnal_dt.ref_docno   = transaction_dt.docno
-       jurnal_dt.ref_doctype = transaction_dt.doctype
-   ============================================================================ */
-
-
-/* ============================================================================
-   CANCEL JVGENL DOCUMENT
-   ============================================================================
-
-   DELETE / UPDATE source JVGENL:
-       jurnal_hd = CANCELLED
-       jurnal_dt = mengikuti status header
-
-   Tidak membuat journal JVREVS.
+   TAHAP 16 — JVGENL DOCUMENT-LEVEL ACCOUNTING
    ============================================================================ */
 
 CREATE OR REPLACE FUNCTION sc_trx.fn_cancel_jvgenl_document(
@@ -632,7 +565,6 @@ END;
 $$;
 
 
-/* Compatibility wrapper. */
 CREATE OR REPLACE FUNCTION sc_trx.fn_reverse_jvgenl_document(
     p_docno     TEXT,
     p_doctype   TEXT,
@@ -650,10 +582,6 @@ BEGIN
 END;
 $$;
 
-
-/* ============================================================================
-   POST / REBUILD JVGENL DOCUMENT
-   ============================================================================ */
 
 CREATE OR REPLACE FUNCTION sc_trx.fn_post_jvgenl_document(
     p_docno     TEXT,
@@ -694,15 +622,6 @@ BEGIN
     END IF;
 
 
-    /*
-       JVGENL = document-level multi-line journal.
-       Trigger masih AFTER EACH ROW, sehingga line pertama
-       belum boleh diposting bila dokumen belum balance.
-
-       POST hanya ketika:
-           total debit = total credit
-           dan keduanya > 0.
-    */
     SELECT
         COALESCE(SUM(td.debet), 0),
         COALESCE(SUM(td.kredit), 0)
@@ -890,7 +809,7 @@ BEGIN
         END IF;
 
 
-                INSERT INTO sc_trx.jurnal_dt
+        INSERT INTO sc_trx.jurnal_dt
         (
             jurnal_id,
             journal_type,
@@ -981,6 +900,11 @@ BEGIN
 END;
 $$;
 
+
+/* ============================================================================
+   TAHAP 16 — POST / GENERATE ACCOUNTING (TRANSFER SAFE)
+   ============================================================================ */
+
 CREATE OR REPLACE FUNCTION sc_trx.fn_post_accounting_transaction(
     p_uniqueid TEXT
 )
@@ -1012,6 +936,9 @@ DECLARE
     v_is_manual         BOOLEAN := FALSE;
     v_effective_dc     CHAR(1);
     v_manual_toggle     BOOLEAN := FALSE;
+
+    /* ✅ TAMBAHAN REV12: deteksi transfer */
+    v_is_transfer       BOOLEAN := FALSE;
 BEGIN
 
     /* ------------------------------------------------------------
@@ -1041,8 +968,6 @@ BEGIN
 
     /*
        JVGENL diproses document-level.
-       Guard ini juga membuat pemanggilan langsung terhadap
-       fn_post_accounting_transaction(JVGENL line) aman.
     */
     IF TRIM(t.journal_type::TEXT) = 'JVGENL' THEN
         RETURN sc_trx.fn_post_jvgenl_document(
@@ -1094,6 +1019,23 @@ BEGIN
             'UNEREL',
             'PAYROL'
         );
+
+
+    /* ------------------------------------------------------------
+       ✅ TAMBAHAN REV12: DETEKSI TRANSFER
+       ------------------------------------------------------------
+       
+       Transfer = TRFWHS, BINMOV, BRNTRF.
+       
+       Untuk transfer:
+       - Setiap 1 transaction_dt (OUT atau IN) → 1 baris jurnal_dt
+       - OUT → hanya KREDIT Inventory asal (skip seq 1 / D)
+       - IN  → hanya DEBIT  Inventory tujuan (skip seq 2 / K)
+       - Balance check per header di-relax.
+       ------------------------------------------------------------ */
+    v_is_transfer :=
+        TRIM(t.journal_type::TEXT) IN
+        ('TRFWHS','BINMOV','BRNTRF');
 
 
     /* ------------------------------------------------------------
@@ -1310,6 +1252,41 @@ BEGIN
         ORDER BY j.seq, j.id
     LOOP
 
+        /* ============================================================
+           ✅ REV12: TRANSFER - SKIP SEQ YANG TIDAK PERLU
+           ============================================================
+           
+           Untuk journal_type transfer:
+           
+           Mapping master (orientasi IN):
+               seq 1: D  Inventory tujuan
+               seq 2: K  Inventory asal
+           
+           Untuk 1 baris transaction_dt:
+           
+               OUT (keluar dari asal):
+                   → hanya butuh KREDIT Inventory
+                   → pakai seq 2 saja
+                   → skip seq 1
+               
+               IN (masuk ke tujuan):
+                   → hanya butuh DEBIT Inventory
+                   → pakai seq 1 saja
+                   → skip seq 2
+           
+           Hasil per baris transaction_dt: 1 baris jurnal_dt (bukan 2).
+           ============================================================ */
+        IF v_is_transfer THEN
+            IF t.type_in_out = 'OUT' AND m.seq <> 2 THEN
+                CONTINUE;
+            END IF;
+
+            IF t.type_in_out = 'IN' AND m.seq <> 1 THEN
+                CONTINUE;
+            END IF;
+        END IF;
+
+
         /* --------------------------------------------------------
            TAX EXPANSION
            -------------------------------------------------------- */
@@ -1319,18 +1296,6 @@ BEGIN
            AND COALESCE(t.pajak, 0) > 0
            AND NOT v_tax_handled
         THEN
-
-            /*
-               TAX FLOW YANG DAPAT DITENTUKAN DARI CONTEXT:
-                   PURCHASE -> INPUT
-                   SALES    -> OUTPUT
-                   TAXINX   -> INPUT
-                   TAXOUT   -> OUTPUT
-                   NDK supplier -> INPUT
-                   NDK customer -> OUTPUT
-
-               Journal type finance lain tidak ditebak ulang.
-            */
 
             SELECT COUNT(*)
             INTO v_tax_count
@@ -1449,10 +1414,10 @@ BEGIN
                     IF v_value > 0 THEN
 
                         INSERT INTO sc_trx.jurnal_dt
-        (
+                        (
                             jurnal_id,
-            journal_type,
-            status,
+                            journal_type,
+                            status,
                             source_uniqueid,
                             source_line_no,
                             seq,
@@ -1469,8 +1434,8 @@ BEGIN
                             createdby,
                             createddate
                         )
-        VALUES
-        (
+                        VALUES
+                        (
                             v_jurnal_id,
                             t.journal_type,
                             'DRAFT',
@@ -1516,10 +1481,6 @@ BEGIN
 
             END IF;
 
-            /*
-               Tidak ada mapping tax yang bisa ditentukan.
-               Jangan membuat COA fiktif.
-            */
             CONTINUE;
 
         END IF;
@@ -1597,15 +1558,9 @@ BEGIN
         END IF;
 
 
-        /*
-           Untuk manual journal yang memang memperbolehkan
-           user menentukan arah account asal:
-               D -> mapping asli
-               K -> mapping dibalik
-
-           NDK / GIRO mempunyai arah yang sudah ditentukan
-           oleh TAHAP 04 sehingga tidak dibalik lagi.
-        */
+        /* --------------------------------------------------------
+           EFEKTIF D/K
+           -------------------------------------------------------- */
 
         v_effective_dc := m.debit_credit;
 
@@ -1623,7 +1578,7 @@ BEGIN
         END IF;
 
 
-                INSERT INTO sc_trx.jurnal_dt
+        INSERT INTO sc_trx.jurnal_dt
         (
             jurnal_id,
             journal_type,
@@ -1720,14 +1675,37 @@ BEGIN
     END IF;
 
 
-    IF ABS(v_balance) > 0.01 THEN
+    /* ============================================================
+       ✅ REV12: BALANCE CHECK — TRANSFER SAFE
+       ============================================================
+       
+       Non-transfer: setiap header HARUS balance.
+       
+       Transfer: per header BOLEH tidak balance,
+       karena balance terjadi saat OUT + IN digabung:
+           Header OUT: total_kredit = X, total_debet = 0  → balance = -X
+           Header IN : total_debet  = X, total_kredit = 0 → balance = +X
+       
+       Yang penting: minimal salah satu sisi > 0.
+       ============================================================ */
+    IF v_is_transfer THEN
 
-        RAISE EXCEPTION
-            'Jurnal % tidak balance. Debet=%, Kredit=%, Balance=%',
-            v_jurnal_id,
-            v_total_d,
-            v_total_k,
-            v_balance;
+        IF v_total_d = 0 AND v_total_k = 0 THEN
+            RAISE EXCEPTION
+                'Transfer % tidak menghasilkan jurnal.',
+                t.uniqueid;
+        END IF;
+
+    ELSE
+
+        IF ABS(v_balance) > 0.01 THEN
+            RAISE EXCEPTION
+                'Jurnal % tidak balance. Debet=%, Kredit=%, Balance=%',
+                v_jurnal_id,
+                v_total_d,
+                v_total_k,
+                v_balance;
+        END IF;
 
     END IF;
 
@@ -1751,11 +1729,6 @@ $$;
 /* ============================================================================
    TAHAP 17
    RECALCULATE transaction_hd
-   ============================================================================
-
-   transaction_hd tetap summary dari transaction_dt.
-   Tidak posting stock / asset / accounting.
-   Grouping mengikuti key yang digunakan TAHAP 05.
    ============================================================================ */
 
 CREATE OR REPLACE FUNCTION sc_trx.fn_recalculate_transaction_hd(
@@ -1872,15 +1845,7 @@ $$;
 
 
 /* ============================================================================
-   TAHAP 18
-   ACCOUNTING TRIGGER
-   ============================================================================
-
-   Trigger dibuat dengan prefix ZZ agar setelah:
-       trg_transaction_asset
-       trg_transaction_stock
-
-   sehingga COST TAHAP 07 tersedia sebelum accounting.
+   TAHAP 18 — ACCOUNTING TRIGGER
    ============================================================================ */
 
 CREATE OR REPLACE FUNCTION sc_trx.fn_transaction_accounting()
@@ -1988,6 +1953,7 @@ BEGIN
 END;
 $$;
 
+
 /*
    FINAL RUNTIME TRIGGER
    ====================
@@ -2035,7 +2001,6 @@ FOR EACH ROW
 EXECUTE FUNCTION sc_trx.fn_transaction_accounting();
 
 
-
 /* ============================================================
    TAHAP 18 -ADD
    DELETE DOWNSTREAM STOCK PROTECTION
@@ -2051,7 +2016,6 @@ DECLARE
     v_downstream_doc   TEXT;
 BEGIN
 
-    /* Hanya transaksi yang mempunyai efek stock */
     IF COALESCE(BTRIM(OLD.stock_effect), 'NONE')
        NOT IN ('IN','OUT','INOUT')
     THEN
@@ -2059,7 +2023,6 @@ BEGIN
     END IF;
 
 
-    /* Cari stock ledger transaksi yang akan dihapus */
     SELECT sb.id
     INTO v_source_stk_id
     FROM sc_trx.stkblc sb
@@ -2068,13 +2031,11 @@ BEGIN
     LIMIT 1;
 
 
-    /* Tidak ada stkblc = tidak ada stock yang perlu dilindungi */
     IF v_source_stk_id IS NULL THEN
         RETURN OLD;
     END IF;
 
 
-    /* Cari downstream stock */
     SELECT
         COUNT(*),
         MIN(x.docno)
@@ -2084,13 +2045,10 @@ BEGIN
     FROM sc_trx.stkblc x
     WHERE x.stock_uniqueid = OLD.stock_uniqueid
       AND x.uniqueid <> OLD.uniqueid
-
-      /* Dokumen yang sama bukan downstream */
       AND NOT (
           x.docno IS NOT DISTINCT FROM OLD.docno
           AND x.doctype IS NOT DISTINCT FROM OLD.doctype
       )
-
       AND (
           x.docdate > OLD.docdate
           OR (
@@ -2100,7 +2058,6 @@ BEGIN
       );
 
 
-    /* BLOCK DELETE */
     IF v_downstream_count > 0 THEN
 
         RAISE EXCEPTION
@@ -2118,10 +2075,6 @@ END;
 $$;
 
 
-/* ============================================================
-   TRIGGER
-   ============================================================ */
-
 DROP TRIGGER IF EXISTS trg_block_delete_downstream_stock
 ON sc_trx.transaction_dt;
 
@@ -2133,126 +2086,62 @@ EXECUTE FUNCTION sc_trx.fn_block_delete_downstream_stock();
 
 
 /* ============================================================================
-   TAHAP 19
-   VALIDATION
-   ============================================================================
-
-   Tidak membuat validation baru.
-   Validation source / type / primary COA tetap berasal dari TAHAP 04.
-   Validation COA jurnal + status DRAFT tetap berasal dari TAHAP 10.
-
-   Function utama yang menjadi dependency:
-       fn_validate_source_uniqueid()
-       fn_validate_transaction_type / versi aktif TAHAP 04
-       fn_validate_jurnal_coa()
-       fn_validate_jurnal_detail_status()
+   TAHAP 19 — VALIDATION
    ============================================================================ */
 
+DO $$
+BEGIN
+    RAISE NOTICE '============================================================';
+    RAISE NOTICE 'TAHAP 11-19 INSTALL : OK (REV12 - TRANSFER SAFE)';
+    RAISE NOTICE '  TAHAP 15 : cancel accounting       : READY';
+    RAISE NOTICE '  TAHAP 16 : post accounting         : READY (TRANSFER SAFE)';
+    RAISE NOTICE '  TAHAP 17 : recalculate transaction : READY';
+    RAISE NOTICE '  TAHAP 18 : accounting trigger      : READY';
+    RAISE NOTICE '  TAHAP 19 : validation              : OK';
+    RAISE NOTICE '============================================================';
+END;
+$$;
 
-/* ============================================================================
-   VERIFICATION
-   ============================================================================ */
-
-SELECT
-    tg.tgname,
-    tg.tgenabled,
-    p.proname AS trigger_function,
-    pg_get_triggerdef(tg.oid) AS trigger_definition
-FROM pg_trigger tg
-JOIN pg_proc p
-  ON p.oid = tg.tgfoid
-WHERE tg.tgrelid = 'sc_trx.transaction_dt'::regclass
-  AND NOT tg.tgisinternal
-ORDER BY tg.tgname;
-
-
-SELECT
-    proname,
-    pg_get_function_identity_arguments(p.oid) AS arguments
-FROM pg_proc p
-JOIN pg_namespace n
-  ON n.oid = p.pronamespace
-WHERE n.nspname = 'sc_trx'
-  AND proname IN
-      (
-          'fn_reverse_accounting_transaction',
-          'fn_resolve_accounting_coa',
-          'fn_post_accounting_transaction',
-          'fn_recalculate_transaction_hd',
-          'fn_transaction_accounting'
-      )
-ORDER BY proname;
-
-
-SELECT
-    jh.id,
-    jh.uniqueid,
-    jh.source_uniqueid,
-    jh.docno,
-    jh.doctype,
-    jh.journal_type,
-    jh.total_debet,
-    jh.total_kredit,
-    jh.balance,
-    jh.status
-FROM sc_trx.jurnal_hd jh
-ORDER BY jh.id DESC
-LIMIT 50;
-
-
-SELECT
-    column_name,
-    data_type,
-    character_maximum_length,
-    is_nullable,
-    column_default
-FROM information_schema.columns
-WHERE table_schema = 'sc_trx'
-  AND table_name = 'jurnal_dt'
-  AND column_name IN ('journal_type', 'status')
-ORDER BY ordinal_position;
-
-
-/* ============================================================================
-   HASIL AKHIR
-   ============================================================================
-
-   INSERT:
-       transaction_dt
-          |
-          +--> TAHAP 06 stock
-          |       |
-          |       +--> TAHAP 07 avgcost
-          |
-          +--> TAHAP 08 asset
-          |
-          +--> TAHAP 16 accounting
-          |       |
-          |       +--> jurnal_hd
-          |       +--> jurnal_dt
-          |
-          +--> TAHAP 17 transaction_hd
-
-   UPDATE:
-       cancel accounting OLD
-       -> post accounting NEW
-       -> recalculate transaction_hd
-
-   DELETE:
-       cancel accounting
-       -> recalculate transaction_hd
-
-   TAHAP 11 - 14:
-       tetap menggunakan object tahap sebelumnya.
-
-   TAHAP 19:
-       validation tetap dikelola TAHAP 04 + TAHAP 10.
-
-   Tidak ada:
-       - DROP TABLE
-       - TEST INSERT
-       - rebuild massal
-       - update data legacy
-   ============================================================================ */
 
 COMMIT;
+
+
+/* ============================================================================
+   RINGKASAN FIX TRANSFER DI REV12
+
+   Di fn_post_accounting_transaction:
+
+   1. Tambah flag v_is_transfer:
+          v_is_transfer :=
+              TRIM(t.journal_type::TEXT) IN
+              ('TRFWHS','BINMOV','BRNTRF');
+
+   2. Skip seq yang tidak perlu di loop:
+          IF v_is_transfer THEN
+              IF t.type_in_out = 'OUT' AND m.seq <> 2 THEN CONTINUE; END IF;
+              IF t.type_in_out = 'IN'  AND m.seq <> 1 THEN CONTINUE; END IF;
+          END IF;
+
+   3. Relax balance check:
+          IF v_is_transfer THEN
+              IF v_total_d = 0 AND v_total_k = 0 THEN
+                  RAISE EXCEPTION 'Transfer % tidak menghasilkan jurnal.', t.uniqueid;
+              END IF;
+          ELSE
+              IF ABS(v_balance) > 0.01 THEN
+                  RAISE EXCEPTION 'Jurnal % tidak balance ...', ...;
+              END IF;
+          END IF;
+
+   HASIL PER DOKUMEN TRANSFER:
+
+       Header OUT (source_uniqueid = OUT_uid):
+           total_kredit = X, total_debet = 0
+           1 baris jurnal_dt: KREDIT Inventory  X
+
+       Header IN (source_uniqueid = IN_uid):
+           total_debet = X, total_kredit = 0
+           1 baris jurnal_dt: DEBIT  Inventory  X
+
+       Total nilai perusahaan TIDAK berubah.
+   ============================================================================ */

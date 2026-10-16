@@ -1585,7 +1585,7 @@ class Globalmodule extends BaseController
         $search = strtoupper(trim($this->request->getPost('_search_')));
         $perpage = $this->request->getPost('_perpage_');
         $px = trim($this->request->getPost('_parameterx_'));
-        $docdate = trim($this->request->getPost('docdate'));
+        $docdate = date('Y-m-d', strtotime($this->request->getPost('docdate')));
         
         $perpage = intval($perpage);
         $page = $this->request->getPost('_page_');
@@ -3333,69 +3333,44 @@ class Globalmodule extends BaseController
 
 
     /* AVERAGE STOCK / PERSEDIAAN  */
-    function list_avg_stock(){
-        $branch = trim($this->session->get('branch'));
-        $loccode_sessions = trim($this->session->get('loccode'));
+    function list_avg_stock()
+    {
         $loccodePost = trim($this->request->getPost('loccode'));
-        $loccodeGet = trim($this->request->getGet('loccode'));
+        $loccodeGet  = trim($this->request->getGet('loccode'));
+        $loccode     = $loccodePost !== '' ? $loccodePost : $loccodeGet;
 
-        $search = strtoupper(trim($this->request->getPost('_search_')));
-        $perpage = $this->request->getPost('_perpage_');
-        $px = trim($this->request->getPost('_parameterx_'));
-        $perpage = intval($perpage);
-        $page = $this->request->getPost('_page_');
-        $varGet = trim($this->request->getGet('_var_'));
+        $px      = trim($this->request->getPost('_parameterx_'));
         $varPost = trim($this->request->getPost('_var_'));
+        $varGet  = trim($this->request->getGet('_var_'));
+        $batch   = $varPost !== '' ? $varPost : $varGet;
 
+        $search  = strtoupper(trim($this->request->getPost('_search_')));
 
-        if (!empty($loccodeGet) or $loccodeGet!=='') {
-            $pidlocationGet= " and coalesce(idlocation,'')='$loccodeGet'";
-        } else {
-            $pidlocationGet= "";
+        $param = " and 1=1 ";
+
+        if ($loccode !== '') {
+            $param .= " and coalesce(idlocation,'') = " . $this->db->escape($loccode);
         }
-        if (!empty($loccodePost) or $loccodePost!=='') {
-            $pidlocationPost= " and coalesce(idlocation,'')='$loccodePost'";
-        } else {
-            $pidlocationPost= "";
+        if ($px !== '') {
+            $param .= " and idbarang = " . $this->db->escape($px);
         }
-
-
-
-        if (!empty($varGet) or $varGet!=='') {
-            $paramglobal1= " and batch='$varGet'";
+        if ($batch !== '') {
+            $param .= " and trim(batch) = " . $this->db->escape($batch);
         } else {
-            $paramglobal1= " and trim(batch)=''";
+            $param .= " and trim(batch) = '' ";
         }
-        if (!empty($varPost) or $varPost!=='') {
-            $paramglobal2= " and trim(batch)='$varPost'";
-        } else {
-            $paramglobal2= " and trim(batch)=''";
-            //$paramglobal2= " and trim(batch)='$varPost'";
+        if ($search !== '') {
+            $param .= " and batch like " . $this->db->escape('%' . $search . '%');
         }
 
-        if (!empty($px) or $px!=='') {
-            $paramitem= " and idbarang='$px'";
-        } else {
-            $paramitem= "";
-        }
-
-        $parameterx = " $pidlocationGet $pidlocationPost ";
-        $page = intval($page);
-        $limit = $perpage * $page;
-
-        $param=" and (batch like '%$search%' $paramitem $paramglobal1 $paramglobal2 $parameterx ) ";
         $getResult = $this->m_balance->q_stkblc_avgcost_selecting($param)->getResult();
-        $count = $this->m_balance->q_stkblc_avgcost_selecting($param)->getNumRows();
-        header('Content-Type: application/json');
-        echo json_encode(
-            array(
-                'total_count' => $count,
-                'items' => $getResult,
-                'incomplete_getResults' => false,
-                'param' => $param,
-            ),
-            JSON_PRETTY_PRINT
-        );
+        $count     = count($getResult);
+
+        return $this->response->setJSON([
+            'total_count' => $count,
+            'items'       => $getResult,
+            'param'       => $param,
+        ]);
     }
 
 
@@ -3409,13 +3384,8 @@ class Globalmodule extends BaseController
             trim($this->request->getPost('_search_'))
         );
 
-        $idbarang = trim(
-            $this->request->getGet('idbarang')
-        );
-
-        $idunit = trim(
-            $this->request->getGet('idunit')
-        );
+        $idbarang = trim($this->request->getVar('idbarang'));
+        $idunit   = trim($this->request->getVar('idunit'));
 
 
         // =========================================
@@ -3423,7 +3393,6 @@ class Globalmodule extends BaseController
         // =========================================
 
         if (empty($idbarang)) {
-
             return $this->response
                 ->setContentType('application/json')
                 ->setJSON([
@@ -3431,7 +3400,6 @@ class Globalmodule extends BaseController
                     'items' => [],
                     'message' => 'ID Barang tidak boleh kosong'
                 ]);
-
         }
 
 
@@ -3449,11 +3417,9 @@ class Globalmodule extends BaseController
         // =========================================
 
         if (!empty($idunit)) {
-
             $param .= "
             AND TRIM(idunit) = " . $this->db->escape($idunit) . "
         ";
-
         }
 
 
@@ -3462,12 +3428,10 @@ class Globalmodule extends BaseController
         // =========================================
 
         if (!empty($search)) {
-
             $param .= "
             AND UPPER(TRIM(idunit))
             LIKE '%" . $this->db->escapeLikeString($search) . "%'
         ";
-
         }
 
 
@@ -3476,7 +3440,7 @@ class Globalmodule extends BaseController
         // =========================================
 
         $param .= "
-        ORDER BY TRIM(idunit) ASC
+        ORDER BY TRIM(cdefault) DESC, TRIM(idunit) ASC
     ";
 
 
@@ -3487,6 +3451,23 @@ class Globalmodule extends BaseController
         $getResult = $this->m_global
             ->m_barang_unit($param)
             ->getResult();
+
+
+        // =========================================
+        // ENRICH: unit_default dari mbarang
+        // =========================================
+
+        foreach ($getResult as &$row) {
+
+            $mbarang = $this->db->table('sc_mst.mbarang')
+                ->select('unit')                 // 🔥 FIX: kolom `unit`, bukan `idunit`
+                ->where('idbarang', $row->idbarang)
+                ->get()
+                ->getRowArray();
+
+            $row->unit_default = $mbarang['unit'] ?? $row->idunit;
+        }
+        unset($row);
 
 
         // =========================================
@@ -3503,13 +3484,9 @@ class Globalmodule extends BaseController
         return $this->response
             ->setContentType('application/json')
             ->setJSON([
-
                 'total_count' => $count,
-
-                'items' => $getResult,
-
+                'items'       => $getResult,
                 'incomplete_getResults' => false,
-
             ]);
     }
 
@@ -3551,6 +3528,186 @@ class Globalmodule extends BaseController
             'status' => true,
             'data'   => $row
         ]);
+    }
+
+    /**
+     * Ambil stock on-hand per batch untuk gudang tertentu
+     *
+     * @param string $idlocation  idlocation_from (gudang asal)
+     * @param string $idbranch    idbranch (opsional, jika multi-branch)
+     * @param string $search      keyword search untuk item/batch
+     * @param int    $limit
+     * @param int    $offset
+     * @return array
+     */
+    public function q_stock_onhand_by_location($idlocation, $idbranch = '', $search = '', $limit = 30, $offset = 0)
+    {
+        $builder = $this->db->table('sc_trx.stkblc');
+
+        // Kolom yang dipilih (sesuaikan dengan kebutuhan JS select2)
+        $builder->select("
+        idbarang,
+        idunit AS unit,
+        batch,
+        lotno,
+        idbranch,
+        warehouse AS idlocation,
+        SUM(qty_in)  - SUM(qty_out) AS sisaonhand,
+        MAX(docdate) AS last_movement
+    ");
+
+        // Filter gudang
+        $builder->where('warehouse', $idlocation);
+
+        // Filter cabang (jika ada)
+        if (!empty($idbranch)) {
+            $builder->where('idbranch', $idbranch);
+        }
+
+        // Grouping dimensi stock
+        $builder->groupBy('idbarang, idunit, batch, lotno, idbranch, warehouse');
+
+        // Hanya yang masih ada stok > 0
+        $builder->having('SUM(qty_in) - SUM(qty_out) >', 0);
+
+        // Search (opsional)
+        if (!empty($search)) {
+            $builder->groupStart()
+                ->like('idbarang', $search)
+                ->orLike('batch',   $search)
+                ->orLike('lotno',   $search)
+                ->groupEnd();
+        }
+
+        // Order & limit
+        $builder->orderBy('idbarang', 'ASC')
+            ->orderBy('batch',    'ASC')
+            ->limit($limit, $offset);
+
+        return $builder->get()->getResultArray();
+    }
+
+    /**
+     * Count total untuk pagination
+     */
+    public function q_stock_onhand_by_location_count($idlocation, $idbranch = '', $search = '')
+    {
+        $sql = "
+        SELECT COUNT(*) AS total FROM (
+            SELECT idbarang, idunit, batch, lotno
+            FROM sc_trx.stkblc
+            WHERE warehouse = ?
+              " . (!empty($idbranch) ? "AND idbranch = ?" : "") . "
+              " . (!empty($search)   ? "AND (idbarang ILIKE ? OR batch ILIKE ? OR lotno ILIKE ?)" : "") . "
+            GROUP BY idbarang, idunit, batch, lotno
+            HAVING SUM(qty_in) - SUM(qty_out) > 0
+        ) x
+    ";
+
+        $params = [$idlocation];
+        if (!empty($idbranch)) $params[] = $idbranch;
+        if (!empty($search)) {
+            $params[] = "%{$search}%";
+            $params[] = "%{$search}%";
+            $params[] = "%{$search}%";
+        }
+
+        $row = $this->db->query($sql, $params)->getRowArray();
+        return (int) ($row['total'] ?? 0);
+    }
+
+
+    /* LIST STOCK BY LOCATION */
+    public function list_stock_by_location()
+    {
+        try {
+            $idlocation   = trim($this->request->getPost('loccode')      ?? '');
+            $search       = strtoupper(trim($this->request->getPost('_search_') ?? ''));
+            $perpage      = (int) ($this->request->getPost('_perpage_')  ?? 30);
+            $page         = (int) ($this->request->getPost('_page_')     ?? 1);
+
+            /* ✅ parameter baru: include barang walau stok 0 */
+            $include_zero = (int) ($this->request->getPost('include_zero') ?? 0);
+
+            /* ✅ filter by idbarang (khusus untuk edit) */
+            $idbarang     = trim($this->request->getPost('_parameterx_')  ?? '');
+
+            if ($perpage <= 0) $perpage = 30;
+            if ($page    <= 0) $page    = 1;
+            $offset = ($page - 1) * $perpage;
+
+            if (empty($idlocation)) {
+                return $this->response->setJSON([
+                    'total_count' => 0,
+                    'items'       => [],
+                    'message'     => 'Gudang asal belum dipilih',
+                ]);
+            }
+
+            /* -----------------------------------------------------
+               Mode 1: EDIT — ambil langsung dari master barang
+                       (walau stok 0)
+               ----------------------------------------------------- */
+            if ($include_zero === 1 && !empty($idbarang)) {
+
+                $items = $this->m_balance->q_stock_by_location_with_zero(
+                    $idlocation, $idbarang, $search, $perpage, $offset
+                );
+
+                $total = $this->m_balance->q_stock_by_location_with_zero_count(
+                    $idlocation, $idbarang, $search
+                );
+
+            }
+            /* -----------------------------------------------------
+               Mode 2: NORMAL — hanya barang yang punya stok
+               ----------------------------------------------------- */
+            else {
+
+                $items = $this->m_balance->q_stock_onhand_by_location(
+                    $idlocation, '', $search, $perpage, $offset
+                );
+
+                $total = $this->m_balance->q_stock_onhand_by_location_count(
+                    $idlocation, '', $search
+                );
+            }
+
+            $result = [];
+            foreach ($items as $row) {
+
+                // Ambil nmbarang
+                $barang = $this->db->table('sc_mst.mbarang')
+                    ->select('nmbarang')
+                    ->where('idbarang', trim($row['idbarang']))
+                    ->get()
+                    ->getRowArray();
+
+                $result[] = [
+                    'id'         => trim($row['id']),         // Select2 key
+                    'idbarang'   => trim($row['idbarang']),
+                    'nmbarang'   => $barang['nmbarang'] ?? '',
+                    'batch'      => trim($row['batch']      ?? ''),
+                    'lotno'      => trim($row['lotno']      ?? ''),
+                    'unit'       => trim($row['unit']       ?? ''),
+                    'idlocation' => trim($row['idlocation'] ?? ''),
+                    'sisaonhand' => (float) ($row['sisaonhand'] ?? 0),
+                ];
+            }
+
+            return $this->response->setJSON([
+                'total_count' => $total,
+                'items'       => $result,
+            ]);
+
+        } catch (\Throwable $e) {
+            log_message('error', '[list_stock_by_location] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'total_count' => 0,
+                'items'       => [],
+                'error'       => $e->getMessage(),
+            ]);
+        }
     }
 }
 

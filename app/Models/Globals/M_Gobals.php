@@ -572,16 +572,17 @@ group by docno order by docno asc");
     {
         return $this->db->query("
         SELECT
-            TRIM(idbarang)||TRIM(idunit) as id,
-            TRIM(idbarang) AS idbarang,
-            TRIM(idunit) AS idunit,
-            TRIM(idunit_tax) AS idunit_tax,
+            TRIM(idbarang)||TRIM(idunit)       AS id,
+            TRIM(idbarang)                     AS idbarang,
+            TRIM(idunit)                       AS idunit,
+            TRIM(idunit)                       AS unit_default,   -- 🔥 alias
+            TRIM(idunit_tax)                   AS idunit_tax,
             basic_value,
             conv_value,
             inputdate,
-            TRIM(inputby) AS inputby,
-            TRIM(cdefault) AS cdefault,
-            TRIM(chold) AS chold
+            TRIM(inputby)                      AS inputby,
+            TRIM(cdefault)                     AS cdefault,
+            TRIM(chold)                        AS chold
         FROM sc_mst.mbarang_unit
         WHERE idbarang IS NOT NULL
         $param

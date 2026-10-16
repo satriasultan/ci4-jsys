@@ -372,9 +372,9 @@
 
 
 
-
-<!-- ================= MODAL TAX DETAIL ================= -->
-<div class="modal fade" id="modalDetailPMK" tabindex="-1" role="dialog" aria-labelledby="modalDetailPemakaianBarang" aria-hidden="true">
+<!-- ================= MODAL PEMAKAIAN STOCK DETAIL ================= -->
+<div class="modal fade" id="modalDetailPMK" tabindex="-1" role="dialog"
+     aria-labelledby="modalDetailPemakaianBarang" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
 
@@ -383,7 +383,8 @@
                 <h5 class="modal-title" id="modalDetailPemakaianBarang">
                     Input Item Detail
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"></button>
             </div>
 
             <!-- FORM -->
@@ -391,37 +392,48 @@
 
                 <div class="modal-body">
 
-                    <input type="hidden" name="idurut" id="idurut">
-                    <input type="hidden" name="iduniq" id="iduniq">
+                    <!-- ===================== HIDDEN ===================== -->
+                    <input type="hidden" name="idurut"           id="idurut">
+                    <input type="hidden" name="iduniq"           id="iduniq">
+                    <input type="hidden" name="unit_default"     id="unit_default">
+                    <input type="hidden" name="qty_base"         id="qty_base">
+                    <input type="hidden" name="qtystock_raw"     id="qtystock_raw" value="0">
 
-                    <!-- ROW 1 -->
+                    <!-- ===================== ROW 1 ===================== -->
                     <div class="row g-3">
 
                         <div class="col-md-4">
                             <label class="form-label">Pilih Gudang</label>
-                            <select name="idlocation_dtl" id="idlocation_dtl" class="form-select" required></select>
+                            <select name="idlocation_dtl" id="idlocation_dtl"
+                                    class="form-select" required></select>
                         </div>
 
                         <div class="col-md-4">
                             <label class="form-label">ID Barang</label>
                             <select name="idbarang" id="idbarang"
-                                    class="form-select select2 getLastStock"
+                                    class="form-select select2"
                                     style="width:100%"></select>
                         </div>
 
-                        <div class="col-md-4">
-                            <label class="form-label">Batch / Spesifikasi</label>
+                        <div class="col-md-3">
+                            <label class="form-label">Spec</label>
+                            <input type="text"
+                                   name="spec"
+                                   id="spec"
+                                   class="form-control"
+                                   placeholder="Spesification"
+                                   style="text-transform:uppercase"
+                                   readonly>
+                        </div>
 
-                            <div class="input-group">
-                                <select name="batch" id="batch" class="form-select getLastStock"></select>
-
-                                <button type="button"
-                                        id="btnNew"
-                                        onclick="new_spec()"
-                                        class="btn btn-primary">
-                                    New Spec
-                                </button>
-                            </div>
+                        <div class="col-md-1">
+                            <label class="form-label">QTY Stock</label>
+                            <input type="text"
+                                   name="qtystock"
+                                   id="qtystock"
+                                   class="form-control"
+                                   placeholder="Qty Stock"
+                                   readonly>
                         </div>
 
                         <div class="col-md-4">
@@ -435,66 +447,38 @@
                                    readonly>
                         </div>
 
-                        <div class="col-md-2" >
-                            <label class="form-label">QTY Stock</label>
-                            <input type="text"
-                                   name="qtystock"
-                                   id="qtystock"
-                                   class="form-control"
-                                   placeholder="Qty Stock"
-                                   readonly>
+                        <div class="col-md-3">
+                            <label class="form-label">Satuan</label>
+                            <select name="unit" id="unit"
+                                    class="form-select"
+                                    style="width:100%"></select>
                         </div>
 
                         <div class="col-md-2">
+                            <label class="form-label">Konversi</label>
+                            <input type="text"
+                                   name="conversion_factor"
+                                   id="conversion_factor"
+                                   class="form-control"
+                                   readonly>
+                        </div>
+
+                        <div class="col-md-3">
                             <label class="form-label">Qty</label>
                             <input type="text"
                                    name="qty"
                                    id="qty"
                                    class="form-control jtsseparator text-end"
-                                   placeholder="0.00" required>
-                        </div>
-
-                        <div class="col-md-2">
-                            <label class="form-label">Satuan</label>
-                            <input name="unit"
-                                   id="unit"
-                                   class="form-control"
-                                   readonly>
+                                   placeholder="0.00"
+                                   required>
                         </div>
 
                     </div>
 
 
-                    <!-- ROW 2 -->
+                    <!-- ===================== ROW 2 ===================== -->
                     <div class="row g-3 mt-1">
-<?php /*
-                        <div class="col-md-2">
-                            <label class="form-label">Debit / Kredit</label>
-                            <select name="dk" id="dk" class="form-select select2" required>
-                                <option value="">-- Pilih --</option>
-                                <option value="D">D</option>
-                                <option value="K">K</option>
-                            </select>
-                        </div>
 
-
-                        <div class="col-md-2">
-                            <label class="form-label">Mata Uang</label>
-                            <input name="currency"
-                                   id="currency"
-                                   class="form-control"
-                                   readonly>
-                        </div>
-
-                        <div class="col-md-2">
-                            <label class="form-label">Harga</label>
-                            <input type="text"
-                                   name="valqty"
-                                   id="valqty"
-                                   class="form-control jtsseparator text-end"
-                                   placeholder="0.00" required>
-                        </div>
- */ ?>
                         <div class="col-md-6">
                             <label class="form-label">Keterangan Detail</label>
                             <textarea name="description"
@@ -509,8 +493,8 @@
                 </div>
 
 
-                <!-- FOOTER -->
-                <div class="modal-footer">
+                <!-- ===================== FOOTER ===================== -->
+                <div class="modal-footer bg-light">
 
                     <button type="button"
                             class="btn btn-primary savePmkBrng"

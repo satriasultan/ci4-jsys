@@ -422,3 +422,30 @@ CREATE TRIGGER tr_mbarang
 
 
 COMMIT;
+
+
+
+
+
+
+UPDATE sc_mst.mbarang AS m
+SET idgroup = CASE TRIM(i.group_)
+    WHEN 'Bahan Baku'       THEN 'BB'
+    WHEN 'Bahan Pembantu'   THEN 'BP'
+    WHEN 'Barang'           THEN 'BRG'
+    WHEN 'Jasa'             THEN 'JSA'
+    WHEN 'Paket'            THEN 'PKT'
+    WHEN 'WIP'              THEN 'PRD'
+    ELSE m.idgroup
+END
+FROM sc_im.mbarang_import AS i
+WHERE TRIM(m.idbarang) = TRIM(i.kode)
+  AND TRIM(i.kode) <> ''
+  AND TRIM(i.group_) IN (
+      'Bahan Baku',
+      'Bahan Pembantu',
+      'Barang',
+      'Jasa',
+      'Paket',
+      'WIP'
+  );

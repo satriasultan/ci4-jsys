@@ -1,19 +1,6 @@
 <?php
 /*
- * select * from sc_mst.trxtype;
---DELETE FROM sc_mst.trxtype WHERE JENISTRX='I.Q.A.1';
-insert into sc_mst.trxtype
-(kdtrx,jenistrx,uraian)
-values
-('I','I.Q.A.1','DRAFT'),
-('E','I.Q.A.1','REVISION/EDITING'),
-('F','I.Q.A.1','FINAL USER'),
-('A','I.Q.A.1','APPROVED'),
-('D','I.Q.A.1','DISAPPROVED'),
-('P','I.Q.A.1','CETAK/PRINT'),
-('O','I.Q.A.1','FINAL TRANSACTION');
- *
- * */
+Controller Persediaan.js */
 
 namespace App\Controllers\Persediaan;
 
@@ -588,6 +575,7 @@ class Persediaan extends BaseController
         }
     }
 
+
     function finalSpkTransfers(){
         $nama = trim($this->session->get('nama'));
         // $loccode = trim($this->session->get('loccode'));
@@ -1132,7 +1120,7 @@ class Persediaan extends BaseController
             );
             $row[] = $lm->idlocation_from;
             $row[] = $lm->idlocation_to;
-            $row[] = $lm->idlocation_transit;
+//            $row[] = $lm->idlocation_transit;
             $row[] = $lm->description;
             $row[] = $lm->nmstatus;
 
@@ -1219,8 +1207,8 @@ class Persediaan extends BaseController
 
     public function saveTransferLocationDetail()
     {
-        $nama = trim($this->session->get('nama'));
-        $docno  = strtoupper($this->request->getPost('docno'));
+        $nama  = trim($this->session->get('nama'));
+        $docno = strtoupper($this->request->getPost('docno'));
         $idurut = $this->request->getPost('idurut');
 
         if (!$docno) {
@@ -1233,6 +1221,9 @@ class Persediaan extends BaseController
         $db = $this->db;
         $db->transStart();
 
+        // ================================================
+        // HEADER — check & insert jika belum ada
+        // ================================================
         $builderHeader = $db->table('sc_tmp.transfer_location_mst');
 
         $exists = $builderHeader
@@ -1242,114 +1233,138 @@ class Persediaan extends BaseController
 
         $reload = false;
 
-        // =========================
-        // INSERT HEADER JIKA BELUM ADA
-        // =========================
         if ($exists == 0) {
-
-            $insertHeader = $builderHeader->insert([
-                'docno'      => $docno,
-                'doctype'    => 'TRANSFER LOCATION',
-                'docref'     => trim($this->request->getPost('docref')),
-                'docdate'    => trim($this->request->getPost('docdate')),
-                'cabang'     => trim($this->request->getPost('cabang')),
-                'cabang_sent'=> trim($this->request->getPost('cabang_sent')),
-                'pemohon'    => strtoupper(trim($this->request->getPost('pemohon'))),
-                'estpakai'   => $this->request->getPost('estpakai'),
+            $builderHeader->insert([
+                'docno'         => $docno,
+                'doctype'       => 'TRFWHS',
+                'docref'        => trim($this->request->getPost('docref')),
+                'docdate'       => trim($this->request->getPost('docdate')),
+                'cabang'        => trim($this->request->getPost('cabang')),
+                'cabang_sent'   => trim($this->request->getPost('cabang_sent')),
+                'pemohon'       => strtoupper(trim($this->request->getPost('pemohon'))),
+                'estpakai'      => $this->request->getPost('estpakai'),
                 'idlocation_from'    => strtoupper(trim($this->request->getPost('idlocation_from'))),
                 'idlocation_to'      => strtoupper(trim($this->request->getPost('idlocation_to'))),
                 'idlocation_transit' => strtoupper(trim($this->request->getPost('idlocation_transit'))),
-                'status'     => 'E',
-                'description' => strtoupper(trim($this->request->getPost('description'))),
-                'inputby'    => $nama,
-                'inputdate'  => date('Y-m-d H:i:s')
+                'status'        => 'E',
+                'description'   => strtoupper(trim($this->request->getPost('description'))),
+                'inputby'       => $nama,
+                'inputdate'     => date('Y-m-d H:i:s')
             ]);
-
-            if (!$insertHeader) {
-                $error = $db->error();
-                $db->transRollback();
-
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => $error['message']
-                ]);
-            }
 
             $reload = true;
         }
 
-        // =========================
-        // AMBIL DATA DETAIL
-        // =========================
-        $uniqueid = $this->request->getPost('iduniq');
-        $idbarang    = trim($this->request->getPost('idbarang'));
-        $nmbarang    = strtoupper(trim($this->request->getPost('nmbarang')));
-        $unit        = strtoupper(trim($this->request->getPost('unit')));
-        $qtystock    = trim($this->request->getPost('qtystock'));
-        $qty         = (float) $this->request->getPost('qty');
+        // ================================================
+        // DETAIL — AMBIL SEMUA FIELD
+        // ================================================
+        $uniqueid          = $this->request->getPost('iduniq');
+        $idbarang          = strtoupper(trim($this->request->getPost('idbarang')));
+        $nmbarang          = strtoupper(trim($this->request->getPost('nmbarang')));
+        $batch             = strtoupper(trim($this->request->getPost('batch') ?? ''));
+        $lotno             = strtoupper(trim($this->request->getPost('lotno') ?? ''));
+
+        $unit              = strtoupper(trim($this->request->getPost('unit')));
+        $unit_default      = strtoupper(trim($this->request->getPost('unit_default') ?? $unit));
+        $conversion_factor = (float) ($this->request->getPost('conversion_factor') ?? 1);
+
+        if ($conversion_factor <= 0) {
+            $conversion_factor = 1;
+        }
+
+        $qty               = (float) $this->request->getPost('qty');
+        $qtystock          = (float) $this->request->getPost('qtystock');
+        $val               = (float) ($this->request->getPost('val') ?? 0);
+
+        // hitung qty_base = qty * conversion_factor
+        $qty_base = $qty * $conversion_factor;
+
         $description = strtoupper(trim($this->request->getPost('description')));
 
+        // ================================================
+        // VALIDASI DASAR
+        // ================================================
         if (!$idbarang) {
             $db->transRollback();
-
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Item belum dipilih'
             ]);
         }
 
-        $builderDetail = $db->table('sc_tmp.transfer_location_dtl');
-
-        // =========================
-        // CEK DUPLIKASI
-        // =========================
-        $builderDuplicate = $builderDetail
-            ->where('docno', $docno)
-            ->where('idbarang', $idbarang)
-            ->where('nmbarang', $nmbarang)
-            ->where('unit', $unit)
-            ->where('qty', $qty)
-            ->where('inputby', $nama)
-            ->where('description', $description);
-
-        if ($uniqueid) {
-            $builderDuplicate->where('iduniq !=', $uniqueid);
-        }
-
-        $duplicate = $builderDuplicate->countAllResults();
-
-        if ($duplicate > 0) {
+        if ($qty <= 0) {
             $db->transRollback();
-
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Tidak boleh menginputkan item yang sama dengan keterangan yang sama'
+                'message' => 'Qty harus lebih dari 0'
             ]);
         }
 
-        // =========================
-        // INSERT / UPDATE DETAIL
-        // =========================
-        if ($idurut) {
+        // ================================================
+        // 🔥 BLOCKING: QTY > STOCK TIDAK BOLEH
+        // ================================================
+        if ($qtystock <= 0) {
+            $db->transRollback();
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Stock tidak tersedia untuk item ini'
+            ]);
+        }
 
-            $updateDetail = $builderDetail
+        if ($qty_base > $qtystock) {
+            $db->transRollback();
+
+            $qtyStockDisplay = number_format($qtystock, 2, ',', '.');
+            $qtyBaseDisplay  = number_format($qty_base, 2, ',', '.');
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' =>
+                    'Qty melebihi stock yang tersedia. ' .
+                    'Qty (dalam satuan dasar) = ' . $qtyBaseDisplay .
+                    ', Stock tersedia = ' . $qtyStockDisplay .
+                    ' ' . $unit_default
+            ]);
+        }
+
+        // ================================================
+        // INSERT / UPDATE
+        // ================================================
+        $builderDetail = $db->table('sc_tmp.transfer_location_dtl');
+
+        $dataDetail = [
+            'docno'             => $docno,
+            'doctype'           => 'TRFWHS',
+            'idbarang'          => $idbarang,
+            'nmbarang'          => $nmbarang,
+            'unit'              => $unit,
+            'unit_default'      => $unit_default,
+            'conversion_factor' => $conversion_factor,
+            'qty'               => $qty,
+            'qty_base'          => $qty_base,
+            'qtystock'          => $qtystock,
+            'batch'             => $batch,
+            'lotno'             => $lotno,
+            'val'               => $val,
+            'description'       => $description,
+        ];
+
+        if ($idurut) {
+            // ================================================
+            // UPDATE
+            // ================================================
+            $dataDetail['updateby']   = $nama;
+            $dataDetail['updatedate'] = date('Y-m-d H:i:s');
+
+            $updated = $builderDetail
                 ->where('docno', $docno)
                 ->where('inputby', $nama)
                 ->where('iduniq', $uniqueid)
-                ->update([
-                    'idbarang'    => $idbarang,
-                    'nmbarang'    => $nmbarang,
-                    'unit'        => $unit,
-                    'qty'         => $qty,
-                    'description' => $description,
-                    'updateby'    => $nama,
-                    'updatedate'  => date('Y-m-d H:i:s')
-                ]);
+                ->update($dataDetail);
 
-            if (!$updateDetail) {
+            if (!$updated) {
                 $error = $db->error();
                 $db->transRollback();
-
                 return $this->response->setJSON([
                     'success' => false,
                     'message' => $error['message']
@@ -1357,28 +1372,22 @@ class Persediaan extends BaseController
             }
 
         } else {
-
+            // ================================================
+            // INSERT
+            // ================================================
             $inputdate = date('Y-m-d H:i:s');
-
-            $rawUnique = $idbarang . '|' . $docno . '|' . $inputdate;
+            $rawUnique = $idbarang . '|' . $batch . '|' . $lotno . '|' . $docno . '|' . $inputdate;
             $uniqueid  = hash('sha256', $rawUnique);
 
-            $insertDetail = $builderDetail->insert([
-                'docno'       => $docno,
-                'idbarang'    => $idbarang,
-                'nmbarang'    => $nmbarang,
-                'unit'        => $unit,
-                'qty'         => $qty,
-                'description' => $description,
-                'inputby'     => $nama,
-                'inputdate'   => $inputdate,
-                'iduniq'      => $uniqueid
-            ]);
+            $dataDetail['inputby']   = $nama;
+            $dataDetail['inputdate'] = $inputdate;
+            $dataDetail['iduniq']    = $uniqueid;
 
-            if (!$insertDetail) {
+            $inserted = $builderDetail->insert($dataDetail);
+
+            if (!$inserted) {
                 $error = $db->error();
                 $db->transRollback();
-
                 return $this->response->setJSON([
                     'success' => false,
                     'message' => $error['message']
@@ -1400,8 +1409,6 @@ class Persediaan extends BaseController
             'reload'  => $reload
         ]);
     }
-
-
     function showing_transfer_location_mst_tmp(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
@@ -1419,9 +1426,9 @@ class Persediaan extends BaseController
     public function get_tmp_transfer_location_dtl()
     {
         $id = $this->request->getGet('id');
-
+        $inputby = trim($this->session->get('nama'));
         $data = $this->m_persediaan
-            ->q_tmp_transfer_location_dtl(" and idurut='$id'");
+            ->q_tmp_transfer_location_dtl(" and iduniq='$id'");
 
         $output = array(
             'status' => true,
@@ -1546,34 +1553,99 @@ class Persediaan extends BaseController
 
     }
 
-    function list_tmp_transfer_location_dtl(){
-        $docno = trim($this->request->getPost('docno')); // ambil dari POST
-        $list = $this->m_persediaan->get_tmp_transfer_location_dtl_view($docno);
-        $data = array();
-        $no = $_POST['start'];
+    public function list_tmp_transfer_location_dtl()
+    {
+        $docno = trim($this->request->getPost('docno'));
+
+        try {
+            $list = $this->m_persediaan
+                ->get_tmp_transfer_location_dtl_view($docno);
+
+            if (!is_array($list)) {
+                $list = [];
+            }
+        } catch (\Throwable $e) {
+            log_message('error',
+                '[list_tmp_transfer_location_dtl] ' . $e->getMessage());
+
+            echo $this->fiky_encryption->jDatatable([
+                'draw'            => (int) ($_POST['draw'] ?? 0),
+                'recordsTotal'    => 0,
+                'recordsFiltered' => 0,
+                'data'            => [],
+                'error'           => $e->getMessage(),
+            ]);
+            return;
+        }
+
+        $data = [];
+        $no   = (int) ($_POST['start'] ?? 0);
+
         foreach ($list as $lm) {
+
             $no++;
-            $row = array();
-            // $row[] = $no;
-            $row[] = $lm->idurut;
-            //item
-            $row[] = $lm->idbarang;
-            $row[] = $lm->nmbarang;
-            $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. $lm->qty  . '</div>';
-            $row[] = $lm->description;
+
+            $qty     = (float) ($lm->qty      ?? 0);
+            $qtyBase = (float) ($lm->qty_base ?? $qty);
+            $unit    = trim($lm->unit         ?? '');
+            $unitDef = trim($lm->unit_default ?? $unit);
+
+            $fmtQty  = number_format($qty,     0, ',', '.');
+            $fmtBase = number_format($qtyBase, 0, ',', '.');
+
+            $row = [];
+
+            /* 0 — iduniq (hidden) */
+            $row[] = $lm->iduniq;
+
+            /* 1 — ID Barang (kiri) */
+            $row[] = htmlspecialchars($lm->idbarang ?? '');
+
+            /* 2 — Nama Barang (kiri) */
+            $row[] = htmlspecialchars($lm->nmbarang ?? '');
+
+            /* 3 — Satuan (TENGAH) */
+            $row[] = '<div class="ratatengah">'
+                . htmlspecialchars($unit)
+                . '</div>';
+
+            /* 4 — Qty Input (KANAN) */
+            $row[] = '<div class="ratakanan">'
+                . $fmtQty . ' ' . htmlspecialchars($unit)
+                . '</div>';
+
+            /* 5 — Unit Default (TENGAH) */
+            $row[] = '<div class="ratatengah">'
+                . '<span class="badge-unit-default">'
+                . htmlspecialchars($unitDef)
+                . '</span>'
+                . '</div>';
+
+            /* 6 — Qty Base (KANAN) */
+            $row[] = '<div class="ratakanan qty-base">'
+                . $fmtBase . ' ' . htmlspecialchars($unitDef)
+                . '</div>';
+
+            /* 7 — Keterangan (kiri) */
+            $row[] = htmlspecialchars($lm->description ?? '');
+
             $data[] = $row;
         }
 
-        $output = array(
-            "draw" => $_POST['draw'],
-            "recordsTotal" => $this->m_persediaan->get_tmp_transfer_location_dtl_view($docno),
-            "recordsFiltered" => $this->m_persediaan->tmp_transfer_location_dtl_view_count_filtered($docno),
-            "data" => $data,
-        );
+        $recordsTotal    = (int) $this->m_persediaan
+            ->tmp_transfer_location_dtl_view_count_all($docno);
+        $recordsFiltered = (int) $this->m_persediaan
+            ->tmp_transfer_location_dtl_view_count_filtered($docno);
+
+        $output = [
+            "draw"            => (int) ($_POST['draw'] ?? 0),
+            "recordsTotal"    => $recordsTotal,
+            "recordsFiltered" => $recordsFiltered,
+            "data"            => $data,
+        ];
+
         echo $this->fiky_encryption->jDatatable($output);
     }
-
 
     function updateTransfersLocation()
     {
@@ -1711,7 +1783,7 @@ class Persediaan extends BaseController
 
 
         // Karena hanya 1 row, ambil index ke-0
-        $prefix = trim($konfigurasiUmum[0]['tal']) ?? '';
+        $prefix = trim($konfigurasiUmum[0]['transferantarlokasi']) ?? '';
         $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
         $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
 
@@ -1761,43 +1833,223 @@ class Persediaan extends BaseController
     }
 
 
+    /* ============================================================
+   DELETE DETAIL TRANSFER LOKASI
+   Route: deleteTransferLokasiDetail
+   ============================================================ */
+    public function deleteTransferLokasiDetail()
+    {
+        $ids = $this->request->getPost('ids');
+
+        if (!$ids || !is_array($ids) || count($ids) === 0) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Data tidak valid / tidak ada yang dipilih'
+            ]);
+        }
+
+        /* Sanitasi */
+        $cleanIds = [];
+        foreach ($ids as $id) {
+            $v = trim((string) $id);
+            if ($v !== '') {
+                $cleanIds[] = $v;
+            }
+        }
+
+        if (count($cleanIds) === 0) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'ID tidak valid'
+            ]);
+        }
+
+        /* -------------------------------------------------
+           ✅ TABLE YANG BENAR: sc_tmp.transfer_location_dtl
+           ------------------------------------------------- */
+        $db      = \Config\Database::connect();
+        $builder = $db->table('sc_tmp.transfer_location_dtl');
+
+        try {
+
+            $db->transBegin();
+
+            /* Hapus berdasarkan iduniq */
+            $builder->whereIn('iduniq', $cleanIds)->delete();
+
+            $affected = $db->affectedRows();
+
+            if ($affected !== count($cleanIds)) {
+                throw new \Exception(
+                    'Sebagian data tidak ditemukan. '
+                    . 'Diminta: ' . count($cleanIds)
+                    . ', Terhapus: ' . $affected
+                );
+            }
+
+            if ($db->transStatus() === false) {
+                throw new \Exception('Transaksi gagal');
+            }
+
+            $db->transCommit();
+
+            return $this->response->setJSON([
+                'success'  => true,
+                'message'  => $affected . ' data berhasil dihapus',
+                'affected' => $affected
+            ]);
+
+        } catch (\Throwable $e) {
+
+            $db->transRollback();
+
+            log_message('error',
+                '[deleteTransferLokasiDetail] ' . $e->getMessage());
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Gagal menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+    /* ============================================================
+   CLEAR TRANSFER LOKASI
+   - Status I : Hapus semua (header + detail)
+   - Status E : Cancel (update status → C)
+   - Lainnya  : Redirect saja
+   ============================================================ */
+
     function clearTransferLokasi()
     {
-        $nama=trim($this->session->get('nama'));
-        $param = " and coalesce(inputby,'')='$nama'";
-        $dtl = $this->m_persediaan->q_tmp_transfer_location_mst($param);
-        // if(isEmpty($dtl->getRowArray()['status'])){
-        //     return redirect()->to(base_url('persediaan/trans/pp'));
-        // }
-        $status = trim($dtl->getRowArray()['status']);
-        $builder = $this->db->table('sc_tmp.transfer_location_mst');
-        $builder_dtl = $this->db->table('sc_tmp.transfer_location_dtl_mst');
+        $nama = trim($this->session->get('nama'));
 
-        if ($status==='I') {
-            // $builder= $this->db->table('sc_tmp.standart_usage_mst');
-            $builder->where('inputby',$nama);
-            $builder->delete();
-            // $builderDtl= $this->db->table('sc_tmp.pp');
-            // $builderDtl->where('inputby',$nama);
-            // $builderDtl->delete();
-            return redirect()->to(base_url('persediaan/trans/transfer_lokasi'));
-        } else if ($status==='E') {
-            $builder->where('inputby',$nama);
-            if ($builder->update(array('status' => 'C'))) {
-                $result = array('status' => true, 'messages' => 'Sukses Di Proses');
-                echo json_encode($result);
-                return redirect()->to(base_url('persediaan/trans/transfer_lokasi'));
-            }
-            else {
-                $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                echo json_encode($result);
-            }
-        } else {
-            // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-            // echo json_encode($result);
+        // -------------------------------------------------
+        // Validasi session
+        // -------------------------------------------------
+        if (empty($nama)) {
             return redirect()->to(base_url('persediaan/trans/transfer_lokasi'));
         }
 
+        // -------------------------------------------------
+        // Ambil status dari TMP header user
+        // -------------------------------------------------
+        $param = " AND COALESCE(inputby,'') = " . $this->db->escape($nama);
+        $dtl   = $this->m_persediaan->q_tmp_transfer_location_mst($param);
+
+        $row = $dtl ? $dtl->getRowArray() : null;
+
+        if (!$row || empty($row['status'])) {
+            return redirect()->to(base_url('persediaan/trans/transfer_lokasi'));
+        }
+
+        $status = trim($row['status']);
+
+        // -------------------------------------------------
+        // Koneksi DB & transaksi
+        // -------------------------------------------------
+        $db = \Config\Database::connect();
+        $db->transBegin();
+
+        try {
+            // =================================================
+            // STATUS I = INPUT
+            // Hapus permanen TMP header + detail
+            // =================================================
+            if ($status === 'I') {
+
+                // 1. Ambil semua docno user
+                $rows = $db->table('sc_tmp.transfer_location_mst')
+                    ->select('docno')
+                    ->where('inputby', $nama)
+                    ->get()
+                    ->getResultArray();
+
+                $docnos = array_column($rows, 'docno');
+
+                // 2. Hapus detail dulu (FK safety)
+                if (count($docnos) > 0) {
+                    $db->table('sc_tmp.transfer_location_dtl')
+                        ->whereIn('docno', $docnos)
+                        ->delete();
+                }
+
+                // 3. Hapus header
+                $db->table('sc_tmp.transfer_location_mst')
+                    ->where('inputby', $nama)
+                    ->delete();
+
+                // 4. Cek status transaksi
+                if ($db->transStatus() === false) {
+                    throw new \Exception('Gagal hapus TMP (status I)');
+                }
+
+                $db->transCommit();
+
+                log_message('info',
+                    '[clearTransferLokasi] User=' . $nama .
+                    ' status=I deleted ' . count($docnos) . ' TMP doc(s)');
+
+                return redirect()->to(base_url('persediaan/trans/transfer_lokasi'));
+            }
+
+            // =================================================
+            // STATUS E = ENTRY
+            // Cancel via status 'E' → 'C'
+            // Trigger akan hapus TMP header + detail
+            // =================================================
+            elseif ($status === 'E') {
+
+                // Update TMP header status ke 'C'
+                // Note: docnotmp, printby, printdate dibiarkan
+                //       (trigger akan baca kondisi saat ini)
+                $db->table('sc_tmp.transfer_location_mst')
+                    ->where('inputby', $nama)
+                    ->update([
+                        'status'     => 'C',
+                        'updatedate' => date('Y-m-d H:i:s'),
+                        'updateby'   => $nama
+                    ]);
+
+                if ($db->transStatus() === false) {
+                    throw new \Exception('Gagal cancel TMP (status E)');
+                }
+
+                $db->transCommit();
+
+                log_message('info',
+                    '[clearTransferLokasi] User=' . $nama .
+                    ' status=E canceled');
+
+                return redirect()->to(base_url('persediaan/trans/transfer_lokasi'));
+            }
+
+            // =================================================
+            // STATUS LAIN (F, P, C) — tidak ada aksi
+            // =================================================
+            else {
+                $db->transRollback();
+
+                log_message('info',
+                    '[clearTransferLokasi] User=' . $nama .
+                    ' status=' . $status . ' no action');
+
+                return redirect()->to(base_url('persediaan/trans/transfer_lokasi'));
+            }
+
+        } catch (\Throwable $e) {
+
+            // Rollback transaksi
+            if ($db->transStatus() === false || $db->transDepth > 0) {
+                $db->transRollback();
+            }
+
+            log_message('error',
+                '[clearTransferLokasi] User=' . $nama .
+                ' status=' . $status .
+                ' error=' . $e->getMessage());
+
+            return redirect()->to(base_url('persediaan/trans/transfer_lokasi'));
+        }
     }
 
 
@@ -2066,6 +2318,91 @@ class Persediaan extends BaseController
         );
         echo $this->fiky_encryption->jDatatable($output);
     }
+
+    /**
+     * Ambil harga persediaan (avg_cost) untuk auto-fill di adjustment stock.
+     *
+     * Route: GET/POST /persediaan/trans/getHargaPersediaan
+     *
+     * Parameter:
+     *   - idbarang
+     *   - idlocation
+     *   - batch
+     *
+     * Response:
+     *   { "success": true, "valqty": 12345.67, "avg_cost": 12345.67, "qty": 100 }
+     */
+    public function getHargaPersediaan()
+    {
+        $idbarang   = trim($this->request->getPost('idbarang')   ?? $this->request->getGet('idbarang')   ?? '');
+        $idlocation = trim($this->request->getPost('idlocation') ?? $this->request->getGet('idlocation') ?? '');
+        $batch      = trim($this->request->getPost('batch')      ?? $this->request->getGet('batch')      ?? '');
+
+        if ($idbarang === '' || $idlocation === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'idbarang dan idlocation wajib diisi'
+            ]);
+        }
+
+        // Ambil avg_cost dari stkblc_avgcost
+        $row = $this->db->query("
+        SELECT 
+            ac.avg_cost,
+            ac.qty,
+            ac.total_value
+        FROM sc_trx.stkblc_avgcost ac
+        WHERE TRIM(ac.idbarang::TEXT)   = ?
+          AND TRIM(ac.idlocation::TEXT) = ?
+          AND TRIM(COALESCE(ac.batch::TEXT, '')) = ?
+        LIMIT 1
+    ", [$idbarang, $idlocation, $batch])->getRowArray();
+
+        if (!$row) {
+            // Fallback: ambil dari stkblc.unitcost terakhir (IN)
+            $row2 = $this->db->query("
+            SELECT 
+                sb.unitcost AS avg_cost,
+                0 AS qty,
+                0 AS total_value
+            FROM sc_trx.stkblc sb
+            WHERE TRIM(sb.idbarang::TEXT)   = ?
+              AND TRIM(sb.idlocation::TEXT) = ?
+              AND TRIM(COALESCE(sb.batch::TEXT, '')) = ?
+              AND sb.type_in_out = 'IN'
+              AND sb.unitcost > 0
+            ORDER BY sb.docdate DESC, sb.id DESC
+            LIMIT 1
+        ", [$idbarang, $idlocation, $batch])->getRowArray();
+
+            if ($row2) {
+                return $this->response->setJSON([
+                    'success'  => true,
+                    'valqty'   => (float) $row2['avg_cost'],
+                    'avg_cost' => (float) $row2['avg_cost'],
+                    'qty'      => 0,
+                    'source'   => 'STKBLC_FALLBACK',
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'success'  => true,
+                'valqty'   => 0,
+                'avg_cost' => 0,
+                'qty'      => 0,
+                'source'   => 'NOT_FOUND',
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'success'  => true,
+            'valqty'   => (float) $row['avg_cost'],
+            'avg_cost' => (float) $row['avg_cost'],
+            'qty'      => (float) $row['qty'],
+            'total_value' => (float) $row['total_value'],
+            'source'   => 'AVGCOST',
+        ]);
+    }
     function add_ajustment_stock_mst(){
         /* Penambahan Squence */
         $data['title']="Add Ajustment Stock";
@@ -2137,9 +2474,10 @@ class Persediaan extends BaseController
 
     public function save_ajustment_stock_detail()
     {
-        $nama = trim($this->session->get('nama'));
-        $docno  = strtoupper($this->request->getPost('docno'));
+        $nama   = trim($this->session->get('nama'));
+        $docno  = strtoupper(trim($this->request->getPost('docno')));
         $idurut = $this->request->getPost('idurut');
+        $iduniq = trim($this->request->getPost('iduniq'));   // ✅ tambah iduniq
 
         if (!$docno) {
             return $this->response->setJSON([
@@ -2151,190 +2489,169 @@ class Persediaan extends BaseController
         $db = $this->db;
         $db->transStart();
 
-        $builderHeader = $db->table('sc_tmp.ajustment_stock_mst');
+        try {
 
-        $exists = $builderHeader
-            ->where('docno', $docno)
-            ->where('inputby', $nama)
-            ->countAllResults();
+            $builderHeader = $db->table('sc_tmp.ajustment_stock_mst');
 
-        $reload = false;
-
-        // =========================
-        // INSERT HEADER JIKA BELUM ADA
-        // =========================
-        if ($exists == 0) {
-
-            $insertHeader = $builderHeader->insert([
-                'docno'      => $docno,
-                'doctype'    => 'AJUSTMENT_STOCK',
-                'docref'     => trim($this->request->getPost('docref')),
-                'docdate'    => trim($this->request->getPost('docdate')),
-                'cabang'     => trim($this->request->getPost('cabang')),
-//                'cabang_sent'=> trim($this->request->getPost('cabang_sent')),
-                'pemohon'    => strtoupper(trim($this->request->getPost('pemohon'))),
-                //'estpakai'   => $this->request->getPost('estpakai'),
-                //'idlocation_from'    => strtoupper(trim($this->request->getPost('idlocation_from'))),
-//                'idlocation_to'      => strtoupper(trim($this->request->getPost('idlocation_to'))),
-//                'idlocation_transit' => strtoupper(trim($this->request->getPost('idlocation_transit'))),
-                'status'     => 'E',
-                'description' => strtoupper(trim($this->request->getPost('keterangan'))),
-                'inputby'    => $nama,
-                'inputdate'  => date('Y-m-d H:i:s')
-            ]);
-
-            if (!$insertHeader) {
-                $error = $db->error();
-                $db->transRollback();
-
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => $error['message']
-                ]);
-            }
-
-            $reload = true;
-        }
-
-        // =========================
-        // AMBIL DATA DETAIL
-        // =========================
-        $uniqueid = $this->request->getPost('iduniq');
-        $idlocation_dtl = strtoupper(trim($this->request->getPost('idlocation_dtl')));
-        $idbarang = strtoupper(trim($this->request->getPost('idbarang')));
-        $batch = strtoupper(trim($this->request->getPost('batch')));
-        $nmbarang = strtoupper(trim($this->request->getPost('nmbarang')));
-        $qtystock = (float) strtoupper(trim($this->request->getPost('qtystock')));
-        $qty = strtoupper(trim($this->request->getPost('qty')));
-        $unit = strtoupper(trim($this->request->getPost('unit')));
-        $dk = strtoupper(trim($this->request->getPost('dk')));
-        $currency = strtoupper(trim($this->request->getPost('currency')));
-        $valqty = (float) strtoupper(trim($this->request->getPost('valqty')));
-        $description = strtoupper(trim($this->request->getPost('description')));
-
-
-        if (!$idbarang or !$dk) {
-            $db->transRollback();
-
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Item belum dipilih/Debit kredit belum dipilih!'
-            ]);
-        }
-
-        $builderDetail = $db->table('sc_tmp.ajustment_stock_dtl');
-
-        // =========================
-        // CEK DUPLIKASI
-        // =========================
-        $builderDuplicate = $builderDetail
-            ->where('docno', $docno)
-            ->where('idbarang', $idbarang)
-            ->where('unit', $unit)
-            ->where('qty', $qty)
-            ->where('inputby', $nama)
-            ->where('description', $description);
-
-        if ($idurut) {
-            $builderDuplicate->where('idurut !=', $uniqueid);
-        }
-
-        $duplicate = $builderDuplicate->countAllResults();
-
-        if ($duplicate > 0) {
-            $db->transRollback();
-
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Tidak boleh menginputkan item yang sama dengan keterangan yang sama'
-            ]);
-        }
-
-        // =========================
-        // INSERT / UPDATE DETAIL
-        // =========================
-        if ($idurut) {
-
-            $updateDetail = $builderDetail
+            $exists = $builderHeader
                 ->where('docno', $docno)
                 ->where('inputby', $nama)
-                ->where('iduniq', $uniqueid)
-                ->update([
+                ->countAllResults();
 
-                    'idlocation'    => $idlocation_dtl,
-                    'idbarang'    => $idbarang,
-                    'batch'    => $batch,
-                    'nmbarang'    => $nmbarang,
-                    'unit'        => $unit,
-                    'qtystock'         => $qtystock,
-                    'qty'         => $qty,
-                    'dk'         => $dk,
-                    'currency'         => $currency,
-                    'valqty'         => $valqty,
-                    'description' => $description,
-                    'updateby'    => $nama,
-                    'updatedate'  => date('Y-m-d H:i:s'),
+            $reload = false;
+
+            // ============================================================
+            // INSERT HEADER JIKA BELUM ADA
+            // ============================================================
+            if ($exists == 0) {
+
+                $insertHeader = $builderHeader->insert([
+                    'docno'          => $docno,
+                    'doctype'        => 'AJUSTMENT_STOCK',
+                    'docref'         => trim($this->request->getPost('docref')),
+                    'docdate'        => trim($this->request->getPost('docdate')),
+                    'cabang'         => trim($this->request->getPost('cabang')),
+                    // 'cabang_sent' => trim($this->request->getPost('cabang_sent')),
+                    'pemohon'        => strtoupper(trim($this->request->getPost('pemohon'))),
+                    // 'estpakai'    => $this->request->getPost('estpakai'),
+                    // 'idlocation_from'    => strtoupper(trim($this->request->getPost('idlocation_from'))),
+                    // 'idlocation_to'      => strtoupper(trim($this->request->getPost('idlocation_to'))),
+                    // 'idlocation_transit' => strtoupper(trim($this->request->getPost('idlocation_transit'))),
+
+                    // ✅ Tambah field yang sebelumnya hilang
+                    'currency'       => strtoupper(trim($this->request->getPost('currency'))) ?: 'IDR',
+                    'kurs'           => floatval($this->request->getPost('kurs')) ?: 1,
+                    'isinclusive'    => strtoupper(trim($this->request->getPost('isinclusive'))) ?: 'NO',
+                    'idtax'          => strtoupper(trim($this->request->getPost('idtax'))) ?: 'NON',
+
+                    'status'         => 'E',
+                    'description'    => strtoupper(trim($this->request->getPost('keterangan'))),
+                    'inputby'        => $nama,
+                    'inputdate'      => date('Y-m-d H:i:s'),
                 ]);
 
-            if (!$updateDetail) {
-                $error = $db->error();
-                $db->transRollback();
+                if (!$insertHeader) {
+                    $error = $db->error();
+                    $db->transRollback();
 
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => $error['message'] ?? 'Gagal insert header'
+                    ]);
+                }
+
+                $reload = true;
+            }
+
+            // ============================================================
+            // CEK DUPLIKAT DETAIL
+            // ============================================================
+            $builderDetail = $db->table('sc_tmp.ajustment_stock_dtl');
+
+            if ($iduniq) {
+                // ✅ Pakai iduniq (TEXT), BUKAN idurut (BIGINT)
+                $cekDtl = $builderDetail
+                    ->where('docno', $docno)
+                    ->where('iduniq', $iduniq)
+                    ->countAllResults();
+
+                $isUpdate = ($cekDtl > 0);
+            } else {
+                $isUpdate = false;
+            }
+
+            // ============================================================
+            // DATA DETAIL
+            // ============================================================
+            $dataDtl = [
+                'docno'        => $docno,
+                'doctype'      => 'AJUSTMENT_STOCK',
+                'docref'       => trim($this->request->getPost('docref')),
+                'idbarang'     => strtoupper(trim($this->request->getPost('idbarang'))),
+                'nmbarang'     => strtoupper(trim($this->request->getPost('nmbarang'))),
+                'unit'         => strtoupper(trim($this->request->getPost('unit'))),
+                'qtystock'     => floatval($this->request->getPost('qtystock')),
+                'qty'          => floatval($this->request->getPost('qty')),
+                'dk'           => strtoupper(trim($this->request->getPost('dk'))),          // D / K
+                'currency'     => strtoupper(trim($this->request->getPost('currency'))) ?: 'IDR',
+                'valqty'       => floatval($this->request->getPost('valqty')),               // harga satuan
+                'idlocation'   => strtoupper(trim($this->request->getPost('idlocation_dtl'))), // ✅ fix mapping
+                'batch'        => strtoupper(trim($this->request->getPost('batch'))),
+                'description'  => strtoupper(trim($this->request->getPost('description'))),
+                'val'          => floatval($this->request->getPost('val')),                  // nilai total
+                'valsum'       => floatval($this->request->getPost('valsum')),               // nilai + tax
+                'status'       => 'E',
+                'inputby'      => $nama,
+                'inputdate'    => date('Y-m-d H:i:s'),
+                'iduniq'       => $iduniq ?: md5($docno . '|' . microtime(true)),
+            ];
+
+            // ============================================================
+            // UPDATE atau INSERT DETAIL
+            // ============================================================
+            if ($isUpdate) {
+
+                // UPDATE by iduniq
+                $update = $builderDetail
+                    ->where('docno', $docno)
+                    ->where('iduniq', $iduniq)
+                    ->update($dataDtl);
+
+                if (!$update) {
+                    $error = $db->error();
+                    $db->transRollback();
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => $error['message'] ?? 'Gagal update detail'
+                    ]);
+                }
+
+            } else {
+
+                // INSERT baru
+                $insertDtl = $builderDetail->insert($dataDtl);
+
+                if (!$insertDtl) {
+                    $error = $db->error();
+                    $db->transRollback();
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => $error['message'] ?? 'Gagal insert detail'
+                    ]);
+                }
+            }
+
+            // ============================================================
+            // COMMIT
+            // ============================================================
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                $db->transRollback();
                 return $this->response->setJSON([
                     'success' => false,
-                    'message' => $error['message']
+                    'message' => 'Transaksi gagal'
                 ]);
             }
 
-        } else {
-
-            $inputdate = date('Y-m-d H:i:s');
-
-            $rawUnique = $idbarang . '|' . $docno . '|' . $inputdate;
-            $uniqueid  = hash('sha256', $rawUnique);
-
-            $insertDetail = $builderDetail->insert([
-                'docno'       => $docno,
-                'idlocation'    => $idlocation_dtl,
-                'idbarang'    => $idbarang,
-                'batch'    => $batch,
-                'nmbarang'    => $nmbarang,
-                'unit'        => $unit,
-                'qtystock'         => $qtystock,
-                'qty'         => $qty,
-                'dk'         => $dk,
-                'currency'         => $currency,
-                'valqty'         => $valqty,
-                'description' => $description,
-                'inputby'     => $nama,
-                'inputdate'   => $inputdate,
-                'iduniq'      => $uniqueid
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $isUpdate
+                    ? 'Data detail berhasil diupdate'
+                    : 'Data detail berhasil disimpan',
+                'reload'  => $reload,
+                'iduniq'  => $dataDtl['iduniq'],
             ]);
 
-            if (!$insertDetail) {
-                $error = $db->error();
-                $db->transRollback();
+        } catch (\Throwable $e) {
 
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => $error['message']
-                ]);
-            }
-        }
+            $db->transRollback();
 
-        $db->transComplete();
-
-        if ($db->transStatus() === false) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Transaction gagal'
+                'message' => 'Server error: ' . $e->getMessage(),
             ]);
         }
-
-        return $this->response->setJSON([
-            'success' => true,
-            'reload'  => $reload
-        ]);
     }
 
 
@@ -2355,9 +2672,9 @@ class Persediaan extends BaseController
     public function get_tmp_ajustment_stock_dtl()
     {
         $id = $this->request->getGet('id');
-
+        $nama=trim($this->session->get('nama'));
         $data = $this->m_persediaan
-            ->q_tmp_ajustment_stock_dtl(" and idurut='$id'");
+            ->q_tmp_ajustment_stock_dtl(" and inputby='$nama' and iduniq='$id'");
 
         $output = array(
             'status' => true,
@@ -2491,7 +2808,7 @@ class Persediaan extends BaseController
             $no++;
             $row = array();
             // $row[] = $no;
-            $row[] = $lm->idurut;
+            $row[] = $lm->iduniq;
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
@@ -2778,38 +3095,72 @@ class Persediaan extends BaseController
             ]);
         }
 
+        $ids = array_values(array_filter(array_map('trim', $ids)));
+
+        if (empty($ids)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih'
+            ]);
+        }
+
         $db = \Config\Database::connect();
         $builder = $db->table('sc_tmp.ajustment_stock_dtl');
 
         try {
+            $db->transBegin();
 
-            $db->transBegin(); // START TRANSACTION
+            // ✅ Pakai iduniq, BUKAN idurut
+            $existing = $builder
+                ->select('iduniq, docno')
+                ->whereIn('iduniq', $ids)
+                ->get()
+                ->getResultArray();
 
-            $builder->whereIn('idurut', $ids)->delete();
-
-            // Cek apakah semua benar-benar terhapus
-            if ($db->affectedRows() !== count($ids)) {
-                throw new \Exception('Sebagian data gagal dihapus');
+            if (empty($existing)) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Data tidak ditemukan'
+                ]);
             }
 
-            if ($db->transStatus() === false) {
-                throw new \Exception('Transaksi gagal');
+            $foundIds = array_column($existing, 'iduniq');
+
+            $builder->whereIn('iduniq', $foundIds)->delete();
+            $deleted = $db->affectedRows();
+
+            if ($deleted === 0) {
+                throw new \Exception('Tidak ada data yang terhapus');
             }
 
-            $db->transCommit(); // COMMIT jika sukses semua
+            $docnos = array_unique(array_column($existing, 'docno'));
+
+            foreach ($docnos as $docno) {
+                $sisa = $db->table('sc_tmp.ajustment_stock_dtl')
+                    ->where('docno', $docno)
+                    ->countAllResults();
+
+                if ($sisa === 0) {
+                    $db->table('sc_tmp.ajustment_stock_mst')
+                        ->where('docno', $docno)
+                        ->delete();
+                }
+            }
+
+            $db->transCommit();
 
             return $this->response->setJSON([
                 'success' => true,
-                'message' => 'Semua data berhasil dihapus'
+                'message' => $deleted . ' data berhasil dihapus',
+                'deleted' => $deleted
             ]);
 
         } catch (\Throwable $e) {
-
-            $db->transRollback(); // ROLLBACK jika ada error
-
+            $db->transRollback();
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Gagal menghapus data: ' . $e->getMessage()
+                'message' => 'Gagal menghapus: ' . $e->getMessage()
             ]);
         }
     }
@@ -4686,42 +5037,117 @@ class Persediaan extends BaseController
             ]);
         }
     }
+
+
     function clear_pnm_brng()
     {
-        $nama=trim($this->session->get('nama'));
-        $param = " and coalesce(inputby,'')='$nama'";
-        $dtl = $this->m_persediaan->q_tmp_pnm_brng_mst($param);
-        // if(isEmpty($dtl->getRowArray()['status'])){
-        //     return redirect()->to(base_url('persediaan/trans/pp'));
-        // }
-        $status = trim($dtl->getRowArray()['status']);
-        $builder = $this->db->table('sc_tmp.pnm_brng_mst');
-        $builder_dtl = $this->db->table('sc_tmp.pnm_brng_dtl');
+        $url = base_url('persediaan/trans/pnm_barang');
+        $nama = trim($this->session->get('nama'));
 
-        if ($status==='I') {
-            // $builder= $this->db->table('sc_tmp.standart_usage_mst');
-            $builder->where('inputby',$nama);
-            $builder->delete();
-            // $builderDtl= $this->db->table('sc_tmp.pp');
-            // $builderDtl->where('inputby',$nama);
-            // $builderDtl->delete();
-            return redirect()->to(base_url('persediaan/trans/pnm_barang'));
-        } else if ($status==='E') {
-            $builder->where('inputby',$nama);
-            if ($builder->update(array('status' => 'C'))) {
-                $result = array('status' => true, 'messages' => 'Sukses Di Proses');
-                echo json_encode($result);
-                return redirect()->to(base_url('persediaan/trans/pnm_barang'));
-            }
-            else {
-                $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                echo json_encode($result);
-            }
-        } else {
-            // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-            // echo json_encode($result);
-            return redirect()->to(base_url('persediaan/trans/pnm_barang'));
+        if ($nama === '') {
+            return redirect()->to($url)
+                ->with('error', 'Clear gagal: session nama kosong.');
         }
 
+        $param = " AND COALESCE(TRIM(inputby), '') = "
+            . $this->db->escape($nama);
+
+        $dtl = $this->m_persediaan->q_tmp_pnm_brng_mst($param);
+
+        if (!$dtl) {
+            return redirect()->to($url)
+                ->with('error', 'Clear gagal: query header tidak menghasilkan data.');
+        }
+
+        $header = $dtl->getRowArray();
+
+        if (empty($header)) {
+            return redirect()->to($url)
+                ->with('error', 'Clear gagal: header PNM Barang tidak ditemukan untuk user ' . $nama . '.');
+        }
+
+        $status = trim($header['status'] ?? '');
+        $docno  = trim($header['docno'] ?? '');
+
+        $builder = $this->db->table('sc_tmp.pnm_brng_mst');
+        $builderDtl = $this->db->table('sc_tmp.pnm_brng_dtl');
+
+        if ($status === 'I') {
+            $this->db->transBegin();
+
+            try {
+                $builderDtl
+                    ->where('inputby', $nama)
+                    ->delete();
+
+                $error = $this->db->error();
+
+                if (!empty($error['code'])) {
+                    throw new \RuntimeException(
+                        'Gagal menghapus detail: ' . $error['message']
+                    );
+                }
+
+                $jumlah = $this->db->affectedRows();
+
+                if ($this->db->transStatus() === false) {
+                    throw new \RuntimeException(
+                        'Transaksi penghapusan detail gagal.'
+                    );
+                }
+
+                $this->db->transCommit();
+
+                return redirect()->to($url)->with(
+                    'success',
+                    "Clear berhasil. Detail terhapus: {$jumlah}. Header tetap dipertahankan."
+                );
+
+            } catch (\Throwable $e) {
+                $this->db->transRollback();
+
+                log_message('error', 'clear_pnm_brng: ' . $e->getMessage());
+
+                return redirect()->to($url)->with(
+                    'error',
+                    'Clear gagal menghapus detail: ' . $e->getMessage()
+                );
+            }
+        }
+
+        if ($status === 'E') {
+            $builder
+                ->where('inputby', $nama)
+                ->where('docno', $docno)
+                ->update(['status' => 'C']);
+
+            $error = $this->db->error();
+
+            if (!empty($error['code'])) {
+                log_message('error', 'clear_pnm_brng update: ' . $error['message']);
+
+                return redirect()->to($url)->with(
+                    'error',
+                    'Gagal mengubah status menjadi C: ' . $error['message']
+                );
+            }
+
+            if ($this->db->affectedRows() < 1) {
+                return redirect()->to($url)->with(
+                    'error',
+                    "Clear gagal: header {$docno} tidak berubah. Periksa status dan trigger."
+                );
+            }
+
+            return redirect()->to($url)
+                ->with('success', "Clear berhasil. Dokumen {$docno} dibatalkan.");
+        }
+
+        return redirect()->to($url)->with(
+            'error',
+            "Clear gagal: status '{$status}' tidak didukung."
+        );
     }
+
+
 }

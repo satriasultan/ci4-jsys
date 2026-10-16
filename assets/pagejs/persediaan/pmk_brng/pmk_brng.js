@@ -1,29 +1,24 @@
 /*
- * Created by PhpStorm.
- *  * User: FIKY-PC
- *  * Date: 12/2/20, 2:32 PM
- *  * Last Modified: 12/2/20, 2:32 PM.
- *  Developed By: Fiky Ashariza Powered By PhpStorm
- *  Copyright© 2020 .All rights reserved.
- *
- */
+pmk_brg.js
+Versi Final - Field mengikuti Stock Transfer Location
+Header : cabang, prefix/infix/suffix, docdate, idcostcenter, keterangan
+Detail : idlocation_dtl + barang + spec + qtystock + unit + konversi + qty
+*/
 
-
-var save_method; //for save method string
+var save_method;
 var table;
 var initTable;
 
-//"use strict";
-
-/* VIUW UTAMA*/
+/* ============================================================
+   LIST PMK BRG — HEADER
+   ============================================================ */
 function table_trx_pmk_brng_mst() {
-    // var lg = languageDatatable;
     var initTable = function () {
         var table = $('#tPmkBrg');
         table.DataTable({
-            "processing": true, //Feature control the processing indicator.
-            "serverSide": true, //Feature control DataTables' server-side processing mode.
-            "order": [], //Initial no order.
+            "processing": true,
+            "serverSide": true,
+            "order": [],
             "language": languageDatatable(),
             "paging": true,
             "lengthChange": false,
@@ -38,9 +33,7 @@ function table_trx_pmk_brng_mst() {
                 ['10 rows', '25 rows', '50 rows', 'Show all']
             ],
             "dom": 'Bfrtip',
-            "buttons": [
-                'pageLength', 'excel'
-            ],
+            "buttons": ['pageLength', 'excel'],
             "ajax": {
                 "url": HOST_URL + 'persediaan/trans/list_trx_pmk_brng_mst',
                 "type": "POST",
@@ -48,7 +41,7 @@ function table_trx_pmk_brng_mst() {
                     data.tglrange = $('#tglrange').val();
                     data.idbarang = $('#idbarang_filter').val();
                     data.namasupplier = $('#namasupplier').val();
-                    data.status = $('#status_filter').val(); //A,P,S,ALL
+                    data.status = $('#status_filter').val();
                 },
                 "dataFilter": function (data) {
                     var json = jQuery.parseJSON(data);
@@ -56,68 +49,59 @@ function table_trx_pmk_brng_mst() {
                     json.recordsTotal = json.dataTables.recordsTotal;
                     json.recordsFiltered = json.dataTables.recordsFiltered;
                     json.data = json.dataTables.data;
-                    return JSON.stringify(json); // return JSON string
+                    return JSON.stringify(json);
                 }
             },
-
-            //Set column definition initialisation properties.
             "columnDefs": [
-                {
-                    "targets": [-1], //last column
-                    "orderable": false, //set not orderable
-                },
-            ],
-
+                { "targets": [-1], "orderable": false }
+            ]
         });
-
     };
-
-
     return initTable();
 }
 
 function reloadPmkBrg() {
     var table = $('#tPmkBrg');
-    table.DataTable().ajax.reload(); //reload datatable ajax
-    //console.log('HALO HALO BANDUNG');
+    table.DataTable().ajax.reload();
 }
 
-$('#btn-filter-tx').click(function () { //button filter event click
+$('#btn-filter-tx').click(function () {
     var table = $('#tPmkBrg');
-    table.DataTable().ajax.reload(); //reload datatable ajax
+    table.DataTable().ajax.reload();
     $('#filter').modal('hide');
 });
-$('#btn-reset-tx').click(function () { //button reset event click
+
+$('#btn-reset-tx').click(function () {
     $('#form-filter')[0].reset();
     var table = $('#tPmkBrg');
-    table.DataTable().ajax.reload(); //reload datatable ajax
+    table.DataTable().ajax.reload();
     $('#filter').modal('hide');
 });
 
 let skipRoleChange = false;
 
-
-//EDIT ITEM
+/* ============================================================
+   DOCUMENT READABLE — EDIT HEADER
+   ============================================================ */
 function documentReadable() {
-
-    //showLoader();
 
     var docno = $('[name="docno"]').val();
 
-    $.getJSON(HOST_URL + 'persediaan/trans/showing_pmk_brng_mst_tmp', {docno: docno})
+    if (!docno || docno.trim() === '') {
+        console.log("Input baru — skip documentReadable");
+        return;
+    }
+
+    $.getJSON(HOST_URL + 'persediaan/trans/showing_pmk_brng_mst_tmp', { docno: docno })
         .done(function (response) {
 
             if (!response.dataTables || !response.dataTables.items.length) {
-                hideLoader();
                 console.log("Data kosong");
                 return;
             }
 
             const item = response.dataTables.items[0];
 
-            // ===============================
-            // SET BASIC FIELD (langsung saja)
-            // ===============================
             $('[name="docno"]').val(item.docno).prop('readonly', true);
 
             let prefixParts = item.docno.trim().split('/');
@@ -131,356 +115,462 @@ function documentReadable() {
 
             skipRoleChange = true;
 
-            // ===============================
-            // LOAD SEMUA MASTER DATA PARALEL
-            // ===============================
+            const branch1 = $.getJSON(HOST_URL + 'api/globalmodule/list_branchjob', { var: item.cabang });
+            const cc      = $.getJSON(HOST_URL + 'api/globalmodule/list_costcenter', { var: item.idcostcenter });
 
-            const branch1 = $.getJSON(HOST_URL + 'api/globalmodule/list_branchjob', {var: item.cabang});
-            const branch2 = $.getJSON(HOST_URL + 'api/globalmodule/list_branchjob', {var: item.cabang_sent});
-            // const locFrom = $.getJSON(HOST_URL + 'api/globalmodule/list_mlocation', {var: item.idlocation_dtl});
-            // const locTo = $.getJSON(HOST_URL + 'api/globalmodule/list_mlocation', {var: item.idlocation_to});
-            // const locTransit = $.getJSON(HOST_URL + 'api/globalmodule/list_mlocation', {var: item.idlocation_transit});
-            const locCostCenter = $.getJSON(HOST_URL + 'api/globalmodule/list_costcenter', {var: item.idcostcenter});
+            $.when(branch1, cc).done(function (b1, c1) {
 
-            $.when(branch1, branch2, locCostCenter)
-                .done(function (b1, b2, l1) {
+                setSelect2('[name="cabang"]',       b1[0].items[0], 'nmbranch',     'idbranch',     true);
+                setSelect2('[name="idcostcenter"]', c1[0].items[0], 'nmcostcenter', 'idcostcenter', true);
+            });
 
-                    setSelect2('[name="cabang"]', b1[0].items[0], 'nmbranch', 'idbranch');
-                    setSelect2('[name="idcostcenter"]', l1[0].items[0], 'nmcostcenter', 'idcostcenter');
-                    // setSelect2('[name="idlocation_dtl"]', l1[0].items[0], 'nmlocation', 'idlocation');
-                    // setSelect2('[name="idlocation_to"]', l2[0].items[0], 'nmlocation', 'idlocation');
-                    // setSelect2('[name="idlocation_transit"]', l3[0].items[0], 'nmlocation', 'idlocation');
-
-
-                    hideLoader();
-
-                });
-            hideLoader();
         })
         .fail(function () {
             console.log("Failed To Loading Data");
-            hideLoader();
-        })
-        .always(function () {
-            hideLoader();
         });
-
-    hideLoader();
 }
 
-
-// ===============================
-// Helper Function (Lebih Bersih)
-// ===============================
-function setSelect2(selector, data, textField, valueField) {
+/* ============================================================
+   HELPER — setSelect2
+   ============================================================ */
+function setSelect2(selector, data, textField, valueField, isDisabled = false) {
     if (!data) return;
 
     var option = new Option(data[textField], data[valueField], true, true);
-    $(selector)
-        .append(option)
-        .trigger('change')
-        .prop('disabled', true);
+    $(selector).append(option).trigger('change');
+
+    if (isDisabled) {
+        $(selector).prop('disabled', true);
+    }
 }
 
-/* FOR INPUT FUNCTION */
-
-
-// +++++++++++++++++++++++++++++++++++++++++++++++++++++ RANAH GROUP ++++++++++++++++++++++++++++++++++++++++//
-
+/* ============================================================
+   SELECT2 BARANG — BERDASARKAN GUDANG (idlocation_dtl)
+   ============================================================ */
 var defaultInitialGroupBrng = '';
-$("#idbarang").select2({
-    placeholder: "Choose Your Item List",
-    allowClear: true,
-    width: '100%',
-    ajax: {
-        url: HOST_URL + 'api/globalmodule/list_item',
-        type: 'POST',
-        dataType: 'json',
-        delay: 250,
-        data: function (params) {
-            return {
-                _search_: params.term, // search term
-                _page_: params.page,
-                _draw_: true,
-                _start_: 1,
-                _perpage_: 2,
-                _paramglobal_: defaultInitialGroupBrng,
-                _parameterx_: defaultInitialGroupBrng,
-                loccode: $('[name="idlocation_dtl"]').val(),
-                term: params.term,
-            };
-        },
-        processResults: function (data, params) {
-            // var searchTerm = $("#idbarang").data("select2").$dropdown.find("input").val();
-            // if (data.items.length === 1 && data.items[0].text === searchTerm) {
-            //     var option = new Option(data.items[0].nmbarang, data.items[0].idbarang, true, true);
-            //     $('#idbarang').append(option).trigger('change').select2("close");
-            //     // manually trigger the `select2:select` event
-            //     $('#idbarang').trigger({
-            //         type: 'select2:select',
-            //         params: {
-            //             data: data
-            //         }
-            //     });
-            // }
-            params.page = params.page || 1;
-            return {
-                results: data.items,
-                pagination: {
-                    more: (params.page * 30) < data.total_count
-                }
-            };
-        },
 
-        cache: false
-    },
-    escapeMarkup: function (markup) {
-        return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatItem, // omitted for brevity, see the source of this page
-    templateSelection: formatItemSelection // omitted for brevity, see the source of this page
-}).on("select2:select", function (e) {
-    var idlocation = $('[name="idlocation_dtl"]').val();
+function initSelect2Barang() {
 
-    if (!idlocation || idlocation.trim() === '') {
+    $('#idbarang')
+        .prop('readonly', false)
+        .prop('disabled', false)
+        .css('pointer-events', 'auto');
 
-        Swal.fire({
-            icon: 'warning',
-            title: 'Peringatan',
-            text: 'Silakan pilih gudang terlebih dahulu.'
-        });
-
-        $('#saveAjusment').prop('disabled', true);
-
-        return; // hentikan proses
-
-    } else {
-        $('#saveAjusment').prop('disabled', false);
+    if ($('#idbarang').data('select2')) {
+        $('#idbarang').select2('destroy');
     }
+    $('#idbarang').empty();
 
+    $("#idbarang").select2({
+        placeholder: "Ketik kode / nama barang...",
+        allowClear: true,
+        width: '100%',
+        minimumInputLength: 0,
+        dropdownAutoWidth: true,
+        closeOnSelect: true,
+        multiple: false,
+        dropdownParent: $('#modalDetailPMK'),
+        escapeMarkup: function (markup) { return markup; },
+        ajax: {
+            url: HOST_URL + 'api/globalmodule/list_stock_by_location',
+            type: 'POST',
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    _search_:     params.term || '',
+                    _page_:       params.page || 1,
+                    _perpage_:    30,
+                    _parameterx_: defaultInitialGroupBrng,
+                    loccode:      $('#idlocation_dtl').val() || '',
+                    term:         params.term || ''
+                };
+            },
+            processResults: function (data, params) {
+                params.page = params.page || 1;
 
-    var data = e.params.data;
+                var results = (data.items || []).map(function (item) {
+                    return {
+                        id:         item.id,
+                        text:       item.idbarang + ' — ' + (item.nmbarang || ''),
+                        idbarang:   item.idbarang,
+                        nmbarang:   item.nmbarang,
+                        batch:      item.batch,
+                        lotno:      item.lotno,
+                        unit:       item.unit,
+                        sisaonhand: item.sisaonhand,
+                        idlocation: item.idlocation
+                    };
+                });
 
-    $('[name="nmbarang"]').val(data.nmbarang.trim()).prop("readonly", true);
-    $('[name="unit"]').val(data.unit.trim()).prop("readonly", true);
-    //$('[name="batch"]').val(data.batch.trim()).prop("readonly", true);
-
-    let qty = (data.sisaonhand && data.sisaonhand !== '') ? data.sisaonhand : 0;
-    $('[name="qtystock"]').val(qty).prop("readonly", true);
-});
-
-
-let isLoadingUpdate = false;
-$(document).on("change blur", ".getLastStock", function () {
-    if (isLoadingUpdate) return;
-    getSisaStock();
-});
-//class getLastStock setiap ada pergerakan dari getLastStock class , input on blur on select selalu menjalankan fungsi getSisaStock(), dan fix ajax saya
-function getSisaStock() {
-
-    let idbarang       = $('[name="idbarang"]').val();
-    let batch          = $('[name="batch"]').val();
-    let idlocation_dtl = $('[name="idlocation_dtl"]').val();
-
-    if (!idbarang || !idlocation_dtl) {
-        return;
-    }
-
-    $.ajax({
-        url: HOST_URL + 'api/globalmodule/list_avg_stock',
-        type: 'POST',
-        dataType: 'json',
-
-        data: {
-            _parameterx_: idbarang,
-            _var_: batch,
-            loccode: idlocation_dtl
+                return {
+                    results: results,
+                    pagination: {
+                        more: (params.page * 30) < (data.total_count || 0)
+                    }
+                };
+            },
+            cache: false
         },
+        templateResult: formatBarang,
+        templateSelection: formatBarangSelection
+    }).on("select2:select", function (e) {
 
-        success: function (response) {
+        var data = e.params.data;
 
-            if (!response || !response.items || response.items.length === 0) {
-                $('[name="qtystock"]').val(0).prop("readonly", true);
-                return;
-            }
+        $('[name="nmbarang"]').val((data.nmbarang || '').trim());
+        $('[name="spec"]').val((data.batch || '').trim());
 
-            let data = response.items[0];
+        $('#qtystock_raw').val(data.sisaonhand || 0);
 
-            $('[name="nmbarang"]').val((data.nmbarang || '').trim()).prop("readonly", true);
+        setReadableNumber('#qtystock', data.sisaonhand || 0);
+        setReadableNumber('#qty', data.sisaonhand || 0);
 
-            $('[name="unit"]').val((data.unit || '').trim()).prop("readonly", true);
-            $('[name="currency"]').val((data.currcode || '').trim()).prop("readonly", true);
+        initSelect2Unit(data.idbarang);
 
-     /*       if (data.batch) {
-                $('#batch').val(data.batch).trigger('change');
-            }*/
-
-            let qty = (data.qty && data.qty !== '') ? data.qty : 0;
-
-            $('[name="qtystock"]').val(qty).prop("readonly", true);
-
-        },
-
-        error: function () {
-
-            console.log("Failed get stock data");
-
-            $('[name="qtystock"]').val(0).prop("readonly", true);
-
-        }
-
+        $('#conversion_factor').val(1);
+        $('#unit_default').val('');
+        $('#qty_base').val('');
     });
 
+    $('#idbarang').on('select2:opening', function (e) {
+        var loc = $('#idlocation_dtl').val();
+        if (!loc) {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'warning',
+                title: 'Peringatan',
+                text: 'Pilih Gudang terlebih dahulu!'
+            });
+            return false;
+        }
+    });
 }
 
+/* ============================================================
+   SELECT2 UNIT
+   ============================================================ */
+function initSelect2Unit(idbarang, callback) {
 
-/* Format Group */
-function formatItem(repo) {
-    if (repo.loading) return repo.text;
-    var markup = "<div class='select2-result-repository__description'>" + repo.idbarang + "   <i class='fa fa-circle-o'></i>   " + repo.nmbarang + "</div>";
-    return markup;
+    if (!idbarang) return;
+
+    if ($('#unit').data('select2')) {
+        $('#unit').select2('destroy');
+    }
+    $('#unit').empty();
+
+    var callbackFired = false;
+
+    $('#unit').select2({
+        placeholder: "Pilih Satuan...",
+        allowClear: true,
+        width: '100%',
+        dropdownParent: $('#modalDetailPMK'),
+        minimumInputLength: 0,
+        ajax: {
+            url: HOST_URL + 'api/globalmodule/list_unit_item',
+            type: 'POST',
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    _search_: params.term || '',
+                    idbarang: idbarang
+                };
+            },
+            processResults: function (data) {
+
+                var items = data.items || [];
+
+                var results = items.map(function (it) {
+                    var conv      = parseFloat(it.conv_value || 1) || 1;
+                    var isDefault = (it.cdefault || '').toUpperCase() === 'YES';
+
+                    var lbl = it.idunit;
+                    if (conv > 1) {
+                        lbl += ' — 1 ' + it.idunit + ' = ' + conv + ' ' + (it.unit_default || '');
+                    }
+                    if (isDefault) {
+                        lbl += ' ★';
+                    }
+
+                    return {
+                        id:           it.idunit,
+                        text:         lbl,
+                        idunit:       it.idunit,
+                        unit_default: it.unit_default || it.idunit,
+                        conv_value:   conv,
+                        cdefault:     isDefault ? 'YES' : 'NO'
+                    };
+                });
+
+                if (typeof callback === 'function' && !callbackFired) {
+                    callbackFired = true;
+                    callback(results);
+                }
+
+                if ($('#unit').find('option').length === 0) {
+
+                    var defaultUnit = null;
+
+                    if (results.length === 1) {
+                        defaultUnit = results[0];
+                    } else if (results.length > 1) {
+                        defaultUnit = results.find(function (r) {
+                            return r.cdefault === 'YES';
+                        });
+                    }
+
+                    if (defaultUnit) {
+                        setTimeout(function () {
+                            if (!$('#unit').data('select2')) return;
+                            if ($('#unit').find('option').length > 0) return;
+
+                            var opt = new Option(
+                                defaultUnit.idunit,
+                                defaultUnit.idunit,
+                                true,
+                                true
+                            );
+                            $('#unit').append(opt).trigger('change');
+                            setUnitConversion(defaultUnit);
+                        }, 50);
+                    }
+                }
+
+                return { results: results };
+            },
+            cache: false
+        },
+        templateResult: function (repo) {
+            if (repo.loading) return repo.text;
+            return repo.text;
+        },
+        templateSelection: function (repo) {
+            return repo.idunit || repo.text;
+        }
+    }).on("select2:select", function (e) {
+        setUnitConversion(e.params.data);
+    });
 }
 
-function formatItemSelection(repo) {
-    return repo.nmbarang || repo.text;
-}
+/* ============================================================
+   SELECT2 UNIT — PRELOAD (MODE EDIT)
+   ============================================================ */
+function initSelect2UnitWithPreload(idbarang, selectedUnit, callback) {
 
+    if (!idbarang) return;
 
-$("#batch").select2({
-    placeholder: "Choose Your Specification / Batch",
-    allowClear: true,
-    width: "100%",
-
-    ajax: {
-        url: HOST_URL + 'api/globalmodule/list_batch_item',
+    $.ajax({
+        url: HOST_URL + 'api/globalmodule/list_unit_item',
         type: 'POST',
         dataType: 'json',
-        delay: 250,
+        data: {
+            _search_: '',
+            idbarang: idbarang
+        }
+    })
+        .done(function (data) {
 
-        data: function (params) {
-            var idbarang = $("#idbarang").val();
-            var loccode = $("#idlocation_dtl").val();
-            return {
-                term: params.term,
-                _parameterx_: (idbarang && idbarang.trim() !== '') ? idbarang : '-',
-                loccode: loccode,
-            };
-        },
+            var items = data.items || [];
 
-        processResults: function (data) {
+            var results = items.map(function (it) {
+                var conv      = parseFloat(it.conv_value || 1) || 1;
+                var isDefault = (it.cdefault || '').toUpperCase() === 'YES';
 
-            var results = $.map(data.items, function (item) {
+                var lbl = it.idunit;
+                if (conv > 1) {
+                    lbl += ' — 1 ' + it.idunit + ' = ' + conv + ' ' + (it.unit_default || '');
+                }
+                if (isDefault) lbl += ' ★';
+
                 return {
-                    id: item.batch,
-                    text: item.batch
+                    id:           it.idunit,
+                    text:         lbl,
+                    idunit:       it.idunit,
+                    unit_default: it.unit_default || it.idunit,
+                    conv_value:   conv,
+                    cdefault:     isDefault ? 'YES' : 'NO'
                 };
             });
 
-            return {
-                results: results
-            };
-        },
+            if ($('#unit').data('select2')) {
+                $('#unit').select2('destroy');
+            }
+            $('#unit').empty();
 
-        cache: true
-    },
+            $('#unit').select2({
+                placeholder: "Pilih Satuan...",
+                allowClear: true,
+                width: '100%',
+                dropdownParent: $('#modalDetailPMK'),
+                data: results
+            })
+                .on("select2:select", function (e) {
+                    setUnitConversion(e.params.data);
+                });
 
-    templateResult: formatBatch,
-    templateSelection: formatBatchSelection,
+            var preSelected = null;
 
-    escapeMarkup: function (markup) {
-        return markup;
+            if (selectedUnit) {
+                preSelected = results.find(function (r) {
+                    return r.idunit === selectedUnit;
+                });
+            }
+
+            if (!preSelected) {
+                preSelected = results.find(function (r) {
+                    return r.cdefault === 'YES';
+                });
+            }
+
+            if (!preSelected && results.length === 1) {
+                preSelected = results[0];
+            }
+
+            if (preSelected) {
+                var opt = new Option(preSelected.idunit, preSelected.idunit, true, true);
+                $('#unit').append(opt).trigger('change');
+                $('#unit').val(preSelected.idunit).trigger('change');
+            }
+
+            if (typeof callback === 'function') {
+                callback(results, preSelected);
+            }
+        })
+        .fail(function (xhr, status, error) {
+            console.error('[initSelect2UnitWithPreload] Failed:', error);
+            if (typeof callback === 'function') {
+                callback([], null);
+            }
+        });
+}
+
+/* ============================================================
+   HELPER — SET KONVERSI
+   ============================================================ */
+function setUnitConversion(dataUnit) {
+
+    var conv        = parseFloat(dataUnit.conv_value || 1) || 1;
+    var unitDefault = dataUnit.unit_default || dataUnit.idunit || '';
+
+    var convRounded = Math.round(conv);
+
+    $('#conversion_factor').val(convRounded);
+    $('#unit_default').val(unitDefault);
+
+    autoFillQtyFromStock();
+    hitungQtyBase();
+}
+
+/* ============================================================
+   AUTO QTY — qty = qtystock / conversion_factor
+   ============================================================ */
+function autoFillQtyFromStock() {
+
+    var qtystock = parseFloat($('#qtystock_raw').val()) || 0;
+
+    if (qtystock === 0) {
+        qtystock = parseFloat(convertToDbNumber($('#qtystock').val())) || 0;
     }
 
+    var conv = parseFloat($('#conversion_factor').val()) || 1;
+    if (conv <= 0) conv = 1;
+
+    var qty = qtystock / conv;
+
+    setReadableNumber('#qty', qty);
+
+    hitungQtyBase();
+}
+
+/* ============================================================
+   HITUNG qty_base = qty × conversion_factor
+   ============================================================ */
+function hitungQtyBase() {
+    var qty  = parseFloat(convertToDbNumber($('#qty').val())) || 0;
+    var conv = parseFloat($('#conversion_factor').val()) || 1;
+
+    conv = Math.round(conv);
+
+    $('#qty_base').val(qty * conv);
+}
+
+$(document).on('input', '#qty', function () {
+    hitungQtyBase();
 });
 
+/* ============================================================
+   FORMAT DROPDOWN BARANG
+   ============================================================ */
+function formatBarang(repo) {
+    if (repo.loading) {
+        return '<div class="p-2 text-muted"><i class="fa fa-spinner fa-spin"></i> Memuat data...</div>';
+    }
 
-function formatBatch(repo) {
+    if (!repo.idbarang) return repo.text;
 
-    if (repo.loading) return repo.text;
+    var stock = parseFloat(repo.sisaonhand || 0);
+    var unit  = repo.unit || '';
+    var batch = (repo.batch || '').trim();
 
-    return '<div class="select2-result-repository__description">' +
-        repo.text +
-        '</div>';
+    var stockText = stock.toLocaleString('id-ID', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+    });
+
+    var $line1 = $('<div>', {
+        style: 'font-weight:600; color:#1f2937; margin-bottom:2px;'
+    });
+    $line1.append(document.createTextNode(repo.idbarang));
+    $line1.append(
+        '<i class="fa fa-circle-o" style="color:#000000; font-size:9px; margin:0 6px;"></i>'
+    );
+    $line1.append(document.createTextNode(repo.nmbarang || ''));
+
+    var $line2 = $('<div>', {
+        style: 'font-size:12px; color:#6b7280;'
+    });
+
+    var parts = [];
+
+    if (batch && batch !== '-') {
+        parts.push('Batch: <span style="color:#000000;">' + batch + '</span>');
+    }
+
+    parts.push(
+        'Stock: <span style="color:#000000; font-weight:600;">' +
+        stockText + ' ' + unit +
+        '</span>'
+    );
+
+    $line2.html(parts.join(' <span style="color:#9c9c9c;">|</span> '));
+
+    var $wrap = $('<div>', {
+        class: 'select2-result-item',
+        style: 'padding:4px 0; line-height:1.4;'
+    });
+
+    $wrap.append($line1).append($line2);
+    return $wrap;
 }
 
-
-function formatBatchSelection(repo) {
-
-    return repo.text || repo.id || '';
-
+function formatBarangSelection(repo) {
+    if (!repo.idbarang) return repo.text;
+    return repo.idbarang + ' — ' + (repo.nmbarang || '');
 }
 
-
+/* ============================================================
+   UTIL
+   ============================================================ */
 function setJtsValue(selector, value) {
     $(selector).val(value);
     _jtsseparator($(selector)[0]);
 }
 
-
 $(document).on('input', '.jtsseparator', function () {
     _jtsseparator(this);
 });
-
-function new_spec() {
-    Swal.fire({
-        title: 'New Batch/Specification',
-        html: '<input type="text" id="newbatch" class="swal2-input" style="text-transform: uppercase;" placeholder="New Batch/Spec">',
-        confirmButtonText: 'Process',
-        focusConfirm: false,
-        preConfirm: () => {
-            const newbatch = Swal.getPopup().querySelector('#newbatch').value
-            //const password = Swal.getPopup().querySelector('#password').value
-            if (!newbatch) {
-                Swal.showValidationMessage(`Fill The New Batch`)
-            }
-            return {newbatch: newbatch}
-        }
-    }).then((result) => {
-        $.ajax({
-            type: "POST",
-            url: HOST_URL + 'api/globalmodule/add_newbatch' + '',
-            dataType: 'json',
-            data: {
-                'loccode': $('[name="idlocation_dtl"]').val(),
-                'idbarang': $('[name="idbarang"]').val(),
-                'batch': result.value.newbatch,
-            },
-            success: function (datax) {
-                if (datax.status) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil',
-                        text: datax.messages,
-                        backdrop: true,
-                        allowOutsideClick: false,
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Oops...',
-                        text: datax.messages,
-                        backdrop: true,
-                        allowOutsideClick: false,
-                    })
-                }
-
-            },
-            error: function (jqXHR, textStatus, errorThrown) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Oops...',
-                    text: 'Unable To Response Data',
-                    backdrop: true,
-                    allowOutsideClick: false,
-                })
-
-            }
-        });
-
-    })
-}
-
 
 function editsearchitem(e) {
     Swal.fire({
@@ -492,27 +582,25 @@ function editsearchitem(e) {
         showDenyButton: true,
         showCancelButton: false,
         confirmButtonText: `Ok`,
-        icon: 'question',
-        //denyButtonText: `Don't save`,
+        icon: 'question'
     }).then((result) => {
-        /* Read more about isConfirmed, isDenied below */
         if (result.isConfirmed) {
-            window.location.replace(HOST_URL + 'master/item/edit' + '/?var=' + e)
+            window.location.replace(HOST_URL + 'master/item/edit' + '/?var=' + e);
         } else if (result.isDenied) {
             return false;
         }
-    })
+    });
 }
 
-
-/* TABLE PP DETAIL */
+/* ============================================================
+   TABLE DETAIL PMK
+   ============================================================ */
 function tabletmpSPKDetail() {
-    /* Tabel PP Detail */
     var initTable = function () {
         var table = $('#tmptabpmksdtl');
         table.DataTable({
-            "processing": true, //Feature control the processing indicator.
-            "serverSide": true, //Feature control DataTables' server-side processing mode.
+            "processing": true,
+            "serverSide": true,
             "language": languageDatatable(),
             "paging": false,
             "lengthChange": true,
@@ -526,21 +614,16 @@ function tabletmpSPKDetail() {
             "ajax": {
                 "url": HOST_URL + 'persediaan/trans/list_tmp_pmk_brng_dtl',
                 "type": "POST",
-                "data": function (data) {
-                    //data.searchfilter = $('#searchitem').val()+'';
-                    //data.idbarang = $('#idbarang').val()+'';
-                    //data.idposition = $('#idposition').val()+'';
-                },
+                "data": function (data) {},
                 "dataFilter": function (data) {
                     var json = jQuery.parseJSON(data);
                     json.draw = json.dataTables.draw;
                     json.recordsTotal = json.dataTables.recordsTotal;
                     json.recordsFiltered = json.dataTables.recordsFiltered;
                     json.data = json.dataTables.data;
-                    return JSON.stringify(json); // return JSON string
+                    return JSON.stringify(json);
                 }
             },
-            //Set column definition initialisation properties.
             "columnDefs": [
                 {
                     "targets": 0,
@@ -548,7 +631,6 @@ function tabletmpSPKDetail() {
                     "searchable": false,
                     "className": "text-center",
                     "render": function (data, type, row) {
-                        // row[1] = kolom ID (ID Tax)
                         return '<input type="checkbox" class="row-check" value="' + row[0] + '">';
                     }
                 },
@@ -558,31 +640,30 @@ function tabletmpSPKDetail() {
                 }
             ]
         });
-    }
 
+        $('#tmptabpmksdtl tbody').on('click', 'tr', function (e) {
+            if ($(e.target).is('input[type="checkbox"]')) return;
+            var checkbox = $(this).find('input[type="checkbox"].row-check');
+            checkbox.prop('checked', !checkbox.prop('checked'));
+            checkbox.trigger('change');
+        });
+    };
     return initTable();
-
 }
-
 
 function reload_pemakaian_dtl() {
     var table = $('#tmptabpmksdtl');
-    table.DataTable().ajax.reload(); //reload datatable ajax
+    table.DataTable().ajax.reload();
 }
 
-
-// CHECK ALL
 $('#tmptabpmksdtl thead').on('change', '#checkAll', function () {
     const checked = this.checked;
-
     $('#tmptabpmksdtl tbody .row-check').prop('checked', checked);
 });
 
-// JIKA SALAH SATU ROW UNCHECK → CHECKALL MATI
 $('#tmptabpmksdtl tbody').on('change', '.row-check', function () {
     const total = $('#tmptabpmksdtl tbody .row-check').length;
     const checked = $('#tmptabpmksdtl tbody .row-check:checked').length;
-
     $('#checkAll').prop('checked', total === checked);
 });
 
@@ -605,321 +686,213 @@ function getCheckedDetailIds() {
     return ids;
 }
 
-
 function setSelect2Ajax(selector, value, text) {
     if (!value) return;
-
     let option = new Option(text || value, value, true, true);
     $(selector).append(option).trigger('change');
 }
 
-
+/* ============================================================
+   UPDATE DETAIL — MODAL EDIT
+   ============================================================ */
 function updatePmkBrgDtl() {
     isLoadingUpdate = true;
     const ids = getCheckedDetailIds();
 
     if (!ids || ids.length === 0) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Peringatan',
-            text: 'Pilih satu data yang akan diupdate'
-        });
+        Swal.fire({ icon: 'warning', title: 'Peringatan',
+            text: 'Pilih satu data yang akan diupdate' });
         return;
     }
 
     if (ids.length > 1) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Peringatan',
-            text: 'Update hanya boleh satu data'
-        });
+        Swal.fire({ icon: 'warning', title: 'Peringatan',
+            text: 'Update hanya boleh satu data' });
         return;
     }
+
+    const iduniq = ids[0];
 
     $.ajax({
         url: HOST_URL + 'persediaan/trans/get_tmp_pmk_brng_dtl',
         type: 'GET',
-        data: { id: ids[0] },
+        data: { id: iduniq },
         dataType: 'json',
-        success: function (json) {
 
-            $('[name="idlocation_dtl"]').empty().trigger('change');
-            $('#idbarang').empty().trigger('change');
-            $('#batch').empty().trigger('change');
+        dataFilter: function (data) {
 
-            if (!json.dataTables.status) return;
+            var json;
+            try {
+                json = jQuery.parseJSON(data);
+            } catch (e) {
+                Swal.fire({ icon: 'error', title: 'Error',
+                    text: 'Response bukan JSON valid' });
+                return null;
+            }
 
-            let data = json.dataTables.items[0];
+            var payload = json.dataTables || json;
 
-            /*
-            =========================
-            TRIM DATA (CHAR FIX)
-            =========================
-            */
+            if (!payload.status || !payload.items || payload.items.length === 0) {
+                Swal.fire({ icon: 'error', title: 'Error',
+                    text: 'Data tidak ditemukan' });
+                return null;
+            }
 
-            data.idbarang   = (data.idbarang || '').trim();
-            data.idlocation = (data.idlocation || '').trim();
-            data.batch      = (data.batch || '').trim();
-            data.dk         = (data.dk || '').trim();
-            data.docno      = (data.docno || '').trim();
-            data.nmbarang   = (data.nmbarang || '').trim();
-            data.unit       = (data.unit || '').trim();
+            var item = payload.items[0];
 
-            /*
-            =========================
-            SET FORM
-            =========================
-            */
-            $('#iduniq').val(res.data.iduniq);
-            $('#idurut').val(data.idurut);
-            $('#description').val(data.description);
-            $('#docno').val(data.docno);
-            $('#dk').val(data.dk).trigger('change');
+            /* STEP 1 — Field dasar */
+            $('#iduniq').val(item.iduniq);
+            $('#idurut').val(item.idurut);
+            $('#description').val(item.description ?? '');
+            $('#docno').val(item.docno ?? '');
 
-            $('#valqty').val(data.valqty);
-            $('#qtystock').val(data.qtystock);
-
-            $('#nmbarang').val(data.nmbarang);
-            $('#unit').val(data.unit);
-            $('#qty').val(data.qty);
-            $('#currency').val(data.currency);
-
-            /*
-            =========================
-            RESET SELECT2
-            =========================
-            */
-
-
-            /*
-            =========================
-            1. LOAD LOCATION
-            =========================
-            */
-
+            /* STEP 2 — Load lokasi (gudang) */
             $.ajax({
                 type: 'GET',
                 url: HOST_URL + 'api/globalmodule/list_mlocation',
-                data: { var: data.idlocation },
+                data: { var: item.idlocation },
                 dataType: 'json'
-            }).then(function (resLocation) {
+            })
+                .then(function (resLocation) {
 
-                if (!resLocation.items || resLocation.items.length === 0) return;
+                    if (!resLocation.items || resLocation.items.length === 0) return;
 
-                let loc = resLocation.items[0];
+                    let loc = resLocation.items[0];
+                    loc.idlocation = (loc.idlocation || '').trim();
 
-                loc.idlocation = (loc.idlocation || '').trim();
+                    if ($('#idlocation_dtl').hasClass('select2-hidden-accessible')) {
+                        $('#idlocation_dtl').select2('destroy');
+                    }
+                    $('#idlocation_dtl').empty();
 
-                let optionLoc = new Option(loc.nmlocation, loc.idlocation, true, true);
+                    var optionLoc = new Option(loc.nmlocation, loc.idlocation, true, true);
+                    $('#idlocation_dtl').append(optionLoc).trigger('change');
 
-                $('[name="idlocation_dtl"]')
-                    .append(optionLoc)
-                    .trigger('change');
+                    $('#idlocation_dtl').select2({
+                        placeholder: 'Pilih Gudang',
+                        width: '100%',
+                        allowClear: false,
+                        dropdownParent: $('#modalDetailPMK')
+                    });
 
-                /*
-                =========================
-                2. LOAD ITEM
-                =========================
-                */
+                    /* STEP 3 — Load barang */
+                    return $.ajax({
+                        type: 'POST',
+                        url: HOST_URL + 'api/globalmodule/list_stock_by_location',
+                        data: {
+                            _parameterx_ : item.idbarang,
+                            loccode      : loc.idlocation,
+                            include_zero : 1,
+                            _perpage_    : 100
+                        },
+                        dataType: 'json'
+                    });
 
-                return $.ajax({
-                    type: 'POST',
-                    url: HOST_URL + 'api/globalmodule/list_item',
-                    data: {
-                        var: data.idbarang,
-                        //loccode: loc.idlocation
-                    },
-                    dataType: 'json'
+                })
+                .then(function (datax) {
+
+                    if (!datax.items || datax.items.length === 0) {
+                        Swal.fire({ icon: 'warning', title: 'Peringatan',
+                            text: 'Barang tidak ditemukan' });
+                        return;
+                    }
+
+                    var itemBarang = datax.items.find(function (x) {
+                        return x.idbarang === item.idbarang;
+                    }) || datax.items[0];
+
+                    if ($('#idbarang').hasClass('select2-hidden-accessible')) {
+                        $('#idbarang').select2('destroy');
+                    }
+                    $('#idbarang').empty();
+
+                    var optionBarang = new Option(itemBarang.nmbarang, itemBarang.idbarang, true, true);
+                    $('#idbarang').append(optionBarang);
+
+                    $('#idbarang').select2({
+                        placeholder: 'Pilih Barang',
+                        width: '100%',
+                        allowClear: false,
+                        dropdownParent: $('#modalDetailPMK')
+                    });
+
+                    $('#idbarang').trigger('change');
+                    $('#nmbarang').val(itemBarang.nmbarang ?? '');
+                    $('#spec').val(itemBarang.batch ?? '');
+
+                    setReadableNumber('#qty',      item.qty      || 0);
+                    setReadableNumber('#qtystock', item.qtystock || itemBarang.sisaonhand || 0);
+
+                    $('#modalDetailPemakaianBarang').text('Update Detail');
+                    $('#modalDetailPMK').modal('show');
+
+                    setTimeout(function () {
+
+                        initSelect2UnitWithPreload(
+                            itemBarang.idbarang,
+                            item.unit,
+                            function (results, preSelected) {
+
+                                $('#conversion_factor').val(
+                                    Math.round(parseFloat(item.conversion_factor) || 1)
+                                );
+                                $('#unit_default').val(item.unit_default || '');
+                                $('#qty_base').val(item.qty_base || '');
+
+                                if (typeof hitungQtyBase === 'function') {
+                                    hitungQtyBase();
+                                }
+
+                                $('#conversion_factor').trigger('input');
+                                $('#qty').trigger('input');
+
+                                setReadableNumber('#qtystock', item.qtystock || itemBarang.sisaonhand || 0);
+                            }
+                        );
+
+                    }, 300);
+
+                })
+                .fail(function (xhr, status, error) {
+                    console.error('[updatePmkBrgDtl] Failed:', error);
+                    Swal.fire({ icon: 'error', title: 'Error',
+                        text: 'Gagal memuat data barang' });
                 });
 
-            }).then(function (resItem) {
-
-                if (!resItem || !resItem.items || resItem.items.length === 0) return;
-
-                let item = resItem.items[0];
-
-                item.idbarang = (item.idbarang || '').trim();
-
-                let optionItem = new Option(item.nmbarang, item.idbarang, true, true);
-
-                $('#idbarang')
-                    .append(optionItem)
-                    .trigger('change');
-
-                $('#idbarang').trigger({
-                    type: 'select2:select',
-                    params: { data: item }
-                });
-
-                /*
-                =========================
-                3. LOAD BATCH
-                =========================
-                */
-
-                // 🔥 VALIDASI AWAL (INI KUNCI)
-                let batchParam = (data.batch || '').trim();
-
-                if (!batchParam) {
-                    // batch kosong → stop di sini, tidak lanjut ke AJAX batch
-                    $('#batch').val(null);
-                    return;
-                }
-
-                return $.ajax({
-                    type: 'POST',
-                    url: HOST_URL + 'api/globalmodule/list_batch_item',
-                    data: {
-                        _parameterx_: data.idbarang,
-                        _var_: batchParam,
-                        loccode: $('[name="idlocation_dtl"]').val()
-                    },
-                    dataType: 'json'
-                });
-
-            }).then(function (resBatch) {
-
-                let $batch = $('#batch');
-                $batch.empty();
-
-                if (!resBatch || !resBatch.items || resBatch.items.length === 0) {
-                    $batch.val(null);
-                    return;
-                }
-
-                let batch = resBatch.items[0];
-                let batchVal = (batch.batch || '').trim();
-
-                // 🔥 double safety (opsional tapi bagus)
-                if (!batchVal) {
-                    $batch.val(null);
-                    return;
-                }
-
-                let optionBatch = new Option(batchVal, batchVal, true, true);
-
-                $batch.append(optionBatch);
-                $batch.val(batchVal).trigger('change');
-
-            });
-
-            /*
-            =========================
-            SHOW MODAL
-            =========================
-            */
-            isLoadingUpdate = false;
-            $('#modalDetailPemakaianBarang').text('Update Detail');
-            $('#modalDetailPMK').modal('show');
-
-
-
+            return data;
         }
     });
-
 }
-
 
 $('#checkAllDetail').on('change', function () {
     $('.row-check').prop('checked', this.checked);
 });
 
-// auto uncheck checkAll jika salah satu dilepas
 $(document).on('change', '.row-check', function () {
     if (!this.checked) {
         $('#checkAllDetail').prop('checked', false);
     }
 });
 
-
-$('#btn-filter').click(function () { //button filter event click
+/* ============================================================
+   FILTER LIST
+   ============================================================ */
+$('#btn-filter').click(function () {
     var table = $('#tlistlbm_wacc');
-    table.DataTable().ajax.reload(); //reload datatable ajax
+    table.DataTable().ajax.reload();
     $('#filter').modal('hide');
 });
-$('#btn-reset').click(function () { //button reset event click
+
+$('#btn-reset').click(function () {
     $('#form-filter')[0].reset();
     var table = $('#tlistlbm_wacc');
-    table.DataTable().ajax.reload(); //reload datatable ajax
+    table.DataTable().ajax.reload();
     $('#filter').modal('hide');
 });
 
-
-var defaultInitialItem = '';
-$("#idbarang_filter").select2({
-    placeholder: "Type/ Choose your item",
-    allowClear: true,
-    dropdownParent: $("#filter"),
-    //minimumInputLength: 2, // only start searching when the user has input 3 or more characters
-    //maximumSelectionLength: 1,
-    multiple: false,
-    ajax: {
-        url: HOST_URL + 'stock/balance/list_item',
-        type: 'POST',
-        dataType: 'json',
-        delay: 250,
-        data: function (params) {
-            return {
-                _search_: params.term, // search term
-                _page_: params.page,
-                _draw_: true,
-                _start_: 1,
-                _perpage_: 2,
-                _paramglobal_: defaultInitialItem,
-                _parameterx_: defaultInitialItem,
-                term: params.term,
-            };
-        },
-        processResults: function (data, params) {
-            var searchTerm = $("#idbarang_filter").data("select2").$dropdown.find("input").val();
-            if (data.items.length === 1 && data.items[0].text === searchTerm) {
-                var option = new Option(data.items[0].nmbarang, data.items[0].idbarang, true, true);
-                $('#idbarang_filter').append(option).trigger('change').select2("close");
-                // manually trigger the `select2:select` event
-                $('#idbarang_filter').trigger({
-                    type: 'select2:select',
-                    params: {
-                        data: data
-                    }
-                });
-            }
-            params.page = params.page || 1;
-            return {
-                results: data.items,
-                pagination: {
-                    more: (params.page * 30) < data.total_count
-                }
-            };
-        },
-
-        cache: false
-    },
-    escapeMarkup: function (markup) {
-        return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatItemFilter, // omitted for brevity, see the source of this page
-    templateSelection: formatItemSelectionFilter // omitted for brevity, see the source of this page
-}).on("change", function () {
-    console.log('Selecting =>' + $(this).val());
-    //var table = $('#tsearchitem');
-    //table.DataTable().ajax.reload(); //reload datatable ajax
-    ///table.append().search( $(this).val() ).draw();
-    //$('#filter').modal('hide');
-});
-
-/* Format Group */
-function formatItemFilter(repo) {
-    if (repo.loading) return repo.text;
-    var markup = "<div class='select2-result-repository__description'>" + repo.idbarang + "   <i class='fa fa-circle-o'></i>   " + repo.nmbarang + "</div>";
-    return markup;
-}
-
-function formatItemSelectionFilter(repo) {
-    return repo.nmbarang || repo.text;
-}
-
-
+/* ============================================================
+   SAVE DETAIL — PMK BRG
+   ============================================================ */
 function savePemakaianBrng() {
 
     Swal.fire({
@@ -933,67 +906,147 @@ function savePemakaianBrng() {
 
         if (!result.isConfirmed) return;
 
-        // ===============================
-        // Ambil dan validasi qty
-        // ===============================
+        /* ================================================
+           VALIDASI GUDANG
+           ================================================ */
+        var idlocation_dtl = ($('#idlocation_dtl').val() || '').trim();
+        if (!idlocation_dtl) {
+            Swal.fire({ icon: 'warning', title: 'Validasi',
+                text: 'Pilih Gudang terlebih dahulu!' });
+            return;
+        }
 
-        let qtyInput = $('#qty').val();
+        /* ================================================
+           AMBIL DATA BARANG
+           ================================================ */
+        var dataBarang = null;
+
+        if ($('#idbarang').data('select2')) {
+            var selData = $('#idbarang').select2('data');
+            if (selData && selData.length > 0) {
+                dataBarang = selData[0];
+            }
+        }
+
+        var idbarang = '';
+
+        if (dataBarang && dataBarang.idbarang) {
+            idbarang = (dataBarang.idbarang || '').trim();
+        } else {
+            idbarang = ($('#idbarang').val() || '').trim().split('|')[0];
+        }
+
+        if (!idbarang) {
+            Swal.fire({ icon: 'warning', title: 'Validasi',
+                text: 'Pilih ID Barang terlebih dahulu!' });
+            return;
+        }
+
+        idbarang = idbarang.substring(0, 20);
+
+        var nmbarang = ($('#nmbarang').val() || '').trim();
+        if (!nmbarang && dataBarang) {
+            nmbarang = (dataBarang.nmbarang || dataBarang.text || '').trim();
+        }
+        nmbarang = nmbarang.substring(0, 150);
+
+        var batch = (dataBarang && dataBarang.batch) ? (dataBarang.batch || '').trim() : '';
+        var lotno = (dataBarang && dataBarang.lotno) ? (dataBarang.lotno || '').trim() : '';
+
+        /* ================================================
+           AMBIL DATA UNIT
+           ================================================ */
+        if (!$('#unit').data('select2')) {
+            Swal.fire({ icon: 'warning', title: 'Validasi',
+                text: 'Unit belum dimuat. Pilih barang terlebih dahulu.' });
+            return;
+        }
+
+        var selectedUnit = $('#unit').select2('data');
+
+        if (!selectedUnit || selectedUnit.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'Validasi',
+                text: 'Pilih Satuan terlebih dahulu!' });
+            return;
+        }
+
+        var unitData = selectedUnit[0];
+
+        var unit = ($('#unit').val() || unitData.id || unitData.idunit || '').trim();
+
+        if (!unit) {
+            Swal.fire({ icon: 'warning', title: 'Validasi',
+                text: 'Satuan tidak valid!' });
+            return;
+        }
+
+        unit = unit.substring(0, 20);
+
+        var cvRaw = unitData.conv_value;
+        var cv    = parseFloat(cvRaw);
+        var conversion_factor = (!isNaN(cv) && cv > 0) ? Math.round(cv) : 1;
+
+        var unit_default = (
+            (unitData && unitData.unit_default)
+            || (dataBarang && dataBarang.unit)
+            || unit
+        ).trim();
+
+        if (unit_default.indexOf('|') >= 0) {
+            unit_default = unit_default.split('|')[0].trim();
+        }
+
+        unit_default = unit_default.substring(0, 20);
+
+        /* ================================================
+           QTY & STOCK
+           ================================================ */
+        let qtyInput   = $('#qty').val();
         let stockInput = $('#qtystock').val();
-        let valueQty = $('#valqty').val();
-        let vardk = $('#dk').val();
 
-        let qty = parseFloat(convertToDbNumber(qtyInput)) || 0;
+        let qty      = parseFloat(convertToDbNumber(qtyInput))   || 0;
         let qtystock = parseFloat(convertToDbNumber(stockInput)) || 0;
-        let valQty = parseFloat(convertToDbNumber(valueQty)) || 0;
 
-        // ===============================
-        // VALIDASI TAMBAHAN
-        // ===============================
-
-        // qty harus valid
-        if (isNaN(qty) || qty <= 0) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Qty Tidak Valid',
-                text: 'Qty harus lebih dari 0'
-            });
+        if (qty <= 0) {
+            Swal.fire({ icon: 'warning', title: 'Validasi',
+                text: 'Qty harus lebih dari 0' });
             return;
         }
 
-        // qtystock tidak boleh null / 0
-        if (isNaN(qtystock) || qtystock <= 0) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Stock Tidak Valid',
-                text: 'Qty stock tidak boleh kosong atau 0'
-            });
+        if (qty > qtystock) {
+            Swal.fire({ icon: 'warning', title: 'Stock Tidak Cukup',
+                text: 'Qty tidak cukup (' + qtystock + ')' });
             return;
         }
 
-        // qtystock harus >= qty
-        if (qtystock < qty) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Stock Tidak Cukup',
-                text: 'Qty melebihi stock tersedia'
-            });
-            return;
-        }
+        let qty_base = qty * conversion_factor;
 
-        // ===============================
-        // Siapkan FormData
-        // ===============================
-
+        /* ================================================
+           FORM DATA
+           ================================================ */
         let formData = new FormData(document.getElementById('formPemakaianStockDtl'));
 
-        formData.append('cabang', $('#cabang').val());
-        formData.append('pemohon', $('#pemohon').val());
-        formData.append('description', $('#description').val());
-        formData.append('docdate', $('#docdate').val());
-        formData.append('docref', $('#docref').val());
-        formData.append('idcostcenter', $('#idcostcenter').val());
+        formData.set('idlocation_dtl', idlocation_dtl);
 
-        // Gabungkan docno
+        formData.set('idbarang', idbarang);
+        formData.set('nmbarang', nmbarang);
+        formData.set('batch',    batch);
+        formData.set('lotno',    lotno);
+
+        formData.set('unit',              unit);
+        formData.set('unit_default',      unit_default);
+        formData.set('conversion_factor', conversion_factor);
+        formData.set('qty',               qty);
+        formData.set('qty_base',          qty_base);
+        formData.set('qtystock',          qtystock);
+
+        formData.set('cabang',       $('#cabang').val());
+        formData.set('idcostcenter', $('#idcostcenter').val());
+        formData.set('description',  $('#description').val());
+        formData.set('docdate',      $('#docdate').val());
+        formData.set('docref',       $('#docref').val());
+        formData.set('iduniq',       $('#iduniq').val());
+
         formData.set(
             'docno',
             $('#prefix').val() + '/' +
@@ -1001,16 +1054,14 @@ function savePemakaianBrng() {
             $('#suffix').val()
         );
 
-        // Set numeric value yang sudah divalidasi
-        formData.set('qty', qty);
-        formData.set('qtystock', qtystock);
-        formData.set('valqty', valQty);
-        formData.set('iduniq', iduniq);
+        console.log('=== SAVE PMK BRG ===');
+        for (var pair of formData.entries()) {
+            console.log(pair[0] + ': ' + pair[1]);
+        }
 
-        // ===============================
-        // AJAX SAVE (TIDAK DIUBAH)
-        // ===============================
-
+        /* ================================================
+           AJAX
+           ================================================ */
         $.ajax({
             url: HOST_URL + 'persediaan/trans/save_pmk_brng_detail',
             type: 'POST',
@@ -1018,18 +1069,9 @@ function savePemakaianBrng() {
             dataType: 'json',
             processData: false,
             contentType: false,
-
             success: function (res) {
 
                 if (res.success) {
-
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil',
-                        text: res.message || 'Data Detail berhasil disimpan',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
 
                     if (res.reload === true) {
                         window.location.reload();
@@ -1040,80 +1082,243 @@ function savePemakaianBrng() {
                     reload_pemakaian_dtl();
                     $('#formPemakaianStockDtl')[0].reset();
 
-                } else {
+                    $('#idbarang').val(null).trigger('change');
 
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Gagal',
-                        text: res.message || 'Gagal menyimpan data'
-                    });
+                    if ($('#unit').data('select2')) {
+                        $('#unit').select2('destroy');
+                    }
+                    $('#unit').empty();
+
+                } else {
+                    Swal.fire({ icon: 'warning', title: 'Gagal',
+                        text: res.message || 'Gagal menyimpan data' });
                 }
             },
-
             error: function (xhr) {
                 console.error(xhr.responseText);
-
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Server Error',
-                    text: 'Terjadi kesalahan server'
-                });
+                Swal.fire({ icon: 'error', title: 'Server Error',
+                    text: 'Terjadi kesalahan server' });
             }
         });
 
     });
 }
 
-// ===============================
-// VALIDASI BUTTON SAVE
-// ===============================
+/* ============================================================
+   VALIDASI BUTTON TAMBAH DETAIL
+   ============================================================ */
 $('#btnAddDetail').on('click', function (e) {
-    btnInputDetail();
-    // var idlocation_dtl = $('[name="idlocation_dtl"]').val();
-    // console.log(idlocation_dtl + "STRING")
-    // if (!idlocation_dtl) {
-    //     e.preventDefault();
-    //
-    //     Swal.fire({
-    //         icon: 'warning',
-    //         title: 'Oops...',
-    //         text: 'Semua Inputan Master Tidak Boleh Kosong!',
-    //         confirmButtonColor: '#3085d6'
-    //     });
-    //     return false; // berhenti di sini
-    //
-    //
-    // } else {
-    //     // ✅ kalau valid jalankan function
-    //
-    //
-    //
-    //
-    //
-    //
-    // }
 
+    var cabang       = $.trim($('[name="cabang"]').val());
+    var docdate      = $.trim($('[name="docdate"]').val());
+    var prefix       = $.trim($('[name="prefix"]').val());
+    var infix        = $.trim($('[name="infix"]').val());
+    var suffix       = $.trim($('[name="suffix"]').val());
+    var idcostcenter = $.trim($('[name="idcostcenter"]').val());
+
+    function showWarning(msg) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Validasi Gagal',
+            text: msg,
+            confirmButtonColor: '#3085d6'
+        });
+    }
+
+    if (!cabang) {
+        e.preventDefault();
+        showWarning('Cabang / Job belum dipilih!');
+        $('[name="cabang"]').focus();
+        return false;
+    }
+
+    if (!prefix || !infix || !suffix) {
+        e.preventDefault();
+        showWarning('Nomor Jurnal (prefix/infix/suffix) belum lengkap!');
+        return false;
+    }
+
+    if (!docdate) {
+        e.preventDefault();
+        showWarning('Tanggal belum diisi!');
+        $('[name="docdate"]').focus();
+        return false;
+    }
+
+    if (!idcostcenter) {
+        e.preventDefault();
+        showWarning('Untuk Bagian / Cost Center belum dipilih!');
+        $('[name="idcostcenter"]').focus();
+        return false;
+    }
+
+    btnInputDetail();
 });
 
-
-// ===============================
-// FUNCTION BUKA MODAL
-// ===============================
+/* ============================================================
+   BUKA MODAL INPUT DETAIL
+   ============================================================ */
 function btnInputDetail() {
-    console.log(" INI KENAPA DI SISI ");
-
-
     $('#formPemakaianStockDtl')[0].reset();
-    // Clear select2
-    $('#idlocation_dtl').val(null).trigger('change');
-    $('#batch').val(null).trigger('change');
+
+    /* Reset gudang */
+    if ($('#idlocation_dtl').data('select2')) {
+        $('#idlocation_dtl').select2('destroy');
+    }
+    $('#idlocation_dtl').empty();
+    initSelect2LocationDtl();
+
+    /* Reset barang */
     $('#idbarang').val(null).trigger('change');
+
+    /* Reset unit */
+    if ($('#unit').data('select2')) {
+        $('#unit').select2('destroy');
+    }
+    $('#unit').empty();
+
     $('#idurut').val('');
+    $('#conversion_factor').val(1);
+    $('#unit_default').val('');
+    $('#qty_base').val('');
+
     $('#modalDetailPemakaianBarang').text('Tambah Item Detail');
     $('#modalDetailPMK').modal('show');
 }
 
+/* ============================================================
+   SELECT2 LOCATION — GUDANG DETAIL
+   ============================================================ */
+var defaultInitialLocationDtl = '';
 
+function initSelect2LocationDtl() {
+
+    if ($('#idlocation_dtl').data('select2')) {
+        $('#idlocation_dtl').select2('destroy');
+    }
+
+    $('#idlocation_dtl').select2({
+        placeholder: " -- Pilih Gudang -- ",
+        allowClear: true,
+        width: '100%',
+        multiple: false,
+        dropdownParent: $('#modalDetailPMK'),
+        ajax: {
+            url: HOST_URL + 'api/globalmodule/list_mlocation',
+            type: 'POST',
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    _search_: params.term,
+                    _page_: params.page,
+                    _draw_: true,
+                    _start_: 1,
+                    _perpage_: 2,
+                    _paramglobal_: defaultInitialLocationDtl,
+                    _parameterx_: defaultInitialLocationDtl,
+                    term: params.term
+                };
+            },
+            processResults: function (data, params) {
+                params.page = params.page || 1;
+                return {
+                    results: data.items,
+                    pagination: { more: (params.page * 30) < data.total_count }
+                };
+            },
+            cache: true
+        },
+        escapeMarkup: function (markup) { return markup; },
+        templateResult: formatLocation,
+        templateSelection: formatLocationSelection
+    })
+        .on("change", function () {
+
+            var val = $(this).val();
+
+            /* Reset barang */
+            $('#idbarang').val(null).trigger('change');
+
+            $('[name="nmbarang"]').val('');
+            $('[name="spec"]').val('');
+            $('[name="qtystock"]').val(0);
+
+            $('#qtystock_raw').val(0);
+
+            if ($('#unit').data('select2')) {
+                $('#unit').select2('destroy');
+            }
+            $('#unit').empty();
+        });
+}
+
+function formatLocation(repo) {
+    if (repo.loading) return repo.text;
+    return "<div class='select2-result-repository__description'>" + repo.idlocation + "   <i class='fa fa-circle-o'></i>   " + repo.nmlocation + "</div>";
+}
+
+function formatLocationSelection(repo) {
+    return repo.nmlocation || repo.text;
+}
+
+/* ============================================================
+   DELETE DETAIL
+   ============================================================ */
+function btnDeleteDetail() {
+
+    const ids = getCheckedDetailIds();
+
+    if (!ids || ids.length === 0) {
+        Swal.fire({ icon: 'warning', title: 'Peringatan',
+            text: 'Pilih minimal satu data yang akan dihapus' });
+        return;
+    }
+
+    Swal.fire({
+        title: 'Konfirmasi Hapus',
+        text: 'Data yang dihapus tidak dapat dikembalikan. Lanjutkan?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Hapus',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#dc3545'
+    }).then((result) => {
+
+        if (!result.isConfirmed) return;
+
+        $.ajax({
+            url: HOST_URL + 'persediaan/trans/delete_pmk_brng',
+            type: 'POST',
+            data: { ids: ids },
+            dataType: 'json',
+            success: function (res) {
+                if (res.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil',
+                        text: res.message || 'Data berhasil dihapus',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    reload_pemakaian_dtl();
+                } else {
+                    Swal.fire({ icon: 'warning', title: 'Gagal',
+                        text: res.message || 'Gagal menghapus data' });
+                }
+            },
+            error: function (xhr) {
+                console.error(xhr.responseText);
+                Swal.fire({ icon: 'error', title: 'Server Error',
+                    text: 'Terjadi kesalahan server' });
+            }
+        });
+    });
+}
+
+/* ============================================================
+   DOCNO GENERATOR
+   ============================================================ */
 let currentKodeSuffix = '';
 
 function generateDocNumber(prefix, infix, suffix) {
@@ -1126,13 +1331,12 @@ $('#cabang').on('change', function () {
     if (skipRoleChange) return;
 
     let idbranch = $(this).val();
-
     if (!idbranch) return;
 
     $.ajax({
         url: HOST_URL + '/persediaan/trans/getBranch_ajustment_stock',
         method: 'GET',
-        data: {idbranch: idbranch},
+        data: { idbranch: idbranch },
         dataType: 'json',
         success: function (res) {
 
@@ -1144,8 +1348,6 @@ $('#cabang').on('change', function () {
             currentKodeSuffix = res.kode_suffix;
 
             $('#infix').val(res.infix);
-
-            // SET PREFIX + TRIGGER CHANGE
             var prefix = res.prefix;
             $('#prefix').val(prefix);
             loadNextSuffixPMK();
@@ -1154,34 +1356,29 @@ $('#cabang').on('change', function () {
 
             if (infix.length === 4) {
                 $('#docdate').prop('disabled', false);
-                var yy = infix.substring(0,2);
-                var mm = infix.substring(2,4);
-                var year = 2000 + parseInt(yy,10);
-                var month = parseInt(mm,10) - 1; // moment month index
 
-                // Gunakan logindate dari response sebagai default
+                var yy = infix.substring(0, 2);
+                var mm = infix.substring(2, 4);
+                var year  = 2000 + parseInt(yy, 10);
+                var month = parseInt(mm, 10) - 1;
+
                 var logindate = res.logindate ? moment(res.logindate, 'DD-MM-YYYY') : moment();
-                
-                // Pastikan logindate dalam range bulan infix
                 var startDate = moment([year, month, 1]);
-                var endDate = moment(startDate).endOf('month');
-                
-                // Jika logindate dalam range, gunakan logindate,否则 gunakan startDate
-                var selectedDate = logindate.isBetween(startDate, endDate, 'day', '[]') 
-                    ? logindate 
+                var endDate   = moment(startDate).endOf('month');
+
+                var selectedDate = logindate.isBetween(startDate, endDate, 'day', '[]')
+                    ? logindate
                     : startDate;
 
                 var $el = $('#docdate');
                 var drp = $el.data('daterangepicker');
 
                 if (drp) {
-                    // update limits & selected date
                     drp.minDate = startDate;
                     drp.maxDate = endDate;
                     drp.setStartDate(selectedDate);
                     drp.setEndDate(selectedDate);
                 } else {
-                    // fallback: (re)initialize with limits
                     $el.daterangepicker({
                         autoUpdateInput: false,
                         singleDatePicker: true,
@@ -1192,20 +1389,16 @@ $('#cabang').on('change', function () {
                         locale: { format: 'DD-MM-YYYY' },
                         cancelLabel: 'Clear'
                     });
-                    // rebind handlers
-                    $el.on('apply.daterangepicker', function(ev, picker) {
+                    $el.on('apply.daterangepicker', function (ev, picker) {
                         $(this).val(picker.startDate.format('DD-MM-YYYY'));
-                        // Trigger change untuk update kurs
                         $(this).trigger('change');
                     });
-                    $el.on('cancel.daterangepicker', function(ev, picker) {
+                    $el.on('cancel.daterangepicker', function (ev, picker) {
                         $(this).val('');
-                        // Trigger change untuk reset kurs
                         $(this).trigger('change');
                     });
                 }
 
-                // isi input dengan selectedDate
                 $el.val(selectedDate.format('DD-MM-YYYY'));
             }
 
@@ -1214,14 +1407,12 @@ $('#cabang').on('change', function () {
             );
         }
     });
-
 });
 
-
 function loadNextSuffixPMK() {
-    
+
     let prefix = $.trim($('#prefix').val()).toUpperCase();
-    let infix = $.trim($('#infix').val());
+    let infix  = $.trim($('#infix').val());
 
     if (!prefix || !infix || !currentKodeSuffix) return;
 
@@ -1241,449 +1432,31 @@ function loadNextSuffixPMK() {
                 return;
             }
 
-            let suffix = $.trim(
-                res.suffix || ''
-            );
+            let suffix = $.trim(res.suffix || '');
 
-            $('#suffix')
-                .val(suffix)
-                .trigger('change');
+            $('#suffix').val(suffix).trigger('change');
 
-            $('#docno').val(
-                prefix + '/' + infix + '/' + res.suffix
-            );
+            $('#docno').val(prefix + '/' + infix + '/' + res.suffix);
         }
     });
-
-};
-
+}
 
 $('#prefix').on('blur', function () {
     loadNextSuffixPMK();
 });
 
-
-
-
+/* ============================================================
+   SELECT2 BRANCH — CABANG
+   ============================================================ */
 var defaultInitialBranch = '';
+
 $("#cabang").select2({
     placeholder: "Type/ Choose your Branch",
     allowClear: true,
     width: '100%',
-    //minimumInputLength: 2, // only start searching when the user has input 3 or more characters
-    maximumSelectionLength: 1,
     multiple: false,
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_branchjob',
-        type: 'POST',
-        dataType: 'json',
-        delay: 250,
-        data: function (params) {
-            return {
-                _search_: params.term, // search term
-                _page_: params.page,
-                _draw_: true,
-                _start_: 1,
-                _perpage_: 2,
-                _paramglobal_: defaultInitialBranch,
-                _parameterx_: defaultInitialBranch,
-                term: params.term,
-            };
-        },
-        processResults: function (data, params) {
-            var searchTerm = $("#cabang").data("select2").$dropdown.find("input").val();
-            if (data.items.length === 1 && data.items[0].text === searchTerm) {
-                var option = new Option(data.items[0].nmbranch, data.items[0].idbranch, true, true);
-                $('#cabang').append(option).trigger('change').select2("close");
-                // manually trigger the `select2:select` event
-                $('#cabang').trigger({
-                    type: 'select2:select',
-                    params: {
-                        data: data
-                    }
-                });
-            }
-            params.page = params.page || 1;
-            return {
-                results: data.items,
-                pagination: {
-                    more: (params.page * 30) < data.total_count
-                }
-            };
-        },
-
-        cache: false
-    },
-    escapeMarkup: function (markup) {
-        return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatBranch, // omitted for brevity, see the source of this page
-    templateSelection: formatBranchSelection // omitted for brevity, see the source of this page
-}).on("change", function () {
-    console.log('Selecting =>' + $(this).val());
-    //var table = $('#tsearchitem');
-    //table.DataTable().ajax.reload(); //reload datatable ajax
-    ///table.append().search( $(this).val() ).draw();
-    //$('#filter').modal('hide');
-});
-
-/* Format Group */
-function formatBranch(repo) {
-    if (repo.loading) return repo.text;
-    var markup = "<div class='select2-result-repository__description'>" + repo.idbranch + "   <i class='fa fa-circle-o'></i>   " + repo.nmbranch + "</div>";
-    return markup;
-}
-
-function formatBranchSelection(repo) {
-    return repo.nmbranch || repo.text;
-}
-
-
-var defaultInitialCabangSent = '';
-$("#cabang_sent").select2({
-    placeholder: "Type/ Choose your Branch",
-    allowClear: true,
-    width: '100%',
-    //minimumInputLength: 2, // only start searching when the user has input 3 or more characters
-    maximumSelectionLength: 1,
-    multiple: false,
-    ajax: {
-        url: HOST_URL + 'api/globalmodule/list_branchjob',
-        type: 'POST',
-        dataType: 'json',
-        delay: 250,
-        data: function (params) {
-            return {
-                _search_: params.term, // search term
-                _page_: params.page,
-                _draw_: true,
-                _start_: 1,
-                _perpage_: 2,
-                _paramglobal_: defaultInitialBranch,
-                _parameterx_: defaultInitialBranch,
-                term: params.term,
-            };
-        },
-        processResults: function (data, params) {
-            var searchTerm = $("#cabang_sent").data("select2").$dropdown.find("input").val();
-            if (data.items.length === 1 && data.items[0].text === searchTerm) {
-                var option = new Option(data.items[0].nmbranch, data.items[0].idbranch, true, true);
-                $('#cabang_sent').append(option).trigger('change').select2("close");
-                // manually trigger the `select2:select` event
-                $('#cabang_sent').trigger({
-                    type: 'select2:select',
-                    params: {
-                        data: data
-                    }
-                });
-            }
-            params.page = params.page || 1;
-            return {
-                results: data.items,
-                pagination: {
-                    more: (params.page * 30) < data.total_count
-                }
-            };
-        },
-
-        cache: false
-    },
-    escapeMarkup: function (markup) {
-        return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatBranch, // omitted for brevity, see the source of this page
-    templateSelection: formatBranchSelection // omitted for brevity, see the source of this page
-}).on("change", function () {
-    console.log('Selecting =>' + $(this).val());
-    //var table = $('#tsearchitem');
-    //table.DataTable().ajax.reload(); //reload datatable ajax
-    ///table.append().search( $(this).val() ).draw();
-    //$('#filter').modal('hide');
-});
-
-
-/* TABEL LIST PO FINAL */
-
-
-//OPEN SCANNER
-function open_scan() {
-    //$('[name="dob"]').datepicker('update',data.dob);
-    read_qrcode();
-    $('#open_scan').modal('show'); // show bootstrap modal when complete loaded
-    $('.modal-title').text('Open Scanner'); // Set title to Bootstrap modal title
-}
-
-function read_qrcode() {
-    function onScanSuccess(decodedText, decodedResult) {
-        play();
-        //alert(`Code scanned = ${decodedText}`, decodedResult);
-        //alert('Code scanned Kintil= ' + decodedText + '');
-        //$('#searchitem').val(decodedText).trigger('keyup');
-
-        $('#searchitem').val(decodedText);
-        $('#open_scan').modal('hide');
-        var table = $('#tsearchitem');
-        table.DataTable().ajax.reload();
-
-        //
-        // var _this = $(decodedText); // copy of this object for further usage
-        // clearTimeout(timer);
-        // timer = setTimeout(function() {
-        //     //$('#searchitem').val('');
-        //     $('#searchitem').val(decodedText);
-        //     $('#open_scan').modal('hide');
-        //     var table = $('#tsearchitem');
-        //     table.DataTable().ajax.reload();
-        // }, 1000);
-        html5QrcodeScanner.clear();
-    }
-
-    var html5QrcodeScanner = new Html5QrcodeScanner(
-        "qr-reader", {fps: 10, qrbox: 250});
-    html5QrcodeScanner.render(onScanSuccess);
-
-}
-
-var audio = document.getElementById('chatAudio');
-
-function play() {
-    audio.play()
-}
-
-function formatNewdept(repo) {
-    if (repo.loading) return repo.text;
-    var markup = "<div class='select2-result-repository__description'>" + repo.kddept + "   <i class='fa fa-circle-o'></i>   " + repo.nmdept + "  </div>";
-    return markup;
-}
-
-function formatNewdeptSelection(repo) {
-    return repo.nmdept || repo.text;
-}
-
-var defaultInitialNewDept = '';
-$("#iddept").select2({
-    placeholder: "Pilih Bagian",
-    allowClear: true,
-    ajax: {
-        url: HOST_URL + 'api/globalmodule/list_departmen',
-        type: 'POST',
-        dataType: 'json',
-        delay: 250,
-        data: function (params) {
-            return {
-                _search_: params.term, // search term
-                _page_: params.page,
-                _draw_: true,
-                _start_: 1,
-                _perpage_: 2,
-                _paramglobal_: defaultInitialNewDept,
-            };
-        },
-        processResults: function (data, params) {
-            // parse the results into the format expected by Select2
-            // since we are using custom formatting functions we do not need to
-            // alter the remote JSON data, except to indicate that infinite
-            // scrolling can be used
-            params.page = params.page || 1;
-
-            return {
-                results: data.items,
-                pagination: {
-                    more: (params.page * 30) < data.total_count
-                }
-            };
-        },
-        cache: false
-    },
-    escapeMarkup: function (markup) {
-        return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatNewdept, // omitted for brevity, see the source of this page
-    templateSelection: formatNewdeptSelection // omitted for brevity, see the source of this page
-}).on("select2:selecting", function () {
-});
-
-$("#fjurnal").on("change", function () {
-    //$("#njurnal").val('00011');
-    //Ajax Load data from ajax
-    $.ajax({
-        url: HOST_URL + 'purchase/purchaseorder/njurnal' + '/?var=' + $("#fjurnal").val(),
-        type: "GET",
-        dataType: "JSON",
-        success: function (data) {
-            $("#njurnal").val(data.njurnal);
-        },
-        error: function (jqXHR, textStatus, errorThrown) {
-            alert('Error get data from ajax');
-        }
-    });
-});
-
-
-$("#docjns").on("change", function () {
-    console.log($(this).val() + 'H');
-    if ($(this).val() === 'PO') {
-
-        $('.sref').remove();
-        $('.sreference').append('<div class="sref"> <label for="description">Reference ID/PO Number</label><select name="docref" id="docref2" class="form-control" required></select></div>');
-
-        //LOAD PO
-        var defaultInitialPO = $("#docref2").val();
-        $("#docref2").select2({
-            placeholder: "Ketik PO Outstanding",
-            allowClear: true,
-            //minimumInputLength: 2, // only start searching when the user has input 3 or more characters
-            maximumSelectionLength: 1,
-            multiple: false,
-            ajax: {
-                url: HOST_URL + 'api/globalmodule/list_outstanding_po',
-                type: 'POST',
-                dataType: 'json',
-                delay: 250,
-                data: function (params) {
-                    return {
-                        _search_: params.term, // search term
-                        _page_: params.page,
-                        _draw_: true,
-                        _start_: 1,
-                        _perpage_: 2,
-                        _paramglobal_: defaultInitialPO,
-                        _parameterx_: defaultInitialPO,
-                        term: params.term,
-                    };
-                },
-                processResults: function (data, params) {
-
-                    var searchTerm = $("#docref2").data("select2").$dropdown.find("input").val();
-                    if (data.items.length === 1 && data.items[0].text === searchTerm) {
-                        var option = new Option(data.items[0].docno, data.items[0].docno, true, true);
-                        $('#docref2').append(option).trigger('change').select2("close");
-                        // manually trigger the `select2:select` event
-                        $('#docref2').trigger({
-                            type: 'select2:select',
-                            params: {
-                                data: data
-                            }
-                        });
-                    }
-                    params.page = params.page || 1;
-
-                    return {
-                        results: data.items,
-                        pagination: {
-                            more: (params.page * 30) < data.total_count
-                        }
-                    };
-                },
-                cache: true
-            },
-            escapeMarkup: function (markup) {
-                return markup;
-            }, // let our custom formatter work
-            // minimumInputLength: 1,
-            templateResult: formatOutstandingPO, // omitted for brevity, see the source of this page
-            templateSelection: formatOutstandingPOSelection // omitted for brevity, see the source of this page
-        }).on("change", function () {
-
-        });
-
-
-        /* Format Group */
-        function formatOutstandingPO(repo) {
-            if (repo.loading) return repo.text;
-            var markup = "<div class='select2-result-repository__description'>" + repo.docno + "</div>";
-            return markup;
-        }
-
-        function formatOutstandingPOSelection(repo) {
-            return repo.docno || repo.text;
-        }
-    } else {
-        $('.sref').remove();
-        $('.sreference').append('<div class="sref"> <label for="description">Reference ID/PO Number</label> <input type="text" name="docref" class="form-control" id="docref1"  style="text-transform: uppercase" placeholder="Reference ID" required></div>');
-    }
-
-
-});
-
-// COST CENTER
-function formatCostcenter(repo) {
-    if (repo.loading) return repo.text;
-    var markup = "<div class='select2-result-repository__description'>" + repo.idcostcenter + "   <i class='fa fa-circle-o'></i>   " + repo.nmcostcenter + "</div>";
-    return markup;
-}
-
-function formatCostcenterSelection(repo) {
-    return repo.nmcostcenter || repo.text;
-}
-
-//var defaultInitialDivision = $("#newdept").val();
-$("#idcostcenter").select2({
-    placeholder: "Ketik/Pilih Cost Center",
-    allowClear: true,
-    ajax: {
-        url: HOST_URL + 'api/globalmodule/list_costcenter',
-        type: 'POST',
-        dataType: 'json',
-        delay: 250,
-        data: function (params) {
-            return {
-                _search_: params.term, // search term
-                _page_: params.page,
-                _draw_: true,
-                _start_: 1,
-                _perpage_: 2,
-                _paramglobal_: '',
-            };
-        },
-        processResults: function (data, params) {
-            // parse the results into the format expected by Select2
-            // since we are using custom formatting functions we do not need to
-            // alter the remote JSON data, except to indicate that infinite
-            // scrolling can be used
-            params.page = params.page || 1;
-
-            return {
-                results: data.items,
-                pagination: {
-                    more: (params.page * 30) < data.total_count
-                }
-            };
-        },
-        cache: true
-    },
-    escapeMarkup: function (markup) {
-        return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatCostcenter, // omitted for brevity, see the source of this page
-    templateSelection: formatCostcenterSelection // omitted for brevity, see the source of this page
-});
-
-
-//ID LOCATION PEMILIHAN GUDANG ASAL
-var defaultInitialLocationFrom = '';
-// =========================
-// GLOBAL FLAG (WAJIB ADA)
-// =========================
-let isAutoSet = false;
-
-
-// =========================
-// SELECT2 LOCATION
-// =========================
-var defaultInitialLocationFrom = '';
-
-$("#idlocation_dtl").select2({
-    placeholder: " -- Pilih Gudang Asal -- ",
-    allowClear: true,
-    maximumSelectionLength: 1,
-    multiple: false,
-    ajax: {
-        url: HOST_URL + 'api/globalmodule/list_mlocation',
         type: 'POST',
         dataType: 'json',
         delay: 250,
@@ -1694,294 +1467,52 @@ $("#idlocation_dtl").select2({
                 _draw_: true,
                 _start_: 1,
                 _perpage_: 2,
-                _paramglobal_: defaultInitialLocationFrom,
-                _parameterx_: defaultInitialLocationFrom,
-                term: params.term,
+                _paramglobal_: defaultInitialBranch,
+                _parameterx_: defaultInitialBranch,
+                term: params.term
             };
         },
         processResults: function (data, params) {
-
-            let searchTerm = $("#idlocation_dtl")
-                .data("select2").$dropdown.find("input").val();
-
+            var searchTerm = $("#cabang").data("select2").$dropdown.find("input").val();
             if (data.items.length === 1 && data.items[0].text === searchTerm) {
-
-                let item = data.items[0];
-                let option = new Option(item.nmlocation, item.idlocation, true, true);
-
-                // ⛔ tandai auto
-                isAutoSet = true;
-
-                $('#idlocation_dtl')
-                    .append(option)
-                    .val(item.idlocation)
-                    .trigger('change')
-                    .select2("close");
-
-                isAutoSet = false;
+                var option = new Option(data.items[0].nmbranch, data.items[0].idbranch, true, true);
+                $('#cabang').append(option).trigger('change').select2("close");
+                $('#cabang').trigger({
+                    type: 'select2:select',
+                    params: { data: data }
+                });
             }
-
             params.page = params.page || 1;
-
             return {
                 results: data.items,
-                pagination: {
-                    more: (params.page * 30) < data.total_count
-                }
+                pagination: { more: (params.page * 30) < data.total_count }
             };
         },
-        cache: true
+        cache: false
     },
-    escapeMarkup: function (markup) {
-        return markup;
-    },
-    templateResult: formatLocation,
-    templateSelection: formatLocationSelection
-})
+    escapeMarkup: function (markup) { return markup; },
+    templateResult: formatBranch,
+    templateSelection: formatBranchSelection
+});
 
-    .on("change", function () {
-
-        // 🔥 STOP kalau dari auto load
-        if (isAutoSet) return;
-
-        let val = $(this).val();
-
-        $('#savePmkBrng').prop('disabled', !val);
-
-        // =========================
-        // RESET TANPA TRIGGER (ANTI DOMINO)
-        // =========================
-        $('#idbarang').val(null);
-        $('#batch').val(null);
-
-        $('[name="nmbarang"]').val('');
-        $('[name="unit"]').val('');
-        $('[name="qtystock"]').val(0);
-
-    });
-
-/* Format Group */
-function formatLocation(repo) {
+function formatBranch(repo) {
     if (repo.loading) return repo.text;
-    var markup = "<div class='select2-result-repository__description'>" + repo.idlocation + "   <i class='fa fa-circle-o'></i>   " + repo.nmlocation + "</div>";
-    return markup;
+    return "<div class='select2-result-repository__description'>" + repo.idbranch + "   <i class='fa fa-circle-o'></i>   " + repo.nmbranch + "</div>";
 }
 
-function formatLocationSelection(repo) {
-    return repo.nmlocation || repo.text;
+function formatBranchSelection(repo) {
+    return repo.nmbranch || repo.text;
 }
 
-//ID LOCATION PEMILIHAN GUDANG TUJUAN
-var defaultInitialLocationTo = '';
-$("#idlocation_to").select2({
-    placeholder: " -- Pilih Gudang Tujuan -- ",
-    allowClear: true,
-    // minimumInputLength: 2, // only start searching when the user has input 3 or more characters
-    maximumSelectionLength: 1,
-    multiple: false,
-    ajax: {
-        url: HOST_URL + 'api/globalmodule/list_mlocation',
-        type: 'POST',
-        dataType: 'json',
-        delay: 250,
-        data: function (params) {
-            return {
-                _search_: params.term, // search term
-                _page_: params.page,
-                _draw_: true,
-                _start_: 1,
-                _perpage_: 2,
-                _paramglobal_: defaultInitialLocationTo,
-                _parameterx_: defaultInitialLocationTo,
-                term: params.term,
-            };
-        },
-        processResults: function (data, params) {
-
-            var searchTerm = $("#idlocation_to").data("select2").$dropdown.find("input").val();
-            if (data.items.length === 1 && data.items[0].text === searchTerm) {
-                var option = new Option(data.items[0].nmlocation, data.items[0].idlocation, true, true);
-                $('#idlocation_to').append(option).trigger('change').select2("close");
-                // manually trigger the `select2:select` event
-                $('#idlocation_to').trigger({
-                    type: 'select2:select',
-                    params: {
-                        data: data
-                    }
-                });
-            }
-            params.page = params.page || 1;
-
-            return {
-                results: data.items,
-                pagination: {
-                    more: (params.page * 30) < data.total_count
-                }
-            };
-        },
-        cache: true
-    },
-    escapeMarkup: function (markup) {
-        return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatLocation, // omitted for brevity, see the source of this page
-    templateSelection: formatLocationSelection // omitted for brevity, see the source of this page
-}).on("change", function () {
-    /*Sementara TUtup Location */
-});
-
-
-//ID LOCATION PEMILIHAN GUDANG TUJUAN
-var defaultInitialLocationTransit = '';
-$("#idlocation_transit").select2({
-    placeholder: " -- Pilih Gudang Tujuan -- ",
-    allowClear: true,
-    // minimumInputLength: 2, // only start searching when the user has input 3 or more characters
-    maximumSelectionLength: 1,
-    multiple: false,
-    ajax: {
-        url: HOST_URL + 'api/globalmodule/list_mlocation',
-        type: 'POST',
-        dataType: 'json',
-        delay: 250,
-        data: function (params) {
-            return {
-                _search_: params.term, // search term
-                _page_: params.page,
-                _draw_: true,
-                _start_: 1,
-                _perpage_: 2,
-                _paramglobal_: defaultInitialLocationTransit,
-                _parameterx_: defaultInitialLocationTransit,
-                term: params.term,
-            };
-        },
-        processResults: function (data, params) {
-
-            var searchTerm = $("#idlocation_transit").data("select2").$dropdown.find("input").val();
-            if (data.items.length === 1 && data.items[0].text === searchTerm) {
-                var option = new Option(data.items[0].nmlocation, data.items[0].idlocation, true, true);
-                $('#idlocation_transit').append(option).trigger('change').select2("close");
-                // manually trigger the `select2:select` event
-                $('#idlocation_transit').trigger({
-                    type: 'select2:select',
-                    params: {
-                        data: data
-                    }
-                });
-            }
-            params.page = params.page || 1;
-
-            return {
-                results: data.items,
-                pagination: {
-                    more: (params.page * 30) < data.total_count
-                }
-            };
-        },
-        cache: true
-    },
-    escapeMarkup: function (markup) {
-        return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatLocation, // omitted for brevity, see the source of this page
-    templateSelection: formatLocationSelection // omitted for brevity, see the source of this page
-}).on("change", function () {
-    /*Sementara TUtup Location */
-});
-
-
-function btnDeleteDetail() {
-
-    const ids = getCheckedDetailIds();
-
-    // ===============================
-    // Validasi pilihan
-    // ===============================
-    if (!ids || ids.length === 0) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Peringatan',
-            text: 'Pilih minimal satu data yang akan dihapus'
-        });
-        return;
-    }
-
-    // ===============================
-    // Konfirmasi Hapus
-    // ===============================
-    Swal.fire({
-        title: 'Konfirmasi Hapus',
-        text: 'Data yang dihapus. Lanjutkan?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Ya, Hapus',
-        cancelButtonText: 'Batal',
-        confirmButtonColor: '#dc3545'
-    }).then((result) => {
-
-        if (!result.isConfirmed) return;
-
-        // ===============================
-        // AJAX DELETE
-        // ===============================
-        $.ajax({
-            url: HOST_URL + 'persediaan/trans/delete_pmk_brng',
-            type: 'POST',
-            data: {
-                ids: ids   // kirim array id
-            },
-            dataType: 'json',
-
-            success: function (res) {
-
-                if (res.success) {
-
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil',
-                        text: res.message || 'Data berhasil dihapus',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-
-                    reload_pemakaian_dtl();
-
-                } else {
-
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Gagal',
-                        text: res.message || 'Gagal menghapus data'
-                    });
-                }
-            },
-
-            error: function (xhr) {
-                console.error(xhr.responseText);
-
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Server Error',
-                    text: 'Terjadi kesalahan server'
-                });
-            }
-        });
-
-    });
-}
-
-/*        ---------------------              ID COSTCENTER ----------------------------------------------*/
-
-//ID LOCATION PEMILIHAN GUDANG TUJUAN
+/* ============================================================
+   SELECT2 COST CENTER — UNTUK BAGIAN
+   ============================================================ */
 var defaultInitialCostcenter = '';
+
 $("#idcostcenter").select2({
     placeholder: " -- Pilih Bagian/Costcenter -- ",
     allowClear: true,
-    // minimumInputLength: 2, // only start searching when the user has input 3 or more characters
-    maximumSelectionLength: 1,
+    width: '100%',
     multiple: false,
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_costcenter',
@@ -1990,110 +1521,98 @@ $("#idcostcenter").select2({
         delay: 250,
         data: function (params) {
             return {
-                _search_: params.term, // search term
+                _search_: params.term,
                 _page_: params.page,
                 _draw_: true,
                 _start_: 1,
                 _perpage_: 2,
                 _paramglobal_: defaultInitialCostcenter,
                 _parameterx_: defaultInitialCostcenter,
-                term: params.term,
+                term: params.term
             };
         },
         processResults: function (data, params) {
-
             var searchTerm = $("#idcostcenter").data("select2").$dropdown.find("input").val();
             if (data.items.length === 1 && data.items[0].text === searchTerm) {
                 var option = new Option(data.items[0].nmcostcenter, data.items[0].idcostcenter, true, true);
                 $('#idcostcenter').append(option).trigger('change').select2("close");
-                // manually trigger the `select2:select` event
                 $('#idcostcenter').trigger({
                     type: 'select2:select',
-                    params: {
-                        data: data
-                    }
+                    params: { data: data }
                 });
             }
             params.page = params.page || 1;
-
             return {
                 results: data.items,
-                pagination: {
-                    more: (params.page * 30) < data.total_count
-                }
+                pagination: { more: (params.page * 30) < data.total_count }
             };
         },
         cache: true
     },
-    escapeMarkup: function (markup) {
-        return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatCostcenter, // omitted for brevity, see the source of this page
-    templateSelection: formatCostcenterSelection // omitted for brevity, see the source of this page
-}).on("change", function () {
-    /*Sementara TUtup Location */
+    escapeMarkup: function (markup) { return markup; },
+    templateResult: formatCostcenter,
+    templateSelection: formatCostcenterSelection
 });
 
 function formatCostcenter(repo) {
     if (repo.loading) return repo.text;
-    var markup = "<div class='select2-result-repository__description'>" + repo.idcostcenter + "   <i class='fa fa-circle-o'></i>   " + repo.nmcostcenter + "</div>";
-    return markup;
+    return "<div class='select2-result-repository__description'>" + repo.idcostcenter + "   <i class='fa fa-circle-o'></i>   " + repo.nmcostcenter + "</div>";
 }
 
 function formatCostcenterSelection(repo) {
     return repo.nmcostcenter || repo.text;
 }
 
+/* ============================================================
+   OPEN SCANNER
+   ============================================================ */
+function open_scan() {
+    read_qrcode();
+    $('#open_scan').modal('show');
+    $('.modal-title').text('Open Scanner');
+}
 
-$(document).ready(function () {
-    // Handle form submission event
-    // Fix SweetAlert input tidak bisa diketik di atas Bootstrap modal
-    if ($.fn.modal) {
-        $.fn.modal.Constructor.prototype._enforceFocus = function () {
-        };
+function read_qrcode() {
+    function onScanSuccess(decodedText, decodedResult) {
+        play();
+        $('#searchitem').val(decodedText);
+        $('#open_scan').modal('hide');
+        var table = $('#tsearchitem');
+        table.DataTable().ajax.reload();
+        html5QrcodeScanner.clear();
     }
 
+    var html5QrcodeScanner = new Html5QrcodeScanner(
+        "qr-reader", { fps: 10, qrbox: 250 });
+    html5QrcodeScanner.render(onScanSuccess);
+}
 
-    // Fix SweetAlert input tidak bisa diketik di atas Bootstrap modal
+var audio = document.getElementById('chatAudio');
 
+function play() {
+    audio.play();
+}
+
+/* ============================================================
+   INIT ON READY
+   ============================================================ */
+$(document).ready(function () {
+
+    /* Fix SweetAlert focus */
+    if ($.fn.modal) {
+        $.fn.modal.Constructor.prototype._enforceFocus = function () {};
+    }
 
     table_trx_pmk_brng_mst();
     tabletmpSPKDetail();
-    // tableItem();
-    //read_qrcode();
-    $('#checkboxnik').change(function () {
-        // this will contain a reference to the checkbox
-        if (this.checked) {
-            var valnik = $('#nik').val();
-            // the checkbox is now checked
-            //alert('Checked');
-            $('#username').prop('readonly', true);
-            $('#username').val(valnik);
-        } else {
-            // the checkbox is now no longer checked
-            //alert('Un Checked');
-            $('#username').prop('readonly', false);
-            $('#username').val('');
-        }
-    });
-    $('#nik').change(function () {
-        if ($('#checkboxnik').is(':checked')) {
-            var valnik = $(this).val();
-            $('#username').val(valnik);
-        }
-    });
-    //* input form */
-    // var valueToScroll = 80;
-    // $(".card").scrollTop(valueToScroll);
-    // if ($('[name="type"]').val() === 'EDIT') {
-    //     documentReadable();
-    // }
-    //console.log($('[name="type"]').val());
-    // if ($('[name="typeform"]').val() === 'INPUT' || $('[name="typeform"]').val() === 'UPDATE' || $('[name="typeform"]').val() === 'DELETE' ) {
-    documentReadable();
-    // }
+
+    initSelect2Barang();
+    initSelect2LocationDtl();
+
+    var docno = $('[name="docno"]').val();
+    if (docno && docno.trim() !== '') {
+        documentReadable();
+    }
+
     $("#loadMe").modal("hide");
-
-
 });
