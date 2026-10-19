@@ -193,7 +193,7 @@ $('#cabang').on('change', function () {
 
 
 function loadNextSuffixBOM() {
-    
+
     let prefix = $.trim($('#prefix').val()).toUpperCase();
     let infix = $.trim($('#infix').val());
 
@@ -215,7 +215,7 @@ function loadNextSuffixBOM() {
                 return;
             }
 
-            
+
             let suffix = $.trim(
                 res.suffix || ''
             );
@@ -530,10 +530,10 @@ function btnInputDetailMaterial() {
     // title modal
     $('#modalDtlBomMaterialTitle').text('Tambah Detail Material');
 
-/*    // destroy jika sudah pernah init
-    if ($('#idbarang').hasClass("select2-hidden-accessible")) {
-        $('#idbarang').select2('destroy');
-    }*/
+    /*    // destroy jika sudah pernah init
+        if ($('#idbarang').hasClass("select2-hidden-accessible")) {
+            $('#idbarang').select2('destroy');
+        }*/
 
 
 
@@ -580,10 +580,10 @@ function btnInputDetailCost() {
     // title modal
     $('#modalDtlBomCostTitle').text('Tambah Detail Cost');
 
-/*    // destroy jika sudah pernah init
-    if ($('#idbarang').hasClass("select2-hidden-accessible")) {
-        $('#idbarang').select2('destroy');
-    }*/
+    /*    // destroy jika sudah pernah init
+        if ($('#idbarang').hasClass("select2-hidden-accessible")) {
+            $('#idbarang').select2('destroy');
+        }*/
 
 
 
@@ -629,10 +629,10 @@ function btnInputDetailWip() {
     // title modal
     $('#modalDtlBomWipTitle').text('Tambah Detail Wip');
 
-/*    // destroy jika sudah pernah init
-    if ($('#idbarang').hasClass("select2-hidden-accessible")) {
-        $('#idbarang').select2('destroy');
-    }*/
+    /*    // destroy jika sudah pernah init
+        if ($('#idbarang').hasClass("select2-hidden-accessible")) {
+            $('#idbarang').select2('destroy');
+        }*/
 
 
 
@@ -1570,140 +1570,140 @@ function setToUnreleased(docno) {
 function saveBomDetail(formId, detailType) {
 
 
-        // ===============================
-        // Ambil dan validasi qty
-        // ===============================
-        let buildfor = $('#buildfor').val();
-        let minimumqty = $('#minimumqty').val();
+    // ===============================
+    // Ambil dan validasi qty
+    // ===============================
+    let buildfor = $('#buildfor').val();
+    let minimumqty = $('#minimumqty').val();
 
-        // ===============================
-        // Siapkan FormData
-        // ===============================
+    // ===============================
+    // Siapkan FormData
+    // ===============================
 
-        let formData = new FormData(document.getElementById(formId));
+    let formData = new FormData(document.getElementById(formId));
 
-        //HEADER
-        formData.append('docref', $('#docref').val());
-        formData.append('cabang', $('#cabang').val());
-        formData.append('pemohon', $('#pemohon').val());
-        formData.append('docno', $('#docno').val());
-        formData.append('docdate', $('#docdate').val());
-        formData.append('idbarang_jadi', $('#idbarang_jadi').val());
-        formData.append('docdate', $('#docdate').val());
-        formData.append('keterangan', $('#keterangan').val());
-        formData.append('minimumqty', convertToDbNumber(minimumqty));
-        formData.append('buildunit', $('#buildunit').val());
-        formData.append('buildfor', convertToDbNumber(buildfor));
-        // formData.append('minimumqty', $('#minimumqty').val());
-        formData.append('keterangan', $('#keterangan').val());
-        //DETAIL
-        // formData.append('idbarangMaterial', $('#idbarangMaterial').val());
-        // formData.append('nmbarangmaterial', $('#nmbarangmaterial').val());
-        // formData.append('unitMaterial', $('#unitMaterial').val());
-        // formData.set('qtymaterial', convertToDbNumber(qtymaterial));
-        // formData.set('standartcostmaterial', convertToDbNumber(standartcostmaterial));
-        // formData.set('totalcostmaterial', convertToDbNumber(totalcostmaterial));
-        // formData.append('description_detail_material', $('#description_detail_material').val());
+    //HEADER
+    formData.append('docref', $('#docref').val());
+    formData.append('cabang', $('#cabang').val());
+    formData.append('pemohon', $('#pemohon').val());
+    formData.append('docno', $('#docno').val());
+    formData.append('docdate', $('#docdate').val());
+    formData.append('idbarang_jadi', $('#idbarang_jadi').val());
+    formData.append('docdate', $('#docdate').val());
+    formData.append('keterangan', $('#keterangan').val());
+    formData.append('minimumqty', convertToDbNumber(minimumqty));
+    formData.append('buildunit', $('#buildunit').val());
+    formData.append('buildfor', convertToDbNumber(buildfor));
+    // formData.append('minimumqty', $('#minimumqty').val());
+    formData.append('keterangan', $('#keterangan').val());
+    //DETAIL
+    // formData.append('idbarangMaterial', $('#idbarangMaterial').val());
+    // formData.append('nmbarangmaterial', $('#nmbarangmaterial').val());
+    // formData.append('unitMaterial', $('#unitMaterial').val());
+    // formData.set('qtymaterial', convertToDbNumber(qtymaterial));
+    // formData.set('standartcostmaterial', convertToDbNumber(standartcostmaterial));
+    // formData.set('totalcostmaterial', convertToDbNumber(totalcostmaterial));
+    // formData.append('description_detail_material', $('#description_detail_material').val());
 
-        if(detailType === 'MATERIAL'){
-            let qtymaterial = $('#qtymaterial').val();
-            let standartcostmaterial = $('#standartcostmaterial').val();
-            let totalcostmaterial = $('#totalcostmaterial').val();
-            formData.set('qtymaterial',convertToDbNumber($('#qtymaterial').val()));
-            formData.set('standartcostmaterial',convertToDbNumber($('#standartcostmaterial').val()));
-            formData.set('uniqueidMaterial', $('#uniqueidMaterial').val());
-            formData.set('totalcostmaterial',convertToDbNumber($('#totalcostmaterial').val()));
+    if(detailType === 'MATERIAL'){
+        let qtymaterial = $('#qtymaterial').val();
+        let standartcostmaterial = $('#standartcostmaterial').val();
+        let totalcostmaterial = $('#totalcostmaterial').val();
+        formData.set('qtymaterial',convertToDbNumber($('#qtymaterial').val()));
+        formData.set('standartcostmaterial',convertToDbNumber($('#standartcostmaterial').val()));
+        formData.set('uniqueidMaterial', $('#uniqueidMaterial').val());
+        formData.set('totalcostmaterial',convertToDbNumber($('#totalcostmaterial').val()));
 
-        }else if(detailType === 'COST'){
-            let qtycost = $('#qtycost').val();
-            let standartcostcost = $('#standartcostcost').val();
-            let totalcostcost = $('#totalcostcost').val();
-            formData.set('qtycost',convertToDbNumber($('#qtycost').val()));
-            formData.set('standartcostcost',convertToDbNumber($('#standartcostcost').val()));
-            formData.set('uniqueidCost', $('#uniqueidCost').val());
-            formData.set('totalcostcost',convertToDbNumber($('#totalcostcost').val()));
-        }else if(detailType === 'WIP'){
-            let qtywip = $('#qtywip').val();
-            let standartcostwip = $('#standartcostwip').val();
-            let totalcostwip = $('#totalcostwip').val();
-            formData.set('qtywip',convertToDbNumber($('#qtywip').val()));
-            formData.set('standartcostwip',convertToDbNumber($('#standartcostwip').val()));
-            formData.set('uniqueidWip', $('#uniqueidWip').val());
-            formData.set('totalcostwip',convertToDbNumber($('#totalcostwip').val()));
-        }
-        formData.append('doctype_detail', detailType);
-        // Gabungkan docno
-        formData.set(
-            'docno',
-            $('#prefix').val() + '/' +
-            $('#infix').val() + '/' +
-            $('#suffix').val()
-        );
+    }else if(detailType === 'COST'){
+        let qtycost = $('#qtycost').val();
+        let standartcostcost = $('#standartcostcost').val();
+        let totalcostcost = $('#totalcostcost').val();
+        formData.set('qtycost',convertToDbNumber($('#qtycost').val()));
+        formData.set('standartcostcost',convertToDbNumber($('#standartcostcost').val()));
+        formData.set('uniqueidCost', $('#uniqueidCost').val());
+        formData.set('totalcostcost',convertToDbNumber($('#totalcostcost').val()));
+    }else if(detailType === 'WIP'){
+        let qtywip = $('#qtywip').val();
+        let standartcostwip = $('#standartcostwip').val();
+        let totalcostwip = $('#totalcostwip').val();
+        formData.set('qtywip',convertToDbNumber($('#qtywip').val()));
+        formData.set('standartcostwip',convertToDbNumber($('#standartcostwip').val()));
+        formData.set('uniqueidWip', $('#uniqueidWip').val());
+        formData.set('totalcostwip',convertToDbNumber($('#totalcostwip').val()));
+    }
+    formData.append('doctype_detail', detailType);
+    // Gabungkan docno
+    formData.set(
+        'docno',
+        $('#prefix').val() + '/' +
+        $('#infix').val() + '/' +
+        $('#suffix').val()
+    );
 
-        // ===============================
-        // AJAX SAVE
-        // ===============================
+    // ===============================
+    // AJAX SAVE
+    // ===============================
 
-        $.ajax({
-            url: HOST_URL + 'production/trans/save_bom_mst',
-            type: 'POST',
-            data: formData,
-            dataType: 'json',
-            processData: false,
-            contentType: false,
+    $.ajax({
+        url: HOST_URL + 'production/trans/save_bom_mst',
+        type: 'POST',
+        data: formData,
+        dataType: 'json',
+        processData: false,
+        contentType: false,
 
-            success: function (res) {
+        success: function (res) {
 
-                if (res.success) {
-
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil',
-                        text: res.message || 'Data Saved Success fully',
-                        timer: 800,
-                        showConfirmButton: false
-                    });
-
-                    if (res.reload === true) {
-                        window.location.reload();
-                        return;
-                    }
-
-                    if(detailType === 'MATERIAL'){
-                        $('#modalDtlBomMaterial').modal('hide');
-                        reload_bom_material_dtl();
-                        $('#formBOMMaterialDtl')[0].reset();
-                    } else if(detailType === 'COST'){
-                        $('#modalDtlBomCost').modal('hide');
-                        reload_bom_cost_dtl();
-                        $('#formBOMCostDtl')[0].reset();
-                    } else if(detailType === 'WIP'){
-                        $('#modalDtlBomWip').modal('hide');
-                        reload_bom_wip_dtl();
-                        $('#formBOMWipDtl')[0].reset();
-                    }
-                    documentReadable()
-
-                } else {
-
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Gagal',
-                        text: res.message || 'Gagal menyimpan data'
-                    });
-                }
-            },
-
-            error: function (xhr) {
-                console.error(xhr.responseText);
+            if (res.success) {
 
                 Swal.fire({
-                    icon: 'error',
-                    title: 'Server Error',
-                    text: 'Terjadi kesalahan server'
+                    icon: 'success',
+                    title: 'Berhasil',
+                    text: res.message || 'Data Saved Success fully',
+                    timer: 800,
+                    showConfirmButton: false
+                });
+
+                if (res.reload === true) {
+                    window.location.reload();
+                    return;
+                }
+
+                if(detailType === 'MATERIAL'){
+                    $('#modalDtlBomMaterial').modal('hide');
+                    reload_bom_material_dtl();
+                    $('#formBOMMaterialDtl')[0].reset();
+                } else if(detailType === 'COST'){
+                    $('#modalDtlBomCost').modal('hide');
+                    reload_bom_cost_dtl();
+                    $('#formBOMCostDtl')[0].reset();
+                } else if(detailType === 'WIP'){
+                    $('#modalDtlBomWip').modal('hide');
+                    reload_bom_wip_dtl();
+                    $('#formBOMWipDtl')[0].reset();
+                }
+                documentReadable()
+
+            } else {
+
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Gagal',
+                    text: res.message || 'Gagal menyimpan data'
                 });
             }
-        });
+        },
+
+        error: function (xhr) {
+            console.error(xhr.responseText);
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Server Error',
+                text: 'Terjadi kesalahan server'
+            });
+        }
+    });
 
 
 }
@@ -1889,7 +1889,7 @@ function tabletmpBOMCost() {
             }
         });
 
-         $('#tmp_bomcostdtl tbody').on('click', 'tr', function(e) {
+        $('#tmp_bomcostdtl tbody').on('click', 'tr', function(e) {
             // Cegah jika yang diklik adalah checkbox itu sendiri (untuk menghindari double trigger)
             if ($(e.target).is('input[type="checkbox"]')) {
                 return;
@@ -2015,7 +2015,7 @@ function tabletmpBOMWip() {
         });
 
 
-         $('#tmp_bomwipdtl tbody').on('click', 'tr', function(e) {
+        $('#tmp_bomwipdtl tbody').on('click', 'tr', function(e) {
             // Cegah jika yang diklik adalah checkbox itu sendiri (untuk menghindari double trigger)
             if ($(e.target).is('input[type="checkbox"]')) {
                 return;
@@ -2109,12 +2109,12 @@ function getCheckedDetailIdsWip() {
 document.addEventListener('keydown', function(e) {
 
 // CTRL + Q
-if (e.ctrlKey && e.key.toLowerCase() === 'q') {
+    if (e.ctrlKey && e.key.toLowerCase() === 'q') {
 
-e.preventDefault();
+        e.preventDefault();
 
-document.getElementById('btnAddDetailMaterial').click();
-}
+        document.getElementById('btnAddDetailMaterial').click();
+    }
 
 });
 

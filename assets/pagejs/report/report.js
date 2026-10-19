@@ -181,7 +181,7 @@ function getMode() {
             colspan: 9
         };
     }
-     /* ====== LAPORAN WO ====== */
+    /* ====== LAPORAN WO ====== */
     if (jenis === 'laporanwo') {
         return {
             type:       'WO',
@@ -210,7 +210,6 @@ function getMode() {
             colspan:    7
         };
     }
-
     return {
         type:       'PP',
         previewUrl: HOST_URL + 'report/trans/previewLaporanPP',
@@ -234,13 +233,12 @@ function tarikData(page) {
     var cabang     = $('#lapCabang').val();
     var idlocation = $('#lapIdlocation').val();
     var kdcust     = $('#lapKdcustomer').val();
-    var wono       = $('#lapWono').val();       
-    var statusWo   = $('#lapStatusWo').val();   
+    var wono       = $('#lapWono').val();
+    var statusWo   = $('#lapStatusWo').val();
     // kalau LR, pakai input single date
     if (mode.type === 'LR') {
         tgl = $('#lapTglSingle').val();
     }
-    
 
     var filterKhusus = (mode.type === 'PP') ? idbarang
                     : (mode.type === 'SO' || mode.type === 'PJ') ? kdcust
@@ -250,6 +248,13 @@ function tarikData(page) {
                     : kdsupp;
 
     var modeBolehKosong = (mode.type === 'MB' || mode.type === 'MS' || mode.type === 'MC');
+
+// validasi khusus LR: tanggal wajib
+    if (mode.type === 'LR' && !tgl) {
+        Swal.fire({ icon: 'warning', title: 'Tanggal wajib diisi.' });
+        return;
+    }
+
     if (!modeBolehKosong && !tgl && !docno && !filterKhusus && !cabang) {
         Swal.fire({ icon: 'warning', title: 'Filter Kosong', text: 'Minimal isi salah satu filter.' });
         return;
@@ -317,7 +322,7 @@ function tarikData(page) {
    ========================================================= */
 function renderPreview(rows, page, perpage, mode) {
     var bodyId = mode.bodyId;
-
+    window._lastLRParent = null;   // ← TAMBAHKAN BARIS INI
     if (!rows || rows.length === 0) {
         $('#' + bodyId).html(
             '<tr><td colspan="' + mode.colspan + '" class="text-center text-muted">Tidak ada data sesuai filter.</td></tr>'
@@ -839,25 +844,33 @@ function renderPreview(rows, page, perpage, mode) {
                 '<td>' + escapeHtml(r.status_wo) + '</td>' +
                 '<td>' + escapeHtml(r.jenis_transaksi) + '</td>' +
                 '<td>' + escapeHtml(r.docno_realisasi) + '</td>' +
-            '</tr>';
+                '</tr>';
         } else if (mode.type === 'BB') {
             /* ---------- BUKU BESAR DETAIL: 9 kolom ---------- */
+            // Konversi format tanggal dari YYYY-MM-DD ke DD-MM-YYYY
+            var tglBB = r.docdate;
+            if (tglBB && tglBB.indexOf('-') !== -1) {
+                var parts = tglBB.split('-');
+                if(parts.length === 3) tglBB = parts[2] + '-' + parts[1] + '-' + parts[0];
+            }
+
             html += '<tr>' +
                 '<td>' + (startNo + i) + '</td>' +
                 '<td>' + escapeHtml(r.nmprk) + '</td>' +
                 '<td>' + escapeHtml(r.kdprk) + '</td>' +
-                '<td>' + escapeHtml(r.docdate) + '</td>' +
+                '<td>' + escapeHtml(tglBB) + '</td>' +
                 '<td>' + escapeHtml(r.docno) + '</td>' +
                 '<td>' + escapeHtml(r.keterangan) + '</td>' +
                 '<td class="text-right">' + fmtNum(r.debet) + '</td>' +
                 '<td class="text-right">' + fmtNum(r.kredit) + '</td>' +
                 '<td>' + escapeHtml(r.namajobchild) + '</td>' +
-            '</tr>';
+                '</tr>';
         } else if (mode.type === 'LR') {
             /* ---------- LABA RUGI: 7 kolom ---------- */
-
-            var isParent = (r.bulan_lalu == 0 && r.bulan_berjalan == 0 && r.tahun_berjalan == 0);
-            var rowClass = isParent ? 'row-parent' : '';
+            // Beri class row-parent hanya pada baris PERTAMA tiap grup parent
+            var isNewParent = (r.parent !== window._lastLRParent);
+            window._lastLRParent = r.parent;
+            var rowClass = isNewParent ? 'row-parent' : '';
 
             html += '<tr class="' + rowClass + '">' +
                 '<td>' + (startNo + i) + '</td>' +
@@ -867,7 +880,7 @@ function renderPreview(rows, page, perpage, mode) {
                 '<td class="text-right">' + fmtNum(r.bulan_berjalan) + '</td>' +
                 '<td class="text-right">' + fmtNum(r.tahun_berjalan) + '</td>' +
                 '<td>' + escapeHtml(r.job) + '</td>' +
-            '</tr>';
+                '</tr>';
         }
         else {
             /* ---------- PP OUTSTANDING: 15 kolom ---------- */
@@ -950,11 +963,19 @@ function escapeHtml(s) {
         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+// function fmtNum(v) {
+//     if (v === null || v === undefined || v === '') return '0';
+//     var n = parseFloat(v);
+//     if (isNaN(n)) return v;
+//     return n.toLocaleString('id-ID');
+// }
+
 function fmtNum(v) {
-    if (v === null || v === undefined || v === '') return '0';
+    if (v === null || v === undefined || v === '') return '0,00';
     var n = parseFloat(v);
     if (isNaN(n)) return v;
-    return n.toLocaleString('id-ID');
+    // Menambahkan 2 angka desimal di belakang koma
+    return n.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 /* =========================================================
@@ -1007,6 +1028,9 @@ function resetLaporanParam() {
     $('#lapCabang').val(null).trigger('change');
     $('#lapKdcustomer').val(null).trigger('change');
     $('#lapTglRange').val('');
+// Reset tanggal single untuk LR — kembali ke default (akhir bulan)
+    var defaultLRDate = $('#lapTglSingle').data('default') || '';
+    $('#lapTglSingle').val(defaultLRDate);
     $('#lapIdlocation').val(null).trigger('change');
     $('#lapDocno').val('');
     $('#lapKdprk').val(null).trigger('change');
@@ -1314,6 +1338,31 @@ $(function () {
             templateSelection: formatBranchSelection
         });
     }
+
+
+
+
+
+    // =====================================================
+    // EVENT LISTENER GLOBAL (Agar tombol di View berfungsi)
+    // =====================================================
+    $('#btnTarikData').off('click').on('click', function() {
+        tarikData(1);
+    });
+
+    $('#perpageSelect').off('change').on('change', function() {
+        changePerpage();
+    });
+
+    $('#btnCetakExcel').off('click').on('click', function() {
+        submitLaporan();
+    });
+
+
+
+
+
+
 });
 
 /* =========================================================

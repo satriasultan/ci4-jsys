@@ -1,5 +1,5 @@
 <style>
-    
+
     .section-block {
         background-color: #e8e8e8;
         border-left: 4px solid #007bff;
@@ -8,10 +8,10 @@
         border-radius: 6px;
         margin-bottom: 30px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-                    box-shadow 0.4s ease, 
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                    box-shadow 0.4s ease,
                     border-color 0.4s ease;
-        
+
         transform: scale(1);
         will-change: transform;
     }
@@ -95,6 +95,7 @@
         font-size: 14px;
     }
 
+
 </style>
 <div class="content-header">
     <div class="container-fluid">
@@ -162,7 +163,7 @@
                                             </div>
                                         </div>
 
-                                        
+
                                     </div>
 
                                     <div class="row">
@@ -184,7 +185,7 @@
                                                         <span class="px-2 align-self-center">/</span>
 
                                                         <input type="text" name="suffix" id="suffix" class="form-control ms-1" maxlength="6" pattern="^[A-Za-z0-9]{0,2}[0-9]{4}$" title="Maksimal 6 karakter. 4 karakter terakhir wajib angka." style="text-transform: uppercase;">
-                                                            
+
                                                     </div>
                                                 </div>
                                             </div>
@@ -226,7 +227,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                        
+
                                 </div>
 
                                 <!-- RIGHT COLUMN -->
@@ -291,6 +292,7 @@
                             </th>
                             <th>ID Barang</th>
                             <th>Nama Barang</th>
+                            <th>Spesifikasi</th>
                             <th>No. Capex</th>
                             <!--Status Detail Tidak Perlu Dimunculkan-->
                             <!--<th>Status</th>-->
@@ -311,8 +313,8 @@
                         <i class="fa fa-arrow-left mr-2"></i>
                         Kembali
                     </a> -->
-                    <a href="<?= base_url('purchase/trans/clearEntryPP') ?>" 
-                        onclick="return confirm('Are you sure clear this entry?')" 
+                    <a href="<?= base_url('purchase/trans/clearEntryPP') ?>"
+                        onclick="return confirm('Are you sure clear this entry?')"
                         class="btn btn-default float-left">
                         <i class="fa fa-arrow-left"></i>
                         Back
@@ -325,7 +327,7 @@
                         </button>
                     <?php endif; ?>
                 </div>
-                
+
             </div>
         </div>
     </form>
@@ -363,6 +365,7 @@
                     <!-- hidden -->
                     <input type="hidden" name="idurut" id="idurut">
                     <input type="hidden" name="docno" id="docno">
+                    <input type="hidden" name="unit_default"     id="unit_default">
                     <!-- <input type="hidden" name="status" id="status" value="P">
                     <input type="hidden" name="chold" id="chold" value="NO"> -->
 
@@ -377,7 +380,7 @@
                             </div>
                         </div>
 
-                        <div class="col-md-8">
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label>Nama Barang <span style="color: red;">*</span></label>
                                 <input type="text"
@@ -389,29 +392,76 @@
                                         style="text-transform:uppercase" readonly>
                             </div>
                         </div>
+                        <!-- SPEC -->
+                        <div class="col-md-4">
+
+                            <label for="batch" class="form-label">
+                                Batch / Specification
+                            </label>
+
+                            <div class="d-flex align-items-center">
+
+                                <div class="flex-grow-1">
+
+                                    <select
+                                            name="batch"
+                                            id="batch"
+                                            class="form-control select2"
+                                            style="width: 100%;"
+                                    >
+                                    </select>
+
+                                </div>
+
+                                <button
+                                        type="button"
+                                        id="btnNew"
+                                        class="btn btn-primary ms-1"
+                                        onclick="new_spec()"
+                                        title="New Specification"
+                                >
+                                    <i class="fa fa-plus"></i>
+                                    New
+                                </button>
+
+                            </div>
+
+                        </div>
                     </div>
 
                     <!-- ROW 2 -->
                     <div class="row">
                         <div class="col-md-2">
                             <div class="form-group">
-                                <label>Satuan <span style="color: red;">*</span></label>
-                                <input name="unit" id="unit"
-                                        class="form-control select2"
-                                        required
-                                        style="width:100%" readonly>
+                                <label>Quantity <span style="color: red;">*</span></label>
+                                <input type="text"
+                                       name="qty"
+                                       id="qty"
+                                       required
+                                       class="form-control jtsseparator ratakanan"
+                                       placeholder="0.00">
                             </div>
                         </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Satuan</label>
+                            <select name="unit" id="unit"
+                                    class="form-control"
+                                    style="width:100%"></select>
+                        </div>
+
 
                         <div class="col-md-2">
                             <div class="form-group">
-                                <label>Quantity <span style="color: red;">*</span></label>
+                                <label>Informasi Stock</label>
                                 <input type="text"
-                                        name="qty"
-                                        id="qty"
-                                        required
-                                        class="form-control jtsseparator ratakanan"
-                                        placeholder="0.00">
+                                       id="qtystock"
+                                       class="form-control jtsseparator ratakanan"
+                                       placeholder="0.00"
+                                       readonly>
+                                <input type="hidden"
+                                       name="qtystock"
+                                       id="qtystock_raw"
+                                       value="0.00">
                             </div>
                         </div>
                         <div class="col-md-2">
@@ -443,7 +493,7 @@
 
                 <!-- FOOTER -->
                 <div class="modal-footer bg-light">
-                    
+
                     <button type="button"
                         class="btn btn-primary"
                         onclick="savePPDetail()">
@@ -460,7 +510,96 @@
         </div>
     </div>
 </div>
+<!-- ============================================= -->
+<!-- MODAL NEW BATCH / SPEC -->
+<!-- ============================================= -->
 
+<div
+        class="modal fade"
+        id="modalNewSpec"
+        tabindex="-1"
+        aria-labelledby="modalNewSpecLabel"
+        aria-hidden="true"
+>
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content">
+
+            <!-- HEADER -->
+            <div class="modal-header bg-primary text-white">
+
+                <h5
+                        class="modal-title"
+                        id="modalNewSpecLabel"
+                >
+                    New Batch / Specification
+                </h5>
+
+                <button
+                        type="button"
+                        class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                ></button>
+
+            </div>
+
+
+            <!-- BODY -->
+            <div class="modal-body">
+
+                <div class="mb-3">
+
+                    <label
+                            for="newbatch"
+                            class="form-label"
+                    >
+                        Batch / Specification
+                    </label>
+
+                    <input
+                            type="text"
+                            class="form-control"
+                            id="newbatch"
+                            name="newbatch"
+                            autocomplete="off"
+                            style="text-transform: uppercase;"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <!-- FOOTER -->
+            <div class="modal-footer">
+
+                <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                        type="button"
+                        class="btn btn-primary"
+                        onclick="save_new_spec()"
+                >
+                    <i class="fa fa-save"></i>
+                    Process
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
 
 
 <script type="application/javascript" src="<?= base_url('assets/pagejs/purchase/pp.js') ?>"></script>
@@ -501,7 +640,7 @@
         $('#docdate').on('apply.daterangepicker', function(ev, picker) {
             const dateStr = picker.startDate.format('DD-MM-YYYY');
             $(this).val(dateStr);
-            
+
             // Update estpakai berdasarkan docdate baru
             const prefix = $('#prefix').val() || 'JI';
             setupEstpakai(prefix);
@@ -538,16 +677,16 @@
     $(document).ready(function() {
         // Misal dapat prefix dari input lain
         const prefix = $('#prefix').val() || 'JI'; // contoh
-        
+
         // Setup berdasarkan prefix
         setupEstpakai(prefix);
-        
+
         // Event listener untuk perubahan prefix
         $('#prefix').on('change', function() {
             const newPrefix = $(this).val();
             setupEstpakai(newPrefix);
         });
-        
+
         // Tambahan: tombol untuk menampilkan opsi pilihan
         $('#btnShowOptions').on('click', function() {
             const prefix = $('#prefix').val() || 'JI';
@@ -555,7 +694,7 @@
         });
     });
 
-        
+
         $('#periodemulai').daterangepicker({
             autoUpdateInput: false,
             singleDatePicker: true,
@@ -573,7 +712,7 @@
             $(this).val('');
         });
 
-        
+
         $('#periodeakhir').daterangepicker({
             autoUpdateInput: false,
             singleDatePicker: true,
@@ -591,7 +730,7 @@
             $(this).val('');
         });
 
-        
+
 
     });
 

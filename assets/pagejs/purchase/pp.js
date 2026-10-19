@@ -433,6 +433,9 @@ $("#idbarang").select2({
     $('[name="nmbarang"]').val(data.nmbarang.trim()).prop("readonly", true);
     $('[name="unit"]').val(data.unit.trim()).prop("readonly", true);
     $("#batch").val(null).trigger('change');
+
+    initSelect2Unit(data.idbarang);
+    loadStockItem();   // 🔹 tambahkan ini
 });
 
 /* Format Group */
@@ -649,13 +652,94 @@ function btnUpdateDetail(){
                 $('#idbarang').val(res.data.idbarang);
                 $('#capexno').val(res.data.capexno);
                 $('#nmbarang').val(res.data.nmbarang);
+                var selectedSpec = $.trim(res.data.batch || '');
+                var selectedItem = $.trim(res.data.idbarang || '');
+
+// Reset Batch / Specification dari data sebelumnya
+                $('#batch')
+                    .empty()
+                    .val(null)
+                    .trigger('change');
+
+// Jika batch kosong, pastikan tidak ada yang terpilih
+                if (selectedSpec === '') {
+
+                    $('#batch')
+                        .val(null)
+                        .trigger('change');
+
+                } else {
+
+                    $.ajax({
+                        type: 'POST',
+                        url: HOST_URL + 'api/globalmodule/list_batch_item',
+                        dataType: 'json',
+                        data: {
+                            _search_: selectedSpec,
+                            _page_: 1,
+                            _draw_: true,
+                            _start_: 1,
+                            _perpage_: 30,
+                            _paramglobal_: '',
+                            _parameterx_: selectedItem,
+                            _var_: selectedSpec
+                        }
+                    }).then(function (datax) {
+
+                        if (!datax || !datax.items || datax.items.length === 0) {
+                            console.warn('Batch / Specification tidak ditemukan');
+                            $('#batch').empty().val(null).trigger('change');
+                            return;
+                        }
+
+                        var specData = datax.items.find(function (item) {
+                            return $.trim(item.batch || '') === selectedSpec;
+                        });
+
+                        if (!specData) {
+                            console.warn('Batch yang sesuai tidak ditemukan:', selectedSpec);
+                            $('#batch').empty().val(null).trigger('change');
+                            return;
+                        }
+
+                        specData.id = specData.batch;
+                        specData.text = specData.batch;
+
+                        var option = new Option(
+                            specData.batch,
+                            specData.batch,
+                            true,
+                            true
+                        );
+
+                        $(option).data('spec-data', specData);
+
+                        $('#batch')
+                            .empty()
+                            .append(option)
+                            .val(specData.batch)
+                            .trigger('change');
+
+                        $('#batch').trigger({
+                            type: 'select2:select',
+                            params: {
+                                data: specData
+                            }
+                        });
+
+                    });
+
+                }
                 $('#unit').val(res.data.unit);
                 $('#qty').val(res.data.qty);
                 setSelect2Ajax('#idbarang', res.data.idbarang, res.data.idbarang);
 
                 $('#modalDetailPPLabel').text('Update PP Detail');
                 $('#modalDetailPP').modal('show');
-
+                // 🔹 Panggil setelah modal show, beri jeda agar select2 selesai render
+                setTimeout(function () {
+                    loadStockItem();
+                }, 300);
             }else{
                 Swal.fire({
                     icon: 'error',
@@ -1093,12 +1177,15 @@ function btnInputDetail() {
     }
     $('#formPPDetail')[0].reset();
 
-    
     // 🔹 Clear select2
     $('#idbarang').val(null).trigger('change');
+    $('#batch').empty().val(null).trigger('change');
 
-    // Jika ada select2 lain, lakukan hal sama
-    // $('#selectlain').val(null).trigger('change');
+    // 🔹 Reset unit juga
+    if ($('#unit').data('select2')) {
+        $('#unit').select2('destroy');
+    }
+    $('#unit').empty();
 
     $('#idurut').val(''); // pastikan id kosong (mode insert)
 
@@ -1783,6 +1870,593 @@ $("#idcostcenter").select2({
     templateResult: formatCostcenter, // omitted for brevity, see the source of this page
     templateSelection: formatCostcenterSelection // omitted for brevity, see the source of this page
 });
+
+function new_spec() {
+
+    // =============================================
+    // RESET INPUT
+    // =============================================
+
+    $('#newbatch')
+        .val('')
+        .prop('disabled', false)
+        .prop('readonly', false);
+
+
+    // =============================================
+    // OPEN MODAL BOOTSTRAP 5
+    // =============================================
+
+    const modalElement =
+        document.getElementById('modalNewSpec');
+
+
+    const modalNewSpec =
+        bootstrap.Modal.getOrCreateInstance(
+            modalElement
+        );
+
+
+    modalNewSpec.show();
+
+
+    // =============================================
+    // FOCUS INPUT
+    // =============================================
+
+    modalElement.addEventListener(
+        'shown.bs.modal',
+        function () {
+
+            $('#newbatch').focus();
+
+        },
+        {
+            once: true
+        }
+    );
+
+}
+function save_new_spec() {
+
+    // =============================================
+    // AMBIL DATA
+    // =============================================
+
+    const newbatch =
+        $.trim(
+            $('#newbatch').val() || ''
+        ).toUpperCase();
+
+
+    const idbarang =
+        $.trim(
+            $('[name="idbarang"]').val() || ''
+        );
+
+
+    // =============================================
+    // VALIDASI BATCH
+    // =============================================
+
+    if (newbatch === '') {
+
+        $('#newbatch').focus();
+
+        alert(
+            'Batch / Specification harus diisi.'
+        );
+
+        return;
+
+    }
+
+
+    // =============================================
+    // VALIDASI BARANG
+    // =============================================
+
+    if (idbarang === '') {
+
+        alert(
+            'Item Barang belum dipilih.'
+        );
+
+        return;
+
+    }
+
+
+    // =============================================
+    // DISABLE BUTTON AGAR TIDAK DOUBLE CLICK
+    // =============================================
+
+    $.ajax({
+
+        type: 'POST',
+
+        url:
+            HOST_URL +
+            'api/globalmodule/add_newbatch',
+
+        dataType: 'json',
+
+        data: {
+
+            idbarang: idbarang,
+
+            batch: newbatch
+
+        },
+
+
+        success: function (datax) {
+
+            if (datax.status) {
+
+                // =========================================
+                // MASUKKAN KE INPUT SPEC LPB
+                // =========================================
+
+                $('#idspec')
+                    .prop('disabled', false)
+                    .prop('readonly', false)
+                    .val(newbatch)
+                    .trigger('change');
+
+
+                // =========================================
+                // TUTUP MODAL NEW SPEC
+                // =========================================
+
+                const modalElement =
+                    document.getElementById(
+                        'modalNewSpec'
+                    );
+
+
+                const modalInstance =
+                    bootstrap.Modal.getInstance(
+                        modalElement
+                    );
+
+
+                if (modalInstance) {
+
+                    modalInstance.hide();
+
+                }
+
+
+                // =========================================
+                // FOCUS KEMBALI KE SPEC
+                // =========================================
+
+                setTimeout(function () {
+
+                    $('#idspec').focus();
+
+                }, 300);
+
+
+                // =========================================
+                // NOTIFIKASI
+                // =========================================
+
+                Swal.fire({
+
+                    icon: 'success',
+
+                    title: 'Berhasil',
+
+                    text:
+                        datax.messages ||
+                        'Batch / Specification berhasil disimpan.'
+
+                });
+
+            } else {
+
+                alert(
+                    datax.messages ||
+                    'Gagal menyimpan Batch / Specification.'
+                );
+
+            }
+
+        },
+
+
+        error: function (xhr) {
+
+            console.error(
+                xhr.responseText
+            );
+
+
+            alert(
+                'Unable To Response Data'
+            );
+
+        }
+
+    });
+
+}
+
+$("#batch").select2({
+
+    placeholder: "Silahkan pilih spek, click x untuk reset pilihan",
+
+    allowClear: true,
+    width: '100%',
+    //
+    // // >>> TAMBAHKAN INI
+    dropdownParent: $('#modalDetailPP'),   // <-- UBAH KE INI
+    ajax: {
+
+        url: HOST_URL + 'api/globalmodule/list_batch_item',
+
+        type: 'POST',
+
+        dataType: 'json',
+
+        delay: 250,
+
+
+        data: function (params) {
+
+            return {
+
+                _search_: params.term,
+
+                _page_: params.page,
+
+                _draw_: true,
+
+                _start_: 1,
+
+                _perpage_: 30,
+
+                _paramglobal_: "",
+
+                _parameterx_: $('[name="idbarang"]').val(),
+
+                term: params.term
+
+            };
+
+        },
+
+
+        processResults: function (data, params) {
+
+            params.page = params.page || 1;
+
+
+            // =============================================
+            // PASTIKAN VALUE SELECT2 = BATCH
+            // =============================================
+
+            var results = $.map(
+                data.items || [],
+                function (item) {
+
+                    return {
+
+                        id: item.batch,      // VALUE YANG DISIMPAN
+                        text: item.batch,    // TEXT SELECT2
+
+                        batch: item.batch
+
+                    };
+
+                }
+            );
+
+
+            return {
+
+                results: results,
+
+                pagination: {
+
+                    more:
+                        (params.page * 30) <
+                        (data.total_count || 0)
+
+                }
+
+            };
+
+        },
+
+
+        cache: false
+
+    },
+
+
+    escapeMarkup: function (markup) {
+
+        return markup;
+
+    },
+
+
+    templateResult: formatBatch,
+
+    templateSelection: formatBatchSelection
+
+}).on("select2:select", function (e) {
+    loadStockItem();   // 🔹 tambahkan ini
+    var data = e.params.data;
+
+    console.log(
+        'Batch dipilih:',
+        data.batch
+    );
+
+});
+
+/* Format Group */
+function formatBatch(repo) {
+    if (repo.loading) return repo.text;
+    var markup ="<div class='select2-result-repository__description'>" + repo.batch +"</div>";
+    return markup;
+}
+function formatBatchSelection(repo) {
+    return repo.batch || repo.text;
+}
+
+
+/* ============================================================
+   SELECT2 UNIT
+   ============================================================ */
+function initSelect2Unit(idbarang, callback) {
+
+    if (!idbarang) return;
+
+    if ($('#unit').data('select2')) {
+        $('#unit').select2('destroy');
+    }
+    $('#unit').empty();
+
+    var callbackFired = false;
+
+    $('#unit').select2({
+        placeholder: "Pilih Satuan...",
+        allowClear: true,
+        width: '100%',
+        dropdownParent: $('#modalDetailPP'),    // <-- BENAR
+        minimumInputLength: 0,
+        ajax: {
+            url: HOST_URL + 'api/globalmodule/list_unit_item',
+            type: 'POST',
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    _search_: params.term || '',
+                    idbarang: idbarang
+                };
+            },
+            processResults: function (data) {
+
+                var items = data.items || [];
+
+                var results = items.map(function (it) {
+                    var conv      = parseFloat(it.conv_value || 1) || 1;
+                    var isDefault = (it.cdefault || '').toUpperCase() === 'YES';
+
+                    var lbl = it.idunit;
+                    if (conv > 1) {
+                        lbl += ' — 1 ' + it.idunit + ' = ' + conv + ' ' + (it.unit_default || '');
+                    }
+                    if (isDefault) {
+                        lbl += ' ★';
+                    }
+
+                    return {
+                        id:           it.idunit,
+                        text:         lbl,
+                        idunit:       it.idunit,
+                        unit_default: it.unit_default || it.idunit,
+                        conv_value:   conv,
+                        cdefault:     isDefault ? 'YES' : 'NO'
+                    };
+                });
+
+                if (typeof callback === 'function' && !callbackFired) {
+                    callbackFired = true;
+                    callback(results);
+                }
+
+                if ($('#unit').find('option').length === 0) {
+
+                    var defaultUnit = null;
+
+                    if (results.length === 1) {
+                        defaultUnit = results[0];
+                    } else if (results.length > 1) {
+                        defaultUnit = results.find(function (r) {
+                            return r.cdefault === 'YES';
+                        });
+                    }
+
+                    if (defaultUnit) {
+                        setTimeout(function () {
+                            if (!$('#unit').data('select2')) return;
+                            if ($('#unit').find('option').length > 0) return;
+
+                            var opt = new Option(
+                                defaultUnit.idunit,
+                                defaultUnit.idunit,
+                                true,
+                                true
+                            );
+                            $('#unit').append(opt).trigger('change');
+                            setUnitConversion(defaultUnit);
+                        }, 50);
+                    }
+                }
+
+                return { results: results };
+            },
+            cache: false
+        },
+        templateResult: function (repo) {
+            if (repo.loading) return repo.text;
+            return repo.text;
+        },
+        templateSelection: function (repo) {
+            return repo.idunit || repo.text;
+        }
+    }).on("select2:select", function (e) {
+
+        loadStockItem();   // 🔹 tambahkan ini
+        setUnitConversion(e.params.data);
+    });
+}
+
+/* ============================================================
+   SELECT2 UNIT — PRELOAD (MODE EDIT)
+   ============================================================ */
+function initSelect2UnitWithPreload(idbarang, selectedUnit, callback) {
+
+    if (!idbarang) return;
+
+    $.ajax({
+        url: HOST_URL + 'api/globalmodule/list_unit_item',
+        type: 'POST',
+        dataType: 'json',
+        data: {
+            _search_: '',
+            idbarang: idbarang
+        }
+    })
+        .done(function (data) {
+
+            var items = data.items || [];
+
+            var results = items.map(function (it) {
+                var conv      = parseFloat(it.conv_value || 1) || 1;
+                var isDefault = (it.cdefault || '').toUpperCase() === 'YES';
+
+                var lbl = it.idunit;
+                if (conv > 1) {
+                    lbl += ' — 1 ' + it.idunit + ' = ' + conv + ' ' + (it.unit_default || '');
+                }
+                if (isDefault) lbl += ' ★';
+
+                return {
+                    id:           it.idunit,
+                    text:         lbl,
+                    idunit:       it.idunit,
+                    unit_default: it.unit_default || it.idunit,
+                    conv_value:   conv,
+                    cdefault:     isDefault ? 'YES' : 'NO'
+                };
+            });
+
+            if ($('#unit').data('select2')) {
+                $('#unit').select2('destroy');
+            }
+            $('#unit').empty();
+
+            $('#unit').select2({
+                placeholder: "Pilih Satuan...",
+                allowClear: true,
+                width: '100%',
+                dropdownParent: $('#modalDetailPP'),
+                data: results
+            })
+                .on("select2:select", function (e) {
+                    setUnitConversion(e.params.data);
+                });
+
+            var preSelected = null;
+
+            if (selectedUnit) {
+                preSelected = results.find(function (r) {
+                    return r.idunit === selectedUnit;
+                });
+            }
+
+            if (!preSelected) {
+                preSelected = results.find(function (r) {
+                    return r.cdefault === 'YES';
+                });
+            }
+
+            if (!preSelected && results.length === 1) {
+                preSelected = results[0];
+            }
+
+            if (preSelected) {
+                var opt = new Option(preSelected.idunit, preSelected.idunit, true, true);
+                $('#unit').append(opt).trigger('change');
+                $('#unit').val(preSelected.idunit).trigger('change');
+            }
+
+            if (typeof callback === 'function') {
+                callback(results, preSelected);
+            }
+        })
+        .fail(function (xhr, status, error) {
+            console.error('[initSelect2UnitWithPreload] Failed:', error);
+            if (typeof callback === 'function') {
+                callback([], null);
+            }
+        });
+}
+
+
+
+/* ============================================================
+   LOAD STOCK ITEM — pemicu: idbarang / batch / unit
+   ============================================================ */
+function loadStockItem() {
+
+    var idbranch = $('#cabang').val();
+    var idbarang = $('#idbarang').val();
+
+    // Belum pilih cabang / barang → reset
+    if (!idbranch || !idbarang) {
+        $('#qtystock').val('0.00');
+        return;
+    }
+
+    $.ajax({
+        url: HOST_URL + 'purchase/trans/see_stock_itemperbranch',
+        type: 'GET',
+        data: {
+            idbranch: idbranch,
+            idbarang: idbarang
+        },
+        dataType: 'json',
+        success: function (res) {
+            var qty = 0;
+
+            if (res.status) {
+                qty = parseFloat(res.data.total_onhand || 0);
+            }
+
+            // Display: format pakai _jtsseparator → 5,000.00
+            setJtsValue('#qtystock', qty);
+
+            // Submit: plain number → 5000.00
+            $('#qtystock_raw').val(qty.toFixed(2));
+        },
+        error: function (xhr) {
+            console.error('Error load stock:', xhr.responseText);
+
+            setJtsValue('#qtystock', '0.00');
+            $('#qtystock_raw').val('0.00');
+        }
+    });
+}
+
 
 
 $(document).ready(function() {

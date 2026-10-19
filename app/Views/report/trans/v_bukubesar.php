@@ -1,3 +1,5 @@
+<!-- v_bukubesar.php -->
+
 <style>
     .btn-excel-modern {
         background: linear-gradient(135deg, #10b981, #059669);
@@ -107,10 +109,10 @@
                 </form>
             </div>
             <div class="card-footer d-flex flex-wrap" style="gap:8px;">
-                <button type="button" class="btn btn-tarik-modern" id="btnTarikData" onclick="tarikData()">
+                <button type="button" class="btn btn-tarik-modern" id="btnTarikData">
                     <i class="fa fa-search"></i> Tarik Data
                 </button>
-                <button type="button" class="btn btn-excel-modern" id="btnCetakExcel" onclick="submitLaporan()" disabled>
+                <button type="button" class="btn btn-excel-modern" id="btnCetakExcel" disabled>
                     <i class="fa fa-file-excel-o"></i> Cetak Excel
                 </button>
                 <button type="button" class="btn btn-default" onclick="resetLaporanParam()">
@@ -125,20 +127,20 @@
                 <div style="overflow-x:auto;">
                     <table id="tblPreviewBB" class="table table-bordered table-striped table-hover" style="width:100%;font-size:12.5px;">
                         <thead class="bg-primary text-white">
-                            <tr style="background:#f1f5f9;">
-                                <th>No</th>
-                                <th>Nama Akun</th>
-                                <th>Kode Akun</th>
-                                <th>Tanggal</th>
-                                <th>No.Jurnal</th>
-                                <th>Keterangan</th>
-                                <th>Debet</th>
-                                <th>Kredit</th>
-                                <th>Nama JobChild</th>
-                            </tr>
+                        <tr style="background:#f1f5f9;">
+                            <th>No</th>
+                            <th>Nama Akun</th>
+                            <th>Kode Akun</th>
+                            <th>Tanggal</th>
+                            <th>No.Jurnal</th>
+                            <th>Keterangan</th>
+                            <th>Debet</th>
+                            <th>Kredit</th>
+                            <th>Nama JobChild</th>
+                        </tr>
                         </thead>
                         <tbody id="tblPreviewBBBody">
-                            <tr><td colspan="9" class="text-center text-muted">Belum ada data.</td></tr>
+                        <tr><td colspan="9" class="text-center text-muted">Belum ada data.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -146,8 +148,7 @@
                 <div class="d-flex justify-content-between align-items-center mt-2 flex-wrap">
                     <div>
                         <label class="mr-2 mb-0">Baris per halaman:</label>
-                        <select id="perpageSelect" class="form-control form-control-sm d-inline-block"
-                                style="width:80px;" onchange="changePerpage()">
+                        <select id="perpageSelect" class="form-control form-control-sm d-inline-block" style="width:80px;">
                             <option value="25" selected>25</option>
                             <option value="50">50</option>
                             <option value="100">100</option>
@@ -162,4 +163,32 @@
 </div>
 
 <iframe name="downloadFrame" style="display:none;"></iframe>
+
+<!-- Load report.js dari controller -->
 <script src="<?= base_url('assets/pagejs/' . $pagejs) ?>"></script>
+
+<!-- 🔧 EVENT BINDING TOMBOL BUKU BESAR -->
+<script>
+    $(document).ready(function() {
+        // Pastikan fungsi tarikData ada (didefinisikan di report.js)
+        if (typeof tarikData === 'function') {
+            $('#btnTarikData').off('click').on('click', function() {
+                tarikData(1);
+            });
+        }
+
+        // Pastikan fungsi changePerpage ada
+        if (typeof changePerpage === 'function') {
+            $('#perpageSelect').off('change').on('change', function() {
+                changePerpage();
+            });
+        }
+
+        // Pastikan fungsi submitLaporan ada
+        if (typeof submitLaporan === 'function') {
+            $('#btnCetakExcel').off('click').on('click', function() {
+                submitLaporan();
+            });
+        }
+    });
+</script>

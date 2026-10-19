@@ -502,6 +502,7 @@ $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], f
     $routes->add('saveVoidPPDetail', 'Purchase::saveVoidPPDetail');
     $routes->add("get_voidpp_detail(:any)", "Purchase::get_voidpp_detail$1");
     $routes->add("delete_voidpp_detail", "Purchase::delete_voidpp_detail");
+    $routes->add("see_stock_itemperbranch(:any)", "Purchase::see_stock_itemperbranch$1");
 
 
 
@@ -1481,7 +1482,6 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('get_workingorder_dtl(:any)', 'Production::get_workingorder_dtl$1');
     $routes->add('final_input_workingorder', 'Production::final_input_workingorder');
     $routes->add("delete_workingorder_detail", "Production::delete_workingorder_detail");
-    $routes->add('updateStatusWO', 'Production::updateStatusWO');
 
     /* BUILD OF MATERIAL */
     $routes->add('update_workingorder_(:any)', 'Production::update_workingorder_$1');
@@ -1669,23 +1669,24 @@ $routes->group('/report/trans', ["namespace" => "App\Controllers\Report"], funct
     $routes->post('previewLaporanPosisiBrg', 'Report::previewLaporanPosisiBrg');
     $routes->post('downloadLaporanPosisiBrg', 'Report::downloadLaporanPosisiBrg');
 
-    $routes->add('posisihutang', 'Report::posisihutang');
+    $routes->get('posisihutang', 'Report::posisihutang');
     $routes->post('previewLaporanPosisiHutang', 'Report::previewLaporanPosisiHutang');
     $routes->post('downloadLaporanPosisiHutang', 'Report::downloadLaporanPosisiHutang');
 
-    $routes->add('umurhutang', 'Report::umurhutang');
+    $routes->get('umurhutang', 'Report::umurhutang');
     $routes->post('previewLaporanUmurHutang', 'Report::previewLaporanUmurHutang');
     $routes->post('downloadLaporanUmurHutang', 'Report::downloadLaporanUmurHutang');
 
-    $routes->add('posisipiutang', 'Report::posisipiutang');
+    $routes->get('posisipiutang', 'Report::posisipiutang');
     $routes->post('previewLaporanPosisiPiutang', 'Report::previewLaporanPosisiPiutang');
     $routes->post('downloadLaporanPosisiPiutang', 'Report::downloadLaporanPosisiPiutang');
 
-    $routes->add('umurpiutang', 'Report::umurpiutang');
+    $routes->get('umurpiutang', 'Report::umurpiutang');
     $routes->post('previewLaporanUmurPiutang', 'Report::previewLaporanUmurPiutang');
     $routes->post('downloadLaporanUmurPiutang', 'Report::downloadLaporanUmurPiutang');
 
-    
+
+
     $routes->add('bukubesar', 'Report::bukubesar');
     $routes->post('previewLaporanBukuBesarDetail', 'Report::previewLaporanBukuBesarDetail');
     $routes->post('downloadLaporanBukuBesarDetail', 'Report::downloadLaporanBukuBesarDetail');
@@ -1693,7 +1694,7 @@ $routes->group('/report/trans', ["namespace" => "App\Controllers\Report"], funct
     $routes->add('labarugi', 'Report::labarugi');
     $routes->post('previewLaporanLabaRugi', 'Report::previewLaporanLabaRugi');
     $routes->post('downloadLaporanLabaRugi', 'Report::downloadLaporanLabaRugi');
-    
+
     $routes->add('wo', 'Report::wo');
     $routes->post('previewLaporanWO', 'Report::previewLaporanWO');
     $routes->post('downloadLaporanWO', 'Report::downloadLaporanWO');

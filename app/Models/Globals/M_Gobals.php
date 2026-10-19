@@ -388,33 +388,127 @@ group by docno order by docno asc");
             $param
         ");
     }
-    function q_pp($param){
+
+
+
+    function q_pp($param)
+    {
+        /* tidak diubah karena ketika di load seluruhnya masih muncul */
         return $this->db->query("
-            SELECT DISTINCT 
-                pp.*, 
-                trim(pp.docno) as id 
-            FROM sc_trx.pp 
-            INNER JOIN sc_trx.pp_dtl ON pp.docno = pp_dtl.docno 
-            WHERE coalesce(trim(pp.docno),'') != '' 
-                AND (pp_dtl.qty - (coalesce(pp_dtl.qtypo, 0) + coalesce(pp_dtl.qtyvoid, 0))) > 0
-                AND (trim(pp.status) = 'P' or trim(pp.status) = 'PO')
-                $param
-        ");
+        SELECT DISTINCT
+            pp.*,
+            TRIM(pp.docno) AS id
+        FROM sc_trx.pp
+        INNER JOIN sc_trx.pp_dtl ppd
+                ON pp.docno = ppd.docno
+        LEFT JOIN LATERAL (
+            SELECT SUM(qty) AS qty
+            FROM sc_tmp.po_dtl
+            WHERE uniqueid = ppd.uniqueid
+        ) p1 ON TRUE
+        LEFT JOIN LATERAL (
+            SELECT SUM(qty) AS qty
+            FROM sc_trx.po_dtl
+            WHERE uniqueid = ppd.uniqueid
+        ) p2 ON TRUE
+        LEFT JOIN LATERAL (
+            SELECT SUM(qty) AS qty
+            FROM sc_trx.voidpp_dtl
+            WHERE uniqueid = ppd.uniqueid
+        ) p3 ON TRUE
+        WHERE COALESCE(TRIM(pp.docno), '') != ''
+          AND ppd.status NOT IN ('C','D')
+          AND (
+                ppd.qty - COALESCE(
+                    p1.qty,
+                    p2.qty,
+                    p3.qty,
+                    COALESCE(ppd.qtypo, 0) + COALESCE(ppd.qtyvoid, 0),
+                    0
+                )
+              ) > 0
+          AND (TRIM(pp.status) = 'P' OR TRIM(pp.status) = 'PO')
+          $param
+    ");
     }
 
-    function q_po($param){
+//    function q_pp($param){
+//        /* tak ganti karena ketika di load seluruhnya masih muncul */
+//        return $this->db->query("
+//            SELECT DISTINCT
+//                pp.*,
+//                trim(pp.docno) as id
+//            FROM sc_trx.pp
+//            INNER JOIN sc_trx.pp_dtl ON pp.docno = pp_dtl.docno
+//            WHERE coalesce(trim(pp.docno),'') != ''
+//                AND (pp_dtl.qty - (coalesce(pp_dtl.qtypo, 0) + coalesce(pp_dtl.qtyvoid, 0))) > 0
+//                AND (trim(pp.status) = 'P' or trim(pp.status) = 'PO')
+//                $param
+//        ");
+//    }
+
+
+    function q_po($param)
+    {
         return $this->db->query("
-            SELECT DISTINCT 
-                po.*, 
-                trim(po.docno) as id 
-            FROM sc_trx.po 
-            INNER JOIN sc_trx.po_dtl ON po.docno = po_dtl.docno 
-            WHERE coalesce(trim(po.docno),'') != '' 
-                AND (po_dtl.qty - (coalesce(po_dtl.qtylpb, 0) + coalesce(po_dtl.qtyvoid, 0))) > 0
-                AND (trim(po.status) = 'P' or trim(po.status) = 'LPB')
-                $param
-        ");
+        SELECT DISTINCT
+            po.*,
+            TRIM(po.docno) AS id
+        FROM sc_trx.po
+        INNER JOIN sc_trx.po_dtl pod
+                ON TRIM(po.docno) = TRIM(pod.docno)
+
+        LEFT JOIN LATERAL (
+            SELECT SUM(qty) AS qty
+            FROM sc_tmp.voidpo_dtl
+            WHERE TRIM(uniqueid) = TRIM(pod.uniqueid)
+        ) p1 ON TRUE
+
+        LEFT JOIN LATERAL (
+            SELECT SUM(qty) AS qty
+            FROM sc_tmp.lpb_dtl
+            WHERE TRIM(uniqueid) = TRIM(pod.uniqueid)
+        ) p2 ON TRUE
+
+        LEFT JOIN LATERAL (
+            SELECT SUM(qty) AS qty
+            FROM sc_trx.lpb_dtl
+            WHERE TRIM(uniqueid) = TRIM(pod.uniqueid)
+        ) p3 ON TRUE
+
+        WHERE COALESCE(TRIM(po.docno), '') != ''
+          AND COALESCE(TRIM(pod.status), '') NOT IN ('C','D')
+          AND (
+                pod.qty - COALESCE(
+                    NULLIF(
+                        COALESCE(p1.qty, 0) + COALESCE(p2.qty, 0) + COALESCE(p3.qty, 0),
+                        0
+                    ),
+                    COALESCE(pod.qtylpb, 0) + COALESCE(pod.qtyvoid, 0),
+                    0
+                )
+              ) > 0
+          AND TRIM(po.status) IN ('P','LPB')
+          $param
+    ");
     }
+
+//    function q_po($param){
+//        return $this->db->query("
+//            SELECT DISTINCT
+//                po.*,
+//                trim(po.docno) as id
+//            FROM sc_trx.po
+//            INNER JOIN sc_trx.po_dtl ON po.docno = po_dtl.docno
+//            WHERE coalesce(trim(po.docno),'') != ''
+//                AND (po_dtl.qty - (coalesce(po_dtl.qtylpb, 0) + coalesce(po_dtl.qtyvoid, 0))) > 0
+//                AND (trim(po.status) = 'P' or trim(po.status) = 'LPB')
+//                $param
+//        ");
+//    }
+
+
+
 
     function q_banks($param){
         return $this->db->query("select * from sc_mst.banks where id is not null $param");

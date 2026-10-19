@@ -43,8 +43,12 @@
         border-radius: 6px; display: inline-block;
     }
     #tblPreviewLR tbody tr.row-parent {
-        background: #e5e7eb;
-        font-weight: 600;
+        background: #dbeafe;
+        font-weight: 700;
+        border-top: 2px solid #3b82f6;
+    }
+    #tblPreviewLR tbody tr.row-parent td {
+        color: #1e40af;
     }
 </style>
 
@@ -95,6 +99,7 @@
                                        name="tglrange"
                                        placeholder="dd-mm-yyyy"
                                        autocomplete="off"
+                                       data-default="<?= date('d-m-Y', strtotime($tglAkhirBulan)) ?>"
                                        value="<?= date('d-m-Y', strtotime($tglAkhirBulan)) ?>"
                                        readonly>
                             </div>

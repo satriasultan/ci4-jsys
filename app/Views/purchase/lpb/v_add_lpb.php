@@ -1,17 +1,17 @@
+<!--v_add_lpb.php -->
+
 <style>
 
     .section-block {
         background-color: #e8e8e8;
         border-left: 4px solid #007bff;
-        /* border-bottom: 4px solid #007bff;  */
         padding: 20px;
         border-radius: 6px;
         margin-bottom: 30px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.04);
         transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                    box-shadow 0.4s ease,
-                    border-color 0.4s ease;
-
+        box-shadow 0.4s ease,
+        border-color 0.4s ease;
         transform: scale(1);
         will-change: transform;
     }
@@ -30,7 +30,6 @@
     }
 
     .section-block:hover {
-        /* transform: scale(1.02); */
         box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
         border-left-color: #0056b3;
         border-bottom-color: #0056b3;
@@ -53,15 +52,14 @@
     .section-divider {
         height: 1px;
         background: linear-gradient(
-            to right,
-            #007bff 0%,
-            #cfe2ff 30%,
-            #e8e8e8 100%
+                to right,
+                #007bff 0%,
+                #cfe2ff 30%,
+                #e8e8e8 100%
         );
         margin: 24px 0;
         border: none;
     }
-
 
 </style>
 <div class="content-header">
@@ -89,8 +87,8 @@
 
 <?php echo $message;?>
 <?php
-    $isIT = isset($userinfo['rolename']) && trim($userinfo['rolename']) === 'IT';
-    $disabled = $isIT ? '' : 'disabled';
+$isIT = isset($userinfo['rolename']) && trim($userinfo['rolename']) === 'IT';
+$disabled = $isIT ? '' : 'disabled';
 ?>
 <div class="row">
     <!-- left column -->
@@ -104,233 +102,209 @@
                 <!-- /.card-header -->
                 <!-- form start -->
                 <div class="card-body">
-                        <div class="section-block">
-                            <div class="section-header">
-                                <i class="fa fa-address-card"></i> Penerimaan Pembelian
+                    <div class="section-block">
+                        <div class="section-header">
+                            <i class="fa fa-address-card"></i> Penerimaan Pembelian
+                        </div>
+                        <div class="row">
+
+                            <!-- LEFT COLUMN -->
+                            <div class="col-md-3">
+
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <div class="form-group">
+                                            <label for="cabang">Cabang / Job</label>
+                                            <select name="cabang" id="cabang" class="form-control" required></select>
+                                        </div>
+                                    </div>
+
+
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label>No. Jurnal Penerimaan Pembelian</label>
+
+                                            <div class="d-flex">
+                                                <input type="text" name="prefix" id="prefix" class="form-control me-1" maxlength="3" style="text-transform: uppercase;" pattern="[A-Za-z0-9]{1,3}" title="Prefix hanya boleh huruf dan angka, maksimal 3 karakter">
+
+                                                <span class="px-2 align-self-center">/</span>
+
+                                                <input type="text"
+                                                       name="infix"
+                                                       id="infix"
+                                                       class="form-control mx-1"
+                                                       readonly>
+
+                                                <span class="px-2 align-self-center">/</span>
+
+                                                <input type="text" name="suffix" id="suffix" class="form-control ms-1" maxlength="6" pattern="^[A-Za-z0-9]{0,2}[0-9]{4}$" title="Maksimal 6 karakter. 4 karakter terakhir wajib angka." style="text-transform: uppercase;">
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" name="docno" class="form-control col-sm-12" id="docno" maxlength="20"     value="<?= isset($dtldata['docno']) ? esc(trim($dtldata['docno'])) : '' ?>" style="text-transform: uppercase;" readonly>
+
+                                </div>
+
                             </div>
-                            <div class="row">
 
-                                <!-- LEFT COLUMN -->
-                                <div class="col-md-3">
+                            <!-- RIGHT COLUMN -->
+                            <div class="col-md-2">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="docdate">Tanggal</label>
+                                            <input type="text"
+                                                   name="docdate"
+                                                   id="docdate"
+                                                   class="form-control"
+                                                   placeholder="Tanggal">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="jthtempo">Jatuh Tempo</label>
+                                            <div class="input-group">
+                                                <input type="text"
+                                                       name="jthtempo"
+                                                       id="jthtempo"
+                                                       class="form-control ratakanan jtsseparator"
+                                                       placeholder="0.00">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text">hari</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                                    <div class="row">
+                            <div class="col-md-4">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="kdsupplier">Supplier</label>
+                                            <select name="kdsupplier" id="kdsupplier" class="form-control select2" required></select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="alamatsupplier">Alamat Supplier</label>
+                                            <textarea name="alamatsupplier"
+                                                      id="alamatsupplier"
+                                                      class="form-control"
+                                                      rows="2"
+                                                      placeholder="Alamat Supplier"
+                                                      style="text-transform:uppercase;"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 d-none" style="margin-top: -20px;">
+                                        <div class="form-group">
+                                            <label for="biayavol">Biaya/Vol</label>
+                                            <input name="biayavol"
+                                                   id="biayavol"
+                                                   class="form-control jtsseparator ratakanan"
+                                                   type="text"
+                                                   placeholder="Biaya/Vol"
+                                                   style="text-transform:uppercase;">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 d-none" style="margin-top: -20px;">
+                                        <div class="form-group">
+                                            <label for="biayavol2">Biaya2/Vol</label>
+                                            <input name="biayavol2"
+                                                   id="biayavol2"
+                                                   class="form-control jtsseparator ratakanan"
+                                                   type="text"
+                                                   placeholder="Biaya2/Vol"
+                                                   style="text-transform:uppercase;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="row">
+                                    <div class="row align-items-end">
+                                        <div class="col-md-4">
+                                            <div class="mb-3">
+                                                <label for="currcode" class="form-label">Mata Uang</label>
+                                                <select name="currcode"
+                                                        id="currcode"
+                                                        class="form-select select2"
+                                                        required>
+                                                </select>
+                                            </div>
+                                        </div>
+
                                         <div class="col-md-8">
-                                            <div class="form-group">
-                                                <label for="cabang">Cabang / Job</label>
-                                                <select name="cabang" id="cabang" class="form-control" required></select>
-                                            </div>
-                                        </div>
-
-
-                                    </div>
-
-                                    <div class="row">
-                                        <div class="col-md-12">
-                                            <div class="form-group">
-                                                <label>No. Jurnal Penerimaan Pembelian</label>
-
-                                                    <div class="d-flex">
-                                                        <input type="text" name="prefix" id="prefix" class="form-control me-1" maxlength="3" style="text-transform: uppercase;" pattern="[A-Za-z0-9]{1,3}" title="Prefix hanya boleh huruf dan angka, maksimal 3 karakter">
-
-                                                        <span class="px-2 align-self-center">/</span>
-
-                                                        <input type="text"
-                                                            name="infix"
-                                                            id="infix"
-                                                            class="form-control mx-1"
-                                                            readonly>
-
-                                                        <span class="px-2 align-self-center">/</span>
-
-                                                        <input type="text" name="suffix" id="suffix" class="form-control ms-1" maxlength="6" pattern="^[A-Za-z0-9]{0,2}[0-9]{4}$" title="Maksimal 6 karakter. 4 karakter terakhir wajib angka." style="text-transform: uppercase;">
-                                                            
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <input type="hidden" name="docno" class="form-control col-sm-12" id="docno" maxlength="20"     value="<?= isset($dtldata['docno']) ? esc(trim($dtldata['docno'])) : '' ?>" style="text-transform: uppercase;" readonly>
-
-                                    </div>
-
-                                </div>
-
-                                <!-- RIGHT COLUMN -->
-                                <div class="col-md-2">
-                                    <div class="row">
-                                        <div class="col-md-12">
-                                            <div class="form-group">
-                                                <label for="docdate">Tanggal</label>
+                                            <div class="mb-3">
+                                                <label for="kurs" class="form-label">Nilai Tukar</label>
                                                 <input type="text"
-                                                name="docdate"
-                                                id="docdate"
-                                                class="form-control"
-                                                placeholder="Tanggal">
+                                                       name="kurs"
+                                                       id="kurs"
+                                                       class="form-control ratakanan jtsseparator"
+                                                       placeholder="Nilai tukar akan muncul disini"
+                                                >
                                             </div>
                                         </div>
                                     </div>
-                                    <!-- <div class="row">
-                                        <div class="col-md-12">
-                                            <div class="form-group">
-                                                <label for="senddate">Tanggal Pengiriman</label>
-                                                <input type="text"
-                                                    name="senddate"
-                                                    id="senddate"
-                                                    class="form-control"
-                                                    placeholder="Tanggal Pengiriman">
-                                            </div>
-                                        </div>
-                                    </div> -->
-                                    <div class="row">
-                                        <div class="col-md-12">
-                                            <div class="form-group">
-                                                <label for="jthtempo">Jatuh Tempo</label>
-                                                <div class="input-group">
-                                                    <input type="text"
-                                                        name="jthtempo"
-                                                        id="jthtempo"
-                                                        class="form-control ratakanan jtsseparator"
-                                                        placeholder="0.00">
-                                                    <div class="input-group-append">
-                                                        <span class="input-group-text">hari</span>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="idtax">Pajak</label>
+                                            <select name="idtax" id="idtax" class="form-control select2" ></select>
                                         </div>
                                     </div>
-                                </div>
-
-                                <div class="col-md-4">
-                                    <div class="row">
-                                        <div class="col-md-12">
-                                            <div class="form-group">
-                                                <label for="kdsupplier">Supplier</label>
-                                                <select name="kdsupplier" id="kdsupplier" class="form-control select2" required></select>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-12">
-                                            <div class="form-group">
-                                                <label for="alamatsupplier">Alamat Supplier</label>
-                                                <textarea name="alamatsupplier"
-                                                    id="alamatsupplier"
-                                                    class="form-control"
-                                                    rows="2"
-                                                    placeholder="Alamat Supplier"
-                                                    style="text-transform:uppercase;"></textarea>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6" style="margin-top: -20px;">
-                                            <div class="form-group">
-                                                <label for="biayavol">Biaya/Vol</label>
-                                                <input name="biayavol"
-                                                    id="biayavol"
-                                                    class="form-control jtsseparator ratakanan"
-                                                    type="text"
-                                                    placeholder="Biaya/Vol"
-                                                    style="text-transform:uppercase;">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6" style="margin-top: -20px;">
-                                            <div class="form-group">
-                                                <label for="biayavol2">Biaya2/Vol</label>
-                                                <input name="biayavol2"
-                                                    id="biayavol2"
-                                                    class="form-control jtsseparator ratakanan"
-                                                    type="text"
-                                                    placeholder="Biaya2/Vol"
-                                                    style="text-transform:uppercase;">
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="row">
-                                        <div class="row align-items-end">
-                                            <div class="col-md-4">
-                                                <div class="mb-3">
-                                                    <label for="currcode" class="form-label">Mata Uang</label>
-                                                    <select name="currcode"
-                                                            id="currcode"
-                                                            class="form-select select2"
-                                                            required>
-                                                    </select>
-                                                </div>
-                                            </div>
-
-                                            <div class="col-md-8">
-                                                <div class="mb-3">
-                                                    <label for="kurs" class="form-label">Nilai Tukar</label>
-                                                    <input type="text"
-                                                        name="kurs"
-                                                        id="kurs"
-                                                        class="form-control ratakanan jtsseparator"
-                                                        placeholder="Nilai tukar akan muncul disini"
-                                                        >
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <!-- <div class="col-md-12">
-                                            <div class="form-group">
-                                                <label for="alamatkirim">Alamat Kirim</label>
-                                                <textarea name="alamatkirim"
-                                                    id="alamatkirim"
-                                                    class="form-control"
-                                                    rows="2"
-                                                    placeholder="Alamat Kirim"
-                                                    style="text-transform:uppercase;"></textarea>
-                                            </div>
-                                        </div> -->
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label for="idtax">Pajak</label>
-                                                <select name="idtax" id="idtax" class="form-control select2" ></select>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3" style="margin-top: 30px;">
-                                            <div class="form-group">
-                                                <!-- Radio untuk Interngroup -->
-                                                <div class="form-check">
-                                                    <input class="form-check-input"
-                                                        type="checkbox"
-                                                        disabled
-                                                        name="isinclusive"
-                                                        id="isinclusive"
+                                    <div class="col-md-3" style="margin-top: 30px;">
+                                        <div class="form-group">
+                                            <div class="form-check">
+                                                <input class="form-check-input"
+                                                       type="checkbox"
+                                                       disabled
+                                                       name="isinclusive"
+                                                       id="isinclusive"
                                                         <?= isset($data['isinclusive']) && $data['isinclusive'] === 'YES' ? 'checked' : '' ?>>
-                                                    <label class="form-check-label" for="isinclusive">
-                                                        Inclusive
-                                                    </label>
-                                                </div>
+                                                <label class="form-check-label" for="isinclusive">
+                                                    Inclusive
+                                                </label>
                                             </div>
                                         </div>
-                                        <div class="col-md-6" >
-                                            <div class="form-group">
-                                                <label for="nofaktur">No. Faktur</label>
-                                                <input name="nofaktur"
-                                                    id="nofaktur"
-                                                    class="form-control"
-                                                    type="text"
-                                                    maxlength="30"
-                                                    placeholder="No. Faktur"
-                                                    style="text-transform:uppercase;">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6" >
-                                            <div class="form-group">
-                                                <label for="nosj">No. SJ</label>
-                                                <input name="nosj"
-                                                    id="nosj"
-                                                    class="form-control"
-                                                    type="text"
-                                                    maxlength="30"
-                                                    placeholder="No. SJ"
-                                                    style="text-transform:uppercase;">
-                                            </div>
-                                        </div>
-
                                     </div>
-                                </div>
+                                    <div class="col-md-6" >
+                                        <div class="form-group">
+                                            <label for="nofaktur">No. Faktur</label>
+                                            <input name="nofaktur"
+                                                   id="nofaktur"
+                                                   class="form-control"
+                                                   type="text"
+                                                   maxlength="30"
+                                                   placeholder="No. Faktur"
+                                                   style="text-transform:uppercase;">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6" >
+                                        <div class="form-group">
+                                            <label for="nosj">No. SJ</label>
+                                            <input name="nosj"
+                                                   id="nosj"
+                                                   class="form-control"
+                                                   type="text"
+                                                   maxlength="30"
+                                                   placeholder="No. SJ"
+                                                   style="text-transform:uppercase;">
+                                        </div>
+                                    </div>
 
+                                </div>
                             </div>
 
                         </div>
+
+                    </div>
                 </div>
             </div>
 
@@ -364,8 +338,6 @@
                                 onclick="btnDeleteDetail()">
                             <i class="fa fa-trash"></i>
                         </button>
-
-
                     </div>
                 </div>
                 <div class="card-body">
@@ -374,29 +346,31 @@
                             <div class="table-responsive" style="overflow-x: auto;">
                                 <table id="tablpbdtl" class="table table-bordered table-striped" style="width:100%;" cellspacing="0">
                                     <thead class="bg-primary text-white">
-                                        <tr>
-                                            <th width="30">
-                                                <input type="checkbox" id="checkAll">
-                                            </th>
-                                            <th>PO</th>
-                                            <th>ID Barang</th>
-                                            <th>Nama Barang</th>
-                                            <th>No. Capex</th>
-                                            <th>Principal</th>
-                                            <th>Gudang</th>
-                                            <th>Spec</th>
-                                            <th>Satuan</th>
-                                            <th>Qty</th>
-                                            <th>Bonus Qty</th>
-                                            <th>Harga</th>
-                                            <th>Multi Disc</th>
-                                            <th>Vol/Item</th>
-                                            <th>Biaya 1</th>
-                                            <th>Biaya 2</th>
-                                            <th>Nilai</th>
-                                            <th>Keterangan PO</th>
-                                            <th>Keterangan PP</th>
-                                        </tr>
+                                    <tr>
+                                        <th width="30">
+                                            <input type="checkbox" id="checkAll">
+                                        </th>
+                                        <th>PO</th>
+                                        <th>ID Barang</th>
+                                        <th>Nama Barang</th>
+                                        <th>No. Capex</th>
+                                        <th>Principal</th>
+                                        <th>Gudang</th>
+                                        <th>Batch</th>
+                                        <th>ETD</th>
+                                        <th>ETD Notes</th>
+                                        <th>Satuan</th>
+                                        <th>Qty</th>
+                                        <th>Bonus Qty</th>
+                                        <th>Harga</th>
+<!--                                        <th>Multi Disc</th>-->
+<!--                                        <th>Vol/Item</th>-->
+<!--                                        <th>Biaya 1</th>-->
+<!--                                        <th>Biaya 2</th>-->
+                                        <th>Nilai</th>
+                                        <th>Keterangan PO</th>
+                                        <th>Keterangan PP</th>
+                                    </tr>
                                     </thead>
                                     <tbody>
                                     </tbody>
@@ -410,11 +384,11 @@
                             <div class="form-group">
                                 <label for="keterangan">Keterangan</label>
                                 <textarea name="keterangan"
-                                    id="keterangan"
-                                    class="form-control"
-                                    rows="4"
-                                    placeholder="Keterangan"
-                                    style="text-transform:uppercase;"></textarea>
+                                          id="keterangan"
+                                          class="form-control"
+                                          rows="4"
+                                          placeholder="Keterangan"
+                                          style="text-transform:uppercase;"></textarea>
                             </div>
                         </div>
 
@@ -429,10 +403,10 @@
                                                 </div>
                                                 <div class="col-md-6">
                                                     <input type="text"
-                                                        name="dpp"
-                                                        id="dpp"
-                                                        class="form-control jtsseparator ratakanan"
-                                                        readonly>
+                                                           name="dpp"
+                                                           id="dpp"
+                                                           class="form-control jtsseparator ratakanan"
+                                                           readonly>
                                                 </div>
                                             </div>
                                         </div>
@@ -448,10 +422,10 @@
                                                 </div>
                                                 <div class="col-md-6">
                                                     <input type="text"
-                                                        name="jumlahpajak"
-                                                        id="jumlahpajak"
-                                                        class="form-control jtsseparator ratakanan"
-                                                        readonly>
+                                                           name="jumlahpajak"
+                                                           id="jumlahpajak"
+                                                           class="form-control jtsseparator ratakanan"
+                                                           readonly>
                                                 </div>
                                             </div>
                                         </div>
@@ -467,24 +441,16 @@
                                                 </div>
                                                 <div class="col-md-6">
                                                     <input type="text"
-                                                        name="total"
-                                                        id="total"
-                                                        style="font-weight: bold;"
-                                                        class="form-control jtsseparator ratakanan"
-                                                        readonly>
+                                                           name="total"
+                                                           id="total"
+                                                           style="font-weight: bold;"
+                                                           class="form-control jtsseparator ratakanan"
+                                                           readonly>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-
-                                <!-- <div class="col-md-12">
-                                    <div class="form-group text-end">
-                                        <button type="button" class="btn btn-lg btn-primary text-white" title="Down Payment">
-                                            <i class="fa fa-money"></i>
-                                        </button>
-                                    </div>
-                                </div> -->
                             </div>
                         </div>
                     </div>
@@ -492,27 +458,18 @@
 
                 </div>
                 <div class="card-footer bg-light">
-                    <!-- <a href="<?= base_url('purchase/trans/lpb') ?>"
-                        class="btn btn-default btn-lg">
-                        <i class="fa fa-arrow-left mr-2"></i>
-                        Kembali
-                    </a> -->
                     <a href="<?= base_url('purchase/trans/clearEntryLPB') ?>"
-                        onclick="return confirm('Are you sure clear this entry?')"
-                        class="btn btn-default float-left btn-lg">
+                       onclick="return confirm('Are you sure clear this entry?')"
+                       class="btn btn-default float-left btn-lg">
                         <i class="fa fa-arrow-left"></i>
                         Back
                     </a>
-                    <!-- HAPUS PENERIMAAN -->
-                    <!-- HAPUS PENERIMAAN -->
                     <button type="button"
                             id="btnDeleteLPB"
                             class="btn btn-danger float-left btn-lg">
                         <i class="fa fa-trash"></i>
                         Hapus Penerimaan
                     </button>
-
-
 
                     <?php if ($typeform != 'DETAIL' && $dtldata != null): ?>
                         <button type="submit"
@@ -526,7 +483,7 @@
             </div>
         </div>
     </form>
-        <!-- /.card -->
+    <!-- /.card -->
     <!--/.col (left) -->
     <!-- right column -->
     <div class="col-md-6">
@@ -538,7 +495,7 @@
 
 
 
-<!-- ================= MODAL TAX DETAIL ================= -->
+<!-- ================= MODAL INPUT DETAIL ================= -->
 <div class="modal fade" id="modalDetailLPB" tabindex="-1" role="dialog" aria-labelledby="modalDetailLPBLabel" aria-hidden="true">
     <div class="modal-dialog modal-md" role="document">
         <div class="modal-content">
@@ -546,7 +503,7 @@
             <!-- HEADER -->
             <div class="modal-header bg-primary">
                 <h5 class="modal-title" id="modalDetailLPBLabel">
-                    </i> Input Item Detail
+                    Input Item Detail
                 </h5>
                 <button type="button" class="close text-white" data-bs-dismiss="modal">
                     <span>&times;</span>
@@ -560,8 +517,6 @@
                     <!-- hidden -->
                     <input type="hidden" name="idurut" id="idurut">
                     <input type="hidden" name="docno" id="docno">
-                    <!-- <input type="hidden" name="status" id="status" value="P">
-                    <input type="hidden" name="chold" id="chold" value="NO"> -->
 
                     <!-- ROW 1 -->
                     <div class="row">
@@ -589,8 +544,6 @@
                             onclick="$('#modalDetailLPB').modal('hide')">
                         <i class="fa fa-times"></i> Batal
                     </button>
-
-
                 </div>
             </form>
         </div>
@@ -598,6 +551,7 @@
 </div>
 
 
+<!-- ================= MODAL UPDATE DETAIL ================= -->
 <div class="modal fade" id="modalUpdateLPB" tabindex="-1" role="dialog" aria-labelledby="modalUpdateLPBLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
@@ -605,7 +559,7 @@
             <!-- HEADER -->
             <div class="modal-header bg-primary">
                 <h5 class="modal-title" id="modalUpdateLPBLabel">
-                     Edit Item Detail
+                    Edit Item Detail
                 </h5>
                 <button type="button" class="close text-white" data-bs-dismiss="modal">
                     <span>&times;</span>
@@ -622,25 +576,22 @@
                     <input type="hidden" name="docno" id="docno">
                     <input type="hidden" name="docnopo" id="docnopo">
 
-                    <!-- <input type="hidden" name="status" id="status" value="P">
-                    <input type="hidden" name="chold" id="chold" value="NO"> -->
-
                     <!-- ROW 1 -->
                     <div class="row">
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label>PO</label>
                                 <input name="docnopomodal" id="docnopomodal"
-                                        class="form-control"
-                                        style="width:100%" readonly>
+                                       class="form-control"
+                                       style="width:100%" readonly>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label>ID Barang</label>
                                 <input name="idbarang" id="idbarang"
-                                        class="form-control"
-                                        style="width:100%" readonly>
+                                       class="form-control"
+                                       style="width:100%" readonly>
                             </div>
                         </div>
 
@@ -648,14 +599,15 @@
                             <div class="form-group">
                                 <label>Nama Barang</label>
                                 <input type="text"
-                                        name="nmbarang"
-                                        id="nmbarang"
-                                        class="form-control"
-                                        placeholder="Nama Barang"
-                                        style="text-transform:uppercase" readonly>
+                                       name="nmbarang"
+                                       id="nmbarang"
+                                       class="form-control"
+                                       placeholder="Nama Barang"
+                                       style="text-transform:uppercase" readonly>
                             </div>
                         </div>
                     </div>
+
                     <div class="row g-3">
 
                         <!-- PRINCIPAL -->
@@ -673,7 +625,6 @@
                             </div>
                         </div>
 
-
                         <!-- GUDANG -->
                         <div class="col-md-4">
                             <div class="form-group">
@@ -689,26 +640,19 @@
                             </div>
                         </div>
 
-
-                        <!-- SPEC -->
+                        <!-- BATCH -->
                         <div class="col-md-4">
-
-                            <label for="idspec" class="form-label">
-                                Batch / Specification
-                            </label>
+                            <label for="batch" class="form-label">Batch</label>
 
                             <div class="d-flex align-items-center">
-
                                 <div class="flex-grow-1">
-
                                     <select
-                                            name="idspec"
-                                            id="idspec"
+                                            name="batch"
+                                            id="batch"
                                             class="form-control select2"
                                             style="width: 100%;"
                                     >
                                     </select>
-
                                 </div>
 
                                 <button
@@ -716,133 +660,145 @@
                                         id="btnNew"
                                         class="btn btn-primary ms-1"
                                         onclick="new_spec()"
-                                        title="New Specification"
+                                        title="New Batch"
                                 >
                                     <i class="fa fa-plus"></i>
                                     New
                                 </button>
-
                             </div>
-
                         </div>
 
                     </div>
 
+                    <!-- ROW 1.5 - ETD -->
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="etd">ETD</label>
+                                <input type="text"
+                                       name="etd"
+                                       id="etd"
+                                       class="form-control"
+                                       placeholder="DD-MM-YYYY"
+                                       autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div class="col-md-8">
+                            <div class="form-group">
+                                <label for="etdnotes">ETD Notes</label>
+                                <input type="text"
+                                       name="etdnotes"
+                                       id="etdnotes"
+                                       class="form-control"
+                                       placeholder="Keterangan ETD"
+                                       maxlength="100"
+                                       style="text-transform:uppercase;"
+                                       autocomplete="off">
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- ROW 2 -->
                     <div class="row">
-                        <div class="col-md-2">
+                        <div class="col-md-3">
                             <div class="form-group">
                                 <label>Satuan</label>
                                 <input name="unit" id="unit"
-                                        class="form-control select2"
-                                        style="width:100%" readonly>
+                                       class="form-control select2"
+                                       style="width:100%" readonly>
                             </div>
                         </div>
 
-                        <div class="col-md-2">
+                        <div class="col-md-3">
                             <div class="form-group">
                                 <label>Quantity</label>
                                 <input type="text"
-                                        name="qty"
-                                        id="qty"
-                                        class="form-control jtsseparator ratakanan"
-                                        placeholder="0.00">
+                                       name="qty"
+                                       id="qty"
+                                       class="form-control jtsseparator ratakanan"
+                                       placeholder="0.00">
                             </div>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-3">
                             <div class="form-group">
                                 <label>Bonus Quantity</label>
                                 <input type="text"
-                                        name="qtybonus"
-                                        id="qtybonus"
-                                        class="form-control jtsseparator ratakanan"
-                                        placeholder="0.00">
+                                       name="qtybonus"
+                                       id="qtybonus"
+                                       class="form-control jtsseparator ratakanan"
+                                       placeholder="0.00">
                             </div>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-3">
                             <div class="form-group">
                                 <label>Harga</label>
                                 <input type="text"
-                                        name="harga"
-                                        id="harga"
-                                        class="form-control jtsseparator ratakanan"
-                                        placeholder="0.00">
+                                       name="harga"
+                                       id="harga"
+                                       class="form-control jtsseparator ratakanan"
+                                       placeholder="0.00">
                             </div>
                         </div>
-                        <div class="col-md-2">
+
+                        <!-- 🔧 MULTI DISC, VOL/ITEM, BIAYA 1, BIAYA 2 DI-HIDE -->
+                        <div class="col-md-2 d-none">
                             <div class="form-group">
                                 <label>Multi Disc (%)</label>
-                                <input type="text"
-                                        name="multidisc"
-                                        id="multidisc"
-                                        class="form-control jtsseparator ratakanan"
-                                        placeholder="0.00">
+                                <input type="text" name="multidisc" id="multidisc" class="form-control jtsseparator ratakanan" placeholder="0.00">
                             </div>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-2 d-none">
                             <div class="form-group">
                                 <label>Vol/Item</label>
-                                <input type="text"
-                                        name="volitem"
-                                        id="volitem"
-                                        class="form-control jtsseparator ratakanan"
-
-                                        placeholder="0.00">
+                                <input type="text" name="volitem" id="volitem" class="form-control jtsseparator ratakanan" placeholder="0.00">
                             </div>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-2 d-none">
                             <div class="form-group">
                                 <label>Biaya 1</label>
-                                <input type="text"
-                                        name="biaya"
-                                        id="biaya"
-                                        class="form-control jtsseparator ratakanan"
-
-                                        placeholder="0.00">
+                                <input type="text" name="biaya" id="biaya" class="form-control jtsseparator ratakanan" placeholder="0.00">
                             </div>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-2 d-none">
                             <div class="form-group">
                                 <label>Biaya 2</label>
-                                <input type="text"
-                                        name="biaya2"
-                                        id="biaya2"
-                                        class="form-control jtsseparator ratakanan"
-
-                                        placeholder="0.00">
+                                <input type="text" name="biaya2" id="biaya2" class="form-control jtsseparator ratakanan" placeholder="0.00">
                             </div>
                         </div>
-                        <div class="col-md-2">
+
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label>Nilai</label>
                                 <input type="text"
-                                        name="nilai"
-                                        id="nilai"
-                                        class="form-control jtsseparator ratakanan"
-                                        readonly
-                                        placeholder="0.00">
+                                       name="nilai"
+                                       id="nilai"
+                                       class="form-control jtsseparator ratakanan"
+                                       readonly
+                                       placeholder="0.00">
                             </div>
                         </div>
-                        <div class="col-md-3">
+
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label>Keterangan PO</label>
                                 <textarea type="text"
-                                        name="descriptionpo"
-                                        rows="4"
-                                        style="text-transform: uppercase;"
-                                        id="descriptionpo"
-                                        class="form-control"></textarea>
+                                          name="descriptionpo"
+                                          rows="4"
+                                          style="text-transform: uppercase;"
+                                          id="descriptionpo"
+                                          class="form-control"></textarea>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label>Keterangan PP</label>
                                 <textarea type="text"
-                                        name="descriptionpp"
-                                        rows="4"
-                                        style="text-transform: uppercase;"
-                                        id="descriptionpp"
-                                        class="form-control" readonly></textarea>
+                                          name="descriptionpp"
+                                          rows="4"
+                                          style="text-transform: uppercase;"
+                                          id="descriptionpp"
+                                          class="form-control" readonly></textarea>
                             </div>
                         </div>
                     </div>
@@ -861,8 +817,6 @@
                             onclick="$('#modalUpdateLPB').modal('hide')">
                         <i class="fa fa-times"></i> Batal
                     </button>
-
-
                 </div>
             </form>
         </div>
@@ -870,7 +824,7 @@
 </div>
 
 <!-- ============================================= -->
-<!-- MODAL NEW BATCH / SPEC -->
+<!-- MODAL NEW BATCH -->
 <!-- ============================================= -->
 
 <div
@@ -892,7 +846,7 @@
                         class="modal-title"
                         id="modalNewSpecLabel"
                 >
-                    New Batch / Specification
+                    New Batch
                 </h5>
 
                 <button
@@ -914,7 +868,7 @@
                             for="newbatch"
                             class="form-label"
                     >
-                        Batch / Specification
+                        Batch
                     </label>
 
                     <input
@@ -966,17 +920,16 @@
         $("#example1").dataTable();
         $("#example2").dataTable();
         $("#example4").dataTable();
-        //datemask
-        //$("#datemaskinput").inputmask("dd/mm/yyyy", {"placeholder": "dd/mm/yyyy"});
-        //$("#datemaskinput").daterangepicker();
-        //Date picker
+
         var dtldata = <?= json_encode($dtldata ?? null) ?>;
 
         if (dtldata && dtldata.docno && dtldata.docno.trim() !== '') {
             $('#docno').val(dtldata.docno.trim()).prop('readonly', true);
         }
 
-
+        // ============================
+        // DOC DATE
+        // ============================
         $('#docdate').daterangepicker({
             autoUpdateInput: false,
             singleDatePicker: true,
@@ -985,19 +938,17 @@
             cancelLabel: 'Clear'
         });
 
-        // handler apply/cancel
         $('#docdate').on('apply.daterangepicker', function(ev, picker) {
             $(this).val(picker.startDate.format('DD-MM-YYYY'));
-            // jika butuh validasi bootstrapValidator:
-            // $('#formInputTransfers').bootstrapValidator('updateStatus', 'docdate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'docdate');
         });
         $('#docdate').on('cancel.daterangepicker', function(ev, picker) {
             $(this).val('');
         });
 
-
-
-        $('#senddate').daterangepicker({
+        // ============================
+        // ETD (di modal update)
+        // ============================
+        $('#etd').daterangepicker({
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
@@ -1005,55 +956,43 @@
             cancelLabel: 'Clear'
         });
 
-        // handler apply/cancel
-        $('#senddate').on('apply.daterangepicker', function(ev, picker) {
+        $('#etd').on('apply.daterangepicker', function(ev, picker) {
             $(this).val(picker.startDate.format('DD-MM-YYYY'));
-            // jika butuh validasi bootstrapValidator:
-            // $('#formInputTransfers').bootstrapValidator('updateStatus', 'senddate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'senddate');
         });
-        $('#senddate').on('cancel.daterangepicker', function(ev, picker) {
+        $('#etd').on('cancel.daterangepicker', function(ev, picker) {
             $(this).val('');
         });
 
-
-
+        // ============================
+        // Peride (opsional, kalau dipakai di filter)
+        // ============================
         $('#periodemulai').daterangepicker({
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: {
-                format: 'DD-MM-YYYY'
-            },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear',
         });
         $('#periodemulai').on('apply.daterangepicker', function(ev, picker) {
             $(this).val(picker.startDate.format('DD-MM-YYYY'));
         });
-
         $('#periodemulai').on('cancel.daterangepicker', function(ev, picker) {
             $(this).val('');
         });
-
 
         $('#periodeakhir').daterangepicker({
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: {
-                format: 'DD-MM-YYYY'
-            },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear',
         });
         $('#periodeakhir').on('apply.daterangepicker', function(ev, picker) {
             $(this).val(picker.startDate.format('DD-MM-YYYY'));
         });
-
         $('#periodeakhir').on('cancel.daterangepicker', function(ev, picker) {
             $(this).val('');
         });
 
-
-
     });
-
 </script>

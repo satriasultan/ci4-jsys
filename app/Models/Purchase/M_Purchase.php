@@ -3088,4 +3088,29 @@ class M_Purchase extends Model
         return $this->db->query($sql, [$periode]);
     }
 
+
+    public function see_stock_itemperbranch($idbranch, $idbarang)
+    {
+        $sql = "
+        SELECT
+            ml.idbranchjob,
+            ml.nmbranchjob,
+            sg.idbarang,
+            COUNT(DISTINCT sg.idlocation) AS total_gudang,
+            COUNT(DISTINCT sg.batch)      AS total_batch,
+            SUM(COALESCE(sg.qty, 0))      AS total_onhand
+        FROM sc_trx.stkgdw sg
+        LEFT JOIN sc_mst.mlocation ml
+               ON TRIM(ml.idlocation) = TRIM(sg.idlocation)
+        WHERE TRIM(ml.idbranchjob) = TRIM(?)
+          AND TRIM(sg.idbarang)    = TRIM(?)
+        GROUP BY
+            ml.idbranchjob,
+            ml.nmbranchjob,
+            sg.idbarang
+    ";
+
+        return $this->db->query($sql, [$idbranch, $idbarang]);
+    }
+
 }

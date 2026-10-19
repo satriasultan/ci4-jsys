@@ -1,3 +1,5 @@
+<!-- v_add_po.php -->
+
 <style>
     
     .section-block {
@@ -346,24 +348,25 @@
                             <div class="table-responsive" style="overflow-x: auto;">
                                 <table id="tabppdtl" class="table table-bordered table-striped" style="width:100%;" cellspacing="0">
                                     <thead class="bg-primary text-white">
-                                        <tr>
-                                            <th width="30">
-                                                <input type="checkbox" id="checkAll">
-                                            </th>
-                                            <th>PP</th>
-                                            <th>ID Barang</th>
-                                            <th>Nama Barang</th>
-                                            <th>No. Capex</th>
-                                            <th>Satuan</th>
-                                            <th>Qty</th>
-                                            <th>Bonus Qty</th>
-                                            <th>Harga</th>
-                                            <th>Multi Disc</th>
-                                            <th>Total Disc</th>
-                                            <th>Nilai</th>
-                                            <th>Keterangan PO</th>
-                                            <th>Keterangan PP</th>
-                                        </tr>
+                                    <tr>
+                                        <th width="30">
+                                            <input type="checkbox" id="checkAll">
+                                        </th>
+                                        <th>PP</th>
+                                        <th>ID Barang</th>
+                                        <th>Nama Barang</th>
+                                        <th>Batch/Spec</th>
+                                        <th>No. Capex</th>
+                                        <th>ETD</th>
+                                        <th>ETD Notes</th>
+                                        <th>Satuan</th>
+                                        <th>Qty</th>
+                                        <th>Bonus Qty</th>
+                                        <th>Harga</th>
+                                        <th>Nilai</th>
+                                        <th>Keterangan PO</th>
+                                        <th>Keterangan PP</th>
+                                    </tr>
                                     </thead>
                                     <tbody>
                                     </tbody>
@@ -559,14 +562,15 @@
 </div>
 
 
-<div class="modal fade" id="modalUpdatePO" tabindex="-1" role="dialog" aria-labelledby="modalUpdatePOLabel" aria-hidden="true">
+<div class="modal fade" id="modalUpdatePO" tabindex="-1" role="dialog"
+     aria-labelledby="modalUpdatePOLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
 
             <!-- HEADER -->
             <div class="modal-header bg-primary">
                 <h5 class="modal-title" id="modalUpdatePOLabel">
-                    </i> Edit Item Detail
+                    <i class="fa fa-edit"></i> Edit Item Detail
                 </h5>
                 <button type="button" class="close text-white" data-bs-dismiss="modal">
                     <span>&times;</span>
@@ -577,60 +581,68 @@
             <form id="formPOUpdate">
                 <div class="modal-body">
 
-                    <!-- hidden -->
-                    <input type="hidden" name="idurut" id="idurut">
-                    <input type="hidden" name="uniqueid" id="uniqueid">
-                    <input type="hidden" name="docno" id="docno">
-                    <!-- <input type="hidden" name="status" id="status" value="P">
-                    <input type="hidden" name="chold" id="chold" value="NO"> -->
+                    <!-- =========================================
+                         HIDDEN FIELDS
+                         ========================================= -->
+                    <input type="hidden" name="idurut"     id="idurut">
+                    <input type="hidden" name="uniqueid"   id="uniqueid">
+                    <input type="hidden" name="uniqueidpo" id="uniqueidpo">
+                    <input type="hidden" name="docno"      id="docno">
 
-                    <!-- ROW 1 -->
+                    <!-- =========================================
+                         ROW 1 — PP & ID Barang
+                         ========================================= -->
                     <div class="row">
-                        <div class="col-md-12">
+
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label>PP</label>
                                 <input name="docnoppmodal" id="docnoppmodal"
-                                        class="form-control"
-                                        style="width:100%" readonly>
+                                       class="form-control"
+                                       style="width:100%"
+                                       readonly>
                             </div>
                         </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-4">
+
+                        <div class="col-md-3">
                             <div class="form-group">
                                 <label>ID Barang</label>
                                 <input name="idbarang" id="idbarang"
-                                        class="form-control"
-                                        style="width:100%" readonly>
+                                       class="form-control"
+                                       style="width:100%"
+                                       readonly>
                             </div>
                         </div>
 
-                        <div class="col-md-8">
+                        <div class="col-md-5">
                             <div class="form-group">
                                 <label>Nama Barang</label>
                                 <input type="text"
-                                        name="nmbarang"
-                                        id="nmbarang"
-                                        class="form-control"
-                                        placeholder="Nama Barang"
-                                        style="text-transform:uppercase" readonly>
+                                       name="nmbarang"
+                                       id="nmbarang"
+                                       class="form-control"
+                                       placeholder="Nama Barang"
+                                       style="text-transform:uppercase"
+                                       readonly>
                             </div>
                         </div>
+
                     </div>
 
-                    <!-- ROW 2 -->
+                    <!-- =========================================
+                         ROW 2 — Satuan, Qty, Bonus, Harga, Nilai
+                         ========================================= -->
                     <div class="row">
+
                         <div class="col-md-2">
                             <div class="form-group">
                                 <label>Satuan</label>
-
                                 <select name="unit"
                                         id="unit"
                                         class="form-control select2"
                                         style="width:100%">
                                     <option value="">-- Pilih Satuan --</option>
                                 </select>
-
                             </div>
                         </div>
 
@@ -638,157 +650,167 @@
                             <div class="form-group">
                                 <label>Quantity</label>
                                 <input type="text"
-                                        name="qty"
-                                        id="qty"
-                                        class="form-control jtsseparator ratakanan"
-                                        placeholder="0.00">
+                                       name="qty"
+                                       id="qty"
+                                       class="form-control jtsseparator ratakanan"
+                                       placeholder="0.00">
                             </div>
                         </div>
+
                         <div class="col-md-2">
                             <div class="form-group">
                                 <label>Bonus Quantity</label>
                                 <input type="text"
-                                        name="qtybonus"
-                                        id="qtybonus"
-                                        class="form-control jtsseparator ratakanan"
-                                        placeholder="0.00">
+                                       name="qtybonus"
+                                       id="qtybonus"
+                                       class="form-control jtsseparator ratakanan"
+                                       placeholder="0.00">
                             </div>
                         </div>
-                        <div class="col-md-2">
+
+                        <div class="col-md-3">
                             <div class="form-group">
                                 <label>Harga</label>
-
                                 <div class="input-group">
-
                                     <input type="text"
                                            name="harga"
                                            id="harga"
                                            class="form-control jtsseparator ratakanan"
                                            placeholder="0.00">
-
                                     <button type="button"
                                             class="btn btn-info"
                                             id="btnHistoryHarga"
                                             onclick="showHistoryHarga()"
                                             title="History Harga">
-
                                         <i class="fa fa-history"></i>
-
                                     </button>
-
                                 </div>
-
                             </div>
                         </div>
-                        <!-- MULTI DISCOUNT -->
+
                         <div class="col-md-3">
                             <div class="form-group">
-
-                                <label>Multi Discount</label>
-
-                                <div class="input-group">
-
-                                    <select
-                                            name="multidisctype"
-                                            id="multidisctype"
-                                            class="form-control"
-                                            style="
-        background-color: #e9ecef;
-        color: #6c757d;
-    ">
-                                        <option value="PERCENT">%</option>
-                                        <option value="NILAI">Nilai</option>
-
-
-                                    </select>
-
-                                    <input
-                                            type="text"
-                                            name="multidisc"
-                                            id="multidisc"
-                                            class="form-control jtsseparator ratakanan"
-                                            value="0">
-
-                                </div>
-
-                            </div>
-                        </div>
-
-
-                        <div class="col-md-2">
-                            <div class="form-group">
-
-                                <label>Total Discount</label>
-
-                                <input
-                                        type="text"
-                                        name="totaldiscount"
-                                        id="totaldiscount"
-                                        class="form-control jtsseparator ratakanan"
-                                        readonly
-                                        value="0">
-
-                            </div>
-                        </div>
-
-
-                        <div class="col-md-2">
-                            <div class="form-group">
-
                                 <label>Nilai</label>
-
-                                <input
-                                        type="text"
-                                        name="nilai"
-                                        id="nilai"
-                                        class="form-control jtsseparator ratakanan"
-                                        readonly
-                                        value="0">
-
+                                <input type="text"
+                                       name="nilai"
+                                       id="nilai"
+                                       class="form-control jtsseparator ratakanan"
+                                       readonly
+                                       value="0">
                             </div>
                         </div>
-                        <div class="col-md-2">
+
+                    </div>
+
+                    <!-- =========================================
+                         ROW 3 — Batch, ETD, ETD Notes, Capex
+                         ========================================= -->
+                    <div class="row">
+
+                        <!-- BATCH / SPEC — hanya tampil, tidak bisa diubah -->
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Batch / Specification</label>
+                                <input type="text"
+                                       name="batch"
+                                       id="batch"
+                                       class="form-control"
+                                       placeholder="Batch / Specification"
+                                       style="text-transform: uppercase;"
+                                       readonly>
+                            </div>
+                        </div>
+
+                        <!-- ETD — Tanggal Estimasi -->
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>ETD (Estimasi Tanggal)</label>
+                                <input type="text"
+                                       name="etd"
+                                       id="etd"
+                                       class="form-control"
+                                       placeholder="DD-MM-YYYY">
+                            </div>
+                        </div>
+                        <!-- ETD NOTES -->
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>ETD Notes</label>
+                                <textarea name="etdnotes"
+                                          id="etdnotes"
+                                          rows="1"
+                                          class="form-control"
+                                          style="text-transform: uppercase;"
+                                          placeholder="Keterangan ETD"></textarea>
+                            </div>
+                        </div>
+                        <!-- CAPEX -->
+                        <div class="col-md-3">
                             <div class="form-group">
                                 <label>Capex No</label>
-                                <input
-                                        type="text"
-                                        name="capexno"
-                                        id="capexno" class="form-control">
-
+                                <input type="text"
+                                       name="capexno"
+                                       id="capexno"
+                                       class="form-control"
+                                       style="text-transform: uppercase;"
+                                       placeholder="No. Capex">
                             </div>
                         </div>
-                        <div class="col-md-3">
+
+
+
+                    </div>
+
+                    <!-- =========================================
+                         ROW 4 — Keterangan PO & PP
+                         ========================================= -->
+                    <div class="row">
+
+                        <div class="col-md-6">
                             <div class="form-group">
                                 <label>Keterangan PO</label>
-                                <textarea type="text"
-                                        name="descriptionpo"
-                                        rows="2"
-                                        style="text-transform: uppercase;"
-                                        id="descriptionpo"
-                                        class="form-control"></textarea>
+                                <textarea name="descriptionpo"
+                                          id="descriptionpo"
+                                          rows="2"
+                                          class="form-control"
+                                          style="text-transform: uppercase;"
+                                          placeholder="Keterangan PO"></textarea>
                             </div>
                         </div>
-                        <div class="col-md-3">
+
+                        <div class="col-md-6">
                             <div class="form-group">
                                 <label>Keterangan PP</label>
-                                <textarea type="text"
-                                        name="descriptionpp"
-                                        rows="2"
-                                        style="text-transform: uppercase;"
-                                        id="descriptionpp"
-                                        class="form-control" readonly></textarea>
+                                <textarea name="descriptionpp"
+                                          id="descriptionpp"
+                                          rows="2"
+                                          class="form-control"
+                                          style="text-transform: uppercase;"
+                                          readonly></textarea>
                             </div>
                         </div>
+
                     </div>
+
+                    <!-- =========================================
+                         MULTI DISCOUNT — DISEMBUNYIKAN
+                         (tetap di DOM untuk logika JS)
+                         ========================================= -->
+                    <div style="display:none;">
+                        <select name="multidisctype" id="multidisctype" class="form-control">
+                            <option value="PERCENT">%</option>
+                            <option value="NILAI">Nilai</option>
+                        </select>
+                        <input type="text" name="multidisc" id="multidisc"
+                               class="form-control" value="0">
+                        <input type="text" name="totaldiscount" id="totaldiscount"
+                               class="form-control" readonly value="0">
+                    </div>
+
                 </div>
 
                 <!-- FOOTER -->
                 <div class="modal-footer bg-light">
-                    <button type="button"
-                            class="btn btn-primary"
-                            onclick="savePODetail()">
-                        <i class="fa fa-save"></i> Simpan
-                    </button>
                     <button type="button"
                             class="btn btn-secondary"
                             data-bs-dismiss="modal"
@@ -796,8 +818,14 @@
                         <i class="fa fa-times"></i> Batal
                     </button>
 
+                    <button type="button"
+                            class="btn btn-primary"
+                            onclick="savePODetail()">
+                        <i class="fa fa-save"></i> Simpan
+                    </button>
                 </div>
             </form>
+
         </div>
     </div>
 </div>
@@ -947,6 +975,29 @@
             $(this).val('');
         });
 
+
+        $('#etd').daterangepicker({
+            autoUpdateInput: false,
+            singleDatePicker: true,
+            showDropdowns: true,
+            locale: { format: 'DD-MM-YYYY' },
+            cancelLabel: 'Clear',
+            parentEl: '#modalUpdatePO'      // 🔹 penting: supaya kalender tidak "ketutup" modal
+        });
+
+// handler apply
+        $('#etd').on('apply.daterangepicker', function(ev, picker) {
+
+            const dateStr = picker.startDate.format('DD-MM-YYYY');
+
+            // 🔹 SET VALUE (ini yang HILANG sebelumnya)
+            $(this).val(dateStr);
+
+        });
+
+        $('#etd').on('cancel.daterangepicker', function(ev, picker) {
+            $(this).val('');
+        });;
 
 
         $('#senddate').daterangepicker({

@@ -113,7 +113,7 @@ $('#cabang').on('change', function () {
     if (!idbranch) return;
 
     $.ajax({
-        url: HOST_URL + '/persediaan/trans/getBranchInfo_materialrelease',
+        url: HOST_URL + 'production/trans/getBranchInfo_materialrelease',
         method: 'GET',
         data: {idbranch: idbranch},
         dataType: 'json',

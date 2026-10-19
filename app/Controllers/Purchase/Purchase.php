@@ -1,5 +1,5 @@
 <?php
-/* Purchase.php */
+/* Purchase.php  */
 
 namespace App\Controllers\Purchase;
 
@@ -804,37 +804,26 @@ class Purchase extends BaseController
 
     public function savePPDetail()
     {
-        $nama=trim($this->session->get('nama'));
-        $logindate = trim($this->session->get('logindate'));
+        $nama       = trim($this->session->get('nama'));
+        $logindate  = trim($this->session->get('logindate'));
 
-
-        $docno  = strtoupper($this->request->getPost('docno'));
-        $idurut     = $this->request->getPost('idurut'); // 🔹 untuk update
+        $docno = strtoupper($this->request->getPost('docno'));
+        $idurut = $this->request->getPost('idurut'); // 🔹 untuk update
 
         /* String To Time */
-        $cek_logindate = date('Ym',strtotime($this->session->get('logindate')));
-        $cek_docdate = date('Ym', strtotime($this->request->getPost('docdate')));
+        $cek_logindate = date('Ym', strtotime($this->session->get('logindate')));
+        $cek_docdate   = date('Ym', strtotime($this->request->getPost('docdate')));
 
         // ==========================================
         // PERIODE HARUS SAMA
         // ==========================================
-
         if ($cek_logindate != $cek_docdate) {
-
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Periode tanggal dokumen harus sama dengan periode login. Periode aktif: '
-                    . date(
-                        'm-Y',
-                        strtotime(
-                            $this->session->get('logindate')
-                        )
-                    )
+                    . date('m-Y', strtotime($this->session->get('logindate')))
             ]);
         }
-
-
-
 
         if (!$docno) {
             return $this->response->setJSON([
@@ -880,9 +869,10 @@ class Purchase extends BaseController
         // =========================
         $idbarang    = $this->request->getPost('idbarang');
         $nmbarang    = strtoupper($this->request->getPost('nmbarang'));
-        $capexno    = strtoupper($this->request->getPost('capexno'));
+        $capexno     = strtoupper($this->request->getPost('capexno'));
         $unit        = strtoupper($this->request->getPost('unit'));
         $qty         = $this->request->getPost('qty');
+        $batch       = strtoupper(trim($this->request->getPost('batch') ?? '')); // 🔹 NEW
         $description = strtoupper($this->request->getPost('description'));
 
         $builderDetail = $db->table('sc_tmp.pp_dtl');
@@ -896,6 +886,7 @@ class Purchase extends BaseController
             ->where('nmbarang', $nmbarang)
             ->where('capexno', $capexno)
             ->where('unit', $unit)
+            ->where('batch', $batch)        // 🔹 NEW
             ->where('qty', $qty)
             ->where('description', $description);
 
@@ -923,13 +914,14 @@ class Purchase extends BaseController
             $builderDetail->where('idurut', $idurut)->update([
                 'idbarang'    => $idbarang,
                 'nmbarang'    => $nmbarang,
-                'capexno'    => $capexno,
+                'capexno'     => $capexno,
                 'unit'        => $unit,
+                'batch'       => $batch,        // 🔹 NEW
                 'qty'         => $qty,
-                'qtypo'         => 0,
+                'qtypo'       => 0,
                 'description' => $description,
-                'updateby'     => $nama,
-                'updatedate'   => date('Y-m-d H:i:s')
+                'updateby'    => $nama,
+                'updatedate'  => date('Y-m-d H:i:s')
             ]);
 
         } else {
@@ -940,18 +932,18 @@ class Purchase extends BaseController
                 . '|' . $nama
                 . '|' . $inputdate;
 
-            $uniqueid  = hash('sha256', $rawUnique);
-
+            $uniqueid = hash('sha256', $rawUnique);
 
             // 🔹 INSERT
             $builderDetail->insert([
                 'docno'       => $docno,
                 'idbarang'    => $idbarang,
                 'nmbarang'    => $nmbarang,
-                'capexno'    => $capexno,
+                'capexno'     => $capexno,
                 'unit'        => $unit,
+                'batch'       => $batch,        // 🔹 NEW
                 'qty'         => $qty,
-                'qtypo'         => 0,
+                'qtypo'       => 0,
                 'description' => $description,
                 'status'      => 'F',
                 'inputby'     => $nama,
@@ -1138,6 +1130,7 @@ class Purchase extends BaseController
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
+            $row[] = $lm->batch;
             $row[] = $lm->capexno;
             /*status pp detail tidak usah dimunculkan dulu */
 //            $row[] = trim($lm->status) == 'VP' ?
@@ -1173,13 +1166,16 @@ class Purchase extends BaseController
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
+            $row[] = $lm->batch;
             $row[] = $lm->capexno;
+
+            $row[] = $lm->qty;
+            $row[] = $lm->unit;
+
+            $row[] = $lm->description;
             $row[] = trim($lm->status) == 'VP' ?
                 '<div class="text-center"><span style="font-size:12px" class="badge badge-danger w-100">' . 'Void PP' . '</span></div>' :
                 '<div class="text-center"><span style="font-size:12px" class="badge badge-primary w-100">' . 'Final User' . '</span></div>'  ;
-            $row[] = $lm->unit;
-            $row[] = $lm->qty;
-            $row[] = $lm->description;
             $data[] = $row;
 
         }
@@ -3893,18 +3889,42 @@ class Purchase extends BaseController
 
     public function savePODetail()
     {
-        $nama   = trim($this->session->get('nama'));
-        $docno  = strtoupper(trim($this->request->getPost('docno')));
-        $docnopp = strtoupper(trim($this->request->getPost('docnopp')));
-        $idurut = $this->request->getPost('idurut'); // HAPUS strtoupper, biarkan apa adanya
+        $nama            = trim($this->session->get('nama'));
+        $docno           = strtoupper(trim($this->request->getPost('docno')));
+        $docnopp         = strtoupper(trim($this->request->getPost('docnopp')));
+        $idurut          = $this->request->getPost('idurut');
         $multidisc       = $this->request->getPost('multidisc');
         $totaldiscount   = $this->request->getPost('totaldiscount');
         $multidisctype   = $this->request->getPost('multidisctype');
         $idhistory_price = $this->request->getPost('idhistory_price');
-        $capexno = trim(strtoupper($this->request->getPost('capexno')));
+        $capexno         = trim(strtoupper($this->request->getPost('capexno')));
+        $batch           = trim($this->request->getPost('batch'));
 
-        // Tambahkan mode untuk membedakan add/edit dengan lebih jelas
-        // $mode = $this->request->getPost('mode'); // 'add' atau 'edit'
+// =============================================
+// 🔹 ETD & ETD NOTES
+// =============================================
+        $etd      = trim((string) $this->request->getPost('etd'));
+        $etdnotes = trim(strtoupper((string) $this->request->getPost('etdnotes')));
+
+// Convert tanggal ETD dari dd-mm-yyyy → Y-m-d (pakai DateTime biar presisi)
+        $etdDate = null;
+        if (!empty($etd)) {
+            $dt = \DateTime::createFromFormat('d-m-Y', $etd);
+            if ($dt && $dt->format('d-m-Y') === $etd) {
+                $etdDate = $dt->format('Y-m-d');
+            } else {
+                log_message('error', '[savePODetail] Format ETD tidak valid: ' . $etd);
+            }
+        }
+
+        if ($etdnotes === null) {
+            $etdnotes = '';
+        }
+
+// 🔹 COALESCE batch — jangan boleh NULL
+        if ($batch === null || $batch === '') {
+            $batch = '';
+        }
 
         if (!$docno || !$docnopp) {
             return $this->response->setJSON([
@@ -3917,6 +3937,11 @@ class Purchase extends BaseController
         $db->transStart();
 
         // =====================================================
+        // ADVISORY LOCK
+        // =====================================================
+        $db->query("SELECT pg_advisory_xact_lock(hashtext(?))", [$docno]);
+
+        // =====================================================
         // CEK / INSERT HEADER
         // =====================================================
         $builderHeader = $db->table('sc_tmp.po');
@@ -3927,7 +3952,6 @@ class Purchase extends BaseController
             ->countAllResults();
 
         $reload = false;
-        // Untuk pengambilan data dari POST
 
         if ($exists == 0) {
             $isinclusive = strtoupper(trim(
@@ -3939,59 +3963,104 @@ class Purchase extends BaseController
             $isinclusive = ($isinclusive === 'YES') ? 'YES' : 'NO';
 
             $builderHeader->insert([
-                'docno'     => $docno,
-                'cabang'     => $this->request->getPost('cabang'),
-                'docdate'   => date('Y-m-d', strtotime(trim($this->request->getPost('docdate')))),
-                'senddate'   => date('Y-m-d', strtotime(trim($this->request->getPost('senddate')))),
-                'jthtempo'     => $this->request->getPost('jthtempo'),
-                'isinclusive'     => $isinclusive,
-
-                'kdsupplier'    => strtoupper($this->request->getPost('kdsupplier')),
-                'nmsupplier'    => strtoupper($this->request->getPost('nmsupplier')),
-                'alamatsupplier'    => strtoupper($this->request->getPost('alamatsupplier')),
+                'docno'          => $docno,
+                'cabang'         => $this->request->getPost('cabang'),
+                'docdate'        => date('Y-m-d', strtotime(trim($this->request->getPost('docdate')))),
+                'senddate'       => date('Y-m-d', strtotime(trim($this->request->getPost('senddate')))),
+                'jthtempo'       => $this->request->getPost('jthtempo'),
+                'isinclusive'    => $isinclusive,
+                'kdsupplier'     => strtoupper($this->request->getPost('kdsupplier')),
+                'nmsupplier'     => strtoupper($this->request->getPost('nmsupplier')),
+                'alamatsupplier' => strtoupper($this->request->getPost('alamatsupplier')),
                 'alamatkirim'    => strtoupper($this->request->getPost('alamatkirim')),
-                'idtax'    => strtoupper($this->request->getPost('idtax')),
-                'currcode'    => strtoupper($this->request->getPost('currcode')),
-                'kurs'    => strtoupper($this->request->getPost('kurs')),
-                'keterangan'    => strtoupper($this->request->getPost('keterangan')),
-
-                'status'    => 'E',
-                'inputby'   => $nama,
-                'inputdate' => date('Y-m-d H:i:s')
+                'idtax'          => strtoupper($this->request->getPost('idtax')),
+                'currcode'       => strtoupper($this->request->getPost('currcode')),
+                'kurs'           => strtoupper($this->request->getPost('kurs')),
+                'keterangan'     => strtoupper($this->request->getPost('keterangan')),
+                'status'         => 'E',
+                'inputby'        => $nama,
+                'inputdate'      => date('Y-m-d H:i:s')
             ]);
 
             $reload = true;
         }
 
         $builderDetail = $db->table('sc_tmp.po_dtl');
-        $insertCount = 0;
-        $message = '';
+        $insertCount   = 0;
+        $message       = '';
 
-        // CEK MODE: ADD atau EDIT
+        // =====================================================
+        // 🔹 AMBIL SENDDATE DARI HEADER PO (untuk default ETD)
+        // =====================================================
+        $senddateDefault = null;
+
+        $headerPO = $builderHeader
+            ->select('senddate')
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->get()
+            ->getRowArray();
+
+        if ($headerPO && !empty($headerPO['senddate'])) {
+            $senddateDefault = $headerPO['senddate'];
+        }
+
+        // =====================================================
+        // CEK MODE: EDIT / ADD
+        // =====================================================
         if (!empty($idurut)) {
-            $uniqueid = $this->request->getPost('uniqueid'); // HAPUS strtoupper, biarkan apa adanya
+
             // =====================================================
             // MODE EDIT - UPDATE DATA
             // =====================================================
-            $qty         = $this->request->getPost('qty');
-            $qtybonus    = $this->request->getPost('qtybonus') ?: 0;
-            $harga       = $this->request->getPost('harga') ?: 0;
-            $multidisc   = $this->request->getPost('multidisc') ?: 0;
-            $nilai       = $this->request->getPost('nilai') ?: 0;
+            $uniqueid      = $this->request->getPost('uniqueid');
+            $uniqueidpo    = $this->request->getPost('uniqueidpo');
+            $qty           = $this->request->getPost('qty');
+            $qtybonus      = $this->request->getPost('qtybonus') ?: 0;
+            $harga         = $this->request->getPost('harga') ?: 0;
+            $multidisc     = $this->request->getPost('multidisc') ?: 0;
+            $nilai         = $this->request->getPost('nilai') ?: 0;
             $descriptionpo = strtoupper($this->request->getPost('descriptionpo'));
+
+            if (empty($uniqueidpo)) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'uniqueidpo wajib dikirim saat mode edit'
+                ]);
+            }
 
             // =====================================================
             // VALIDASI QTY TERHADAP SISA QTY PP
             // =====================================================
             $ppDetail = $db->query("
-                SELECT
-                    qty,
-                    qtypo,
-                    qtyvoid,
-                    (qty - (qtypo + qtyvoid)) AS sisa_qty
-                FROM sc_trx.pp_dtl
-                WHERE TRIM(uniqueid) = ?
-            ", [$uniqueid])->getRow();
+            SELECT
+                ppd.qty,
+                ppd.qtypo,
+                ppd.qtyvoid,
+                COALESCE(p1.qty, p2.qty, p3.qty,
+                         COALESCE(ppd.qtypo, 0) + COALESCE(ppd.qtyvoid, 0),
+                         0) AS qty_pengurang
+            FROM sc_trx.pp_dtl ppd
+            LEFT JOIN LATERAL (
+                SELECT SUM(qty) AS qty
+                FROM sc_tmp.po_dtl
+                WHERE uniqueid = ppd.uniqueid
+                  AND rtrim(uniqueidpo) != rtrim(?)
+            ) p1 ON TRUE
+            LEFT JOIN LATERAL (
+                SELECT SUM(qty) AS qty
+                FROM sc_trx.po_dtl
+                WHERE uniqueid = ppd.uniqueid
+            ) p2 ON TRUE
+            LEFT JOIN LATERAL (
+                SELECT SUM(qty) AS qty
+                FROM sc_trx.voidpp_dtl
+                WHERE uniqueid = ppd.uniqueid
+            ) p3 ON TRUE
+            WHERE TRIM(ppd.uniqueid) = TRIM(?)
+            LIMIT 1
+        ", [$uniqueidpo, $uniqueid])->getRow();
 
             if (!$ppDetail) {
                 $db->transRollback();
@@ -4001,18 +4070,7 @@ class Purchase extends BaseController
                 ]);
             }
 
-            // Hitung total qty dari semua PO untuk uniqueid ini, EXCEPT PO ini
-            $totalQtyPoLain = $db->table('sc_trx.po_dtl')
-                ->selectSum('qty', 'total')
-                ->where('uniqueid', $uniqueid)
-                ->where('docno !=', $docno)   // kecualikan PO ini
-                ->get()
-                ->getRowArray();
-
-            $qtyPoLain = $totalQtyPoLain['total'] ?? 0;
-
-            // Sisa tersedia = qty PP - qtyvoid - qtyPO lain
-            $sisaTersedia = $ppDetail->qty - $ppDetail->qtyvoid - $qtyPoLain;
+            $sisaTersedia = $ppDetail->qty - $ppDetail->qty_pengurang;
 
             if ($qty > $sisaTersedia) {
                 $db->transRollback();
@@ -4022,143 +4080,127 @@ class Purchase extends BaseController
                 ]);
             }
 
-
             // Ambil kurs dari header PO
             $poHeader = $builderHeader->select('kurs, idtax')
                 ->where('docno', $docno)
                 ->where('inputby', $nama)
                 ->get()->getRowArray();
-            $kurs = $poHeader['kurs'] ?? 0;
+            $kurs  = $poHeader['kurs'] ?? 0;
             $idtax = $poHeader['idtax'] ?? '';
 
-            // Hitung nilaikonversi = nilai * kurs
             $nilaikonversi = $nilai * $kurs;
 
-            // Hitung nilaipajak berdasarkan idtax
             $nilaipajak = 0;
             if (!empty($idtax) && trim($idtax) !== 'NON' && $nilai > 0) {
-                // Ambil detail tax dari sc_mst.tax_dtl
-                $builderTaxDtl = $db->table('sc_mst.tax_dtl');
-                $taxDetails = $builderTaxDtl->select('percentation')
+                $taxDetails = $db->table('sc_mst.tax_dtl')
+                    ->select('percentation')
                     ->where('idtax', $idtax)
                     ->get()
                     ->getResultArray();
 
                 $totalPersentase = 0;
                 foreach ($taxDetails as $tax) {
-                    $persentase = $tax['percentation'] ?? 0;
-                    $totalPersentase += $persentase;
+                    $totalPersentase += $tax['percentation'] ?? 0;
                 }
 
-                // Hitung nilaipajak = nilai + (nilai * totalPersentase / 100)
-                // $nilaipajak = $nilai + ($nilai * $totalPersentase / 100);
                 $nilaipajak = $nilai * $totalPersentase / 100;
-
             } else {
-                // Jika NON pajak, nilaipajak sama dengan nilai
                 $nilaipajak = $nilai;
             }
 
-            $builderDetail->where('uniqueid', $uniqueid)->update([
-                'qty'          => $qty,
-                'qtybonus'     => $qtybonus,
-                'harga'        => $harga,
-                'multidisc'    => $multidisc,
-                'nilai'        => $nilai,
-                'nilaikonversi' => $nilaikonversi,  // Tambahkan ini
-                'nilaipajak'   => $nilaipajak,      // Tambahkan ini
-                'kurs'          => strtoupper($this->request->getPost('kurs')),
-                'idtax'         => strtoupper($this->request->getPost('idtax')),
-                'currcode'      => strtoupper($this->request->getPost('currcode')),
-                'totaldiscount'    => $this->request->getPost('totaldiscount'),
-                'multidisctype'    => $this->request->getPost('multidisctype'),
-                'idhistory_price'    => $this->request->getPost('idhistory_price'),
-                'descriptionpo' => $descriptionpo,
-                'capexno' => $capexno,
-                'updateby'     => $nama,
-                'updatedate'   => date('Y-m-d H:i:s')
-            ]);
-            // $builderDetail->where('uniqueid', $uniqueid)->update([
-            //     'qty'          => $qty,
-            //     'qtybonus'     => $qtybonus,
-            //     'harga'        => $harga,
-            //     'multidisc'    => $multidisc,
-            //     'nilai'        => $nilai,
-            //     'descriptionpo' => $descriptionpo,
-            //     'updateby'     => $nama,
-            //     'updatedate'   => date('Y-m-d H:i:s')
-            // ]);
-
-
-
-            $poHeader = $builderHeader->select('idtax')
-                ->where('docno', $docno)
-                ->where('inputby', $nama)->get()->getRowArray();
-            $idtax = $poHeader['idtax'] ?? '';
-
-            // Hitung total DPP (sum nilai dari po_dtl)
-            $builderTotalDpp = $db->table('sc_tmp.po_dtl');
-            $totalDpp = $builderTotalDpp->select('COALESCE(SUM(nilai), 0) as total_dpp')
-                ->where('docno', $docno)
-                ->where('inputby', $nama)
-                ->get()
-                ->getRowArray();
-
-            $dpp = $totalDpp['total_dpp'] ?? 0;
-
-            // Hitung jumlah pajak berdasarkan idtax
-            $jumlahPajak = 0;
-
-            if (!empty($idtax) && trim($idtax) !== 'NON'  && $dpp > 0) {
-                // Ambil detail tax dari sc_mst.tax_dtl
-                $builderTaxDtl = $db->table('sc_mst.tax_dtl');
-                $taxDetails = $builderTaxDtl->select('percentation')
-                    ->where('idtax', $idtax)
-                    ->get()
-                    ->getResultArray();
-
-                foreach ($taxDetails as $tax) {
-                    $persentase = $tax['percentation'] ?? 0;
-                    $jumlahPajak += $dpp * ($persentase / 100);
-                }
+            // =====================================================
+            // UPDATE DETAIL — pakai uniqueidpo, batch pakai COALESCE
+            // =====================================================
+            // =============================================
+            // 🔹 ETD: kalau kosong → pakai senddate header
+            // =============================================
+            $etdFinal = $etdDate;
+            if (empty($etdFinal) && !empty($senddateDefault)) {
+                $etdFinal = $senddateDefault;
             }
 
-            // Hitung total (DPP + Jumlah Pajak)
-            $total = $dpp + $jumlahPajak;
-
-            // Update header PO
-            $builderHeader->where('docno', $docno)
-                ->where('inputby', $nama)
+            $builderDetail
+                ->where('uniqueidpo', $uniqueidpo)
+                ->where('docno', $docno)
                 ->update([
-                    'dpp' => number_format($dpp, 2, '.', ''),
-                    'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
-                    'total' => number_format($total, 2, '.', ''),
-                    'updateby' => $nama,
-                    'updatedate' => date('Y-m-d H:i:s')
+                    'qty'             => $qty,
+                    'qtybonus'        => $qtybonus,
+                    'harga'           => $harga,
+                    'multidisc'       => $multidisc,
+                    'nilai'           => $nilai,
+                    'nilaikonversi'   => $nilaikonversi,
+                    'nilaipajak'      => $nilaipajak,
+                    'kurs'            => strtoupper($this->request->getPost('kurs')),
+                    'idtax'           => strtoupper($this->request->getPost('idtax')),
+                    'currcode'        => strtoupper($this->request->getPost('currcode')),
+                    'totaldiscount'   => $this->request->getPost('totaldiscount'),
+                    'multidisctype'   => $this->request->getPost('multidisctype'),
+                    'idhistory_price' => $this->request->getPost('idhistory_price'),
+                    'descriptionpo'   => $descriptionpo,
+                    'capexno'         => $capexno,
+                    'etd'             => $etdFinal,      // 🔹 fallback ke senddate kalau kosong
+                    'etdnotes'        => $etdnotes,
+                    'updateby'        => $nama,
+                    'updatedate'      => date('Y-m-d H:i:s')
                 ]);
 
             $message = 'Data berhasil diupdate';
 
         } else {
+
             // =====================================================
             // MODE ADD - INSERT DATA DARI PP
+            // Konsep:
+            //   - qty insert = SISA (tidak boleh melebihi)
+            //   - selama sisa > 0 → INSERT BARIS BARU
+            //   - uniqueidpo di-generate otomatis oleh trigger AFTER INSERT
+            //   - baris lama JANGAN di-update
+            //   - cegah double insert dalam 1x request via tracking array
             // =====================================================
             $ppDetails = $db->query("
-                SELECT 
-                    docno,
-                    idbarang,
-                    uniqueid,
-                    nmbarang,
-                    unit,
-                    qty,
-                    capexno,
-                    qtypo,
-                    qtyvoid,
-                    description
-                FROM sc_trx.pp_dtl
-                WHERE TRIM(docno) = ?
-                AND TRIM(COALESCE(status,'')) <> 'VP'
-            ", [$docnopp])->getResult();
+        SELECT
+            ppd.docno,
+            ppd.idbarang,
+            ppd.uniqueid,
+            ppd.nmbarang,
+            ppd.unit,
+            ppd.qty,
+            ppd.capexno,
+            ppd.qtypo,
+            ppd.qtyvoid,
+            ppd.description,
+            COALESCE(ppd.batch, '') AS batch,
+
+            COALESCE(p1.qty, p2.qty, p3.qty,
+                     COALESCE(ppd.qtypo, 0) + COALESCE(ppd.qtyvoid, 0),
+                     0) AS qty_pengurang
+
+        FROM sc_trx.pp_dtl ppd
+
+        LEFT JOIN LATERAL (
+            SELECT SUM(qty) AS qty
+            FROM sc_tmp.po_dtl
+            WHERE uniqueid = ppd.uniqueid
+            -- 🔹 tidak mengecualikan docno
+        ) p1 ON TRUE
+
+        LEFT JOIN LATERAL (
+            SELECT SUM(qty) AS qty
+            FROM sc_trx.po_dtl
+            WHERE uniqueid = ppd.uniqueid
+        ) p2 ON TRUE
+
+        LEFT JOIN LATERAL (
+            SELECT SUM(qty) AS qty
+            FROM sc_trx.voidpp_dtl
+            WHERE uniqueid = ppd.uniqueid
+        ) p3 ON TRUE
+
+        WHERE TRIM(ppd.docno) = TRIM(?)
+          AND TRIM(COALESCE(ppd.status,'')) <> 'VP'
+
+        ORDER BY ppd.idurut
+    ", [$docnopp])->getResult();
 
             if (empty($ppDetails)) {
                 $db->transRollback();
@@ -4168,72 +4210,137 @@ class Purchase extends BaseController
                 ]);
             }
 
+            // 🔹 Tracking per request — cegah double insert untuk sisa yang sama
+            $insertedKeys = [];
+
             foreach ($ppDetails as $row) {
-                // CEK APAKAH ITEM SUDAH ADA DI TMP
-                // $duplicate = $builderDetail
-                //     ->where('docno', $docno)
-                //     ->where('docnopp', $docnopp)
-                //     ->where('idbarang', $row->idbarang)
-                //     ->where('inputby', $nama)
-                //     ->countAllResults();
-                $qtyPOSaatIni = 0;
 
-                $existingPO = $db->query("
-                    SELECT qty 
-                    FROM sc_tmp.po_dtl 
-                    WHERE
-                    uniqueid = ?
-                ", [$row->uniqueid])->getRow();
+                // =====================================================
+                // HITUNG SISA = qty_pp − qty_pengurang
+                // =====================================================
+                $sisaQty = (float)$row->qty - (float)$row->qty_pengurang;
 
-                if ($existingPO) {
-                    $qtyPOSaatIni = $existingPO->qty;
-                }
-
-                $sisaQty = $row->qty - ($row->qtypo + $row->qtyvoid - $qtyPOSaatIni);
-
-                // Jika sisa quantity <= 0, skip item ini
+                // Skip kalau sisa <= 0
                 if ($sisaQty <= 0) {
-                    continue; // Lewati item ini
+                    continue;
                 }
 
-                $duplicate = $builderDetail
-                    ->where('uniqueid', $row->uniqueid)
-                    ->countAllResults();
+                // =====================================================
+                // CEGAH DOUBLE INSERT DALAM 1x REQUEST
+                // =====================================================
+                $key = $row->uniqueid . '|' . $sisaQty;
 
-                if ($duplicate == 0) {
-                    $builderDetail->insert([
-                        'docno'         => $docno,
-                        'docnopp'       => $docnopp,
-                        'idbarang'      => $row->idbarang,
-                        'uniqueid'      => $row->uniqueid,
-                        'nmbarang'      => $row->nmbarang,
-                        'unit'          => $row->unit,
-                        'capexno'          => $row->capexno,
-                        'qty'           => $sisaQty,
-                        'kurs'          => strtoupper($this->request->getPost('kurs')),
-                        'idtax'         => strtoupper($this->request->getPost('idtax')),
-                        'currcode'      => strtoupper($this->request->getPost('currcode')),
-                        'totaldiscount' => $this->request->getPost('totaldiscount'),
-                        'multidisctype' => $this->request->getPost('multidisctype'),
-                        'idhistory_price' => $this->request->getPost('idhistory_price'),
-                        'qtybonus'      => 0, // Default 0 untuk new insert
-                        'harga'         => 0, // Default 0 untuk new insert
-                        'multidisc'     => 0, // Default 0 untuk new insert
-                        'nilai'         => 0, // Default 0 untuk new insert
-                        'descriptionpp' => $row->description,
-                        'descriptionpo' => $row->description,
-                        'inputby'       => $nama,
-                        'inputdate'     => date('Y-m-d H:i:s')
-                    ]);
+                if (isset($insertedKeys[$key])) {
+                    continue;
+                }
 
+                // =====================================================
+                // BATCH COALESCE
+                // =====================================================
+                $batchFromPP = $row->batch ?? '';
+                if ($batchFromPP === null) {
+                    $batchFromPP = '';
+                }
+
+                // =====================================================
+                // INSERT BARIS BARU
+                // — uniqueidpo di-generate otomatis oleh trigger
+                // =====================================================
+                // =============================================
+                // 🔹 ETD: kalau user tidak isi → pakai senddate
+                // =============================================
+                $etdFinal = $etdDate;
+                if (empty($etdFinal) && !empty($senddateDefault)) {
+                    $etdFinal = $senddateDefault;
+                }
+
+                $payload = [
+                    'docno'           => $docno,
+                    'docnopp'         => $docnopp,
+                    'idbarang'        => $row->idbarang,
+                    'uniqueid'        => $row->uniqueid,
+                    'nmbarang'        => $row->nmbarang,
+                    'unit'            => $row->unit,
+                    'capexno'         => $row->capexno,
+                    'qty'             => $sisaQty,
+                    'batch'           => $batchFromPP,
+                    'kurs'            => strtoupper($this->request->getPost('kurs')),
+                    'idtax'           => strtoupper($this->request->getPost('idtax')),
+                    'currcode'        => strtoupper($this->request->getPost('currcode')),
+                    'totaldiscount'   => $this->request->getPost('totaldiscount'),
+                    'multidisctype'   => $this->request->getPost('multidisctype'),
+                    'idhistory_price' => $this->request->getPost('idhistory_price'),
+                    'qtybonus'        => 0,
+                    'harga'           => 0,
+                    'multidisc'       => 0,
+                    'nilai'           => 0,
+                    'descriptionpp'   => $row->description,
+                    'descriptionpo'   => $row->description,
+                    'etd'             => $etdFinal,      // 🔹 default = senddate kalau kosong
+                    'etdnotes'        => $etdnotes,
+                    'inputby'         => $nama,
+                    'inputdate'       => date('Y-m-d H:i:s')
+                ];
+
+                $ok = $builderDetail->insert($payload);
+
+                if (!$ok) {
+                    log_message('error', '[savePODetail][ADD] INSERT FAILED: ' . json_encode($db->error()));
+                    log_message('error', '[savePODetail][ADD] Payload: ' . json_encode($payload));
+                } else {
+                    $insertedKeys[$key] = true;
                     $insertCount++;
                 }
             }
 
             $message = $insertCount > 0
                 ? "$insertCount item berhasil ditambahkan"
-                : "Semua item sudah ada sebelumnya";
+                : "Tidak ada sisa untuk ditambahkan";
         }
+
+        // =====================================================
+        // HITUNG ULANG DPP & TOTAL HEADER
+        // =====================================================
+        $poHeader = $builderHeader->select('idtax')
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->get()->getRowArray();
+        $idtax = $poHeader['idtax'] ?? '';
+
+        $totalDpp = $db->table('sc_tmp.po_dtl')
+            ->select('COALESCE(SUM(nilai), 0) as total_dpp')
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->get()
+            ->getRowArray();
+
+        $dpp = $totalDpp['total_dpp'] ?? 0;
+
+        $jumlahPajak = 0;
+        if (!empty($idtax) && trim($idtax) !== 'NON' && $dpp > 0) {
+            $taxDetails = $db->table('sc_mst.tax_dtl')
+                ->select('percentation')
+                ->where('idtax', $idtax)
+                ->get()
+                ->getResultArray();
+
+            foreach ($taxDetails as $tax) {
+                $persentase = $tax['percentation'] ?? 0;
+                $jumlahPajak += $dpp * ($persentase / 100);
+            }
+        }
+
+        $total = $dpp + $jumlahPajak;
+
+        $builderHeader->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->update([
+                'dpp'         => number_format($dpp, 2, '.', ''),
+                'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
+                'total'       => number_format($total, 2, '.', ''),
+                'updateby'    => $nama,
+                'updatedate'  => date('Y-m-d H:i:s')
+            ]);
 
         $db->transComplete();
 
@@ -4380,39 +4487,43 @@ class Purchase extends BaseController
 
         $row = $this->db->table('sc_tmp.po_dtl')
             ->select("
-                idurut,
-                TRIM(docno) AS docno,
-                TRIM(docnopp) AS docnopp,
-                TRIM(idbarang) AS idbarang,
-                TRIM(nmbarang) AS nmbarang,
-                TRIM(unit) AS unit,
-                qty,
-                qtybonus,
-                harga,
-                multidisc,
-                nilai,
-                descriptionpo,
-                descriptionpp,
-                TRIM(status) AS status,
-                inputby,
-                inputdate,
-                updateby,
-                updatedate,
-                TRIM(docnotmp) AS docnotmp,
-                uniqueid,
-                TRIM(idtax) AS idtax,
-                TRIM(currcode) AS currcode,
-                kurs,
-                nilaikonversi,
-                nilaipajak,
-                qtylpb,
-                qtyvoid,
-                TRIM(capexno) AS capexno,
-                TRIM(idhistory_price) AS idhistory_price,
-                TRIM(multidisctype) AS multidisctype,
-                totaldiscount
-            ", false)
-            ->where('uniqueid', $id)
+            idurut,
+            TRIM(docno) AS docno,
+            TRIM(docnopp) AS docnopp,
+            TRIM(idbarang) AS idbarang,
+            TRIM(nmbarang) AS nmbarang,
+            TRIM(unit) AS unit,
+            qty,
+            qtybonus,
+            harga,
+            multidisc,
+            nilai,
+            descriptionpo,
+            descriptionpp,
+            TRIM(status) AS status,
+            inputby,
+            inputdate,
+            updateby,
+            updatedate,
+            TRIM(docnotmp) AS docnotmp,
+            uniqueid,
+            uniqueidpo,
+            TRIM(idtax) AS idtax,
+            TRIM(currcode) AS currcode,
+            kurs,
+            nilaikonversi,
+            nilaipajak,
+            qtylpb,
+            qtyvoid,
+            TRIM(capexno) AS capexno,
+            TRIM(idhistory_price) AS idhistory_price,
+            TRIM(multidisctype) AS multidisctype,
+            totaldiscount,
+            TRIM(batch) AS batch,               -- 🔹 NEW
+            etd,                                  -- 🔹 NEW
+            TRIM(etdnotes) AS etdnotes           -- 🔹 NEW
+        ", false)
+            ->where('uniqueidpo', $id)
             ->get()
             ->getRowArray();
 
@@ -4458,7 +4569,7 @@ class Purchase extends BaseController
             $docno = '';
             $firstDetail = $builder
                 ->select('docno')
-                ->whereIn('uniqueid', $ids)
+                ->whereIn('uniqueidpo', $ids)
                 ->get()
                 ->getRowArray();
 
@@ -4467,7 +4578,7 @@ class Purchase extends BaseController
             }
 
             $builder
-                ->whereIn('uniqueid', $ids)
+                ->whereIn('uniqueidpo', $ids)
                 ->delete();
 
             if ($db->affectedRows() === 0) {
@@ -4557,30 +4668,48 @@ class Purchase extends BaseController
             $no++;
             $row = array();
             // $row[] = $no;
-            $row[] = $lm->uniqueid;
+            $row[] = $lm->uniqueidpo;
+//        $row[] = $lm->uniqueid;
             //$row[] = $lm->idurut;
             //item
             $row[] = $lm->docnopp;
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
+            $row[] = $lm->batch;
             $row[] = $lm->capexno;
+
+            // =========================================
+            // 🔹 ETD (menggantikan Multi Disc)
+            // =========================================
+            $etdFormatted = !empty($lm->etd)
+                ? date('d-m-Y', strtotime($lm->etd))
+                : '';
+            $row[] = $etdFormatted;
+
+            // =========================================
+            // 🔹 ETD NOTES (menggantikan Total Disc)
+            // =========================================
+            $row[] = $lm->etdnotes;
+
             $row[] = $lm->unit;
             $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 2, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan">'. number_format($lm->harga, 2, '.', ',') . '</div>';
-            $multidisctype = trim($lm->multidisctype ?? '');
-            $multidisc = (float) ($lm->multidisc ?? 0);
 
-            $row[] = '<div class="ratakanan">' .
-                number_format($multidisc, 2, '.', ',') .
-                (
-                $multidisc > 0 &&
-                in_array($multidisctype, ['PERCENT', '%'])
-                    ? ' %'
-                    : ''
-                ) .
-                '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->totaldiscount, 2, '.', ',') . '</div>';
+            // Multi Disc & Total Disc tetap di-comment
+//        $multidisctype = trim($lm->multidisctype ?? '');
+//        $multidisc = (float) ($lm->multidisc ?? 0);
+//        $row[] = '<div class="ratakanan">' .
+//            number_format($multidisc, 2, '.', ',') .
+//            (
+//            $multidisc > 0 &&
+//            in_array($multidisctype, ['PERCENT', '%'])
+//                ? ' %'
+//                : ''
+//            ) .
+//            '</div>';
+//        $row[] = '<div class="ratakanan">'. number_format($lm->totaldiscount, 2, '.', ',') . '</div>';
+
             $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 2, '.', ',') . '</div>';
             $row[] = $lm->descriptionpo;
             $row[] = $lm->descriptionpp;
@@ -4610,6 +4739,7 @@ class Purchase extends BaseController
             $row[] = $lm->docnopp;
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
+            $row[] = $lm->batch;
             $row[] = $lm->capexno;
             $row[] = $lm->unit;
             $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
@@ -9049,9 +9179,7 @@ class Purchase extends BaseController
             'docdate'    => $docdate,
             'cabang'     => $cabang,
             'pemohon'    => $pemohon,
-            // 'estpakai'   => $estpakai,
             'status'     => 'E',
-            // 'keterangan' => $keterangan,
             'inputby'    => $nama,
             'inputdate'  => date('Y-m-d H:i:s')
         ]);
@@ -9066,10 +9194,10 @@ class Purchase extends BaseController
 
     public function saveLPBDetail()
     {
-        $nama   = trim($this->session->get('nama'));
-        $docno  = strtoupper(trim($this->request->getPost('docno') ?? ''));
+        $nama    = trim($this->session->get('nama'));
+        $docno   = strtoupper(trim($this->request->getPost('docno') ?? ''));
         $docnopo = strtoupper(trim($this->request->getPost('docnopo') ?? ''));
-        $idurut = $this->request->getPost('idurut');
+        $idurut  = $this->request->getPost('idurut');
 
         if (!$docno) {
             return $this->response->setJSON([
@@ -9081,20 +9209,23 @@ class Purchase extends BaseController
         $db = $this->db;
         $db->transStart();
 
-        $builderPO = $db->table('sc_trx.po');
-        $poData = $builderPO
-            ->select('currcode, kurs, idtax, isinclusive')
-            ->where('docno', $docnopo)
-            ->get()
-            ->getRowArray();
+        $modeEdit = !empty($idurut);
 
-        // Jika data PO tidak ditemukan, beri response error
-        if (!$poData) {
-            $db->transRollback();
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => "Data PO dengan nomor {$docnopo} tidak ditemukan"
-            ]);
+        $poData = null;
+        if (!$modeEdit) {
+            $poData = $db->table('sc_trx.po')
+                ->select('currcode, kurs, idtax, isinclusive')
+                ->where('docno', $docnopo)
+                ->get()
+                ->getRowArray();
+
+            if (!$poData) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => "Data PO dengan nomor {$docnopo} tidak ditemukan"
+                ]);
+            }
         }
 
         // =====================================================
@@ -9110,77 +9241,82 @@ class Purchase extends BaseController
         $reload = false;
 
         if ($exists == 0) {
-            $currcode   = $poData['currcode'] ?? '';
-            $kurs       = $poData['kurs'] ?? 0;
-            $idtax      = $poData['idtax'] ?? '';
+            $currcode    = $poData['currcode']   ?? '';
+            $kurs        = $poData['kurs']       ?? 0;
+            $idtax       = $poData['idtax']      ?? '';
             $isinclusive = strtoupper(trim($poData['isinclusive'] ?? 'NO'));
             $isinclusive = ($isinclusive === 'YES') ? 'YES' : 'NO';
 
             $db->table('sc_tmp.lpb')->insert([
-                'docno'     => $docno,
-                'cabang'    => $this->request->getPost('cabang'),
-                'docdate'   => date('Y-m-d', strtotime(trim($this->request->getPost('docdate')))),
-                // 'senddate'   => date('Y-m-d', strtotime(trim($this->request->getPost('senddate')))),
-                'jthtempo'     => $this->request->getPost('jthtempo'),
-                'isinclusive'   => $isinclusive,                              // ← Dari PO
-
-                'kdsupplier'    => strtoupper($this->request->getPost('kdsupplier')),
-                'nmsupplier'    => strtoupper($this->request->getPost('nmsupplier')),
-                'alamatsupplier'    => strtoupper($this->request->getPost('alamatsupplier')),
-                // 'alamatkirim'    => strtoupper($this->request->getPost('alamatkirim')),
-                'idtax'         => strtoupper($idtax),                        // ← Dari PO
-                'biayavol' => $this->request->getPost('biayavol') ?? 0,
-                'biayavol2' => $this->request->getPost('biayavol2') ?? 0,
-                'nosj'    => strtoupper($this->request->getPost('nosj')),
-                'nofaktur'    => strtoupper($this->request->getPost('nofaktur')),
-                'currcode'      => strtoupper($currcode),                     // ← Dari PO
-                'kurs'          => $kurs ?? 1,                                     // ← Dari PO
-                'keterangan'    => strtoupper($this->request->getPost('keterangan')),
-                'status'    => 'E',
-                'inputby'   => $nama,
-                'inputdate' => date('Y-m-d H:i:s')
+                'docno'          => $docno,
+                'cabang'         => $this->request->getPost('cabang'),
+                'docdate'        => date('Y-m-d', strtotime(trim($this->request->getPost('docdate')))),
+                'jthtempo'       => $this->request->getPost('jthtempo'),
+                'isinclusive'    => $isinclusive,
+                'kdsupplier'     => strtoupper($this->request->getPost('kdsupplier')),
+                'nmsupplier'     => strtoupper($this->request->getPost('nmsupplier')),
+                'alamatsupplier' => strtoupper($this->request->getPost('alamatsupplier')),
+                'idtax'          => strtoupper($idtax),
+                'biayavol'       => $this->request->getPost('biayavol')  ?? 0,
+                'biayavol2'      => $this->request->getPost('biayavol2') ?? 0,
+                'nosj'           => strtoupper($this->request->getPost('nosj')),
+                'nofaktur'       => strtoupper($this->request->getPost('nofaktur')),
+                'currcode'       => strtoupper($currcode),
+                'kurs'           => $kurs ?: 1,
+                'keterangan'     => strtoupper($this->request->getPost('keterangan')),
+                'pemohon'        => strtoupper($this->request->getPost('pemohon') ?? $nama),
+                'status'         => 'E',
+                'inputby'        => $nama,
+                'inputdate'      => date('Y-m-d H:i:s')
             ]);
 
             $reload = true;
         }
 
         $insertCount = 0;
-        $message = '';
+        $message     = '';
 
-        // ===============================
+        // =====================================================
         // MODE EDIT
-        // ===============================
-        if (!empty($idurut)) {
+        // =====================================================
+        if ($modeEdit) {
 
             $uniqueid = trim($this->request->getPost('uniqueid'));
 
-            $qty = (float)($this->request->getPost('qty') ?? 0);
-            $harga = (float)($this->request->getPost('harga') ?? 0);
-            $nilai = $qty * $harga;
-
-            $qtybonus = (float)($this->request->getPost('qtybonus') ?? 0);
-            $multidisc = (float)($this->request->getPost('multidisc') ?? 0);
-            $volitem = (float)($this->request->getPost('volitem') ?? 0);
-            $biaya = (float)($this->request->getPost('biaya') ?? 0);
-            $biaya2 = (float)($this->request->getPost('biaya2') ?? 0);
+            // ---- Input post
+            $qty       = (float) ($this->request->getPost('qty')       ?? 0);
+            $harga     = (float) ($this->request->getPost('harga')     ?? 0);
+            $qtybonus  = (float) ($this->request->getPost('qtybonus')  ?? 0);
+            $multidisc = (float) ($this->request->getPost('multidisc') ?? 0);
+            $volitem   = (float) ($this->request->getPost('volitem')   ?? 0);
+            $biaya     = (float) ($this->request->getPost('biaya')     ?? 0);
+            $biaya2    = (float) ($this->request->getPost('biaya2')    ?? 0);
 
             $descriptionpo = strtoupper($this->request->getPost('descriptionpo') ?? '');
-            $idprincipal = strtoupper(trim($this->request->getPost('idprincipal') ?? ''));
-            $idgudang = strtoupper($this->request->getPost('idgudang') ?? '');
-            $idspec = strtoupper($this->request->getPost('idspec') ?? '');
+            $idprincipal   = strtoupper(trim($this->request->getPost('idprincipal') ?? ''));
+            $idgudang      = strtoupper($this->request->getPost('idgudang') ?? '');
+
+            // 🔧 FIX: input batch (sebelumnya idspec)
+            $batchPost = strtoupper(trim($this->request->getPost('batch') ?? ''));
+
+            // 🔧 nilai = (qty * harga) - diskon
+            $nilaiAwal = $qty * $harga;
+            $diskon    = $nilaiAwal * $multidisc / 100;
+            $nilai     = $nilaiAwal - $diskon;
 
             // =====================================================
-            // VALIDASI QTY TERHADAP SISA QTY PO (untuk LPB)
+            // VALIDASI QTY TERHADAP SISA QTY PO
             // =====================================================
             $poDetail = $db->query("
-                SELECT
-                    qty,
-                    COALESCE(qtylpb, 0)  AS qtylpb,
-                    COALESCE(qtyvoid, 0) AS qtyvoid,
-                    (qty - COALESCE(qtylpb, 0) - COALESCE(qtyvoid, 0)) AS sisa_qty
-                FROM sc_trx.po_dtl
-                WHERE TRIM(uniqueid) = ?
-            ", [$uniqueid])->getRow();
+            SELECT
+                qty,
+                COALESCE(qtylpb, 0)  AS qtylpb,
+                COALESCE(qtyvoid, 0) AS qtyvoid,
+                COALESCE(batch, '')  AS batch_po,
+                (qty - COALESCE(qtylpb, 0) - COALESCE(qtyvoid, 0)) AS sisa_qty
+            FROM sc_trx.po_dtl
+            WHERE TRIM(uniqueid) = ?
+        ", [$uniqueid])->getRow();
 
             if (!$poDetail) {
                 $db->transRollback();
@@ -9198,20 +9334,24 @@ class Purchase extends BaseController
                 ]);
             }
 
+            // ---- Ambil header tmp
             $h = $db->table('sc_tmp.lpb')
-                ->select('kurs,idtax')
+                ->select('kurs, idtax, currcode')
                 ->where('docno', $docno)
                 ->where('inputby', $nama)
                 ->get()
                 ->getRowArray();
 
-            $kurs = $h['kurs'] ?? 1;
-            $idtax = $h['idtax'] ?? 'NON';
+            $kurs     = (float) ($h['kurs']     ?? 1);
+            $idtax    = $h['idtax']    ?? 'NON';
+            $currcode = $h['currcode'] ?? 'IDR';
+
+            if ($kurs <= 0) $kurs = 1;
 
             $nilaikonversi = $nilai * $kurs;
 
+            // 🔧 nilaipajak untuk NON = 0
             $nilaipajak = 0;
-
             if (!empty($idtax) && trim($idtax) !== 'NON' && $nilai > 0) {
                 $taxDetails = $db->table('sc_mst.tax_dtl')
                     ->select('percentation')
@@ -9220,41 +9360,48 @@ class Purchase extends BaseController
                     ->getResultArray();
 
                 $totalPersen = array_sum(array_column($taxDetails, 'percentation'));
-                // $nilaipajak = $nilai + ($nilai * $totalPersen / 100);
-                $nilaipajak = $nilai * $totalPersen / 100;
+                $nilaipajak  = $nilai * $totalPersen / 100;
             }
-            log_message('error', 'UNIQUEID: ' . $uniqueid);
+
+            // 🔧 FIX: batch langsung dari POST; kalau kosong fallback ke batch PO
+            $batchFinal = $batchPost !== '' ? $batchPost : ($poDetail->batch_po ?? '');
+
+            // 🔧 where TRIM pakai false
             $db->table('sc_tmp.lpb_dtl')
                 ->where('docno', $docno)
                 ->where('inputby', $nama)
-                ->where('TRIM(uniqueid)', $uniqueid)
+                ->where('TRIM(uniqueid)', $uniqueid, false)
                 ->update([
-                    'qty' => $qty,
-                    'qtybonus' => $qtybonus,
-                    'harga' => $harga,
-                    'multidisc' => $multidisc,
-                    'nilai' => $nilai,
+                    'qty'           => $qty,
+                    'qtybonus'      => $qtybonus,
+                    'harga'         => $harga,
+                    'multidisc'     => $multidisc,
+                    'nilai'         => $nilai,
                     'nilaikonversi' => $nilaikonversi,
-                    'nilaipajak' => $nilaipajak,
-                    'idtax' => $idtax,
-                    'kurs' => $kurs,
-                    'currcode' => $poData['currcode'] ?? '',
-                    'volitem' => $volitem,
-                    'biaya' => $biaya,
-                    'biaya2' => $biaya2,
-                    'idprincipal' => strtoupper(trim($this->request->getPost('idprincipal') ?? '')),
-                    'idgudang' => $idgudang,
-                    'idspec' => $idspec,
+                    'nilaipajak'    => $nilaipajak,
+                    'idtax'         => $idtax,
+                    'kurs'          => $kurs,
+                    'currcode'      => $currcode,
+                    'volitem'       => $volitem,
+                    'biaya'         => $biaya,
+                    'biaya2'        => $biaya2,
+                    'idprincipal'   => $idprincipal,
+                    'idgudang'      => $idgudang,
+                    'batch'         => $batchFinal,   // 🔧 batch, bukan idspec
                     'descriptionpo' => $descriptionpo,
-                    'updateby' => $nama,
-                    'updatedate' => date('Y-m-d H:i:s')
+                    'updateby'      => $nama,
+                    'updatedate'    => date('Y-m-d H:i:s')
                 ]);
 
             $message = 'Data berhasil diupdate';
 
         } else {
 
+            // =====================================================
+            // MODE ADD
+            // =====================================================
             if (empty($docnopo)) {
+                $db->transRollback();
                 return $this->response->setJSON([
                     'success' => false,
                     'message' => 'Docno PO kosong'
@@ -9262,69 +9409,113 @@ class Purchase extends BaseController
             }
 
             $poDetails = $db->query("
-            SELECT * FROM sc_trx.po_dtl WHERE TRIM(docno)=?
+            SELECT
+                idbarang, uniqueid, uniqueidpo, nmbarang, capexno, unit,
+                qty, qtylpb, qtyvoid, harga, idtax, currcode, kurs,
+                descriptionpp, descriptionpo, batch, etd, etdnotes
+            FROM sc_trx.po_dtl
+            WHERE TRIM(docno) = ?
         ", [$docnopo])->getResult();
 
             if (empty($poDetails)) {
+                $db->transRollback();
                 return $this->response->setJSON([
                     'success' => false,
                     'message' => 'PO tidak ditemukan'
                 ]);
             }
 
+            $headerTmp = $db->table('sc_tmp.lpb')
+                ->select('idtax, currcode, kurs')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->get()
+                ->getRowArray();
+
+            $idtaxHeader    = $headerTmp['idtax']    ?? ($poData['idtax']    ?? 'NON');
+            $currcodeHeader = $headerTmp['currcode'] ?? ($poData['currcode'] ?? 'IDR');
+            $kursHeader     = (float) ($headerTmp['kurs'] ?? ($poData['kurs'] ?? 1));
+            if ($kursHeader <= 0) $kursHeader = 1;
+
+            // 🔧 FIX: input batch dari POST (bukan idspec)
+            $batchPost = strtoupper(trim($this->request->getPost('batch') ?? ''));
+
             foreach ($poDetails as $row) {
 
-                $qtyLPBSaatIni = 0;
+                $sisaQty = (float) $row->qty
+                    - (float) ($row->qtylpb  ?? 0)
+                    - (float) ($row->qtyvoid ?? 0);
 
-                $existingLPB = $db->query("
-                    SELECT qty 
-                    FROM sc_tmp.lpb_dtl 
-                    WHERE
-                    uniqueid = ?
-                ", [$row->uniqueid])->getRow();
-
-                if ($existingLPB) {
-                    $qtyLPBSaatIni = $existingLPB->qty;
+                if ($sisaQty <= 0) {
+                    continue;
                 }
-
-                $sisaQty = $row->qty - ($row->qtylpb + $row->qtyvoid - $qtyLPBSaatIni);
-                if ($sisaQty <= 0) continue;
 
                 $duplicate = $db->table('sc_tmp.lpb_dtl')
                     ->where('docno', $docno)
                     ->where('uniqueid', $row->uniqueid)
                     ->countAllResults();
 
-                if ($duplicate > 0) continue;
+                if ($duplicate > 0) {
+                    continue;
+                }
 
                 $barang = $db->query("
-                SELECT deflocation FROM sc_mst.mbarang 
-                WHERE TRIM(idbarang)=? LIMIT 1
+                SELECT deflocation FROM sc_mst.mbarang
+                WHERE TRIM(idbarang) = ? LIMIT 1
             ", [trim($row->idbarang)])->getRow();
 
+                $harga      = (float) ($row->harga ?? 0);
+                $nilai      = $sisaQty * $harga;
+
+                $kursRow    = (float) ($row->kurs ?? $kursHeader);
+                if ($kursRow <= 0) $kursRow = 1;
+
+                $nilaikonversi = $nilai * $kursRow;
+
+                $idtaxRow = trim($row->idtax ?? '') ?: $idtaxHeader;
+                $nilaipajak = 0;
+                if (!empty($idtaxRow) && trim($idtaxRow) !== 'NON' && $nilai > 0) {
+                    $taxDetails = $db->table('sc_mst.tax_dtl')
+                        ->select('percentation')
+                        ->where('idtax', $idtaxRow)
+                        ->get()
+                        ->getResultArray();
+
+                    $totalPersen = array_sum(array_column($taxDetails, 'percentation'));
+                    $nilaipajak  = $nilai * $totalPersen / 100;
+                }
+
+                // 🔧 FIX: batch dari POST kalau diisi, kalau tidak pakai batch PO
+                $batchFinal = $batchPost !== ''
+                    ? $batchPost
+                    : ($row->batch ?? '');
+
                 $db->table('sc_tmp.lpb_dtl')->insert([
-                    'docno' => $docno,
-                    'docnopo' => $docnopo,
-                    'idbarang' => $row->idbarang,
-                    'uniqueid' => $row->uniqueid,
-                    'nmbarang' => $row->nmbarang,
-                    'capexno' => $row->capexno,
-                    'idgudang' => $barang->deflocation ?? '',
-                    'unit' => $row->unit,
-                    'qty' => $sisaQty,
-                    'harga' => $row->harga,
-                    'nilai' => $row->nilai,
-                    'nilaipajak' => $row->nilaipajak,
-                    'nilaikonversi' => $row->nilaikonversi,
-                    'currcode' => $row->currcode,
-                    'kurs' => $row->kurs,
-                    'idtax' => $row->idtax,
+                    'docno'         => $docno,
+                    'docnopo'       => $docnopo,
+                    'idbarang'      => $row->idbarang,
+                    'uniqueid'      => $row->uniqueid,
+                    'uniqueidpo'    => $row->uniqueidpo,
+                    'nmbarang'      => $row->nmbarang,
+                    'capexno'       => $row->capexno,
+                    'idgudang'      => $barang->deflocation ?? '',
+                    'unit'          => $row->unit,
+                    'qty'           => $sisaQty,
+                    'harga'         => $harga,
+                    'nilai'         => $nilai,
+                    'nilaipajak'    => $nilaipajak,
+                    'nilaikonversi' => $nilaikonversi,
+                    'currcode'      => $row->currcode   ?? $currcodeHeader,
+                    'kurs'          => $kursRow,
+                    'idtax'         => $idtaxRow,
                     'descriptionpp' => $row->descriptionpp,
                     'descriptionpo' => $row->descriptionpo,
-                    'idprincipal' => strtoupper(trim($this->request->getPost('idprincipal') ?? '')),
-                    'idspec' => '',
-                    'inputby' => $nama,
-                    'inputdate' => date('Y-m-d H:i:s')
+                    'idprincipal'   => strtoupper(trim($this->request->getPost('idprincipal') ?? '')),
+                    'batch'         => $batchFinal,
+                    'etd'           => $row->etd      ?? null,
+                    'etdnotes'      => $row->etdnotes ?? '',
+                    'inputby'       => $nama,
+                    'inputdate'     => date('Y-m-d H:i:s')
                 ]);
 
                 $insertCount++;
@@ -9335,59 +9526,59 @@ class Purchase extends BaseController
                 : "Semua item sudah ada sebelumnya";
         }
 
-        // ===============================
-        // HITUNG TOTAL (AMAN)
-        // ===============================
-        $lpbHeader = $builderHeader->select('idtax')
+        // =====================================================
+        // HITUNG TOTAL HEADER
+        // =====================================================
+        $lpbHeader = $builderHeader
+            ->select('idtax')
             ->where('inputby', $nama)
             ->where('docno', $docno)
-            ->get()->getRowArray();
+            ->get()
+            ->getRowArray();
+
         $idtax = $lpbHeader['idtax'] ?? '';
 
-        // Hitung total DPP (sum nilai dari po_dtl)
-        $builderTotalDpp = $db->table('sc_tmp.lpb_dtl');
-        $totalDpp = $builderTotalDpp->select('COALESCE(SUM(nilai), 0) as total_dpp')
+        $totalDpp = $db->table('sc_tmp.lpb_dtl')
+            ->select('COALESCE(SUM(nilai), 0) as total_dpp')
             ->where('docno', $docno)
             ->where('inputby', $nama)
             ->get()
             ->getRowArray();
 
-        $dpp = $totalDpp['total_dpp'] ?? 0;
+        $dpp = (float) ($totalDpp['total_dpp'] ?? 0);
 
-        // Hitung jumlah pajak berdasarkan idtax
         $jumlahPajak = 0;
-
-        if (!empty($idtax) && trim($idtax) !== 'NON'  && $dpp > 0) {
-            // Ambil detail tax dari sc_mst.tax_dtl
-            $builderTaxDtl = $db->table('sc_mst.tax_dtl');
-            $taxDetails = $builderTaxDtl->select('percentation')
+        if (!empty($idtax) && trim($idtax) !== 'NON' && $dpp > 0) {
+            $taxDetails = $db->table('sc_mst.tax_dtl')
+                ->select('percentation')
                 ->where('idtax', $idtax)
                 ->get()
                 ->getResultArray();
 
             foreach ($taxDetails as $tax) {
-                $persentase = $tax['percentation'] ?? 0;
+                $persentase   = (float) ($tax['percentation'] ?? 0);
                 $jumlahPajak += $dpp * ($persentase / 100);
             }
         }
 
-        // Hitung total (DPP + Jumlah Pajak)
         $total = $dpp + $jumlahPajak;
 
-        // Update header LPB
-        $builderHeader->where('docno', $docno)->where('inputby', $nama)->update([
-            'dpp' => number_format($dpp, 2, '.', ''),
-            'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
-            'total' => number_format($total, 2, '.', ''),
-            'updateby' => $nama,
-            'updatedate' => date('Y-m-d H:i:s')
-        ]);
+        $builderHeader
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->update([
+                'dpp'         => number_format($dpp, 2, '.', ''),
+                'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
+                'total'       => number_format($total, 2, '.', ''),
+                'updateby'    => $nama,
+                'updatedate'  => date('Y-m-d H:i:s')
+            ]);
 
         $db->transComplete();
 
         return $this->response->setJSON([
             'success' => true,
-            'reload' => $reload,
+            'reload'  => $reload,
             'message' => $message
         ]);
     }
@@ -9822,7 +10013,7 @@ class Purchase extends BaseController
     }
 
     function list_tmp_lpb_dtl(){
-        $docno = trim($this->request->getPost('docno')); // ambil dari POST
+        $docno = trim($this->request->getPost('docno'));
         $list = $this->m_purchase->get_t_lpb_dtl_temp_view($docno);
         $data = array();
         $no = $_POST['start'];
@@ -9838,15 +10029,22 @@ class Purchase extends BaseController
             $row[] = $lm->capexno;
             $row[] = $lm->idprincipal;
             $row[] = $lm->idgudang;
-            $row[] = $lm->idspec;
+
+            // 🔧 batch (sebelumnya idspec)
+            $row[] = $lm->batch;
+
+            // 🔧 ETD & ETD Notes
+            $row[] = !empty($lm->etd) ? date('d-m-Y', strtotime($lm->etd)) : '';
+            $row[] = $lm->etdnotes;
+
             $row[] = $lm->unit;
             $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 2, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan">'. number_format($lm->harga, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 2, '.', ',') . '% </div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 2, '.', ',') . '</div>';
+//            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 2, '.', ',') . '% </div>';
+//            $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 2, '.', ',') . '</div>';
+//            $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 2, '.', ',') . '</div>';
+//            $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 2, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 2, '.', ',') . '</div>';
             $row[] = $lm->descriptionpo;
             $row[] = $lm->descriptionpp;
@@ -9863,7 +10061,7 @@ class Purchase extends BaseController
     }
 
     function list_trx_lpb_dtl(){
-        $docno = trim($this->request->getPost('docno')); // ambil dari POST
+        $docno = trim($this->request->getPost('docno'));
         $list = $this->m_purchase->get_t_lpb_dtl_view($docno);
         $data = array();
         $no = $_POST['start'];
@@ -9879,20 +10077,26 @@ class Purchase extends BaseController
             $row[] = $lm->capexno;
             $row[] = $lm->idprincipal;
             $row[] = $lm->idgudang;
-            $row[] = $lm->idspec;
+
+            // 🔧 batch (sebelumnya idspec)
+            $row[] = $lm->batch;
+
+            // 🔧 ETD & ETD Notes
+            $row[] = !empty($lm->etd) ? date('d-m-Y', strtotime($lm->etd)) : '';
+            $row[] = $lm->etdnotes;
+
             $row[] = $lm->unit;
             $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 2, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan">'. number_format($lm->harga, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 2, '.', ',') . '</div>';
+//            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 2, '.', ',') . '</div>';
+//            $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 2, '.', ',') . '</div>';
+//            $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 2, '.', ',') . '</div>';
+//            $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 2, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 2, '.', ',') . '</div>';
             $row[] = $lm->descriptionpo;
             $row[] = $lm->descriptionpp;
             $data[] = $row;
-
         }
 
         $output = array(
@@ -12112,5 +12316,109 @@ class Purchase extends BaseController
 
     }
 
+    /**
+     * Cek total onhand 1 item di 1 branch
+     * URL: purchase/trans/see_stock_itemperbranch?idbranch=xxx&idbarang=yyy
+     */
+    public function see_stock_itemperbranch()
+    {
+        // =============================
+        // AMBIL PARAMETER
+        // =============================
+        $idbranch = $this->request->getGet('idbranch')
+            ?? $this->request->getPost('idbranch');
+
+        $idbarang = $this->request->getGet('idbarang')
+            ?? $this->request->getPost('idbarang');
+
+        // =============================
+        // VALIDASI PARAMETER
+        // =============================
+        if (empty($idbranch) || empty($idbarang)) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Parameter idbranch dan idbarang wajib diisi.',
+                'data'    => null
+            ]);
+        }
+
+        // =============================
+        // ESCAPE PARAMETER
+        // =============================
+        $idbranchEsc = $this->db->escape(trim((string) $idbranch));
+        $idbarangEsc = $this->db->escape(trim((string) $idbarang));
+
+        // =============================
+        // QUERY — pakai kolom `onhand`
+        // =============================
+        $sql = "
+        SELECT
+            ml.idbranchjob,
+            ml.nmbranchjob,
+            sg.idbarang,
+            COUNT(DISTINCT sg.idlocation) AS total_gudang,
+            COUNT(DISTINCT sg.batch)      AS total_batch,
+            SUM(COALESCE(sg.onhand, 0))   AS total_onhand
+        FROM sc_mst.stkgdw sg
+        INNER JOIN sc_mst.mlocation ml
+                ON TRIM(ml.idlocation) = TRIM(sg.idlocation)
+        WHERE TRIM(ml.idbranchjob) = TRIM({$idbranchEsc})
+          AND TRIM(sg.idbarang)    = TRIM({$idbarangEsc})
+        GROUP BY
+            ml.idbranchjob,
+            ml.nmbranchjob,
+            sg.idbarang
+    ";
+
+        $query = $this->db->query($sql);
+
+        // =============================
+        // GUARD: query gagal
+        // =============================
+        if ($query === false) {
+            log_message('error', 'see_stock_itemperbranch gagal: ' . print_r($this->db->error(), true));
+            log_message('error', 'SQL: ' . $sql);
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Query gagal. Hubungi administrator.',
+                'data'    => null
+            ]);
+        }
+
+        $result = $query->getRow();
+
+        // =============================
+        // HANDLE JIKA DATA TIDAK ADA
+        // =============================
+        if (!$result) {
+            return $this->response->setJSON([
+                'status'  => true,
+                'message' => 'Tidak ada stock untuk item ini di branch tersebut.',
+                'data'    => [
+                    'idbranchjob'  => $idbranch,
+                    'nmbranchjob'  => null,
+                    'idbarang'     => $idbarang,
+                    'total_gudang' => 0,
+                    'total_batch'  => 0,
+                    'total_onhand' => 0
+                ]
+            ]);
+        }
+
+        // =============================
+        // FORMAT RESPONSE
+        // =============================
+        return $this->response->setJSON([
+            'status' => true,
+            'data'   => [
+                'idbranchjob'  => trim($result->idbranchjob),
+                'nmbranchjob'  => trim((string) $result->nmbranchjob),
+                'idbarang'     => trim($result->idbarang),
+                'total_gudang' => (int)   $result->total_gudang,
+                'total_batch'  => (int)   $result->total_batch,
+                'total_onhand' => (float) $result->total_onhand
+            ]
+        ]);
+    }
 
 }

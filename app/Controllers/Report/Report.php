@@ -5229,41 +5229,166 @@ ORDER BY
 
     private function buildQueryBukuBesarDetail()
     {
-        // ============================================
-        // TODO: ISI QUERY DARI ATASAN
-        // ============================================
-        // Kolom output yang diharapkan:
-        // nmprk, kdprk, docdate, docno, keterangan,
-        // debet, kredit, namajobchild
-        // ============================================
-
-        $sql = "SELECT
-                    '' AS nmprk,
-                    '' AS kdprk,
-                    NULL AS docdate,
+        $sql = "
+            WITH parameter AS (
+                SELECT 
+                    ?::DATE AS tgl_mulai,
+                    ?::DATE AS tgl_akhir,
+                    ?::VARCHAR AS cabang,
+                    ?::VARCHAR AS kode_akun
+            ),
+            saldo_awal AS (
+                -- 1. Hitung Saldo Awal (Sebelum tgl_mulai)
+                SELECT 
+                    jd.idcoa,
+                    SUM(jd.debet - jd.kredit) AS saldo_awal
+                FROM sc_trx.jurnal_dt jd
+                JOIN sc_trx.jurnal_hd jh ON jh.id = jd.jurnal_id
+                WHERE jd.status = 'POSTED'
+                  AND jh.trxdate < (SELECT tgl_mulai FROM parameter)
+                  AND (
+                      (SELECT cabang FROM parameter) = '' 
+                      OR TRIM(jh.idbranch) = TRIM((SELECT cabang FROM parameter))
+                  )
+                  AND (
+                      (SELECT kode_akun FROM parameter) = '' 
+                      OR TRIM(jd.idcoa) = TRIM((SELECT kode_akun FROM parameter))
+                  )
+                GROUP BY jd.idcoa
+            ),
+            mutasi_summary AS (
+                -- 2. Ambil Mutasi & Grouping berdasarkan Docno dan Idcoa + Concat Detail
+                SELECT 
+                    jd.idcoa,
+                    jh.trxdate,
+                    jh.docno,
+                    
+                    -- 🔧 CONCAT SUPPLIER, BARANG, (QTY UNIT), BATCH
+                    STRING_AGG(
+                        DISTINCT 
+                        COALESCE(NULLIF(TRIM(td.nsupplier), ''), 'TANPA SUPPLIER') 
+                        || ' - ' || 
+                        COALESCE(NULLIF(TRIM(mb.nmbarang), ''), NULLIF(TRIM(td.namabarang), ''), 'TANPA BARANG')
+                        || ' (' || 
+                           COALESCE(TO_CHAR(td.qty, 'FM999,999,990.00'), '0') || 
+                           CASE WHEN COALESCE(TRIM(td.idunit), '') <> '' THEN ' ' || TRIM(td.idunit) ELSE '' END
+                        || ')' 
+                        || ' / ' || 
+                        COALESCE(NULLIF(TRIM(td.batch), ''), '-')
+                        , ' / '
+                    ) AS keterangan,
+                    
+                    SUM(jd.debet) AS debet,
+                    SUM(jd.kredit) AS kredit,
+                    COALESCE(TRIM(b.nmbranch), TRIM(jh.cabang), '-') AS namajobchild
+                FROM sc_trx.jurnal_dt jd
+                JOIN sc_trx.jurnal_hd jh ON jh.id = jd.jurnal_id
+                
+                -- JOIN KE TABEL TRANSAKSI UNTUK SUPPLIER & BARANG
+                LEFT JOIN sc_trx.transaction_dt td ON TRIM(td.uniqueid) = TRIM(jd.source_uniqueid)
+                LEFT JOIN sc_mst.mbarang mb ON TRIM(mb.idbarang) = TRIM(td.idbarang)
+                LEFT JOIN sc_mst.branchjob b ON TRIM(b.idbranch) = TRIM(jh.idbranch)
+                
+                WHERE jd.status = 'POSTED'
+                  AND jh.trxdate BETWEEN (SELECT tgl_mulai FROM parameter) AND (SELECT tgl_akhir FROM parameter)
+                  AND (
+                      (SELECT cabang FROM parameter) = '' 
+                      OR TRIM(jh.idbranch) = TRIM((SELECT cabang FROM parameter))
+                  )
+                  AND (
+                      (SELECT kode_akun FROM parameter) = '' 
+                      OR TRIM(jd.idcoa) = TRIM((SELECT kode_akun FROM parameter))
+                  )
+                GROUP BY 
+                    jd.idcoa, 
+                    jh.trxdate, 
+                    jh.docno, 
+                    COALESCE(TRIM(b.nmbranch), TRIM(jh.cabang), '-')
+            ),
+            coa_yang_muncul AS (
+                -- 3. Ambil gabungan COA dari Saldo Awal dan Mutasi
+                SELECT idcoa FROM saldo_awal
+                UNION
+                SELECT idcoa FROM mutasi_summary
+            ),
+            gabungan AS (
+                -- 4. Baris Saldo Awal (Gunakan COALESCE jika tidak ada = 0)
+                SELECT 
+                    cy.idcoa,
+                    c.nmcoa,
+                    (SELECT tgl_mulai FROM parameter) AS trxdate,
                     '' AS docno,
-                    '' AS keterangan,
-                    0 AS debet,
-                    0 AS kredit,
-                    '' AS namajobchild
-                WHERE 1=0";
+                    'SALDO AWAL' AS keterangan,
+                    CASE WHEN COALESCE(sa.saldo_awal, 0) > 0 THEN sa.saldo_awal ELSE 0 END AS debet,
+                    CASE WHEN COALESCE(sa.saldo_awal, 0) < 0 THEN ABS(sa.saldo_awal) ELSE 0 END AS kredit,
+                    'PT JATIM TAMAN STEEL MFG' AS namajobchild,
+                    0 AS is_saldo_awal
+                FROM coa_yang_muncul cy
+                JOIN sc_mst.coa c ON TRIM(c.idcoa) = TRIM(cy.idcoa)
+                LEFT JOIN saldo_awal sa ON TRIM(sa.idcoa) = TRIM(cy.idcoa)
+                
+                UNION ALL
+                
+                -- 5. Baris Mutasi
+                SELECT 
+                    m.idcoa,
+                    c.nmcoa,
+                    m.trxdate,
+                    m.docno,
+                    m.keterangan,
+                    m.debet,
+                    m.kredit,
+                    m.namajobchild,
+                    1 AS is_saldo_awal
+                FROM mutasi_summary m
+                JOIN sc_mst.coa c ON TRIM(c.idcoa) = TRIM(m.idcoa)
+            ),
+            final_result AS (
+                -- 6. Nomor urut reset per COA
+                SELECT 
+                    *,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY idcoa 
+                        ORDER BY is_saldo_awal ASC, trxdate ASC, docno ASC
+                    ) AS urutan
+                FROM gabungan
+            )
+            -- 7. Output Final
+            SELECT 
+                nmcoa AS nmprk,
+                idcoa AS kdprk,
+                TO_CHAR(trxdate, 'YYYY-MM-DD') AS docdate,
+                docno,
+                keterangan,
+                debet,
+                kredit,
+                namajobchild
+            FROM final_result
+            ORDER BY 
+                kdprk ASC, 
+                urutan ASC
+        ";
 
-        return rtrim($sql, " \t\n\r\0\x0B;");
+        return $sql;
     }
 
     public function previewLaporanBukuBesarDetail()
     {
         $tglrange = $this->request->getPost('tglrange');
-        $cabang   = $this->request->getPost('cabang');
-        $kdprk    = $this->request->getPost('kdprk');
+        $cabang   = $this->request->getPost('cabang') ?? '';
+        $kdprk    = $this->request->getPost('kdprk') ?? '';
+
+        // Pecah tanggal (Asumsi format dari frontend: 'DD-MM-YYYY - DD-MM-YYYY')
+        $dates = explode(' - ', $tglrange);
+        $tglAwal = !empty($dates[0]) ? date('Y-m-d', strtotime($dates[0])) : date('Y-m-01');
+        $tglAkhir = !empty($dates[1]) ? date('Y-m-d', strtotime($dates[1])) : date('Y-m-t');
 
         $page    = max(1, (int)($this->request->getPost('page') ?? 1));
         $perpage = (int)($this->request->getPost('perpage') ?? 25);
         if ($perpage < 1 || $perpage > 200) $perpage = 25;
 
-        // ⚠️ SEMENTARA: query placeholder tanpa ? → bindBase kosong
-        // Setelah query asli datang, isi: [$tglAwal, $tglAkhir, $cabang, $kdprk]
-        $bindBase = [];
+        // Bind parameter sesuai urutan di Query: Tgl Awal, Tgl Akhir, Cabang, Kd Prk
+        $bindBase = [$tglAwal, $tglAkhir, $cabang, $kdprk];
 
         $sql = $this->buildQueryBukuBesarDetail();
 
@@ -5291,11 +5416,16 @@ ORDER BY
     public function downloadLaporanBukuBesarDetail()
     {
         $tglrange = $this->request->getPost('tglrange');
-        $cabang   = $this->request->getPost('cabang');
-        $kdprk    = $this->request->getPost('kdprk');
+        $cabang   = $this->request->getPost('cabang') ?? '';
+        $kdprk    = $this->request->getPost('kdprk') ?? '';
 
-        // ⚠️ SEMENTARA: kosong
-        $bind = [];
+        // Pecah tanggal
+        $dates = explode(' - ', $tglrange);
+        $tglAwal = !empty($dates[0]) ? date('Y-m-d', strtotime($dates[0])) : date('Y-m-01');
+        $tglAkhir = !empty($dates[1]) ? date('Y-m-d', strtotime($dates[1])) : date('Y-m-t');
+
+        // Bind parameter
+        $bind = [$tglAwal, $tglAkhir, $cabang, $kdprk];
 
         $sql = $this->buildQueryBukuBesarDetail();
 
@@ -5395,90 +5525,97 @@ ORDER BY
         return $this->template->render('report/trans/v_labarugi', $data);
     }
 
-    private function buildQueryLabaRugi()
+    private function buildQueryLabaRugi($tgl, $cabang)
     {
-        // ============================================
-        // TODO: ISI QUERY DARI ATASAN
-        // ============================================
-        // Kolom output yang diharapkan:
-        // parent, description, bulan_lalu, bulan_berjalan,
-        // tahun_berjalan, job
-        // ============================================
+        // Escape nilai string dengan helper CI4 (aman dari SQL injection)
+        $tglEsc    = $this->db->escape($tgl);       // → "'2026-10-31'"
+        $cabangEsc = $this->db->escape($cabang);    // → "''" atau "'CBG01'"
 
-        $sql = "SELECT
-                    '' AS parent,
-                    '' AS description,
-                    0 AS bulan_lalu,
-                    0 AS bulan_berjalan,
-                    0 AS tahun_berjalan,
-                    '' AS job
-                WHERE 1=0";
+        $sql = "
+        WITH parameter AS (
+            SELECT
+                CAST({$tglEsc} AS date)    AS tgl_laporan,
+                CAST({$cabangEsc} AS varchar) AS cabang
+        ),
+        mutasi AS (
+            SELECT
+                jd.idcoa,
+                jh.trxdate,
+                COALESCE(TRIM(jh.idbranch), 'PUSAT') AS job,
+                SUM(jd.debet - jd.kredit) AS saldo
+            FROM sc_trx.jurnal_dt jd
+            JOIN sc_trx.jurnal_hd jh ON jh.id = jd.jurnal_id
+            WHERE jd.status = 'POSTED'
+              AND (
+                  (SELECT cabang FROM parameter) = ''
+                  OR TRIM(jh.idbranch) = TRIM((SELECT cabang FROM parameter))
+              )
+              AND jh.trxdate <= (SELECT tgl_laporan FROM parameter)
+            GROUP BY jd.idcoa, jh.trxdate, TRIM(jh.idbranch)
+        ),
+        rekap AS (
+            SELECT
+                m.idcoa,
+                m.job,
+                SUM(CASE
+                    WHEN m.trxdate BETWEEN
+                        (DATE_TRUNC('month', (SELECT tgl_laporan FROM parameter)) - INTERVAL '1 year')
+                        AND
+                        ((SELECT tgl_laporan FROM parameter) - INTERVAL '1 year')
+                    THEN m.saldo ELSE 0 END) AS bulan_lalu,
+                SUM(CASE
+                    WHEN m.trxdate BETWEEN
+                        DATE_TRUNC('month', (SELECT tgl_laporan FROM parameter))
+                        AND
+                        (SELECT tgl_laporan FROM parameter)
+                    THEN m.saldo ELSE 0 END) AS bulan_berjalan,
+                SUM(CASE
+                    WHEN m.trxdate BETWEEN
+                        DATE_TRUNC('year', (SELECT tgl_laporan FROM parameter))
+                        AND
+                        (SELECT tgl_laporan FROM parameter)
+                    THEN m.saldo ELSE 0 END) AS tahun_berjalan
+            FROM mutasi m
+            GROUP BY m.idcoa, m.job
+        )
+        SELECT
+            CASE
+                WHEN TRIM(c.groupcoa) = 'PENDAPATAN' THEN 'PENDAPATAN'
+                WHEN TRIM(c.groupcoa) = 'BIAYA' THEN 'HARGA POKOK PENJUALAN'
+                WHEN TRIM(c.groupcoa) = 'PENDAPATAN DI LUAR USAHA' THEN 'BEBAN OPERASIONAL'
+                WHEN TRIM(c.groupcoa) = 'BIAYA DI LUAR USAHA' THEN 'PENDAPATAN / BIAYA LAIN-LAIN'
+                ELSE 'LAIN-LAIN'
+            END AS parent,
+            TRIM(c.nmcoa) AS description,
+            COALESCE(r.bulan_lalu, 0)     AS bulan_lalu,
+            COALESCE(r.bulan_berjalan, 0) AS bulan_berjalan,
+            COALESCE(r.tahun_berjalan, 0) AS tahun_berjalan,
+            COALESCE(r.job, '-')          AS job
+        FROM rekap r
+        JOIN sc_mst.coa c ON TRIM(c.idcoa) = TRIM(r.idcoa)
+        WHERE TRIM(c.groupcoa) IN (
+            'PENDAPATAN',
+            'BIAYA',
+            'PENDAPATAN DI LUAR USAHA',
+            'BIAYA DI LUAR USAHA'
+        )
+        ORDER BY
+            CASE TRIM(c.groupcoa)
+                WHEN 'PENDAPATAN' THEN 1
+                WHEN 'BIAYA' THEN 2
+                WHEN 'PENDAPATAN DI LUAR USAHA' THEN 3
+                WHEN 'BIAYA DI LUAR USAHA' THEN 4
+                ELSE 5
+            END,
+            TRIM(c.idcoa),
+            r.job,
+            TRIM(c.nmcoa)
+    ";
 
         return rtrim($sql, " \t\n\r\0\x0B;");
     }
 
     public function previewLaporanLabaRugi()
-    {
-        $tglrange = $this->request->getPost('tglrange'); // single date, format dd-mm-yyyy
-        $cabang   = $this->request->getPost('cabang');
-
-        // =========================
-        // NORMALISASI TANGGAL
-        // =========================
-        $tgl = null;
-        if (!empty($tglrange)) {
-            // terima dd-mm-yyyy
-            if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $tglrange)) {
-                $dt = \DateTime::createFromFormat('d-m-Y', $tglrange);
-                if ($dt !== false) {
-                    $tgl = $dt->format('Y-m-d');
-                }
-            }
-            // terima yyyy-mm-dd
-            elseif (preg_match('/^\d{4}-\d{2}-\d{2}$/', $tglrange)) {
-                $tgl = $tglrange;
-            }
-        }
-
-        if (empty($tgl)) {
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'Tanggal wajib diisi.',
-            ]);
-        }
-
-        $page    = max(1, (int)($this->request->getPost('page') ?? 1));
-        $perpage = (int)($this->request->getPost('perpage') ?? 25);
-        if ($perpage < 1 || $perpage > 200) $perpage = 25;
-
-        // ⚠️ SEMENTARA: query placeholder tanpa ? → bindBase kosong
-        // Setelah query asli datang, isi: [$tgl, $cabang]
-        $bindBase = [];
-
-        $sql = $this->buildQueryLabaRugi();
-
-        // COUNT
-        $sqlCount = "SELECT COUNT(*) AS total FROM (" . $sql . ") x";
-        $totalRow = $this->db->query($sqlCount, $bindBase)->getRowArray();
-        $total    = (int)($totalRow['total'] ?? 0);
-        $totalPage = $perpage > 0 ? (int)ceil($total / $perpage) : 0;
-
-        // DATA
-        $offset   = ($page - 1) * $perpage;
-        $bindData = array_merge($bindBase, [$perpage, $offset]);
-        $rows = $this->db->query($sql . " LIMIT ? OFFSET ?", $bindData)->getResultArray();
-
-        return $this->response->setJSON([
-            'status'     => 'ok',
-            'data'       => $rows,
-            'page'       => $page,
-            'perpage'    => $perpage,
-            'total'      => $total,
-            'total_page' => $totalPage,
-        ]);
-    }
-
-    public function downloadLaporanLabaRugi()
     {
         $tglrange = $this->request->getPost('tglrange');
         $cabang   = $this->request->getPost('cabang');
@@ -5495,21 +5632,92 @@ ORDER BY
         }
 
         if (empty($tgl)) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Tanggal wajib diisi.',
+            ]);
+        }
+
+        $page    = max(1, (int)($this->request->getPost('page') ?? 1));
+        $perpage = (int)($this->request->getPost('perpage') ?? 25);
+        if ($perpage < 1 || $perpage > 200) $perpage = 25;
+
+        $cabang = $cabang ?? '';
+
+        // Build SQL dengan parameter sudah di-escape
+        $sql = $this->buildQueryLabaRugi($tgl, $cabang);
+
+        // ---- COUNT ----
+        $sqlCount   = "SELECT COUNT(*) AS total FROM (" . $sql . ") x";
+        $queryCount = $this->db->query($sqlCount);
+        if ($queryCount === false) {
+            log_message('error', 'LR count gagal: ' . print_r($this->db->error(), true));
+            log_message('error', 'SQL: ' . $sqlCount);
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Query count gagal.',
+            ]);
+        }
+        $totalRow  = $queryCount->getRowArray();
+        $total     = (int)($totalRow['total'] ?? 0);
+        $totalPage = $perpage > 0 ? (int)ceil($total / $perpage) : 0;
+
+        // ---- DATA (LIMIT/OFFSET inline, sudah di-cast int) ----
+        $offset    = ($page - 1) * $perpage;
+        $sqlData   = $sql . " LIMIT " . (int)$perpage . " OFFSET " . (int)$offset;
+        $queryData = $this->db->query($sqlData);
+        if ($queryData === false) {
+            log_message('error', 'LR data gagal: ' . print_r($this->db->error(), true));
+            log_message('error', 'SQL: ' . $sqlData);
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Query data gagal.',
+            ]);
+        }
+        $rows = $queryData->getResultArray();
+
+        return $this->response->setJSON([
+            'status'     => 'ok',
+            'data'       => $rows,
+            'page'       => $page,
+            'perpage'    => $perpage,
+            'total'      => $total,
+            'total_page' => $totalPage,
+        ]);
+    }
+
+    public function downloadLaporanLabaRugi()
+    {
+        $tglrange = $this->request->getPost('tglrange');
+        $cabang   = $this->request->getPost('cabang');
+
+        $tgl = null;
+        if (!empty($tglrange)) {
+            if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $tglrange)) {
+                $dt = \DateTime::createFromFormat('d-m-Y', $tglrange);
+                if ($dt !== false) $tgl = $dt->format('Y-m-d');
+            } elseif (preg_match('/^\d{4}-\d{2}-\d{2}$/', $tglrange)) {
+                $tgl = $tglrange;
+            }
+        }
+
+        if (empty($tgl)) {
             exit('Tanggal wajib diisi.');
         }
 
-        // ⚠️ SEMENTARA: kosong
-        $bind = [];
+        $cabang = $cabang ?? '';
 
-        $sql = $this->buildQueryLabaRugi();
+        // Build SQL — parameter sudah di-escape di dalam fungsi
+        $sql = $this->buildQueryLabaRugi($tgl, $cabang);
 
         ini_set('memory_limit', '512M');
         set_time_limit(0);
         if (ob_get_length()) ob_end_clean();
 
-        $query = $this->db->query($sql, $bind);
+        $query = $this->db->query($sql);
         if ($query === false) {
             log_message('error', 'Laba Rugi query failed: ' . print_r($this->db->error(), true));
+            log_message('error', 'SQL: ' . $sql);
             exit('Query gagal. Hubungi administrator.');
         }
 
@@ -5520,10 +5728,12 @@ ORDER BY
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
         $sheet->getStyle('A1')->getAlignment()->setHorizontal('center');
 
-        $headers = [
-            'Parent', 'Description', 'Bulan Lalu', 'Bulan Berjalan',
-            'Tahun Berjalan', 'Job'
-        ];
+        // Info tanggal & cabang
+        $sheet->setCellValue('A2', 'Per Tanggal: ' . $tgl . '   |   Cabang: ' . ($cabang !== '' ? $cabang : 'SEMUA'));
+        $sheet->mergeCells('A2:F2');
+        $sheet->getStyle('A2')->getFont()->setItalic(true);
+
+        $headers = ['Parent', 'Description', 'Bulan Lalu', 'Bulan Berjalan', 'Tahun Berjalan', 'Job'];
         $sheet->fromArray($headers, null, 'A3');
         $sheet->getStyle('A3:F3')->getFont()->setBold(true);
         $sheet->getStyle('A3:F3')->getFill()
@@ -5538,7 +5748,7 @@ ORDER BY
                 $r['bulan_lalu'],
                 $r['bulan_berjalan'],
                 $r['tahun_berjalan'],
-                $r['job']
+                $r['job'],
             ], null, 'A' . $rowNum);
             $rowNum++; $rowCount++;
         }
@@ -5573,7 +5783,7 @@ ORDER BY
     }
 
 
-    
+
 
     // ========================= LAPORAN WO ==========================
 
@@ -5760,5 +5970,4 @@ ORDER BY
         unset($spreadsheet);
         exit;
     }
-    
 }

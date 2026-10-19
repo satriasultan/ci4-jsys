@@ -1,10 +1,5 @@
 /*
- * Created by PhpStorm.
- *  * User: FIKY-PC
- *  * Date: 12/2/20, 2:32 PM
- *  * Last Modified: 12/2/20, 2:32 PM.
- *  Developed By: Fiky Ashariza Powered By PhpStorm
- *  Copyright© 2020 .All rights reserved.
+ * lpb.js
  *
  */
 
@@ -15,13 +10,12 @@ var initTable;
 //"use strict";
 
 function tableLPBTrx(){
-    // var lg = languageDatatable;
     var initTable = function () {
         var table = $('#tablelpbTrx');
         table.DataTable({
-            "processing": true, //Feature control the processing indicator.
-            "serverSide": true, //Feature control DataTables' server-side processing mode.
-            "order": [], //Initial no order.
+            "processing": true,
+            "serverSide": true,
+            "order": [],
             "language":  languageDatatable(),
             "paging": true,
             "lengthChange": false,
@@ -46,7 +40,7 @@ function tableLPBTrx(){
                     data.tglrange = $('#tglrange').val();
                     data.idbarang = $('#idbarang_filter').val();
                     data.namasupplier = $('#namasupplier').val();
-                    data.status = $('#status_filter').val(); //A,P,S,ALL
+                    data.status = $('#status_filter').val();
                 },
                 "dataFilter": function(data) {
                     var json = jQuery.parseJSON(data);
@@ -54,56 +48,43 @@ function tableLPBTrx(){
                     json.recordsTotal = json.dataTables.recordsTotal;
                     json.recordsFiltered = json.dataTables.recordsFiltered;
                     json.data = json.dataTables.data;
-                    return JSON.stringify(json); // return JSON string
+                    return JSON.stringify(json);
                 }
             },
-
-            //Set column definition initialisation properties.
             "columnDefs": [
                 {
-                    "targets": [ -1 ], //last column
-                    "orderable": false, //set not orderable
+                    "targets": [ -1 ],
+                    "orderable": false,
                 },
             ],
-
         });
-
     };
-
-
     return initTable();
 }
 
 function reload_tableLPBTrx()
 {
     var table = $('#tablelpbTrx');
-    table.DataTable().ajax.reload(); //reload datatable ajax
-    //console.log('HALO HALO BANDUNG');
+    table.DataTable().ajax.reload();
 }
 
-$('#btn-filter-tx').click(function(){ //button filter event click
+$('#btn-filter-tx').click(function(){
     var table = $('#tablelpbTrx');
-    table.DataTable().ajax.reload(); //reload datatable ajax
+    table.DataTable().ajax.reload();
     $('#filter').modal('hide');
 });
-$('#btn-reset-tx').click(function(){ //button reset event click
+$('#btn-reset-tx').click(function(){
     $('#form-filter')[0].reset();
     var table = $('#tablelpbTrx');
-    table.DataTable().ajax.reload(); //reload datatable ajax
+    table.DataTable().ajax.reload();
     $('#filter').modal('hide');
 });
 
 let skipRoleChange = false;
 
 
-
 //EDIT ITEM
 function documentReadable(){
-    // $("#loadMe").modal({
-    //     backdrop: "static", //remove ability to close modal with click
-    //     keyboard: false, //remove option to close with keyboard
-    //     show: false //Display loader!
-    // });
     var docno = $('[name="docno"]').val()
 
     $.ajax({
@@ -120,12 +101,11 @@ function documentReadable(){
 
             $('[name="docno"]').val(json.dataTables.items[0].docno).prop('readonly', true);
             var docnoData = json.dataTables.items[0].docno.trim();
-            let prefixParts = docnoData.split('/'); // ["JTS", "PH", "25", "08"]
+            let prefixParts = docnoData.split('/');
             $('[name="prefix"]').val(prefixParts[0]).prop('readonly', true);
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
             $('[name="suffix"]').val(prefixParts[2]).prop('readonly', true);
             defaultInitialPO = prefixParts[2].substring(0, 2);
-
 
             $.ajax({
                 type: 'GET',
@@ -133,35 +113,26 @@ function documentReadable(){
                 dataType: 'json',
                 delay: 250,
             }).then(function (datax) {
-
-            // Tambahkan data alamat dan phone ke object
                 var supplierData = datax.items[0];
                 supplierData.alamat = json.dataTables.items[0].alamatsupplier;
-                // supplierData.phone = data.phone;
-                
-                // create the option dan simpan data lengkap
+
                 var option = new Option(supplierData.nmsupplier, supplierData.kdsupplier, true, true);
-                $(option).data('supplier-data', supplierData); // Simpan data lengkap
-                
+                $(option).data('supplier-data', supplierData);
+
                 $('[name="kdsupplier"]').append(option).trigger('change').prop('disabled',true);
                 defaultInitialSupPO = json.dataTables.items[0].kdsupplier
-                // Set alamat dan phone langsung
                 $("#alamatsupplier").val(json.dataTables.items[0].alamatsupplier);
-                // $("#phone").val(data.phone).prop('readonly', true);
             });
 
-            //$('[name="idgroup"]').val(json.dataTables.items[0].idgroup);
             $.ajax({
                 type: 'GET',
                 url: HOST_URL + 'api/globalmodule/list_branchjob' + '?var=' + json.dataTables.items[0].cabang,
                 dataType: 'json',
                 delay: 250,
             }).then(function (datax) {
-                // create the option and append to Select2
                 var option = new Option(datax.items[0].nmbranch, datax.items[0].idbranch, true, true);
                 $('[name="cabang"]').append(option).trigger('change').prop('disabled',true);
 
-                // manually trigger the `select2:select` event
                 $('[name="cabang"]').trigger({
                     type: 'select2:select',
                     params: {
@@ -176,11 +147,9 @@ function documentReadable(){
                 dataType: 'json',
                 delay: 250,
             }).then(function (datax) {
-                // create the option and append to Select2
                 var option = new Option(datax.items[0].nmtax, datax.items[0].idtax, true, true);
                 $('[name="idtax"]').append(option).trigger('change');
 
-                // manually trigger the `select2:select` event
                 $('[name="idtax"]').trigger({
                     type: 'select2:select',
                     params: {
@@ -195,27 +164,21 @@ function documentReadable(){
                 dataType: 'json',
                 delay: 250,
             }).then(function (datax) {
-                // create the option and append to Select2
                 var currencyData = datax.items[0];
                 currencyData.kurs = json.dataTables.items[0].kurs;
-                // currencyData.phone = data.phone;
-                
-                // create the option dan simpan data lengkap
+
                 var option = new Option(currencyData.currname, currencyData.currcode, true, true);
-                $(option).data('currency-data', currencyData); // Simpan data lengkap
-                
+                $(option).data('currency-data', currencyData);
+
                 $('[name="currcode"]').append(option).trigger('change');
-                
-                // Set alamat dan phone langsung
+
                 setJtsValue('[name="kurs"]', convertToDbNumber(json.dataTables.items[0].kurs));
                 $('[name="kurs"]').prop('readonly', true);
-                // $("#phone").val(data.phone).prop('readonly', true);
             });
 
 
             skipRoleChange = true;
             $('[name="docdate"]').val(moment(json.dataTables.items[0].docdate).format('DD-MM-YYYY'));
-            // $('[name="senddate"]').val(json.dataTables.items[0].senddate);
             setJtsValue('[name="jthtempo"]', convertToDbNumber(json.dataTables.items[0].jthtempo));
             setJtsValue('[name="biayavol"]', convertToDbNumber(json.dataTables.items[0].biayavol));
             setJtsValue('[name="biayavol2"]', convertToDbNumber(json.dataTables.items[0].biayavol2));
@@ -224,10 +187,7 @@ function documentReadable(){
                 'checked',
                 $.trim((json.dataTables.items[0].isinclusive || '')).toUpperCase() === 'YES'
             );
-            // $('[name="jthtempo"]').val(json.dataTables.items[0].jthtempo);
             $('[name="alamatsupplier"]').val(json.dataTables.items[0].alamatsupplier);
-            // $('[name="alamatkirim"]').val(json.dataTables.items[0].alamatkirim);
-            // $('[name="isinclusive"]').val(json.dataTables.items[0].isinclusive);
             $('[name="keterangan"]').val(json.dataTables.items[0].keterangan);
             $('[name="nosj"]').val(json.dataTables.items[0].nosj);
             $('[name="nofaktur"]').val(json.dataTables.items[0].nofaktur);
@@ -236,15 +196,8 @@ function documentReadable(){
             setJtsValue('[name="dpp"]', convertToDbNumber(json.dataTables.items[0].dpp));
             setJtsValue('[name="jumlahpajak"]', convertToDbNumber(json.dataTables.items[0].jumlahpajak));
             setJtsValue('[name="total"]', convertToDbNumber(json.dataTables.items[0].total));
-            // $('[name="estpakai"]').val(json.dataTables.items[0].estpakai);
-            
 
-            // $('[name="keterangan"]').val(json.dataTables.items[0].keterangan);
-            //$('[name="chold"]').val(json.dataTables.items[0].chold.trim()).trigger('change');
-
-            //$('[name="idbarang"]').prop('readonly', true);
             $("#loadMe").modal("hide");
-
         },
         complete: function(){
             $("#loadMe").modal("hide");
@@ -262,7 +215,7 @@ function documentReadable(){
 
 
 function formatPrincipal(repo) {
-if (repo.loading) return repo.text;
+    if (repo.loading) return repo.text;
     var markup ="<div class='select2-result-repository__description'>" + repo.idprincipal +"   <i class='fa fa-circle'></i>   "+ repo.nmprincipal +"  </div>";
     return markup;
 }
@@ -272,7 +225,6 @@ function formatPrincipalSelection(repo) {
 
 // ======================= PEMBELIAN ==================================
 
-//var defaultInitialGol = $("#newdept").val();
 $("#idprincipal").select2({
     placeholder: "Ketik/Pilih Principal",
     allowClear: true,
@@ -285,7 +237,7 @@ $("#idprincipal").select2({
         delay: 250,
         data: function(params) {
             return {
-                _search_: params.term, // search term
+                _search_: params.term,
                 _page_: params.page,
                 _draw_: true,
                 _start_: 1,
@@ -294,10 +246,6 @@ $("#idprincipal").select2({
             };
         },
         processResults: function(data, params) {
-            // parse the results into the format expected by Select2
-            // since we are using custom formatting functions we do not need to
-            // alter the remote JSON data, except to indicate that infinite
-            // scrolling can be used
             params.page = params.page || 1;
 
             return {
@@ -311,10 +259,9 @@ $("#idprincipal").select2({
     },
     escapeMarkup: function(markup) {
         return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatPrincipal, // omitted for brevity, see the source of this page
-    templateSelection: formatPrincipalSelection // omitted for brevity, see the source of this page
+    },
+    templateResult: formatPrincipal,
+    templateSelection: formatPrincipalSelection
 }).on('select2:select', function (e) {
 });
 
@@ -325,7 +272,6 @@ $("#idgudang").select2({
     allowClear: true,
     width: '100%',
     dropdownParent: $('#modalUpdateLPB'),
-    // minimumInputLength: 2, // only start searching when the user has input 3 or more characters
     maximumSelectionLength: 1,
     multiple: false,
     ajax: {
@@ -335,7 +281,7 @@ $("#idgudang").select2({
         delay: 250,
         data: function(params) {
             return {
-                _search_: params.term, // search term
+                _search_: params.term,
                 _page_: params.page,
                 _draw_: true,
                 _start_: 1,
@@ -346,19 +292,6 @@ $("#idgudang").select2({
             };
         },
         processResults: function(data, params) {
-
-            // var searchTerm = $("#idgudang").data("select2").$dropdown.find("input").val();
-            // if (data.items.length === 1 && data.items[0].text === searchTerm) {
-            //     var option = new Option(data.items[0].nmlocation, data.items[0].idlocation, true, true);
-            //     $('#idgudang').append(option).trigger('change').select2("close");
-            //     // manually trigger the `select2:select` event
-            //     $('#idgudang').trigger({
-            //         type: 'select2:select',
-            //         params: {
-            //             data: data
-            //         }
-            //     });
-            // }
             params.page = params.page || 1;
 
             return {
@@ -372,12 +305,11 @@ $("#idgudang").select2({
     },
     escapeMarkup: function(markup) {
         return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatLocation, // omitted for brevity, see the source of this page
-    templateSelection: formatLocationSelection // omitted for brevity, see the source of this page
+    },
+    templateResult: formatLocation,
+    templateSelection: formatLocationSelection
 }).on("change", function () {
-   /*Sementara TUtup Location */
+    /*Sementara TUtup Location */
 });
 /* Format Group */
 function formatLocation(repo) {
@@ -482,7 +414,7 @@ $("#docnopo").select2({
         delay: 250,
         data: function(params) {
             return {
-                _search_: params.term, // search term
+                _search_: params.term,
                 _page_: params.page,
                 _draw_: true,
                 _start_: 1,
@@ -494,18 +426,6 @@ $("#docnopo").select2({
             };
         },
         processResults: function (data, params) {
-            // var searchTerm = $("#idbarang").data("select2").$dropdown.find("input").val();
-            // if (data.items.length === 1 && data.items[0].text === searchTerm) {
-            //     var option = new Option(data.items[0].nmbarang, data.items[0].idbarang, true, true);
-            //     $('#idbarang').append(option).trigger('change').select2("close");
-            //     // manually trigger the `select2:select` event
-            //     $('#idbarang').trigger({
-            //         type: 'select2:select',
-            //         params: {
-            //             data: data
-            //         }
-            //     });
-            // }
             params.page = params.page || 1;
             return {
                 results: data.items,
@@ -519,20 +439,15 @@ $("#docnopo").select2({
     },
     escapeMarkup: function(markup) {
         return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatPO, // omitted for brevity, see the source of this page
-    templateSelection: formatPOSelection // omitted for brevity, see the source of this page
+    },
+    templateResult: formatPO,
+    templateSelection: formatPOSelection
 }).on("select2:select", function (e) {
     var data = e.params.data;
-    // $('[name="nmbarang"]').val(data.nmbarang.trim()).prop("readonly", true);
-    // $('[name="unit"]').val(data.unit.trim()).prop("readonly", true);
-    // $("#batch").val(null).trigger('change');
 });
 
 /* Format Group */
 function formatPO(repo) {
-
     if (repo.loading) {
         return repo.text;
     }
@@ -546,15 +461,11 @@ function formatPO(repo) {
     );
 }
 
-
 function formatPOSelection(repo) {
-
-    // Saat belum ada data
     if (!repo.docno) {
         return repo.text || '';
     }
 
-    // Tampilkan NOMOR PO + KETERANGAN
     return (
         repo.docno +
         ' - ' +
@@ -564,7 +475,7 @@ function formatPOSelection(repo) {
 
 
 function formatCurrency(repo) {
-if (repo.loading) return repo.text;
+    if (repo.loading) return repo.text;
     var markup ="<div class='select2-result-repository__description'>" + repo.currcode +"   <i class='fa fa-circle'></i>   "+ repo.currname +"   <i class='fa fa-circle'></i>   "+  repo.kurs +"  </div>";
     return markup;
 }
@@ -574,7 +485,6 @@ function formatCurrencySelection(repo) {
 
 // ======================= PEMBELIAN ==================================
 
-//var defaultInitialGol = $("#newdept").val();
 $("#currcode").select2({
     placeholder: "Ketik/Pilih Currency",
     allowClear: true,
@@ -586,7 +496,7 @@ $("#currcode").select2({
         delay: 250,
         data: function(params) {
             return {
-                _search_: params.term, // search term
+                _search_: params.term,
                 _page_: params.page,
                 _draw_: true,
                 _start_: 1,
@@ -595,10 +505,6 @@ $("#currcode").select2({
             };
         },
         processResults: function(data, params) {
-            // parse the results into the format expected by Select2
-            // since we are using custom formatting functions we do not need to
-            // alter the remote JSON data, except to indicate that infinite
-            // scrolling can be used
             params.page = params.page || 1;
 
             return {
@@ -612,21 +518,19 @@ $("#currcode").select2({
     },
     escapeMarkup: function(markup) {
         return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatCurrency, // omitted for brevity, see the source of this page
-    templateSelection: formatCurrencySelection // omitted for brevity, see the source of this page
+    },
+    templateResult: formatCurrency,
+    templateSelection: formatCurrencySelection
 }).on("select2:select", function (e) {
     var data = e.params.data;
     setJtsValue('[name="kurs"]', convertToDbNumber(data.kurs));
-
 });
 
 
 
 
 function formatTax(repo) {
-if (repo.loading) return repo.text;
+    if (repo.loading) return repo.text;
     var markup ="<div class='select2-result-repository__description'>" + repo.idtax +"   <i class='fa fa-circle'></i>   "+ repo.nmtax +"  </div>";
     return markup;
 }
@@ -636,7 +540,6 @@ function formatTaxSelection(repo) {
 
 // ======================= PEMBELIAN ==================================
 
-//var defaultInitialGol = $("#newdept").val();
 $("#idtax").select2({
     placeholder: "Ketik/Pilih Pajak",
     allowClear: true,
@@ -648,7 +551,7 @@ $("#idtax").select2({
         delay: 250,
         data: function(params) {
             return {
-                _search_: params.term, // search term
+                _search_: params.term,
                 _page_: params.page,
                 _draw_: true,
                 _start_: 1,
@@ -657,10 +560,6 @@ $("#idtax").select2({
             };
         },
         processResults: function(data, params) {
-            // parse the results into the format expected by Select2
-            // since we are using custom formatting functions we do not need to
-            // alter the remote JSON data, except to indicate that infinite
-            // scrolling can be used
             params.page = params.page || 1;
 
             return {
@@ -674,13 +573,10 @@ $("#idtax").select2({
     },
     escapeMarkup: function(markup) {
         return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatTax, // omitted for brevity, see the source of this page
-    templateSelection: formatTaxSelection // omitted for brevity, see the source of this page
+    },
+    templateResult: formatTax,
+    templateSelection: formatTaxSelection
 }).on("select2:select", function (e) {
-    // var data = e.params.data;
-
 });
 
 
@@ -703,12 +599,11 @@ $(document).on('input', '.jtsseparator', function () {
 
 /* TABLE PO DETAIL */
 function tableLPBDetail(){
-        /* Tabel PO Detail */
     var initTable = function () {
         var table = $('#tablpbdtl');
         table.DataTable({
-            "processing": true, //Feature control the processing indicator.
-            "serverSide": true, //Feature control DataTables' server-side processing mode.
+            "processing": true,
+            "serverSide": true,
             "language":  languageDatatable(),
             "paging": false,
             "lengthChange": true,
@@ -723,9 +618,6 @@ function tableLPBDetail(){
                 "url": HOST_URL + 'purchase/trans/list_tmp_lpb_dtl',
                 "type": "POST",
                 "data": function(data) {
-                    //data.searchfilter = $('#searchitem').val()+'';
-                    //data.idbarang = $('#idbarang').val()+'';
-                    //data.idposition = $('#idposition').val()+'';
                 },
                 "dataFilter": function(data) {
                     var json = jQuery.parseJSON(data);
@@ -733,10 +625,9 @@ function tableLPBDetail(){
                     json.recordsTotal = json.dataTables.recordsTotal;
                     json.recordsFiltered = json.dataTables.recordsFiltered;
                     json.data = json.dataTables.data;
-                    return JSON.stringify(json); // return JSON string
+                    return JSON.stringify(json);
                 }
             },
-            //Set column definition initialisation properties.
             "columnDefs": [
                 {
                     "targets": 0,
@@ -744,7 +635,6 @@ function tableLPBDetail(){
                     "searchable": false,
                     "className": "text-center",
                     "render": function (data, type, row) {
-                        // row[1] = kolom ID (ID Tax)
                         return '<input type="checkbox" class="row-check" value="' + row[0] + '">';
                     }
                 },
@@ -756,31 +646,35 @@ function tableLPBDetail(){
         });
 
         $('#tablpbdtl tbody').on('click', 'tr', function(e) {
-            // Cegah jika yang diklik adalah checkbox itu sendiri (untuk menghindari double trigger)
+            // Jika yang diklik adalah checkbox itu sendiri, biarkan perilaku default
             if ($(e.target).is('input[type="checkbox"]')) {
                 return;
             }
-            
-            // Cari checkbox di dalam baris ini
+
+            // Jika user mengklik teks/tautan di dalam baris (misal ada tombol), jangan ditoggle
+            if ($(e.target).is('a, button, i')) {
+                return;
+            }
+
             var checkbox = $(this).find('input[type="checkbox"].row-check');
-            
-            // Toggle status checkbox
-            checkbox.prop('checked', !checkbox.prop('checked'));
-            
-            // Trigger event change jika diperlukan
+
+            // Toggle nilai checkbox
+            var isChecked = !checkbox.prop('checked');
+            checkbox.prop('checked', isChecked);
+
+            // PENTING: Trigger event 'change' agar event listener lain (seperti pengecekan checkAll) ikut berjalan
             checkbox.trigger('change');
         });
     }
 
     return initTable();
-
 }
 
 
 function reload_table_lpb_dtl()
 {
     var table = $('#tablpbdtl');
-    table.DataTable().ajax.reload(); //reload datatable ajax
+    table.DataTable().ajax.reload();
 }
 
 
@@ -802,7 +696,6 @@ $('#tablpbdtl tbody').on('change', '.row-check', function () {
 
 $('#tablpbdtl').on('draw.dt', function () {
     $('#checkAll').prop('checked', false);
-    // Jika detail > 0, header dikunci
     checkLPBDetailAndLock();
 });
 function getSelectedLPBDetail(){
@@ -824,31 +717,36 @@ function resetSelect2Fields() {
     // Reset idprincipal
     $('[name="idprincipal"]').val(null).trigger('change');
     $('[name="idprincipal"]').empty();
-    
+
     // Reset idgudang
     $('[name="idgudang"]').val(null).trigger('change');
     $('[name="idgudang"]').empty();
+
+    // 🔧 Reset batch (sebelumnya idspec)
+    $('[name="batch"]').val(null).trigger('change');
+    $('[name="batch"]').empty();
+
+    // 🔧 Reset etd & etdnotes
+    $('[name="etd"]').val('');
+    $('[name="etdnotes"]').val('');
 }
 
 function setSelect2Ajax(selector, value, text) {
     if (!value) return;
-    
+
     var $select = $(selector);
-    
-    // Cek apakah option sudah ada
+
     if (!$select.find('option[value="' + value + '"]').length) {
         var option = new Option(text || value, value, true, true);
         $select.append(option);
     }
-    
-    // Set value
+
     $select.val(value).trigger('change');
 }
 
 let currentEditId = null;
 function btnUpdateDetail(){
     const ids = getCheckedDetailIds();
-    console.log('IDS:', ids);
 
     if(ids.length === 0){
         Swal.fire({
@@ -888,8 +786,8 @@ function btnUpdateDetail(){
                 $('[name="docnopo"]').val(res.data.docnopo);
                 $('#idbarang').val(res.data.idbarang);
                 $('#nmbarang').val(res.data.nmbarang);
-                //$('#idspec').val(res.data.idspec);
                 $('#unit').val(res.data.unit);
+
                 setJtsValue('[name="qty"]', convertToDbNumber(res.data.qty));
                 setJtsValue('[name="qtybonus"]', convertToDbNumber(res.data.qtybonus));
                 setJtsValue('[name="harga"]', convertToDbNumber(res.data.harga));
@@ -899,66 +797,64 @@ function btnUpdateDetail(){
                 setJtsValue('[name="multidisc"]', convertToDbNumber(res.data.multidisc));
                 setJtsValue('[name="nilai"]', convertToDbNumber(res.data.nilai));
 
+                // 🔧 ETD & ETD NOTES
+                // etd disimpan sebagai DATE (YYYY-MM-DD) → tampil DD-MM-YYYY
+                if (res.data.etd) {
+                    $('#etd').val(moment(res.data.etd).format('DD-MM-YYYY'));
+                } else {
+                    $('#etd').val('');
+                }
+                $('#etdnotes').val(res.data.etdnotes || '');
 
                 currentEditId = res.data.idurut;
-                // $('#qty').val(res.data.qty);
-                // $('#qtybonus').val(res.data.qtybonus);
-                // $('#harga').val(res.data.harga);
-                // $('#multidisc').val(res.data.multidisc);
-                // setSelect2Ajax('#idprincipal', res.data.idprincipal, res.data.idprincipal);
-                // setSelect2Ajax('#idgudang', res.data.idgudang, res.data.idgudang);
-                //idspec
+
                 // =====================================================
-                // AUTO SELECT BATCH / SPECIFICATION
+                // AUTO SELECT BATCH (sebelumnya idspec)
                 // =====================================================
 
-                var selectedSpec = $.trim(res.data.idspec || '');
-                var selectedItem = $.trim(res.data.idbarang || '');
+                var selectedBatch = $.trim(res.data.batch || '');
+                var selectedItem  = $.trim(res.data.idbarang || '');
 
-// Reset Batch / Specification dari data sebelumnya
-                $('#idspec')
+                // Reset batch dulu
+                $('#batch')
                     .empty()
                     .val(null)
                     .trigger('change');
 
-// Jika idspec kosong, pastikan tidak ada yang terpilih
-                if (selectedSpec === '') {
-
-                    $('#idspec')
+                if (selectedBatch === '') {
+                    $('#batch')
                         .val(null)
                         .trigger('change');
-
                 } else {
-
                     $.ajax({
                         type: 'POST',
                         url: HOST_URL + 'api/globalmodule/list_batch_item',
                         dataType: 'json',
                         data: {
-                            _search_: selectedSpec,
+                            _search_: selectedBatch,
                             _page_: 1,
                             _draw_: true,
                             _start_: 1,
                             _perpage_: 30,
                             _paramglobal_: '',
                             _parameterx_: selectedItem,
-                            _var_: selectedSpec
+                            _var_: selectedBatch
                         }
                     }).then(function (datax) {
 
                         if (!datax || !datax.items || datax.items.length === 0) {
-                            console.warn('Batch / Specification tidak ditemukan');
-                            $('#idspec').empty().val(null).trigger('change');
+                            console.warn('Batch tidak ditemukan');
+                            $('#batch').empty().val(null).trigger('change');
                             return;
                         }
 
                         var specData = datax.items.find(function (item) {
-                            return $.trim(item.batch || '') === selectedSpec;
+                            return $.trim(item.batch || '') === selectedBatch;
                         });
 
                         if (!specData) {
-                            console.warn('Batch yang sesuai tidak ditemukan:', selectedSpec);
-                            $('#idspec').empty().val(null).trigger('change');
+                            console.warn('Batch yang sesuai tidak ditemukan:', selectedBatch);
+                            $('#batch').empty().val(null).trigger('change');
                             return;
                         }
 
@@ -974,13 +870,13 @@ function btnUpdateDetail(){
 
                         $(option).data('spec-data', specData);
 
-                        $('#idspec')
+                        $('#batch')
                             .empty()
                             .append(option)
                             .val(specData.batch)
                             .trigger('change');
 
-                        $('#idspec').trigger({
+                        $('#batch').trigger({
                             type: 'select2:select',
                             params: {
                                 data: specData
@@ -988,7 +884,6 @@ function btnUpdateDetail(){
                         });
 
                     });
-
                 }
                 /* ID PRINCIPAL */
                 $.ajax({
@@ -1018,7 +913,6 @@ function btnUpdateDetail(){
                         .append(option)
                         .trigger('change')
                         .prop('disabled', true);
-
                 });
 
                 $.ajax({
@@ -1027,11 +921,9 @@ function btnUpdateDetail(){
                     dataType: 'json',
                     delay: 250,
                 }).then(function (datax) {
-                    // create the option and append to Select2
                     var option = new Option(datax.items[0].nmlocation, datax.items[0].idlocation, true, true);
                     $('[name="idgudang"]').append(option).trigger('change')
 
-                    // manually trigger the `select2:select` event
                     $('[name="idgudang"]').trigger({
                         type: 'select2:select',
                         params: {
@@ -1039,7 +931,6 @@ function btnUpdateDetail(){
                         }
                     });
                 });
-                // setSelect2Ajax('#docnopp', res.data.docnopp, res.data.keterangan);
 
                 $('#modalUpdateLPBLabel').text('Update Penerimaan Pembelian');
                 $('#modalUpdateLPB').modal('show');
@@ -1061,25 +952,17 @@ $('#modalUpdateLPB').on('hidden.bs.modal', function () {
 });
 
 $(document).on('input', '.form-control', function () {
-    // Jika sedang dalam mode edit, gunakan currentEditId
     if (currentEditId) {
-        // Baca nilai qty, harga, dan multidisc
         let qty = parseFloat($('#qty').val().replace(/,/g, '')) || 0;
         let harga = parseFloat($('#harga').val().replace(/,/g, '')) || 0;
         let multidisc = parseFloat($('#multidisc').val().replace(/,/g, '')) || 0;
-        
-        // Hitung nilai awal (qty * harga)
+
         let nilaiAwal = qty * harga;
-        
-        // Hitung diskon
         let diskon = (nilaiAwal * multidisc) / 100;
-        
-        // Hitung nilai akhir setelah diskon
         let nilaiAkhir = nilaiAwal - diskon;
-        
-        // Format ke en-US: separator ribuan = koma, desimal = titik
+
         $('#nilai').val(nilaiAkhir.toLocaleString('en-US', {
-            minimumFractionDigits: 2, 
+            minimumFractionDigits: 2,
             maximumFractionDigits: 2
         }));
     }
@@ -1129,7 +1012,6 @@ function btnDeleteDetail(){
                     documentReadable()
                     checkLPBDetailAndLock();
 
-
                 }else{
                     Swal.fire({
                         icon: 'error',
@@ -1148,7 +1030,6 @@ $('#checkAllDetail').on('change', function(){
     $('.row-check').prop('checked', this.checked);
 });
 
-// auto uncheck checkAll jika salah satu dilepas
 $(document).on('change','.row-check', function(){
     if(!this.checked){
         $('#checkAllDetail').prop('checked', false);
@@ -1184,13 +1065,6 @@ $('#formPOMasters').bootstrapValidator({
                 },
             }
         },
-        // njurnal: {
-        //     validators: {
-        //         notEmpty: {
-        //             message: 'The field can not be empty'
-        //         },
-        //     }
-        // },
         fjurnal: {
             validators: {
                 notEmpty: {
@@ -1198,7 +1072,6 @@ $('#formPOMasters').bootstrapValidator({
                 },
             }
         },
-
     },
     excluded: [':disabled']
 });
@@ -1224,7 +1097,6 @@ $('#formLPBdetail').bootstrapValidator({
                 },
             }
         },
-
     },
     excluded: [':disabled']
 });
@@ -1235,174 +1107,154 @@ function saveLPBDetail() {
     let ok =  $('#docnopo').val()
     let ok2 = $('[name="docnopo"]').val();
 
-    // Swal.fire({
-    //     title: 'Konfirmasi',
-    //     text: 'Simpan data Penerimaan Pembelian?',
-    //     icon: 'question',
-    //     showCancelButton: true,
-    //     confirmButtonText: 'Ya, Simpan',
-    //     cancelButtonText: 'Batal',
-    //     reverseButtons: true
-    // }).then((result) => {
+    // ==========================================
+    // AMBIL DATA SUPPLIER DARI SELECT2
+    // ==========================================
+    let supplierData = $('#kdsupplier').select2('data');
 
-        // if (!result.isConfirmed) return;
+    let kdsupplier = '';
+    let nmsupplier = '';
 
-        // ==========================================
-        // AMBIL DATA SUPPLIER DARI SELECT2
-        // ==========================================
-        let supplierData = $('#kdsupplier').select2('data');
+    if (supplierData && supplierData.length > 0) {
+        kdsupplier = supplierData[0].kdsupplier || supplierData[0].id || '';
+        nmsupplier = supplierData[0].nmsupplier || supplierData[0].text || '';
+    }
 
-        let kdsupplier = '';
-        let nmsupplier = '';
+    let formData = new FormData(document.getElementById('formLPBDetail'));
+    formData.append('docdate', $('#docdate').val());
+    formData.append('cabang', $('#cabang').val());
+    formData.append('jthtempo', convertToDbNumber($('#jthtempo').val()));
 
-        if (supplierData && supplierData.length > 0) {
-            kdsupplier = supplierData[0].kdsupplier || supplierData[0].id || '';
-            nmsupplier = supplierData[0].nmsupplier || supplierData[0].text || '';
+    // ==========================================
+    // SUPPLIER
+    // ==========================================
+    formData.append('kdsupplier', kdsupplier);
+    formData.append('nmsupplier', nmsupplier);
+
+    formData.append(
+        'isinclusive',
+        $('#isinclusive').is(':checked') ? 'YES' : 'NO'
+    );
+    formData.append('alamatsupplier', $('#alamatsupplier').val());
+    formData.append('nosj', $('#nosj').val());
+    formData.append('nofaktur', $('#nofaktur').val());
+    formData.append('idtax', $('#idtax').val());
+    formData.append('currcode', $('#currcode').val());
+    formData.append('kurs', convertToDbNumber($('#kurs').val()));
+    formData.append('biayavol', convertToDbNumber($('#biayavol').val()));
+    formData.append('biayavol2', convertToDbNumber($('#biayavol2').val()));
+    formData.append('keterangan', $('#keterangan').val());
+
+    // docno gabungan
+    formData.set('docno', $('#prefix').val() + '/' + $('#infix').val() + '/' + $('#suffix').val());
+
+    // convert qty ke numeric DB
+    let qty = $('#qty').val();
+    let qtybonus = $('#qtybonus').val();
+    let harga = $('#harga').val();
+    let multidisc = $('#multidisc').val();
+    let nilai = $('#nilai').val();
+    let volitem = $('#volitem').val();
+    let biaya = $('#biaya').val();
+    let biaya2 = $('#biaya2').val();
+    formData.set('qty', convertToDbNumber(qty));
+    formData.set('qtybonus', convertToDbNumber(qtybonus));
+    formData.set('harga', convertToDbNumber(harga));
+    formData.set('multidisc', convertToDbNumber(multidisc));
+    formData.set('nilai', convertToDbNumber(nilai));
+    formData.set('volitem', convertToDbNumber(volitem));
+    formData.set('biaya', convertToDbNumber(biaya));
+    formData.set('biaya2', convertToDbNumber(biaya2));
+    formData.set('descriptionpo', $('#descriptionpo').val());
+    formData.set('uniqueid', $('#uniqueid').val());
+    formData.set('idprincipal', $('#idprincipal').val() ?? '');
+    formData.set('idgudang', $('#idgudang').val());
+
+    // 🔧 BATCH (sebelumnya idspec)
+    formData.set('batch', $('#batch').val() ?? '');
+
+    // 🔧 ETD & ETD NOTES
+    // etd di DB = DATE. Kalau user isi DD-MM-YYYY, ubah ke YYYY-MM-DD
+    let etdVal = $.trim($('#etd').val() || '');
+    let etdDb = '';
+    if (etdVal !== '') {
+        let m = moment(etdVal, 'DD-MM-YYYY', true);
+        if (m.isValid()) {
+            etdDb = m.format('YYYY-MM-DD');
+        } else {
+            etdDb = etdVal; // biar PHP yang validasi
         }
+    }
+    formData.set('etd', etdDb);
+    formData.set('etdnotes', $.trim($('#etdnotes').val() || ''));
 
-        let formData = new FormData(document.getElementById('formLPBDetail'));
-        formData.append('docdate', $('#docdate').val());
-        formData.append('cabang', $('#cabang').val());
-        // formData.append('senddate', $('#senddate').val());
-        formData.append('jthtempo', convertToDbNumber($('#jthtempo').val()));
-        // ==========================================
-        // SUPPLIER
-        // ==========================================
-        formData.append('kdsupplier', kdsupplier);
-        formData.append('nmsupplier', nmsupplier);
+    let docnopo = $('#docnopo').val();
 
-        formData.append(
-            'isinclusive',
-            $('#isinclusive').is(':checked') ? 'YES' : 'NO'
-        );
-        formData.append('alamatsupplier', $('#alamatsupplier').val());
-        formData.append('nosj', $('#nosj').val());
-        formData.append('nofaktur', $('#nofaktur').val());
-        formData.append('idtax', $('#idtax').val());
-        formData.append('currcode', $('#currcode').val());
-        formData.append('kurs', convertToDbNumber($('#kurs').val()));
-        formData.append('biayavol', convertToDbNumber($('#biayavol').val()));
-        formData.append('biayavol2', convertToDbNumber($('#biayavol2').val()));
-        // formData.append('alamatkirim', $('#alamatkirim').val());
-        formData.append('keterangan', $('#keterangan').val());
-        // formData.append('estpakai', $('#estpakai').val());
+    if (!docnopo) {
+        docnopo = $('#docnopomodal').val();
+    }
 
-        // docno gabungan (lebih aman pakai hidden header)
-        formData.set('docno', $('#prefix').val() + '/' + $('#infix').val() + '/' + $('#suffix').val());
-        // convert qty ke numeric DB
-        let qty = $('#qty').val();
-        let qtybonus = $('#qtybonus').val();
-        let harga = $('#harga').val();
-        let multidisc = $('#multidisc').val();
-        let nilai = $('#nilai').val();
-        let volitem = $('#volitem').val();
-        let biaya = $('#biaya').val();
-        let biaya2 = $('#biaya2').val();
-        formData.set('qty', convertToDbNumber(qty));
-        formData.set('qtybonus', convertToDbNumber(qtybonus));
-        formData.set('harga', convertToDbNumber(harga));
-        formData.set('multidisc', convertToDbNumber(multidisc));
-        formData.set('nilai', convertToDbNumber(nilai));
-        formData.set('volitem', convertToDbNumber(volitem));
-        formData.set('biaya', convertToDbNumber(biaya));
-        formData.set('biaya2', convertToDbNumber(biaya2));
-        formData.set('descriptionpo', $('#descriptionpo').val());
-        formData.set('uniqueid', $('#uniqueid').val());
-        //formData.set('idprincipal', $('#idprincipal').val());
-        formData.set('idprincipal', $('#idprincipal').val() ?? '');
-        formData.set('idspec', $('#idspec').val() ?? '');
-        formData.set('idgudang', $('#idgudang').val());
+    formData.set('docnopo', docnopo);
 
-        // formData.set('docnopo', $('#docnopo').val());
-        let docnopo = $('#docnopo').val();
+    $.ajax({
+        url: HOST_URL + 'purchase/trans/saveLPBDetail',
+        type: 'POST',
+        data: formData,
+        dataType: 'json',
+        processData: false,
+        contentType: false,
 
-        // fallback kalau di modal update
-        if (!docnopo) {
-            docnopo = $('#docnopomodal').val();
-        }
+        success: function (res) {
 
-        formData.set('docnopo', docnopo);
-        
-        // formData.set('descriptionpo', convertToDbNumber(qty));
-
-        $.ajax({
-            url: HOST_URL + 'purchase/trans/saveLPBDetail',
-            type: 'POST',
-            data: formData,
-            dataType: 'json',
-            processData: false,
-            contentType: false,
-
-            success: function (res) {
-
-                if (!res.success) {
-
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Gagal',
-                        text: res.message
-                    });
-
-                    return;
-                }
-
-                // ==============================
-                // SUCCESS
-                // ==============================
-
-                // Jika tidak ada item baru (semua sudah ada)
-                let iconType = 'success';
-                let titleText = 'Berhasil';
-
-                if (res.message && res.message.toLowerCase().includes('sudah ada')) {
-                    iconType = 'info';
-                    titleText = 'Tidak Ada Perubahan';
-                }
-
-                // Swal.fire({
-                //     icon: iconType,
-                //     title: titleText,
-                //     text: res.message,
-                //     timer: 2000,
-                //     showConfirmButton: false
-                // });
-
-                // Jika header baru dibuat → reload
-                if (res.reload === true) {
-                    setTimeout(function () {
-                        window.location.reload();
-                    }, 1000);
-                    return;
-                }
-
-                // Jika hanya tambah detail
-                $('#modalDetailLPB').modal('hide');
-                $('#modalUpdateLPB').modal('hide');
-                $('#formLPBUpdate')[0].reset();
-                reload_table_lpb_dtl();
-
-                setTimeout(function () {
-                    checkLPBDetailAndLock();
-                }, 300);
-
-                documentReadable();
-                $('#formLPBDetail')[0].reset();
-            },
-
-            error: function (xhr) {
-
-                console.error(xhr.responseText);
+            if (!res.success) {
 
                 Swal.fire({
-                    icon: 'error',
-                    title: 'Server Error',
-                    text: 'Terjadi kesalahan pada server (500)'
+                    icon: 'warning',
+                    title: 'Gagal',
+                    text: res.message
                 });
+
+                return;
             }
-        });
 
+            let iconType = 'success';
+            let titleText = 'Berhasil';
 
-    // });
+            if (res.message && res.message.toLowerCase().includes('sudah ada')) {
+                iconType = 'info';
+                titleText = 'Tidak Ada Perubahan';
+            }
+
+            if (res.reload === true) {
+                setTimeout(function () {
+                    window.location.reload();
+                }, 1000);
+                return;
+            }
+
+            $('#modalDetailLPB').modal('hide');
+            $('#modalUpdateLPB').modal('hide');
+            $('#formLPBUpdate')[0].reset();
+            reload_table_lpb_dtl();
+
+            setTimeout(function () {
+                checkLPBDetailAndLock();
+            }, 300);
+
+            documentReadable();
+            $('#formLPBDetail')[0].reset();
+        },
+
+        error: function (xhr) {
+            console.error(xhr.responseText);
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Server Error',
+                text: 'Terjadi kesalahan pada server (500)'
+            });
+        }
+    });
 }
 
 function btnInputDetail() {
@@ -1414,25 +1266,20 @@ function btnInputDetail() {
     if (!cabang || cabang.trim() === '') {
         alert('Cabang harus dipilih terlebih dahulu');
         $('#cabang').focus();
-        return; // stop proses
+        return;
     }
 
-     if (!kdsupplier || kdsupplier.trim() === '') {
+    if (!kdsupplier || kdsupplier.trim() === '') {
         alert('Supplier harus dipilih terlebih dahulu');
         $('#kdsupplier').focus();
-        return; // stop proses
+        return;
     }
 
     $('#formLPBDetail')[0].reset();
 
-    
-    // 🔹 Clear select2
     $('#docnopo').val(null).trigger('change');
 
-    // Jika ada select2 lain, lakukan hal sama
-    // $('#selectlain').val(null).trigger('change');
-
-    $('#idurut').val(''); // pastikan id kosong (mode insert)
+    $('#idurut').val('');
 
     $('#modalDetailLPBLabel').text('Tarik Data PO Detail');
     $('#modalDetailLPB').modal('show');
@@ -1452,7 +1299,6 @@ function formatSupplierSelection(repo) {
 
 // ======================= PEMBELIAN ==================================
 
-//var defaultInitialGol = $("#newdept").val();
 $("#kdsupplier").select2({
     placeholder: "Ketik/Pilih Supplier",
     allowClear: true,
@@ -1464,7 +1310,7 @@ $("#kdsupplier").select2({
         delay: 250,
         data: function(params) {
             return {
-                _search_: params.term, // search term
+                _search_: params.term,
                 _page_: params.page,
                 _draw_: true,
                 _start_: 1,
@@ -1473,10 +1319,6 @@ $("#kdsupplier").select2({
             };
         },
         processResults: function(data, params) {
-            // parse the results into the format expected by Select2
-            // since we are using custom formatting functions we do not need to
-            // alter the remote JSON data, except to indicate that infinite
-            // scrolling can be used
             params.page = params.page || 1;
 
             return {
@@ -1490,183 +1332,160 @@ $("#kdsupplier").select2({
     },
     escapeMarkup: function(markup) {
         return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatSupplier, // omitted for brevity, see the source of this page
-    templateSelection: formatSupplierSelection // omitted for brevity, see the source of this page
+    },
+    templateResult: formatSupplier,
+    templateSelection: formatSupplierSelection
 }).on("select2:select", function (e) {
     if (e.params && e.params.data) {
         var selectedData = e.params.data;
-        
+
         $("#alamatsupplier").val(selectedData.alamat || '').prop('disabled', true);
         defaultInitialSupPO = selectedData.kdsupplier
         $("#jthtempo").val(selectedData.jthtempo || '')
-        // $("#phone").val(selectedData.phone || '').prop('disabled', true);
     }
 });
 
 
 $('#cabang').on('change', function () {
-    if (skipRoleChange) return; // skip
+    if (skipRoleChange) return;
 
     let idbranch = $(this).val();
 
     if(idbranch){
         $.ajax({
-                url: HOST_URL + '/purchase/trans/getBranchInfoLPB',
-                method: 'GET',
-                data: { idbranch: idbranch },
-                dataType: 'json',
-                success: function (res) {
-                    if (!res.success) {
-                        Swal.fire('Error', res.message, 'warning');
-                        return;
-                    }
-
-                    currentKodeSuffix = res.kode_suffix; // PT / PA / PB
-                    $('#infix').val(res.infix);          // YYMM
-                    var prefix = res.prefix;
-                    $('#prefix').val(prefix);             // default
-                    loadNextSuffixLPB()
-                    defaultInitialPO = currentKodeSuffix;
-
-                    var infix = (res.infix || '').toString();
-                    if (infix.length === 4) {
-                        $('#docdate').prop('disabled', false);
-                        var yy = infix.substring(0,2);
-                        var mm = infix.substring(2,4);
-                        var year = 2000 + parseInt(yy,10);
-                        var month = parseInt(mm,10) - 1; // moment month index
-
-                        // Gunakan logindate dari response sebagai default
-                        var logindate = res.logindate ? moment(res.logindate, 'DD-MM-YYYY') : moment();
-                        
-                        // Pastikan logindate dalam range bulan infix
-                        var startDate = moment([year, month, 1]);
-                        var endDate = moment(startDate).endOf('month');
-                        
-                        // Jika logindate dalam range, gunakan logindate,否则 gunakan startDate
-                        var selectedDate = logindate.isBetween(startDate, endDate, 'day', '[]') 
-                            ? logindate 
-                            : startDate;
-
-                        var $el = $('#docdate');
-                        var drp = $el.data('daterangepicker');
-
-                        if (drp) {
-                            // update limits & selected date
-                            drp.minDate = startDate;
-                            drp.maxDate = endDate;
-                            drp.setStartDate(selectedDate);
-                            drp.setEndDate(selectedDate);
-                        } else {
-                            // fallback: (re)initialize with limits
-                            $el.daterangepicker({
-                                autoUpdateInput: false,
-                                singleDatePicker: true,
-                                showDropdowns: true,
-                                startDate: selectedDate,
-                                minDate: startDate,
-                                maxDate: endDate,
-                                locale: { format: 'DD-MM-YYYY' },
-                                cancelLabel: 'Clear'
-                            });
-                            // rebind handlers
-                            $el.on('apply.daterangepicker', function(ev, picker) {
-                                $(this).val(picker.startDate.format('DD-MM-YYYY'));
-                                // Trigger change untuk update kurs
-                                $(this).trigger('change');
-                            });
-                            $el.on('cancel.daterangepicker', function(ev, picker) {
-                                $(this).val('');
-                                // Trigger change untuk reset kurs
-                                $(this).trigger('change');
-                            });
-                        }
-
-                        // isi input dengan selectedDate
-                        $el.val(selectedDate.format('DD-MM-YYYY'));
-                    }
-
-                    $('#docno').val(
-                        prefix + '/' + res.infix + '/' + currentKodeSuffix + '0001'
-                    );
-
-                    // Ambil docdate dari field
-                    var docdate = $('#docdate').val() || '';
-                    
-                    // Load Currency dengan docdate
-                    if (res.currcode) {
-                        // Kosongkan Select2 terlebih dahulu
-                        $('[name="currcode"]').empty().trigger('change');
-                        
-                        // Panggil API dengan docdate
-                        var url = HOST_URL + 'api/globalmodule/list_currency' + '?var=' + res.currcode;
-                        if (docdate) {
-                            url += '&docdate=' + encodeURIComponent(docdate);
-                        }
-                        
-                        $.ajax({
-                            type: 'GET',
-                            url: url,
-                            dataType: 'json',
-                            delay: 250,
-                        }).then(function (datax) {
-                            if (datax.items && datax.items.length > 0) {
-                                // create the option and append to Select2
-                                var currencyData = datax.items[0];
-                                
-                                
-                                // create the option dan simpan data lengkap
-                                var option = new Option(currencyData.currname, currencyData.currcode, true, true);
-                                $(option).data('currency-data', currencyData); // Simpan data lengkap
-                                
-                                $('[name="currcode"]').append(option).trigger('change');
-                                
-                                // Set kurs
-                                setJtsValue('[name="kurs"]', convertToDbNumber(currencyData.kurs || 1));
-                                $('[name="kurs"]').prop('readonly', false);
-                            }
-                        }).fail(function() {
-                            console.error('Failed to load currency data');
-                        });
-                    }
-
-                    // Load Tax
-                    if (res.idtax) {
-                        // Kosongkan Select2 terlebih dahulu
-                        $('[name="idtax"]').empty().trigger('change');
-                        
-                        $.ajax({
-                            type: 'GET',
-                            url: HOST_URL + 'api/globalmodule/list_tax' + '?var=' + res.idtax,
-                            dataType: 'json',
-                            delay: 250,
-                        }).then(function (datax) {
-                            if (datax.items && datax.items.length > 0) {
-                                // create the option and append to Select2
-                                var option = new Option(datax.items[0].nmtax, datax.items[0].idtax, true, true);
-                                $('[name="idtax"]').append(option).trigger('change');
-
-                                // manually trigger the `select2:select` event
-                                $('[name="idtax"]').trigger({
-                                    type: 'select2:select',
-                                    params: {
-                                        data: datax
-                                    }
-                                });
-                            }
-                        }).fail(function() {
-                            console.error('Failed to load tax data');
-                        });
-                    }
+            url: HOST_URL + '/purchase/trans/getBranchInfoLPB',
+            method: 'GET',
+            data: { idbranch: idbranch },
+            dataType: 'json',
+            success: function (res) {
+                if (!res.success) {
+                    Swal.fire('Error', res.message, 'warning');
+                    return;
                 }
-            });
+
+                currentKodeSuffix = res.kode_suffix;
+                $('#infix').val(res.infix);
+                var prefix = res.prefix;
+                $('#prefix').val(prefix);
+                loadNextSuffixLPB()
+                defaultInitialPO = currentKodeSuffix;
+
+                var infix = (res.infix || '').toString();
+                if (infix.length === 4) {
+                    $('#docdate').prop('disabled', false);
+                    var yy = infix.substring(0,2);
+                    var mm = infix.substring(2,4);
+                    var year = 2000 + parseInt(yy,10);
+                    var month = parseInt(mm,10) - 1;
+
+                    var logindate = res.logindate ? moment(res.logindate, 'DD-MM-YYYY') : moment();
+
+                    var startDate = moment([year, month, 1]);
+                    var endDate = moment(startDate).endOf('month');
+
+                    var selectedDate = logindate.isBetween(startDate, endDate, 'day', '[]')
+                        ? logindate
+                        : startDate;
+
+                    var $el = $('#docdate');
+                    var drp = $el.data('daterangepicker');
+
+                    if (drp) {
+                        drp.minDate = startDate;
+                        drp.maxDate = endDate;
+                        drp.setStartDate(selectedDate);
+                        drp.setEndDate(selectedDate);
+                    } else {
+                        $el.daterangepicker({
+                            autoUpdateInput: false,
+                            singleDatePicker: true,
+                            showDropdowns: true,
+                            startDate: selectedDate,
+                            minDate: startDate,
+                            maxDate: endDate,
+                            locale: { format: 'DD-MM-YYYY' },
+                            cancelLabel: 'Clear'
+                        });
+                        $el.on('apply.daterangepicker', function(ev, picker) {
+                            $(this).val(picker.startDate.format('DD-MM-YYYY'));
+                            $(this).trigger('change');
+                        });
+                        $el.on('cancel.daterangepicker', function(ev, picker) {
+                            $(this).val('');
+                            $(this).trigger('change');
+                        });
+                    }
+
+                    $el.val(selectedDate.format('DD-MM-YYYY'));
+                }
+
+                $('#docno').val(
+                    prefix + '/' + res.infix + '/' + currentKodeSuffix + '0001'
+                );
+
+                var docdate = $('#docdate').val() || '';
+
+                if (res.currcode) {
+                    $('[name="currcode"]').empty().trigger('change');
+
+                    var url = HOST_URL + 'api/globalmodule/list_currency' + '?var=' + res.currcode;
+                    if (docdate) {
+                        url += '&docdate=' + encodeURIComponent(docdate);
+                    }
+
+                    $.ajax({
+                        type: 'GET',
+                        url: url,
+                        dataType: 'json',
+                        delay: 250,
+                    }).then(function (datax) {
+                        if (datax.items && datax.items.length > 0) {
+                            var currencyData = datax.items[0];
+
+                            var option = new Option(currencyData.currname, currencyData.currcode, true, true);
+                            $(option).data('currency-data', currencyData);
+
+                            $('[name="currcode"]').append(option).trigger('change');
+
+                            setJtsValue('[name="kurs"]', convertToDbNumber(currencyData.kurs || 1));
+                            $('[name="kurs"]').prop('readonly', false);
+                        }
+                    }).fail(function() {
+                        console.error('Failed to load currency data');
+                    });
+                }
+
+                if (res.idtax) {
+                    $('[name="idtax"]').empty().trigger('change');
+
+                    $.ajax({
+                        type: 'GET',
+                        url: HOST_URL + 'api/globalmodule/list_tax' + '?var=' + res.idtax,
+                        dataType: 'json',
+                        delay: 250,
+                    }).then(function (datax) {
+                        if (datax.items && datax.items.length > 0) {
+                            var option = new Option(datax.items[0].nmtax, datax.items[0].idtax, true, true);
+                            $('[name="idtax"]').append(option).trigger('change');
+
+                            $('[name="idtax"]').trigger({
+                                type: 'select2:select',
+                                params: {
+                                    data: datax
+                                }
+                            });
+                        }
+                    }).fail(function() {
+                        console.error('Failed to load tax data');
+                    });
+                }
+            }
+        });
     }
-    
+
 });
 function loadNextSuffixLPB() {
-    
+
     let prefix = $.trim($('#prefix').val()).toUpperCase();
     let infix = $.trim($('#infix').val());
 
@@ -1720,7 +1539,6 @@ $("#cabang").select2({
     placeholder: "Type/ Choose your Branch",
     allowClear: true,
     width: '100%',
-    //minimumInputLength: 2, // only start searching when the user has input 3 or more characters
     maximumSelectionLength: 1,
     multiple: false,
     ajax: {
@@ -1730,7 +1548,7 @@ $("#cabang").select2({
         delay: 250,
         data: function(params) {
             return {
-                _search_: params.term, // search term
+                _search_: params.term,
                 _page_: params.page,
                 _draw_: true,
                 _start_: 1,
@@ -1745,7 +1563,6 @@ $("#cabang").select2({
             if (data.items.length === 1 && data.items[0].text === searchTerm) {
                 var option = new Option(data.items[0].nmbranch, data.items[0].idbranch, true, true);
                 $('#cabang').append(option).trigger('change').select2("close");
-                // manually trigger the `select2:select` event
                 $('#cabang').trigger({
                     type: 'select2:select',
                     params: {
@@ -1766,16 +1583,11 @@ $("#cabang").select2({
     },
     escapeMarkup: function(markup) {
         return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatBranch, // omitted for brevity, see the source of this page
-    templateSelection: formatBranchSelection // omitted for brevity, see the source of this page
+    },
+    templateResult: formatBranch,
+    templateSelection: formatBranchSelection
 }).on("change", function () {
     console.log('Selecting =>' + $(this).val());
-    //var table = $('#tsearchitem');
-    //table.DataTable().ajax.reload(); //reload datatable ajax
-    ///table.append().search( $(this).val() ).draw();
-    //$('#filter').modal('hide');
 });
 /* Format Group */
 function formatBranch(repo) {
@@ -1812,7 +1624,7 @@ $("#iddept").select2({
         delay: 250,
         data: function(params) {
             return {
-                _search_: params.term, // search term
+                _search_: params.term,
                 _page_: params.page,
                 _draw_: true,
                 _start_: 1,
@@ -1821,10 +1633,6 @@ $("#iddept").select2({
             };
         },
         processResults: function(data, params) {
-            // parse the results into the format expected by Select2
-            // since we are using custom formatting functions we do not need to
-            // alter the remote JSON data, except to indicate that infinite
-            // scrolling can be used
             params.page = params.page || 1;
 
             return {
@@ -1838,16 +1646,13 @@ $("#iddept").select2({
     },
     escapeMarkup: function(markup) {
         return markup;
-    }, // let our custom formatter work
-    // minimumInputLength: 1,
-    templateResult: formatNewdept, // omitted for brevity, see the source of this page
-    templateSelection: formatNewdeptSelection // omitted for brevity, see the source of this page
+    },
+    templateResult: formatNewdept,
+    templateSelection: formatNewdeptSelection
 }).on("select2:selecting", function () {
 });
 
 $("#fjurnal").on("change", function () {
-    //$("#njurnal").val('00011');
-    //Ajax Load data from ajax
     $.ajax({
         url: HOST_URL + 'purchase/purchaseorder/njurnal' + '/?var=' + $("#fjurnal").val(),
         type: "GET",
@@ -1935,7 +1740,7 @@ function save_new_spec() {
         $('#newbatch').focus();
 
         alert(
-            'Batch / Specification harus diisi.'
+            'Batch harus diisi.'
         );
 
         return;
@@ -1957,10 +1762,6 @@ function save_new_spec() {
 
     }
 
-
-    // =============================================
-    // DISABLE BUTTON AGAR TIDAK DOUBLE CLICK
-    // =============================================
 
     $.ajax({
 
@@ -1986,12 +1787,13 @@ function save_new_spec() {
             if (datax.status) {
 
                 // =========================================
-                // MASUKKAN KE INPUT SPEC LPB
+                // 🔧 MASUKKAN KE INPUT BATCH (sebelumnya idspec)
                 // =========================================
 
-                $('#idspec')
+                $('#batch')
                     .prop('disabled', false)
                     .prop('readonly', false)
+                    .append(new Option(newbatch, newbatch, true, true))
                     .val(newbatch)
                     .trigger('change');
 
@@ -2020,12 +1822,12 @@ function save_new_spec() {
 
 
                 // =========================================
-                // FOCUS KEMBALI KE SPEC
+                // FOCUS KEMBALI KE BATCH
                 // =========================================
 
                 setTimeout(function () {
 
-                    $('#idspec').focus();
+                    $('#batch').focus();
 
                 }, 300);
 
@@ -2042,7 +1844,7 @@ function save_new_spec() {
 
                     text:
                         datax.messages ||
-                        'Batch / Specification berhasil disimpan.'
+                        'Batch berhasil disimpan.'
 
                 });
 
@@ -2050,7 +1852,7 @@ function save_new_spec() {
 
                 alert(
                     datax.messages ||
-                    'Gagal menyimpan Batch / Specification.'
+                    'Gagal menyimpan Batch.'
                 );
 
             }
@@ -2074,9 +1876,10 @@ function save_new_spec() {
     });
 
 }
-$("#idspec").select2({
+// 🔧 BATCH (sebelumnya idspec)
+$("#batch").select2({
 
-    placeholder: "Silahkan pilih spek, click x untuk reset pilihan",
+    placeholder: "Silahkan pilih batch, click x untuk reset pilihan",
 
     allowClear: true,
 
@@ -2121,18 +1924,14 @@ $("#idspec").select2({
             params.page = params.page || 1;
 
 
-            // =============================================
-            // PASTIKAN VALUE SELECT2 = BATCH
-            // =============================================
-
             var results = $.map(
                 data.items || [],
                 function (item) {
 
                     return {
 
-                        id: item.batch,      // VALUE YANG DISIMPAN
-                        text: item.batch,    // TEXT SELECT2
+                        id: item.batch,
+                        text: item.batch,
 
                         batch: item.batch
 
@@ -2199,10 +1998,8 @@ function formatBatchSelection(repo) {
 
 $('#btnDeleteLPB').on('click', function () {
 
-    // Ambil Document Number dari input #docno
     let docno = $.trim($('#docno').val());
 
-    // Validasi
     if (docno === '') {
 
         Swal.fire({
@@ -2215,7 +2012,6 @@ $('#btnDeleteLPB').on('click', function () {
     }
 
 
-    // Konfirmasi hapus
     Swal.fire({
         title: 'Hapus Penerimaan?',
         html:
@@ -2243,10 +2039,6 @@ $('#btnDeleteLPB').on('click', function () {
             return;
         }
 
-
-        // =====================================================
-        // AJAX DELETE LPB
-        // =====================================================
         $.ajax({
 
             url: HOST_URL + 'purchase/trans/delete_document_lpb',
@@ -2287,7 +2079,6 @@ $('#btnDeleteLPB').on('click', function () {
 
                     }).then(() => {
 
-                        // Kembali ke halaman LPB
                         window.location.href =
                             HOST_URL + 'purchase/trans/lpb';
 
@@ -2296,10 +2087,6 @@ $('#btnDeleteLPB').on('click', function () {
                     return;
                 }
 
-
-                // =============================================
-                // RESPONSE GAGAL
-                // =============================================
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal',
@@ -2330,7 +2117,6 @@ $('#btnDeleteLPB').on('click', function () {
                     'Terjadi kesalahan saat menghapus penerimaan.';
 
 
-                // Jika controller mengirim JSON error
                 if (
                     xhr.responseJSON &&
                     xhr.responseJSON.message
@@ -2365,30 +2151,21 @@ $('#btnDeleteLPB').on('click', function () {
 
 function setLPBHeaderLock(isLocked) {
 
-    // Cabang / Job
     $('#cabang').prop('disabled', isLocked);
 
-    // Jurnal Penerimaan
     $('#prefix').prop('readonly', isLocked);
-    // $('#infix').prop('readonly', isLocked);
     $('#suffix').prop('readonly', isLocked);
 
-    // Tanggal
     $('#docdate').prop('readonly', isLocked);
 
-    // Supplier
     $('#kdsupplier').prop('disabled', isLocked);
 
-    // PPN / Pajak
     $('#idtax').prop('disabled', isLocked);
 
-    // Mata Uang / IDR
     $('#currcode').prop('disabled', isLocked);
 
-    // Inclusive
     $('#isinclusive').prop('disabled', isLocked);
 
-    // Refresh Select2
     $('#cabang').trigger('change.select2');
     $('#kdsupplier').trigger('change.select2');
     $('#idtax').trigger('change.select2');
@@ -2415,28 +2192,31 @@ function checkLPBDetailAndLock() {
 }
 
 $(document).ready(function() {
-    // Handle form submission event
-    // Handle form submission event
-
-
-
-
-
     tableLPBTrx();
-    // tablePOApprvTrx();
     tableLPBDetail();
-    //read_qrcode();
+
+    // 🔧 Inisialisasi daterangepicker untuk ETD di modal update
+    $('#etd').daterangepicker({
+        autoUpdateInput: false,
+        singleDatePicker: true,
+        showDropdowns: true,
+        locale: { format: 'DD-MM-YYYY' },
+        cancelLabel: 'Clear'
+    });
+
+    $('#etd').on('apply.daterangepicker', function(ev, picker) {
+        $(this).val(picker.startDate.format('DD-MM-YYYY'));
+    });
+    $('#etd').on('cancel.daterangepicker', function(ev, picker) {
+        $(this).val('');
+    });
+
     $('#checkboxnik').change(function() {
-        // this will contain a reference to the checkbox
         if (this.checked) {
             var valnik = $('#nik').val();
-            // the checkbox is now checked
-            //alert('Checked');
             $('#username').prop('readonly', true);
             $('#username').val(valnik);
         } else {
-            // the checkbox is now no longer checked
-            //alert('Un Checked');
             $('#username').prop('readonly', false);
             $('#username').val('');
         }
@@ -2447,19 +2227,7 @@ $(document).ready(function() {
             $('#username').val(valnik);
         }
     });
-    //* input form */
-    // var valueToScroll = 80;
-    // $(".card").scrollTop(valueToScroll);
-    // if ($('[name="type"]').val() === 'EDIT') {
-    //     documentReadable();
-    // }
-    //console.log($('[name="type"]').val());
-    // if ($('[name="typeform"]').val() === 'INPUT' || $('[name="typeform"]').val() === 'UPDATE' || $('[name="typeform"]').val() === 'DELETE' ) {
-        documentReadable();
-    // }
+
+    documentReadable();
     $("#loadMe").modal("hide");
-
-
-
-
 });

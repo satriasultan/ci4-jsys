@@ -3,8 +3,9 @@
 -- Semua object PO dibuat ulang dalam 1 transaction.
 -- Perubahan:
 --   - Tambah kolom: batch character(100) di po_dtl (tmp & trx)
+--   - Tambah kolom: etd date, etdnotes character(100) di po_dtl (tmp & trx)
 --   - uniqueidpo ikut ter-copy di semua INSERT ... SELECT po_dtl
---   - batch ikut ter-copy di semua INSERT ... SELECT po_dtl
+--   - batch, etd, etdnotes ikut ter-copy di semua INSERT ... SELECT po_dtl
 --   - Trigger auto-isi uniqueidpo (AFTER INSERT sc_tmp.po_dtl)
 -- Jika ada error, PostgreSQL akan melakukan ROLLBACK.
 -- ============================================================
@@ -141,7 +142,9 @@ CREATE TABLE sc_tmp.po_dtl
     idhistory_price text,
     multidisctype char(30),
     totaldiscount numeric(18,2),
-    batch character(100)
+    batch character(100),
+    etd date,
+    etdnotes character(100)
 )
 TABLESPACE pg_default;
 
@@ -185,7 +188,9 @@ CREATE TABLE sc_trx.po_dtl
     idhistory_price text,
     multidisctype char(30),
     totaldiscount numeric(18,2),
-    batch character(100)
+    batch character(100),
+    etd date,
+    etdnotes character(100)
 )
 TABLESPACE pg_default;
 
@@ -256,6 +261,7 @@ BEGIN
 
         -- ===============================
         -- NORMALISASI
+        -- ===============================
         v_docno   := rtrim(NEW.docno);
         v_inputby := NEW.inputby;
         v_idurut  := NEW.idurut;
@@ -345,7 +351,7 @@ BEGIN
             AND idurut = v_idurut;
 
         -- ===============================
-        -- INSERT DETAIL (uniqueidpo & batch IKUT)
+        -- INSERT DETAIL (uniqueidpo, batch, etd, etdnotes IKUT)
         -- ===============================
         INSERT INTO sc_trx.po_dtl (
             idurut, docno, docnopp, idbarang, capexno, uniqueid, uniqueidpo,
@@ -353,7 +359,8 @@ BEGIN
             harga, multidisc, nilai, nilaipajak, nilaikonversi, currcode, idtax, kurs,
             descriptionpo, descriptionpp,
             inputby, inputdate, status, updateby, updatedate,
-            idhistory_price, multidisctype, totaldiscount, batch
+            idhistory_price, multidisctype, totaldiscount, batch,
+            etd, etdnotes
         )
         SELECT
             idurut, v_docno, docnopp, idbarang, capexno, uniqueid, uniqueidpo,
@@ -361,7 +368,8 @@ BEGIN
             harga, multidisc, nilai, nilaipajak, nilaikonversi, currcode, idtax, kurs,
             descriptionpo, descriptionpp,
             inputby, inputdate, status, updateby, updatedate,
-            idhistory_price, multidisctype, totaldiscount, batch
+            idhistory_price, multidisctype, totaldiscount, batch,
+            etd, etdnotes
         FROM sc_tmp.po_dtl
         WHERE rtrim(docno) = rtrim(OLD.docno)
             AND inputby = v_inputby;
@@ -438,7 +446,7 @@ BEGIN
             AND inputby = v_inputby;
 
     -- ===============================
-    -- DOCNOTMP FLOW (TETAP)
+    -- DOCNOTMP FLOW
     -- ===============================
     ELSIF OLD.status = 'E' AND NEW.status = 'F' AND COALESCE(NEW.docnotmp, '') <> '' THEN
 
@@ -469,14 +477,16 @@ BEGIN
          harga, multidisc, nilai, nilaipajak, nilaikonversi, currcode, idtax, kurs,
          descriptionpo, descriptionpp,
          inputby, inputdate, status, updateby, updatedate, docnotmp,
-         idhistory_price, multidisctype, totaldiscount, batch)
+         idhistory_price, multidisctype, totaldiscount, batch,
+         etd, etdnotes)
         SELECT
             idurut, NEW.docnotmp, docnopp, idbarang, capexno, uniqueid, uniqueidpo,
             nmbarang, unit, qty, qtybonus,
             harga, multidisc, nilai, nilaipajak, nilaikonversi, currcode, idtax, kurs,
             descriptionpo, descriptionpp,
             inputby, inputdate, status, updateby, updatedate, docnotmp,
-            idhistory_price, multidisctype, totaldiscount, batch
+            idhistory_price, multidisctype, totaldiscount, batch,
+            etd, etdnotes
         FROM sc_tmp.po_dtl
         WHERE rtrim(docno) = rtrim(NEW.docno);
 
@@ -611,9 +621,7 @@ BEGIN
     -- ===============================
     IF (OLD.STATUS = 'F' AND NEW.STATUS = 'C') THEN
 
-        -- ===============================
         -- REVERT QTYPO DI PP_DTL
-        -- ===============================
         UPDATE sc_trx.pp_dtl ppd
         SET qtypo = COALESCE(ppd.qtypo, 0) - pod.qty_used
         FROM (
@@ -628,9 +636,7 @@ BEGIN
         ) pod
         WHERE ppd.uniqueid = pod.uniqueid;
 
-        -- ===============================
         -- UPDATE STATUS PP HEADER
-        -- ===============================
         UPDATE sc_trx.pp pp
         SET status = CASE
             WHEN EXISTS (
@@ -652,9 +658,7 @@ BEGIN
                 )
         );
 
-        -- ===============================
         -- UPDATE STATUS PP_DTL BERDASARKAN QTYPO
-        -- ===============================
         UPDATE sc_trx.pp_dtl ppd
         SET status = CASE
             WHEN ppd.qty = COALESCE(ppd.qtypo, 0) THEN 'PO'
@@ -664,9 +668,7 @@ BEGIN
         WHERE ppd.uniqueid = pd.uniqueid
             AND rtrim(pd.docno) = rtrim(NEW.docno);
 
-        -- ===============================
         -- LOG: CANCEL HEADER PO
-        -- ===============================
         PERFORM sc_log.fn_log_transaction(
             NEW.docno,
             NULL,
@@ -681,21 +683,23 @@ BEGIN
     END IF;
 
     IF (OLD.STATUS = 'F' AND NEW.STATUS = 'E') THEN
-        -- Insert into po_dtl (uniqueidpo & batch IKUT)
+        -- Insert into po_dtl (uniqueidpo, batch, etd, etdnotes IKUT)
         INSERT INTO sc_tmp.po_dtl
         (idurut, docno, docnopp, idbarang, capexno, uniqueid, uniqueidpo,
          nmbarang, unit, qty, qtybonus,
          harga, multidisc, nilai, nilaipajak, nilaikonversi, currcode, idtax, kurs,
          descriptionpo, descriptionpp,
          inputby, inputdate, status, updateby, updatedate, docnotmp,
-         idhistory_price, multidisctype, totaldiscount, batch)
+         idhistory_price, multidisctype, totaldiscount, batch,
+         etd, etdnotes)
         SELECT
             idurut, NEW.docno, docnopp, idbarang, capexno, uniqueid, uniqueidpo,
             nmbarang, unit, qty, qtybonus,
             harga, multidisc, nilai, nilaipajak, nilaikonversi, currcode, idtax, kurs,
             descriptionpo, descriptionpp,
             inputby, inputdate, status, updateby, updatedate, NEW.docno,
-            idhistory_price, multidisctype, totaldiscount, batch
+            idhistory_price, multidisctype, totaldiscount, batch,
+            etd, etdnotes
         FROM sc_trx.po_dtl
         WHERE docno = NEW.docno;
 
@@ -747,9 +751,10 @@ COMMIT;
 -- ============================================================
 SELECT table_schema, column_name, data_type
 FROM information_schema.columns
-WHERE table_schema IN ('sc_tmp','sc_trx') AND table_name = 'po_dtl'
-  AND column_name = 'batch'
-ORDER BY table_schema;
+WHERE table_schema IN ('sc_tmp','sc_trx')
+  AND table_name = 'po_dtl'
+  AND column_name IN ('batch','etd','etdnotes')
+ORDER BY table_schema, column_name;
 
 SELECT event_object_schema, event_object_table, trigger_name
 FROM information_schema.triggers

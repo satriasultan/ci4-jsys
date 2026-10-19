@@ -521,11 +521,12 @@ function formatPPSelection(repo) {
 
 function formatCurrency(repo) {
     if (repo.loading) return repo.text;
-    var markup ="<div class='select2-result-repository__description'>" + repo.currcode +"   <i class='fa fa-circle'></i>   "+ repo.currname +"   <i class='fa fa-circle'></i>   "+  repo.kurs +"  </div>";
+    var markup = "<div class='select2-result-repository__description'>" + repo.currcode + "</div>";
     return markup;
 }
+
 function formatCurrencySelection(repo) {
-    return repo.currname || repo.text;
+    return repo.currcode || repo.text;
 }
 
 // ======================= PEMBELIAN ==================================
@@ -730,7 +731,6 @@ function tablePODetail(){
                     "searchable": false,
                     "className": "text-center",
                     "render": function (data, type, row) {
-                        // row[1] = kolom ID (ID Tax)
                         return '<input type="checkbox" class="row-check" value="' + row[0] + '">';
                     }
                 },
@@ -833,6 +833,7 @@ function btnUpdateDetail(){
 
                 $('#idurut').val(res.data.idurut);
                 $('#uniqueid').val(res.data.uniqueid);
+                $('#uniqueidpo').val(res.data.uniqueidpo);   // 🔹 TAMBAH INI
                 $('#descriptionpp').val(res.data.descriptionpp);
                 $('#descriptionpo').val(res.data.descriptionpo);
                 $('#docno').val(res.data.docno);
@@ -840,6 +841,19 @@ function btnUpdateDetail(){
                 $('#idbarang').val(res.data.idbarang);
                 $('#nmbarang').val(res.data.nmbarang);
                 $('#capexno').val(res.data.capexno);
+                // ==========================================
+// 🔹 SET BATCH, ETD, ETD NOTES
+// ==========================================
+                $('#batch').val($.trim(res.data.batch || ''));
+
+// ETD: format dari DB (Y-m-d) → daterangepicker (d-m-Y)
+                if (res.data.etd && res.data.etd.trim() !== '') {
+                    $('#etd').val(moment(res.data.etd).format('DD-MM-YYYY'));
+                } else {
+                    $('#etd').val('');
+                }
+
+                $('#etdnotes').val($.trim(res.data.etdnotes || ''));
                 $('#multidisctype')
                     .val(
                         $.trim(res.data.multidisctype || 'NILAI')
@@ -1150,6 +1164,12 @@ function savePODetail() {
     formData.append('alamatkirim', $('#alamatkirim').val());
     formData.append('keterangan', $('#keterangan').val());
     formData.append('capexno', $('#capexno').val());
+    // ==========================================
+    // 🔹 BATCH, ETD, ETD NOTES
+    // ==========================================
+    formData.append('batch',    $('#batch').val() || '');
+    formData.append('etd',      $('#etd').val() || '');
+    formData.append('etdnotes', $('#etdnotes').val() || '');
     // formData.append('estpakai', $('#estpakai').val());
 
     // docno gabungan (lebih aman pakai hidden header)
@@ -1175,6 +1195,7 @@ function savePODetail() {
     // formData.set('nilai', convertToDbNumber(nilai));
     formData.set('descriptionpo', $('#descriptionpo').val());
     formData.set('uniqueid', $('#uniqueid').val());
+    formData.set('uniqueidpo', $('#uniqueidpo').val());   // 🔹 TAMBAH INI
     formData.set('docnopp', $('#docnopp').val());
     formData.set(
         'multidisc',

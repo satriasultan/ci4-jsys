@@ -259,27 +259,27 @@ group by idunit);");
     }
 
 
-function q_item_std_cost_param($param, $docdate){
+    function q_item_std_cost_param($param, $docdate){
 
-    // =========================
-    // NORMALISASI FORMAT TANGGAL
-    // =========================
-    if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $docdate)) {
-        $dt = \DateTime::createFromFormat('d-m-Y', $docdate);
-        if ($dt === false) {
+        // =========================
+        // NORMALISASI FORMAT TANGGAL
+        // =========================
+        if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $docdate)) {
+            $dt = \DateTime::createFromFormat('d-m-Y', $docdate);
+            if ($dt === false) {
+                throw new \Exception('Format docdate tidak valid: ' . $docdate);
+            }
+            $docdate = $dt->format('Y-m-d');
+        }
+
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $docdate)) {
             throw new \Exception('Format docdate tidak valid: ' . $docdate);
         }
-        $docdate = $dt->format('Y-m-d');
-    }
 
-    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $docdate)) {
-        throw new \Exception('Format docdate tidak valid: ' . $docdate);
-    }
-
-    // =========================
-    // QUERY
-    // =========================
-    $query = "
+        // =========================
+        // QUERY
+        // =========================
+        $query = "
         SELECT 
             trim(a.idbarang) as id,
             a.idbarang,
@@ -441,8 +441,8 @@ function q_item_std_cost_param($param, $docdate){
             AND a.status = 'F'
             $param
     ";
-    
-    return $this->db->query($query);
+
+        return $this->db->query($query);
     }
 
     public function q_item_bom_param($param,$docdate,$wono)
