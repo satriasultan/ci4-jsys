@@ -566,3 +566,248 @@ AFTER UPDATE
 ON sc_trx.bpnm_mst
 FOR EACH ROW
 EXECUTE FUNCTION sc_trx.tr_mst_bpnm_mst();
+
+
+
+BEGIN;
+
+-- ============================================================
+-- BPNM → transaction_dt (journal_type: WIPINX)
+-- Non-material: stock_effect = NONE, accounting_effect = YES
+-- ============================================================
+CREATE OR REPLACE FUNCTION sc_trx.fn_sync_bpnm_dtl_to_transaction(
+    p_docno    TEXT,
+    p_uniqueid TEXT
+) RETURNS VOID
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_mst        sc_trx.bpnm_mst%ROWTYPE;
+    v_dtl        sc_trx.bpnm_dtl%ROWTYPE;
+    v_tx_uid     TEXT;
+    v_idbranch   CHAR(20);
+    v_coa_debet  VARCHAR(20);
+    v_coa_kredit VARCHAR(20);
+    v_harga      NUMERIC(18,6);
+    v_nilai      NUMERIC(18,2);
+    v_exists     BOOLEAN;
+BEGIN
+    -- Ambil header
+    SELECT * INTO v_mst
+      FROM sc_trx.bpnm_mst
+     WHERE BTRIM(docno) = BTRIM(p_docno);
+    IF NOT FOUND THEN RETURN; END IF;
+
+    -- Ambil detail
+    SELECT * INTO v_dtl
+      FROM sc_trx.bpnm_dtl
+     WHERE BTRIM(docno) = BTRIM(p_docno)
+       AND uniqueid = p_uniqueid;
+    IF NOT FOUND THEN RETURN; END IF;
+
+    -- BPNM adalah NON MATERIAL. Hanya proses baris yang bukan MATERIAL
+    -- (kebalikan dari penerimaanbp). Kalau kamu ingin memproses semua baris,
+    -- hapus blok IF ini.
+    IF UPPER(BTRIM(COALESCE(v_dtl.doctype_detail,''))) = 'MATERIAL' THEN
+        RETURN;
+    END IF;
+
+    -- COA Debet: WIP dari konfigurasi_umum.pproduksi
+    -- (menambah nilai WIP karena biaya produksi non material)
+    SELECT BTRIM(pproduksi) INTO v_coa_debet
+      FROM sc_mst.konfigurasi_umum
+     LIMIT 1;
+
+    -- COA Kredit: ppersediaan per idbarang detail (jika ada),
+    -- fallback ke pproduksi / akun biaya umum jika idbarang kosong.
+    SELECT BTRIM(ppersediaan) INTO v_coa_kredit
+      FROM sc_mst.mbarang
+     WHERE BTRIM(idbarang) = BTRIM(COALESCE(v_dtl.idbarang,''))
+     LIMIT 1;
+
+    IF v_coa_kredit IS NULL OR BTRIM(v_coa_kredit) = '' THEN
+        -- fallback: pakai akun biaya umum dari konfigurasi (kalau ada)
+        -- kalau tidak ada, pakai pproduksi agar tetap balance
+        v_coa_kredit := v_coa_debet;
+    END IF;
+
+    -- Harga: pakai dtl.harga; fallback ke nilai/qty
+    v_harga := COALESCE(NULLIF(v_dtl.harga,0), NULL);
+    IF v_harga IS NULL THEN
+        v_harga := CASE
+            WHEN COALESCE(v_dtl.qty,0) <> 0
+            THEN COALESCE(v_dtl.nilai,0) / v_dtl.qty
+            ELSE 0
+        END;
+    END IF;
+
+    v_harga := COALESCE(v_harga, 0);
+    v_nilai := COALESCE(NULLIF(v_dtl.nilai,0), v_harga * COALESCE(v_dtl.qty,0), 0);
+
+    v_idbranch := CASE BTRIM(COALESCE(v_mst.cabang,''))
+        WHEN 'JTS1' THEN 'JTS'::CHAR(20)
+        WHEN 'JTS2' THEN 'JTS'::CHAR(20)
+        ELSE BTRIM(COALESCE(v_mst.cabang,''))::CHAR(20)
+    END;
+
+    v_tx_uid := MD5(BTRIM(p_docno)||'|'||COALESCE(v_dtl.uniqueid,'')||'|bpnm');
+
+    SELECT EXISTS (
+        SELECT 1 FROM sc_trx.transaction_dt
+        WHERE BTRIM(docno) = BTRIM(p_docno)
+          AND uniqueid = v_tx_uid
+    ) INTO v_exists;
+
+    IF v_exists THEN
+        UPDATE sc_trx.transaction_dt SET
+            journal_type  = 'WIPINX',
+            type_in_out   = 'IN',
+            docdate       = COALESCE(v_mst.docdate, CURRENT_DATE),
+            idbranch      = v_idbranch,
+            cabang        = BTRIM(COALESCE(v_mst.cabang,'')),
+            idbarang      = BTRIM(COALESCE(v_dtl.idbarang,'')),
+            namabarang    = BTRIM(COALESCE(v_dtl.nmbarang,'')),
+            idunit        = BTRIM(COALESCE(v_dtl.unit,'')),
+            idarea        = BTRIM(COALESCE(v_mst.idlocation,'')),
+            warehouse     = BTRIM(COALESCE(v_mst.idlocation,'')),
+            bin           = '',
+            batch         = BTRIM(COALESCE(v_mst.batchno,'')),
+            lotno         = '',
+            qty           = COALESCE(v_dtl.qty,0),
+            harga         = v_harga,
+            bruto         = v_nilai,
+            discount      = 0,
+            nilai         = v_nilai,
+            dpp           = v_nilai,
+            pajak         = 0,
+            total         = v_nilai,
+            idtax         = 'NON',
+            isinclusive   = 'NO',
+            currcode      = 'IDR',
+            kurs          = 1,
+            idcoa         = v_coa_debet,
+            counter_idcoa = v_coa_kredit,
+            debet_kredit  = 'D',
+            keterangan    = COALESCE(v_dtl.description,''),
+            updatedby     = v_mst.updateby,
+            updateddate   = CURRENT_TIMESTAMP
+        WHERE BTRIM(docno) = BTRIM(p_docno)
+          AND uniqueid = v_tx_uid;
+    ELSE
+        INSERT INTO sc_trx.transaction_dt (
+            uniqueid, source_uniqueid, docno, doctype, journal_type,
+            line_no, docdate, idbranch, cabang, type_in_out,
+            ref_docno, ref_doctype, idbarang, namabarang, idunit,
+            idarea, warehouse, bin, batch, lotno,
+            qty, harga, bruto, discount, nilai, dpp, pajak, total,
+            idtax, isinclusive, currcode, kurs,
+            idcoa, counter_idcoa, debet_kredit,
+            keterangan, createdby
+        ) VALUES (
+            v_tx_uid, COALESCE(v_dtl.uniqueid,''), BTRIM(p_docno),
+            'BPNM', 'WIPINX',
+            GREATEST(COALESCE(v_dtl.idurut,1),1),
+            COALESCE(v_mst.docdate, CURRENT_DATE),
+            v_idbranch, BTRIM(COALESCE(v_mst.cabang,'')), 'IN',
+            BTRIM(COALESCE(v_mst.wono,'')), 'BPNM',
+            BTRIM(COALESCE(v_dtl.idbarang,'')),
+            BTRIM(COALESCE(v_dtl.nmbarang,'')),
+            BTRIM(COALESCE(v_dtl.unit,'')),
+            BTRIM(COALESCE(v_mst.idlocation,'')),
+            BTRIM(COALESCE(v_mst.idlocation,'')),
+            '', BTRIM(COALESCE(v_mst.batchno,'')), '',
+            COALESCE(v_dtl.qty,0), v_harga, v_nilai, 0, v_nilai,
+            v_nilai, 0, v_nilai, 'NON','NO','IDR',1,
+            v_coa_debet, v_coa_kredit, 'D',
+            COALESCE(v_dtl.description,''),
+            COALESCE(v_mst.inputby,'SYSTEM')
+        );
+    END IF;
+END;
+$$;
+
+ALTER FUNCTION sc_trx.fn_sync_bpnm_dtl_to_transaction(TEXT, TEXT)
+    OWNER TO postgres;
+
+
+-- ============================================================
+-- TRIGGER FUNCTION
+-- ============================================================
+CREATE OR REPLACE FUNCTION sc_trx.fn_bpnm_dtl_to_transaction()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        PERFORM sc_trx.fn_sync_bpnm_dtl_to_transaction(NEW.docno, NEW.uniqueid);
+        RETURN NEW;
+
+    ELSIF TG_OP = 'UPDATE' THEN
+        PERFORM sc_trx.fn_sync_bpnm_dtl_to_transaction(NEW.docno, NEW.uniqueid);
+        RETURN NEW;
+
+    ELSIF TG_OP = 'DELETE' THEN
+        DELETE FROM sc_trx.transaction_dt
+        WHERE BTRIM(docno) = BTRIM(OLD.docno)
+          AND uniqueid = MD5(
+                BTRIM(OLD.docno) || '|' ||
+                COALESCE(OLD.uniqueid, '') || '|bpnm'
+              );
+        RETURN OLD;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+ALTER FUNCTION sc_trx.fn_bpnm_dtl_to_transaction()
+    OWNER TO postgres;
+
+
+-- ============================================================
+-- TRIGGER
+-- ============================================================
+DROP TRIGGER IF EXISTS tr_bpnm_dtl_to_transaction
+ON sc_trx.bpnm_dtl;
+
+CREATE TRIGGER tr_bpnm_dtl_to_transaction
+AFTER INSERT OR UPDATE OR DELETE
+ON sc_trx.bpnm_dtl
+FOR EACH ROW
+EXECUTE FUNCTION sc_trx.fn_bpnm_dtl_to_transaction();
+
+
+-- ============================================================
+-- VERIFIKASI
+-- ============================================================
+DO $$
+DECLARE
+    v_ok INT := 0;
+BEGIN
+    IF to_regprocedure('sc_trx.fn_sync_bpnm_dtl_to_transaction(text,text)') IS NOT NULL
+    THEN v_ok := v_ok + 1; END IF;
+
+    IF to_regprocedure('sc_trx.fn_bpnm_dtl_to_transaction()') IS NOT NULL
+    THEN v_ok := v_ok + 1; END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM pg_trigger
+        WHERE tgname = 'tr_bpnm_dtl_to_transaction'
+          AND tgrelid = 'sc_trx.bpnm_dtl'::regclass
+    ) THEN v_ok := v_ok + 1; END IF;
+
+    RAISE NOTICE '=========================================================';
+    RAISE NOTICE 'MODUL BPNM -> transaction_dt : % / 3 terpasang', v_ok;
+    RAISE NOTICE '  Journal type : WIPINX (IN)';
+    RAISE NOTICE '  COA Debet    : konfigurasi_umum.pproduksi (WIP)';
+    RAISE NOTICE '  COA Kredit   : mbarang.ppersediaan (fallback: pproduksi)';
+    RAISE NOTICE '  Filter       : doctype_detail <> MATERIAL';
+    RAISE NOTICE '=========================================================';
+
+    IF v_ok <> 3 THEN
+        RAISE WARNING 'Ada objek modul BPNM yang tidak terpasang!';
+    END IF;
+END;
+$$;
+
+COMMIT;

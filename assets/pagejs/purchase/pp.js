@@ -2092,7 +2092,7 @@ $("#batch").select2({
     width: '100%',
     //
     // // >>> TAMBAHKAN INI
-    dropdownParent: $('#modalDetailPP'),   // <-- UBAH KE INI
+    dropdownParent: $('#modalDetailPP .modal-body'),   // <-- UBAH KE INI
     ajax: {
 
         url: HOST_URL + 'api/globalmodule/list_batch_item',
@@ -2228,7 +2228,7 @@ function initSelect2Unit(idbarang, callback) {
         placeholder: "Pilih Satuan...",
         allowClear: true,
         width: '100%',
-        dropdownParent: $('#modalDetailPP'),    // <-- BENAR
+        dropdownParent: $('#modalDetailPP .modal-body'),    // <-- BENAR
         minimumInputLength: 0,
         ajax: {
             url: HOST_URL + 'api/globalmodule/list_unit_item',

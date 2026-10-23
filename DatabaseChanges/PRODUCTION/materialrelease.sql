@@ -548,3 +548,130 @@ FOR EACH ROW
 EXECUTE FUNCTION sc_trx.tr_mst_materialrelease_mst();
 
 COMMIT;
+
+CREATE OR REPLACE FUNCTION sc_trx.fn_sync_materialrelease_dtl_to_transaction(
+    p_docno TEXT, p_uniqueid TEXT
+) RETURNS VOID LANGUAGE plpgsql AS $$
+DECLARE
+    v_mst        sc_trx.materialrelease_mst%ROWTYPE;
+    v_dtl        sc_trx.materialrelease_dtl%ROWTYPE;
+    v_tx_uid     TEXT;
+    v_idbranch   CHAR(20);
+    v_coa_debet  VARCHAR(20);
+    v_coa_kredit VARCHAR(20);
+    v_harga      NUMERIC(18,6);
+    v_nilai      NUMERIC(18,2);
+BEGIN
+    SELECT * INTO v_mst FROM sc_trx.materialrelease_mst
+     WHERE BTRIM(docno) = BTRIM(p_docno);
+    IF NOT FOUND THEN RETURN; END IF;
+
+    SELECT * INTO v_dtl FROM sc_trx.materialrelease_dtl
+     WHERE BTRIM(docno) = BTRIM(p_docno) AND uniqueid = p_uniqueid;
+    IF NOT FOUND THEN RETURN; END IF;
+
+    IF UPPER(BTRIM(COALESCE(v_dtl.doctype_detail,'MATERIAL'))) <> 'MATERIAL' THEN
+        RETURN;
+    END IF;
+
+    -- COA Debet: BDP dari konfigurasi_umum.pproduksi
+    SELECT BTRIM(pproduksi) INTO v_coa_debet
+      FROM sc_mst.konfigurasi_umum LIMIT 1;
+
+    -- COA Kredit: ppersediaan dari mbarang per idbarang detail
+    SELECT BTRIM(ppersediaan) INTO v_coa_kredit
+      FROM sc_mst.mbarang WHERE BTRIM(idbarang) = BTRIM(v_dtl.idbarang);
+
+    -- Harga: BOM vs standart_cost_dtl
+    IF COALESCE(UPPER(BTRIM(v_dtl.issub)), 'F') = 'F' THEN
+        SELECT standartcost INTO v_harga
+          FROM sc_trx.workingorder_bom_dtl
+         WHERE BTRIM(docref) = BTRIM(v_mst.wono)
+           AND BTRIM(idbarang) = BTRIM(v_dtl.idbarang)
+           AND UPPER(BTRIM(doctype_detail)) = 'MATERIAL'
+         LIMIT 1;
+    ELSE
+        SELECT newcost INTO v_harga
+          FROM sc_mst.standart_cost_dtl
+         WHERE BTRIM(idbarang) = BTRIM(v_dtl.idbarang)
+           AND status = 'F'
+         ORDER BY activedate DESC LIMIT 1;
+    END IF;
+
+    v_harga := COALESCE(v_harga, 0);
+    v_nilai := COALESCE(v_dtl.qty,0) * v_harga;
+
+    v_idbranch := CASE BTRIM(COALESCE(v_mst.cabang,''))
+        WHEN 'JTS1' THEN 'JTS'::CHAR(20)
+        WHEN 'JTS2' THEN 'JTS'::CHAR(20)
+        ELSE BTRIM(COALESCE(v_mst.cabang,''))::CHAR(20) END;
+
+    v_tx_uid := MD5(BTRIM(p_docno)||'|'||COALESCE(v_dtl.uniqueid,'')||'|mr');
+
+    INSERT INTO sc_trx.transaction_dt (
+        uniqueid, source_uniqueid, docno, doctype, journal_type,
+        line_no, docdate, idbranch, cabang, type_in_out,
+        ref_docno, ref_doctype, idbarang, namabarang, idunit,
+        idarea, warehouse, bin, batch, lotno,
+        qty, harga, bruto, discount, nilai, dpp, pajak, total,
+        idtax, isinclusive, currcode, kurs,
+        idcoa, counter_idcoa, debet_kredit,
+        keterangan, createdby
+    ) VALUES (
+        v_tx_uid, COALESCE(v_dtl.uniqueid,''), BTRIM(p_docno),
+        'MATERIALRELEASE', 'WOISSU', GREATEST(COALESCE(v_dtl.idurut,1),1),
+        COALESCE(v_mst.docdate, CURRENT_DATE),
+        v_idbranch, BTRIM(COALESCE(v_mst.cabang,'')), 'OUT',
+        BTRIM(COALESCE(v_mst.wono,'')), 'MR',
+        BTRIM(COALESCE(v_dtl.idbarang,'')),
+        BTRIM(COALESCE(v_dtl.nmbarang,'')),
+        BTRIM(COALESCE(v_dtl.unit,'')),
+        BTRIM(COALESCE(v_mst.idlocation,'')),
+        BTRIM(COALESCE(v_mst.idlocation,'')),
+        '', BTRIM(COALESCE(v_mst.batchno,'')), '',
+        COALESCE(v_dtl.qty,0), v_harga, v_nilai, 0, v_nilai,
+        v_nilai, 0, v_nilai, 'NON','NO','IDR',1,
+        v_coa_debet, v_coa_kredit, 'D',
+        COALESCE(v_dtl.description,''),
+        COALESCE(v_mst.inputby,'SYSTEM')
+    )
+    ON CONFLICT (docno, uniqueid) DO UPDATE SET
+        journal_type  = EXCLUDED.journal_type,
+        docdate       = EXCLUDED.docdate,
+        idcoa         = EXCLUDED.idcoa,
+        counter_idcoa = EXCLUDED.counter_idcoa,
+        qty           = EXCLUDED.qty,
+        harga         = EXCLUDED.harga,
+        nilai         = EXCLUDED.nilai,
+        dpp           = EXCLUDED.dpp,
+        total         = EXCLUDED.total,
+        updateddate   = CURRENT_TIMESTAMP;
+END; $$;
+
+
+CREATE OR REPLACE FUNCTION sc_trx.fn_materialrelease_dtl_to_transaction()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        PERFORM sc_trx.fn_sync_materialrelease_dtl_to_transaction(NEW.docno, NEW.uniqueid);
+        RETURN NEW;
+    ELSIF TG_OP = 'UPDATE' THEN
+        PERFORM sc_trx.fn_sync_materialrelease_dtl_to_transaction(NEW.docno, NEW.uniqueid);
+        RETURN NEW;
+    ELSIF TG_OP = 'DELETE' THEN
+        DELETE FROM sc_trx.transaction_dt
+        WHERE BTRIM(docno) = BTRIM(OLD.docno)
+          AND uniqueid = MD5(BTRIM(OLD.docno)||'|'||COALESCE(OLD.uniqueid,'')||'|mr');
+        RETURN OLD;
+    END IF;
+    RETURN NEW;
+END; $$;
+
+DROP TRIGGER IF EXISTS tr_materialrelease_dtl_to_transaction
+ON sc_trx.materialrelease_dtl;
+
+CREATE TRIGGER tr_materialrelease_dtl_to_transaction
+AFTER INSERT OR UPDATE OR DELETE
+ON sc_trx.materialrelease_dtl
+FOR EACH ROW
+EXECUTE FUNCTION sc_trx.fn_materialrelease_dtl_to_transaction();

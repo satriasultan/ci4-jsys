@@ -9970,12 +9970,6 @@ class Production extends BaseController
         ]);
     }
 
-<<<<<<< Updated upstream
-    
-    
-=======
-
->>>>>>> Stashed changes
     public function delete_penerimaanbp_detail()
     {
         $request = service('request');
