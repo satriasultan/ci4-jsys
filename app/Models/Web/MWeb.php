@@ -29,27 +29,27 @@ class MWeb extends Model
         return $query;
     }
 
-    function cek_user_login($username, $password,$hold='NO'){
-        $tglskg=date("Y-m-d H:i:s");
 
-        return $this->db->query("select * from sc_mst.user where expdate > '$tglskg' and hold_id='$hold' and username = '$username' 
-                            and passwordweb = '".md5(md5(md5(strtoupper($password))))."'");
+    public function cek_user_login($username, $password, $hold = 'NO')
+    {
+        $tglskg = date('Y-m-d H:i:s');
 
-        //$builder = $this->table('sc_mst.user');
-        //$builder->select('*');
-        //$builder->where('expdate >',$tglskg);
-        //$builder->where('hold_id',$hold);
-        //$builder->where('username',$username);
-        //$builder->where('passwordweb',md5(md5(md5(strtoupper($password)))));
-        //$query = $builder->get();
+        // Pertahankan algoritma password lama untuk kompatibilitas.
+        // Migrasi ke password_hash/password_verify dilakukan terpisah.
+        $passwordHash = md5(
+            md5(
+                md5(strtoupper($password))
+            )
+        );
 
-        //if ($builder->countAll() == 1)
-        //{
-        //    return $builder->getResultArray();
-        //}
-
-
+        return $this->db->table('sc_mst.user')
+            ->where('expdate >', $tglskg)
+            ->where('hold_id', $hold)
+            ->where('username', $username)
+            ->where('passwordweb', $passwordHash)
+            ->get();
     }
+
 
     function getUserSession(){
         // $username = $this->session->get('username');

@@ -94,7 +94,25 @@ order by msession);");
             (string) $this->request->getVar('g-recaptcha-response')
         );
 
-        $ip = $this->fiky_encryption->getUserIP();
+        //$ip = $this->fiky_encryption->getUserIP();
+
+        $ip = $this->request->getIPAddress();
+
+// Batasi maksimal 10 request login per IP per 60 detik.
+        $throttler = service('throttler');
+
+        $ipKey = 'login-ip-' . hash('sha256', $ip);
+
+        if ($throttler->check($ipKey, 10, 60) === false) {
+            return $this->response
+                ->setStatusCode(429)
+                ->setJSON([
+                    'status'   => false,
+                    'messages' => 'Terlalu banyak percobaan login. Silakan coba lagi nanti.',
+                    'result'   => 'error'
+                ]);
+        }
+
 
 
         // ==========================================
@@ -240,6 +258,9 @@ order by msession);");
             'logindate' => $logindate
         ];
 
+        //$this->session->set($newdata);
+
+        $this->session->regenerate(true);
         $this->session->set($newdata);
 
          $this->m_global->insertlogtrans(

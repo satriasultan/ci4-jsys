@@ -271,6 +271,9 @@
     <p style="margin-top: -5px; opacity: .8;">Version 0.1 Development</p>
 
     <form id="loginform" action="<?php echo base_url('web/login/proses');?>" method="post">
+        <?= csrf_field() ?>
+
+
 
         <input class="form-control mt-3"
                type="text"

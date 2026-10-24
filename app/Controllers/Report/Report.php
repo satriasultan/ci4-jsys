@@ -5230,144 +5230,127 @@ ORDER BY
     private function buildQueryBukuBesarDetail()
     {
         $sql = "
-            WITH parameter AS (
-                SELECT 
-                    ?::DATE AS tgl_mulai,
-                    ?::DATE AS tgl_akhir,
-                    ?::VARCHAR AS cabang,
-                    ?::VARCHAR AS kode_akun
-            ),
-            saldo_awal AS (
-                -- 1. Hitung Saldo Awal (Sebelum tgl_mulai)
-                SELECT 
-                    jd.idcoa,
-                    SUM(jd.debet - jd.kredit) AS saldo_awal
-                FROM sc_trx.jurnal_dt jd
-                JOIN sc_trx.jurnal_hd jh ON jh.id = jd.jurnal_id
-                WHERE jd.status = 'POSTED'
-                  AND jh.trxdate < (SELECT tgl_mulai FROM parameter)
-                  AND (
-                      (SELECT cabang FROM parameter) = '' 
-                      OR TRIM(jh.idbranch) = TRIM((SELECT cabang FROM parameter))
-                  )
-                  AND (
-                      (SELECT kode_akun FROM parameter) = '' 
-                      OR TRIM(jd.idcoa) = TRIM((SELECT kode_akun FROM parameter))
-                  )
-                GROUP BY jd.idcoa
-            ),
-            mutasi_summary AS (
-                -- 2. Ambil Mutasi & Grouping berdasarkan Docno dan Idcoa + Concat Detail
-                SELECT 
-                    jd.idcoa,
-                    jh.trxdate,
-                    jh.docno,
-                    
-                    -- 🔧 CONCAT SUPPLIER, BARANG, (QTY UNIT), BATCH
-                    STRING_AGG(
-                        DISTINCT 
-                        COALESCE(NULLIF(TRIM(td.nsupplier), ''), 'TANPA SUPPLIER') 
-                        || ' - ' || 
-                        COALESCE(NULLIF(TRIM(mb.nmbarang), ''), NULLIF(TRIM(td.namabarang), ''), 'TANPA BARANG')
-                        || ' (' || 
-                           COALESCE(TO_CHAR(td.qty, 'FM999,999,990.00'), '0') || 
-                           CASE WHEN COALESCE(TRIM(td.idunit), '') <> '' THEN ' ' || TRIM(td.idunit) ELSE '' END
-                        || ')' 
-                        || ' / ' || 
-                        COALESCE(NULLIF(TRIM(td.batch), ''), '-')
-                        , ' / '
-                    ) AS keterangan,
-                    
-                    SUM(jd.debet) AS debet,
-                    SUM(jd.kredit) AS kredit,
-                    COALESCE(TRIM(b.nmbranch), TRIM(jh.cabang), '-') AS namajobchild
-                FROM sc_trx.jurnal_dt jd
-                JOIN sc_trx.jurnal_hd jh ON jh.id = jd.jurnal_id
-                
-                -- JOIN KE TABEL TRANSAKSI UNTUK SUPPLIER & BARANG
-                LEFT JOIN sc_trx.transaction_dt td ON TRIM(td.uniqueid) = TRIM(jd.source_uniqueid)
-                LEFT JOIN sc_mst.mbarang mb ON TRIM(mb.idbarang) = TRIM(td.idbarang)
-                LEFT JOIN sc_mst.branchjob b ON TRIM(b.idbranch) = TRIM(jh.idbranch)
-                
-                WHERE jd.status = 'POSTED'
-                  AND jh.trxdate BETWEEN (SELECT tgl_mulai FROM parameter) AND (SELECT tgl_akhir FROM parameter)
-                  AND (
-                      (SELECT cabang FROM parameter) = '' 
-                      OR TRIM(jh.idbranch) = TRIM((SELECT cabang FROM parameter))
-                  )
-                  AND (
-                      (SELECT kode_akun FROM parameter) = '' 
-                      OR TRIM(jd.idcoa) = TRIM((SELECT kode_akun FROM parameter))
-                  )
-                GROUP BY 
-                    jd.idcoa, 
-                    jh.trxdate, 
-                    jh.docno, 
-                    COALESCE(TRIM(b.nmbranch), TRIM(jh.cabang), '-')
-            ),
-            coa_yang_muncul AS (
-                -- 3. Ambil gabungan COA dari Saldo Awal dan Mutasi
-                SELECT idcoa FROM saldo_awal
-                UNION
-                SELECT idcoa FROM mutasi_summary
-            ),
-            gabungan AS (
-                -- 4. Baris Saldo Awal (Gunakan COALESCE jika tidak ada = 0)
-                SELECT 
-                    cy.idcoa,
-                    c.nmcoa,
-                    (SELECT tgl_mulai FROM parameter) AS trxdate,
-                    '' AS docno,
-                    'SALDO AWAL' AS keterangan,
-                    CASE WHEN COALESCE(sa.saldo_awal, 0) > 0 THEN sa.saldo_awal ELSE 0 END AS debet,
-                    CASE WHEN COALESCE(sa.saldo_awal, 0) < 0 THEN ABS(sa.saldo_awal) ELSE 0 END AS kredit,
-                    'PT JATIM TAMAN STEEL MFG' AS namajobchild,
-                    0 AS is_saldo_awal
-                FROM coa_yang_muncul cy
-                JOIN sc_mst.coa c ON TRIM(c.idcoa) = TRIM(cy.idcoa)
-                LEFT JOIN saldo_awal sa ON TRIM(sa.idcoa) = TRIM(cy.idcoa)
-                
-                UNION ALL
-                
-                -- 5. Baris Mutasi
-                SELECT 
-                    m.idcoa,
-                    c.nmcoa,
-                    m.trxdate,
-                    m.docno,
-                    m.keterangan,
-                    m.debet,
-                    m.kredit,
-                    m.namajobchild,
-                    1 AS is_saldo_awal
-                FROM mutasi_summary m
-                JOIN sc_mst.coa c ON TRIM(c.idcoa) = TRIM(m.idcoa)
-            ),
-            final_result AS (
-                -- 6. Nomor urut reset per COA
-                SELECT 
-                    *,
-                    ROW_NUMBER() OVER (
-                        PARTITION BY idcoa 
-                        ORDER BY is_saldo_awal ASC, trxdate ASC, docno ASC
-                    ) AS urutan
-                FROM gabungan
-            )
-            -- 7. Output Final
-            SELECT 
-                nmcoa AS nmprk,
-                idcoa AS kdprk,
-                TO_CHAR(trxdate, 'YYYY-MM-DD') AS docdate,
-                docno,
-                keterangan,
-                debet,
-                kredit,
-                namajobchild
-            FROM final_result
-            ORDER BY 
-                kdprk ASC, 
-                urutan ASC
-        ";
+        WITH parameter AS (
+            SELECT
+                ?::DATE AS tgl_mulai,
+                ?::DATE AS tgl_akhir,
+                ?::VARCHAR AS cabang,
+                ?::VARCHAR AS kode_akun
+        ),
+        saldo_awal AS (
+            SELECT
+                jd.idcoa,
+                SUM(jd.debet - jd.kredit) AS saldo_awal
+            FROM sc_trx.jurnal_dt jd
+            JOIN sc_trx.jurnal_hd jh ON jh.id = jd.jurnal_id
+            WHERE jd.status = 'POSTED'
+              AND jh.trxdate < (SELECT tgl_mulai FROM parameter)
+              AND (
+                  (SELECT cabang FROM parameter) = ''
+                  OR TRIM(jh.idbranch) = TRIM((SELECT cabang FROM parameter))
+              )
+              AND (
+                  (SELECT kode_akun FROM parameter) = ''
+                  OR TRIM(jd.idcoa) = TRIM((SELECT kode_akun FROM parameter))
+              )
+            GROUP BY jd.idcoa
+        ),
+        mutasi_summary AS (
+            SELECT
+                jd.idcoa,
+                jh.trxdate,
+                jh.docno,
+                COALESCE(jd.source_description, '') AS keterangan,
+                SUM(jd.debet) AS debet,
+                SUM(jd.kredit) AS kredit,
+                COALESCE(TRIM(b.nmbranch), TRIM(jh.cabang), '-') AS namajobchild
+            FROM sc_trx.jurnal_dt jd
+            JOIN sc_trx.jurnal_hd jh ON jh.id = jd.jurnal_id
+            LEFT JOIN sc_trx.transaction_dt td
+                ON TRIM(td.uniqueid) = TRIM(jd.source_uniqueid)
+            LEFT JOIN sc_mst.mbarang mb
+                ON TRIM(mb.idbarang) = TRIM(td.idbarang)
+            LEFT JOIN sc_mst.branchjob b
+                ON TRIM(b.idbranch) = TRIM(jh.idbranch)
+            WHERE jd.status = 'POSTED'
+              AND jh.trxdate BETWEEN
+                  (SELECT tgl_mulai FROM parameter)
+                  AND (SELECT tgl_akhir FROM parameter)
+              AND (
+                  (SELECT cabang FROM parameter) = ''
+                  OR TRIM(jh.idbranch) = TRIM((SELECT cabang FROM parameter))
+              )
+              AND (
+                  (SELECT kode_akun FROM parameter) = ''
+                  OR TRIM(jd.idcoa) = TRIM((SELECT kode_akun FROM parameter))
+              )
+            GROUP BY
+                jd.idcoa,
+                jh.trxdate,
+                jh.docno,
+                COALESCE(jd.source_description, ''),
+                COALESCE(TRIM(b.nmbranch), TRIM(jh.cabang), '-')
+        ),
+        coa_yang_muncul AS (
+            SELECT idcoa FROM saldo_awal
+            UNION
+            SELECT idcoa FROM mutasi_summary
+        ),
+        gabungan AS (
+            SELECT
+                cy.idcoa,
+                c.nmcoa,
+                (SELECT tgl_mulai FROM parameter) AS trxdate,
+                '' AS docno,
+                'SALDO AWAL' AS keterangan,
+                CASE WHEN COALESCE(sa.saldo_awal, 0) > 0
+                    THEN sa.saldo_awal ELSE 0 END AS debet,
+                CASE WHEN COALESCE(sa.saldo_awal, 0) < 0
+                    THEN ABS(sa.saldo_awal) ELSE 0 END AS kredit,
+                'PT JATIM TAMAN STEEL MFG' AS namajobchild,
+                0 AS is_saldo_awal
+            FROM coa_yang_muncul cy
+            JOIN sc_mst.coa c ON TRIM(c.idcoa) = TRIM(cy.idcoa)
+            LEFT JOIN saldo_awal sa ON TRIM(sa.idcoa) = TRIM(cy.idcoa)
+
+            UNION ALL
+
+            SELECT
+                m.idcoa,
+                c.nmcoa,
+                m.trxdate,
+                m.docno,
+                m.keterangan,
+                m.debet,
+                m.kredit,
+                m.namajobchild,
+                1 AS is_saldo_awal
+            FROM mutasi_summary m
+            JOIN sc_mst.coa c ON TRIM(c.idcoa) = TRIM(m.idcoa)
+        ),
+        final_result AS (
+            SELECT
+                *,
+                ROW_NUMBER() OVER (
+                    PARTITION BY idcoa
+                    ORDER BY is_saldo_awal ASC, trxdate ASC, docno ASC
+                ) AS urutan
+            FROM gabungan
+        )
+        SELECT
+            nmcoa AS nmprk,
+            idcoa AS kdprk,
+            TO_CHAR(trxdate, 'YYYY-MM-DD') AS docdate,
+            docno,
+            keterangan,
+            debet,
+            kredit,
+            namajobchild
+        FROM final_result
+        ORDER BY
+            kdprk ASC,
+            urutan ASC
+    ";
 
         return $sql;
     }

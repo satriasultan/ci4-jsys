@@ -1,3 +1,13 @@
+BEGIN;
+
+/*
+   PERHATIAN:
+   DROP TABLE menghapus seluruh data sc_trx.jurnal_dt.
+   CASCADE juga dapat menghapus objek yang bergantung pada tabel ini.
+   Gunakan hanya jika memang ingin membangun ulang tabel dari nol.
+*/
+DROP TABLE IF EXISTS sc_trx.jurnal_dt CASCADE;
+
 /* ============================================================
    TAHAP 10
    ACCOUNTING JOURNAL DETAIL : sc_trx.jurnal_dt
@@ -49,6 +59,7 @@ CREATE TABLE IF NOT EXISTS sc_trx.jurnal_dt
     status              VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
 
     keterangan          TEXT NOT NULL DEFAULT '',
+    source_description  TEXT NOT NULL DEFAULT '',
 
     currcode            CHAR(3) NOT NULL DEFAULT '',
     kurs                NUMERIC(18,6) NOT NULL DEFAULT 1,
@@ -194,6 +205,15 @@ BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_schema='sc_trx' AND table_name='jurnal_dt'
+          AND column_name='source_description'
+    ) THEN
+        ALTER TABLE sc_trx.jurnal_dt
+            ADD COLUMN source_description TEXT DEFAULT '';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema='sc_trx' AND table_name='jurnal_dt'
           AND column_name='currcode'
     ) THEN
         ALTER TABLE sc_trx.jurnal_dt ADD COLUMN currcode CHAR(3) DEFAULT '';
@@ -276,6 +296,7 @@ SET
     ref_doctype     = COALESCE(ref_doctype, ''),
     status          = COALESCE(status, 'DRAFT'),
     keterangan      = COALESCE(keterangan, ''),
+    source_description = COALESCE(source_description, ''),
     currcode        = COALESCE(currcode, ''),
     kurs            = COALESCE(kurs, 1),
     createddate     = COALESCE(createddate, CURRENT_TIMESTAMP)
@@ -291,6 +312,7 @@ WHERE
     OR ref_doctype IS NULL
     OR status IS NULL
     OR keterangan IS NULL
+    OR source_description IS NULL
     OR currcode IS NULL
     OR kurs IS NULL
     OR createddate IS NULL;
@@ -315,6 +337,12 @@ BEGIN
 
     ALTER TABLE sc_trx.jurnal_dt
         ALTER COLUMN status SET NOT NULL;
+
+    ALTER TABLE sc_trx.jurnal_dt
+        ALTER COLUMN source_description SET DEFAULT '';
+
+    ALTER TABLE sc_trx.jurnal_dt
+        ALTER COLUMN source_description SET NOT NULL;
 END
 $$;
 
@@ -1064,3 +1092,5 @@ LEFT JOIN sc_mst.journal_type jt
        ON jt.journal_type = jd.journal_type
 WHERE NULLIF(BTRIM(jd.journal_type::TEXT), '') IS NULL
    OR jt.journal_type IS NULL;
+
+COMMIT;

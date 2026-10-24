@@ -1,5 +1,5 @@
 <?php
-
+/* Finance.php */
 
 namespace App\Controllers\Finance;
 
@@ -6334,4 +6334,342 @@ ORDER BY p.docno;
             'data'   => $data
         ]);
     }
+
+
+    /*
+     * PATCH untuk App\Controllers\Ka\Finance (sesuaikan namespace sesuai controller).
+     * Ganti method importPengeluaranKB(), downloadTemplatePengeluaranKB(),
+     * generateTemplateCSV(), prosesImportPengeluaranKB() dan helper readCSV/readExcel/parseDate
+     * yang lama dengan blok ini. Method ini hanya menulis staging sc_im; tidak menulis sc_tmp/sc_trx.
+     */
+
+    public function importPengeluaranKB()
+    {
+        $data['title'] = 'Import Pengeluaran Kas/Bank';
+        $qBranch = $this->m_global->q_branch();
+        $dtlbranch = $qBranch ? $qBranch->getRowArray() : null;
+        $nama = trim((string) $this->session->get('nama'));
+        $kodemenu = 'I.K.B.3';
+        $versirelease = 'I.K.B.3/01';
+        $releasedate = date('2025-04-12 00:00:00');
+
+        $versidb = $this->fiky_version->version($kodemenu, $versirelease, $releasedate, $nama);
+        $x = $this->fiky_menu->menus($kodemenu, $versirelease, $releasedate);
+        $data['x'] = $x['rows'];
+        $data['y'] = $x['res'];
+        $data['t'] = $x['xn'];
+        $data['kodemenu'] = $kodemenu;
+        $data['version'] = $versidb;
+        $data['message'] = '';
+
+        $db = $this->db;
+        $data['recent'] = $db->table('sc_im.pengeluarankb_import_batch')
+            ->orderBy('id', 'DESC')->limit(15)->get()->getResultArray();
+        $data['previewBatch'] = null;
+        $data['previewHeaders'] = [];
+        $data['previewDetails'] = [];
+        $data['previewSummary'] = null;
+        $previewToken = trim((string) session()->getFlashdata('preview_batch_token'));
+        if ($previewToken !== '') {
+            $batch = $db->table('sc_im.pengeluarankb_import_batch')->where('batch_token', $previewToken)->where('created_by', $nama)->get()->getRowArray();
+            if ($batch) {
+                $data['previewBatch'] = $batch;
+                $data['previewHeaders'] = $db->table('sc_im.pengeluarankb_import_hd')->where('batch_id', $batch['id'])->orderBy('nomor_baris', 'ASC')->get()->getResultArray();
+                $data['previewDetails'] = $db->table('sc_im.pengeluarankb_import_dtl')->where('batch_id', $batch['id'])->orderBy('header_id', 'ASC')->orderBy('slot_no', 'ASC')->get()->getResultArray();
+                $data['previewSummary'] = ['jumlah_baris'=>(int)$batch['jumlah_baris'], 'jumlah_valid'=>(int)$batch['jumlah_valid'], 'jumlah_gagal'=>(int)$batch['jumlah_gagal']];
+            }
+        }
+
+        $kmenu = 'I.K.B.3';
+        $role = trim((string) $this->session->get('roleid'));
+        $qAkses = $this->m_role->detail_user_akses($role, $kmenu);
+        $data['dtl_akses'] = $qAkses ? $qAkses->getRowArray() : null;
+
+        return $this->template->render('finance/finance/v_import_pengeluarankb', $data);
+    }
+
+    public function downloadTemplatePengeluaranKB()
+    {
+        $headers = [
+            'NOMOR BK','TANGGAL BK','KODE SUPPLIER','SUPPLIER','DIBAYAR KEPADA',
+            'ALAMAT SUPPLIER','KODE BANK','KETERANGAN','TOTAL PEMBAYARAN','CURRENCY'
+        ];
+        foreach (['COA','KET','REFF','DK','NILAI'] as $group) {
+            for ($i = 1; $i <= 25; $i++) $headers[] = $group . ' ' . $i;
+        }
+
+        $this->response->setHeader('Content-Type', 'text/csv; charset=UTF-8');
+        $this->response->setHeader('Content-Disposition', 'attachment; filename="Template_Import_PengeluaranKB_' . date('YmdHis') . '.csv"');
+        $out = fopen('php://output', 'w');
+        // BOM agar Excel mengenali UTF-8.
+        fwrite($out, "\xEF\xBB\xBF");
+        fputcsv($out, $headers);
+        $example = array_fill(0, count($headers), '');
+        $sample = [
+            'NOMOR BK'=>'BKT/2608/PT0012','TANGGAL BK'=>'15-08-2026',
+            'KODE SUPPLIER'=>'S-01080','SUPPLIER'=>'CONTOH SUPPLIER',
+            'DIBAYAR KEPADA'=>'CONTOH SUPPLIER','ALAMAT SUPPLIER'=>'ALAMAT SUPPLIER',
+            'KODE BANK'=>'111204','KETERANGAN'=>'CONTOH PEMBAYARAN',
+            'TOTAL PEMBAYARAN'=>'1000000','CURRENCY'=>'IDR',
+            'COA 1'=>'213102','KET 1'=>'KETERANGAN DETAIL','REFF 1'=>'LPB/2607/PA0399',
+            'DK 1'=>'D','NILAI 1'=>'1000000'
+        ];
+        foreach ($headers as $i => $h) if (isset($sample[$h])) $example[$i] = $sample[$h];
+        fputcsv($out, $example);
+        fclose($out);
+        return $this->response;
+    }
+
+    /** Upload hanya membentuk preview di sc_im. Tidak mengubah tabel transaksi. */
+    public function prosesImportPengeluaranKB()
+    {
+        set_time_limit(300); // File export BK bisa berisi ribuan dokumen.
+        $nama = trim((string) $this->session->get('nama'));
+        $file = $this->request->getFile('file_import');
+        $redirect = base_url('ka/finance/importPengeluaranKB');
+
+        if (!$file || !$file->isValid()) return redirect()->to($redirect)->with('error', 'File tidak valid atau tidak ditemukan.');
+        $ext = strtolower($file->getExtension());
+        if (!in_array($ext, ['xlsx','xls','csv'], true)) return redirect()->to($redirect)->with('error', 'Format file harus XLSX, XLS, atau CSV.');
+        if ($file->getSize() > 10 * 1024 * 1024) return redirect()->to($redirect)->with('error', 'Ukuran file maksimal 10 MB.');
+
+        $uploadPath = WRITEPATH . 'uploads/import_bk/';
+        if (!is_dir($uploadPath) && !mkdir($uploadPath, 0775, true) && !is_dir($uploadPath)) {
+            return redirect()->to($redirect)->with('error', 'Folder upload tidak dapat dibuat.');
+        }
+        $safeUser = preg_replace('/[^A-Za-z0-9_-]/', '_', $nama ?: 'user');
+        $newName = $safeUser . '_' . date('YmdHis') . '_' . bin2hex(random_bytes(3)) . '.' . $ext;
+        try {
+            $file->move($uploadPath, $newName);
+            $path = $uploadPath . $newName;
+            $rows = $ext === 'csv' ? $this->readCSV($path) : $this->readExcel($path);
+        } catch (\Throwable $e) {
+            log_message('error', 'Import PengeluaranKB preview: ' . $e->getMessage());
+            return redirect()->to($redirect)->with('error', 'Gagal membaca file. Periksa format file dan coba kembali.');
+        }
+
+        if (empty($rows)) return redirect()->to($redirect)->with('error', 'File kosong.');
+
+        // Temukan baris header; export BK yang diberikan memiliki baris pertama HEADER/CONTENT,
+        // dan nama kolom berada di baris kedua. Tetap mendukung template satu baris header.
+        $headerIndex = null;
+        foreach (array_slice($rows, 0, 10, true) as $idx => $row) {
+            $cells = array_map(fn($v) => strtoupper(trim((string) $v)), $row);
+            if (in_array('NOMOR BK', $cells, true) && in_array('TANGGAL BK', $cells, true)) { $headerIndex = $idx; break; }
+        }
+        if ($headerIndex === null) return redirect()->to($redirect)->with('error', 'Header NOMOR BK dan TANGGAL BK tidak ditemukan. Gunakan template import.');
+
+        $headers = array_map(fn($v) => strtoupper(trim((string) $v)), $rows[$headerIndex]);
+        $dataRows = array_slice($rows, $headerIndex + 1);
+        $headerMap = [];
+        foreach ($headers as $idx => $h) if ($h !== '') $headerMap[$h] = $idx;
+
+        $batchToken = bin2hex(random_bytes(24));
+        $now = date('Y-m-d H:i:s');
+        $db = $this->db;
+        $countValid = 0;
+        $countError = 0;
+        $qBranch = $this->m_global->q_branch();
+        $branchRow = $qBranch ? $qBranch->getRowArray() : null;
+        $branch = trim((string) ($branchRow['branch'] ?? ''));
+
+        // Bangun baris RAW (teks persis seperti di Excel); parsing & validasi dilakukan
+        // di database oleh sc_im.sp_build_pengeluarankb_import().
+        $colMap = [
+            'NOMOR BK'=>'nomor_bk', 'TANGGAL BK'=>'tanggal_bk', 'KODE SUPPLIER'=>'kode_supplier',
+            'SUPPLIER'=>'supplier', 'DIBAYAR KEPADA'=>'dibayar_kepada', 'ALAMAT SUPPLIER'=>'alamat_supplier',
+            'KODE BANK'=>'kode_bank', 'KETERANGAN'=>'keterangan',
+            'TOTAL PEMBAYARAN'=>'total_pembayaran', 'CURRENCY'=>'currency',
+        ];
+        $rawRows = [];
+        $lineNo = $headerIndex + 1;
+        foreach ($dataRows as $row) {
+            $lineNo++;
+            $row = is_array($row) ? $row : [];
+            if (!array_filter($row, fn($v) => trim((string) $v) !== '')) continue;
+            $raw = [];
+            foreach ($headerMap as $h => $idx) $raw[$h] = trim((string) ($row[$idx] ?? ''));
+            $rec = ['nomor_baris'=>$lineNo];
+            foreach ($colMap as $h => $col) $rec[$col] = $raw[$h] ?? '';
+            for ($i = 1; $i <= 25; $i++) {
+                $rec['coa_'.$i]   = $raw['COA '.$i] ?? '';
+                $rec['ket_'.$i]   = $raw['KET '.$i] ?? '';
+                $rec['reff_'.$i]  = $raw['REFF '.$i] ?? '';
+                $rec['dk_'.$i]    = $raw['DK '.$i] ?? '';
+                $rec['nilai_'.$i] = $raw['NILAI '.$i] ?? '';
+            }
+            $rawRows[] = $rec;
+        }
+        if (empty($rawRows)) return redirect()->to($redirect)->with('error', 'Tidak ada baris data yang dapat dipreview.');
+
+        $db->transBegin();
+        try {
+            $db->table('sc_im.pengeluarankb_import_batch')->insert([
+                'batch_token'=>$batchToken, 'nama_file'=>basename($file->getName()),
+                'status'=>'PREVIEW', 'created_by'=>$nama, 'created_at'=>$now,
+                'keterangan'=>'Preview import; belum diposting ke transaksi.'
+            ]);
+            $batchId = (int) $db->insertID();
+
+            foreach (array_chunk($rawRows, 200) as $chunk) {
+                foreach ($chunk as &$rec) $rec['batch_id'] = $batchId;
+                unset($rec);
+                $db->table('sc_im.pengeluarankb_import_raw')->insertBatch($chunk);
+            }
+
+            // Transform RAW -> header/detail + seluruh validasi kolom di sisi database.
+            $db->query('CALL sc_im.sp_build_pengeluarankb_import(?)', [$batchId]);
+
+            // REPLACE: docno yang sudah ada di transaksi/draft atau staging batch aktif lain
+            // ditandai is_replace=1; staging lama dengan docno sama dihapus (tidak ditumpuk).
+            $batchDocnos = array_column($db->table('sc_im.pengeluarankb_import_hd')->select('docno')->where('batch_id', $batchId)->get()->getResultArray(), 'docno');
+            $replaceSet = [];
+            $oldHeaderIds = [];
+            foreach (array_chunk($batchDocnos, 500) as $chunk) {
+                foreach ($db->table('sc_trx.pengeluarankb')->select('docno')->whereIn('docno', $chunk)->get()->getResultArray() as $r) $replaceSet[$r['docno']] = true;
+                foreach ($db->table('sc_tmp.pengeluarankb')->select('docno')->whereIn('docno', $chunk)->get()->getResultArray() as $r) $replaceSet[$r['docno']] = true;
+                $oldRows = $db->table('sc_im.pengeluarankb_import_hd h')
+                    ->select('h.id, h.docno')
+                    ->join('sc_im.pengeluarankb_import_batch b', 'b.id = h.batch_id')
+                    ->whereIn('h.docno', $chunk)
+                    ->whereIn('b.status', ['PREVIEW', 'CONFIRMED'])
+                    ->where('b.id <>', $batchId)
+                    ->get()->getResultArray();
+                foreach ($oldRows as $r) { $oldHeaderIds[] = (int) $r['id']; $replaceSet[$r['docno']] = true; }
+            }
+            if ($oldHeaderIds) {
+                foreach (array_chunk($oldHeaderIds, 500) as $chunk) {
+                    $db->table('sc_im.pengeluarankb_import_dtl')->whereIn('header_id', $chunk)->delete();
+                }
+                $db->table('sc_im.pengeluarankb_import_hd')->whereIn('id', $oldHeaderIds)->delete();
+            }
+            if ($replaceSet) {
+                foreach (array_chunk(array_keys($replaceSet), 500) as $chunk) {
+                    $db->table('sc_im.pengeluarankb_import_hd')->set('is_replace', 1)->where('batch_id', $batchId)->whereIn('docno', $chunk)->update();
+                }
+            }
+            $countReplace = (int) $db->table('sc_im.pengeluarankb_import_hd')->where('batch_id', $batchId)->where('is_replace', 1)->countAllResults();
+
+            // Jumlah valid/error diambil dari batch (sudah diisi SP).
+            $batchRow = $db->table('sc_im.pengeluarankb_import_batch')->where('id', $batchId)->get()->getRowArray();
+            $countValid = (int) ($batchRow['jumlah_valid'] ?? 0);
+            $countError = (int) ($batchRow['jumlah_gagal'] ?? 0);
+
+            $totalRows = $countValid + $countError;
+            if ($totalRows === 0) throw new \RuntimeException('Tidak ada baris data yang dapat dipreview.');
+            $db->table('sc_im.pengeluarankb_import_batch')->where('id', $batchId)->update([
+                'jumlah_baris'=>$totalRows, 'jumlah_valid'=>$countValid, 'jumlah_gagal'=>$countError
+            ]);
+            if ($db->transStatus() === false) throw new \RuntimeException('Database gagal menyimpan preview.');
+            $db->transCommit();
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', 'Import PengeluaranKB stage failed: '.$e->getMessage());
+            return redirect()->to($redirect)->with('error', 'Preview gagal disimpan: '.$e->getMessage());
+        }
+
+        return redirect()->to($redirect)->with('preview_batch_token', $batchToken)
+            ->with('success', 'Preview selesai. Valid: '.$countValid.', error: '.$countError.', replace: '.$countReplace.'. Belum ada transaksi yang diubah.');
+    }
+
+    /** Konfirmasi menyelesaikan staging batch. Tidak mem-posting ke sc_tmp/sc_trx. */
+    public function simpanImportPengeluaranKB()
+    {
+        $nama = trim((string) $this->session->get('nama'));
+        $token = trim((string) $this->request->getPost('batch_token'));
+        if ($token === '') return redirect()->to(base_url('ka/finance/importPengeluaranKB'))->with('error', 'Token batch tidak ditemukan.');
+        $db = $this->db;
+        $batch = $db->table('sc_im.pengeluarankb_import_batch')->where('batch_token', $token)->where('created_by', $nama)->get()->getRowArray();
+        if (!$batch || $batch['status'] !== 'PREVIEW') return redirect()->to(base_url('ka/finance/importPengeluaranKB'))->with('error', 'Batch tidak ditemukan atau sudah diproses.');
+        if ((int)$batch['jumlah_gagal'] > 0) return redirect()->to(base_url('ka/finance/importPengeluaranKB'))->with('error', 'Batch masih memiliki baris ERROR. Perbaiki file lalu upload ulang; batch tidak dikonfirmasi.');
+        $db->table('sc_im.pengeluarankb_import_batch')->where('id', $batch['id'])->where('status', 'PREVIEW')->update([
+            'status'=>'CONFIRMED', 'confirmed_by'=>$nama, 'confirmed_at'=>date('Y-m-d H:i:s'),
+            'keterangan'=>'Preview dikonfirmasi dan tersimpan di staging sc_im; belum diposting ke transaksi.'
+        ]);
+        return redirect()->to(base_url('ka/finance/importPengeluaranKB'))->with('success', 'Batch dikonfirmasi dan tersimpan di staging sc_im. Tidak ada perubahan pada tabel transaksi.');
+    }
+
+    public function cancelImportPengeluaranKB()
+    {
+        $nama = trim((string) $this->session->get('nama'));
+        $token = trim((string) $this->request->getPost('batch_token'));
+        $db = $this->db;
+        $db->table('sc_im.pengeluarankb_import_batch')->where('batch_token', $token)->where('created_by', $nama)->where('status', 'PREVIEW')->update([
+            'status'=>'CANCELLED', 'cancelled_by'=>$nama, 'cancelled_at'=>date('Y-m-d H:i:s'), 'keterangan'=>'Preview dibatalkan oleh user.'
+        ]);
+        return redirect()->to(base_url('ka/finance/importPengeluaranKB'))->with('success', 'Preview dibatalkan. Data staging tetap tersedia untuk audit.');
+    }
+
+    private function readCSV($filepath): array
+    {
+        $rows = [];
+        if (($handle = fopen($filepath, 'r')) === false) throw new \RuntimeException('File CSV tidak dapat dibuka.');
+        $first = fgets($handle);
+        $delimiter = (strpos((string)$first, ';') !== false && strpos((string)$first, ',') === false) ? ';' : ',';
+        rewind($handle);
+        while (($data = fgetcsv($handle, 0, $delimiter)) !== false) $rows[] = $data;
+        fclose($handle);
+        return $rows;
+    }
+
+    private function readExcel($filepath): array
+    {
+        if (class_exists('\\PhpOffice\\PhpSpreadsheet\\IOFactory')) {
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($filepath);
+            return $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
+        }
+        if (class_exists('\\Shuchkin\\SimpleXLSX')) {
+            $xlsx = \Shuchkin\SimpleXLSX::parse($filepath);
+            if ($xlsx) return $xlsx->rows();
+            throw new \RuntimeException('File XLSX tidak dapat dibaca.');
+        }
+        throw new \RuntimeException('Library PhpSpreadsheet/SimpleXLSX tidak tersedia.');
+    }
+
+    private function parseDate($value): ?string
+    {
+        if ($value instanceof \DateTimeInterface) return $value->format('Y-m-d');
+        $value = trim((string)$value);
+        if ($value === '') return null;
+        if (is_numeric($value) && (float)$value > 0 && (float)$value < 100000 && class_exists('\\PhpOffice\\PhpSpreadsheet\\Shared\\Date')) {
+            try { return \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject((float)$value)->format('Y-m-d'); } catch (\Throwable $e) {}
+        }
+        foreach (['d-m-Y','d/m/Y','Y-m-d','d M Y','d F Y','m/d/Y','Y/m/d','d.m.Y'] as $format) {
+            $dt = \DateTime::createFromFormat('!'.$format, $value);
+            if ($dt && $dt->format($format) === $value) return $dt->format('Y-m-d');
+        }
+        $ts = strtotime($value);
+        return $ts === false ? null : date('Y-m-d', $ts);
+    }
+
+    /**
+     * Parser angka khusus file import BK. PhpSpreadsheet toArray() mengembalikan
+     * angka sebagai string berformat ribuan (mis. "1,186,298,070"), jadi cleanNumber()
+     * umum (strip koma saja) tidak cukup bila formatnya Indonesia ("1.186.298.070,50").
+     */
+    private function parseImportNumber($value): float
+    {
+        if (is_int($value) || is_float($value)) return (float) $value;
+        $v = trim((string) $value);
+        if ($v === '') return 0.0;
+        $v = str_replace(["\xc2\xa0", ' '], '', $v);
+        $negative = str_starts_with($v, '(') && str_ends_with($v, ')');
+        $v = trim($v, '()');
+        if (str_contains($v, ',') && str_contains($v, '.')) {
+            // Pemisah paling kanan diasumsikan desimal.
+            if (strrpos($v, ',') > strrpos($v, '.')) $v = str_replace(',', '.', str_replace('.', '', $v));
+            else $v = str_replace(',', '', $v);
+        } elseif (str_contains($v, ',')) {
+            $parts = explode(',', $v);
+            $v = count($parts) === 2 && strlen($parts[1]) <= 2 ? $parts[0].'.'.$parts[1] : implode('', $parts);
+        } elseif (substr_count($v, '.') > 1) {
+            $v = str_replace('.', '', $v);
+        } elseif (str_contains($v, '.') && strlen(substr(strrchr($v, '.'), 1)) === 3) {
+            $v = str_replace('.', '', $v);
+        }
+        $v = preg_replace('/[^0-9.\-]/', '', $v);
+        $number = is_numeric($v) ? (float) $v : 0.0;
+        return $negative ? -$number : $number;
+    }
+
 }

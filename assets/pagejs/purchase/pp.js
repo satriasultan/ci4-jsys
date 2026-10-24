@@ -2092,7 +2092,7 @@ $("#batch").select2({
     width: '100%',
     //
     // // >>> TAMBAHKAN INI
-    dropdownParent: $('#modalDetailPP .modal-body'),   // <-- UBAH KE INI
+    dropdownParent: $('#modalDetailPP'),   // <-- UBAH KE INI
     ajax: {
 
         url: HOST_URL + 'api/globalmodule/list_batch_item',
@@ -2228,7 +2228,7 @@ function initSelect2Unit(idbarang, callback) {
         placeholder: "Pilih Satuan...",
         allowClear: true,
         width: '100%',
-        dropdownParent: $('#modalDetailPP .modal-body'),    // <-- BENAR
+        dropdownParent: $('#modalDetailPP'),    // <-- BENAR
         minimumInputLength: 0,
         ajax: {
             url: HOST_URL + 'api/globalmodule/list_unit_item',
@@ -2315,7 +2315,7 @@ function initSelect2Unit(idbarang, callback) {
     }).on("select2:select", function (e) {
 
         loadStockItem();   // 🔹 tambahkan ini
-        setUnitConversion(e.params.data);
+        //setUnitConversion(e.params.data);
     });
 }
 
@@ -2420,10 +2420,12 @@ function loadStockItem() {
 
     var idbranch = $('#cabang').val();
     var idbarang = $('#idbarang').val();
+    var batch    = $('#batch').val();
 
     // Belum pilih cabang / barang → reset
     if (!idbranch || !idbarang) {
-        $('#qtystock').val('0.00');
+        setJtsValue('#qtystock', '0.00');
+        $('#qtystock_raw').val('0.00');
         return;
     }
 
@@ -2432,7 +2434,8 @@ function loadStockItem() {
         type: 'GET',
         data: {
             idbranch: idbranch,
-            idbarang: idbarang
+            idbarang: idbarang,
+            batch:    batch || ''
         },
         dataType: 'json',
         success: function (res) {

@@ -1,3 +1,5 @@
+/* pengeluarankb.js */
+
 var save_method; //for save method string
 var table;
 var initTable;

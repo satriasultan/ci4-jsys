@@ -12331,6 +12331,10 @@ class Purchase extends BaseController
         $idbarang = $this->request->getGet('idbarang')
             ?? $this->request->getPost('idbarang');
 
+        $batch = $this->request->getGet('batch')
+            ?? $this->request->getPost('batch');
+        $batch = trim((string) ($batch ?? ''));
+
         // =============================
         // VALIDASI PARAMETER
         // =============================
@@ -12348,8 +12352,14 @@ class Purchase extends BaseController
         $idbranchEsc = $this->db->escape(trim((string) $idbranch));
         $idbarangEsc = $this->db->escape(trim((string) $idbarang));
 
+        // 🔹 Filter batch — SELALU diterapkan
+        // batch kosong  → hanya baris tanpa batch
+        // batch terisi  → hanya baris dengan batch tsb
+        $batchEsc    = $this->db->escape($batch);
+        $batchFilter = " AND TRIM(COALESCE(sg.batch, '')) = TRIM({$batchEsc}) ";
+
         // =============================
-        // QUERY — pakai kolom `onhand`
+        // QUERY
         // =============================
         $sql = "
         SELECT
@@ -12364,6 +12374,7 @@ class Purchase extends BaseController
                 ON TRIM(ml.idlocation) = TRIM(sg.idlocation)
         WHERE TRIM(ml.idbranchjob) = TRIM({$idbranchEsc})
           AND TRIM(sg.idbarang)    = TRIM({$idbarangEsc})
+          {$batchFilter}
         GROUP BY
             ml.idbranchjob,
             ml.nmbranchjob,
@@ -12398,6 +12409,7 @@ class Purchase extends BaseController
                     'idbranchjob'  => $idbranch,
                     'nmbranchjob'  => null,
                     'idbarang'     => $idbarang,
+                    'batch'        => $batch,
                     'total_gudang' => 0,
                     'total_batch'  => 0,
                     'total_onhand' => 0
@@ -12414,6 +12426,7 @@ class Purchase extends BaseController
                 'idbranchjob'  => trim($result->idbranchjob),
                 'nmbranchjob'  => trim((string) $result->nmbranchjob),
                 'idbarang'     => trim($result->idbarang),
+                'batch'        => $batch,
                 'total_gudang' => (int)   $result->total_gudang,
                 'total_batch'  => (int)   $result->total_batch,
                 'total_onhand' => (float) $result->total_onhand

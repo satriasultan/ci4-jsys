@@ -27,6 +27,7 @@
        - average cost tetap milik TAHAP 07.
        - asset tetap milik TAHAP 08.
        - jurnal detail tetap milik TAHAP 10.
+       - jurnal_dt.source_description diisi dari transaction_dt.keterangan.
        - accounting COA operasional dari journal_type_coa + master resolver.
        - manual accounting memakai:
              transaction_dt.idcoa
@@ -108,6 +109,17 @@ BEGIN
     ) THEN
         RAISE EXCEPTION
             'TAHAP 10 belum patched: sc_trx.jurnal_dt.status tidak ditemukan.';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'sc_trx'
+          AND table_name = 'jurnal_dt'
+          AND column_name = 'source_description'
+    ) THEN
+        RAISE EXCEPTION
+            'TAHAP 10 belum patched: sc_trx.jurnal_dt.source_description tidak ditemukan. Jalankan TAHAP 10 revisi terlebih dahulu.';
     END IF;
 
     IF to_regclass('sc_mst.journal_type') IS NULL THEN
@@ -825,6 +837,7 @@ BEGIN
             ref_docno,
             ref_doctype,
             keterangan,
+            source_description,
             currcode,
             kurs,
             createdby,
@@ -853,6 +866,7 @@ BEGIN
             END,
             r.docno,
             r.doctype,
+            COALESCE(r.keterangan, ''),
             COALESCE(r.keterangan, ''),
             COALESCE(r.currcode, ''),
             COALESCE(r.kurs, 1),
@@ -1429,6 +1443,7 @@ BEGIN
                             ref_docno,
                             ref_doctype,
                             keterangan,
+                            source_description,
                             currcode,
                             kurs,
                             createdby,
@@ -1466,6 +1481,7 @@ BEGIN
                             COALESCE(t.docno, ''),
                             COALESCE(t.doctype, ''),
                             COALESCE(m.description, t.keterangan, ''),
+                            COALESCE(t.keterangan, ''),
                             COALESCE(t.currcode, ''),
                             COALESCE(t.kurs, 1),
                             t.createdby,
@@ -1594,6 +1610,7 @@ BEGIN
             ref_docno,
             ref_doctype,
             keterangan,
+            source_description,
             currcode,
             kurs,
             createdby,
@@ -1623,6 +1640,7 @@ BEGIN
             COALESCE(t.docno, ''),
             COALESCE(t.doctype, ''),
             COALESCE(m.description, t.keterangan, ''),
+            COALESCE(t.keterangan, ''),
             COALESCE(t.currcode, ''),
             COALESCE(t.kurs, 1),
             t.createdby,

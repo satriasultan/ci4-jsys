@@ -1,3 +1,5 @@
+<!-- v_add_penerimaankb.php -->
+
 <style>
     
     .section-block {
@@ -176,14 +178,14 @@
                                                 placeholder="Tanggal">
                                             </div>
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-md-6">x
                                             <div class="form-group">
-                                                <label for="pp">PP</label>
+                                                <label for="pp">No TT</label>
                                                 <input type="text"
                                                 name="pp"
                                                 id="pp"
                                                 class="form-control"
-                                                placeholder="PP">
+                                                placeholder="No TT/PP">
                                             </div>
                                         </div>
                                     </div>

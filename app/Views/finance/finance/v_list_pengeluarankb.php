@@ -1,3 +1,5 @@
+<!-- v_list_pengeluarankb-->
+
 <div class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
@@ -28,14 +30,34 @@
 		<div class="card">
             <div class="card-header">
                 <div class="btn-group">
-                    <button type="button" class="btn btn-primary btn-sm dropdown-toggle dropdown-icon" data-bs-toggle="dropdown"><?php echo 'Menu'; ?>
+                    <button type="button" class="btn btn-primary btn-sm dropdown-toggle dropdown-icon" data-bs-toggle="dropdown">
+                        <?php echo 'Menu'; ?>
                     </button>
                     <div class="dropdown-menu">
+
                         <?php if (isset($dtl_akses['a_input']) && trim($dtl_akses['a_input']) === 't'): ?>
-                            <a class="dropdown-item" href="<?= base_url('ka/finance/addPengeluaranKB') ?>"><i class="fa fa-plus"></i><?php echo '   Input'; ?> </a>
+                            <a class="dropdown-item" href="<?= base_url('ka/finance/addPengeluaranKB') ?>">
+                                <i class="fa fa-plus"></i><?php echo '   Input'; ?>
+                            </a>
                         <?php endif; ?>
-                            <!-- <a class="dropdown-item disabled" data-bs-toggle="modal" data-bs-target="#filter"  href="#"><i class="fa fa-filter"></i><?php echo '   Filter'; ?></a> -->
-                        <a class="dropdown-item" href="#"  onclick="reload_tablePOTrx()"><i class="fa fa-refresh"></i><?php echo '    Reload'; ?> </a>
+
+                        <!-- 🔹 FILTER -->
+                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#filter">
+                            <i class="fa fa-filter"></i><?php echo '   Filter'; ?>
+                        </a>
+
+                        <!-- 🔹 RELOAD -->
+                        <a class="dropdown-item" href="#" onclick="reload_tablePengeluaranKBTrx()">
+                            <i class="fa fa-refresh"></i><?php echo '   Reload'; ?>
+                        </a>
+
+                        <!-- 🔹 IMPORT BK -->
+                        <?php if (isset($dtl_akses['a_input']) && trim($dtl_akses['a_input']) === 't'): ?>
+                            <a class="dropdown-item" href="<?= base_url('ka/finance/importPengeluaranKB') ?>">
+                                <i class="fa fa-upload"></i><?php echo '   Import BK'; ?>
+                            </a>
+                        <?php endif; ?>
+
                     </div>
                 </div>
             </div><!-- /.card-header -->

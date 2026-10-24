@@ -4565,7 +4565,7 @@ class Production extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-    
+
     public function updateStatusWO()
     {
         $docno = $this->request->getPost('docno');
@@ -9969,6 +9969,7 @@ class Production extends BaseController
             'incomplete_getResults' => false,
         ]);
     }
+
 
     public function delete_penerimaanbp_detail()
     {

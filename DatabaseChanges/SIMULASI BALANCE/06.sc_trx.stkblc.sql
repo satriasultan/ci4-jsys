@@ -19,11 +19,11 @@
       menangani costing OUT / average cost.
 
    TRANSFER SAFE:
-   9. Transfer (TRFWHS, BINMOV, BRNTRF) TIDAK mengubah nilai
+   11. Transfer (TRFWHS, BINMOV, BRNTRF) TIDAK mengubah nilai
       persediaan perusahaan.
-   10. OUT transfer: nilai = avg cost saat ini × qty.
-   11. IN transfer: nilai = totalcost OUT pasangan (source_uniqueid).
-   12. Nilai IN transfer = Nilai OUT transfer.
+   12. OUT transfer: nilai = avg cost saat ini × qty.
+   13. IN transfer: nilai = totalcost OUT pasangan (source_uniqueid).
+   14. Nilai IN transfer = Nilai OUT transfer.
    ============================================================ */
 
 
@@ -220,7 +220,27 @@ DECLARE
         "idcoa": "VARCHAR(20) DEFAULT ''''",
         "keterangan": "TEXT DEFAULT ''''",
         "createdby": "VARCHAR(50)",
-        "createddate": "TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP"
+        "createddate": "TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP",
+        "idlocation": "VARCHAR(50) DEFAULT ''''",
+        "trxdate": "TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP",
+        "docref": "VARCHAR(50) DEFAULT ''''",
+        "hist": "VARCHAR(50) DEFAULT ''''",
+        "ctype": "CHAR(3) DEFAULT ''IN''",
+        "pricelst_in": "NUMERIC(18,6) DEFAULT 0",
+        "pricelst_out": "NUMERIC(18,6) DEFAULT 0",
+        "pricelst_sld": "NUMERIC(18,6) DEFAULT 0",
+        "currvalue": "NUMERIC(18,6) DEFAULT 1",
+        "tax": "NUMERIC(18,2) DEFAULT 0",
+        "disc": "NUMERIC(18,2) DEFAULT 0",
+        "biaya": "NUMERIC(18,2) DEFAULT 0",
+        "is_posted": "BOOLEAN DEFAULT FALSE",
+        "posted_at": "TIMESTAMP WITHOUT TIME ZONE",
+        "picby": "VARCHAR(50)",
+        "unit": "VARCHAR(10) DEFAULT ''''",
+        "description": "TEXT DEFAULT ''''",
+        "created_at": "TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP",
+        "created_by": "VARCHAR(50)",
+        "status": "CHAR(1) DEFAULT ''F''"
     }'::JSONB;
 
 BEGIN
@@ -283,7 +303,25 @@ SET
     source_table    = COALESCE(source_table, ''),
     idcoa           = COALESCE(idcoa, ''),
     keterangan      = COALESCE(keterangan, ''),
-    createddate     = COALESCE(createddate, CURRENT_TIMESTAMP);
+    createddate     = COALESCE(createddate, CURRENT_TIMESTAMP),
+    idlocation      = COALESCE(idlocation, warehouse, ''),
+    trxdate         = COALESCE(trxdate, docdate::TIMESTAMP, CURRENT_TIMESTAMP),
+    docref          = COALESCE(docref, ref_docno, ''),
+    hist            = COALESCE(hist, journal_type, ''),
+    ctype           = COALESCE(ctype, type_in_out, 'IN'),
+    pricelst_in     = COALESCE(pricelst_in, 0),
+    pricelst_out    = COALESCE(pricelst_out, 0),
+    pricelst_sld    = COALESCE(pricelst_sld, 0),
+    currvalue       = COALESCE(currvalue, kurs, 1),
+    tax             = COALESCE(tax, 0),
+    disc            = COALESCE(disc, 0),
+    biaya           = COALESCE(biaya, 0),
+    is_posted       = COALESCE(is_posted, FALSE),
+    unit            = COALESCE(unit, idunit, ''),
+    description     = COALESCE(description, keterangan, ''),
+    created_at      = COALESCE(created_at, createddate, CURRENT_TIMESTAMP),
+    created_by      = COALESCE(created_by, createdby),
+    status          = COALESCE(status, 'F');
 
 
 /* ============================================================
@@ -771,6 +809,11 @@ BEGIN
         IF p_transaction.type_in_out = 'OUT' THEN
 
             /* OUT: avg cost saat ini × qty */
+            IF to_regclass('sc_trx.stkblc_avgcost') IS NULL THEN
+                RAISE EXCEPTION
+                    'TAHAP 07 belum tersedia: sc_trx.stkblc_avgcost diperlukan untuk costing OUT transfer';
+            END IF;
+
             SELECT COALESCE(ac.avg_cost, 0)
             INTO v_avg_cost_src
             FROM sc_trx.stkblc_avgcost ac
@@ -795,7 +838,8 @@ BEGIN
             SELECT COALESCE(SUM(sb.totalcost), 0)
             INTO v_out_cost
             FROM sc_trx.stkblc sb
-            WHERE sb.source_uniqueid = p_transaction.source_uniqueid
+            WHERE NULLIF(BTRIM(COALESCE(p_transaction.source_uniqueid, '')), '') IS NOT NULL
+              AND sb.source_uniqueid = p_transaction.source_uniqueid
               AND sb.type_in_out = 'OUT'
               AND BTRIM(sb.idbarang::TEXT)
                     = BTRIM(p_transaction.idbarang::TEXT);
@@ -833,8 +877,33 @@ BEGIN
                 v_unitcost := 0;
             END IF;
         ELSE
-            v_totalcost := 0;
-            v_unitcost  := 0;
+            /*
+             * OUT non-transfer:
+             * ambil average cost sebelum transaksi OUT diposting.
+             * Tidak menggunakan harga jual / nilai transaksi OUT.
+             */
+            IF to_regclass('sc_trx.stkblc_avgcost') IS NULL THEN
+                RAISE EXCEPTION
+                    'TAHAP 07 belum tersedia: sc_trx.stkblc_avgcost diperlukan untuk costing OUT';
+            END IF;
+
+            SELECT COALESCE(ac.avg_cost, 0)
+            INTO v_avg_cost_src
+            FROM sc_trx.stkblc_avgcost ac
+            WHERE BTRIM(ac.idbarang::TEXT)
+                    = BTRIM(p_transaction.idbarang::TEXT)
+              AND BTRIM(ac.idlocation::TEXT)
+                    = BTRIM(p_transaction.warehouse::TEXT)
+              AND BTRIM(COALESCE(ac.batch, ''))
+                    = BTRIM(COALESCE(p_transaction.batch::TEXT, ''))
+            LIMIT 1;
+
+            v_avg_cost_src := COALESCE(v_avg_cost_src, 0);
+            v_unitcost := v_avg_cost_src;
+            v_totalcost := ROUND(
+                v_unitcost * COALESCE(p_transaction.qty, 0),
+                2
+            );
         END IF;
 
     END IF;
@@ -874,7 +943,7 @@ BEGIN
         CASE WHEN p_transaction.type_in_out = 'IN'  THEN COALESCE(p_transaction.qty,0) ELSE 0 END,
         CASE WHEN p_transaction.type_in_out = 'OUT' THEN COALESCE(p_transaction.qty,0) ELSE 0 END,
         CASE WHEN p_transaction.type_in_out = 'IN'  THEN v_unitcost ELSE 0 END,
-        0,
+        CASE WHEN p_transaction.type_in_out = 'OUT' THEN v_unitcost ELSE 0 END,
         0,
         COALESCE(NULLIF(BTRIM(p_transaction.currcode), ''), 'IDR'),
         COALESCE(p_transaction.kurs, 1),
@@ -998,7 +1067,7 @@ BEGIN
     RAISE NOTICE '============================================================';
     RAISE NOTICE 'TAHAP 06 INSTALL : OK';
     RAISE NOTICE '  - stkblc table        : READY';
-    RAISE NOTICE '  - fn_post_stkblc      : READY (TRANSFER SAFE)';
+    RAISE NOTICE '  - fn_post_stkblc      : READY (TRANSFER SAFE + OUT COSTING)';
     RAISE NOTICE '  - fn_delete_stkblc    : READY';
     RAISE NOTICE '  - fn_transaction_stock: READY';
     RAISE NOTICE '  - trigger trg_transaction_stock : ACTIVE';

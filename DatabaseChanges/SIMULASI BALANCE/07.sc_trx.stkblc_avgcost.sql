@@ -176,10 +176,21 @@ BEGIN
                - IN non-transfer → pakai pricelst_in × qty
                -------------------------------------------------- */
             IF TRIM(COALESCE(r.journal_type::TEXT, '')) IN
-               ('TRFWHS','BINMOV','BRNTRF')
+               ('TRFWHS','BINMOV','BRNTRF','OPENST')
             THEN
+                /*
+                   Transfer dan saldo awal:
+                   pertahankan nilai totalcost yang sudah tersimpan.
+                   OPENST tidak dihitung ulang dari pricelst_in × qty,
+                   karena pricelst_in dapat memiliki presisi berbeda
+                   dari nilai biaya saldo awal yang resmi.
+                */
                 v_value := v_value + COALESCE(r.totalcost, 0);
             ELSE
+                /*
+                   IN non-transfer selain OPENST tetap mengikuti
+                   aturan existing: pricelst_in × qty.
+                */
                 v_value := v_value + ROUND(
                     COALESCE(r.qty_in, 0) * COALESCE(r.pricelst_in, 0),
                     6
@@ -247,16 +258,22 @@ BEGIN
             END IF;
 
             /* ------------------------------------------
-               Update unitcost & totalcost OUT
-               (trigger dimatikan oleh replica)
+               Update harga pokok OUT:
+               - pricelst_out = average cost sebelum OUT
+               - unitcost     = average cost sebelum OUT
+               - totalcost    = qty_out × average cost
+               Trigger dimatikan sementara oleh session_replication_role
+               agar UPDATE costing tidak memanggil recalculation ulang.
                ------------------------------------------ */
             UPDATE sc_trx.stkblc
             SET
-                unitcost  = ROUND(v_out_avg, 6),
-                totalcost = ROUND(v_cost_out, 2)
+                pricelst_out = ROUND(v_out_avg, 6),
+                unitcost     = ROUND(v_out_avg, 6),
+                totalcost    = ROUND(v_cost_out, 2)
             WHERE id = r.id
               AND (
-                  unitcost  IS DISTINCT FROM ROUND(v_out_avg, 6)
+                  pricelst_out IS DISTINCT FROM ROUND(v_out_avg, 6)
+                  OR unitcost  IS DISTINCT FROM ROUND(v_out_avg, 6)
                   OR totalcost IS DISTINCT FROM ROUND(v_cost_out, 2)
               );
 
