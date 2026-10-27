@@ -362,3 +362,227 @@ COMMIT;
 -- 2) bulk insert each Excel row into sc_im.pengeluarankb_import_raw
 -- 3) CALL sc_im.sp_build_pengeluarankb_import(<batch_id>);
 -- 4) read import_hd/import_dtl for preview. PHP tidak perlu memecah 25 slot.
+
+
+
+
+BEGIN;
+
+ALTER TABLE sc_tmp.pengeluarankb_dtl
+    ADD COLUMN IF NOT EXISTS currcode CHARACTER(3),
+    ADD COLUMN IF NOT EXISTS kurs NUMERIC(18,2);
+
+ALTER TABLE sc_trx.pengeluarankb_dtl
+    ADD COLUMN IF NOT EXISTS currcode CHARACTER(3),
+    ADD COLUMN IF NOT EXISTS kurs NUMERIC(18,2);
+
+CREATE OR REPLACE PROCEDURE sc_im.sp_confirm_pengeluarankb_import(
+    p_batch_id BIGINT,
+    p_user VARCHAR(100)
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    h RECORD;
+    d RECORD;
+    v_header_id INTEGER;
+    v_detail_id INTEGER;
+    v_uniqueid TEXT;
+    v_detail_uniqueid TEXT;
+    v_docno TEXT;
+    v_user TEXT;
+    v_count INTEGER := 0;
+BEGIN
+    v_user := COALESCE(NULLIF(BTRIM(p_user), ''), 'SYSTEM');
+
+    PERFORM 1
+    FROM sc_im.pengeluarankb_import_batch
+    WHERE id = p_batch_id AND status = 'PREVIEW'
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Batch % tidak ditemukan atau status bukan PREVIEW.', p_batch_id;
+    END IF;
+
+    IF to_regclass('sc_trx.transaction_dt') IS NULL THEN
+        RAISE EXCEPTION 'Tabel sc_trx.transaction_dt belum tersedia.';
+    END IF;
+
+    IF to_regclass('sc_trx.pengeluarankb') IS NULL
+       OR to_regclass('sc_trx.pengeluarankb_dtl') IS NULL THEN
+        RAISE EXCEPTION 'Tabel transaksi sc_trx.pengeluarankb / pengeluarankb_dtl belum tersedia.';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM sc_mst.journal_type jt
+        WHERE BTRIM(jt.journal_type::TEXT) = 'BANKOUT'
+    ) THEN
+        RAISE EXCEPTION 'journal_type BANKOUT belum terdaftar di sc_mst.journal_type.';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM sc_im.pengeluarankb_import_hd h
+        WHERE h.batch_id = p_batch_id
+          AND (
+              h.status <> 'VALID'
+              OR h.docdate IS NULL
+              OR BTRIM(COALESCE(h.docno, '')) = ''
+              OR BTRIM(COALESCE(h.prkkas, '')) = ''
+              OR EXISTS (
+                  SELECT 1 FROM sc_im.pengeluarankb_import_dtl d
+                  WHERE d.header_id = h.id AND d.status <> 'VALID'
+              )
+              OR NOT EXISTS (
+                  SELECT 1 FROM sc_im.pengeluarankb_import_dtl d
+                  WHERE d.header_id = h.id
+              )
+          )
+    ) THEN
+        RAISE EXCEPTION 'Batch % masih memiliki header/detail tidak valid atau tanpa detail.', p_batch_id;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM sc_im.pengeluarankb_import_hd WHERE batch_id = p_batch_id
+    ) THEN
+        RAISE EXCEPTION 'Batch % tidak memiliki data untuk diimpor.', p_batch_id;
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM sc_im.pengeluarankb_import_hd ih
+        JOIN sc_trx.pengeluarankb th ON BTRIM(th.docno) = BTRIM(ih.docno)
+        WHERE ih.batch_id = p_batch_id
+    ) THEN
+        RAISE EXCEPTION 'Ada NOMOR BK yang sudah ada di sc_trx.pengeluarankb. Tidak ada data batch yang disimpan.';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM sc_im.pengeluarankb_import_hd ih
+        LEFT JOIN sc_mst.coa c ON BTRIM(c.idcoa::TEXT) = BTRIM(ih.prkkas)
+        WHERE ih.batch_id = p_batch_id AND c.idcoa IS NULL
+    ) THEN
+        RAISE EXCEPTION 'Ada COA bank/prkkas yang tidak ditemukan di sc_mst.coa.';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM sc_im.pengeluarankb_import_dtl id
+        JOIN sc_im.pengeluarankb_import_hd ih ON ih.id = id.header_id
+        LEFT JOIN sc_mst.coa c ON BTRIM(c.idcoa::TEXT) = BTRIM(id.idcoa)
+        WHERE ih.batch_id = p_batch_id AND c.idcoa IS NULL
+    ) THEN
+        RAISE EXCEPTION 'Ada COA detail yang tidak ditemukan di sc_mst.coa.';
+    END IF;
+
+    FOR h IN
+        SELECT * FROM sc_im.pengeluarankb_import_hd
+        WHERE batch_id = p_batch_id ORDER BY nomor_baris
+    LOOP
+        v_docno := BTRIM(h.docno);
+
+        INSERT INTO sc_trx.pengeluarankb (
+            docno, docdate, cabang, pemohon, kdsupplier, nmsupplier,
+            alamatsupplier, prkkas, np, jthtempo, isinclusive, currcode,
+            kurs, dpp, jumlahpajak, total, status, keterangan, balance,
+            inputby, inputdate, docnotmp
+        ) VALUES (
+            v_docno, TO_CHAR(h.docdate, 'DD-MM-YYYY'), NULL, h.dibayarkepada,
+            h.kdsupplier, h.nmsupplier, h.alamatsupplier, h.prkkas, NULL,
+            0, 'NO', COALESCE(NULLIF(BTRIM(h.currcode), ''), 'IDR'), 1,
+            h.total_pembayaran, 0, h.total_pembayaran, 'F', h.keterangan, 0,
+            v_user, CURRENT_TIMESTAMP, NULL
+        )
+        RETURNING idurut INTO v_header_id;
+
+        FOR d IN
+            SELECT * FROM sc_im.pengeluarankb_import_dtl
+            WHERE header_id = h.id ORDER BY slot_no
+        LOOP
+            v_detail_uniqueid := MD5(
+                'IMPORT-PENGELUARANKB|' || p_batch_id::TEXT || '|' ||
+                h.nomor_baris::TEXT || '|' || d.slot_no::TEXT || '|' || v_docno
+            );
+
+            INSERT INTO sc_trx.pengeluarankb_dtl (
+                docno, nobukti, idcoa, nmcoa, remarks, dk, cabang,
+                nilai, nilaiakhir, uniqueid, status, inputby, inputdate,
+                docnotmp, jurnalref, nilai_ref, currcode, kurs
+            ) VALUES (
+                v_docno, d.reff, d.idcoa,
+                COALESCE(
+                    NULLIF(BTRIM(d.nmcoa), ''),
+                    (SELECT c.nmcoa FROM sc_mst.coa c
+                     WHERE BTRIM(c.idcoa::TEXT) = BTRIM(d.idcoa) LIMIT 1)
+                ),
+                d.keterangan, d.dk, NULL, d.nilai, d.nilai,
+                v_detail_uniqueid, 'F', v_user, CURRENT_TIMESTAMP,
+                NULL, 'YES', 0, COALESCE(NULLIF(BTRIM(h.currcode), ''), 'IDR'), 1
+            )
+            RETURNING idurut INTO v_detail_id;
+
+            v_uniqueid := MD5(v_docno || '|' || v_detail_uniqueid || '|pengeluarankb');
+
+            INSERT INTO sc_trx.transaction_dt (
+                uniqueid, source_uniqueid, docno, doctype, journal_type,
+                line_no, docdate, idbranch, cabang, type_in_out,
+                ref_docno, ref_doctype, source_table, source_id, source_line_id,
+                kdsupplier, nsupplier, nilai, dpp, pajak, total, idtax,
+                isinclusive, currcode, kurs, idcoa, counter_idcoa, debet_kredit,
+                module, direction, stock_effect, accounting_effect, asset_effect,
+                keterangan, createdby, createddate, updatedby, updateddate
+            ) VALUES (
+                v_uniqueid, v_detail_uniqueid, v_docno, 'PENGELUARKANKB', 'BANKOUT',
+                d.slot_no, h.docdate, '', '', 'OUT', COALESCE(d.reff, ''), '',
+                'sc_trx.pengeluarankb_dtl', v_header_id, v_detail_id,
+                COALESCE(h.kdsupplier, ''), COALESCE(h.nmsupplier, ''),
+                COALESCE(d.nilai, 0), COALESCE(d.nilai, 0), 0, COALESCE(d.nilai, 0),
+                'NON', 'NO', COALESCE(NULLIF(BTRIM(h.currcode), ''), 'IDR'), 1,
+                BTRIM(d.idcoa), BTRIM(h.prkkas), d.dk,
+                'FINANCE', 'OUT', 'NONE', 'YES', 'NONE',
+                CONCAT_WS(' | ', NULLIF(BTRIM(COALESCE(d.keterangan, '')), ''),
+                    NULLIF(BTRIM(COALESCE(d.reff, '')), ''),
+                    NULLIF(BTRIM(COALESCE(h.keterangan, '')), '')),
+                v_user, CURRENT_TIMESTAMP, v_user, CURRENT_TIMESTAMP
+            )
+            ON CONFLICT (uniqueid) DO UPDATE SET
+                source_uniqueid = EXCLUDED.source_uniqueid,
+                docno = EXCLUDED.docno,
+                doctype = EXCLUDED.doctype,
+                journal_type = EXCLUDED.journal_type,
+                line_no = EXCLUDED.line_no,
+                docdate = EXCLUDED.docdate,
+                source_table = EXCLUDED.source_table,
+                source_id = EXCLUDED.source_id,
+                source_line_id = EXCLUDED.source_line_id,
+                nilai = EXCLUDED.nilai,
+                dpp = EXCLUDED.dpp,
+                total = EXCLUDED.total,
+                currcode = EXCLUDED.currcode,
+                kurs = EXCLUDED.kurs,
+                idcoa = EXCLUDED.idcoa,
+                counter_idcoa = EXCLUDED.counter_idcoa,
+                debet_kredit = EXCLUDED.debet_kredit,
+                keterangan = EXCLUDED.keterangan,
+                updatedby = EXCLUDED.updatedby,
+                updateddate = CURRENT_TIMESTAMP;
+        END LOOP;
+
+        v_count := v_count + 1;
+    END LOOP;
+
+    UPDATE sc_im.pengeluarankb_import_batch
+    SET status = 'CONFIRMED',
+        confirmed_by = v_user,
+        confirmed_at = CURRENT_TIMESTAMP,
+        keterangan = CONCAT_WS(E'\n', NULLIF(keterangan, ''),
+            FORMAT('Confirmed %s dokumen ke sc_trx dan transaction_dt BANKOUT.', v_count))
+    WHERE id = p_batch_id;
+END;
+$$;
+
+COMMIT;
+
+-- Jalankan setelah preview lolos validasi:
+-- CALL sc_im.sp_confirm_pengeluarankb_import(<BATCH_ID>, '<USER_LOGIN>');

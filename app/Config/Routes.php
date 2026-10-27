@@ -357,9 +357,17 @@ $routes->group('/ka/finance', ["namespace" => "App\Controllers\Finance"], functi
     $routes->add('savePengeluaranKBDetail', 'Finance::savePengeluaranKBDetail');
     $routes->add("get_pengeluarankb_detail(:any)", "Finance::get_pengeluarankb_detail$1");
     $routes->add("delete_pengeluarankb_detail", "Finance::delete_pengeluarankb_detail");
+    $routes->add("tarikPenerimaanBarangSupplier", "Finance::tarikPenerimaanBarangSupplier");
 
     $routes->add('clearfinalPengeluaranKB', 'Finance::clearfinalPengeluaranKB');
     $routes->add('finalPengeluaranKB', 'Finance::finalPengeluaranKB');
+
+    /* Import Pengeluaran Kas Bank */
+    $routes->get('importPengeluaranKB', 'Finance::importPengeluaranKB');
+    $routes->post('prosesImportPengeluaranKB', 'Finance::prosesImportPengeluaranKB');
+    $routes->post('simpanImportPengeluaranKB', 'Finance::simpanImportPengeluaranKB');
+    $routes->post('cancelImportPengeluaranKB', 'Finance::cancelImportPengeluaranKB');
+    $routes->get('downloadTemplatePengeluaranKB', 'Finance::downloadTemplatePengeluaranKB');
 
 
 });

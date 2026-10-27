@@ -114,14 +114,12 @@
                                 <div class="col-md-3">
 
                                     <div class="row">
-                                        <div class="col-md-8">
+                                        <div class="col-md-12">
                                             <div class="form-group">
                                                 <label for="cabang">Cabang / Job</label>
                                                 <select name="cabang" id="cabang" class="form-control" required></select>
                                             </div>
                                         </div>
-
-
                                     </div>
 
                                     <div class="row">
@@ -149,10 +147,10 @@
                                                     <span class="px-2 align-self-center">/</span>
 
                                                     <input type="text"
-                                                        name="sufix"
-                                                        id="sufix"
-                                                        class="form-control ms-1"
-                                                        readonly>
+                                                           name="suffix"
+                                                           id="suffix"
+                                                           class="form-control ms-1"
+                                                           maxlength="6">
 
                                                     </div>
                                                 </div>
@@ -190,7 +188,7 @@
                                         </div>
                                     </div>
                                     <div class="row align-items-end">
-                                        <div class="col-md-4">
+                                        <div class="col-md-6">
                                             <div class="mb-3">
                                                 <label for="currcode" class="form-label">Mata Uang</label>
                                                 <select name="currcode"
@@ -201,7 +199,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="col-md-8">
+                                        <div class="col-md-6">
                                             <div class="mb-3">
                                                 <label for="kurs" class="form-label">Nilai Tukar</label>
                                                 <input type="text"
@@ -222,16 +220,20 @@
                                                 <select name="kdsupplier" id="kdsupplier" class="form-control select2" required></select>
                                             </div>
                                         </div>
-                                        <div class="col-md-12">
+                                        <div class="col-md-6">
                                             <div class="form-group">
-                                                <label for="alamatsupplier">Alamat Supplier</label>
-                                                <textarea name="alamatsupplier"
-                                                    id="alamatsupplier"
-                                                    class="form-control"
-                                                    rows="2"
-                                                    placeholder="Alamat Supplier"
-
-                                                    style="text-transform:uppercase;"></textarea>
+                                                <label for="prkkas">Perk. Kas/Bank</label>
+                                                <select name="prkkas" id="prkkas" class="form-control" required>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="total">Nilai</label>
+                                                <input type="text"
+                                                       name="total"
+                                                       id="total"
+                                                       class="form-control jtsseparator ratakanan">
                                             </div>
                                         </div>
                                     </div>
@@ -241,33 +243,31 @@
                                         <div class="row">
                                             <div class="col-md-12" >
                                                 <div class="form-group">
-                                                    <label for="keterangan">Keterangan</label>
-                                                    <textarea name="keterangan"
-                                                        id="keterangan"
-                                                        class="form-control"
-                                                        rows="2"
-                                                        placeholder="Keterangan"
-                                                        style="text-transform:uppercase;" required></textarea>
+                                                    <label for="alamatsupplier">Alamat Supplier</label>
+                                                    <textarea name="alamatsupplier"
+                                                              id="alamatsupplier"
+                                                              class="form-control"
+                                                              rows="2"
+                                                              placeholder="Alamat Supplier"
+
+                                                              style="text-transform:uppercase;"></textarea>
                                                 </div>
+
                                             </div>
                                         </div>
                                         <div class="row" style="margin-top: -25px;">
-                                            <div class="col-md-6">
+                                            <div class="col-md-12">
                                                 <div class="form-group">
-                                                    <label for="prkkas">Perk. Kas/Bank</label>
-                                                    <select name="prkkas" id="prkkas" class="form-control" required>
-                                                    </select>
+                                                    <label for="keterangan">Keterangan</label>
+                                                    <textarea name="keterangan"
+                                                              id="keterangan"
+                                                              class="form-control"
+                                                              rows="2"
+                                                              placeholder="Keterangan"
+                                                              style="text-transform:uppercase;" required></textarea>
                                                 </div>
                                             </div>
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label for="total">Nilai</label>
-                                                    <input type="text"
-                                                            name="total"
-                                                            id="total"
-                                                            class="form-control jtsseparator ratakanan">
-                                                </div>
-                                            </div>
+
                                         </div>
                                     </div>
                                 </div>
@@ -302,8 +302,8 @@
                                 <div class="d-flex justify-content-between align-items-center mb-2 w-100">
 
                                     <!-- KIRI : TARIK PENERIMAAN -->
-                                    <button type="button" class="btn btn-primary" onclick="btnTarikPenerimaanTterima()">
-                                        <i class="fas fa-search"></i> Tarik Penerimaan
+                                    <button type="button" class="btn btn-primary" onclick="btnTarikPengeluaranKB()">
+                                        <i class="fas fa-search"></i> Tarik Pengeluaran Kas Bank
                                     </button>
 
 
@@ -324,7 +324,7 @@
                                         <button type="button"
                                                 class="btn btn-warning btn-sm btn-detail-action"
                                                 id="btnEditDetail"
-                                                onclick="editSelectedTterimaDetail()"
+                                                onclick="editSelectedPengeluaranKBDetail()"
                                                 title="Edit Detail"
                                                 aria-label="Edit Detail"
                                                 disabled>
@@ -481,7 +481,7 @@
                     <div>
                         <h5 class="modal-title mb-0"
                             id="modalDetailPengeluaranKBLabel">
-                            Detail Tanda Terima
+                            Detail Pengeluaran Kas Bank
                         </h5>
 
                         <small class="opacity-75">
@@ -728,9 +728,9 @@
 
                                 <div class="input-group">
 
-                                <span class="input-group-text">
-                                    Rp
-                                </span>
+                                    <span class="input-group-text" id="detail_currency_symbol">
+                                        IDR
+                                    </span>
 
                                     <input type="text"
                                            name="nilai"

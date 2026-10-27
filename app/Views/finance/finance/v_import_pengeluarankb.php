@@ -1,4 +1,39 @@
 <!-- Replace app/Views/finance/finance/v_import_pengeluarankb.php with this view. -->
+<style>
+    <style>
+    .btn-preview-data {
+        background: #8a1c08;
+        color: #fff;
+        border: 1px solid #701606;
+        font-weight: 600;
+        padding: 7px 16px;
+        border-radius: 4px;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn-preview-data:hover {
+        background: #b5121b;
+        color: #fff;
+        border-color: #b5121b;
+        box-shadow: 0 5px 10px rgba(138, 28, 8, 0.35);
+        transform: translateY(-2px);
+    }
+
+    .btn-preview-data:active {
+        background: #701606;
+        color: #fff;
+        transform: translateY(0);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-preview-data:focus-visible {
+        outline: 3px solid rgba(181, 18, 27, 0.3);
+        outline-offset: 2px;
+    }
+</style>
+
+
 <?php
 $h = static fn($v) => esc((string)($v ?? ''), 'html');
 $money = static fn($v) => number_format((float)($v ?? 0), 2, ',', '.');
@@ -37,8 +72,8 @@ foreach (($previewDetails ?? []) as $d) $detailsByHeader[(string)$d['header_id']
                 <?= csrf_field() ?>
                 <div class="card-body">
                     <div class="alert alert-info mb-3">
-                        <strong>Alur:</strong> Upload → Preview/validasi → Konfirmasi batch staging.
-                        Data yang dikonfirmasi disimpan di <code>sc_im</code> dan <strong>belum diposting</strong> ke tabel transaksi.
+                        <strong>Alur:</strong> Upload → Preview/validasi → Konfirmasi.
+                        Data yang dikonfirmasi <strong>diposting</strong> ke <code>sc_trx.pengeluarankb</code> dan jurnal <code>transaction_dt</code> (BANKOT).
                         <ul class="mb-0 mt-2">
                             <li>Format XLSX/XLS/CSV, maksimal 10 MB. Export BK yang memiliki baris HEADER/CONTENT juga didukung.</li>
                             <li>Header wajib mengikuti template. Satu NOMOR BK adalah satu header, maksimal 25 detail.</li>
@@ -48,7 +83,7 @@ foreach (($previewDetails ?? []) as $d) $detailsByHeader[(string)$d['header_id']
                     </div>
                     <div class="row align-items-center mb-3">
                         <div class="col-md-3"><label>Template Import</label></div>
-                        <div class="col-md-9"><a href="<?= base_url('ka/finance/downloadTemplatePengeluaranKB') ?>" class="btn btn-sm btn-success"><i class="fa fa-download"></i> Download CSV Template (25 Detail)</a></div>
+                        <div class="col-md-9"><a href="<?= base_url().'/assets/files/pengeluarankb/EXPORT_BK_UPLOAD_READY.xlsx' ?>" class="btn btn-sm btn-success"><i class="fa fa-download"></i> Download XLS Template (25 Detail)</a></div>
                     </div>
                     <div class="form-group row mb-0">
                         <label class="col-md-3 col-form-label" for="file_import">File Import <span class="text-danger">*</span></label>
@@ -57,7 +92,10 @@ foreach (($previewDetails ?? []) as $d) $detailsByHeader[(string)$d['header_id']
                     </div>
                 </div>
                 <div class="card-footer">
-                    <button type="submit" class="btn btn-sm" style="background:#8a1c08;color:#fff"><i class="fa fa-search"></i> Preview Data</button>
+                    <button type="submit" id="btnPreviewData"
+                            class="btn btn-sm btn-preview-data">
+                        <i class="fa fa-search"></i> Preview Data
+                    </button>
                     <a href="<?= base_url('ka/finance/pengeluarankb') ?>" class="btn btn-sm btn-secondary"><i class="fa fa-arrow-left"></i> Kembali</a>
                 </div>
             </form>
@@ -89,11 +127,11 @@ foreach (($previewDetails ?? []) as $d) $detailsByHeader[(string)$d['header_id']
                             </tbody>
                         </table>
                     </div>
-                    <div class="alert alert-warning mb-0 mt-3">Konfirmasi hanya mengunci batch sebagai <code>CONFIRMED</code> di staging <code>sc_im</code>. Ini belum membuat transaksi Pengeluaran Kas/Bank.</div>
+                    <div class="alert alert-warning mb-0 mt-3">Konfirmasi akan membuat transaksi Pengeluaran Kas/Bank dan jurnal BANKOT. NOMOR BK yang sudah ada di transaksi akan membatalkan seluruh batch.</div>
                 </div>
                 <div class="card-footer d-flex flex-wrap" style="gap:8px">
                     <?php if ($previewBatch['status']==='PREVIEW' && (int)$previewBatch['jumlah_gagal']===0 && (int)$previewBatch['jumlah_valid']>0): ?>
-                        <form action="<?= base_url('ka/finance/simpanImportPengeluaranKB') ?>" method="post" onsubmit="return confirm('Konfirmasi batch dan simpan statusnya di staging sc_im?');">
+                        <form action="<?= base_url('ka/finance/simpanImportPengeluaranKB') ?>" method="post" onsubmit="return confirm('Konfirmasi batch dan posting ke transaksi + jurnal?');">
                             <?= csrf_field() ?><input type="hidden" name="batch_token" value="<?= $h($previewBatch['batch_token']) ?>">
                             <button class="btn btn-sm btn-success" type="submit"><i class="fa fa-check"></i> Konfirmasi Batch</button>
                         </form>

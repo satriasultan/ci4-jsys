@@ -154,3 +154,62 @@ INSERT INTO sc_mst.coa (idcoa, nmcoa, nm2coa, induk, level, isdetail, groupcoa, 
 
 -- menambahkan defaultstyle.php untuk ztree
 -- menambahkan folder libraries di C:\xampp\htdocs\ci4-jsys\assets\css\ztree\js\
+
+
+
+INSERT INTO sc_mst.coa (
+    idcoa,
+    nmcoa,
+    nm2coa,
+    induk,
+    "level",
+    isdetail,
+    groupcoa,
+    idcur,
+    jenis,
+    status,
+    createdby,
+    createddate
+)
+SELECT
+    v.idcoa,
+    v.nmcoa,
+    v.nmcoa,
+    v.induk,
+    v.level,
+    '0',
+    v.groupcoa,
+    NULL,
+    NULL,
+    'F',
+    CURRENT_USER,
+    CURRENT_TIMESTAMP
+FROM (
+    VALUES
+        (
+            '136101',
+            'AKUM. PENY. SOFTWARE & LISENSI',
+            '1361',
+            '5',
+            'Aktiva'
+        ),
+        (
+            '611192.02.110',
+            'LISTRIK_GENERAL STEEL MAKING',
+            '611192.02',
+            '7',
+            'Biaya'
+        ),
+        (
+            '611192.02.406',
+            'LISTRIK_GENERAL ROLLING MILL',
+            '611192.02',
+            '7',
+            'Biaya'
+        )
+) AS v(idcoa, nmcoa, induk, level, groupcoa)
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM sc_mst.coa c
+    WHERE BTRIM(c.idcoa::text) = v.idcoa
+);

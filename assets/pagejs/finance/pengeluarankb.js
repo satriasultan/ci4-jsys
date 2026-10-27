@@ -4,72 +4,100 @@ var save_method; //for save method string
 var table;
 var initTable;
 //"use strict";
-
-function tablePengeluaranKBTrx(){
-    // var lg = languageDatatable;
+function tablePengeluaranKBTrx() {
     var initTable = function () {
         var table = $('#tablepengeluarankbTrx');
+
+        // Hindari inisialisasi DataTable berulang
+        if ($.fn.DataTable.isDataTable('#tablepengeluarankbTrx')) {
+            table.DataTable().destroy();
+        }
+
         table.DataTable({
-            "processing": true, //Feature control the processing indicator.
-            "serverSide": true, //Feature control DataTables' server-side processing mode.
-            "order": [], //Initial no order.
-            "language":  languageDatatable(),
-            "paging": true,
-            "lengthChange": false,
-            "searching": true,
-            "ordering": true,
-            "info": true,
-            "autoWidth": false,
-            "responsive": false,
-            "bFilter":true,
-            "lengthMenu": [
-                [ 10, 25, 50, -1 ],
-                [ '10 rows', '25 rows', '50 rows', 'Show all' ]
+            processing: true,
+            serverSide: true,
+            order: [],
+            language: languageDatatable(),
+
+            paging: true,
+            lengthChange: false,
+            searching: true,
+            ordering: true,
+            info: true,
+
+            autoWidth: false,
+            scrollX: true,
+            scrollCollapse: true,
+            responsive: false,
+
+            bFilter: true,
+
+            lengthMenu: [
+                [10, 25, 50, -1],
+                ['10 rows', '25 rows', '50 rows', 'Show all']
             ],
-            "dom": 'Bfrtip',
-            "buttons": [
-                'pageLength','excel'
+
+            dom: 'Bfrtip',
+
+            buttons: [
+                'pageLength',
+                'excel'
             ],
-            "ajax": {
-                "url": HOST_URL + 'ka/finance/list_pengeluarankb',
-                "type": "POST",
-                "data": function(data) {
+
+            ajax: {
+                url: HOST_URL + 'ka/finance/list_pengeluarankb',
+                type: 'POST',
+
+                data: function (data) {
                     data.tglrange = $('#tglrange').val();
                     data.idbarang = $('#idbarang_filter').val();
                     data.namasupplier = $('#namasupplier').val();
-                    data.status = $('#status_filter').val(); //A,P,S,ALL
+                    data.status = $('#status_filter').val();
                 },
-                "dataFilter": function(data) {
+
+                dataFilter: function (data) {
                     var json = jQuery.parseJSON(data);
+
                     json.draw = json.dataTables.draw;
                     json.recordsTotal = json.dataTables.recordsTotal;
                     json.recordsFiltered = json.dataTables.recordsFiltered;
                     json.data = json.dataTables.data;
-                    return JSON.stringify(json); // return JSON string
+
+                    return JSON.stringify(json);
                 }
             },
 
-            //Set column definition initialisation properties.
-            "columnDefs": [
+            columnDefs: [
                 {
-                    "targets": [ -1 ], //last column
-                    "orderable": false, //set not orderable
-                },
+                    targets: -1,
+                    orderable: false
+                }
             ],
 
+            initComplete: function () {
+                var api = this.api();
+
+                // Pastikan lebar kolom dihitung ulang
+                setTimeout(function () {
+                    api.columns.adjust();
+                }, 100);
+            },
+
+            drawCallback: function () {
+                this.api().columns.adjust();
+            }
         });
-
     };
-
 
     return initTable();
 }
 
-function reload_tablePengeluaranKBTrx()
-{
-    var table = $('#tablepengeluarankbTrx');
-    table.DataTable().ajax.reload(); //reload datatable ajax
-    //console.log('HALO HALO BANDUNG');
+function reload_tablePengeluaranKBTrx() {
+    if ($.fn.DataTable.isDataTable('#tablepengeluarankbTrx')) {
+        $('#tablepengeluarankbTrx').DataTable().ajax.reload(null, false);
+    } else {
+        tablePengeluaranKBTrx();
+    }
 }
 
 
@@ -490,7 +518,7 @@ function documentReadable() {
 
             $('#prefix').val(parts[0] || '').prop('readonly', true);
             $('#infix').val(parts[1] || '').prop('readonly', true);
-            $('#sufix').val(parts.slice(2).join('/') || '').prop('readonly', true);
+            $('#suffix').val(parts.slice(2).join('/') || '').prop('readonly', true);
 
             if (parts[2]) {
                 defaultInitialPP = parts[2].substring(0, 2);
@@ -845,13 +873,6 @@ function tablePengeluaranKBDetail() {
 
     });
 
-    $table.find('tbody')
-        .off('click.pengeluaranKBDetail', 'tr')
-        .on('click.pengeluaranKBDetail', 'tr', function (e) {
-            if ($(e.target).closest('input, button, a, select, label, .select2-container').length) return;
-            const $check = $(this).find('.row-check').first();
-            if ($check.length) $check.prop('checked', !$check.prop('checked')).trigger('change');
-        });
 
     $table
         .off('change.pengeluaranKBDetail', '.row-check')
@@ -872,6 +893,23 @@ function tablePengeluaranKBDetail() {
         });
 }
 
+$(document)
+    .off('click.pengeluaranKBDetailRow', '#tabpengeluarankbdtl tbody tr')
+    .on('click.pengeluaranKBDetailRow', '#tabpengeluarankbdtl tbody tr', function (e) {
+        if ($(e.target).closest(
+            'input, button, a, select, label, .select2-container'
+        ).length) {
+            return;
+        }
+
+        const $checkbox = $(this).find('.row-check').first();
+
+        if (!$checkbox.length) return;
+
+        $checkbox
+            .prop('checked', !$checkbox.prop('checked'))
+            .trigger('change');
+    });
 function reload_table_pengeluarankb_dtl() {
     if ($.fn.DataTable.isDataTable('#tabpengeluarankbdtl')) {
         $('#tabpengeluarankbdtl').DataTable().ajax.reload(null, false);
@@ -912,100 +950,159 @@ function setSelect2Ajax(selector, value, text) {
 
 
 function pengeluaranKBNumber(value) {
-    let s = String(value ?? '0').trim().replace(/,/g, '').replace(/[^0-9.\-]/g, '');
-    const n = Number(s);
-    return Number.isFinite(n) ? n : 0;
+    if (value === null || value === undefined || value === '') {
+        return 0;
+    }
+
+    let str = String(value).trim();
+
+    // Format: 3,000 atau 3,000.00
+    // Koma = pemisah ribuan, titik = desimal
+    if (str.includes(',')) {
+        str = str.replace(/,/g, '');
+    }
+
+    const number = Number(str);
+
+    return Number.isFinite(number) ? number : 0;
 }
 
-
 function finalPengeluaranKB() {
-    const idurut = $.trim($('#idurut').val() || '');
-    const docno = $.trim($('#docno').val() || '');
+    // ==========================================
+    // 1. AMBIL IDENTITAS DOKUMEN
+    // ==========================================
+    const idurut = $.trim(
+        $('#idurut').val() ||
+        $('#idurut_header').val() ||
+        $('#idurut_hd').val() ||
+        ''
+    );
 
-    function toInteger(value) {
-        let normalized = String(value ?? '')
+    const docno = $.trim(
+        $('#docno').val() ||
+        [
+            $('#prefix').val(),
+            $('#infix').val(),
+            $('#suffix').val()
+        ].filter(Boolean).join('/')
+    );
+
+    console.log('Finalisasi - ID Urut:', idurut);
+    console.log('Finalisasi - Docno:', docno);
+
+    // ==========================================
+    // 2. PARSE ANGKA
+    // Format: 3,000 atau 3,000.00
+    // ==========================================
+    function toNumber(value) {
+        if (value === null || value === undefined || value === '') {
+            return 0;
+        }
+
+        let normalized = String(value)
             .trim()
             .replace(/[^\d,.-]/g, '');
 
-        // Format 2,000,000 atau 2.000.000 = pemisah ribuan
-        if (/^-?\d{1,3}(,\d{3})+$/.test(normalized) ||
-            /^-?\d{1,3}(\.\d{3})+$/.test(normalized)) {
-            normalized = normalized.replace(/[,.]/g, '');
-        } else {
-            normalized = normalized.replace(/\./g, '').replace(',', '.');
-        }
+        // Koma merupakan pemisah ribuan.
+        normalized = normalized.replace(/,/g, '');
 
-        const numberValue = Number(normalized);
-        return Number.isFinite(numberValue) ? Math.round(numberValue) : 0;
+        const result = Number(normalized);
+
+        return Number.isFinite(result) ? result : NaN;
     }
 
     const rawHeader = $('#total').val();
     const rawAlokasi = $('#totalalokasi').val();
 
-    console.log('Elemen total:', $('#total').length, rawHeader);
-    console.log('Elemen alokasi:', $('#totalalokasi').length, rawAlokasi);
+    const totalHeader = toNumber(rawHeader);
+    const totalAlokasi = toNumber(rawAlokasi);
+    const tolerance = 0.005;
 
-    const nilaiHeader = toInteger(rawHeader);
-    const nilaiAlokasi = toInteger(rawAlokasi);
+    console.log('Finalisasi - Total Header:', rawHeader, totalHeader);
+    console.log('Finalisasi - Total Alokasi:', rawAlokasi, totalAlokasi);
 
-    console.log('Finalisasi - Total Header:', $('#total').val(), nilaiHeader);
-    console.log('Finalisasi - Total Alokasi:', $('#totalalokasi').val(), nilaiAlokasi);
-
-    // Lanjutkan validasi dan popup finalisasi Anda di sini.
-
-    if (nilaiAlokasi < 0) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Finalisasi Ditolak',
-            text: 'Total Alokasi tidak boleh negatif. Dokumen tidak dapat difinalisasi.'
-        });
-        return;
-    }
-
-    if (docno === '') {
+    // ==========================================
+    // 3. VALIDASI DOKUMEN
+    // ==========================================
+    if (!docno) {
         Swal.fire({
             icon: 'warning',
             title: 'Data Belum Tersedia',
-            text: 'Nomor Pengeluaran Kas Bank belum tersedia.'
+            text: 'Nomor Pengeluaran Kas/Bank belum tersedia.'
         });
         return;
     }
 
-    const isBalance = nilaiHeader === nilaiAlokasi;
+    if (!Number.isFinite(totalHeader) || !Number.isFinite(totalAlokasi)) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Nilai Tidak Valid',
+            text: 'Total Pengeluaran atau Total Alokasi bukan angka yang valid.'
+        });
+        return;
+    }
 
-    if (!isBalance) {
+    if (totalAlokasi < 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Finalisasi Ditolak',
+            text: 'Total Alokasi tidak boleh negatif.'
+        });
+        return;
+    }
+
+    // ==========================================
+    // 4. TOTAL WAJIB BALANCE
+    // ==========================================
+    if (Math.abs(totalHeader - totalAlokasi) >= tolerance) {
         Swal.fire({
             icon: 'warning',
             title: 'Finalisasi Ditolak',
             html:
-                'Total Pengeluaran dan Total Alokasi tidak balance.' +
+                'Total Pengeluaran dan Total Alokasi harus sama.' +
                 '<br><br>Total Pengeluaran: <b>' +
-                nilaiHeader.toLocaleString('id-ID') +
+                totalHeader.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }) +
                 '</b><br>Total Alokasi: <b>' +
-                nilaiAlokasi.toLocaleString('id-ID') +
-                '</b><br><br>Dokumen tidak dapat difinalisasi.',
-            confirmButtonText: 'Tutup'
+                totalAlokasi.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }) +
+                '</b><br><br>Dokumen tidak dapat difinalisasi.'
         });
         return;
     }
 
+    // ==========================================
+    // 5. KONFIRMASI FINALISASI
+    // ==========================================
     Swal.fire({
         icon: 'question',
         title: 'Finalisasi Pengeluaran Kas Bank',
         html:
             'Dokumen akan difinalisasi dan tidak lagi berstatus draft.' +
             '<br><br>Total Pengeluaran: <b>' +
-            nilaiHeader.toLocaleString('id-ID') +
+            totalHeader.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }) +
             '</b><br>Total Alokasi: <b>' +
-            nilaiAlokasi.toLocaleString('id-ID') +
+            totalAlokasi.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }) +
             '</b>',
         showCancelButton: true,
         confirmButtonText: 'Ya, Finalisasi',
-        cancelButtonText: 'Batal'
+        cancelButtonText: 'Batal',
+        reverseButtons: true
     }).then(function (result) {
         if (!result.isConfirmed) return;
 
-        $('#btnSimpan').prop('disabled', true);
+        const $btn = $('#btnSimpan');
+        $btn.prop('disabled', true);
 
         $.ajax({
             type: 'POST',
@@ -1017,16 +1114,14 @@ function finalPengeluaranKB() {
             },
 
             success: function (res) {
-
-                console.log('finalPengeluaranKB response:', res);
+                console.log('Finalisasi response:', res);
 
                 if (!res || res.success !== true) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Gagal Finalisasi',
-                        text: res && res.message
-                            ? res.message
-                            : 'Gagal melakukan finalisasi.'
+                        text: (res && res.message) ||
+                            'Gagal melakukan finalisasi.'
                     });
                     return;
                 }
@@ -1035,9 +1130,7 @@ function finalPengeluaranKB() {
                     icon: 'success',
                     title: 'Berhasil',
                     text: res.message ||
-                        (isBalance
-                            ? 'Pengeluaran Kas Bank berhasil difinalisasi.'
-                            : 'Pengeluaran Kas Bank berhasil difinalisasi meskipun tidak balance.'),
+                        'Pengeluaran Kas Bank berhasil difinalisasi.',
                     timer: 1500,
                     showConfirmButton: false
                 }).then(function () {
@@ -1046,23 +1139,35 @@ function finalPengeluaranKB() {
                 });
             },
 
-            error: function (jqXHR, textStatus, errorThrown) {
+            error: function (xhr, textStatus, errorThrown) {
                 console.error(
                     'finalPengeluaranKB error:',
-                    jqXHR.responseText,
+                    xhr.status,
+                    xhr.responseText,
                     textStatus,
                     errorThrown
                 );
 
+                let message =
+                    'Terjadi kesalahan saat finalisasi Pengeluaran Kas Bank.';
+
+                try {
+                    const response = JSON.parse(xhr.responseText || '{}');
+
+                    if (response.message) {
+                        message = response.message;
+                    }
+                } catch (e) {}
+
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
-                    text: 'Terjadi kesalahan saat finalisasi Pengeluaran Kas Bank.'
+                    text: message
                 });
             },
 
             complete: function () {
-                $('#btnSimpan').prop('disabled', false);
+                $btn.prop('disabled', false);
             }
         });
     });
@@ -1080,7 +1185,7 @@ $(document)
         e.preventDefault();
 
         const docno = $.trim($('#docno').val() || [
-            $('#prefix').val(), $('#infix').val(), $('#sufix').val()
+            $('#prefix').val(), $('#infix').val(), $('#suffix').val()
         ].filter(Boolean).join('/'));
 
         if (!docno) {
@@ -1261,52 +1366,144 @@ $("#currcode").select2({
 
 function formatCurrency(repo) {
     if (repo.loading) return repo.text;
-    var markup ="<div class='select2-result-repository__description'>" + repo.currcode +"   <i class='fa fa-circle'></i>   "+ repo.currname +"   <i class='fa fa-circle'></i>   "+  repo.kurs +"  </div>";
-    return markup;
+
+    return "<div class='select2-result-repository__description'>" + repo.currcode + "</div>";
 }
+
 function formatCurrencySelection(repo) {
-    return repo.currname || repo.text;
+    return repo.currcode || repo.text;
 }
 
 
+function updateCurrencySymbol() {
+    const currcode = ($('#currcode').val() || 'IDR').trim().toUpperCase();
+
+    $('.currency-symbol').text(currcode);
+}
+
+$(document).on('change', '#currcode', function () {
+    updateCurrencySymbol();
+});
+
+$(document).ready(function () {
+    updateCurrencySymbol();
+});
 
 function savePengeluaranKBDetail() {
-
-    console.log('Value perkiraan:', $('#perkiraan').val());
-    console.log('Selected data:', $('#perkiraan').select2('data'));
-
     const form = document.getElementById('formPengeluaranKBDetail');
+
     if (!form) {
-        Swal.fire({ icon: 'error', title: 'Form Tidak Ditemukan', text: 'Form detail tidak tersedia.' });
+        Swal.fire('Error', 'Form detail tidak ditemukan.', 'error');
         return;
     }
 
+    // ==========================================
+    // 1. AMBIL DATA FORM
+    // ==========================================
     const nilai = pengeluaranKBNumber($('#nilai').val());
     const idcoa = $.trim($('#perkiraan').val() || '');
     const remarks = $.trim($('#keterangan_dtl').val() || '');
     const dk = $.trim($('#dk').val() || '').toUpperCase();
 
+    const editIdurut = $.trim($('#detail_idurut').val() || '');
+    const editUniqueid = $.trim($('#detail_uniqueid').val() || '');
+    const isEdit = Boolean(editIdurut || editUniqueid);
+
+    // ==========================================
+    // 2. VALIDASI INPUT
+    // ==========================================
     if (!idcoa) {
-        Swal.fire({ icon: 'warning', title: 'Perkiraan Wajib Diisi', text: 'Pilih perkiraan/COA terlebih dahulu.' });
+        Swal.fire(
+            'Peringatan',
+            'Pilih perkiraan/COA terlebih dahulu.',
+            'warning'
+        );
+
         $('#perkiraan').select2('open');
         return;
     }
+
     if (!remarks) {
-        Swal.fire({ icon: 'warning', title: 'Keterangan Wajib Diisi', text: 'Keterangan detail wajib diisi.' });
-        $('#remarks').trigger('focus');
+        Swal.fire(
+            'Peringatan',
+            'Keterangan detail wajib diisi.',
+            'warning'
+        );
+
+        $('#keterangan_dtl').trigger('focus');
         return;
     }
+
     if (dk !== 'D' && dk !== 'K') {
-        Swal.fire({ icon: 'warning', title: 'DK Tidak Valid', text: 'Debit/Kredit harus bernilai D atau K.' });
-        $('#dk').trigger('focus');
+        Swal.fire(
+            'Peringatan',
+            'Debit/Kredit harus bernilai D atau K.',
+            'warning'
+        );
         return;
     }
-    if (nilai <= 0) {
-        Swal.fire({ icon: 'warning', title: 'Nilai Tidak Valid', text: 'Nilai detail harus lebih besar dari 0.' });
+
+    if (!Number.isFinite(nilai) || nilai <= 0) {
+        Swal.fire(
+            'Peringatan',
+            'Nilai detail harus lebih besar dari 0.',
+            'warning'
+        );
+
         $('#nilai').trigger('focus');
         return;
     }
 
+    // ==========================================
+    // 3. VALIDASI TOTAL
+    // ATURAN: TOTAL ALOKASI + NILAI <= TOTAL
+    // ==========================================
+    const totalHeader = pengeluaranKBNumber($('#total').val());
+    const totalAlokasi = pengeluaranKBNumber($('#totalalokasi').val());
+    const tolerance = 0.005;
+
+    const totalSetelahSimpan = totalAlokasi + nilai;
+
+    console.log('Validasi Pengeluaran Kas/Bank:', {
+        totalHeader: totalHeader,
+        totalAlokasi: totalAlokasi,
+        nilaiBaru: nilai,
+        totalSetelahSimpan: totalSetelahSimpan,
+        isEdit: isEdit
+    });
+
+    if (totalSetelahSimpan > totalHeader + tolerance) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Nilai Tidak Imbang',
+            html:
+                'Total Alokasi: <b>' +
+                totalAlokasi.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }) +
+                '</b><br>Nilai Baru: <b>' +
+                nilai.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }) +
+                '</b><br>Total Pengeluaran: <b>' +
+                totalHeader.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }) +
+                '</b><br><br>Total Alokasi + Nilai Baru melebihi Total Pengeluaran.'
+        });
+
+        return;
+    }
+
+    // Jika total setelah ditambah nilai <= total header,
+    // proses penyimpanan diperbolehkan.
+
+    // ==========================================
+    // 4. KONFIRMASI SIMPAN
+    // ==========================================
     Swal.fire({
         title: 'Konfirmasi',
         text: 'Simpan detail Pengeluaran Kas/Bank?',
@@ -1316,30 +1513,48 @@ function savePengeluaranKBDetail() {
         cancelButtonText: 'Batal',
         reverseButtons: true
     }).then(function (result) {
-        if (!result.isConfirmed) return;
+        if (!result.isConfirmed) {
+            return;
+        }
 
-        const $btn = $('#formPengeluaranKBDetail').find('[type="submit"], #btnSavePengeluaranKBDetail').first();
+        const $btn = $('#formPengeluaranKBDetail')
+            .find('[type="submit"], #btnSavePengeluaranKBDetail')
+            .first();
+
         const oldHtml = $btn.length ? $btn.html() : '';
-        if ($btn.length) $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i>Menyimpan...');
 
+        if ($btn.length) {
+            $btn.prop('disabled', true)
+                .html(
+                    '<i class="fa fa-spinner fa-spin me-1"></i>Menyimpan...'
+                );
+        }
+
+        // ==========================================
+        // 5. SIAPKAN FORM DATA
+        // ==========================================
         const formData = new FormData(form);
 
         const docno = $.trim($('#docno').val() || [
             $('#prefix').val(),
             $('#infix').val(),
-            $('#sufix').val()
+            $('#suffix').val()
         ].filter(Boolean).join('/'));
 
+        // Header
         formData.set('docno', docno);
         formData.set('cabang', $('#cabang').val() || '');
         formData.set('prefix', $('#prefix').val() || '');
         formData.set('infix', $('#infix').val() || '');
-        formData.set('sufix', $('#sufix').val() || '');
+        formData.set('suffix', $('#suffix').val() || '');
         formData.set('docdate', $('#docdate').val() || '');
         formData.set('pp', $('#pp').val() || '');
         formData.set('kdsupplier', $('#kdsupplier').val() || '');
         formData.set('alamatsupplier', $('#alamatsupplier').val() || '');
-        formData.set('nmsupplier', $('#kdsupplier option:selected').text() || '');
+        formData.set(
+            'nmsupplier',
+            $('#kdsupplier option:selected').text() || ''
+        );
         formData.set('currcode', $('#currcode').val() || '');
         formData.set('kurs', convertToDbNumber($('#kurs').val()));
         formData.set('keterangan', $('#keterangan').val() || '');
@@ -1347,19 +1562,37 @@ function savePengeluaranKBDetail() {
         formData.set('nmprkkas', $('#nmprkkas').val() || '');
         formData.set('total', convertToDbNumber($('#total').val()));
 
-        formData.set('idurut_detail', $('#detail_idurut').val() || '');
-        formData.set('uniqueid', $('#detail_uniqueid').val() || '');
-        formData.set('docno_detail', $('#detail_docno').val() || '');
+        // Identitas detail
+        formData.set('idurut_detail', editIdurut);
+        formData.set('uniqueid', editUniqueid);
+        formData.set(
+            'docno_detail',
+            $('#detail_docno').val() || ''
+        );
+
+        // Referensi
         formData.set('nilai_ref', $('#nilai_ref').val() || '');
         formData.set('jurnalref', $('#jurnalref').val() || '');
         formData.set('nobukti', $('#nobukti').val() || '');
-        formData.set('perkiraan', $('#perkiraan').val() || '');
-        formData.set('nmperkiraan', $('#nmperkiraan').val() || '');
-        formData.set('dk', $('#dk').val() || 'D');
+
+        // COA
+        const selectedCoaId = $.trim($('#perkiraan').val() || '');
+        const selectedCoaName = $.trim($('#nmperkiraan').val() || '');
+
+        formData.set('perkiraan', selectedCoaId);
+        formData.set('idperkiraan', selectedCoaId);
+        formData.set('nmperkiraan', selectedCoaName);
+        formData.set('namaperkiraan', selectedCoaName);
+
+        // Detail
+        formData.set('dk', dk);
         formData.set('costcenter', $('#costcenter').val() || '');
-        formData.set('keterangan_dtl', $('#keterangan_dtl').val() || '');
+        formData.set('keterangan_dtl', remarks);
         formData.set('nilai', convertToDbNumber($('#nilai').val()));
 
+        // ==========================================
+        // 6. KIRIM KE SERVER
+        // ==========================================
         $.ajax({
             url: HOST_URL + 'ka/finance/savePengeluaranKBDetail',
             type: 'POST',
@@ -1367,44 +1600,99 @@ function savePengeluaranKBDetail() {
             dataType: 'json',
             processData: false,
             contentType: false,
+
             success: function (res) {
+                console.log('Response save detail:', res);
+
                 if (!res || res.success !== true) {
                     Swal.fire({
                         icon: 'warning',
-                        title: 'Gagal',
-                        text: (res && res.message) || 'Detail gagal disimpan.'
+                        title: 'Gagal Menyimpan',
+                        text: (res && res.message)
+                            ? res.message
+                            : 'Server menolak penyimpanan detail.'
                     });
                     return;
                 }
 
-                $('#modalDetailPengeluaranKB').modal('hide');
+                // Reset form setelah berhasil
                 form.reset();
-                $('#uniqueid, #detail_id').val('');
-                $('#idcoa').val(null).trigger('change');
-                $('#cabangdtl').val(null).trigger('change');
-                $('#dk').val('D').trigger('change');
-                $('#nmcoa').val('');
-                $('#modalDetailPengeluaranKBLabel').text('Tambah Detail Pengeluaran Kas/Bank');
 
-                reload_table_pengeluarankb_dtl();
-                if (typeof documentReadable === 'function') documentReadable();
+                $('#detail_idurut, #detail_uniqueid, #detail_docno').val('');
+
+                $('#perkiraan').val(null).trigger('change');
+                $('#costcenter').val(null).trigger('change');
+                $('#dk').val('D').trigger('change');
+
+                $('#nmperkiraan').val('');
+                $('#nilai_ref, #jurnalref, #nobukti').val('');
+
+                $('#modalDetailPengeluaranKBLabel')
+                    .text('Tambah Detail Pengeluaran Kas/Bank');
+
+                $('#modalDetailPengeluaranKB').modal('hide');
+
+                // Refresh tabel detail
+                if (typeof reload_table_pengeluarankb_dtl === 'function') {
+                    reload_table_pengeluarankb_dtl();
+                } else if (typeof reloadTablePengeluaranKBDtl === 'function') {
+                    reloadTablePengeluaranKBDtl();
+                }
+
+                // Hitung ulang total alokasi
+                if (typeof refreshPengeluaranKBTotalAlokasi === 'function') {
+                    refreshPengeluaranKBTotalAlokasi();
+                }
+
+                if (typeof documentReadable === 'function') {
+                    documentReadable();
+                }
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil',
+                    text: res.message || 'Detail berhasil disimpan.',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
             },
+
             error: function (xhr) {
-                console.error('savePengeluaranKBDetail:', xhr.responseText);
+                console.error(
+                    'savePengeluaranKBDetail:',
+                    xhr.status,
+                    xhr.responseText
+                );
+
                 let message = 'Terjadi kesalahan saat menyimpan detail.';
+
                 try {
                     const response = JSON.parse(xhr.responseText || '{}');
-                    if (response.message) message = response.message;
-                } catch (e) {}
-                Swal.fire({ icon: 'error', title: 'Server Error', text: message });
+
+                    if (response.message) {
+                        message = response.message;
+                    }
+                } catch (e) {
+                    if (xhr.responseText) {
+                        message = xhr.responseText.substring(0, 500);
+                    }
+                }
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Server Error',
+                    text: message
+                });
             },
+
             complete: function () {
-                if ($btn.length) $btn.prop('disabled', false).html(oldHtml);
+                if ($btn.length) {
+                    $btn.prop('disabled', false).html(oldHtml);
+                }
             }
         });
     });
 }
-
 
 function formatSupplier(repo) {
     if (repo.loading) return repo.text;
@@ -1506,469 +1794,227 @@ $("#kdsupplier").select2({
 let currentKodeSuffix = '';
 let skipRoleChange = false;
 
-$('#cabang').on('change', function () {
 
+$('#cabang').on('change', function () {
     if (skipRoleChange) return;
 
-    let idbranch = $(this).val();
+    const idbranch = $(this).val();
 
-    if (idbranch) {
+    if (!idbranch) {
+        currentKodeSuffix = '';
+        $('#docno, #infix, #suffix').val('');
+        return;
+    }
 
-        $.ajax({
+    $.ajax({
+        url: HOST_URL + '/ka/finance/getBranchInfoPengeluaranKB',
+        method: 'GET',
+        data: { idbranch: idbranch },
+        dataType: 'json',
+        cache: false,
 
-            url: HOST_URL + '/ka/finance/getBranchInfoPengeluaranKB',
+        success: function (res) {
+            if (!res || res.success !== true) {
+                Swal.fire(
+                    'Error',
+                    (res && res.message) || 'Informasi cabang tidak ditemukan.',
+                    'warning'
+                );
+                return;
+            }
 
-            method: 'GET',
+            // =========================================
+            // DATA CABANG DAN NOMOR DOKUMEN
+            // =========================================
+            currentKodeSuffix = $.trim(res.kode_suffix || '');
 
-            data: {
-                idbranch: idbranch
-            },
+            const infix = $.trim(String(res.infix || ''));
 
-            dataType: 'json',
+            if (!currentKodeSuffix || !infix) {
+                Swal.fire(
+                    'Error',
+                    'Kode suffix atau periode dokumen tidak tersedia.',
+                    'warning'
+                );
+                return;
+            }
 
-            success: function (res) {
+            $('#prefix').val('BKK');
+            $('#infix').val(infix);
 
-                if (!res.success) {
+            // Ambil nomor berikutnya dari server.
+            // Jangan mengisi nomor secara hardcode dengan 0001.
+            loadNextSuffixPengeluaranKB();
 
-                    Swal.fire(
-                        'Error',
-                        res.message,
-                        'warning'
+            // =========================================
+            // DEFAULT CURRENCY: IDR
+            // =========================================
+            $.ajax({
+                url: HOST_URL +
+                    'api/globalmodule/list_currency?var=' +
+                    encodeURIComponent('IDR'),
+                method: 'GET',
+                dataType: 'json',
+                cache: false,
+
+                success: function (datax) {
+                    if (
+                        !datax ||
+                        !Array.isArray(datax.items) ||
+                        datax.items.length === 0
+                    ) {
+                        console.warn('Currency IDR tidak ditemukan.');
+                        return;
+                    }
+
+                    const currencyData = {
+                        ...datax.items[0],
+                        kurs: 1
+                    };
+
+                    const $currency = $('[name="currcode"]');
+
+                    const option = new Option(
+                        currencyData.currname,
+                        currencyData.currcode,
+                        true,
+                        true
                     );
 
+                    $(option).data('currency-data', currencyData);
+
+                    $currency.empty()
+                        .append(option)
+                        .val(currencyData.currcode)
+                        .trigger('change');
+
+                    setJtsValue('[name="kurs"]', 1);
+                    $('[name="kurs"]').prop('readonly', true);
+                },
+
+                error: function (xhr) {
+                    console.error(
+                        'Gagal load Currency IDR:',
+                        xhr.responseText
+                    );
+                }
+            });
+
+            // =========================================
+            // KONFIGURASI PAJAK
+            // =========================================
+            const config = (
+                Array.isArray(res.konfigurasi_umum) &&
+                res.konfigurasi_umum.length > 0
+            ) ? res.konfigurasi_umum[0] : null;
+
+
+            // =========================================
+            // BATAS TANGGAL BERDASARKAN INFIX YYMM
+            // =========================================
+            if (/^\d{4}$/.test(infix)) {
+                $('#docdate').prop('disabled', false);
+
+                const year = 2000 + parseInt(infix.substring(0, 2), 10);
+                const month = parseInt(infix.substring(2, 4), 10) - 1;
+
+                const startDate = moment([year, month, 1]);
+                const endDate = moment(startDate).endOf('month');
+                const today = moment();
+
+                if (!startDate.isValid() || !endDate.isValid()) {
+                    Swal.fire(
+                        'Error',
+                        'Periode tanggal tidak valid.',
+                        'warning'
+                    );
                     return;
                 }
 
+                const selectedDate = today.isBetween(
+                    startDate,
+                    endDate,
+                    'day',
+                    '[]'
+                ) ? today : startDate;
 
-                // =====================================================
-                // DATA BRANCH
-                // =====================================================
+                const $el = $('#docdate');
+                let drp = $el.data('daterangepicker');
 
-                currentKodeSuffix = res.kode_suffix;
+                if (drp) {
+                    drp.minDate = startDate.clone();
+                    drp.maxDate = endDate.clone();
+                    drp.setStartDate(selectedDate);
+                    drp.setEndDate(selectedDate);
+                } else {
+                    $el.daterangepicker({
+                        autoUpdateInput: false,
+                        singleDatePicker: true,
+                        showDropdowns: true,
+                        startDate: selectedDate,
+                        minDate: startDate,
+                        maxDate: endDate,
+                        locale: {
+                            format: 'DD-MM-YYYY'
+                        },
+                        cancelLabel: 'Clear'
+                    });
 
-                $('#infix').val(res.infix);
+                    $el.off('.daterangepickerKB');
 
-                // PREFIX KHUSUS PENGELUARAN KB
-                $('#prefix').val('BKK');
-
-                $('#sufix').val(
-                    currentKodeSuffix + '0001'
-                );
-
-                defaultInitialPP = currentKodeSuffix;
-
-
-                // =====================================================
-                // FORCE DEFAULT CURRENCY IDR
-                // =====================================================
-
-                var defaultCurrcode = 'IDR';
-
-
-                $.ajax({
-
-                    type: 'GET',
-
-                    url:
-                        HOST_URL +
-                        'api/globalmodule/list_currency?var=' +
-                        encodeURIComponent(defaultCurrcode),
-
-                    dataType: 'json',
-
-                    success: function (datax) {
-
-                        // =============================================
-                        // VALIDASI CURRENCY
-                        // =============================================
-
-                        if (
-                            !datax ||
-                            !datax.items ||
-                            datax.items.length === 0
-                        ) {
-
-                            console.warn(
-                                'Currency IDR tidak ditemukan'
+                    $el.on(
+                        'apply.daterangepickerKB',
+                        function (ev, picker) {
+                            $(this).val(
+                                picker.startDate.format('DD-MM-YYYY')
                             );
-
-                            return;
                         }
-
-
-                        // =============================================
-                        // DATA CURRENCY
-                        // =============================================
-
-                        var currencyData = datax.items[0];
-
-
-                        // FORCE KURS IDR = 1
-
-                        currencyData.kurs = 1;
-
-
-                        // =============================================
-                        // HAPUS CURRENCY SEBELUMNYA
-                        // =============================================
-
-                        $('[name="currcode"]')
-                            .empty();
-
-
-                        // =============================================
-                        // CREATE OPTION
-                        // =============================================
-
-                        var option = new Option(
-
-                            currencyData.currname,
-
-                            currencyData.currcode,
-
-                            true,
-
-                            true
-
-                        );
-
-
-                        // Simpan data lengkap currency
-
-                        $(option).data(
-                            'currency-data',
-                            currencyData
-                        );
-
-
-                        // =============================================
-                        // SELECT IDR
-                        // =============================================
-
-                        $('[name="currcode"]')
-                            .append(option)
-                            .val(currencyData.currcode)
-                            .trigger('change');
-
-
-                        // =============================================
-                        // FORCE KURS = 1
-                        // =============================================
-
-                        setJtsValue(
-                            '[name="kurs"]',
-                            1
-                        );
-
-
-                        // =============================================
-                        // KURS READONLY
-                        // =============================================
-
-                        $('[name="kurs"]')
-                            .prop('readonly', true);
-
-                    },
-
-                    error: function (xhr) {
-
-                        console.error(
-                            'Gagal load Currency IDR:',
-                            xhr.responseText
-                        );
-
-                    }
-
-                });
-
-
-                // =====================================================
-                // KONFIGURASI UMUM
-                // =====================================================
-
-                var config = null;
-
-
-                if (
-                    Array.isArray(res.konfigurasi_umum) &&
-                    res.konfigurasi_umum.length > 0
-                ) {
-
-                    config = res.konfigurasi_umum[0];
-
-                }
-
-
-                // =====================================================
-                // AUTO SELECT TAX
-                // =====================================================
-
-                if (config) {
-
-                    var idtax = $.trim(
-                        config.idtax || ''
                     );
 
-
-                    if (idtax !== '') {
-
-                        loadDefaultTax(idtax);
-
-                    }
-
-                }
-
-
-                // =====================================================
-                // DATE RANGE BERDASARKAN INFIX
-                // =====================================================
-
-                var infix =
-                    (res.infix || '').toString();
-
-
-                if (infix.length === 4) {
-
-                    $('#docdate').prop(
-                        'disabled',
-                        false
+                    $el.on(
+                        'cancel.daterangepickerKB',
+                        function () {
+                            $(this).val('');
+                        }
                     );
-
-
-                    var yy =
-                        infix.substring(0, 2);
-
-
-                    var mm =
-                        infix.substring(2, 4);
-
-
-                    var year =
-                        2000 + parseInt(yy, 10);
-
-
-                    var month =
-                        parseInt(mm, 10) - 1;
-
-
-                    var today =
-                        moment();
-
-
-                    var startDate =
-                        moment([
-                            year,
-                            month,
-                            1
-                        ]);
-
-
-                    var endDate =
-                        moment(startDate)
-                            .endOf('month');
-
-
-                    var $el =
-                        $('#docdate');
-
-
-                    var drp =
-                        $el.data(
-                            'daterangepicker'
-                        );
-
-
-                    // =============================================
-                    // UPDATE DATERANGEPICKER
-                    // =============================================
-
-                    if (drp) {
-
-                        drp.minDate =
-                            startDate;
-
-                        drp.maxDate =
-                            endDate;
-
-                        drp.setStartDate(
-                            startDate
-                        );
-
-                        drp.setEndDate(
-                            startDate
-                        );
-
-                    } else {
-
-                        // =============================================
-                        // FALLBACK INITIALIZE
-                        // =============================================
-
-                        $el.daterangepicker({
-
-                            autoUpdateInput: false,
-
-                            singleDatePicker: true,
-
-                            showDropdowns: true,
-
-                            startDate:
-                            startDate,
-
-                            minDate:
-                            startDate,
-
-                            maxDate:
-                            endDate,
-
-                            locale: {
-                                format: 'DD-MM-YYYY'
-                            },
-
-                            cancelLabel: 'Clear'
-
-                        });
-
-
-                        // =============================================
-                        // APPLY DATE
-                        // =============================================
-
-                        $el.off(
-                            'apply.daterangepicker'
-                        );
-
-                        $el.on(
-                            'apply.daterangepicker',
-                            function (ev, picker) {
-
-                                $(this).val(
-                                    picker.startDate
-                                        .format('DD-MM-YYYY')
-                                );
-
-                            }
-                        );
-
-
-                        // =============================================
-                        // CANCEL DATE
-                        // =============================================
-
-                        $el.off(
-                            'cancel.daterangepicker'
-                        );
-
-                        $el.on(
-                            'cancel.daterangepicker',
-                            function () {
-
-                                $(this).val('');
-
-                            }
-                        );
-
-                    }
-
-
-                    // =============================================
-                    // SET TANGGAL DEFAULT
-                    // =============================================
-
-                    if (
-                        today.isSameOrAfter(startDate) &&
-                        today.isSameOrBefore(endDate)
-                    ) {
-
-                        $el.val(
-                            today.format(
-                                'DD-MM-YYYY'
-                            )
-                        );
-
-                    } else {
-
-                        $el.val(
-                            startDate.format(
-                                'DD-MM-YYYY'
-                            )
-                        );
-
-                    }
-
                 }
 
-
-                // =====================================================
-                // GENERATE DOCNO
-                // =====================================================
-
-                $('#docno').val(
-
-                    'BKK/' +
-                    res.infix +
-                    '/' +
-                    currentKodeSuffix +
-                    '0001'
-
-                );
-
-
-                // =====================================================
-                // ENABLE SUPPLIER
-                // =====================================================
-
-                $('#kdsupplier')
-                    .prop('disabled', false);
-
-
-                // =====================================================
-                // RESET SUPPLIER
-                // =====================================================
-
-                $('#kdsupplier')
-                    .val(null)
-                    .trigger('change');
-
-
-                // =====================================================
-                // RESET ALAMAT SUPPLIER
-                // =====================================================
-
-                $('#alamatsupplier').val('');
-
-
-            },
-
-
-            // =========================================================
-            // AJAX ERROR
-            // =========================================================
-
-            error: function (xhr) {
-
-                console.error(
-                    xhr.responseText
-                );
-
-                Swal.fire(
-                    'Error',
-                    'Gagal mengambil informasi cabang',
-                    'error'
-                );
-
+                $el.val(selectedDate.format('DD-MM-YYYY'));
             }
 
-        });
+            // =========================================
+            // ENABLE DAN RESET SUPPLIER
+            // =========================================
+            $('#kdsupplier')
+                .prop('disabled', false)
+                .val(null)
+                .trigger('change');
 
-    }
+            $('#alamatsupplier').val('');
+        },
 
+        error: function (xhr) {
+            console.error(
+                'getBranchInfoPengeluaranKB:',
+                xhr.responseText
+            );
+
+            Swal.fire(
+                'Error',
+                'Gagal mengambil informasi cabang.',
+                'error'
+            );
+        }
+    });
 });
 
 
-$('#prefix').on('blur', function () {
-    let prefix = $(this).val().toUpperCase();
-    let infix  = $('#infix').val();
+
+
+function loadNextSuffixPengeluaranKB() {
+
+    let prefix = $.trim($('#prefix').val()).toUpperCase();
+    let infix = $.trim($('#infix').val());
 
     if (!prefix || !infix || !currentKodeSuffix) return;
 
@@ -1981,20 +2027,33 @@ $('#prefix').on('blur', function () {
             kode_suffix: currentKodeSuffix
         },
         dataType: 'json',
+        cache: false,
+
         success: function (res) {
             if (!res.success) {
                 Swal.fire('Error', res.message, 'warning');
                 return;
             }
 
-            $('#sufix').val(res.suffix);
+            let suffix = $.trim(
+                res.suffix || ''
+            );
+
+            $('#suffix')
+                .val(suffix)
+                .trigger('change');
+
             $('#docno').val(
                 prefix + '/' + infix + '/' + res.suffix
             );
+
         }
     });
-});
+};
 
+$('#prefix').on('blur', function () {
+    loadNextSuffixPengeluaranKB();
+});
 
 
 
@@ -2353,8 +2412,11 @@ function addDetailPengeluaranKB() {
     }
 
     // Data header yang akan disimpan.
+    const prefix = String($('#prefix').val() || '').trim();
+    const infix  = String($('#infix').val() || '').trim();
+    const suffix = String($('#suffix').val() || '').trim();
     const header = {
-        docno: docno,
+        docno: [prefix, infix, suffix].join('/'),
         docdate: $('#docdate').val(),
         cabang: $('#cabang').val(),
         pemohon: $('#pemohon').val(),
@@ -2392,7 +2454,18 @@ function addDetailPengeluaranKB() {
         );
         return;
     }
+    var prkkas = $('#prkkas').val();
 
+    if (!prkkas || prkkas.trim() === '') {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Validasi',
+            text: 'Perkiraan Kas/Bank tidak boleh kosong!'
+        });
+
+        $('#prkkas').select2('open');
+        return false;
+    }
     // =====================================================
     // BACA ULANG HEADER SETELAH BERHASIL DISIMPAN
     // =====================================================
@@ -2527,6 +2600,14 @@ function addDetailPengeluaranKB() {
                 // =================================================
                 // BUKA MODAL
                 // =================================================
+                // Simbol mata uang mengikuti currency dari header
+                const detailCurrency =
+                    clean(savedHeader.currcode || $('#currcode').val() || 'IDR')
+                        .toUpperCase();
+
+                $('#detail_currency_symbol').text(detailCurrency);
+
+                // Buka modal detail
                 $('#modalDetailPengeluaranKB').modal('show');
 
                 console.log(
@@ -2686,54 +2767,48 @@ $('#perkiraan').select2({
     console.log('PERKIRAAN:', $('#perkiraan').val());
     console.log('NAMA PERKIRAAN:', $('#nmperkiraan').val());
 
+
     // =====================================================
-    // HITUNG SELISIH TOTAL
+    // HITUNG SELISIH TOTAL ALOKASI
     // =====================================================
     function toInteger(value) {
-        const raw = String(value || '')
+        const raw = String(value ?? '')
             .trim()
             .replace(/,/g, '')
             .replace(/[^0-9.\-]/g, '');
 
         const numberValue = Number(raw);
-
-        if (!Number.isFinite(numberValue)) {
-            return 0;
-        }
-
-        return Math.round(numberValue);
+        return Number.isFinite(numberValue)
+            ? Math.round(numberValue)
+            : 0;
     }
 
     const total = toInteger($('#total').val());
     const totalAlokasi = toInteger($('#totalalokasi').val());
 
-    let selisih = 0;
+    // Selisih positif berarti nilai header masih kurang dialokasikan.
+    const selisih = total - totalAlokasi;
+
+    let nilaiModal = Math.abs(selisih);
     let dk = 'D';
 
-    if (total > totalAlokasi) {
-        selisih = total - totalAlokasi;
-        dk = 'D';
-    } else if (total < totalAlokasi) {
-        selisih = totalAlokasi - total;
+    if (selisih < 0) {
+        // Alokasi melebihi total header.
         dk = 'K';
-    } else {
-        selisih = 0;
-        dk = 'D';
     }
 
     // =====================================================
-    // ISI NILAI DAN DK
+    // ISI NILAI DAN DK PADA MODAL
     // =====================================================
-    $('#nilai').val(tterimaFormatNumber(selisih));
-
-    $('#dk')
-        .val(dk)
-        .trigger('change');
+    $('#nilai').val(tterimaFormatNumber(nilaiModal));
+    $('#dk').val(dk).trigger('change');
 
     console.log('TOTAL:', total);
     console.log('TOTAL ALOKASI:', totalAlokasi);
     console.log('SELISIH:', selisih);
+    console.log('NILAI MODAL:', nilaiModal);
     console.log('DK:', dk);
+
 });
 
 function formatCoa(repo) {
@@ -2754,223 +2829,213 @@ function formatCoaSelection(repo) {
 // -------------------------------------------------------------
 // EDIT SELECTED
 // -------------------------------------------------------------
-function editSelectedTterimaDetail() {
 
-    const ids =
-        getSelectedTterimaDetailIds();
+function editSelectedPengeluaranKBDetail() {
+    const ids = getCheckedDetailIds();
 
     if (ids.length !== 1) {
-
         Swal.fire({
             icon: 'warning',
             title: 'Pilih 1 Detail',
             text: 'Pilih tepat satu detail untuk diedit.'
         });
-
         return;
     }
 
-    const id = ids[0];
+    const uniqueid = String(ids[0]).trim();
+    const table = $('#tabpengeluarankbdtl').DataTable();
 
-    const row =
-        window.tterimaDetailRows[id];
+    let rowData = null;
 
-    if (!row) {
+    $('#tabpengeluarankbdtl tbody .row-check:checked').each(function () {
+        rowData = table.row($(this).closest('tr')).data();
+    });
 
+    if (!rowData) {
         Swal.fire({
             icon: 'error',
             title: 'Data Tidak Ditemukan',
-            text: 'Data detail tidak ditemukan.'
+            text: 'Data detail tidak ditemukan. Muat ulang tabel lalu coba kembali.'
         });
-
         return;
     }
 
-    // Header reference
-    const idurutHeader =
-        $.trim(
-            $('#idurut').val() || ''
-        );
+    // Backend mengirim data DataTables berbentuk array.
+    // Urutan indeks mengikuti list_tmp_pengeluarankb_dtl() di Finance.php:
+    // 0 uniqueid, 1 nobukti, 2 COA tampilan, 3 remarks, 4 dk,
+    // 5 cabang, 6 nilai tampilan, 7 idcoa, 8 nmcoa,
+    // 9 nilai_ref, 10 jurnalref, 11 costcenter/cabang.
+    if (Array.isArray(rowData)) {
+        if (String(rowData[0] ?? '').trim() !== uniqueid) {
+            console.error('Unique ID checkbox dan data berbeda:', {
+                checkbox: uniqueid,
+                row: rowData
+            });
 
-    const docno =
-        $.trim(
-            $('#docno').val() || ''
-        );
-// No BK Revisi
-    const nobkrev = $.trim(row.nobkrev || '');
-    $('#nobkrev').val(nobkrev);
-
-    $('#detail_idurut')
-        .val(idurutHeader);
-
-    $('#detail_uniqueid')
-        .val(id);
-
-    $('#detail_docno')
-        .val(docno);
-
-    const supplier =
-        $.trim(
-            $('#kdsupplier').val() || ''
-        );
-
-    const supplierText =
-        $('#kdsupplier option:selected').text();
-
-    $('#detail_supplier')
-        .val(
-            supplierText ||
-            supplier ||
-            '-'
-        );
-
-    $('#detail_docno_display')
-        .val(docno);
-
-    $('#detail_idurut_display')
-        .val(idurutHeader);
-
-    // Detail
-    $('#nobukti')
-        .val(
-            String(row.nobukti ?? '').trim()
-        );
-
-    $('#keterangan_dtl')
-        .val(
-            String(row.keterangan ?? '')
-                .trim()
-        );
-
-    $('#dk')
-        .val(
-            String(row.dk ?? 'D')
-                .trim()
-                .toUpperCase()
-        )
-        .trigger('change');
-
-    $('#nilai')
-        .val(
-            tterimaFormatNumber(row.nilai)
-        );
-
-    // Perkiraan
-    const coa =
-        String(row.noperkiraan ?? '').trim();
-
-    const coaName =
-        String(row.namaperkiraan ?? '').trim();
-
-    if (coa !== '') {
-
-        const option =
-            new Option(
-                coaName !== ''
-                    ? coa + ' - ' + coaName
-                    : coa,
-                coa,
-                true,
-                true
-            );
-
-        $('#perkiraan')
-            .empty()
-            .append(option)
-            .trigger('change');
-
-        /*baru*/
-        $('#nilai_ref')
-            .val(
-                tterimaFormatNumber(row.nilai)
-            );
-        $('#jurnalref')
-            .val(
-                row.jurnalref
-            );
-
-    } else {
-
-        $('#perkiraan')
-            .val(null)
-            .trigger('change');
-    }
-
-    // Cost / Profit Center
-    const cost =
-        String(
-            row.costprofitcenter ??
-            row.costcenter ??
-            ''
-        ).trim();
-
-    if (cost !== '') {
-
-        let $option =
-            $('#costcenter option[value="' +
-                cost.replace(/"/g, '\\"') +
-                '"]');
-
-        if (!$option.length) {
-
-            const text =
-                cost === '01.01'
-                    ? '01.01 - PLANT I'
-                    : cost === '01.02'
-                        ? '01.02 - PLANT II'
-                        : cost;
-
-            $option =
-                $(new Option(
-                    text,
-                    cost,
-                    true,
-                    true
-                ));
-
-            $('#costcenter')
-                .append($option);
-
+            Swal.fire({
+                icon: 'error',
+                title: 'Unique ID Tidak Cocok',
+                text: 'Unique ID pada checkbox berbeda dari data detail.'
+            });
+            return;
         }
 
-        $('#costcenter')
-            .val(cost)
-            .trigger('change');
+        if (rowData.length < 12) {
+            console.error('Kolom tambahan untuk edit belum dikirim backend:', rowData);
 
+            Swal.fire({
+                icon: 'error',
+                title: 'Data Edit Belum Lengkap',
+                text: 'Backend harus mengirim 12 kolom detail, termasuk idcoa, nmcoa, nilai_ref, jurnalref, dan costcenter.'
+            });
+            return;
+        }
+
+        rowData = {
+            uniqueid: String(rowData[0] ?? '').trim(),
+            nobukti: rowData[1] ?? '',
+            remarks: rowData[3] ?? '',
+            dk: rowData[4] ?? 'D',
+            cabang: rowData[5] ?? '',
+            nilai: $('<div>').html(rowData[6] ?? '').text().trim(),
+            idcoa: rowData[7] ?? '',
+            nmcoa: rowData[8] ?? '',
+            nilai_ref: rowData[9] ?? '',
+            jurnalref: rowData[10] ?? '',
+            costcenter: rowData[11] ?? rowData[5] ?? ''
+        };
     } else {
+        const rowUniqueId = String(rowData.uniqueid ?? '').trim();
 
-        $('#costcenter')
-            .val(null)
-            .trigger('change');
+        if (rowUniqueId !== uniqueid) {
+            console.error('Unique ID checkbox dan data berbeda:', {
+                checkbox: uniqueid,
+                row: rowData
+            });
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Unique ID Tidak Cocok',
+                text: 'Unique ID pada checkbox berbeda dari data detail.'
+            });
+            return;
+        }
     }
 
-    $('#modalUpdateTterimaDtlLabel')
-        .text('Edit Detail Tanda Terima');
+    window.pengeluaranKBDetailRows = window.pengeluaranKBDetailRows || {};
+    window.pengeluaranKBDetailRows[uniqueid] = rowData;
 
-    $('#btnSavePengeluaranKBDetail')
-        .html(
-            '<i class="fa fa-save me-1"></i> Update'
-        )
-        .data('mode', 'edit');
+    $('#detail_uniqueid, #uniqueid').val(uniqueid);
+    $('#detail_idurut').val($('#idurut').val() || '');
+    $('#detail_docno').val($('#docno').val() || '');
 
-    const modalElement =
-        document.getElementById(
-            'modalUpdateTterimaDtl'
-        );
+    $('#nobukti').val(rowData.nobukti ?? '');
+    $('#keterangan_dtl').val(
+        rowData.keterangan_dtl ?? rowData.remarks ?? rowData.keterangan ?? ''
+    );
+    $('#dk').val(String(rowData.dk ?? 'D').trim().toUpperCase())
+        .trigger('change');
+    $('#nilai').val(pengeluaranKBFormatNumber(rowData.nilai));
+    $('#nilai_ref').val(pengeluaranKBFormatNumber(rowData.nilai_ref ?? rowData.nilai));
+    $('#jurnalref').val(rowData.jurnalref ?? '');
 
-    if (modalElement) {
+    const coa = String(rowData.idcoa ?? rowData.idperkiraan ?? rowData.perkiraan ?? '').trim();
+    const coaName = String(rowData.nmcoa ?? rowData.nmperkiraan ?? rowData.namaperkiraan ?? '').trim();
 
-        bootstrap.Modal
-            .getOrCreateInstance(
-                modalElement
-            )
-            .show();
+    // Isi hidden field yang benar-benar dikirim ke backend.
+    // Perubahan Select2 secara programatik tidak selalu memicu select2:select.
+    $('#nmperkiraan').val(coaName);
+
+    if (coa) {
+        const optionText = coaName ? coa + ' - ' + coaName : coa;
+        const option = new Option(optionText, coa, true, true);
+        $('#perkiraan').empty().append(option).val(coa).trigger('change');
+        // Pastikan nama tetap terisi setelah event change Select2.
+        $('#nmperkiraan').val(coaName);
+    } else {
+        $('#perkiraan').val(null).trigger('change');
+        $('#nmperkiraan').val('');
     }
+
+    const cost = String(
+        rowData.costcenter ?? rowData.costprofitcenter ?? rowData.cabangdtl ?? ''
+    ).trim();
+
+    if (cost) {
+        if (!$('#costcenter option').filter(function () {
+            return this.value === cost;
+        }).length) {
+            $('#costcenter').append(new Option(cost, cost, true, true));
+        }
+
+        $('#costcenter').val(cost).trigger('change');
+    }
+
+    // =====================================================
+    // ISI REFERENSI HEADER PADA MODAL EDIT DETAIL
+    // Field ini juga diisi pada proses Input Detail.
+    // =====================================================
+    const $detailModal = $('#modalDetailPengeluaranKB');
+    const headerDocno = String(
+        $('#docno').val() || $('#detail_docno').val() || $detailModal.attr('data-docno') || ''
+    ).trim();
+    const headerIdurut = String(
+        $('#idurut').val() || $detailModal.attr('data-idurut') || $('#detail_idurut').val() || ''
+    ).trim();
+    const supplierCode = String($('#kdsupplier').val() || '').trim();
+    let supplierName = String($('#nmsupplier').val() || '').trim();
+
+    if (!supplierName) {
+        const selectedSupplierText = String(
+            $('#kdsupplier option:selected').text() || ''
+        ).trim();
+        if (selectedSupplierText && selectedSupplierText !== supplierCode) {
+            supplierName = selectedSupplierText;
+        }
+    }
+
+    $('#detail_supplier').val(
+        supplierCode + (supplierName ? ' - ' + supplierName : '')
+    );
+    $('#detail_docno_display').val(headerDocno);
+    $('#detail_idurut_display').val(headerIdurut);
+    $('#detail_docno').val(headerDocno);
+
+    // Simpan referensi header pada modal agar tetap tersedia saat update.
+    $('#modalDetailPengeluaranKB')
+        .attr('data-idurut', headerIdurut)
+        .attr('data-docno', headerDocno);
+
+    $('#modalDetailPengeluaranKBLabel').text('Edit Detail Pengeluaran Kas/Bank');
+    $('#btnSavePengeluaranKBDetail').text('Update Detail');
+    $('#modalDetailPengeluaranKB').modal('show');
+}
+
+
+function pengeluaranKBFormatNumber(value) {
+    const number = pengeluaranKBNumber(value);
+    return number.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+    });
 }
 
 // -------------------------------------------------------------
 // DELETE SELECTED
 // -------------------------------------------------------------
+function getSelectedTterimaDetailIds() {
+    const ids = [];
+
+    $('#tabpengeluarankbdtl tbody input[type="checkbox"]:checked').each(function () {
+        const id = $(this).val();
+
+        if (id !== undefined && id !== '') {
+            ids.push(String(id));
+        }
+    });
+
+    return ids;
+}
 function deleteSelectedTterimaDetail() {
 
     const ids =
@@ -3029,11 +3094,12 @@ function deleteSelectedTterimaDetail() {
 
                     url:
                         HOST_URL +
-                        'ka/finance/deleteTterimaDetail',
+                        'ka/finance/delete_pengeluarankb_detail',
 
                     data: {
                         docno: docno,
-                        idurut: id
+                        idurut: id,
+                        ids: id
                     },
 
                     dataType: 'json'
@@ -3077,13 +3143,15 @@ function deleteSelectedTterimaDetail() {
                     });
                 }
 
-                window.location.reload();
+                // Ganti menjadi
+                reload_table_pengeluarankb_dtl();
+                refreshPengeluaranKBTotalAlokasi();
 
             })
             .catch(function (xhr) {
 
                 console.error(
-                    'deleteTterimaDetail error:',
+                    'Delete pengeluaran KB error:',
                     xhr
                 );
 
@@ -3172,6 +3240,7 @@ function reloadTterimaDetailFresh() {
 // -------------------------------------------------------------
 // RENDER LIST DETAIL PENGELUARAN KAS/BANK
 // -------------------------------------------------------------
+
 function loadPengeluaranKBDetail(detail) {
     const rows = Array.isArray(detail) ? detail : [];
     const $body = $('#bodyPengeluaranKBDetail');
@@ -3184,6 +3253,25 @@ function loadPengeluaranKBDetail(detail) {
         .prop('checked', false)
         .prop('indeterminate', false);
 
+    const escapeHtml = function (value) {
+        return String(value ?? '').replace(/[&<>"']/g, function (char) {
+            return {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            }[char];
+        });
+    };
+
+    const formatAmount = function (value) {
+        if (typeof formatNumber === 'function') {
+            return formatNumber(value ?? 0);
+        }
+        return escapeHtml(value ?? 0);
+    };
+
     if (rows.length === 0) {
         $body.html(`
             <tr>
@@ -3194,12 +3282,7 @@ function loadPengeluaranKBDetail(detail) {
             </tr>
         `);
 
-        $('#totalalokasi').val(
-            typeof formatNumber === 'function'
-                ? formatNumber(0)
-                : '0'
-        );
-
+        $('#totalalokasi').val(formatAmount(0));
         updateDetailActionButtons();
         return;
     }
@@ -3207,31 +3290,17 @@ function loadPengeluaranKBDetail(detail) {
     let html = '';
 
     rows.forEach(function (row) {
-        const id = String(
-            row.idurut ??
-            row.idurut_detail ??
-            ''
-        ).trim();
+        // Identitas detail wajib uniqueid.
+        const id = String(row.uniqueid ?? '').trim();
 
-        if (id === '') return;
+        if (!id) return;
 
         window.pengeluaranKBDetailRows[id] = row;
-
-        const escapeHtml = function (value) {
-            return String(value ?? '').replace(/[&<>"']/g, function (char) {
-                return {
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    '"': '&quot;',
-                    "'": '&#039;'
-                }[char];
-            });
-        };
 
         const nobukti = escapeHtml(row.nobukti);
         const idcoa = escapeHtml(row.idcoa);
         const nmcoa = escapeHtml(row.nmcoa);
+
         const keterangan = escapeHtml(
             row.remarks ?? row.keterangan ?? ''
         );
@@ -3244,14 +3313,13 @@ function loadPengeluaranKBDetail(detail) {
             row.cabangdtl ?? row.cabang ?? ''
         );
 
-        const nilai = typeof formatNumber === 'function'
-            ? formatNumber(row.nilai)
-            : escapeHtml(row.nilai);
+        const nilai = formatAmount(row.nilai);
 
         html += `
             <tr data-detail-id="${escapeHtml(id)}">
                 <td class="text-center">
-                    <input type="checkbox"
+                    <input
+                        type="checkbox"
                         class="row-check"
                         value="${escapeHtml(id)}"
                         aria-label="Pilih detail ${escapeHtml(id)}">
@@ -3269,11 +3337,26 @@ function loadPengeluaranKBDetail(detail) {
         `;
     });
 
+    if (html === '') {
+        $body.html(`
+            <tr>
+                <td colspan="7" class="text-center py-3">
+                    Tidak ada detail dengan uniqueid yang valid.
+                </td>
+            </tr>
+        `);
+
+        $('#totalalokasi').val(formatAmount(0));
+        updateDetailActionButtons();
+        return;
+    }
+
     $body.html(html);
 
     updatePengeluaranKBTotalAlokasi(rows);
     updateDetailActionButtons();
 }
+
 
 
 // -------------------------------------------------------------
@@ -3387,15 +3470,43 @@ function updatePengeluaranKBTotalAlokasi(response) {
     });
 
     $('#totalalokasi').val(
-        total.toLocaleString('id-ID')
+        total.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        })
     );
-
     console.log('Data untuk Total Alokasi:', rows);
     console.log('Hasil Total Alokasi:', total);
 
     return total;
 }
 
+
+
+// Refresh total alokasi dari sumber detail terbaru setelah tambah/hapus/edit.
+function refreshPengeluaranKBTotalAlokasi() {
+    const docno = $.trim($('#docno').val() || '');
+    if (!docno) {
+        updatePengeluaranKBTotalAlokasi([]);
+        return $.Deferred().resolve().promise();
+    }
+
+    return $.ajax({
+        type: 'GET',
+        url: HOST_URL + 'ka/finance/showing_pengeluarankbtemp',
+        data: { docno: docno },
+        dataType: 'json'
+    }).done(function (response) {
+        const details = response && response.data && Array.isArray(response.data.detail)
+            ? response.data.detail
+            : [];
+        updatePengeluaranKBTotalAlokasi(details);
+    }).fail(function (xhr) {
+        console.error('Gagal refresh total alokasi:', xhr.responseText);
+        // Fallback: reload tabel; jangan mengubah total menjadi nol saat API gagal.
+        reload_table_pengeluarankb_dtl();
+    });
+}
 
 // -------------------------------------------------------------
 // ENABLE / DISABLE ACTION PENGELUARAN KAS/BANK
@@ -3450,6 +3561,118 @@ function getSelectedPengeluaranKBDetailIds() {
         });
 
     return ids;
+}
+
+
+/* TARIK LPB */
+function btnTarikPengeluaranKB() {
+
+    const docno = $.trim($('#docno').val() || '');
+    const nobkrev = $.trim($('#nobkrev').val() || '');
+    const kdsupplier = $.trim($('#kdsupplier').val() || '');
+
+    if (docno === '') {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Perhatian',
+            text: 'Nomor Tanda Terima belum tersedia.'
+        });
+        return;
+    }
+
+    if (kdsupplier === '') {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Perhatian',
+            text: 'Supplier belum dipilih.'
+        });
+        return;
+    }
+
+    Swal.fire({
+        title: 'Tarik Penerimaan?',
+        text: 'Data penerimaan supplier / Nota Debit Kredit.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Tarik',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        $.ajax({
+            url: HOST_URL + 'ka/finance/tarikPenerimaanBarangSupplier',
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                docno: docno,
+                kdsupplier: kdsupplier,
+                inputby: $('#inputby').val() || ''
+            },
+
+            beforeSend: function () {
+
+                Swal.fire({
+                    title: 'Memproses...',
+                    text: 'Sedang mengambil data penerimaan.',
+                    allowOutsideClick: false,
+                    didOpen: function () {
+                        Swal.showLoading();
+                    }
+                });
+
+            },
+
+            success: function (response) {
+
+                Swal.close();
+
+                // Tidak ada data
+                if (
+                    response.status !== true ||
+                    !response.data ||
+                    response.data.length === 0
+                ) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Data Tidak Ditemukan',
+                        text: response.message || 'Tidak ada data penerimaan yang dapat ditarik.',
+                        confirmButtonText: 'OK'
+                    });
+
+                    return;
+                }
+
+                // Ada data
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil',
+                    text: response.message || 'Data penerimaan berhasil ditarik.',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+
+                // Reload detail
+                reload_table_pengeluarankb_dtl();
+            },
+
+            error: function (xhr) {
+
+                Swal.close();
+
+                console.error(xhr.responseText);
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Terjadi kesalahan saat mengambil penerimaan.'
+                });
+            }
+        });
+
+    });
 }
 
 $(document).ready(function() {

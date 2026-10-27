@@ -651,3 +651,6 @@ CREATE TABLE sc_trx.jurnal_hd_penggunaan
     inputdate TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
  
 );	
+
+ALTER TABLE sc_trx.jurnal_hd_penggunaan
+ALTER COLUMN idunique TYPE TEXT;

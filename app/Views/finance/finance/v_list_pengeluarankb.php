@@ -1,5 +1,28 @@
 <!-- v_list_pengeluarankb-->
+<style>
+    #tablepengeluarankbTrx {
+        width: 100% !important;
+    }
 
+    #tablepengeluarankbTrx th,
+    #tablepengeluarankbTrx td {
+        white-space: nowrap !important;
+        vertical-align: middle;
+    }
+
+    #tablepengeluarankbTrx_wrapper {
+        width: 100%;
+    }
+
+    .dataTables_scrollBody {
+        overflow-x: auto !important;
+    }
+
+    div.dataTables_scrollHead table,
+    div.dataTables_scrollBody table {
+        margin-bottom: 0 !important;
+    }
+</style>
 <div class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
@@ -70,29 +93,26 @@
                             <div class="table-responsive"  style='overflow-x:auto;'>
                                 <table id="tablepengeluarankbTrx" class="table table-bordered table-striped"  style="width:100%;" cellspacing="0">
                                     <thead class="text-center">
-                                        <tr>
-                                            <th style="min-width:10px; text-align:center; vertical-align:middle;">No.</th>
-                                            <th style="min-width:10px; text-align:center; vertical-align:middle;">Action</th>
-                                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Docno</th>
-                                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Tanggal</th>
-
-                                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Supplier</th>
-                                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Nama Supplier</th>
-                                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Alamat Supplier</th>
-                                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Kota Supplier</th>
-                                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Currency</th>
-                                            <th style="min-width:100px; text-align:center; vertical-align:middle;">NP</th>
-                                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Account</th>
-                                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Acc Name</th>
-                                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Nilai</th>
-                                            <!-- <th style="min-width:80px; text-align:center; vertical-align:middle;">Status</th> -->
-                                            <th style="min-width:600px; text-align:center; vertical-align:middle;">Keterangan</th>
-                                            <th style="min-width:150px; text-align:center; vertical-align:middle;">Cost Center</th>
-                                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Status</th>
-                                        </tr>
+                                    <tr>
+                                        <th>No.</th>
+                                        <th>Action</th>
+                                        <th>Docno</th>
+                                        <th>Tanggal</th>
+                                        <th>Supplier</th>
+                                        <th>Nama Supplier</th>
+                                        <th>Alamat Supplier</th>
+                                        <th>Kota Supplier</th>
+                                        <th>Mata Uang</th>
+                                        <th>Kurs</th>
+                                        <th>Kode PRK</th>
+                                        <th>Nama PRK</th>
+                                        <th>Nilai</th>
+                                        <th>Keterangan</th>
+                                        <th>Cost Center</th>
+                                        <th>Status</th>
+                                    </tr>
                                     </thead>
-                                    <tbody>
-                                    </tbody>
+                                    <tbody></tbody>
                                 </table>
                             </div>
                         </div>
