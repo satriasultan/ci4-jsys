@@ -83,6 +83,35 @@ function reload_tablePenerimaanKBTrx()
 
 
 //EDIT ITEM
+/* =========================================================================
+ * TANGGAL: tampilkan selalu dd-mm-yyyy
+ * ========================================================================= */
+function penerimaanKBDateDisplay(value) {
+    const raw = String(value == null ? '' : value).trim();
+
+    if (raw === '') {
+        return '';
+    }
+
+    // yyyy-mm-dd -> dd-mm-yyyy
+    let m = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+
+    if (m) {
+        return String(m[3]).padStart(2, '0') + '-' +
+            String(m[2]).padStart(2, '0') + '-' + m[1];
+    }
+
+    // dd-mm-yyyy / dd/mm/yyyy -> dd-mm-yyyy
+    m = raw.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);
+
+    if (m) {
+        return String(m[1]).padStart(2, '0') + '-' +
+            String(m[2]).padStart(2, '0') + '-' + m[3];
+    }
+
+    return raw;
+}
+
 function documentReadable(){
     // $("#loadMe").modal({
     //     backdrop: "static", //remove ability to close modal with click
@@ -206,7 +235,10 @@ function documentReadable(){
                 // $("#phone").val(data.phone).prop('readonly', true);
             });
             skipRoleChange = true;
-            $('[name="docdate"]').val(json.dataTables.items[0].docdate).prop('readonly',true);
+            // Tanggal ditampilkan dalam format dd-mm-yyyy
+            $('[name="docdate"]').val(
+                penerimaanKBDateDisplay(json.dataTables.items[0].docdate)
+            ).prop('readonly', true);
             // $('[name="senddate"]').val(json.dataTables.items[0].senddate);
             // setJtsValue('[name="jthtempo"]', convertToDbNumber(json.dataTables.items[0].jthtempo));
             // setJtsValue('[name="kurs"]', convertToDbNumber(json.dataTables.items[0].kurs));
@@ -1344,12 +1376,12 @@ $('#cabang').on('change', function () {
                                 startDate: today,
                                 minDate: startDate,
                                 maxDate: endDate,
-                                locale: { format: 'YYYY-MM-DD' },
+                                locale: { format: 'DD-MM-YYYY' },
                                 cancelLabel: 'Clear'
                             });
                             // rebind handlers jika perlu (apply/cancel)
                             $el.on('apply.daterangepicker', function(ev, picker) {
-                                $(this).val(picker.startDate.format('YYYY-MM-DD'));
+                                $(this).val(picker.startDate.format('DD-MM-YYYY'));
                             });
                             $el.on('cancel.daterangepicker', function(ev, picker) {
                                 $(this).val('');
@@ -1357,7 +1389,7 @@ $('#cabang').on('change', function () {
                         }
 
                         // isi input langsung (opsional)
-                        $el.val(today.format('YYYY-MM-DD'));
+                        $el.val(today.format('DD-MM-YYYY'));
                     }
 
                     $('#docno').val(
@@ -1604,5 +1636,139 @@ $(document).ready(function() {
 
 
 
+
+});
+
+// ============================================================
+// LAPORAN JURNAL TRANSAKSI PENERIMAAN KAS/BANK
+// Sumber: sc_trx.jurnal_hd + sc_trx.jurnal_dt (POSTED),
+// dokumen: sc_trx.penerimaankb
+// ============================================================
+
+var tableLaporanJurnalPenerimaanKB = null;
+
+// Format nominal untuk tabel jurnal
+function formatNominalJurnalPenerimaanKB(value) {
+
+    if (typeof dbToIndoFormat === 'function') {
+        return dbToIndoFormat(value);
+    }
+
+    return parseFloat(value || 0).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+$(document).on('click', '#btnLaporanJurnalPenerimaanKB', function () {
+
+    // AMBIL DOCNO PENERIMAAN KAS/BANK
+    let docno = $.trim($('#docno').val());
+
+    // VALIDASI
+    if (docno === '') {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Penerimaan Kas/Bank belum dipilih',
+            text: 'Silahkan pilih atau buka transaksi Penerimaan Kas/Bank terlebih dahulu'
+        });
+        return;
+    }
+
+    // BUKA MODAL
+    $('#modalLaporanJurnalPenerimaanKB').modal('show');
+
+    // DESTROY DATATABLE SEBELUMNYA
+    if ($.fn.DataTable.isDataTable('#tableLaporanJurnalPenerimaanKB')) {
+        $('#tableLaporanJurnalPenerimaanKB').DataTable().destroy();
+    }
+
+    // LOADING
+    $('#tableLaporanJurnalPenerimaanKB tbody').html(`
+        <tr>
+            <td colspan="8" class="text-center">
+                <i class="fa fa-spinner fa-spin"></i>
+                Loading...
+            </td>
+        </tr>
+    `);
+
+    // AJAX
+    $.ajax({
+
+        url: HOST_URL + 'ka/finance/laporan_jurnal_transaksi_penerimaankb',
+
+        type: 'POST',
+
+        dataType: 'json',
+
+        data: {
+            docno: docno
+        },
+
+        success: function (response) {
+
+            // ERROR
+            if (!response.status) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: response.messages
+                });
+                return;
+            }
+
+            // INIT DATATABLE
+            tableLaporanJurnalPenerimaanKB = $('#tableLaporanJurnalPenerimaanKB').DataTable({
+
+                data: response.data,
+
+                destroy: true,
+
+                paging: false,
+
+                searching: false,
+
+                ordering: false,
+
+                info: false,
+
+                columns: [
+                    { data: null, render: function (data, type, row, meta) { if (row.urutan == 1) { return ''; } return meta.row + 1; } },
+                    { data: 'trxdate', render: function (data) { if (data === null || data === '') { return ''; } return data; } },
+                    { data: 'docno', render: function (data) { return data || ''; } },
+                    { data: 'nmcustomer', render: function (data, type, row) { if (row.urutan == 1) { return ''; } return data || ''; } },
+                    { data: 'idcoa', render: function (data, type, row) { if (row.urutan == 1) { return ''; } return data || ''; } },
+                    { data: 'nmcoa', render: function (data, type, row) { if (row.urutan == 1) { return '<b style="font-size:16px">TOTAL</b>'; } return data || ''; } },
+                    { data: 'debet', className: 'text-right', render: function (data) { return formatNominalJurnalPenerimaanKB(data || 0); } },
+                    { data: 'kredit', className: 'text-right', render: function (data) { return formatNominalJurnalPenerimaanKB(data || 0); } }
+                ],
+
+                createdRow: function (row, data) {
+                    if (data.urutan == 1) {
+                        $(row).addClass('row-total');
+                    }
+                }
+
+            });
+
+            // ADJUST MODAL DATATABLE
+            setTimeout(function () {
+                tableLaporanJurnalPenerimaanKB.columns.adjust();
+            }, 300);
+
+        },
+
+        error: function () {
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal',
+                text: 'Tidak dapat mengambil data jurnal transaksi'
+            });
+
+        }
+
+    });
 
 });

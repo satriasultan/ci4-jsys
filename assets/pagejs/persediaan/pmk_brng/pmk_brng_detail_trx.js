@@ -15,6 +15,20 @@ var initTable;
 
 //"use strict";
 
+/* ============================================================
+   ENDPOINT DATA PEMAKAIAN BARANG
+   Default  : mode ENTRY  -> sumber data sc_tmp.* (form input)
+   Override : halaman DETAIL transaksi FINAL (read only) mengeset
+              window.PMK_DETAIL_ENDPOINT sebelum file ini di-load,
+              sehingga sumber data diambil dari sc_trx.*
+   ============================================================ */
+var PMK_DETAIL_ENDPOINT = window.PMK_DETAIL_ENDPOINT || {
+    master: 'persediaan/trans/showing_pmk_brng_mst_tmp',
+    detail: 'persediaan/trans/list_tmp_pmk_brng_dtl',
+    journal: 'persediaan/trans/laporan_jurnal_transaksi_pmk'
+};
+
+
 /* VIUW UTAMA*/
 function table_trx_pmk_brng_mst() {
     // var lg = languageDatatable;
@@ -104,7 +118,7 @@ function documentReadable() {
 
     var docno = $('[name="docno"]').val();
 
-    $.getJSON(HOST_URL + 'persediaan/trans/showing_pmk_brng_mst_tmp', {docno: docno})
+    $.getJSON(HOST_URL + PMK_DETAIL_ENDPOINT.master, {docno: docno})
         .done(function (response) {
 
             if (!response.dataTables || !response.dataTables.items.length) {
@@ -118,14 +132,14 @@ function documentReadable() {
             // ===============================
             // SET BASIC FIELD (langsung saja)
             // ===============================
-            $('[name="docno"]').val(item.docno).prop('readonly', true);
+            $('[name="docno"]').val((item.docno || '').trim()).prop('readonly', true);
 
             let prefixParts = item.docno.trim().split('/');
             $('[name="prefix"]').val(prefixParts[0]).prop('readonly', true);
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
             $('[name="sufix"]').val(prefixParts[2]).prop('readonly', true);
 
-            $('[name="docdate"]').val(item.docdate).prop('disabled', true);
+            $('[name="docdate"]').val((item.docdate || '').trim()).prop('disabled', true);
             $('[name="docref"]').val(item.docref).prop('disabled', false);
             $('[name="keterangan"]').val(item.description);
 
@@ -175,11 +189,15 @@ function documentReadable() {
 function setSelect2(selector, data, textField, valueField) {
     if (!data) return;
 
-    var option = new Option(data[textField], data[valueField], true, true);
-    $(selector)
-        .append(option)
-        .trigger('change')
-        .prop('disabled', true);
+    var $el   = $(selector);
+    var value = data[valueField];
+
+    // hindari duplikat bila option sudah dirender dari server (halaman DETAIL)
+    if ($el.find('option[value="' + value + '"]').length === 0) {
+        $el.append(new Option(data[textField], value, true, true));
+    }
+
+    $el.trigger('change').prop('disabled', true);
 }
 
 /* FOR INPUT FUNCTION */
@@ -525,10 +543,10 @@ function tabletmpSPKDetail() {
             "bFilter": true,
             "iDisplayLength": -1,
             "ajax": {
-                "url": HOST_URL + 'persediaan/trans/list_tmp_pmk_brng_dtl',
+                "url": HOST_URL + PMK_DETAIL_ENDPOINT.detail,
                 "type": "POST",
                 "data": function (data) {
-                    //data.searchfilter = $('#searchitem').val()+'';
+                    data.docno = $.trim($('#docno').val());
                     //data.idbarang = $('#idbarang').val()+'';
                     //data.idposition = $('#idposition').val()+'';
                 },
@@ -549,7 +567,11 @@ function tabletmpSPKDetail() {
                     "searchable": false,
                     "className": "text-center",
                     "render": function (data, type, row) {
-                        // row[1] = kolom ID (ID Tax)
+                        // row[0] = idurut
+                        if (PMK_DETAIL_ENDPOINT && PMK_DETAIL_ENDPOINT.readonly) {
+                            // halaman DETAIL transaksi final -> tanpa aksi baris
+                            return '';
+                        }
                         return '<input type="checkbox" class="row-check" value="' + row[0] + '">';
                     }
                 },

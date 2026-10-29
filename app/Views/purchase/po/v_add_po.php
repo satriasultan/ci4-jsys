@@ -64,6 +64,27 @@
         border: none;
     }
 
+    /* =====================================================
+       Header PO terkunci saat detail sudah terisi
+       (hanya Alamat Kirim & Keterangan yang tetap aktif)
+       ===================================================== */
+    .po-locked {
+        pointer-events: none !important;
+    }
+
+    .select2-container.po-locked .select2-selection {
+        background-color: #dfdfdf;
+        opacity: 1;
+    }
+
+    .select2-container.po-locked .select2-selection__clear {
+        display: none !important;
+    }
+
+    .form-check.po-locked {
+        opacity: 0.85;
+    }
+
 
 </style>
 <div class="content-header">
@@ -116,6 +137,7 @@
                         <div class="section-block">
                             <div class="section-header">
                                 <i class="fa fa-address-card"></i> Purchase Order (PO)
+
                             </div>
                             <div class="row">
 
@@ -361,7 +383,7 @@
                                         <th>ETD Notes</th>
                                         <th>Satuan</th>
                                         <th>Qty</th>
-                                        <th>Bonus Qty</th>
+                                        <!--<th>Bonus Qty</th>-->
                                         <th>Harga</th>
                                         <th>Nilai</th>
                                         <th>Keterangan PO</th>
@@ -448,19 +470,19 @@
                                     </div>
                                 </div>
                                 
-                                <div class="col-md-12">
+                                <!--<div class="col-md-12">
                                     <div class="form-group text-end">
                                         <span id="btnDPWrapper" data-bs-toggle="tooltip" title="Down Payment">
                                         <button id="btnDP"
                                                 type="submit"
-                                                formaction="<?= base_url('purchase/trans/finalEntryPO_DP') ?>"
+                                                formaction="<?php /*= base_url('purchase/trans/finalEntryPO_DP') */?>"
                                                 class="btn btn-lg btn-primary text-white"
                                                 >
                                             <i class="fa fa-money"></i>
                                         </button>
                                         </span>
                                     </div>
-                                </div>
+                                </div>-->
                             </div>
                         </div>
                     </div>
@@ -658,14 +680,14 @@
                         </div>
 
                         <div class="col-md-2">
-                            <div class="form-group">
+                           <!-- <div class="form-group">
                                 <label>Bonus Quantity</label>
                                 <input type="text"
                                        name="qtybonus"
                                        id="qtybonus"
                                        class="form-control jtsseparator ratakanan"
                                        placeholder="0.00">
-                            </div>
+                            </div>-->
                         </div>
 
                         <div class="col-md-3">
@@ -920,6 +942,9 @@
 
 <script type="application/javascript" src="<?= base_url('assets/pagejs/purchase/po.js') ?>"></script>
 <script type="text/javascript">
+    // jumlah detail temp milik user (dikirim dari controller) → dipakai untuk mengunci header PO
+    var PO_DETAIL_COUNT = <?= (int) ($detailcount ?? 0) ?>;
+
     $(function() {
         $("#example1").dataTable();
         $("#example2").dataTable();
@@ -1075,6 +1100,9 @@
             });
 
         });
+
+        // kunci header PO kalau detail sudah terisi
+        applyPOHeaderLock();
 
     });
 

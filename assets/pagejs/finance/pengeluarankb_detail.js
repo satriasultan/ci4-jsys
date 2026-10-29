@@ -14,6 +14,14 @@ var table;
 var initTable;
 //"use strict";
 
+// ============================================================
+// PAGE MODE
+// Khusus halaman Detail Pengeluaran Kas/Bank (read only).
+// Halaman lain (input/edit) tidak memiliki #pageMode.
+// ============================================================
+var PAGE_MODE = ($('#pageMode').val() || '').trim().toUpperCase();
+var IS_DETAIL_PAGE = PAGE_MODE === 'DETAIL';
+
 function tablePengeluaranKBTrx(){
     // var lg = languageDatatable;
     var initTable = function () {
@@ -103,8 +111,8 @@ function documentReadable(){
             json.items = json.dataTables.items;
             json.incomplete_results = json.dataTables.incomplete_results;
 
-            $('[name="docno"]').val(json.dataTables.items[0].docno).prop('readonly', true);
-            var docnoData = json.dataTables.items[0].docno.trim();
+            $('[name="docno"]').val($.trim(json.dataTables.items[0].docno || '')).prop('readonly', true);
+            var docnoData = $.trim(json.dataTables.items[0].docno || '');
             let prefixParts = docnoData.split('/'); // ["JTS", "PH", "25", "08"]
             $('[name="prefix"]').val(prefixParts[0]).prop('readonly', true);
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
@@ -115,12 +123,12 @@ function documentReadable(){
             //$('[name="idgroup"]').val(json.dataTables.items[0].idgroup);
             $.ajax({
                 type: 'GET',
-                url: HOST_URL + 'api/globalmodule/list_branchjob' + '?var=' + json.dataTables.items[0].cabang,
+                url: HOST_URL + 'api/globalmodule/list_branchjob' + '?var=' + $.trim(json.dataTables.items[0].cabang || ''),
                 dataType: 'json',
                 delay: 250,
             }).then(function (datax) {
                 // create the option and append to Select2
-                var option = new Option(datax.items[0].nmbranch, datax.items[0].idbranch, true, true);
+                var option = new Option($.trim(datax.items[0].nmbranch || ''), $.trim(datax.items[0].idbranch || ''), true, true);
                 $('[name="cabang"]').append(option).trigger('change').prop('disabled',true);
 
                 // manually trigger the `select2:select` event
@@ -142,12 +150,12 @@ function documentReadable(){
             } else {
                 $.ajax({
                     type: 'GET',
-                    url: HOST_URL + 'api/globalmodule/list_coa' + '?var=' + json.dataTables.items[0].prkkas,
+                    url: HOST_URL + 'api/globalmodule/list_coa' + '?var=' + prkkas,
                     dataType: 'json',
                     delay: 250,
                 }).then(function (datax) {
                     // create the option and append to Select2
-                    var option = new Option(datax.items[0].nmcoa, datax.items[0].idcoa, true, true);
+                    var option = new Option($.trim(datax.items[0].nmcoa || ''), $.trim(datax.items[0].idcoa || ''), true, true);
                     $('[name="prkkas"]').append(option).trigger('change').prop('disabled',true);
 
                     // manually trigger the `select2:select` event
@@ -162,18 +170,18 @@ function documentReadable(){
             
             $.ajax({
                 type: 'GET',
-                url: HOST_URL + 'api/globalmodule/list_supplier_new' + '?var=' + json.dataTables.items[0].kdsupplier,
+                url: HOST_URL + 'api/globalmodule/list_supplier_new' + '?var=' + $.trim(json.dataTables.items[0].kdsupplier || ''),
                 dataType: 'json',
                 delay: 250,
             }).then(function (datax) {
 
             // Tambahkan data alamat dan phone ke object
                 var supplierData = datax.items[0];
-                supplierData.alamat = json.dataTables.items[0].alamatsupplier;
+                supplierData.alamat = $.trim(json.dataTables.items[0].alamatsupplier || '');
                 // supplierData.phone = data.phone;
                 
                 // create the option dan simpan data lengkap
-                var option = new Option(supplierData.nmsupplier, supplierData.kdsupplier, true, true);
+                var option = new Option($.trim(supplierData.nmsupplier || ''), $.trim(supplierData.kdsupplier || ''), true, true);
                 $(option).data('supplier-data', supplierData); // Simpan data lengkap
                 
                 $('[name="kdsupplier"]').append(option).trigger('change');
@@ -185,7 +193,7 @@ function documentReadable(){
 
             $.ajax({
                 type: 'GET',
-                url: HOST_URL + 'api/globalmodule/list_currency' + '?var=' + json.dataTables.items[0].currcode,
+                url: HOST_URL + 'api/globalmodule/list_currency' + '?var=' + $.trim(json.dataTables.items[0].currcode || ''),
                 dataType: 'json',
                 delay: 250,
             }).then(function (datax) {
@@ -195,7 +203,7 @@ function documentReadable(){
                 // currencyData.phone = data.phone;
                 
                 // create the option dan simpan data lengkap
-                var option = new Option(currencyData.currname, currencyData.currcode, true, true);
+                var option = new Option($.trim(currencyData.currname || ''), $.trim(currencyData.currcode || ''), true, true);
                 $(option).data('currency-data', currencyData); // Simpan data lengkap
                 
                 $('[name="currcode"]').append(option).trigger('change');
@@ -207,7 +215,7 @@ function documentReadable(){
                 // $("#phone").val(data.phone).prop('readonly', true);
             });
             skipRoleChange = true;
-            $('[name="docdate"]').val(json.dataTables.items[0].docdate).prop('readonly',true);
+            $('[name="docdate"]').val($.trim(json.dataTables.items[0].docdate || '')).prop('readonly',true);
             // $('[name="senddate"]').val(json.dataTables.items[0].senddate);
             // setJtsValue('[name="jthtempo"]', convertToDbNumber(json.dataTables.items[0].jthtempo));
             // setJtsValue('[name="kurs"]', convertToDbNumber(json.dataTables.items[0].kurs));
@@ -219,8 +227,8 @@ function documentReadable(){
             // $('[name="alamatsupplier"]').val(json.dataTables.items[0].alamatsupplier);
             // $('[name="alamatkirim"]').val(json.dataTables.items[0].alamatkirim);
             // $('[name="isinclusive"]').val(json.dataTables.items[0].isinclusive);
-            $('[name="keterangan"]').val(json.dataTables.items[0].keterangan).prop('readonly',true);;
-            $('[name="np"]').val(json.dataTables.items[0].np).prop('readonly',true);
+            $('[name="keterangan"]').val($.trim(json.dataTables.items[0].keterangan || '')).prop('readonly',true);;
+            $('[name="np"]').val($.trim(json.dataTables.items[0].np || '')).prop('readonly',true);
             
             // $('[name="syarat"]').val(json.dataTables.items[0].syarat);
 
@@ -278,6 +286,14 @@ function documentReadable(){
         },
         complete: function(){
             $("#loadMe").modal("hide");
+
+            // =================================================
+            // HALAMAN DETAIL = READ ONLY
+            // Semua input di-disable setelah data tampil
+            // =================================================
+            if (IS_DETAIL_PAGE) {
+                disablePengeluaranKBView();
+            }
         },
         error: function (jqXHR, textStatus, errorThrown)
         {
@@ -287,6 +303,37 @@ function documentReadable(){
     });
 
     $("#loadMe").modal("hide");
+}
+
+// ============================================================
+// READ ONLY VIEW
+// Halaman Detail Pengeluaran Kas/Bank hanya untuk melihat data
+// (sumber: sc_trx.pengeluarankb & sc_trx.pengeluarankb_dtl),
+// sehingga seluruh field di-disable.
+// ============================================================
+function disablePengeluaranKBView() {
+
+    // Header Pengeluaran Kas/Bank
+    $('#formPO')
+        .find('input, select, textarea')
+        .not('[type="hidden"]')
+        .prop('disabled', true);
+
+    // Detail Perkiraan (modal tidak dipakai pada mode view)
+    $('#formPengeluaranKBDetail')
+        .find('input, select, textarea')
+        .not('[type="hidden"]')
+        .prop('disabled', true);
+
+    $('#formPengeluaranKBDetail button')
+        .filter(function () {
+            return ($(this).attr('onclick') || '')
+                .indexOf('savePengeluaranKBDetail') >= 0;
+        })
+        .prop('disabled', true);
+
+    // Checkbox detail tidak boleh diubah
+    $('#tabpengeluarankbdtl .row-check, #checkAll').prop('disabled', true);
 }
 
 $(document).on('input', '#dpp', function () {
@@ -1377,6 +1424,10 @@ $('#cabang').on('change', function () {
 
 
 $('#prefix').on('blur', function () {
+
+    // Halaman detail hanya untuk melihat data
+    if (IS_DETAIL_PAGE) return;
+
     let prefix = $(this).val().toUpperCase();
     let infix  = $('#infix').val();
 
@@ -1607,3 +1658,318 @@ $(document).ready(function() {
 
 
 });
+
+// ============================================================
+// LAPORAN JURNAL TRANSAKSI PENGELUARAN KAS/BANK
+// Sumber: sc_trx.jurnal_hd + sc_trx.jurnal_dt (POSTED),
+// dokumen: sc_trx.pengeluarankb
+// ============================================================
+
+var tableLaporanJurnalPengeluaranKB = null;
+
+// Format nominal untuk tabel jurnal
+function formatNominalJurnalPengeluaranKB(value) {
+
+    if (typeof dbToIndoFormat === 'function') {
+        return dbToIndoFormat(value);
+    }
+
+    return parseFloat(value || 0).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+$(document).on('click', '#btnLaporanJurnalPengeluaranKB', function () {
+
+    // =====================================================
+    // AMBIL DOCNO PENGELUARAN KAS/BANK
+    // =====================================================
+
+    let docno = $.trim($('#docno').val());
+
+
+    // =====================================================
+    // VALIDASI
+    // =====================================================
+
+    if (docno === '') {
+
+        Swal.fire({
+            icon: 'warning',
+            title: 'Pengeluaran Kas/Bank belum dipilih',
+            text: 'Silahkan pilih atau buka transaksi Pengeluaran Kas/Bank terlebih dahulu'
+        });
+
+        return;
+
+    }
+
+
+    // =====================================================
+    // BUKA MODAL
+    // =====================================================
+
+    $('#modalLaporanJurnalPengeluaranKB').modal('show');
+
+
+    // =====================================================
+    // DESTROY DATATABLE SEBELUMNYA
+    // =====================================================
+
+    if ($.fn.DataTable.isDataTable('#tableLaporanJurnalPengeluaranKB')) {
+
+        $('#tableLaporanJurnalPengeluaranKB')
+            .DataTable()
+            .destroy();
+
+    }
+
+
+    // =====================================================
+    // LOADING
+    // =====================================================
+
+    $('#tableLaporanJurnalPengeluaranKB tbody').html(`
+        <tr>
+            <td colspan="8" class="text-center">
+                <i class="fa fa-spinner fa-spin"></i>
+                Loading...
+            </td>
+        </tr>
+    `);
+
+
+    // =====================================================
+    // AJAX
+    // =====================================================
+
+    $.ajax({
+
+        url: HOST_URL + 'ka/finance/laporan_jurnal_transaksi_pengeluarankb',
+
+        type: 'POST',
+
+        dataType: 'json',
+
+        data: {
+
+            docno: docno
+
+        },
+
+
+        success: function (response) {
+
+            // =================================================
+            // ERROR
+            // =================================================
+
+            if (!response.status) {
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: response.messages
+                });
+
+                return;
+
+            }
+
+
+            // =================================================
+            // INIT DATATABLE
+            // =================================================
+
+            tableLaporanJurnalPengeluaranKB = $('#tableLaporanJurnalPengeluaranKB').DataTable({
+
+                data: response.data,
+
+                destroy: true,
+
+                paging: false,
+
+                searching: false,
+
+                ordering: false,
+
+                info: false,
+
+                columns: [
+
+                    {
+                        data: null,
+
+                        render: function (data, type, row, meta) {
+
+                            if (row.urutan == 1) {
+
+                                return '';
+
+                            }
+
+                            return meta.row + 1;
+
+                        }
+                    },
+
+
+                    {
+                        data: 'trxdate',
+
+                        render: function (data) {
+
+                            if (data === null || data === '') {
+
+                                return '';
+
+                            }
+
+                            return data;
+
+                        }
+                    },
+
+
+                    {
+                        data: 'docno',
+
+                        render: function (data) {
+
+                            return data || '';
+
+                        }
+                    },
+
+
+                    {
+                        data: 'nmsupplier',
+
+                        render: function (data, type, row) {
+
+                            if (row.urutan == 1) {
+
+                                return '';
+
+                            }
+
+                            return data || '';
+
+                        }
+                    },
+
+
+                    {
+                        data: 'idcoa',
+
+                        render: function (data, type, row) {
+
+                            if (row.urutan == 1) {
+
+                                return '';
+
+                            }
+
+                            return data || '';
+
+                        }
+                    },
+
+
+                    {
+                        data: 'nmcoa',
+
+                        render: function (data, type, row) {
+
+                            // TOTAL
+                            if (row.urutan == 1) {
+
+                                return `
+                                    <b style="font-size:16px">
+                                        TOTAL
+                                    </b>
+                                `;
+
+                            }
+
+                            return data || '';
+
+                        }
+                    },
+
+
+                    {
+                        data: 'debet',
+
+                        className: 'text-right',
+
+                        render: function (data) {
+
+                            return formatNominalJurnalPengeluaranKB(data || 0);
+
+                        }
+                    },
+
+
+                    {
+                        data: 'kredit',
+
+                        className: 'text-right',
+
+                        render: function (data) {
+
+                            return formatNominalJurnalPengeluaranKB(data || 0);
+
+                        }
+                    }
+
+                ],
+
+
+                // =============================================
+                // STYLE TOTAL
+                // =============================================
+
+                createdRow: function (row, data) {
+
+                    if (data.urutan == 1) {
+
+                        $(row).addClass('row-total');
+
+                    }
+
+                }
+
+            });
+
+
+            // =================================================
+            // ADJUST MODAL DATATABLE
+            // =================================================
+
+            setTimeout(function () {
+
+                tableLaporanJurnalPengeluaranKB
+                    .columns
+                    .adjust();
+
+            }, 300);
+
+        },
+
+
+        error: function () {
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal',
+                text: 'Tidak dapat mengambil data jurnal transaksi'
+            });
+
+        }
+
+    });
+
+});
+

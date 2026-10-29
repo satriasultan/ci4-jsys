@@ -542,29 +542,27 @@
                             <div class="table-responsive" style="overflow-x: auto;">
                                 <table id="tablpbdtl" class="table table-bordered table-striped" style="width:100%;" cellspacing="0">
                                     <thead class="bg-primary text-white">
-                                        <tr>
-                                            <th width="30">
-                                                <input type="checkbox" id="checkAll">
-                                            </th>
-                                            <th>PO</th>
-                                            <th>ID Barang</th>
-                                            <th>Nama Barang</th>
-                                            <th>No. Capex</th>
-                                            <th>Principal</th>
-                                            <th>Gudang</th>
-                                            <th>Spec</th>
-                                            <th>Satuan</th>
-                                            <th>Qty</th>
-                                            <th>Bonus Qty</th>
-                                            <th>Harga</th>
-                                            <th>Multi Disc</th>
-                                            <th>Vol/Item</th>
-                                            <th>Biaya 1</th>
-                                            <th>Biaya 2</th>
-                                            <th>Nilai</th>
-                                            <th>Keterangan PO</th>
-                                            <th>Keterangan PP</th>
-                                        </tr>
+                                    <tr>
+                                        <th width="30">
+                                            <input type="checkbox" id="checkAll">
+                                        </th>
+                                        <th>PO</th>
+                                        <th>ID Barang</th>
+                                        <th>Nama Barang</th>
+                                        <th>No. Capex</th>
+                                        <th>Principal</th>
+                                        <th>Gudang</th>
+                                        <th>Batch</th>
+                                        <th>ETD</th>
+                                        <th>ETD Notes</th>
+                                        <th>Satuan</th>
+                                        <th>Qty</th>
+                                        <th>Bonus Qty</th>
+                                        <th>Harga</th>
+                                        <th>Nilai</th>
+                                        <th>Keterangan PO</th>
+                                        <th>Keterangan PP</th>
+                                    </tr>
                                     </thead>
                                     <tbody>
                                     </tbody>

@@ -1,22 +1,24 @@
 <!-- Replace app/Views/finance/finance/v_import_pengeluarankb.php with this view. -->
 <style>
-    <style>
     .btn-preview-data {
-        background: #8a1c08;
+        background: linear-gradient(135deg, #b5121b 0%, #8a1c08 100%);
         color: #fff;
-        border: 1px solid #701606;
-        font-weight: 600;
-        padding: 7px 16px;
-        border-radius: 4px;
-        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+        border: 2px solid #701606;
+        font-weight: 700;
+        font-size: 1rem;
+        letter-spacing: .3px;
+        padding: 10px 28px;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(138, 28, 8, 0.45);
         transition: all 0.2s ease-in-out;
+        animation: bk-preview-pulse 1.8s infinite;
     }
 
     .btn-preview-data:hover {
-        background: #b5121b;
+        background: linear-gradient(135deg, #d0181f 0%, #b5121b 100%);
         color: #fff;
         border-color: #b5121b;
-        box-shadow: 0 5px 10px rgba(138, 28, 8, 0.35);
+        box-shadow: 0 6px 16px rgba(138, 28, 8, 0.55);
         transform: translateY(-2px);
     }
 
@@ -30,6 +32,12 @@
     .btn-preview-data:focus-visible {
         outline: 3px solid rgba(181, 18, 27, 0.3);
         outline-offset: 2px;
+    }
+
+    @keyframes bk-preview-pulse {
+        0%   { box-shadow: 0 0 0 0 rgba(181, 18, 27, 0.55); }
+        70%  { box-shadow: 0 0 0 14px rgba(181, 18, 27, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(181, 18, 27, 0); }
     }
 </style>
 
@@ -93,7 +101,7 @@ foreach (($previewDetails ?? []) as $d) $detailsByHeader[(string)$d['header_id']
                 </div>
                 <div class="card-footer">
                     <button type="submit" id="btnPreviewData"
-                            class="btn btn-sm btn-preview-data">
+                            class="btn btn-preview-data">
                         <i class="fa fa-search"></i> Preview Data
                     </button>
                     <a href="<?= base_url('ka/finance/pengeluarankb') ?>" class="btn btn-sm btn-secondary"><i class="fa fa-arrow-left"></i> Kembali</a>
@@ -105,6 +113,16 @@ foreach (($previewDetails ?? []) as $d) $detailsByHeader[(string)$d['header_id']
         <div class="col-12"><div class="card">
                 <div class="card-header"><h3 class="card-title"><i class="fa fa-table"></i> Preview Batch #<?= (int)$previewBatch['id'] ?> — <?= $h($previewBatch['nama_file']) ?></h3></div>
                 <div class="card-body">
+                    <?php $closedDocs = array_values(array_filter($previewHeaders ?? [], fn($hd) => $hd['status'] === 'ERROR' && stripos((string)($hd['error_message'] ?? ''), 'sudah TUTUP (closing)') !== false)); ?>
+                    <?php if (!empty($closedDocs)): ?>
+                        <div class="alert alert-danger mb-3">
+                            <i class="fa fa-lock"></i>
+                            <strong><?= count($closedDocs) ?> dokumen</strong> berada pada periode yang sudah
+                            <strong>TUTUP (closing)</strong> sehingga statusnya
+                            <span class="badge badge-danger">INVALID</span> dan tidak dapat diproses/dikonfirmasi.
+                            <div class="mt-1 small">Nomor BK: <?= $h(implode(', ', array_map(fn($d) => (string)$d['docno'], $closedDocs))) ?></div>
+                        </div>
+                    <?php endif; ?>
                     <div class="row mb-3">
                         <div class="col-md-4 mb-2"><div class="metric"><span>Total Dokumen</span><strong><?= (int)$previewBatch['jumlah_baris'] ?></strong></div></div>
                         <div class="col-md-4 mb-2"><div class="metric"><span>Valid</span><strong class="text-success"><?= (int)$previewBatch['jumlah_valid'] ?></strong></div></div>

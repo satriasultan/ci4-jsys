@@ -63,6 +63,109 @@
     }
 
 
+    /* =========================================
+       TOOLBAR
+    ========================================= */
+
+    .accounting-toolbar {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin: 10px 0 20px 0;
+        flex-wrap: wrap;
+    }
+
+
+    /*jurnal posting*/
+    /* =========================================
+   LAPORAN JURNAL - CORPORATE TABLE
+========================================= */
+
+    #modalLaporanJurnalPenerimaanKB .modal-content {
+        border-radius: 4px;
+        border: 1px solid #d6dce3;
+    }
+
+    #modalLaporanJurnalPenerimaanKB .modal-header {
+        padding: 12px 20px;
+    }
+
+    #modalLaporanJurnalPenerimaanKB .modal-title {
+        font-size: 16px;
+        color: #343a40;
+    }
+
+    /* =========================================
+       DATATABLE
+    ========================================= */
+
+    #tableLaporanJurnalPenerimaanKB {
+        border-collapse: collapse !important;
+        white-space: nowrap !important;
+    }
+
+    #tableLaporanJurnalPenerimaanKB thead th {
+        background: #46533a;
+        color: #ffffff;
+        font-size: 12px;
+        font-weight: 600;
+        vertical-align: middle;
+        white-space: nowrap !important;
+        border-color: #59664c;
+        padding: 9px 10px;
+    }
+
+    #tableLaporanJurnalPenerimaanKB tbody td {
+        font-size: 12px;
+        vertical-align: middle;
+        white-space: nowrap !important;
+        padding: 8px 10px;
+    }
+
+    /* Hover corporate */
+    #tableLaporanJurnalPenerimaanKB tbody tr:hover {
+        background-color: #f1f4f6 !important;
+    }
+
+    /* Nominal */
+    #tableLaporanJurnalPenerimaanKB td.text-right {
+        font-family: Consolas, "Courier New", monospace;
+        font-weight: 500;
+    }
+
+    /* TOTAL ROW */
+    #tableLaporanJurnalPenerimaanKB tbody tr.row-total td {
+        background-color: #eef1e9 !important;
+        font-weight: bold;
+        border-top: 2px solid #46533a !important;
+    }
+
+    /* =========================================
+       DATATABLE CONTROL
+    ========================================= */
+
+    #modalLaporanJurnalPenerimaanKB .dataTables_wrapper {
+        font-size: 12px;
+    }
+
+    #modalLaporanJurnalPenerimaanKB .dataTables_filter input {
+        border: 1px solid #ced4da;
+        border-radius: 3px;
+        height: 30px;
+        padding: 5px 10px;
+    }
+
+    #modalLaporanJurnalPenerimaanKB .dataTables_length select {
+        border: 1px solid #ced4da;
+        border-radius: 3px;
+        height: 30px;
+    }
+
+    /* Horizontal scroll */
+    #modalLaporanJurnalPenerimaanKB .dataTables_scrollBody {
+        border-bottom: 1px solid #dee2e6 !important;
+    }
+
 </style>
 <div class="content-header">
     <div class="container-fluid">
@@ -388,16 +491,23 @@
                         Kembali
                     </a>
                 </div>
+                <!--/.col (left) -->
+                <!-- right column -->
+                <div class="accounting-toolbar">
+
+                    <button type="button"
+                            id="btnLaporanJurnalPenerimaanKB"
+                            class="btn btn-primary">
+                        <i class="fa fa-book"></i> Laporan Jurnal Transaksi
+                    </button>
+
+                </div>
                 
             </div>
         </div>
     </form>
         <!-- /.card -->
-    <!--/.col (left) -->
-    <!-- right column -->
-    <div class="col-md-6">
 
-    </div>
     <!--/.col (right) -->
 </div>
 
@@ -530,6 +640,91 @@
 
 
 
+<!-- ================= MODAL LAPORAN JURNAL TRANSAKSI ================= -->
+<div class="modal fade"
+     id="modalLaporanJurnalPenerimaanKB"
+     tabindex="-1"
+     aria-labelledby="modalLaporanJurnalPenerimaanKBLabel"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+
+        <div class="modal-content">
+
+            <!-- HEADER -->
+            <div class="modal-header">
+
+                <h5 class="modal-title" id="modalLaporanJurnalPenerimaanKBLabel">
+                    <i class="fa fa-book"></i>
+                    Laporan Jurnal Transaksi Penerimaan Kas/Bank
+                </h5>
+
+                <!-- BOOTSTRAP 5 CLOSE -->
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close">
+                </button>
+
+            </div>
+
+
+            <!-- BODY -->
+            <div class="modal-body">
+
+                <div class="table-responsive">
+
+                    <table id="tableLaporanJurnalPenerimaanKB"
+                           class="table table-bordered table-striped table-hover w-100">
+
+                        <thead>
+
+                        <tr>
+
+                            <th>No</th>
+                            <th>Tanggal</th>
+                            <th>Doc No</th>
+                            <th>Customer</th>
+
+                            <th>COA</th>
+                            <th>Nama Perkiraan</th>
+
+                            <th class="text-end">Debet</th>
+                            <th class="text-end">Kredit</th>
+
+                        </tr>
+
+                        </thead>
+
+                        <tbody></tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+
+            <!-- FOOTER -->
+            <div class="modal-footer">
+
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+
+                    Close
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
 <script type="application/javascript" src="<?= base_url('assets/pagejs/finance/penerimaankb_detail.js') ?>"></script>
 <script type="text/javascript">
     $(function() {
@@ -551,13 +746,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#docdate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('DD-MM-YYYY'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'docdate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'docdate');
         });
@@ -571,13 +766,13 @@
             autoUpdateInput: false,
             singleDatePicker: true,
             showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
+            locale: { format: 'DD-MM-YYYY' },
             cancelLabel: 'Clear'
         });
 
         // handler apply/cancel
         $('#senddate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            $(this).val(picker.startDate.format('DD-MM-YYYY'));
             // jika butuh validasi bootstrapValidator:
             // $('#formInputTransfers').bootstrapValidator('updateStatus', 'senddate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'senddate');
         });

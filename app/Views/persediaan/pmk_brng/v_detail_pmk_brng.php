@@ -217,7 +217,13 @@ $disabled = $isIT ? '' : 'disabled';
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label for="cabang">Cabang / Job</label>
-                                            <select name="cabang" id="cabang" class="form-control" required></select>
+                                            <select name="cabang" id="cabang" class="form-control" required>
+                                                <?php if (isset($dtldata['cabang']) && trim($dtldata['cabang']) !== ''): ?>
+                                                    <option value="<?= esc(trim($dtldata['cabang'])) ?>" selected>
+                                                        <?= esc($nmbranch ?? trim($dtldata['cabang'])) ?>
+                                                    </option>
+                                                <?php endif; ?>
+                                            </select>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -266,6 +272,7 @@ $disabled = $isIT ? '' : 'disabled';
                                                    name="docdate"
                                                    id="docdate"
                                                    class="form-control"
+                                                   value="<?= isset($dtldata['docdate']) ? esc(trim($dtldata['docdate'])) : '' ?>"
                                                    placeholder="Tanggal">
                                         </div>
                                     </div>
@@ -275,7 +282,13 @@ $disabled = $isIT ? '' : 'disabled';
                                     <!--                                            </div>-->
                                     <div class="col-md-6">
                                         <label for="idcostcenter">Bagian Costcenter</label>
-                                        <select name="idcostcenter" id="idcostcenter" class="form-control" required></select>
+                                        <select name="idcostcenter" id="idcostcenter" class="form-control" required>
+                                            <?php if (isset($dtldata['idcostcenter']) && trim($dtldata['idcostcenter']) !== ''): ?>
+                                                <option value="<?= esc(trim($dtldata['idcostcenter'])) ?>" selected>
+                                                    <?= esc($nmcostcenter ?? trim($dtldata['idcostcenter'])) ?>
+                                                </option>
+                                            <?php endif; ?>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -284,7 +297,7 @@ $disabled = $isIT ? '' : 'disabled';
                                     <div class="col-md-12">
                                         <div class="form-group">
                                             <label for="keterangan">Keterangan</label>
-                                            <textarea name="keterangan" id="keterangan" class="form-control" rows="5" placeholder="Catatan / Informasi..." style="text-transform:uppercase;"></textarea>
+                                            <textarea name="keterangan" id="keterangan" class="form-control" rows="5" placeholder="Catatan / Informasi..." style="text-transform:uppercase;"><?= isset($dtldata['description']) ? esc($dtldata['description']) : '' ?></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -300,6 +313,8 @@ $disabled = $isIT ? '' : 'disabled';
                         <h3 class="card-title">
                             Detail Barang
                         </h3>
+
+                        <?php if ($typeform != 'DETAIL'): /* transaksi final -> read only, tombol input/ubah/hapus disembunyikan */ ?>
 
                         <div class="float-right d-flex align-items-center gap-2">
                             <button type="button"
@@ -328,6 +343,8 @@ $disabled = $isIT ? '' : 'disabled';
 
 
                         </div>
+                        <?php endif; ?>
+
                     </div>
                     <div class="card-body p-3">
                         <div class="table-responsive">
@@ -336,7 +353,9 @@ $disabled = $isIT ? '' : 'disabled';
                                 <thead>
                                 <tr>
                                     <th class="text-center" width="40">
+                                        <?php if ($typeform != 'DETAIL'): /* detail final -> tanpa aksi baris */ ?>
                                         <input type="checkbox" id="checkAll">
+                                        <?php endif; ?>
                                     </th>
                                     <th>ID Barang</th>
                                     <th>Nama Barang</th>
@@ -353,6 +372,11 @@ $disabled = $isIT ? '' : 'disabled';
                         </div>
                     </div>
                     <div class="card-footer bg-light">
+                        <button type="button"
+                                id="btnLaporanJurnalPmk"
+                                class="btn btn-primary btn-lg float-right ml-2">
+                            <i class="fa fa-book"></i> Laporan Jurnal Transaksi
+                        </button>
                         <a href="<?= base_url('persediaan/trans/pmk_brng') ?>"
                            class="btn btn-default btn-lg">
                             <i class="fa fa-arrow-left mr-2"></i>
@@ -539,9 +563,104 @@ $disabled = $isIT ? '' : 'disabled';
     </div>
 </div>
 
+<!-- ================= MODAL LAPORAN JURNAL TRANSAKSI ================= -->
+<div class="modal fade"
+     id="modalLaporanJurnalPmk"
+     tabindex="-1"
+     aria-labelledby="modalLaporanJurnalPmkLabel"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+
+        <div class="modal-content">
+
+            <!-- HEADER -->
+            <div class="modal-header">
+
+                <h5 class="modal-title" id="modalLaporanJurnalPmkLabel">
+                    <i class="fa fa-book"></i>
+                    Laporan Jurnal Transaksi Pemakaian Barang
+                </h5>
+
+                <!-- BOOTSTRAP 5 CLOSE -->
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close">
+                </button>
+
+            </div>
+
+            <!-- BODY -->
+            <div class="modal-body">
+
+                <div class="table-responsive">
+
+                    <table id="tableLaporanJurnalPmk"
+                           class="table table-bordered table-striped table-hover w-100">
+
+                        <thead>
+
+                        <tr>
+
+                            <th>No</th>
+                            <th>Tanggal</th>
+                            <th>Doc No</th>
+                            <th>Cost Center</th>
+
+                            <th>COA</th>
+                            <th>Nama Perkiraan</th>
+
+                            <th class="text-end">Debet</th>
+                            <th class="text-end">Kredit</th>
+
+                        </tr>
+
+                        </thead>
+
+                        <tbody></tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+            <!-- FOOTER -->
+            <div class="modal-footer">
+
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+
+                    Close
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
 
 
-<script type="application/javascript" src="<?= base_url('assets/pagejs/persediaan/pmk_brng/pmk_brng_detail_trx.js') ?>"></script>
+
+
+
+<script type="text/javascript">
+    /* Halaman DETAIL transaksi FINAL (read only) -> sumber data sc_trx.* */
+    window.PMK_DETAIL_ENDPOINT = {
+        master: 'persediaan/trans/showing_pmk_brng_mst',
+        detail: 'persediaan/trans/list_trx_pmk_brng_dtl',
+        journal: 'persediaan/trans/laporan_jurnal_transaksi_pmk',
+        readonly: true
+    };
+</script>
+
+
+<script type="application/javascript" src="<?= base_url('assets/pagejs/persediaan/pmk_brng/pmk_brng_detail_trx.js') ?>?v=<?= @filemtime(APPPATH . '../assets/pagejs/persediaan/pmk_brng/pmk_brng_detail_trx.js') ?: date('Ymd') ?>"></script>
 <script type="text/javascript">
     $(function() {
         $("#example1").dataTable();
@@ -636,5 +755,152 @@ $disabled = $isIT ? '' : 'disabled';
 
 
     });
+
+
+        /* ============================================================
+           LAPORAN JURNAL TRANSAKSI PEMAKAIAN BARANG
+           Sumber: sc_trx.jurnal_hd + sc_trx.jurnal_dt (status POSTED)
+           ============================================================ */
+        let tableLaporanJurnalPmk = null;
+
+        function formatNumberPmk(value) {
+            return parseFloat(value || 0).toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        $('#btnLaporanJurnalPmk').on('click', function () {
+
+            let docno = $.trim($('#docno').val());
+
+            if (docno === '') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Dokumen belum dipilih',
+                    text: 'Silahkan buka transaksi Pemakaian Barang terlebih dahulu'
+                });
+                return;
+            }
+
+            $('#modalLaporanJurnalPmk').modal('show');
+
+            if ($.fn.DataTable.isDataTable('#tableLaporanJurnalPmk')) {
+                $('#tableLaporanJurnalPmk').DataTable().destroy();
+            }
+
+            $('#tableLaporanJurnalPmk tbody').html(`
+                <tr>
+                    <td colspan="8" class="text-center">
+                        <i class="fa fa-spinner fa-spin"></i> Loading...
+                    </td>
+                </tr>
+            `);
+
+            $.ajax({
+                url: HOST_URL + PMK_DETAIL_ENDPOINT.journal,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    docno: docno
+                },
+
+                success: function (response) {
+
+                    if (!response.status) {
+                        $('#tableLaporanJurnalPmk tbody').empty();
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: response.messages
+                        });
+                        return;
+                    }
+
+                    tableLaporanJurnalPmk = $('#tableLaporanJurnalPmk').DataTable({
+                        data: response.data,
+                        destroy: true,
+                        paging: false,
+                        searching: false,
+                        ordering: false,
+                        info: false,
+                        columns: [
+                            {
+                                data: null,
+                                render: function (data, type, row, meta) {
+                                    if (row.urutan == 1) {
+                                        return '';
+                                    }
+                                    return meta.row + 1;
+                                }
+                            },
+                            {
+                                data: 'trxdate',
+                                render: function (data) {
+                                    return data || '';
+                                }
+                            },
+                            {
+                                data: 'docno',
+                                render: function (data) {
+                                    return data || '';
+                                }
+                            },
+                            {
+                                data: 'nmcostcenter',
+                                render: function (data, type, row) {
+                                    return data || (row.idcostcenter || '');
+                                }
+                            },
+                            {
+                                data: 'idcoa',
+                                render: function (data) {
+                                    return data || '';
+                                }
+                            },
+                            {
+                                data: 'nmcoa',
+                                render: function (data) {
+                                    return data || '';
+                                }
+                            },
+                            {
+                                data: 'debet',
+                                className: 'text-right',
+                                render: function (data) {
+                                    return formatNumberPmk(data || 0);
+                                }
+                            },
+                            {
+                                data: 'kredit',
+                                className: 'text-right',
+                                render: function (data) {
+                                    return formatNumberPmk(data || 0);
+                                }
+                            }
+                        ],
+                        createdRow: function (row, data) {
+                            if (data.urutan == 1) {
+                                $(row).css({
+                                    'font-weight': 'bold',
+                                    'background-color': '#f1f1f1'
+                                });
+                            }
+                        }
+                    });
+                },
+
+                error: function (xhr) {
+                    console.error(xhr.responseText);
+                    $('#tableLaporanJurnalPmk tbody').empty();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Gagal mengambil laporan jurnal'
+                    });
+                }
+            });
+        });
+
 
 </script>

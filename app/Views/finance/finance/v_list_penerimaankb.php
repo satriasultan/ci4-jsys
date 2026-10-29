@@ -1,3 +1,28 @@
+<!-- v_list_penerimaankb-->
+<style>
+    #tablepenerimaankbTrx {
+        width: 100% !important;
+    }
+
+    #tablepenerimaankbTrx th,
+    #tablepenerimaankbTrx td {
+        white-space: nowrap !important;
+        vertical-align: middle;
+    }
+
+    #tablepenerimaankbTrx_wrapper {
+        width: 100%;
+    }
+
+    .dataTables_scrollBody {
+        overflow-x: auto !important;
+    }
+
+    div.dataTables_scrollHead table,
+    div.dataTables_scrollBody table {
+        margin-bottom: 0 !important;
+    }
+</style>
 <div class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
@@ -35,7 +60,7 @@
                             <a class="dropdown-item" href="<?= base_url('ka/finance/addPenerimaanKB') ?>"><i class="fa fa-plus"></i><?php echo '   Input'; ?> </a>
                         <?php endif; ?>
                             <!-- <a class="dropdown-item disabled" data-bs-toggle="modal" data-bs-target="#filter"  href="#"><i class="fa fa-filter"></i><?php echo '   Filter'; ?></a> -->
-                        <a class="dropdown-item" href="#"  onclick="reload_tablePOTrx()"><i class="fa fa-refresh"></i><?php echo '    Reload'; ?> </a>
+                        <a class="dropdown-item" href="#"  onclick="reload_tablePenerimaanKBTrx()"><i class="fa fa-refresh"></i><?php echo '    Reload'; ?> </a>
                     </div>
                 </div>
             </div><!-- /.card-header -->

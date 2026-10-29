@@ -247,15 +247,34 @@ from sc_mst.mbarang where unit not in (select idunit from sc_mst.unit where ctyp
 group by idunit);");
     }
 
-    function q_item_param($param){
-        return $this->db->query("select * from (select trim(a.idbarang) as id,a.idbarang, a.nmbarang, a.idgroup, a.idsubgroup, a.idtype, a.grade, a.lsize, a.deflocation, a.defarea, a.description, a.unit, a.subunit, a.subunitenable, a.lastprice, a.onhand, a.allocated, a.uninvoiced, a.tmpalloca, a.lastrxdate, a.lastrxdoc, a.idbarcode, a.sku, a.expdate, a.batch, a.mfgdate, a.maks_daystock, a.chold, a.inputby, a.inputdate, a.status,
+    /**
+     * Query master barang.
+     *
+     * @param string $param  kondisi where/order by (tanpa limit)
+     * @param int    $limit  jumlah baris maksimal (0 = tanpa limit / semua baris)
+     * @param int    $offset baris yang dilewati (dipakai bila $limit > 0)
+     */
+    function q_item_param($param, $limit = 0, $offset = 0){
+        $sql = "select * from (select trim(a.idbarang) as id,a.idbarang, a.nmbarang, a.idgroup, a.idsubgroup, a.idtype, a.grade, a.lsize, a.deflocation, a.defarea, a.description, a.unit, a.subunit, a.subunitenable, a.lastprice, a.onhand, a.allocated, a.uninvoiced, a.tmpalloca, a.lastrxdate, a.lastrxdoc, a.idbarcode, a.sku, a.expdate, a.batch, a.mfgdate, a.maks_daystock, a.chold, a.inputby, a.inputdate, a.status,
  to_char(a.inputdate,'dd-mm-yyyy hh24:mi:ss') as inputdate1,to_char(a.expdate,'dd-mm-yyyy hh24:mi:ss') as expdate1,
  c.nmlocation,d.nmarea,b.nmgroup,to_char(a.mfgdate,'dd-mm-yyyy hh24:mi:ss') as mfgdate1
  from sc_mst.mbarang a 
  left outer join sc_mst.mgroup b on a.idgroup=b.idgroup
  left outer join sc_mst.mlocation c on a.deflocation=c.idlocation
  left outer join sc_mst.marea d on a.defarea=d.idarea
-) as x where id is not null $param");
+) as x where id is not null $param";
+
+        // Batasi hasil hanya bila diminta (untuk select2/typeahead agar tidak menarik semua baris).
+        $limit = intval($limit);
+        if ($limit > 0) {
+            $sql .= " limit " . $limit;
+            $offset = intval($offset);
+            if ($offset > 0) {
+                $sql .= " offset " . $offset;
+            }
+        }
+
+        return $this->db->query($sql);
     }
 
 

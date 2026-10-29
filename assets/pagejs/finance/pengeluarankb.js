@@ -3656,6 +3656,9 @@ function btnTarikPengeluaranKB() {
 
                 // Reload detail
                 reload_table_pengeluarankb_dtl();
+                // Hitung ulang total alokasi (#totalalokasi) dari detail terbaru
+                // setelah data penerimaan berhasil ditarik.
+                refreshPengeluaranKBTotalAlokasi();
             },
 
             error: function (xhr) {

@@ -3212,50 +3212,281 @@ class Finance extends BaseController
 
     public function initPenerimaanKBHeader()
     {
-        $nama = trim($this->session->get('nama'));
+        $nama = trim((string) $this->session->get('nama'));
 
-        $docno      = strtoupper($this->request->getPost('docno'));
-        $docdate    = $this->request->getPost('docdate');
-        $cabang     = $this->request->getPost('cabang');
-        $pemohon    = strtoupper($this->request->getPost('pemohon'));
-        // $estpakai   = $this->request->getPost('estpakai');
-        // $keterangan = strtoupper($this->request->getPost('keterangan'));
-
-        if (!$docno || !$docdate || !$cabang) {
+        if ($nama === '') {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Header belum lengkap'
+                'message' => 'User login tidak ditemukan.'
             ]);
         }
 
-        $builder = $this->db->table('sc_tmp.penerimaankb');
-        $exists = $builder->where('docno', $docno)->countAllResults();
+        // =========================================================
+        // AMBIL DATA HEADER DARI POST
+        // =========================================================
+        $docno          = strtoupper(trim((string) $this->request->getPost('docno')));
+        $docdate        = trim((string) $this->request->getPost('docdate'));
+        $cabang         = trim((string) $this->request->getPost('cabang'));
+        $pemohon        = $nama;
+        $kdcustomer     = strtoupper(trim((string) $this->request->getPost('kdcustomer')));
+        $nmcustomer     = strtoupper(trim((string) $this->request->getPost('nmcustomer')));
+        $alamatcustomer = strtoupper(trim((string) $this->request->getPost('alamatcustomer')));
+        $prkkas         = trim((string) $this->request->getPost('prkkas'));
+        $np             = trim((string) $this->request->getPost('np'));
+        $currcode       = strtoupper(trim((string) $this->request->getPost('currcode')));
+        $kurs           = $this->request->getPost('kurs');
+        $keterangan     = trim((string) $this->request->getPost('keterangan'));
 
-        // HEADER SUDAH ADA → TIDAK PERLU RELOAD
-        if ($exists > 0) {
+        // Nilai diterima dikirim lewat field #total (konsep Pengeluaran KB)
+        // atau dpp. Keduanya diterima.
+        $totalPosted = trim((string) $this->request->getPost('total'));
+        $dpp         = trim((string) $this->request->getPost('dpp'));
+
+        if ($dpp === '' && $totalPosted !== '') {
+            $dpp = $totalPosted;
+        }
+
+        $toNumber = static function ($value) {
+            $value = str_replace(',', '', trim((string) ($value ?? '')));
+
+            return $value === '' ? 0 : (float) $value;
+        };
+
+        // =========================================================
+        // VALIDASI HEADER MINIMAL
+        // =========================================================
+        if ($docno === '' || $docdate === '' || $cabang === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Nomor dokumen, tanggal, dan cabang wajib diisi.'
+            ]);
+        }
+
+        if ($kdcustomer === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Customer wajib dipilih.'
+            ]);
+        }
+
+        if ($prkkas === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Perkiraan Kas/Bank (prkkas) wajib diisi.'
+            ]);
+        }
+
+        // =========================================================
+        // CEK DOCNO SUDAH DIGUNAKAN DI TRANSAKSI
+        // =========================================================
+        $docnoTrx = $this->db
+            ->table('sc_trx.penerimaankb')
+            ->where('docno', $docno)
+            ->countAllResults();
+
+        if ($docnoTrx > 0) {
+            return $this->response->setJSON([
+                'success' => false,
+                'reload'  => false,
+                'message' => 'Nomor dokumen ' . $docno
+                    . ' sudah digunakan. Ubah No. Bukti (suffix) terlebih dahulu.'
+            ]);
+        }
+
+        // =========================================================
+        // CEK / SIMPAN HEADER TEMPORARY
+        // =========================================================
+        $builder = $this->db->table('sc_tmp.penerimaankb');
+
+        $existing = $builder
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->where('status', 'E')
+            ->get()
+            ->getRowArray();
+
+        $data = [
+            'docdate'        => $this->penerimaanKBDateDisplay($docdate) ?: date('d-m-Y'),
+            'cabang'         => $cabang,
+            'pemohon'        => $pemohon,
+            'kdcustomer'     => $kdcustomer,
+            'nmcustomer'     => $nmcustomer,
+            'alamatcustomer' => $alamatcustomer,
+            'prkkas'         => $prkkas,
+            'np'             => $np,
+            'currcode'       => $currcode !== '' ? $currcode : 'IDR',
+            'kurs'           => $toNumber($kurs),
+            'dpp'            => $toNumber($dpp),
+            'keterangan'     => $keterangan,
+            'inputdate'      => date('Y-m-d H:i:s')
+        ];
+
+        try {
+            if ($existing) {
+                // =====================================================
+                // UPDATE HEADER TEMPORARY YANG SUDAH ADA
+                // =====================================================
+                $idurut = $existing['idurut'];
+
+                $updated = $this->db
+                    ->table('sc_tmp.penerimaankb')
+                    ->where('idurut', $idurut)
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->where('status', 'E')
+                    ->update($data);
+
+                if (!$updated && $this->db->error()['code'] != 0) {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Gagal memperbarui header temporary.'
+                    ]);
+                }
+
+                // total & balance dihitung dari SELURUH baris detail
+                $this->recalcPenerimaanKBBalance($docno, $nama);
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'reload'  => false,
+                    'message' => 'Header temporary berhasil diperbarui.',
+                    'data'    => [
+                        'idurut' => $idurut,
+                        'docno'  => $docno
+                    ]
+                ]);
+            }
+
+            // =========================================================
+            // INSERT HEADER TEMPORARY BARU
+            // =========================================================
+            $data['docno']   = $docno;
+            $data['status']  = 'E';
+            $data['inputby'] = $nama;
+
+            $inserted = $this->db
+                ->table('sc_tmp.penerimaankb')
+                ->insert($data);
+
+            if (!$inserted) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal menyimpan header temporary.'
+                ]);
+            }
+
+            $idurut = $this->db->insertID();
+
             return $this->response->setJSON([
                 'success' => true,
-                'reload'  => false
+                'reload'  => false,
+                'message' => 'Header temporary berhasil disimpan.',
+                'data'    => [
+                    'idurut' => $idurut,
+                    'docno'  => $docno
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            log_message('error', 'initPenerimaanKBHeader: ' . $e->getMessage());
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menyimpan header temporary.'
             ]);
         }
+    }
 
-        // HEADER BARU → INSERT
-        $builder->insert([
-            'docno'      => $docno,
-            'docdate'    => $docdate,
-            'cabang'     => $cabang,
-            'pemohon'    => $pemohon,
-            // 'estpakai'   => $estpakai,
-            'status'     => 'E',
-            // 'keterangan' => $keterangan,
-            'inputby'    => $nama,
-            'inputdate'  => date('Y-m-d H:i:s')
-        ]);
+    /**
+     * Hitung ulang total & balance header Penerimaan Kas/Bank.
+     *
+     * Kondisi disamakan dengan Pengeluaran Kas/Bank: SELURUH baris detail
+     * ikut dihitung (tanpa filter status), karena trigger finalisasi
+     * (sc_tmp.penerimaankb_finalize) memindahkan semua detail ke sc_trx
+     * dan trigger BANKIN membuat jurnal dari semua detail tersebut.
+     *
+     *   total   = SUM(kredit) - SUM(debit)
+     *   balance = dpp + SUM(debit) - SUM(kredit)   => 0 bila sudah balance
+     */
+    private function recalcPenerimaanKBBalance($docno, $nama = '')
+    {
+        $docno = trim((string) $docno);
 
-        return $this->response->setJSON([
-            'success' => true,
-            'reload'  => true   // ⬅ PENTING
-        ]);
+        if ($docno === '') {
+            return null;
+        }
+
+        $getBalance = $this->db->table('sc_tmp.penerimaankb_dtl')
+            ->select("
+                COALESCE(SUM(CASE WHEN UPPER(TRIM(COALESCE(dk,''))) IN ('DEBIT','D') THEN nilai ELSE 0 END),0) AS total_debit,
+                COALESCE(SUM(CASE WHEN UPPER(TRIM(COALESCE(dk,''))) IN ('KREDIT','K','CREDIT','CR') THEN nilai ELSE 0 END),0) AS total_kredit
+            ")
+            ->where('docno', $docno)
+            ->get()
+            ->getRowArray();
+
+        $totalDebit  = (float) ($getBalance['total_debit'] ?? 0);
+        $totalKredit = (float) ($getBalance['total_kredit'] ?? 0);
+
+        $headerRow = $this->db->table('sc_tmp.penerimaankb')
+            ->select('dpp')
+            ->where('docno', $docno)
+            ->get()
+            ->getRowArray();
+
+        if (!$headerRow) {
+            return null;
+        }
+
+        $dpp = (float) ($headerRow['dpp'] ?? 0);
+
+        $updateHeader = [
+            'total'      => $totalKredit - $totalDebit,
+            'balance'    => $dpp + $totalDebit - $totalKredit,
+            'updatedate' => date('Y-m-d H:i:s')
+        ];
+
+        if ($nama !== '') {
+            $updateHeader['updateby'] = $nama;
+        }
+
+        $this->db->table('sc_tmp.penerimaankb')
+            ->where('docno', $docno)
+            ->update($updateHeader);
+
+        return [
+            'total'       => $updateHeader['total'],
+            'balance'     => $updateHeader['balance'],
+            'total_debit' => $totalDebit,
+            'total_kredit' => $totalKredit
+        ];
+    }
+
+    /**
+     * Normalisasi tanggal ke format tampilan dd-mm-yyyy.
+     * Menerima input dd-mm-yyyy maupun yyyy-mm-dd.
+     * Format ini juga diterima oleh trigger jurnal BANKIN.
+     */
+    private function penerimaanKBDateDisplay($value)
+    {
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return '';
+        }
+
+        // yyyy-mm-dd
+        if (preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})/', $value, $m)) {
+            return sprintf('%02d-%02d-%04d', (int) $m[3], (int) $m[2], (int) $m[1]);
+        }
+
+        // dd-mm-yyyy / dd/mm/yyyy
+        if (preg_match('/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/', $value, $m)) {
+            return sprintf('%02d-%02d-%04d', (int) $m[1], (int) $m[2], (int) $m[3]);
+        }
+
+        $ts = strtotime($value);
+
+        return $ts ? date('d-m-Y', $ts) : $value;
     }
 
     public function getPenjualanCust()
@@ -3300,7 +3531,7 @@ class Finance extends BaseController
                 'alamatcustomer'    => $alamatcustomer,
                 'currcode'    => $currcode,
                 'kurs'    => $kurs,
-                'docdate'   => date('Y-m-d', strtotime($docdate)),
+                'docdate'   => $this->penerimaanKBDateDisplay($docdate) ?: date('d-m-Y'),
                 'status'    => 'E',
                 'inputby'   => $nama,
                 'inputdate' => date('Y-m-d H:i:s')
@@ -3309,235 +3540,37 @@ class Finance extends BaseController
         }
 
         // =====================================================
-        // HAPUS DETAIL LAMA
-        // =====================================================
-
-        $db->table('sc_tmp.penerimaankb_dtl')
-            ->where('docno', $docno)
-            ->delete();
-
-        // =====================================================
-        // AMBIL DATA PENJUALAN
-        // =====================================================
-
-        $penjualan = $db->query("
-            SELECT 
-                'PENJUALAN' AS sourcetype,
-                trim(p.docno) AS docref,
-                p.docdate,
-                p.kdcustomer AS kodepartner,
-
-                (
-                    p.total -
-                    COALESCE(
-                        (
-                            SELECT SUM(pkbd.nilai)
-                            FROM sc_trx.penerimaankb_dtl pkbd
-                            WHERE trim(pkbd.nobukti) = trim(p.docno)
-                            AND trim(pkbd.status) = 'F'
-                        ),
-                        0
-                    )
-                ) AS nilaitotal,
-                p.cabang,
-                p.keterangan
-            FROM sc_trx.penjualan p
-            WHERE trim(p.kdcustomer) = ?
-            AND trim(coalesce(p.currcode,'')) = ?
-            AND trim(coalesce(p.status,'')) = 'F'
-            AND (
-                p.total -
-                COALESCE(
-                    (
-                        SELECT SUM(pkbd.nilai)
-                        FROM sc_trx.penerimaankb_dtl pkbd
-                        WHERE trim(pkbd.nobukti) = trim(p.docno)
-                        AND trim(pkbd.status) = 'F'
-                    ),
-                    0
-                )
-            ) > 0
-
-            UNION ALL
-
-            SELECT 
-                'UMT' AS sourcetype,
-                trim(u.docno) AS docref,
-                u.docdate,
-                u.kdsupplier AS kodepartner,
-                (
-                    u.total -
-                    COALESCE(
-                        (
-                            SELECT SUM(pkbd.nilai)
-                            FROM sc_trx.penerimaankb_dtl pkbd
-                            WHERE trim(pkbd.nobukti) = trim(u.docno)
-                            AND trim(pkbd.status) = 'F'
-                        ),
-                        0
-                    )
-                ) AS nilaitotal,
-                u.cabang,
-                u.keterangan
-            FROM sc_trx.umt u
-            WHERE trim(u.kdsupplier) = ?
-            AND trim(coalesce(u.currcode,'')) = ?
-            AND trim(coalesce(u.status,'')) = 'F'
-            AND (
-                u.total -
-                COALESCE(
-                    (
-                        SELECT SUM(pkbd.nilai)
-                        FROM sc_trx.penerimaankb_dtl pkbd
-                        WHERE trim(pkbd.nobukti) = trim(u.docno)
-                        AND trim(pkbd.status) = 'F'
-                    ),
-                    0
-                )
-            ) > 0
-
-            UNION ALL
-
-            SELECT 
-                'NDK' AS sourcetype,
-                trim(n.docno) AS docref,
-                n.docdate,
-                n.kdsupplier AS kodepartner,
-                (
-                    n.total -
-                    COALESCE(
-                        (
-                            SELECT SUM(pkbd.nilai)
-                            FROM sc_trx.penerimaankb_dtl pkbd
-                            WHERE trim(pkbd.nobukti) = trim(n.docno)
-                            AND trim(pkbd.status) = 'F'
-                        ),
-                        0
-                    )
-                ) AS nilaitotal,
-                n.cabang,
-                n.keterangan
-            FROM sc_trx.ndk n
-            WHERE trim(n.kdsupplier) = ?
-            AND trim(coalesce(n.currcode,'')) = ?
-            AND trim(coalesce(n.status,'')) = 'F'
-            AND (
-                n.total -
-                COALESCE(
-                    (
-                        SELECT SUM(pkbd.nilai)
-                        FROM sc_trx.penerimaankb_dtl pkbd
-                        WHERE trim(pkbd.nobukti) = trim(n.docno)
-                        AND trim(pkbd.status) = 'F'
-                    ),
-                    0
-                )
-            ) > 0
-            ORDER BY docdate ASC
-
-        ", [
-
-            // PENJUALAN
-            $kdcustomer,
-            $currcode,
-
-            // UMT
-            $kdcustomer,
-            $currcode,
-
-            // NDK
-            $kdcustomer,
-            $currcode
-
-        ])->getResult();
-
-        // =====================================================
-        // INSERT DETAIL
-        // =====================================================
-
-        $currencyData = $db->query("
-            SELECT 
-                c.currcode,
-                c.ppiutang
-            FROM sc_mst.currency c
-            WHERE trim(c.currcode) = ?
-        ", [$currcode])->getRow();
-
-        $idcoa = null;
-        $nmcoa = null;
-
-        if (!empty($currencyData) && !empty($currencyData->ppiutang)) {
-
-            $idcoa = trim($currencyData->ppiutang);
-
-            $coaData = $db->query("
-                SELECT nmcoa
-                FROM sc_mst.coa
-                WHERE trim(idcoa) = ?
-            ", [$idcoa])->getRow();
-
-            if (!empty($coaData)) {
-                $nmcoa = trim($coaData->nmcoa);
-            }
-        }
-
-        foreach ($penjualan as $row) {
-
-            $rawUnique =
-                $docno . '|' .
-                $row->docref . '|' .
-                microtime(true);
-
-            $uniqueid = hash('sha256', $rawUnique);
-            $dk = ($row->sourcetype == 'UMT') ? 'DEBIT' : 'KREDIT';
-
-            $db->table('sc_tmp.penerimaankb_dtl')->insert([
-
-                'docno'        => $docno,
-                'nobukti'      => $row->docref,
-                'idcoa'        => $idcoa,
-                'nmcoa'        => $nmcoa,
-                'remarks'      => "(" . $row->docref . ") " . $row->keterangan,
-                'nilai'        => $row->nilaitotal ?? 0,
-                'dk'           => $dk,
-                'cabang'           => $row->cabang,
-                // 'status'       => 'F',
-                'inputby'      => $nama,
-                'inputdate'    => date('Y-m-d H:i:s'),
-                'uniqueid'     => $uniqueid
-
-            ]);
-        }
-
-        // =====================================================
         // UPDATE HEADER CUSTOMER
+        // Catatan penting:
+        //   Detail TIDAK dihapus dan TIDAK diisi di sini.
+        //   Penarikan piutang customer dilakukan lewat tombol
+        //   "Tarik Piutang Customer" (Finance::tarikPiutangCustomer),
+        //   mengikuti pola Pengeluaran Kas/Bank (tombol Tarik).
         // =====================================================
 
-        $getBalance = $db->table('sc_tmp.penerimaankb_dtl')
-            ->select("
-                SUM(CASE WHEN dk='DEBIT' THEN nilai ELSE 0 END) AS total_debit,
-                SUM(CASE WHEN dk='KREDIT' THEN nilai ELSE 0 END) AS total_kredit
-            ")
-            ->where('docno', $docno)
-            ->where("TRIM(status) = 'F'", null, false)
-            ->get()
-            ->getRowArray();
+        $updateHeader = [
+            'kdcustomer'     => $kdcustomer,
+            'alamatcustomer' => $alamatcustomer,
+            'currcode'       => $currcode,
+            'updateby'       => $nama,
+            'updatedate'     => date('Y-m-d H:i:s')
+        ];
 
-        $totalDebit  = ($getBalance['total_debit'] ?? 0);
-        $totalKredit = ($getBalance['total_kredit'] ?? 0);
+        if ($kurs !== '') {
+            $updateHeader['kurs'] = $kurs;
+        }
 
-        // balance = debit - kredit
-        $total = $totalDebit - $totalKredit;
-
+        if ($docdate !== '') {
+            $updateHeader['docdate'] = $this->penerimaanKBDateDisplay($docdate);
+        }
 
         $db->table('sc_tmp.penerimaankb')
             ->where('docno', $docno)
-            ->update([
-                'kdcustomer'     => $kdcustomer,
-                'total'     => $total,
-                'updateby'        => $nama,
-                'updatedate'      => date('Y-m-d H:i:s')
-            ]);
+            ->where('inputby', $nama)
+            ->update($updateHeader);
+
+        // total & balance dihitung dari SELURUH detail (kondisi Pengeluaran KB)
+        $this->recalcPenerimaanKBBalance($docno, $nama);
 
         $db->transComplete();
 
@@ -3552,7 +3585,7 @@ class Finance extends BaseController
         return $this->response->setJSON([
             'success' => true,
             'reload'  => $reload,
-            'total'   => count($penjualan)
+            'total'   => 0
         ]);
     }
 
@@ -3578,6 +3611,22 @@ class Finance extends BaseController
         $db->transStart();
 
         // =====================================================
+        // PARSER ANGKA (aman untuk format "1,000.00")
+        // =====================================================
+        $toNumber = static function ($value) {
+            $value = str_replace(',', '', trim((string) ($value ?? '')));
+
+            return $value === '' ? 0 : (float) $value;
+        };
+
+        // Nilai diterima: field #total (konsep Pengeluaran KB) atau dpp
+        $dppPosted = trim((string) $this->request->getPost('dpp'));
+
+        if ($dppPosted === '') {
+            $dppPosted = trim((string) $this->request->getPost('total'));
+        }
+
+        // =====================================================
         // CEK / INSERT HEADER
         // =====================================================
         $builderHeader = $db->table('sc_tmp.penerimaankb');
@@ -3592,27 +3641,25 @@ class Finance extends BaseController
 
         if ($exists == 0) {
 
+            $docdatePost = trim((string) $this->request->getPost('docdate'));
+
             $builderHeader->insert([
-                'docno'     => $docno,
-                'cabang'     => $this->request->getPost('cabang'),
-                'docdate'   => date('Y-m-d', strtotime(trim($this->request->getPost('docdate')))),
-                // 'senddate'   => date('Y-m-d', strtotime(trim($this->request->getPost('senddate')))),
-                // 'jthtempo'     => $this->request->getPost('jthtempo'),
-                // 'isinclusive'     => $isinclusive,
-                'dpp'    => strtoupper($this->request->getPost('dpp')),
-                'jumlahpajak'    => strtoupper($this->request->getPost('ppn')),
-                'total'    => strtoupper($this->request->getPost('total')),
-                'prkkas'    => strtoupper($this->request->getPost('prkkas')),
-                'kdcustomer'    => strtoupper($this->request->getPost('kdcustomer')),
-                'alamatcustomer'    => strtoupper($this->request->getPost('alamatcustomer')),
-                // 'alamatkirim'    => strtoupper($this->request->getPost('alamatkirim')),
-                // 'idtax'    => strtoupper($this->request->getPost('idtax')),
-                'currcode'    => strtoupper($this->request->getPost('currcode')),
-                'kurs'    => strtoupper($this->request->getPost('kurs')),
-                'keterangan'    => strtoupper($this->request->getPost('keterangan')),
-                'status'    => 'E',
-                'inputby'   => $nama,
-                'inputdate' => date('Y-m-d H:i:s')
+                'docno'          => $docno,
+                'cabang'         => strtoupper(trim((string) $this->request->getPost('cabang'))),
+                'docdate'        => $this->penerimaanKBDateDisplay($docdatePost) ?: date('d-m-Y'),
+                'dpp'            => $toNumber($dppPosted),
+                'jumlahpajak'    => $toNumber($this->request->getPost('ppn')),
+                'total'          => $toNumber($this->request->getPost('total')),
+                'prkkas'         => strtoupper(trim((string) $this->request->getPost('prkkas'))),
+                'kdcustomer'     => strtoupper(trim((string) $this->request->getPost('kdcustomer'))),
+                'nmcustomer'     => strtoupper(trim((string) $this->request->getPost('nmcustomer'))),
+                'alamatcustomer' => strtoupper(trim((string) $this->request->getPost('alamatcustomer'))),
+                'currcode'       => strtoupper(trim((string) $this->request->getPost('currcode'))),
+                'kurs'           => $toNumber($this->request->getPost('kurs')),
+                'keterangan'     => strtoupper(trim((string) $this->request->getPost('keterangan'))),
+                'status'         => 'E',
+                'inputby'        => $nama,
+                'inputdate'      => date('Y-m-d H:i:s')
             ]);
 
             $reload = true;
@@ -3622,87 +3669,69 @@ class Finance extends BaseController
         $insertCount = 0;
         $message = '';
 
+        // =====================================================
+        // IDENTITAS DETAIL
+        // =====================================================
+        $idcoa     = trim((string) $this->request->getPost('idcoa'));
+        $nmcoa     = strtoupper(trim((string) $this->request->getPost('nmcoa')));
+        $nobukti   = strtoupper(trim((string) $this->request->getPost('nobukti')));
+        $remarks   = strtoupper(trim((string) $this->request->getPost('remarks')));
+        $dk        = strtoupper(trim((string) $this->request->getPost('dk')));
+        $cabangdtl = strtoupper(trim((string) $this->request->getPost('cabangdtl')));
+        $nilai     = $toNumber($this->request->getPost('nilai'));
 
+        // Normalisasi DK ke 'D' / 'K'
+        $dk = in_array($dk, ['D', 'DEBIT', 'DR'], true) ? 'D' : 'K';
 
-        $idcoa    = $this->request->getPost('idcoa');
-        $nmcoa    = strtoupper($this->request->getPost('nmcoa'));
-        $nilai       = $this->request->getPost('nilai') ?: 0;
-        $remarks = strtoupper($this->request->getPost('remarks'));
-        $dk = strtoupper($this->request->getPost('dk'));
-        $cabangdtl = strtoupper($this->request->getPost('cabangdtl'));
+        // =====================================================
+        // MATA UANG / KURS HEADER + NILAI AKHIR
+        // Kondisi sama dengan Pengeluaran Kas/Bank:
+        //   nilaiakhir = nilai x kurs (dipakai trigger jurnal BANKIN)
+        // =====================================================
+        $headerCurr = $db->table('sc_tmp.penerimaankb')
+            ->select('currcode, kurs')
+            ->where('docno', $docno)
+            ->get()
+            ->getRowArray();
+
+        $currcode = strtoupper(trim((string) ($headerCurr['currcode'] ?? '')));
+        $currcode = $currcode !== '' ? $currcode : 'IDR';
+
+        $kurs = $toNumber($headerCurr['kurs'] ?? 0);
+
+        if ($kurs <= 0) {
+            $kurs = 1;
+        }
+
+        $nilaiakhir = round($nilai * $kurs, 2);
+
+        $detailData = [
+            'nobukti'    => $nobukti,
+            'idcoa'      => $idcoa,
+            'nmcoa'      => $nmcoa,
+            'dk'         => $dk,
+            'nilai'      => $nilai,
+            'nilaiakhir' => $nilaiakhir,
+            'currcode'   => $currcode,
+            'kurs'       => $kurs,
+            'cabang'     => $cabangdtl,
+            'remarks'    => $remarks,
+            'jurnalref'  => 'YES',
+            'nilai_ref'  => $nilaiakhir,
+            'updateby'   => $nama,
+            'updatedate' => date('Y-m-d H:i:s')
+        ];
 
         // CEK MODE: ADD atau EDIT
         if (!empty($idurut)) {
             $uniqueid = $this->request->getPost('uniqueid'); // HAPUS strtoupper, biarkan
             // 🔹 UPDATE
-            $builderDetail->where('idurut', $idurut)->update([
-                'idcoa'    => $idcoa,
-                'nmcoa'    => $nmcoa,
-                'dk'        => $dk,
-                'nilai'        => $nilai,
-                // 'status'        => 'F',
-                'cabang'        => $cabangdtl,
-                'remarks' => $remarks,
-                'updateby'     => $nama,
-                'updatedate'   => date('Y-m-d H:i:s')
-            ]);
-
-            $getDetail = $db->table('sc_tmp.penerimaankb_dtl')
-                ->select('status')
-                ->where('idurut', $idurut)
-                ->get()
-                ->getRowArray();
-
-            if (trim($getDetail['status'] ?? '') == 'F') {
-
-                $getBalance = $db->table('sc_tmp.penerimaankb_dtl')
-                    ->select("
-                        COALESCE(SUM(CASE WHEN dk='DEBIT' THEN nilai ELSE 0 END),0) AS total_debit,
-                        COALESCE(SUM(CASE WHEN dk='KREDIT' THEN nilai ELSE 0 END),0) AS total_kredit
-                    ")
-                    ->where('docno', $docno)
-                    ->where("TRIM(status) = 'F'", null, false)
-                    ->get()
-                    ->getRowArray();
-
-                $totalDebit  = ($getBalance['total_debit'] ?? 0);
-                $totalKredit = ($getBalance['total_kredit'] ?? 0);
-
-                $getHeader = $db->table('sc_tmp.penerimaankb')
-                    ->select('dpp')
-                    ->where('docno', $docno)
-                    ->get()
-                    ->getRowArray();
-
-                if (!$getHeader) {
-                    throw new \Exception('Header tidak ditemukan');
-                }
-
-                $dpp = $getHeader['dpp'];
-
-                $total = $totalKredit - $totalDebit;
-                $balance = $dpp + $totalDebit - $totalKredit;
-
-                $db->table('sc_tmp.penerimaankb')
-                    ->where('docno', $docno)
-                    ->update([
-                        'total'      => $total,
-                        'balance'    => $balance,
-                        'updateby'   => $nama,
-                        'updatedate' => date('Y-m-d H:i:s')
-                    ]);
-            }
-
-            // // Update header PO
-            // $builderHeader->where('docno', $docno)->update([
-            //     // 'dpp' => number_format($dpp, 2, '.', ''),
-            //     // 'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
-            //     'balance' => number_format($balance, 2, '.', ''),
-            //     'updateby' => $nama,
-            //     'updatedate' => date('Y-m-d H:i:s')
-            // ]);
+            $builderDetail->where('idurut', $idurut)->update($detailData);
 
             $message = 'Data berhasil diupdate';
+
+            // Total & balance header dihitung ulang di akhir method
+            // (recalcPenerimaanKBBalance) memakai SELURUH baris detail.
 
         } else {
             $inputdate = date('Y-m-d H:i:s');
@@ -3715,48 +3744,24 @@ class Finance extends BaseController
 
 
             // 🔹 INSERT
-            $builderDetail->insert([
-                'docno'       => $docno,
-                'idcoa'    => $idcoa,
-                'nmcoa'    => $nmcoa,
-                'dk'         => $dk,
-                'cabang'         => $cabangdtl,
-                'remarks' => $remarks,
-                'nilai' => $nilai,
-                // 'status'      => 'F',
-                'inputby'     => $nama,
-                'inputdate'   => date('Y-m-d H:i:s'),
-                'uniqueid'    => $uniqueid
-            ]);
+            $detailData['docno']     = $docno;
+            $detailData['inputby']   = $nama;
+            $detailData['inputdate'] = $inputdate;
+            $detailData['uniqueid']  = $uniqueid;
+
+            $builderDetail->insert($detailData);
+
+            $message = 'Data berhasil disimpan';
         }
 
 
         // =====================================================
-        // HITUNG ULANG BALANCE HEADER
+        // HITUNG ULANG TOTAL & BALANCE HEADER
+        // Memakai SELURUH baris detail (kondisi sama dengan
+        // Pengeluaran Kas/Bank).
         // =====================================================
+        $this->recalcPenerimaanKBBalance($docno, $nama);
 
-        // $getBalance = $db->table('sc_tmp.penerimaankb_dtl')
-        //     ->select("
-        //         SUM(CASE WHEN dk='DEBIT' THEN nilai ELSE 0 END) AS total_debit,
-        //         SUM(CASE WHEN dk='KREDIT' THEN nilai ELSE 0 END) AS total_kredit
-        //     ")
-        //     ->where('docno', $docno)
-        //     ->where("TRIM(status) = 'F'", null, false)
-        //     ->get()
-        //     ->getRowArray();
-
-        // $totalDebit  = ($getBalance['total_debit'] ?? 0);
-        // $totalKredit = ($getBalance['total_kredit'] ?? 0);
-
-        // // balance = debit - kredit
-        // $balance = $totalDebit - $totalKredit;
-
-        // // update header
-        // $builderHeader->where('docno', $docno)->update([
-        //     'balance'    => $balance,
-        //     'updateby'   => $nama,
-        //     'updatedate' => date('Y-m-d H:i:s')
-        // ]);
         $db->transComplete();
 
         return $this->response->setJSON([
@@ -3891,12 +3896,57 @@ class Finance extends BaseController
             ]);
         }
 
+        $nama = trim((string) session()->get('nama'));
+
         try {
             $db->transBegin();
 
-            // Hapus detail berdasarkan uniqueid
+            /*
+             * Identifier baris detail Penerimaan Kas/Bank = idurut
+             * (sesuai checkbox pada tabel detail), uniqueid tetap
+             * didukung agar kompatibel dengan pemanggil lama.
+             */
+            $numericIds = array_values(array_filter(
+                $ids,
+                static fn($id) => ctype_digit((string) $id)
+            ));
+
+            $detailQuery = $db->table('sc_tmp.penerimaankb_dtl')
+                ->select('docno, idurut, uniqueid')
+                ->groupStart();
+
+            if (!empty($numericIds)) {
+                $detailQuery
+                    ->whereIn('idurut', $numericIds)
+                    ->orWhereIn('uniqueid', $ids);
+            } else {
+                $detailQuery->whereIn('uniqueid', $ids);
+            }
+
+            $detailRows = $detailQuery->groupEnd()->get()->getResultArray();
+
+            if (empty($detailRows)) {
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'success' => false,
+                    'message' => 'Data detail Penerimaan Kas Bank tidak ditemukan.'
+                ]);
+            }
+
+            $deleteIds = array_values(array_unique(array_map(
+                static fn($row) => (string) $row['idurut'],
+                $detailRows
+            )));
+
+            $affectedDocnos = array_values(array_unique(array_filter(array_map(
+                static fn($row) => trim((string) ($row['docno'] ?? '')),
+                $detailRows
+            ))));
+
             $db->table('sc_tmp.penerimaankb_dtl')
-                ->whereIn('uniqueid', $ids)
+                ->whereIn('idurut', $deleteIds)
                 ->delete();
 
             if ($db->transStatus() === false) {
@@ -3905,14 +3955,16 @@ class Finance extends BaseController
                 );
             }
 
-            if ($db->affectedRows() === 0) {
-                $db->transRollback();
+            // Hitung ulang total & balance header untuk setiap dokumen yang terpengaruh
+            // (memakai SELURUH baris detail - kondisi sama dengan Pengeluaran Kas/Bank)
+            foreach ($affectedDocnos as $docnoAffected) {
+                $this->recalcPenerimaanKBBalance($docnoAffected, $nama);
+            }
 
-                return $this->response->setJSON([
-                    'status'  => false,
-                    'success' => false,
-                    'message' => 'Data detail Penerimaan Kas Bank tidak ditemukan.'
-                ]);
+            if ($db->transStatus() === false) {
+                throw new \RuntimeException(
+                    'Gagal menghitung ulang balance Penerimaan Kas Bank.'
+                );
             }
 
             $db->transCommit();
@@ -3971,44 +4023,9 @@ class Finance extends BaseController
                     'status' => $status ?: null
                 ]);
 
-            // hitung ulang balance dari detail yang status = F
-            $getBalance = $db->table('sc_tmp.penerimaankb_dtl')
-                ->select("
-                    COALESCE(SUM(CASE WHEN dk='DEBIT' THEN nilai ELSE 0 END),0) AS total_debit,
-                    COALESCE(SUM(CASE WHEN dk='KREDIT' THEN nilai ELSE 0 END),0) AS total_kredit
-                ")
-                ->where('docno', $docno)
-                ->where("TRIM(status) = 'F'", null, false)
-                ->get()
-                ->getRowArray();
-
-            $totalDebit  = ($getBalance['total_debit'] ?? 0);
-            $totalKredit = ($getBalance['total_kredit'] ?? 0);
-
-            $getHeader = $db->table('sc_tmp.penerimaankb')
-                ->select('dpp')
-                ->where('docno', $docno)
-                ->get()
-                ->getRowArray();
-
-            if (!$getHeader) {
-                throw new \Exception('Header tidak ditemukan');
-            }
-
-
-            // balance = debit - kredit
-            $total =  $totalKredit - $totalDebit;
-            $balance = $getHeader['dpp'] + $totalDebit - $totalKredit;
-
-            // update header
-            $db->table('sc_tmp.penerimaankb')
-                ->where('docno', $docno)
-                ->update([
-                    'total'    => $total,
-                    'balance'    => $balance,
-                    'updateby'   => $nama,
-                    'updatedate' => date('Y-m-d H:i:s')
-                ]);
+            // hitung ulang total & balance header
+            // (memakai SELURUH baris detail - kondisi sama dengan Pengeluaran Kas/Bank)
+            $this->recalcPenerimaanKBBalance($docno, $nama);
 
             if ($db->transStatus() === false) {
                 throw new \Exception('Gagal update data');
@@ -4036,48 +4053,24 @@ class Finance extends BaseController
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_finance->get_t_penerimaankb_dtl_temp_view($docno);
         $data = array();
-        $no = $_POST['start'];
+
         foreach ($list as $lm) {
             $row = array();
 
-            $checked = trim($lm->status) == 'F' ? 'checked' : '';
-
+            // 0. Checkbox (identifier baris = idurut)
             $row[] = [
-                'id' => $lm->idurut,
-                'checked' => $checked
+                'id'       => $lm->idurut,
+                'uniqueid' => $lm->uniqueid,
+                'checked'  => trim((string) $lm->status) === 'F' ? 'checked' : ''
             ];
 
-            $row[] = '
-            <div class="btn-group">
-
-                <button type="button"
-                        class="btn btn-warning btn-sm btn-edit"
-                        data-id="'.$lm->idurut.'">
-                    <i class="fa fa-edit"></i>
-                </button>
-                &nbsp
-                '.(
-                empty(trim($lm->nobukti))
-                    ? '<button type="button"
-                            class="btn btn-danger btn-sm btn-delete"
-                            data-id="'.$lm->idurut.'">
-                        <i class="fa fa-trash"></i>
-                    </button>'
-                    : ''
-                ).'
-
-            </div>';
-
+            // 1-6. Kolom tampilan (konsep sama dengan Pengeluaran Kas/Bank)
             $row[] = $lm->nobukti;
-            $row[] = $lm->idcoa;
-            $row[] = $lm->nmcoa;
+            $row[] = trim((string) $lm->idcoa) . '  -  ' . trim((string) $lm->nmcoa);
             $row[] = $lm->remarks;
-            $row[] = $lm->dk;
-            $row[] = trim($lm->status) == 'F'
-                ? '<span class="badge bg-success">DIPILIH</span>'
-                : '<span class="badge bg-secondary text-dark">BELUM DIPILIH</span>';
+            $row[] = strtoupper(trim((string) $lm->dk));
             $row[] = $lm->cabang;
-            $row[] = '<div class="ratakanan">'.number_format($lm->nilai,2,'.',',').'</div>';
+            $row[] = '<div class="ratakanan">' . number_format((float) $lm->nilai, 2, '.', ',') . '</div>';
 
             $data[] = $row;
         }
@@ -4173,65 +4166,67 @@ class Finance extends BaseController
 
             return redirect()->to(base_url('/ka/finance/addPenerimaanKB'));
         } else {
-            // Ambil dari request POST
-            // $pemohon = strtoupper(trim($this->request->getPost('pemohon')));
-            // $docdate   = trim($this->request->getPost('docdate'));
-            $keterangan   = trim($this->request->getPost('keterangan'));
-            $prkkas   = trim($this->request->getPost('prkkas'));
-            $dpp   = trim($this->request->getPost('dpp'));
-            $balance   = trim($this->request->getPost('balance'));
-            $total   = trim($this->request->getPost('total_awal'));
+            $keterangan = trim((string) $this->request->getPost('keterangan'));
+            $prkkas     = strtoupper(trim((string) $this->request->getPost('prkkas')));
+            $dpp        = trim((string) $this->request->getPost('dpp'));
 
-            $dpp = trim($this->request->getPost('dpp'));
-            $dpp_clean = 0;
-            if (!empty($dpp)) {
-                $dpp_clean = str_replace(',', '', $dpp);
-                // $kurs_clean = str_replace('.', '.', $kurs_clean);
-                // $kurs_clean = floatval($kurs_clean);
+            // #prkkas dapat terkunci (disabled) pada UI setelah header tersimpan,
+            // sehingga diambil dari header temporary bila tidak terkirim.
+            if ($prkkas === '') {
+                $rowPrkkas = $this->db->table('sc_tmp.penerimaankb')
+                    ->select('prkkas')
+                    ->where('inputby', $nama)
+                    ->get()
+                    ->getRowArray();
+
+                $prkkas = strtoupper(trim((string) ($rowPrkkas['prkkas'] ?? '')));
             }
 
-
-            $balance = trim($this->request->getPost('balance'));
-            $balance_clean = 0;
-            if (!empty($balance)) {
-                $balance_clean = str_replace(',', '', $balance);
-                // $kurs_clean = str_replace('.', '.', $kurs_clean);
-                // $kurs_clean = floatval($kurs_clean);
+            // Field #total (konsep Pengeluaran KB) dipakai bila dpp kosong
+            if ($dpp === '') {
+                $dpp = trim((string) $this->request->getPost('total'));
             }
 
+            // =====================================================
+            // VALIDASI: Perkiraan Kas/Bank (prkkas) WAJIB diisi.
+            // Trigger jurnal BANKIN pada sc_trx.penerimaankb_dtl akan
+            // menolak detail bila header.prkkas kosong.
+            // =====================================================
+            if ($prkkas === '') {
+                $builder_trxerror->insert([
+                    'userid'      => $nama,
+                    'errorcode'   => 3,
+                    'nomorakhir1' => $cek->getNumRows(),
+                    'nomorakhir2' => $cek2->getNumRows(),
+                    'modul'       => 'I.K.B.2',
+                ]);
 
-            $total = trim($this->request->getPost('total'));
-            $total_clean = 0;
-            if (!empty($total)) {
-                $total_clean = str_replace(',', '', $total);
-                // $kurs_clean = str_replace('.', '.', $kurs_clean);
-                // $kurs_clean = floatval($kurs_clean);
+                return redirect()->to(base_url('/ka/finance/addPenerimaanKB'));
             }
 
-            // Convert expdate ke format YYYY-MM-DD
-            // $docdateph = null;
-            // if (!empty($docdate)) {
-            //     $docdateph = date('Y-m-d', strtotime(str_replace('-', '/', $docdate)));
-            // }
+            $dpp_clean = (float) str_replace(',', '', $dpp);
 
-            // Update data header dulu sebelum set status F
+            // 1) Update header dulu sebelum set status F
             $updateHeader = [
-                // 'docdate'        => $docdateph,
-                'prkkas'    => strtoupper($prkkas),
-                'dpp'    => $dpp_clean,
-                'balance'    => $balance_clean,
-                'total'    => $total_clean,
-                'keterangan'     => strtoupper($keterangan),
-                // 'currcode'       => $currcode,
-                // 'kurs'           => $kurs_clean,
-                // 'isinclusive'    => strtoupper($isinclusive),
-                // 'idtax'          => strtoupper($idtax),
-                // 'syarat'         => strtoupper($syarat)
-                // 'pemohon'       => $pemohon (jika masih diperlukan nanti bisa ditambahkan)
+                'prkkas'     => $prkkas,
+                'dpp'        => $dpp_clean,
+                'keterangan' => strtoupper($keterangan),
             ];
 
             $builder->where('inputby', $nama);
             $builder->update($updateHeader);
+
+            // 2) Hitung total & balance dari SELURUH baris detail
+            //    (kondisi sama dengan Pengeluaran Kas/Bank)
+            $headerTmp = $this->db->table('sc_tmp.penerimaankb')
+                ->select('docno')
+                ->where('inputby', $nama)
+                ->get()
+                ->getRowArray();
+
+            if ($headerTmp) {
+                $this->recalcPenerimaanKBBalance(trim((string) $headerTmp['docno']), $nama);
+            }
 
             $info = array(
                 'status' => 'F'
@@ -4254,6 +4249,15 @@ class Finance extends BaseController
                     'modul' => 'I.K.B.2',
                 );
                 $builder_trxerror->insert($infotrxerror);
+
+                // Catat penyebab kegagalan (mis. periode CLOSED pada modul closing)
+                $dbError = $this->db->error();
+                log_message(
+                    'error',
+                    'finalEntryPenerimaanKB gagal finalisasi: '
+                    . ($dbError['message'] ?? 'penyebab tidak diketahui')
+                );
+
                 return redirect()->to(base_url('/ka/finance/addPenerimaanKB'));
             }
 
@@ -4264,6 +4268,105 @@ class Finance extends BaseController
     }
 
 
+
+    /**
+     * Laporan Jurnal Transaksi Penerimaan Kas/Bank (read only).
+     * Sumber jurnal: sc_trx.jurnal_hd + sc_trx.jurnal_dt (status POSTED),
+     * nama customer diambil dari dokumen sc_trx.penerimaankb.
+     */
+    public function laporan_jurnal_transaksi_penerimaankb()
+    {
+        try {
+
+            // =================================================
+            // GET DOCNO
+            // =================================================
+
+            $docno = trim(
+                $this->request->getPost('docno')
+            );
+
+
+            // =================================================
+            // VALIDASI
+            // =================================================
+
+            if ($docno === '') {
+
+                return $this->response
+                    ->setJSON([
+
+                        'status'   => false,
+
+                        'messages' => 'Doc No Penerimaan Kas/Bank tidak ditemukan',
+
+                        'data'     => []
+
+                    ]);
+
+            }
+
+
+            // =================================================
+            // PARAMETER QUERY
+            // =================================================
+
+            $params = "
+
+            AND TRIM(jh.docno) = " .
+                $this->db->escape($docno);
+
+
+            // =================================================
+            // GET DATA
+            // =================================================
+
+            $query = $this->m_finance
+                ->q_laporan_jurnal_transaksi_penerimaankb($params);
+
+
+            $data = $query->getResultArray();
+
+
+            // =================================================
+            // RESPONSE
+            // =================================================
+
+            return $this->response
+                ->setJSON([
+
+                    'status'   => true,
+
+                    'messages' => 'Data berhasil diambil',
+
+                    'data'     => $data
+
+                ]);
+
+        }
+        catch (\Throwable $e) {
+
+            log_message(
+                'error',
+                'laporan_jurnal_transaksi_penerimaankb: '
+                . $e->getMessage()
+            );
+
+
+            return $this->response
+                ->setJSON([
+
+                    'status'   => false,
+
+                    'messages' => $e->getMessage(),
+
+                    'data'     => []
+
+                ]);
+
+        }
+
+    }
 
     function show_penerimaankb(){
         $module = 'Penerimaan Kas/Bank';
@@ -5322,12 +5425,37 @@ ORDER BY
             $inserted = 0;
             $skipped  = 0;
 
+            /*
+             * Mata uang / kurs header temporary dipakai untuk menghitung
+             * nilaiakhir, sama seperti detail yang diinput manual.
+             */
+            $headerRow = $this->db->table('sc_tmp.pengeluarankb')
+                ->select('currcode, kurs')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->get()
+                ->getRowArray();
+
+            $currcode = strtoupper(trim((string) ($headerRow['currcode'] ?? '')));
+            $currcode = $currcode !== '' ? $currcode : 'IDR';
+
+            $kurs = (float) ($headerRow['kurs'] ?? 0);
+            if ($kurs <= 0) {
+                $kurs = 1;
+            }
+
+            $coaCache = [];
+
             foreach ($rows as $row) {
 
                 $nobukti     = trim($row['nobukti']);
                 $noperkiraan = trim($row['noperkiraan']);
                 $nilai       = (float) $row['nilai'];
                 $keterangan  = trim($row['keterangan'] ?? '');
+
+                if ($nobukti === '' || $noperkiraan === '' || $nilai <= 0) {
+                    continue;
+                }
 
                 /*
                  * 1 Tanda Terima + 1 LPB + 1 COA
@@ -5347,7 +5475,7 @@ ORDER BY
                     ->table('sc_tmp.pengeluarankb_dtl')
                     ->where('docno', $docno)
                     ->where('nobukti', $nobukti)
-                    ->where('noperkiraan', $noperkiraan)
+                    ->where('idcoa', $noperkiraan)
                     ->countAllResults();
 
                 if ($cek > 0) {
@@ -5355,28 +5483,49 @@ ORDER BY
                     continue;
                 }
 
+                /*
+                 * Nama perkiraan (nmcoa) untuk tampilan detail.
+                 */
+                if (!array_key_exists($noperkiraan, $coaCache)) {
+                    $coaRow = $this->db->query(
+                        "SELECT COALESCE(BTRIM(nmcoa::TEXT), '') AS nmcoa
+                           FROM sc_mst.coa
+                          WHERE BTRIM(idcoa::TEXT) = ?",
+                        [$noperkiraan]
+                    )->getRowArray();
+
+                    $coaCache[$noperkiraan] = $coaRow ? trim((string) $coaRow['nmcoa']) : '';
+                }
+
+                $nilaiakhir = round($nilai * $kurs, 2);
+
                 $this->db
                     ->table('sc_tmp.pengeluarankb_dtl')
                     ->insert([
-                        'docno'            => $docno,
-                        'idunique'         => $idunique,
-                        'nobukti'          => $nobukti,
-                        'docref'           => $nobukti,
-                        'noperkiraan'      => $noperkiraan,
-                        'namaperkiraan'    => '',
-                        'keterangan'       => $keterangan,
-                        'dk'               => 'D',
-                        'costprofitcenter' => '',
-                        'nilai'            => $nilai,
-                        'status'           => 'E',
-                        'inputby'          => $nama,
-                        'inputdate'        => date('Y-m-d H:i:s'),
-                        'jurnalref'        => 'YES',
-                        'nilai_ref'            => $nilai,
+                        'docno'      => $docno,
+                        'nobukti'    => $nobukti,
+                        'idcoa'      => $noperkiraan,
+                        'nmcoa'      => $coaCache[$noperkiraan],
+                        'remarks'    => '(' . $nobukti . ') ' . $keterangan,
+                        'dk'         => 'D',
+                        'cabang'     => '',
+                        'nilai'      => $nilai,
+                        'nilaiakhir' => $nilaiakhir,
+                        'currcode'   => $currcode,
+                        'kurs'       => $kurs,
+                        'uniqueid'   => $idunique,
+                        'status'     => 'E',
+                        'inputby'    => $nama,
+                        'inputdate'  => date('Y-m-d H:i:s'),
+                        'jurnalref'  => 'YES',
+                        'nilai_ref'  => $nilaiakhir,
                     ]);
 
                 $inserted++;
             }
+
+            /* Hitung ulang total & balance header dari seluruh detail. */
+            $this->recalcPengeluaranKBBalance($docno, $nama);
 
             if ($this->db->transStatus() === false) {
                 throw new \Exception(
@@ -5415,6 +5564,304 @@ ORDER BY
             ]);
         }
     }
+
+    /**
+     * Hitung ulang total & balance header temporary Pengeluaran Kas/Bank
+     * dari seluruh baris detail (sc_tmp.pengeluarankb_dtl).
+     * Dipakai setelah proses "Tarik Penerimaan Barang Supplier".
+     */
+    private function recalcPengeluaranKBBalance($docno, $nama = '')
+    {
+        $docno = trim((string) $docno);
+
+        if ($docno === '') {
+            return null;
+        }
+
+        $getBalance = $this->db->table('sc_tmp.pengeluarankb_dtl')
+            ->select("
+                COALESCE(SUM(CASE WHEN UPPER(TRIM(COALESCE(dk,''))) IN ('DEBIT','D','DR') THEN nilai ELSE 0 END),0) AS total_debit,
+                COALESCE(SUM(CASE WHEN UPPER(TRIM(COALESCE(dk,''))) IN ('KREDIT','K','CREDIT','CR') THEN nilai ELSE 0 END),0) AS total_kredit
+            ")
+            ->where('docno', $docno)
+            ->get()
+            ->getRowArray();
+
+        $totalDebit  = (float) ($getBalance['total_debit'] ?? 0);
+        $totalKredit = (float) ($getBalance['total_kredit'] ?? 0);
+
+        $headerRow = $this->db->table('sc_tmp.pengeluarankb')
+            ->select('dpp')
+            ->where('docno', $docno)
+            ->get()
+            ->getRowArray();
+
+        if (!$headerRow) {
+            return null;
+        }
+
+        $dpp = (float) ($headerRow['dpp'] ?? 0);
+
+        // total = debit - kredit ; balance = dpp + kredit - debit
+        $total   = $totalDebit - $totalKredit;
+        $balance = $dpp + $totalKredit - $totalDebit;
+
+        $updateHeader = [
+            'total'      => $total,
+            'balance'    => $balance,
+            'updatedate' => date('Y-m-d H:i:s'),
+        ];
+
+        if ($nama !== '') {
+            $updateHeader['updateby'] = $nama;
+        }
+
+        $this->db->table('sc_tmp.pengeluarankb')
+            ->where('docno', $docno)
+            ->update($updateHeader);
+
+        return [
+            'total'        => $total,
+            'balance'      => $balance,
+            'total_debit'  => $totalDebit,
+            'total_kredit' => $totalKredit,
+        ];
+    }
+
+    /*
+     * =====================================================================
+     * TARIK PIUTANG CUSTOMER - PENERIMAAN KAS/BANK
+     * =====================================================================
+     * Konsep sama dengan tombol "Tarik Pengeluaran Kas Bank" pada Pengeluaran
+     * Kas/Bank, perbedaannya:
+     *   - Pengeluaran KB menarik HUTANG (AP) supplier dari LPB.
+     *   - Penerimaan KB menarik PIUTANG (AR) customer dari dokumen penjualan
+     *     (input /sales/postsales/penjualan) yang sudah final (status 'F').
+     *
+     * Sumber angka = dokumen penjualan, karena modul Penjualan tidak menulis
+     * jurnal (sc_trx.jurnal_dt / sc_trx.transaction_dt):
+     *   sc_trx.penjualan.total
+     *   - sc_trx.penerimaankb_dtl (status 'F', dk KREDIT) yang sudah memakai
+     *     piutang tersebut pada dokumen Penerimaan Kas/Bank sebelumnya.
+     *
+     * COA piutang diambil dari sc_mst.currency.ppiutang sesuai currcode
+     * dokumen penjualan.
+     * Hasil tarik masuk ke sc_tmp.penerimaankb_dtl dengan dk = 'KREDIT'
+     * (meng-kredit piutang karena kas/bank bertambah) dan status 'E'
+     * sehingga harus dicentang (checked) dulu oleh user.
+     */
+
+    /**
+     * Ambil baris sisa piutang customer dari dokumen penjualan yang final.
+     */
+    private function piutangCustomerRows($kdcustomer, $currcode = '')
+    {
+        $kdcustomer = strtoupper(trim($kdcustomer));
+        $currcode   = strtoupper(trim($currcode));
+
+        if ($kdcustomer === '') {
+            return [];
+        }
+
+        /*
+         * Sumber piutang = dokumen penjualan yang sudah final
+         * (sc_trx.penjualan, hasil input /sales/postsales/penjualan).
+         *
+         * Modul Penjualan tidak menulis jurnal (jurnal_dt / transaction_dt),
+         * jadi sisa piutang dihitung dari:
+         *   sc_trx.penjualan.total
+         *   - nilai yang sudah dipakai dokumen Penerimaan Kas/Bank lain
+         *     (sc_trx.penerimaankb_dtl dengan status 'F' dan dk KREDIT)
+         *
+         * COA piutang diambil dari sc_mst.currency.ppiutang sesuai
+         * currcode masing-masing dokumen penjualan.
+         */
+        $sql = "SELECT
+                    TRIM(p.docno)                                            AS nobukti,
+                    TRIM(COALESCE(cur.ppiutang, ''))                         AS noperkiraan,
+                    COALESCE(TRIM(coa.nmcoa), '')                            AS namaperkiraan,
+                    TRIM(p.kdcustomer)                                       AS kdcustomer,
+                    COALESCE(TRIM(cust.nmcustomer), '')                      AS nmcustomer,
+                    COALESCE(TRIM(p.keterangan), '')                         AS keterangan,
+                    TRIM(COALESCE(p.cabang, ''))                             AS cabang,
+                    COALESCE(p.total, 0) - COALESCE(used.total_digunakan, 0) AS nilai
+                FROM sc_trx.penjualan p
+                LEFT JOIN sc_mst.currency cur
+                       ON TRIM(cur.currcode) = TRIM(COALESCE(p.currcode, ''))
+                LEFT JOIN sc_mst.coa coa
+                       ON TRIM(coa.idcoa) = TRIM(COALESCE(cur.ppiutang, ''))
+                LEFT JOIN sc_mst.customer cust
+                       ON TRIM(cust.kdcustomer) = TRIM(p.kdcustomer)
+                LEFT JOIN (
+                    SELECT
+                        TRIM(nobukti)           AS nobukti,
+                        SUM(COALESCE(nilai, 0)) AS total_digunakan
+                    FROM sc_trx.penerimaankb_dtl
+                    WHERE UPPER(TRIM(COALESCE(dk, ''))) IN ('KREDIT', 'K')
+                    GROUP BY TRIM(nobukti)
+                ) used
+                       ON used.nobukti = TRIM(p.docno)
+                WHERE TRIM(COALESCE(p.kdcustomer, '')) = ?
+                  AND TRIM(COALESCE(p.status, '')) = 'F'
+                  AND COALESCE(TRIM(cur.ppiutang), '') <> ''
+                  AND ( ? = '' OR TRIM(COALESCE(p.currcode, '')) = ? )
+                  AND COALESCE(p.total, 0) - COALESCE(used.total_digunakan, 0) > 0
+                ORDER BY TRIM(p.docno)";
+
+        return $this->db->query($sql, [$kdcustomer, $currcode, $currcode])->getResultArray();
+    }
+
+    /**
+     * Simpan baris piutang hasil tarik ke detail sementara Penerimaan KB.
+     * 1 dokumen + 1 bukti (invoice) + 1 COA = 1 baris, tidak dobel.
+     */
+    private function insertPiutangCustomerDetail($docno, $rows, $nama)
+    {
+        $inserted = 0;
+        $skipped  = 0;
+
+        // =====================================================
+        // MATA UANG / KURS HEADER
+        // Dipakai untuk nilaiakhir = nilai x kurs, sama seperti
+        // detail yang diinput manual pada Pengeluaran Kas/Bank.
+        // =====================================================
+        $headerRow = $this->db->table('sc_tmp.penerimaankb')
+            ->select('currcode, kurs')
+            ->where('docno', $docno)
+            ->get()
+            ->getRowArray();
+
+        $currcode = strtoupper(trim((string) ($headerRow['currcode'] ?? '')));
+        $currcode = $currcode !== '' ? $currcode : 'IDR';
+
+        $kurs = (float) ($headerRow['kurs'] ?? 0);
+
+        if ($kurs <= 0) {
+            $kurs = 1;
+        }
+
+        foreach ($rows as $row) {
+            $nobukti    = trim((string) ($row['nobukti'] ?? ''));
+            $idcoa      = trim((string) ($row['noperkiraan'] ?? ''));
+            $nilai      = (float) ($row['nilai'] ?? 0);
+            $keterangan = trim((string) ($row['keterangan'] ?? ''));
+
+            if ($nobukti === '' || $idcoa === '' || $nilai <= 0) {
+                continue;
+            }
+
+            $cek = $this->db->table('sc_tmp.penerimaankb_dtl')
+                ->where('docno', $docno)
+                ->where('nobukti', $nobukti)
+                ->where('idcoa', $idcoa)
+                ->countAllResults();
+
+            if ($cek > 0) {
+                $skipped++;
+                continue;
+            }
+
+            $nilaiakhir = round($nilai * $kurs, 2);
+
+            $this->db->table('sc_tmp.penerimaankb_dtl')->insert([
+                'docno'      => $docno,
+                'nobukti'    => $nobukti,
+                'idcoa'      => $idcoa,
+                'nmcoa'      => trim((string) ($row['namaperkiraan'] ?? '')),
+                'remarks'    => '(' . $nobukti . ') ' . $keterangan,
+                'dk'         => 'K',
+                'cabang'     => trim((string) ($row['cabang'] ?? '')),
+                'nilai'      => $nilai,
+                'nilaiakhir' => $nilaiakhir,
+                'currcode'   => $currcode,
+                'kurs'       => $kurs,
+                'jurnalref'  => 'YES',
+                'nilai_ref'  => $nilaiakhir,
+                'status'     => 'E',
+                'inputby'    => $nama,
+                'inputdate'  => date('Y-m-d H:i:s'),
+                'uniqueid'   => md5($docno . '|' . $nobukti . '|' . $idcoa),
+            ]);
+
+            $inserted++;
+        }
+
+        return [$inserted, $skipped];
+    }
+
+    /**
+     * TARIK PIUTANG CUSTOMER (tombol Tarik pada Penerimaan Kas/Bank).
+     */
+    public function tarikPiutangCustomer()
+    {
+        $docno      = strtoupper(trim((string) $this->request->getPost('docno')));
+        $kdcustomer = strtoupper(trim((string) $this->request->getPost('kdcustomer')));
+        $currcode   = strtoupper(trim((string) $this->request->getPost('currcode')));
+        $nama       = trim((string) $this->session->get('nama'));
+
+        if ($docno === '') {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Nomor bukti Penerimaan Kas/Bank belum tersedia.'
+            ]);
+        }
+
+        if ($kdcustomer === '') {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Customer belum dipilih.'
+            ]);
+        }
+
+        $rows = $this->piutangCustomerRows($kdcustomer, $currcode);
+
+        if (empty($rows)) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Tidak ada sisa piutang customer tersebut (dokumen penjualan belum final atau sudah lunas).',
+                'data'    => []
+            ]);
+        }
+
+        $this->db->transBegin();
+
+        try {
+            [$inserted, $skipped] = $this->insertPiutangCustomerDetail($docno, $rows, $nama);
+
+            // Hitung ulang total & balance header dari seluruh detail
+            $this->recalcPenerimaanKBBalance($docno, $nama);
+
+            if ($this->db->transStatus() === false) {
+                throw new \Exception('Gagal menyimpan detail piutang customer.');
+            }
+
+            $this->db->transCommit();
+
+            if ($inserted === 0) {
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Data piutang customer sudah pernah ditarik.',
+                    'data'    => []
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'status'   => true,
+                'message'  => 'Piutang customer berhasil ditarik.',
+                'inserted' => $inserted,
+                'skipped'  => $skipped,
+                'data'     => $rows
+            ]);
+        } catch (\Throwable $e) {
+            $this->db->rollback();
+
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
     public function getPembelianSup()
     {
         $db   = $this->db;
@@ -6202,6 +6649,24 @@ ORDER BY p.docno;
         echo json_encode($data);
     }
 
+    /**
+     * Ambil header Pengeluaran Kas/Bank (read only) dari sc_trx.pengeluarankb.
+     * Dipakai oleh halaman Detail Pengeluaran Kas/Bank.
+     */
+    function showing_pengeluarankbtrx(){
+        $docno = trim($this->request->getGet('docno')); // Ambil parameter docno dari Ajax
+
+        $param = " and docno='$docno'";
+        $data = $this->m_finance->q_pengeluarankb_master($param);
+        $output = array(
+            'status' => true,
+            'total_count' => $data->getNumRows(),
+            'items' => $data->getResult(),
+            'incomplete_getResults' => false,
+        );
+        echo $this->fiky_encryption->jDatatable($output);
+    }
+
 
 
     public function get_pengeluarankb_detail()
@@ -6371,6 +6836,106 @@ ORDER BY p.docno;
             "data" => $data,
         );
         echo $this->fiky_encryption->jDatatable($output);
+    }
+
+
+    /**
+     * Laporan Jurnal Transaksi Pengeluaran Kas/Bank (read only).
+     * Sumber jurnal: sc_trx.jurnal_hd + sc_trx.jurnal_dt (status POSTED),
+     * nama supplier diambil dari dokumen sc_trx.pengeluarankb.
+     */
+    public function laporan_jurnal_transaksi_pengeluarankb()
+    {
+        try {
+
+            // =================================================
+            // GET DOCNO
+            // =================================================
+
+            $docno = trim(
+                $this->request->getPost('docno')
+            );
+
+
+            // =================================================
+            // VALIDASI
+            // =================================================
+
+            if ($docno === '') {
+
+                return $this->response
+                    ->setJSON([
+
+                        'status'   => false,
+
+                        'messages' => 'Doc No Pengeluaran Kas/Bank tidak ditemukan',
+
+                        'data'     => []
+
+                    ]);
+
+            }
+
+
+            // =================================================
+            // PARAMETER QUERY
+            // =================================================
+
+            $params = "
+
+            AND TRIM(jh.docno) = " .
+                $this->db->escape($docno);
+
+
+            // =================================================
+            // GET DATA
+            // =================================================
+
+            $query = $this->m_finance
+                ->q_laporan_jurnal_transaksi_pengeluarankb($params);
+
+
+            $data = $query->getResultArray();
+
+
+            // =================================================
+            // RESPONSE
+            // =================================================
+
+            return $this->response
+                ->setJSON([
+
+                    'status'   => true,
+
+                    'messages' => 'Data berhasil diambil',
+
+                    'data'     => $data
+
+                ]);
+
+        }
+        catch (\Throwable $e) {
+
+            log_message(
+                'error',
+                'laporan_jurnal_transaksi_pengeluarankb: '
+                . $e->getMessage()
+            );
+
+
+            return $this->response
+                ->setJSON([
+
+                    'status'   => false,
+
+                    'messages' => $e->getMessage(),
+
+                    'data'     => []
+
+                ]);
+
+        }
+
     }
 
 
@@ -6932,6 +7497,28 @@ ORDER BY p.docno;
             // Transform RAW -> header/detail + seluruh validasi kolom di sisi database.
             $db->query('CALL sc_im.sp_build_pengeluarankb_import(?)', [$batchId]);
 
+            // TUTUP PERIODE / CLOSING: dokumen yang tanggalnya berada pada periode yang sudah
+            // ditutup (sc_trx.closeperiod.flagproses = 'TUTUP') ditandai ERROR (merah) sehingga
+            // batch tidak dapat dikonfirmasi/diposting ke transaksi.
+            $db->query(
+                "UPDATE sc_im.pengeluarankb_import_hd h
+                    SET status = 'ERROR',
+                        error_message = CONCAT_WS('; ', NULLIF(h.error_message, ''),
+                            'Periode ' || TO_CHAR(h.docdate, 'YYMM') || ' sudah TUTUP (closing). Dokumen tidak dapat diproses.')
+                   FROM sc_trx.closeperiod cp
+                  WHERE h.batch_id = ?
+                    AND h.docdate IS NOT NULL
+                    AND BTRIM(cp.periode::TEXT) = TO_CHAR(h.docdate, 'YYMM')
+                    AND UPPER(BTRIM(cp.flagproses)) = 'TUTUP'",
+                [$batchId]
+            );
+            $countClosing = (int) ($db->query(
+                "SELECT COUNT(*)::INT AS c
+                   FROM sc_im.pengeluarankb_import_hd
+                  WHERE batch_id = ? AND error_message LIKE '%sudah TUTUP (closing)%'",
+                [$batchId]
+            )->getRowArray()['c'] ?? 0);
+
             // REPLACE: docno yang sudah ada di transaksi/draft atau staging batch aktif lain
             // ditandai is_replace=1; staging lama dengan docno sama dihapus (tidak ditumpuk).
             $batchDocnos = array_column($db->table('sc_im.pengeluarankb_import_hd')->select('docno')->where('batch_id', $batchId)->get()->getResultArray(), 'docno');
@@ -6962,12 +7549,20 @@ ORDER BY p.docno;
             }
             $countReplace = (int) $db->table('sc_im.pengeluarankb_import_hd')->where('batch_id', $batchId)->where('is_replace', 1)->countAllResults();
 
-            // Jumlah valid/error diambil dari batch (sudah diisi SP).
-            $batchRow = $db->table('sc_im.pengeluarankb_import_batch')->where('id', $batchId)->get()->getRowArray();
-            $countValid = (int) ($batchRow['jumlah_valid'] ?? 0);
-            $countError = (int) ($batchRow['jumlah_gagal'] ?? 0);
+            // Jumlah valid/error dihitung ulang dari staging agar perubahan akibat penandaan
+            // TUTUP PERIODE (closing) di atas ikut terhitung.
+            $countRow = $db->query(
+                "SELECT COUNT(*)::INT AS jumlah_baris,
+                        COUNT(*) FILTER (WHERE status = 'VALID')::INT AS jumlah_valid,
+                        COUNT(*) FILTER (WHERE status = 'ERROR')::INT AS jumlah_gagal
+                   FROM sc_im.pengeluarankb_import_hd
+                  WHERE batch_id = ?",
+                [$batchId]
+            )->getRowArray();
+            $countValid = (int) ($countRow['jumlah_valid'] ?? 0);
+            $countError = (int) ($countRow['jumlah_gagal'] ?? 0);
 
-            $totalRows = $countValid + $countError;
+            $totalRows = (int) ($countRow['jumlah_baris'] ?? 0);
             if ($totalRows === 0) throw new \RuntimeException('Tidak ada baris data yang dapat dipreview.');
             $db->table('sc_im.pengeluarankb_import_batch')->where('id', $batchId)->update([
                 'jumlah_baris'=>$totalRows, 'jumlah_valid'=>$countValid, 'jumlah_gagal'=>$countError
@@ -6978,6 +7573,11 @@ ORDER BY p.docno;
             $db->transRollback();
             log_message('error', 'Import PengeluaranKB stage failed: '.$e->getMessage());
             return redirect()->to($redirect)->with('error', 'Preview gagal disimpan: '.$e->getMessage());
+        }
+
+        if (!empty($countClosing)) {
+            return redirect()->to($redirect)->with('preview_batch_token', $batchToken)
+                ->with('warning', 'Preview selesai. Valid: '.$countValid.', error: '.$countError.'. '.$countClosing.' dokumen berada pada periode TUTUP (closing) sehingga ditandai INVALID (merah) dan tidak dapat diproses.');
         }
 
         return redirect()->to($redirect)->with('preview_batch_token', $batchToken)
@@ -6994,6 +7594,18 @@ ORDER BY p.docno;
         $batch = $db->table('sc_im.pengeluarankb_import_batch')->where('batch_token', $token)->where('created_by', $nama)->get()->getRowArray();
         if (!$batch || $batch['status'] !== 'PREVIEW') return redirect()->to(base_url('ka/finance/importPengeluaranKB'))->with('error', 'Batch tidak ditemukan atau sudah diproses.');
         if ((int)$batch['jumlah_gagal'] > 0) return redirect()->to(base_url('ka/finance/importPengeluaranKB'))->with('error', 'Batch masih memiliki baris ERROR. Perbaiki file lalu upload ulang; batch tidak dikonfirmasi.');
+        // Guard periode: dokumen pada periode yang sudah TUTUP (closing) tidak boleh diposting.
+        $closedRow = $db->query(
+            "SELECT COUNT(*)::INT AS c
+               FROM sc_im.pengeluarankb_import_hd h
+               JOIN sc_trx.closeperiod cp
+                 ON BTRIM(cp.periode::TEXT) = TO_CHAR(h.docdate, 'YYMM')
+              WHERE h.batch_id = ?
+                AND h.docdate IS NOT NULL
+                AND UPPER(BTRIM(cp.flagproses)) = 'TUTUP'",
+            [$batch['id']]
+        )->getRowArray();
+        if ((int)($closedRow['c'] ?? 0) > 0) return redirect()->to(base_url('ka/finance/importPengeluaranKB'))->with('error', 'Batch memuat dokumen pada periode yang sudah TUTUP (closing). Konfirmasi dibatalkan.');
         // SP validasi ulang + insert header/detail + jurnal, lalu set batch CONFIRMED. Gagal = rollback semua.
         $db->transBegin();
         try {

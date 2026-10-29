@@ -289,6 +289,7 @@ $routes->group('/ka/finance', ["namespace" => "App\Controllers\Finance"], functi
     $routes->add('list_penerimaankb_apprv', 'Finance::list_penerimaankb_apprv');
 
     $routes->add('getPenjualanCust', 'Finance::getPenjualanCust');
+    $routes->add('tarikPiutangCustomer', 'Finance::tarikPiutangCustomer');
     $routes->add('addPenerimaanKB', 'Finance::addPenerimaanKB');
     $routes->add('detailPenerimaanKB', 'Finance::detailPenerimaanKB');
     $routes->add('list_tmp_penerimaankb_dtl', 'Finance::list_tmp_penerimaankb_dtl');
@@ -315,6 +316,9 @@ $routes->group('/ka/finance', ["namespace" => "App\Controllers\Finance"], functi
     $routes->add('savePenerimaanKBDetail', 'Finance::savePenerimaanKBDetail');
     $routes->add("get_penerimaankb_detail(:any)", "Finance::get_penerimaankb_detail$1");
     $routes->add("delete_penerimaankb_detail", "Finance::delete_penerimaankb_detail");
+
+    $routes->post(
+        'laporan_jurnal_transaksi_penerimaankb', 'Finance::laporan_jurnal_transaksi_penerimaankb');
 
 
 
@@ -357,6 +361,8 @@ $routes->group('/ka/finance', ["namespace" => "App\Controllers\Finance"], functi
     $routes->add('savePengeluaranKBDetail', 'Finance::savePengeluaranKBDetail');
     $routes->add("get_pengeluarankb_detail(:any)", "Finance::get_pengeluarankb_detail$1");
     $routes->add("delete_pengeluarankb_detail", "Finance::delete_pengeluarankb_detail");
+    $routes->post(
+        'laporan_jurnal_transaksi_pengeluarankb', 'Finance::laporan_jurnal_transaksi_pengeluarankb');
     $routes->add("tarikPenerimaanBarangSupplier", "Finance::tarikPenerimaanBarangSupplier");
 
     $routes->add('clearfinalPengeluaranKB', 'Finance::clearfinalPengeluaranKB');
@@ -433,8 +439,21 @@ $routes->group('/tools/konfigurasi', ["namespace" => "App\Controllers\Tools"], f
 
 
 $routes->group('/tools/proses', ["namespace" => "App\Controllers\Tools"], function ($routes) {
-    $routes->add('tutupbulan', 'Tools::tutupbulan');
-    $routes->add('processTutupBulan', 'Tools::processTutupBulan');
+    /* Proses Tutup Bulan (Accounting Closing) */
+    $routes->add('tutupbulan', 'Closing::index');
+    $routes->add('processTutupBulan', 'Closing::processTutupBulan');
+    $routes->add('registerClosingPeriod', 'Closing::registerClosingPeriod');
+    $routes->add('getClosingDiagnostics', 'Closing::getClosingDiagnostics');
+    $routes->add('applyClosingChecks', 'Closing::applyClosingChecks');
+    $routes->add('startClosingPeriod', 'Closing::startClosingPeriod');
+    $routes->add('submitClosingReview', 'Closing::submitClosingReview');
+    $routes->add('closeClosingPeriod', 'Closing::closeClosingPeriod');
+    $routes->add('reopenClosingPeriod', 'Closing::reopenClosingPeriod');
+    $routes->add('saveClosingCheck', 'Closing::saveClosingCheck');
+    $routes->add('prepareYearEndClosing', 'Closing::prepareYearEndClosing');
+    $routes->add('getClosingYearEndJournal', 'Closing::getClosingYearEndJournal');
+    $routes->add('listClosingCoaRule', 'Closing::listClosingCoaRule');
+    $routes->add('saveClosingCoaRule', 'Closing::saveClosingCoaRule');
 
 });
 

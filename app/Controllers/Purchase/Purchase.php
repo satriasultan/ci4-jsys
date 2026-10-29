@@ -3047,8 +3047,8 @@ class Purchase extends BaseController
                 empty($lm->printdate) &&
                 trim($status) == 'FINAL USER'
             ) {
-                $disapproveBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToCancel(\'' . trim($lm->docno) . '\');">
-                    <i class="fa fa-undo"></i> Batalkan Purchase Order</a>';
+//                $disapproveBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToCancel(\'' . trim($lm->docno) . '\');">
+//                    <i class="fa fa-undo"></i> Batalkan Purchase Order</a>';
             }
 
 
@@ -3679,6 +3679,10 @@ class Purchase extends BaseController
         $data['userlogin'] = $nama;
         $param = " and trim(inputby)='$nama'";
         $data['dtldata'] = $this->m_purchase->q_po_master_temp($param)->getRowArray();
+
+        /* Jumlah detail temp milik user → dipakai untuk mengunci header PO */
+        $paramdtlcount = " and coalesce(inputby,'$nama')='$nama'";
+        $data['detailcount'] = $this->m_purchase->q_po_dtl_temp($paramdtlcount)->getNumRows();
         $logindate  = trim($this->session->get('logindate'));
         $ts    = strtotime($logindate);
 
@@ -4693,7 +4697,7 @@ class Purchase extends BaseController
 
             $row[] = $lm->unit;
             $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 2, '.', ',') . '</div>';
+            /*$row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 2, '.', ',') . '</div>';*/
             $row[] = '<div class="ratakanan">'. number_format($lm->harga, 2, '.', ',') . '</div>';
 
             // Multi Disc & Total Disc tetap di-comment

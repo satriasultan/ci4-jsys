@@ -1450,6 +1450,205 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.Q.A.1' and 
         return $this->db->query("select * from sc_trx.pmk_brng_dtl where docno is not null $param order by idurut desc");
     }
 
+    /* ============================================================
+       PEMAKAIAN BARANG - DETAIL TRANSAKSI FINAL (READ ONLY)
+       Sumber: sc_trx.pmk_brng_dtl, difilter per docno
+       ============================================================ */
+    var $trx_pmk_brng_dtl_view = "sc_trx.pmk_brng_dtl";
+    var $trx_pmk_brng_dtl_view_column = array('idurut','idbarang','nmbarang','idlocation','batch','unit','qty','description');
+    var $trx_pmk_brng_dtl_view_order = array("idurut" => 'asc'); // default order
+
+    private function _get_query_trx_pmk_brng_dtl($docno)
+    {
+        $builder = $this->db->table($this->trx_pmk_brng_dtl_view . ' AS x');
+
+        $builder->join('sc_mst.mlocation AS ml', 'ml.idlocation = x.idlocation', 'left');
+
+        $builder->select("x.idurut, x.docno, x.idbarang, x.nmbarang, x.unit, x.qty, x.batch,
+                          x.idlocation, ml.nmlocation, x.description, x.idcostcenter, x.idcoa, x.counter_idcoa");
+
+        // filter dokumen : hanya baris milik docno yang dibuka
+        $builder->where("trim(x.docno)", trim($docno));
+
+        $builder->orderBy('x.idurut', 'asc');
+
+        if (isset($_POST['search']['value']) && $_POST['search']['value']) // if datatable send POST for search
+        {
+            $i = 0;
+            foreach ($this->trx_pmk_brng_dtl_view_column as $mrp)
+            {
+                if ($i === 0) // first loop
+                {
+                    $builder->groupStart(); // open bracket
+                    $builder->like("upper(cast(x." . strtoupper($mrp) . " as varchar))", strtoupper($_POST['search']['value']));
+                }
+                else
+                {
+                    $builder->orLike("upper(cast(x." . strtoupper($mrp) . " as varchar))", strtoupper($_POST['search']['value']));
+                }
+
+                if (count($this->trx_pmk_brng_dtl_view_column) - 1 == $i) //last loop
+                    $builder->groupEnd(); //close bracket
+
+                $i++;
+            }
+        }
+
+        if (isset($_POST['order'])) // here order processing
+        {
+            $colIdx = (int) $_POST['order']['0']['column'];
+            if ($colIdx != 0 && isset($this->trx_pmk_brng_dtl_view_column[$colIdx])) {
+                $dir = strtoupper($_POST['order']['0']['dir']) === 'DESC' ? 'DESC' : 'ASC';
+                $builder->orderBy('x.' . $this->trx_pmk_brng_dtl_view_column[$colIdx], $dir);
+            }
+        }
+
+        return $builder;
+    }
+
+    function get_trx_pmk_brng_dtl_view($docno)
+    {
+        $builder = $this->_get_query_trx_pmk_brng_dtl($docno);
+        if (isset($_POST['length']) && $_POST['length'] != -1)
+            $builder->limit($_POST['length'], $_POST['start']);
+        $query = $builder->get();
+        return $query->getResult();
+    }
+
+    function trx_pmk_brng_dtl_view_count_filtered($docno)
+    {
+        $builder = $this->_get_query_trx_pmk_brng_dtl($docno);
+        $query = $builder->get();
+        return $query->getNumRows();
+    }
+
+    public function trx_pmk_brng_dtl_view_count_all($docno)
+    {
+        $builder = $this->_get_query_trx_pmk_brng_dtl($docno);
+        return $builder->countAllResults();
+    }
+
+    /* ============================================================
+       LAPORAN JURNAL TRANSAKSI PEMAKAIAN BARANG (READ ONLY)
+       Sumber jurnal: sc_trx.jurnal_hd + sc_trx.jurnal_dt (status POSTED),
+       cost center diambil dari dokumen asal sc_trx.pmk_brng_mst.
+       ============================================================ */
+    function q_laporan_jurnal_transaksi_pmk($params = '')
+    {
+        return $this->db->query("
+        WITH data_jurnal AS (
+
+            SELECT
+                jd.id,
+                jd.jurnal_id,
+
+                TRIM(jd.idcoa) AS idcoa,
+                TRIM(coa.nmcoa) AS nmcoa,
+
+                jd.debet,
+                jd.kredit,
+
+                TRIM(jd.ref_docno) AS ref_docno,
+                TRIM(jd.ref_doctype) AS ref_doctype,
+
+                TRIM(jh.docno) AS docno,
+                TRIM(jh.doctype) AS doctype,
+
+                jh.trxdate,
+
+                TRIM(pmk.idcostcenter) AS idcostcenter,
+                TRIM(cc.nmcostcenter) AS nmcostcenter
+
+            FROM sc_trx.jurnal_dt jd
+
+            INNER JOIN sc_trx.jurnal_hd jh
+                ON jh.id = jd.jurnal_id
+
+            LEFT JOIN sc_mst.coa coa
+                ON TRIM(coa.idcoa) = TRIM(jd.idcoa)
+
+            LEFT JOIN sc_trx.pmk_brng_mst pmk
+                ON TRIM(pmk.docno) = COALESCE(
+                    NULLIF(TRIM(jd.ref_docno), ''),
+                    NULLIF(TRIM(jh.docno), '')
+                )
+
+            LEFT JOIN sc_mst.costcenter cc
+                ON TRIM(cc.idcostcenter) = TRIM(pmk.idcostcenter)
+
+            WHERE 1=1
+            AND jh.status = 'POSTED'
+            AND jd.status = 'POSTED'
+            $params
+        )
+
+        /* ============================================
+           DETAIL JURNAL
+        ============================================ */
+
+        SELECT
+            id,
+            jurnal_id,
+            idcoa,
+            nmcoa,
+            debet,
+            kredit,
+            ref_docno,
+            ref_doctype,
+            docno,
+            doctype,
+            trxdate,
+            idcostcenter,
+            nmcostcenter,
+
+            0 AS urutan
+
+        FROM data_jurnal
+
+
+        UNION ALL
+
+
+        /* ============================================
+           TOTAL
+        ============================================ */
+
+        SELECT
+            NULL::BIGINT,
+            NULL::BIGINT,
+
+            NULL::VARCHAR,
+            'TOTAL'::VARCHAR,
+
+            COALESCE(SUM(debet), 0),
+            COALESCE(SUM(kredit), 0),
+
+            NULL::VARCHAR,
+            NULL::VARCHAR,
+
+            NULL::VARCHAR,
+            NULL::VARCHAR,
+
+            NULL::DATE,
+
+            NULL::VARCHAR,
+            NULL::VARCHAR,
+
+            1 AS urutan
+
+        FROM data_jurnal
+
+
+        ORDER BY
+            urutan,
+            trxdate DESC NULLS LAST,
+            jurnal_id,
+            id
+        ");
+    }
+
+
+
 
     public function q_cek_periode($periode)
     {

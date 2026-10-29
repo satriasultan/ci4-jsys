@@ -885,3 +885,157 @@ WHERE trigger_name IN (
     'tr_lpb_dtl_transaction_dt'
 )
 ORDER BY trigger_name;
+
+
+
+
+
+/* ============================================================
+   PATCH LPB -> TRANSACTION_DT
+   ============================================================
+   Tujuan:
+   - Tidak drop/recreate tabel LPB.
+   - Memperbarui fungsi sinkronisasi detail LPB ke transaction_dt.
+   - Validasi idbarang ada di sc_mst.mbarang dan idgroup terisi.
+   - JSA tetap masuk transaction_dt/accounting, tidak ke stkblc
+     (diatur oleh sc_trx.fn_prepare_transaction_dt).
+   - Barang selain JSA mengikuti routing journal_type dan COA
+     master pada transaction_dt.
+
+   Jalankan setelah backup dan pastikan fungsi dasar
+   sc_trx.fn_prepare_transaction_dt() sudah terpasang.
+   ============================================================ */
+
+BEGIN;
+
+CREATE OR REPLACE FUNCTION sc_trx.tr_lpb_dtl_transaction_dt()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $BODY$
+DECLARE
+    v_docno       TEXT;
+    v_tx_uniqueid TEXT;
+    v_header      sc_trx.lpb%ROWTYPE;
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        IF NULLIF(BTRIM(OLD.uniqueid), '') IS NOT NULL THEN
+            DELETE FROM sc_trx.transaction_dt
+            WHERE uniqueid = md5('LPB|GRNREC|' || BTRIM(OLD.docno) || '|' || BTRIM(OLD.uniqueid));
+
+            DELETE FROM sc_trx.transaction_dt
+            WHERE BTRIM(source_uniqueid) = BTRIM(OLD.uniqueid)
+              AND BTRIM(docno) = BTRIM(OLD.docno)
+              AND BTRIM(doctype) = 'GR'
+              AND BTRIM(journal_type) = 'GRNREC';
+        END IF;
+        RETURN OLD;
+    END IF;
+
+    IF NULLIF(BTRIM(NEW.uniqueid), '') IS NULL THEN
+        RAISE EXCEPTION
+            'LPB detail % tidak mempunyai uniqueid PO. Transaction_dt tidak dapat dibuat.',
+            BTRIM(NEW.docno);
+    END IF;
+
+    v_docno := BTRIM(NEW.docno);
+
+    /* PATCH: validasi master barang sebelum membuat transaction_dt.
+       JSA akan diarahkan ke accounting tanpa stock oleh
+       sc_trx.fn_prepare_transaction_dt(). Kelompok selain JSA
+       mengikuti routing master journal_type dan COA persediaan. */
+    IF NOT EXISTS
+    (
+        SELECT 1
+        FROM sc_mst.mbarang b
+        WHERE BTRIM(to_jsonb(b)->>'idbarang')
+              = BTRIM(COALESCE(NEW.idbarang, ''))
+          AND NULLIF(BTRIM(to_jsonb(b)->>'idgroup'), '') IS NOT NULL
+    )
+    THEN
+        RAISE EXCEPTION
+            'Barang % pada LPB % tidak ditemukan di sc_mst.mbarang atau idgroup kosong. Transaction_dt dibatalkan.',
+            BTRIM(COALESCE(NEW.idbarang, '')),
+            v_docno;
+    END IF;
+
+    SELECT h.* INTO v_header
+    FROM sc_trx.lpb h
+    WHERE BTRIM(h.docno) = v_docno
+    LIMIT 1;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION
+            'Header LPB % tidak ditemukan saat membuat transaction_dt.',
+            v_docno;
+    END IF;
+
+    v_tx_uniqueid := md5('LPB|GRNREC|' || v_docno || '|' || BTRIM(NEW.uniqueid));
+
+    DELETE FROM sc_trx.transaction_dt WHERE uniqueid = v_tx_uniqueid;
+
+    INSERT INTO sc_trx.transaction_dt
+    (
+        uniqueid, source_uniqueid, docno, doctype, journal_type, line_no, docdate,
+        idbranch, cabang, type_in_out,
+        ref_docno, ref_doctype,
+        source_table, source_id, source_line_id,
+        kdsupplier, nsupplier,
+        idbarang, namabarang, idunit,
+        idarea, warehouse, bin, batch, lotno,
+        qty, harga, bruto, discount, nilai, dpp, pajak, total,
+        idtax, isinclusive, currcode, kurs,
+        keterangan, createdby, createddate
+    )
+    VALUES
+    (
+        v_tx_uniqueid, BTRIM(NEW.uniqueid),
+        v_docno, 'GR', 'GRNREC',
+        GREATEST(COALESCE(NEW.idurut, 1), 1),
+        v_header.docdate,
+        COALESCE(BTRIM(v_header.cabang), ''),
+        COALESCE(BTRIM(v_header.cabang), ''),
+        'IN',
+        COALESCE(BTRIM(NEW.docnopo), ''), 'PO',
+        'sc_trx.lpb_dtl', NEW.idurut, NEW.idurut,
+        COALESCE(BTRIM(v_header.kdsupplier), ''),
+        COALESCE(BTRIM(v_header.nmsupplier), ''),
+        COALESCE(BTRIM(NEW.idbarang), ''),
+        COALESCE(BTRIM(NEW.nmbarang), ''),
+        COALESCE(BTRIM(NEW.unit), ''),
+        '', COALESCE(BTRIM(NEW.idgudang), ''), '',
+        COALESCE(BTRIM(NEW.batch), ''), '',
+        COALESCE(NEW.qty, 0),
+        COALESCE(NEW.harga, 0),
+        COALESCE(NEW.harga, 0) * COALESCE(NEW.qty, 0),
+        COALESCE(NEW.totaldiscount, 0),
+        COALESCE(NULLIF(NEW.nilaikonversi, 0), COALESCE(NEW.nilai, 0)),
+        COALESCE(NULLIF(NEW.nilaikonversi, 0), COALESCE(NEW.nilai, 0)),
+        COALESCE(NEW.nilaipajak, 0),
+        COALESCE(NULLIF(NEW.nilaikonversi, 0), COALESCE(NEW.nilai, 0))
+            + COALESCE(NEW.nilaipajak, 0),
+        COALESCE(NULLIF(BTRIM(NEW.idtax), ''), NULLIF(BTRIM(v_header.idtax), ''), 'NON'),
+        COALESCE(NULLIF(BTRIM(v_header.isinclusive), ''), 'NO'),
+        COALESCE(NULLIF(BTRIM(NEW.currcode), ''), NULLIF(BTRIM(v_header.currcode), ''), 'IDR'),
+        COALESCE(NULLIF(NEW.kurs, 0), NULLIF(v_header.kurs, 0), 1),
+        COALESCE(
+            NULLIF(BTRIM(NEW.descriptionpp), ''),
+            NULLIF(BTRIM(NEW.descriptionpo), ''),
+            'LPB ' || v_docno
+        ),
+        COALESCE(BTRIM(NEW.inputby), BTRIM(v_header.inputby), ''),
+        COALESCE(NEW.inputdate, v_header.inputdate, CURRENT_TIMESTAMP)
+    );
+
+    RETURN NEW;
+END;
+$BODY$;
+
+ALTER FUNCTION sc_trx.tr_lpb_dtl_transaction_dt() OWNER TO postgres;
+
+CREATE OR REPLACE TRIGGER tr_lpb_dtl_transaction_dt
+    AFTER INSERT OR DELETE
+    ON sc_trx.lpb_dtl
+    FOR EACH ROW
+    EXECUTE FUNCTION sc_trx.tr_lpb_dtl_transaction_dt();
+
+COMMIT;

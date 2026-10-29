@@ -62,8 +62,111 @@
         border: none;
     }
 
+    /* =========================================
+       TOOLBAR (VIEW ONLY)
+    ========================================= */
+
+    .accounting-toolbar {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin: 10px 0 20px 0;
+        flex-wrap: wrap;
+    }
+
+
+    /*jurnal posting*/
+    /* =========================================
+   LAPORAN JURNAL - CORPORATE TABLE
+========================================= */
+
+    #modalLaporanJurnalPengeluaranKB .modal-content {
+        border-radius: 4px;
+        border: 1px solid #d6dce3;
+    }
+
+    #modalLaporanJurnalPengeluaranKB .modal-header {
+        padding: 12px 20px;
+    }
+
+    #modalLaporanJurnalPengeluaranKB .modal-title {
+        font-size: 16px;
+        color: #343a40;
+    }
+
+    /* =========================================
+       DATATABLE
+    ========================================= */
+
+    #tableLaporanJurnalPengeluaranKB {
+        border-collapse: collapse !important;
+        white-space: nowrap !important;
+    }
+
+    #tableLaporanJurnalPengeluaranKB thead th {
+        background: #46533a;
+        color: #ffffff;
+        font-size: 12px;
+        font-weight: 600;
+        vertical-align: middle;
+        white-space: nowrap !important;
+        border-color: #59664c;
+        padding: 9px 10px;
+    }
+
+    #tableLaporanJurnalPengeluaranKB tbody td {
+        font-size: 12px;
+        vertical-align: middle;
+        white-space: nowrap !important;
+        padding: 8px 10px;
+    }
+
+    /* Hover corporate */
+    #tableLaporanJurnalPengeluaranKB tbody tr:hover {
+        background-color: #f1f4f6 !important;
+    }
+
+    /* Nominal */
+    #tableLaporanJurnalPengeluaranKB td.text-right {
+        font-family: Consolas, "Courier New", monospace;
+        font-weight: 500;
+    }
+
+    /* TOTAL ROW */
+    #tableLaporanJurnalPengeluaranKB tbody tr.row-total td {
+        background-color: #eef1e9 !important;
+        font-weight: bold;
+        border-top: 2px solid #46533a !important;
+    }
+
+    /* =========================================
+       DATATABLE CONTROL
+    ========================================= */
+
+    #modalLaporanJurnalPengeluaranKB .dataTables_wrapper {
+        font-size: 12px;
+    }
+
+    #modalLaporanJurnalPengeluaranKB .dataTables_filter input {
+        border: 1px solid #ced4da;
+        border-radius: 3px;
+        height: 30px;
+        padding: 5px 10px;
+    }
+
+    #modalLaporanJurnalPengeluaranKB .dataTables_length select {
+        border: 1px solid #ced4da;
+        border-radius: 3px;
+        height: 30px;
+    }
+
+    /* Horizontal scroll */
+    #modalLaporanJurnalPengeluaranKB .dataTables_scrollBody {
+        border-bottom: 1px solid #dee2e6 !important;
+    }
 
 </style>
+
 <div class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
@@ -74,6 +177,7 @@
                 <ol class="breadcrumb float-sm-right">
                     <div class="float-right" style="margin-right: 10px;vertical-align:middle;padding-top: 0.7%;"><i style="color:transparent;"><?php echo $t; ?></i> Menu ID <?php echo $version; ?></div>
                     <input type="hidden" id="classmenu" value="<?= str_replace('.','_',$kodemenu) ?>" required>
+                    <input type="hidden" id="pageMode" value="<?= strtoupper(trim((string) $typeform)) ?>">
                     <?php foreach ($y as $y1) { ?>
                         <?php if( trim($y1->kodemenu)!=trim($kodemenu)) { ?>
                             <li class="breadcrumb-item"><a href="<?php echo base_url( trim($y1->linkmenu)) ; ?>"><i class="fa <?php echo trim($y1->iconmenu); ?>"></i> <?php echo  trim($y1->namamenu); ?></a></li>
@@ -381,23 +485,32 @@
                     <hr>
 
                 </div>
-                <div class="card-footer bg-light">
+
+                <div class="card-footer bg-light d-flex align-items-center gap-2">
+
                     <a href="<?= base_url('ka/finance/pengeluarankb') ?>"
-                        class="btn btn-default btn-lg">
+                       class="btn btn-default btn-lg">
                         <i class="fa fa-arrow-left mr-2"></i>
                         Kembali
                     </a>
+
+                    <button type="button"
+                            id="btnLaporanJurnalPengeluaranKB"
+                            class="btn btn-primary btn-lg">
+                        <i class="fa fa-book mr-2"></i>
+                        Laporan Jurnal Transaksi
+                    </button>
+
                 </div>
-                
+
+
             </div>
         </div>
     </form>
         <!-- /.card -->
     <!--/.col (left) -->
     <!-- right column -->
-    <div class="col-md-6">
 
-    </div>
     <!--/.col (right) -->
 </div>
 
@@ -528,6 +641,90 @@
     </div>
 </div>
 
+
+<!-- ================= MODAL LAPORAN JURNAL TRANSAKSI ================= -->
+<div class="modal fade"
+     id="modalLaporanJurnalPengeluaranKB"
+     tabindex="-1"
+     aria-labelledby="modalLaporanJurnalPengeluaranKBLabel"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+
+        <div class="modal-content">
+
+            <!-- HEADER -->
+            <div class="modal-header">
+
+                <h5 class="modal-title" id="modalLaporanJurnalPengeluaranKBLabel">
+                    <i class="fa fa-book"></i>
+                    Laporan Jurnal Transaksi Pengeluaran Kas/Bank
+                </h5>
+
+                <!-- BOOTSTRAP 5 CLOSE -->
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close">
+                </button>
+
+            </div>
+
+
+            <!-- BODY -->
+            <div class="modal-body">
+
+                <div class="table-responsive">
+
+                    <table id="tableLaporanJurnalPengeluaranKB"
+                           class="table table-bordered table-striped table-hover w-100">
+
+                        <thead>
+
+                        <tr>
+
+                            <th>No</th>
+                            <th>Tanggal</th>
+                            <th>Doc No</th>
+                            <th>Supplier</th>
+
+                            <th>COA</th>
+                            <th>Nama Perkiraan</th>
+
+                            <th class="text-end">Debet</th>
+                            <th class="text-end">Kredit</th>
+
+                        </tr>
+
+                        </thead>
+
+                        <tbody></tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+
+            <!-- FOOTER -->
+            <div class="modal-footer">
+
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+
+                    Close
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
 
 
 <script type="application/javascript" src="<?= base_url('assets/pagejs/finance/pengeluarankb_detail.js') ?>"></script>

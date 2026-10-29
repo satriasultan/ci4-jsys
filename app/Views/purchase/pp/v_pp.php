@@ -56,7 +56,7 @@
                         <th>Reference(PO)</th>
                         <th>Id Barang</th>
                         <th>Nama Barang</th>
-                        <th>Spesifikasi</th>
+                        <th>Spesifikasi/Batch</th>
                         <th>Kategori</th>
                         <th>QtyTerima</th>
                         <th>QtyKotor</th>

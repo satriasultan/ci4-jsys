@@ -1297,6 +1297,240 @@ class M_Finance extends Model
         return $this->db->query("select * from sc_trx.pengeluarankb_dtl where docno is not null $param order by idurut desc");
     }
 
+    /**
+     * Laporan Jurnal Transaksi Pengeluaran Kas/Bank.
+     * Sumber data: sc_trx.jurnal_hd + sc_trx.jurnal_dt,
+     * nama supplier diambil dari sc_trx.pengeluarankb (dokumen asal).
+     */
+    function q_laporan_jurnal_transaksi_pengeluarankb($params = '')
+    {
+        return $this->db->query("
+        WITH data_jurnal AS (
+
+            SELECT
+                jd.id,
+                jd.jurnal_id,
+
+                TRIM(jd.idcoa) AS idcoa,
+                TRIM(coa.nmcoa) AS nmcoa,
+
+                jd.debet,
+                jd.kredit,
+
+                TRIM(jd.ref_docno) AS ref_docno,
+                TRIM(jd.ref_doctype) AS ref_doctype,
+
+                TRIM(jh.docno) AS docno,
+                TRIM(jh.doctype) AS doctype,
+
+                jh.trxdate,
+
+                TRIM(pk.kdsupplier) AS kdsupplier,
+                TRIM(pk.nmsupplier) AS nmsupplier
+
+            FROM sc_trx.jurnal_dt jd
+
+            INNER JOIN sc_trx.jurnal_hd jh
+                ON jh.id = jd.jurnal_id
+
+            LEFT JOIN sc_mst.coa coa
+                ON TRIM(coa.idcoa) = TRIM(jd.idcoa)
+
+            LEFT JOIN sc_trx.pengeluarankb pk
+                ON TRIM(pk.docno) = COALESCE(
+                    NULLIF(TRIM(jd.ref_docno), ''),
+                    NULLIF(TRIM(jh.docno), '')
+                )
+
+            WHERE 1=1
+            AND jh.status = 'POSTED'
+            AND jd.status = 'POSTED'
+            AND UPPER(TRIM(jh.doctype)) = 'PENGELUARANKB'
+            $params
+        )
+
+        /* ============================================
+           DETAIL JURNAL
+        ============================================ */
+
+        SELECT
+            id,
+            jurnal_id,
+            idcoa,
+            nmcoa,
+            debet,
+            kredit,
+            ref_docno,
+            ref_doctype,
+            docno,
+            doctype,
+            trxdate,
+            kdsupplier,
+            nmsupplier,
+
+            0 AS urutan
+
+        FROM data_jurnal
+
+
+        UNION ALL
+
+
+        /* ============================================
+           TOTAL
+        ============================================ */
+
+        SELECT
+            NULL::BIGINT,
+            NULL::BIGINT,
+
+            NULL::VARCHAR,
+            'TOTAL'::VARCHAR,
+
+            COALESCE(SUM(debet), 0),
+            COALESCE(SUM(kredit), 0),
+
+            NULL::VARCHAR,
+            NULL::VARCHAR,
+
+            NULL::VARCHAR,
+            NULL::VARCHAR,
+
+            NULL::DATE,
+
+            NULL::VARCHAR,
+            NULL::VARCHAR,
+
+            1 AS urutan
+
+        FROM data_jurnal
+
+
+        ORDER BY
+            urutan,
+            trxdate DESC NULLS LAST,
+            jurnal_id,
+            id
+    ");
+    }
+
+    /**
+     * Laporan Jurnal Transaksi Penerimaan Kas/Bank.
+     * Sumber data: sc_trx.jurnal_hd + sc_trx.jurnal_dt,
+     * nama customer diambil dari sc_trx.penerimaankb (dokumen asal).
+     */
+    function q_laporan_jurnal_transaksi_penerimaankb($params = '')
+    {
+        return $this->db->query("
+        WITH data_jurnal AS (
+
+            SELECT
+                jd.id,
+                jd.jurnal_id,
+
+                TRIM(jd.idcoa) AS idcoa,
+                TRIM(coa.nmcoa) AS nmcoa,
+
+                jd.debet,
+                jd.kredit,
+
+                TRIM(jd.ref_docno) AS ref_docno,
+                TRIM(jd.ref_doctype) AS ref_doctype,
+
+                TRIM(jh.docno) AS docno,
+                TRIM(jh.doctype) AS doctype,
+
+                jh.trxdate,
+
+                TRIM(pk.kdcustomer) AS kdcustomer,
+                TRIM(pk.nmcustomer) AS nmcustomer
+
+            FROM sc_trx.jurnal_dt jd
+
+            INNER JOIN sc_trx.jurnal_hd jh
+                ON jh.id = jd.jurnal_id
+
+            LEFT JOIN sc_mst.coa coa
+                ON TRIM(coa.idcoa) = TRIM(jd.idcoa)
+
+            LEFT JOIN sc_trx.penerimaankb pk
+                ON TRIM(pk.docno) = COALESCE(
+                    NULLIF(TRIM(jd.ref_docno), ''),
+                    NULLIF(TRIM(jh.docno), '')
+                )
+
+            WHERE 1=1
+            AND jh.status = 'POSTED'
+            AND jd.status = 'POSTED'
+            AND UPPER(TRIM(jh.doctype)) = 'PENERIMAANKB'
+            $params
+        )
+
+        /* ============================================
+           DETAIL JURNAL
+        ============================================ */
+
+        SELECT
+            id,
+            jurnal_id,
+            idcoa,
+            nmcoa,
+            debet,
+            kredit,
+            ref_docno,
+            ref_doctype,
+            docno,
+            doctype,
+            trxdate,
+            kdcustomer,
+            nmcustomer,
+
+            0 AS urutan
+
+        FROM data_jurnal
+
+
+        UNION ALL
+
+
+        /* ============================================
+           TOTAL
+        ============================================ */
+
+        SELECT
+            NULL::BIGINT,
+            NULL::BIGINT,
+
+            NULL::VARCHAR,
+            'TOTAL'::VARCHAR,
+
+            COALESCE(SUM(debet), 0),
+            COALESCE(SUM(kredit), 0),
+
+            NULL::VARCHAR,
+            NULL::VARCHAR,
+
+            NULL::VARCHAR,
+            NULL::VARCHAR,
+
+            NULL::DATE,
+
+            NULL::VARCHAR,
+            NULL::VARCHAR,
+
+            1 AS urutan
+
+        FROM data_jurnal
+
+
+        ORDER BY
+            urutan,
+            trxdate DESC NULLS LAST,
+            jurnal_id,
+            id
+    ");
+    }
+
     public function loadPerSupplier($kdsupplier)
     {
         return $this->db->query("select * from sc_trx.pengeluarankb where kdsupplier = '$kdsupplier'");

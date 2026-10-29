@@ -375,21 +375,24 @@ function documentReadable(){
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++ RANAH GROUP ++++++++++++++++++++++++++++++++++++++++//
 
 var defaultInitialGroupBrng = '';
+// OPTIMASI: jumlah baris per request untuk typeahead (menghindari menarik seluruh master barang)
+var ITEM_PAGE_SIZE = 30;
 $("#idbarang").select2({
-    placeholder: "Choose Your Item List",
+    placeholder: "Ketik minimal 2 huruf untuk mencari barang...",
     allowClear: true,
     width:'100%',
-    // minimumInputLength: 2,
+    minimumInputLength: 2, // hanya query saat user mengetik -> jauh lebih cepat
     dropdownParent: $('#modalDetailPP .modal-body'),
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_item',
         type: 'POST',
         dataType: 'json',
-        delay: 250,
+        delay: 150,
         data: function(params) {
             return {
                 _search_: params.term, // search term
                 _page_: params.page,
+                _pagesize_: ITEM_PAGE_SIZE, // OPTIMASI: server membatasi hasil via LIMIT/OFFSET
                 _draw_: true,
                 _start_: 1,
                 _perpage_: 2,
@@ -412,15 +415,19 @@ $("#idbarang").select2({
             //     });
             // }
             params.page = params.page || 1;
+            // server (mode _pagesize_) mengirim flag "more"; fallback ke perhitungan lama
+            var more = (typeof data.more !== 'undefined')
+                ? data.more
+                : (params.page * ITEM_PAGE_SIZE) < data.total_count;
             return {
                 results: data.items,
                 pagination: {
-                    more: (params.page * 30) < data.total_count
+                    more: more
                 }
             };
         },
 
-        cache: false
+        cache: true
     },
     escapeMarkup: function(markup) {
         return markup;

@@ -1549,6 +1549,11 @@ class Globalmodule extends BaseController
         $page = $this->request->getPost('_page_');
         $varGet = trim($this->request->getGet('var'));
         $varPost = trim($this->request->getPost('var'));
+
+        /* OPTIMASI: bila _pagesize_ dikirim (select2/typeahead), hasil dibatasi
+           dengan LIMIT/OFFSET supaya tidak menarik seluruh master barang. */
+        $pagesize = intval($this->request->getPost('_pagesize_'));
+
         if (!empty($varGet) or $varGet!=='') {
             $paramglobal1= " and idbarang='$varGet'";
         } else {
@@ -1562,12 +1567,40 @@ class Globalmodule extends BaseController
 
         $parameterx = " and coalesce(chold,'NO')!='YES'";
         $page = intval($page);
+        if ($page < 1) { $page = 1; }
         $limit = $perpage * $page;
 
         $param=" and (idbarang like '%$search%' $paramglobal1 $paramglobal2 $parameterx ) or (nmbarang like '%$search%' $paramglobal1 $paramglobal2 $parameterx ) order by nmbarang asc";
-        $getResult = $this->m_balance->q_item_param($param)->getResult();
-        $count = $this->m_balance->q_item_param($param)->getNumRows();
+
         header('Content-Type: application/json');
+
+        if ($pagesize > 0) {
+            /* MODE PAGINATED (dipakai select2) — hemat bandwidth & waktu render. */
+            $offset = ($page - 1) * $pagesize;
+            // ambil 1 baris ekstra untuk mendeteksi apakah masih ada halaman berikutnya
+            $getResult = $this->m_balance->q_item_param($param, $pagesize + 1, $offset)->getResult();
+            $more = count($getResult) > $pagesize;
+            if ($more) {
+                $getResult = array_slice($getResult, 0, $pagesize);
+            }
+
+            echo json_encode(
+                array(
+                    'total_count' => count($getResult),
+                    'items' => $getResult,
+                    'more' => $more,
+                    'incomplete_getResults' => false,
+                    'param' => $param,
+                ),
+                JSON_PRETTY_PRINT
+            );
+            return;
+        }
+
+        /* MODE LEGACY (tanpa limit) — dipakai modul lain yang butuh seluruh data. */
+        $getResult = $this->m_balance->q_item_param($param)->getResult();
+        $count = count($getResult); // hindari query count kedua yang identik
+
         echo json_encode(
             array(
                 'total_count' => $count,

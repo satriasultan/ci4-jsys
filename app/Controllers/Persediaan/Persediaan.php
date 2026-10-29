@@ -3866,6 +3866,41 @@ class Persediaan extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
+    /* ============================================================
+       LIST DETAIL PEMAKAIAN BARANG (TRANSAKSI FINAL)
+       Sumber: sc_trx.pmk_brng_dtl difilter per docno
+       ============================================================ */
+    function list_trx_pmk_brng_dtl(){
+        $docno = trim($this->request->getPost('docno')); // ambil dari POST
+        $list = $this->m_persediaan->get_trx_pmk_brng_dtl_view($docno);
+        $data = array();
+        $no = $_POST['start'] ?? 0;
+        foreach ($list as $lm) {
+            $no++;
+            $row = array();
+            $row[] = $lm->idurut;
+            //item
+            $row[] = trim($lm->idbarang);
+            $row[] = trim($lm->nmbarang);
+            $row[] = trim($lm->nmlocation) != '' ? trim($lm->nmlocation) : trim($lm->idlocation);
+            $row[] = trim($lm->batch);
+            $row[] = trim($lm->unit);
+            $row[] = '<div class="ratakanan">'. number_format((float) $lm->qty, 2, '.', ',') . '</div>';
+            $row[] = $lm->description;
+            $data[] = $row;
+        }
+
+        $output = array(
+            "draw" => $_POST['draw'] ?? 0,
+            "recordsTotal" => $this->m_persediaan->trx_pmk_brng_dtl_view_count_all($docno),
+            "recordsFiltered" => $this->m_persediaan->trx_pmk_brng_dtl_view_count_filtered($docno),
+            "data" => $data,
+        );
+        echo $this->fiky_encryption->jDatatable($output);
+    }
+
+
+
 
     function updatePmkBrg()
     {
@@ -3955,12 +3990,109 @@ class Persediaan extends BaseController
         $param = " and coalesce(docno,'') = '$decoded_docno'";
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
-        $data['typeform'] = 'INPUT';
+        $data['typeform'] = 'DETAIL';
         $data['userlogin'] = $nama;
         $data['docnoParam'] = $decoded_docno;
         $data['dtldata'] = $this->m_persediaan->q_trx_pmk_brng_mst($param)->getRowArray();
+
+        /* ====== NAMA CABANG & COST CENTER (untuk tampilan detail) ====== */
+        $cabang       = isset($data['dtldata']['cabang']) ? trim($data['dtldata']['cabang']) : '';
+        $idcostcenter = isset($data['dtldata']['idcostcenter']) ? trim($data['dtldata']['idcostcenter']) : '';
+
+        $dtlbranchjob = $this->m_global->q_branchjob(" and idbranch=" . $this->db->escape($cabang))->getRowArray();
+        $dtlcostcntr  = $this->m_global->q_costcenter(" and idcostcenter=" . $this->db->escape($idcostcenter))->getRowArray();
+
+        $data['nmbranch']     = isset($dtlbranchjob['nmbranch']) ? trim($dtlbranchjob['nmbranch']) : $cabang;
+        $data['nmcostcenter'] = isset($dtlcostcntr['nmcostcenter']) ? trim($dtlcostcntr['nmcostcenter']) : $idcostcenter;
+
         return $this->template->render('persediaan/pmk_brng/v_detail_pmk_brng',$data);
     }
+
+    /**
+     * Laporan Jurnal Transaksi Pemakaian Barang (read only).
+     * Sumber jurnal: sc_trx.jurnal_hd + sc_trx.jurnal_dt (status POSTED),
+     * cost center diambil dari dokumen asal sc_trx.pmk_brng_mst.
+     */
+    public function laporan_jurnal_transaksi_pmk()
+    {
+        try {
+
+            // =================================================
+            // GET DOCNO
+            // =================================================
+
+            $docno = trim($this->request->getPost('docno'));
+
+            // =================================================
+            // VALIDASI
+            // =================================================
+
+            if ($docno === '') {
+
+                return $this->response->setJSON([
+
+                    'status'   => false,
+
+                    'messages' => 'Doc No Pemakaian Barang tidak ditemukan',
+
+                    'data'     => []
+
+                ]);
+
+            }
+
+            // =================================================
+            // PARAMETER QUERY
+            // =================================================
+
+            $params = "
+
+            AND TRIM(jh.docno) = " .
+                $this->db->escape($docno);
+
+            // =================================================
+            // GET DATA
+            // =================================================
+
+            $query = $this->m_persediaan
+                ->q_laporan_jurnal_transaksi_pmk($params);
+
+            $data = $query->getResultArray();
+
+            // =================================================
+            // RESPONSE
+            // =================================================
+
+            return $this->response->setJSON([
+
+                'status'   => true,
+
+                'messages' => 'Data berhasil diambil',
+
+                'data'     => $data
+
+            ]);
+
+        } catch (\Throwable $e) {
+
+            log_message(
+                'error',
+                'laporan_jurnal_transaksi_pmk: '
+                . $e->getMessage()
+            );
+
+            return $this->response->setJSON([
+
+                'status'   => false,
+
+                'messages' => $e->getMessage(),
+
+                'data'     => []
+
+            ]);
+        }
+    }
+
 
     public function getBranch_pmk_brng()
     {

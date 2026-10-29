@@ -2321,11 +2321,18 @@ class Tools extends BaseController
 
                     // OPEN
                     $builder->where('idurut', $existing['idurut'])->update([
-                        'flagproses' => 'OPEN',
-                        'keterangan' => 'Periode Dibuka',
-                        'updateby' => $nama,
-                        'updatedate' => date('Y-m-d H:i:s')
+                        'flagproses'    => 'OPEN',
+                        'status_closing'=> 'REOPENED',
+                        'keterangan'    => 'Periode Dibuka',
+                        'reopened_by'   => $nama,
+                        'reopened_at'   => date('Y-m-d H:i:s'),
+                        'reopen_reason' => 'Dibuka melalui menu Block/Unblock Period',
+                        'updateby'      => $nama,
+                        'updatedate'    => date('Y-m-d H:i:s')
                     ]);
+
+                    $this->closingLogWrite($existing['idurut'], 'REOPEN', 'CLOSED', 'REOPENED', $nama,
+                        'Dibuka melalui menu Block/Unblock Period');
 
                     $message = 'Periode berhasil dibuka';
 
@@ -2333,11 +2340,17 @@ class Tools extends BaseController
 
                     // TUTUP
                     $builder->where('idurut', $existing['idurut'])->update([
-                        'flagproses' => 'TUTUP',
-                        'keterangan' => 'Periode Ditutup',
-                        'updateby' => $nama,
-                        'updatedate' => date('Y-m-d H:i:s')
+                        'flagproses'    => 'TUTUP',
+                        'status_closing'=> 'CLOSED',
+                        'keterangan'    => 'Periode Ditutup',
+                        'closed_by'     => $nama,
+                        'closed_at'     => date('Y-m-d H:i:s'),
+                        'updateby'      => $nama,
+                        'updatedate'    => date('Y-m-d H:i:s')
                     ]);
+
+                    $this->closingLogWrite($existing['idurut'], 'CLOSE', 'OPEN', 'CLOSED', $nama,
+                        'Ditutup melalui menu Block/Unblock Period');
 
                     $message = 'Periode berhasil ditutup';
                 }
@@ -2348,11 +2361,14 @@ class Tools extends BaseController
                 // INSERT BARU → TUTUP
                 // =========================
                 $builder->insert([
-                    'periode' => $periode,
-                    'flagproses' => 'TUTUP',
-                    'keterangan' => 'Periode Ditutup',
-                    'inputby' => $nama,
-                    'inputdate' => date('Y-m-d H:i:s')
+                    'periode'        => $periode,
+                    'flagproses'     => 'TUTUP',
+                    'status_closing' => 'CLOSED',
+                    'keterangan'     => 'Periode Ditutup',
+                    'closed_by'      => $nama,
+                    'closed_at'      => date('Y-m-d H:i:s'),
+                    'inputby'        => $nama,
+                    'inputdate'      => date('Y-m-d H:i:s')
                 ]);
 
                 $message = 'Periode berhasil ditutup (data baru)';
@@ -2377,6 +2393,26 @@ class Tools extends BaseController
             ]);
         }
     }
+    /* Tulis riwayat proses closing (dipakai juga oleh menu Block/Unblock Period) */
+    private function closingLogWrite($idurut, $action, $oldStatus, $newStatus, $user, $reason)
+    {
+        try {
+            $this->db->table('sc_trx.period_closing_log')->insert([
+                'closeperiod_id' => (int) $idurut,
+                'action'         => $action,
+                'old_status'     => $oldStatus,
+                'new_status'     => $newStatus,
+                'action_by'      => $user,
+                'action_at'      => date('Y-m-d H:i:s'),
+                'reason'         => $reason
+            ]);
+        } catch (\Throwable $e) {
+            // log bersifat pelengkap; jangan menggagalkan proses utama
+        }
+    }
+
+
+
 
 
 
@@ -2386,143 +2422,8 @@ class Tools extends BaseController
 
 
      // ======================================= PROSES TUTUP BULAN ====================================================================
+     // Proses Tutup Bulan dipindahkan ke App\Controllers\Tools\Closing.php
+     // (routes: tools/proses/tutupbulan dan endpoint lainnya pada grup /tools/proses).
 
-
-     public function tutupbulan()
-    {
-        $data['title']="Proses Tutup Bulan";
-        $dtlbranch=$this->m_global->q_branch()->getRowArray();
-        $branch=$dtlbranch['branch'];
-        /* CODE UNTUK VERSI*/
-        $nama=trim($this->session->get('nama'));
-        $kodemenu='I.T.C.1'; $versirelease='I.T.C.1/01'; $releasedate=date('2025-04-12 00:00:00');
-        $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
-        $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
-        $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
-        $data['kodemenu']=$kodemenu; $data['version']=$versidb;
-        /* END CODE UNTUK VERSI */
-
-        $paramerror=" and userid='$nama' and modul='I.T.C.1'";
-        $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
-        $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
-        if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
-        if(isset($dtlerror['nomorakhir1'])) { $nomorakhir1=trim($dtlerror['nomorakhir1']); } else { $nomorakhir1='';  }
-        if(isset($dtlerror['errorcode'])) { $errorcode=trim($dtlerror['errorcode']); } else { $errorcode='';  }
-
-        if($count_err>0 and $errordesc<>''){
-            if ($dtlerror['errorcode']==0){
-                $data['message']="<div class='alert alert-info'>DATA SUCCESSFULLY PROCESSED $nomorakhir1 </div>";
-            } else {
-                $data['message']="<div class='alert alert-info'>$errordesc</div>";
-            }
-
-        }else {
-            if ($errorcode=='0'){
-                $data['message']="<div class='alert alert-info'>DATA SUCCESSFULLY PROCESSED $nomorakhir1 </div>";
-            } else {
-                $data['message']="";
-            }
-
-        }
-        /* Item Entry Master Check */
-        $param = " and coalesce(inputby,'')='$nama'";
-        
-        $logindate = trim($this->session->get('logindate'));
-        $kmenu = 'I.T.C.1';
-        $role = trim($this->session->get('roleid'));
-        $data['dtl_akses'] = $this->m_role->detail_user_akses($role, $kmenu)->getRowArray();        
-        //auto insert unit
-        $pterror = " and userid='$nama'";
-        $this->m_trxerror->q_deltrxerror($pterror);
-        
-        $builderTglAwal = $this->db->table('sc_trx.closeperiod');
-        $dataTglAwal = $builderTglAwal
-        ->where('flagproses', 'PROSES')
-        ->orderBy('idurut', 'DESC')
-        ->limit(1)
-        ->get()
-        ->getRowArray();
-    
-        // Kirim data ke view
-        $data['periode'] = isset($dataTglAwal['periode']) ? $dataTglAwal['periode'] : '';
-        
-        return $this->template->render('tools/proses/v_list_ptb',$data);
-    }
-
-    public function processTutupBulan()
-    {
-        $nama = trim($this->session->get('nama'));
-        // $periode = trim($this->request->getPost('periode'));
-        
-        // Validasi input
-        // if (empty($periode)) {
-        //     return $this->response->setJSON([
-        //         'success' => false,
-        //         'message' => 'Periode tidak boleh kosong'
-        //     ]);
-        // }
-        
-        // // Validasi format tanggal (asumsi format d-m-Y)
-        // $dt = DateTime::createFromFormat('d-m-Y', $periode);
-        // if (!$dt) {
-        //     return $this->response->setJSON([
-        //         'success' => false,
-        //         'message' => 'Format tanggal tidak valid. Gunakan format DD-MM-YYYY'
-        //     ]);
-        // }
-        
-        $db = $this->db;
-        $db->transStart();
-        
-        try {
-            $builderTglAwal = $db->table('sc_trx.closeperiod');
-            
-            // =====================================================
-            // 1. NON-AKTIFKAN DATA YANG SEDANG PROSES
-            // =====================================================
-            $builderTglAwal
-                ->where('flagproses', 'PROSES')
-                ->update([
-                    'flagproses' => 'NO',
-                    'updateby'   => $nama,
-                    'keterangan' => 'Periode Ditutup',
-                    'updatedate' => date('Y-m-d H:i:s')
-                ]);
-            
-            
-            // =====================================================
-            // 3. INSERT DATA BARU DENGAN FLAG PROSES
-            // =====================================================
-            $dataInsert = [
-                // 'periode'    => (trim($periode)), // Simpan dalam format Y-m-d
-                'flagproses' => 'PROSES',
-                'keterangan' => 'Periode Berjalan',
-                'inputby'    => $nama,
-                'inputdate'  => date('Y-m-d H:i:s')
-            ];
-            
-            $builderTglAwal->insert($dataInsert);
-            
-            
-            $db->transComplete();
-            
-            if ($db->transStatus() === false) {
-                throw new \Exception('Gagal menyimpan data');
-            }
-            
-            return $this->response->setJSON([
-                'success'  => true,
-                'message'  => 'Tutup Periode berhasil diproses',
-                // 'tglawal'  => $dt->format('d-m-Y')
-            ]);
-            
-        } catch (\Exception $e) {
-            $db->transRollback();
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage()
-            ]);
-        }
-    }
 
 }

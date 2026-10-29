@@ -260,7 +260,10 @@ function documentReadable(){
 
                 // Set alamat dan phone langsung
                 setJtsValue('[name="kurs"]', convertToDbNumber(json.dataTables.items[0].kurs));
-                $('[name="kurs"]').prop('readonly', false);
+
+                if (!poHeaderLocked) {
+                    $('[name="kurs"]').prop('readonly', false);
+                }
                 // $("#phone").val(data.phone).prop('readonly', true);
             });
             skipRoleChange = true;
@@ -312,6 +315,8 @@ function documentReadable(){
         },
         complete: function(){
             $("#loadMe").modal("hide");
+            // kunci header PO kalau detail sudah terisi
+            applyPOHeaderLock();
         },
         error: function (jqXHR, textStatus, errorThrown)
         {
@@ -322,6 +327,123 @@ function documentReadable(){
 
     $("#loadMe").modal("hide");
 }
+/* ============================================================
+ * LOCK HEADER PO
+ * ------------------------------------------------------------
+ * Ketika detail PO sudah terisi, seluruh field pada card
+ * "Input Purchase Order" tidak boleh diubah lagi.
+ * Yang tetap bisa diubah hanya : Alamat Kirim & Keterangan.
+ *
+ * PENTING : field TIDAK di-disable supaya nilainya tetap ikut
+ *           ter-POST saat final entry. Penguncian dilakukan
+ *           dengan readonly (input/textarea) dan pemblokiran
+ *           interaksi select2 (select tetap enabled).
+ * ============================================================ */
+
+// field header PO yang dikunci (input text / textarea)
+var PO_LOCK_TEXT_FIELDS = [
+    'prefix', 'infix', 'suffix',
+    'docdate', 'senddate', 'jthtempo',
+    'alamatsupplier', 'kurs'
+];
+
+// field header PO yang dikunci (select / select2)
+var PO_LOCK_SELECT_FIELDS = [
+    'cabang', 'kdsupplier', 'idtax', 'currcode'
+];
+
+// flag global : header PO sudah dikunci / belum
+var poHeaderLocked = false;
+
+// jumlah detail yang dikirim controller (di-set pada v_add_po.php)
+function poDetailCountFromServer() {
+    var total = window.PO_DETAIL_COUNT;
+
+    if (typeof total === 'undefined') return 0;
+
+    total = parseInt(total, 10);
+
+    return isNaN(total) ? 0 : total;
+}
+
+// jumlah detail yang tampil pada tabel detail
+function poDetailCountCurrent() {
+    if ($.fn.DataTable && $.fn.DataTable.isDataTable('#tabppdtl')) {
+        return $('#tabppdtl').DataTable().rows().count();
+    }
+
+    return poDetailCountFromServer();
+}
+
+// blokir aksi select2 (buka dropdown / ganti pilihan / clear)
+// tanpa men-disable select-nya
+function poPreventLockedAction(e) {
+    if (poHeaderLocked) {
+        e.preventDefault();
+    }
+}
+
+// kunci select2 : select tetap enabled → nilai tetap ikut ter-POST
+function poLockSelect2(id) {
+    var $el = $('#' + id);
+
+    if ($el.length === 0) return;
+
+    // container tidak bisa diklik / di-clear (mouse & keyboard)
+    $el.next('.select2-container').addClass('po-locked');
+
+    $el.off('.poLockHeader')
+        .on('select2:opening.poLockHeader', poPreventLockedAction)
+        .on('select2:selecting.poLockHeader', poPreventLockedAction)
+        .on('select2:unselecting.poLockHeader', poPreventLockedAction)
+        .on('select2:clearing.poLockHeader', poPreventLockedAction);
+}
+
+// kunci field header PO (dipanggil tiap kali detail ditambah / dihapus / di-load)
+function applyPOHeaderLock() {
+    // hanya berlaku pada halaman input PO
+    if ($('#formPO').length === 0) return;
+
+    // header hanya dikunci kalau detail sudah terisi
+    if (poDetailCountCurrent() <= 0) return;
+
+    if (poHeaderLocked) return;
+
+    poHeaderLocked = true;
+
+    // 1. input text / textarea → readonly
+    //    (readonly tetap ikut ter-POST, beda dengan disabled)
+    $.each(PO_LOCK_TEXT_FIELDS, function (i, id) {
+        var $el = $('#' + id);
+
+        if ($el.length === 0) return;
+
+        $el.prop('readonly', true).addClass('po-locked');
+    });
+
+    // 2. select / select2 → tetap ENABLED, hanya interaksinya yang diblokir
+    //    supaya nilainya tetap terkirim saat final entry
+    $.each(PO_LOCK_SELECT_FIELDS, function (i, id) {
+        poLockSelect2(id);
+    });
+
+    // 3. checkbox inclusive → tetap enabled, hanya tidak bisa diklik / di-tab
+    $('#isinclusive')
+        .attr('tabindex', -1)
+        .closest('.form-check')
+        .addClass('po-locked');
+
+    // 4. penanda visual pada card header
+    $('#poHeaderLockInfo').show();
+}
+
+// jaga-jaga : klik checkbox inclusive dibatalkan selama header terkunci
+$(document).on('click', '#isinclusive', function (e) {
+    if (poHeaderLocked) {
+        e.preventDefault();
+    }
+});
+
 /* FOR INPUT FUNCTION */
 
 
@@ -738,7 +860,11 @@ function tablePODetail(){
                     "targets": [ -1 ],
                     "orderable": false
                 }
-            ]
+            ],
+            // setiap tabel detail selesai di-load → cek apakah header harus dikunci
+            "drawCallback": function (settings) {
+                applyPOHeaderLock();
+            }
         });
 
         $('#tabppdtl tbody').on('click', 'tr', function(e) {
@@ -900,7 +1026,7 @@ function btnUpdateDetail(){
 
                 }
                 setJtsValue('[name="qty"]', convertToDbNumber(res.data.qty));
-                setJtsValue('[name="qtybonus"]', convertToDbNumber(res.data.qtybonus));
+                // setJtsValue('[name="qtybonus"]', convertToDbNumber(res.data.qtybonus));
                 setJtsValue('[name="harga"]', convertToDbNumber(res.data.harga));
                 // setJtsValue('[name="multidisc"]', convertToDbNumber(res.data.multidisc));
                 setJtsValue('[name="nilai"]', convertToDbNumber(res.data.nilai));
@@ -1176,7 +1302,7 @@ function savePODetail() {
     formData.set('docno', $('#prefix').val() + '/' + $('#infix').val() + '/' + $('#suffix').val());
     // convert qty ke numeric DB
     let qty = $('#qty').val();
-    let qtybonus = $('#qtybonus').val();
+    // let qtybonus = $('#qtybonus').val();
     let harga = $('#harga').val();
 
 
@@ -1188,7 +1314,7 @@ function savePODetail() {
 
 
     formData.set('qty', convertToDbNumber(qty));
-    formData.set('qtybonus', convertToDbNumber(qtybonus));
+    // formData.set('qtybonus', convertToDbNumber(qtybonus));
     formData.set('harga', convertToDbNumber(harga));
     // formData.set('multidisc', convertToDbNumber(multidisc));
     formData.set('nilai', convertToDbNumber(nilai));
@@ -1401,6 +1527,7 @@ $("#kdsupplier").select2({
         var selectedData = e.params.data;
 
         $("#alamatsupplier").val(selectedData.alamat || '').prop('readonly', true);
+        $("#nmsupplier").val(selectedData.nmsupplier || '');
         $("#jthtempo").val(selectedData.jthtempo || '')
         // $("#phone").val(selectedData.phone || '').prop('disabled', true);
     }
@@ -2710,8 +2837,10 @@ function updateExchangeRate() {
     // SELAIN IDR
     // =============================================
 
-    $('[name="kurs"]')
-        .prop('readonly', false);
+    if (!poHeaderLocked) {
+        $('[name="kurs"]')
+            .prop('readonly', false);
+    }
 
 
     // =============================================
@@ -2909,6 +3038,10 @@ $(document).ready(function() {
     // if ($('[name="typeform"]').val() === 'INPUT' || $('[name="typeform"]').val() === 'UPDATE' || $('[name="typeform"]').val() === 'DELETE' ) {
     documentReadable();
     // }
+
+    // kunci header PO kalau detail sudah terisi
+    applyPOHeaderLock();
+
     $("#loadMe").modal("hide");
 
 
