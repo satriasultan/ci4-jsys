@@ -479,7 +479,8 @@
                     <?php if ($typeform != 'DETAIL' && $dtldata != null): ?>
 
                         <button type="submit"
-                                onclick="return confirm('Simpan Data?')"
+                                id="btnFinalMaterialRelease"
+                                onclick="return guardPeriodeTutup(event) && confirm('Simpan Final Material Release?')"
                                 class="btn btn-success btn-lg float-right">
 
                             <i class="fa fa-save"></i>
@@ -494,6 +495,18 @@
             </div>
         </div>
     </form>
+
+    <script>
+        /* Sprint 1 : cegah klik FINAL dua kali (double submit) */
+        $(document).on('submit', '#formStandarCostMst', function () {
+            var btn = document.getElementById('btnFinalMaterialRelease');
+
+            if (btn && !btn.disabled) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Menyimpan...';
+            }
+        });
+    </script>
         <!-- /.card -->
     <!--/.col (left) -->
     <!-- right column -->

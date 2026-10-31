@@ -70,6 +70,11 @@ class Dashboard extends BaseController
         $viewData['totalformppcount'] = $this->m_dashboarduser->_get_query_totalformppcount();
         $viewData['totalformiicount'] = $this->m_dashboarduser->_get_query_totalformiicount();
         $viewData['totalformpkcount'] = $this->m_dashboarduser->_get_query_totalformpkcount();
+
+        /* Menu card & isinya diambil dari sc_mst.menuprg sesuai role yang login */
+        $viewData['menu_cards'] = $this->m_menu->list_menu_card_akses($roleid)->getResult();
+        $viewData['menu_items'] = $this->m_menu->list_menu_item_akses($roleid)->getResult();
+
         return $this->template->render("dashboard/v_menu", $viewData);
         //echo 'MASUK DASHBOARD';
     }

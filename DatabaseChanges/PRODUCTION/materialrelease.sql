@@ -561,6 +561,7 @@ DECLARE
     v_coa_kredit VARCHAR(20);
     v_harga      NUMERIC(18,6);
     v_nilai      NUMERIC(18,2);
+    v_exists     BOOLEAN;
 BEGIN
     SELECT * INTO v_mst FROM sc_trx.materialrelease_mst
      WHERE BTRIM(docno) = BTRIM(p_docno);
@@ -569,6 +570,16 @@ BEGIN
     SELECT * INTO v_dtl FROM sc_trx.materialrelease_dtl
      WHERE BTRIM(docno) = BTRIM(p_docno) AND uniqueid = p_uniqueid;
     IF NOT FOUND THEN RETURN; END IF;
+
+    -- ============================================================
+    -- PENGAMAN (Sprint 2)
+    -- Hanya baris MATERIAL yang diposting (konsisten dengan
+    -- Penerimaan BP & BPNM). Baris COST / WIP bukan pergerakan stok,
+    -- sehingga tidak boleh membuat baris transaction_dt.
+    -- ============================================================
+    IF UPPER(BTRIM(COALESCE(v_dtl.doctype_detail, 'MATERIAL'))) <> 'MATERIAL' THEN
+        RETURN;
+    END IF;
 
     IF UPPER(BTRIM(COALESCE(v_dtl.doctype_detail,'MATERIAL'))) <> 'MATERIAL' THEN
         RETURN;
@@ -581,6 +592,25 @@ BEGIN
     -- COA Kredit: ppersediaan dari mbarang per idbarang detail
     SELECT BTRIM(ppersediaan) INTO v_coa_kredit
       FROM sc_mst.mbarang WHERE BTRIM(idbarang) = BTRIM(v_dtl.idbarang);
+
+    -- ============================================================
+    -- PENGAMAN KONTRAK KE SIMULASI BALANCE
+    -- journal_type WOISSU harus terdaftar & akun COA harus lengkap,
+    -- supaya posting stok + jurnal tidak menghasilkan error tidak jelas.
+    -- ============================================================
+    IF NOT EXISTS (
+        SELECT 1 FROM sc_mst.journal_type WHERE BTRIM(journal_type) = 'WOISSU'
+    ) THEN
+        RAISE EXCEPTION
+            'JOURNAL TYPE WOISSU tidak ditemukan di sc_mst.journal_type. Jalankan script SIMULASI BALANCE terlebih dahulu.';
+    END IF;
+
+    IF COALESCE(BTRIM(v_coa_debet), '') = ''
+       OR COALESCE(BTRIM(v_coa_kredit), '') = '' THEN
+        RAISE EXCEPTION
+            'MATERIAL RELEASE % : akun COA tidak lengkap (debet=%, kredit=%). Periksa konfigurasi_umum.pproduksi dan mbarang.ppersediaan untuk barang %.',
+            BTRIM(p_docno), COALESCE(v_coa_debet, ''), COALESCE(v_coa_kredit, ''), BTRIM(v_dtl.idbarang);
+    END IF;
 
     -- Harga: BOM vs standart_cost_dtl
     IF COALESCE(UPPER(BTRIM(v_dtl.issub)), 'F') = 'F' THEN
@@ -599,6 +629,17 @@ BEGIN
     END IF;
 
     v_harga := COALESCE(v_harga, 0);
+
+    -- ============================================================
+    -- PENGAMAN : harga standar wajib ada untuk baris MATERIAL.
+    -- Mencegah nilai 0 (barang masuk persediaan tanpa nilai).
+    -- ============================================================
+    IF v_harga <= 0 THEN
+        RAISE EXCEPTION
+            'MATERIAL RELEASE % : harga standar barang % tidak ditemukan (WO %). Periksa standart cost / WO BOM.',
+            BTRIM(p_docno), BTRIM(v_dtl.idbarang), BTRIM(COALESCE(v_mst.wono, ''));
+    END IF;
+
     v_nilai := COALESCE(v_dtl.qty,0) * v_harga;
 
     v_idbranch := CASE BTRIM(COALESCE(v_mst.cabang,''))
@@ -608,44 +649,81 @@ BEGIN
 
     v_tx_uid := MD5(BTRIM(p_docno)||'|'||COALESCE(v_dtl.uniqueid,'')||'|mr');
 
-    INSERT INTO sc_trx.transaction_dt (
-        uniqueid, source_uniqueid, docno, doctype, journal_type,
-        line_no, docdate, idbranch, cabang, type_in_out,
-        ref_docno, ref_doctype, idbarang, namabarang, idunit,
-        idarea, warehouse, bin, batch, lotno,
-        qty, harga, bruto, discount, nilai, dpp, pajak, total,
-        idtax, isinclusive, currcode, kurs,
-        idcoa, counter_idcoa, debet_kredit,
-        keterangan, createdby
-    ) VALUES (
-        v_tx_uid, COALESCE(v_dtl.uniqueid,''), BTRIM(p_docno),
-        'MATERIALRELEASE', 'WOISSU', GREATEST(COALESCE(v_dtl.idurut,1),1),
-        COALESCE(v_mst.docdate, CURRENT_DATE),
-        v_idbranch, BTRIM(COALESCE(v_mst.cabang,'')), 'OUT',
-        BTRIM(COALESCE(v_mst.wono,'')), 'MR',
-        BTRIM(COALESCE(v_dtl.idbarang,'')),
-        BTRIM(COALESCE(v_dtl.nmbarang,'')),
-        BTRIM(COALESCE(v_dtl.unit,'')),
-        BTRIM(COALESCE(v_mst.idlocation,'')),
-        BTRIM(COALESCE(v_mst.idlocation,'')),
-        '', BTRIM(COALESCE(v_mst.batchno,'')), '',
-        COALESCE(v_dtl.qty,0), v_harga, v_nilai, 0, v_nilai,
-        v_nilai, 0, v_nilai, 'NON','NO','IDR',1,
-        v_coa_debet, v_coa_kredit, 'D',
-        COALESCE(v_dtl.description,''),
-        COALESCE(v_mst.inputby,'SYSTEM')
-    )
-    ON CONFLICT (docno, uniqueid) DO UPDATE SET
-        journal_type  = EXCLUDED.journal_type,
-        docdate       = EXCLUDED.docdate,
-        idcoa         = EXCLUDED.idcoa,
-        counter_idcoa = EXCLUDED.counter_idcoa,
-        qty           = EXCLUDED.qty,
-        harga         = EXCLUDED.harga,
-        nilai         = EXCLUDED.nilai,
-        dpp           = EXCLUDED.dpp,
-        total         = EXCLUDED.total,
-        updateddate   = CURRENT_TIMESTAMP;
+    -- ============================================================
+    -- PENGAMAN (Sprint 2)
+    -- sc_trx.transaction_dt TIDAK punya unique constraint pada
+    -- (docno, uniqueid), sehingga ON CONFLICT gagal:
+    --   "there is no unique or exclusion constraint matching the
+    --    ON CONFLICT specification".
+    -- Dipakai pola EXISTS + UPDATE/INSERT (sama seperti Penerimaan BP / BPNM).
+    -- ============================================================
+    SELECT EXISTS (
+        SELECT 1 FROM sc_trx.transaction_dt
+        WHERE BTRIM(docno) = BTRIM(p_docno)
+          AND uniqueid = v_tx_uid
+    ) INTO v_exists;
+
+    IF v_exists THEN
+
+        UPDATE sc_trx.transaction_dt SET
+            journal_type  = 'WOISSU',
+            docdate       = COALESCE(v_mst.docdate, CURRENT_DATE),
+            idbranch      = v_idbranch,
+            cabang        = BTRIM(COALESCE(v_mst.cabang,'')),
+            type_in_out   = 'OUT',
+            ref_docno     = BTRIM(COALESCE(v_mst.wono,'')),
+            ref_doctype   = 'MR',
+            idbarang      = BTRIM(COALESCE(v_dtl.idbarang,'')),
+            namabarang    = BTRIM(COALESCE(v_dtl.nmbarang,'')),
+            idunit        = BTRIM(COALESCE(v_dtl.unit,'')),
+            idarea        = BTRIM(COALESCE(v_mst.idlocation,'')),
+            warehouse     = BTRIM(COALESCE(v_mst.idlocation,'')),
+            batch         = BTRIM(COALESCE(v_mst.batchno,'')),
+            qty           = COALESCE(v_dtl.qty,0),
+            harga         = v_harga,
+            bruto         = v_nilai,
+            nilai         = v_nilai,
+            dpp           = v_nilai,
+            total         = v_nilai,
+            idcoa         = v_coa_debet,
+            counter_idcoa = v_coa_kredit,
+            debet_kredit  = 'D',
+            keterangan    = COALESCE(v_dtl.description,''),
+            updateddate   = CURRENT_TIMESTAMP
+        WHERE BTRIM(docno) = BTRIM(p_docno)
+          AND uniqueid = v_tx_uid;
+
+    ELSE
+
+            INSERT INTO sc_trx.transaction_dt (
+                uniqueid, source_uniqueid, docno, doctype, journal_type,
+                line_no, docdate, idbranch, cabang, type_in_out,
+                ref_docno, ref_doctype, idbarang, namabarang, idunit,
+                idarea, warehouse, bin, batch, lotno,
+                qty, harga, bruto, discount, nilai, dpp, pajak, total,
+                idtax, isinclusive, currcode, kurs,
+                idcoa, counter_idcoa, debet_kredit,
+                keterangan, createdby
+            ) VALUES (
+                v_tx_uid, COALESCE(v_dtl.uniqueid,''), BTRIM(p_docno),
+                'MATERIALRELEASE', 'WOISSU', GREATEST(COALESCE(v_dtl.idurut,1),1),
+                COALESCE(v_mst.docdate, CURRENT_DATE),
+                v_idbranch, BTRIM(COALESCE(v_mst.cabang,'')), 'OUT',
+                BTRIM(COALESCE(v_mst.wono,'')), 'MR',
+                BTRIM(COALESCE(v_dtl.idbarang,'')),
+                BTRIM(COALESCE(v_dtl.nmbarang,'')),
+                BTRIM(COALESCE(v_dtl.unit,'')),
+                BTRIM(COALESCE(v_mst.idlocation,'')),
+                BTRIM(COALESCE(v_mst.idlocation,'')),
+                '', BTRIM(COALESCE(v_mst.batchno,'')), '',
+                COALESCE(v_dtl.qty,0), v_harga, v_nilai, 0, v_nilai,
+                v_nilai, 0, v_nilai, 'NON','NO','IDR',1,
+                v_coa_debet, v_coa_kredit, 'D',
+                COALESCE(v_dtl.description,''),
+                COALESCE(v_mst.inputby,'SYSTEM')
+            );
+
+    END IF;
 END; $$;
 
 

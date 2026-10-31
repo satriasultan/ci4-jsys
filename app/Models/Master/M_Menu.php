@@ -142,6 +142,55 @@ replace(parentsub,'.','_') as idparentsub from sc_mst.menuprg where child='P' an
         ");
     }
 
+    /* ============================================================
+     |  MENU CARD (v_menu.php) — card & isi menu dari sc_mst.menuprg
+     |  difilter berdasarkan hak akses role (role_permissions.a_view='t')
+     |  Card  = menuprg.child = 'U'  (menu root)
+     |  Grup  = menuprg.child = 'S'  (sub menu)
+     |  Item  = menuprg.child = 'P'  (menu program / link)
+     * ============================================================ */
+
+    /**
+     * Daftar card (menu root) yang punya minimal 1 item yang diizinkan
+     * untuk role tertentu. Urut sesuai menuprg.urut.
+     */
+    function list_menu_card_akses($roleid){
+        return $this->db->query("select u.kodemenu, u.namamenu, u.iconmenu, u.urut
+                                from sc_mst.menuprg u
+                                where u.child='U'
+                                  and exists (
+                                      select 1
+                                      from sc_mst.menuprg p
+                                      inner join sc_mst.role_permissions rp
+                                              on trim(rp.kodemenu) = trim(p.kodemenu)
+                                             and rp.roleid = '$roleid'
+                                             and rp.a_view = 't'
+                                      where p.child='P'
+                                        and trim(p.parentmenu) = trim(u.kodemenu)
+                                  )
+                                order by u.urut asc");
+    }
+
+    /**
+     * Daftar item menu (child='P') yang diizinkan untuk role tertentu,
+     * lengkap dengan nama grup (sub) dan urutannya.
+     */
+    function list_menu_item_akses($roleid){
+        return $this->db->query("select p.kodemenu, p.namamenu, p.iconmenu, p.linkmenu, p.urut,
+                                        trim(p.parentmenu) as parentmenu,
+                                        trim(p.parentsub)  as parentsub,
+                                        s.namamenu as namasub, s.urut as urutsub
+                                from sc_mst.menuprg p
+                                inner join sc_mst.role_permissions rp
+                                        on trim(rp.kodemenu) = trim(p.kodemenu)
+                                       and rp.roleid = '$roleid'
+                                       and rp.a_view = 't'
+                                left outer join sc_mst.menuprg s
+                                        on trim(s.kodemenu) = trim(p.parentsub)
+                                where p.child='P'
+                                order by trim(p.parentmenu) asc, s.urut asc, p.urut asc");
+    }
+
 
 
 }

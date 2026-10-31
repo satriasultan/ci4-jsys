@@ -3375,4 +3375,179 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
         return $this->db->query($sql, [$periode]);
     }
 
+    /* ============================================================
+       SPRINT 1 - MATERIAL RELEASE (I.R.A.8)
+       Helper tambahan untuk validasi & pengaman.
+       Tidak mengubah method yang sudah ada di atas.
+       ============================================================ */
+
+    /* 1 baris draft material release milik user.
+       $docno boleh '' -> ambil draft terbaru milik user tsb. */
+    public function q_tmp_materialrelease_doc($docno, $inputby)
+    {
+        $sql = "SELECT *
+                    FROM sc_tmp.materialrelease_mst
+                    WHERE coalesce(inputby,'') = ?
+                      AND (? = '' OR trim(docno) = trim(?))
+                    ORDER BY inputdate DESC
+                    LIMIT 1";
+        return $this->db->query($sql, [$inputby, $docno, $docno]);
+    }
+
+    /* Statistik detail draft : jumlah baris, total qty, jumlah baris qty <= 0 */
+    public function q_tmp_materialrelease_dtl_stat($docno, $inputby)
+    {
+        $sql = "SELECT count(*) as jml,
+                       coalesce(sum(coalesce(qty,0)),0) as totalqty,
+                       coalesce(sum(case when coalesce(qty,0) <= 0 then 1 else 0 end),0) as qtyinvalid
+                    FROM sc_tmp.materialrelease_dtl
+                    WHERE trim(docno) = trim(?)
+                      AND coalesce(inputby,'') = ?";
+        return $this->db->query($sql, [$docno, $inputby]);
+    }
+
+    /* Status WO. Dipakai untuk aturan: hanya WO status 'F' yang boleh ditarik. */
+    public function q_wo_status($wono)
+    {
+        $sql = "SELECT trim(status) as status
+                    FROM sc_trx.workingorder_mst
+                    WHERE trim(docno) = trim(?)
+                    LIMIT 1";
+        return $this->db->query($sql, [$wono]);
+    }
+
+    /* Jumlah dokumen turunan yang masih aktif menarik sebuah WO.
+       Dipakai untuk aturan: WO sudah 'A' (completed) -> dokumen turunan terkunci. */
+    public function q_wo_downstream($wono)
+    {
+        $sql = "SELECT
+                    (SELECT count(*) FROM sc_trx.woe
+                        WHERE trim(wono) = trim(?) and coalesce(status,'') <> 'C') as woe,
+                    (SELECT count(*) FROM sc_trx.materialrelease_mst
+                        WHERE trim(wono) = trim(?) and coalesce(status,'') <> 'C') as mr,
+                    (SELECT count(*) FROM sc_trx.penerimaanbp_mst
+                        WHERE trim(wono) = trim(?) and coalesce(status,'') <> 'C') as pbp,
+                    (SELECT count(*) FROM sc_trx.bpnm_mst
+                        WHERE trim(wono) = trim(?) and coalesce(status,'') <> 'C') as bpnm";
+        return $this->db->query($sql, [$wono, $wono, $wono, $wono]);
+    }
+
+    /* Statistik detail draft Penerimaan Barang Produksi (Sprint 2) */
+    public function q_tmp_penerimaanbp_dtl_stat($docno, $inputby)
+    {
+        $sql = "SELECT count(*) as jml,
+                       coalesce(sum(coalesce(qty,0)),0) as totalqty,
+                       coalesce(sum(case when coalesce(qty,0) <= 0 then 1 else 0 end),0) as qtyinvalid
+                    FROM sc_tmp.penerimaanbp_dtl
+                    WHERE trim(docno) = trim(?)
+                      AND coalesce(inputby,'') = ?";
+        return $this->db->query($sql, [$docno, $inputby]);
+    }
+
+    /* Statistik detail draft Biaya Produksi Non Material (Sprint 2) */
+    public function q_tmp_bpnm_dtl_stat($docno, $inputby)
+    {
+        $sql = "SELECT count(*) as jml,
+                       coalesce(sum(coalesce(qty,0)),0) as totalqty,
+                       coalesce(sum(case when coalesce(qty,0) <= 0 then 1 else 0 end),0) as qtyinvalid
+                    FROM sc_tmp.bpnm_dtl
+                    WHERE trim(docno) = trim(?)
+                      AND coalesce(inputby,'') = ?";
+        return $this->db->query($sql, [$docno, $inputby]);
+    }
+
+
+    /* ============================================================
+       LAPORAN JURNAL TRANSAKSI (detail Material Release / PBP / BPNM)
+       Sumber: sc_trx.jurnal_hd + sc_trx.jurnal_dt (hanya yang POSTED).
+       Kolom "Pemohon" diambil dari mst modul produksi terkait (mr/pbp/bpnm).
+       ============================================================ */
+    public function q_laporan_jurnal_transaksi($params = '')
+    {
+        return $this->db->query("
+        WITH data_jurnal AS (
+            SELECT
+                jd.id,
+                jd.jurnal_id,
+                TRIM(jd.idcoa) AS idcoa,
+                TRIM(coa.nmcoa) AS nmcoa,
+                jd.debet,
+                jd.kredit,
+                TRIM(jd.ref_docno) AS ref_docno,
+                TRIM(jd.ref_doctype) AS ref_doctype,
+                TRIM(jh.docno) AS docno,
+                TRIM(jh.doctype) AS doctype,
+                jh.trxdate,
+                COALESCE(TRIM(mr.pemohon), TRIM(pbp.pemohon), TRIM(bnm.pemohon), '') AS nmpemohon
+            FROM sc_trx.jurnal_dt jd
+            INNER JOIN sc_trx.jurnal_hd jh
+                ON jh.id = jd.jurnal_id
+            LEFT JOIN sc_mst.coa coa
+                ON TRIM(coa.idcoa) = TRIM(jd.idcoa)
+            LEFT JOIN sc_trx.materialrelease_mst mr
+                ON TRIM(mr.docno) = TRIM(jh.docno)
+            LEFT JOIN sc_trx.penerimaanbp_mst pbp
+                ON TRIM(pbp.docno) = TRIM(jh.docno)
+            LEFT JOIN sc_trx.bpnm_mst bnm
+                ON TRIM(bnm.docno) = TRIM(jh.docno)
+            WHERE 1=1
+              AND jh.status = 'POSTED'
+              AND jd.status = 'POSTED'
+              $params
+        )
+        SELECT
+            id, jurnal_id, idcoa, nmcoa, debet, kredit,
+            ref_docno, ref_doctype, docno, doctype, trxdate, nmpemohon,
+            0 AS urutan
+        FROM data_jurnal
+
+        UNION ALL
+
+        SELECT
+            NULL::BIGINT, NULL::BIGINT, NULL::VARCHAR, 'TOTAL'::VARCHAR,
+            COALESCE(SUM(debet), 0), COALESCE(SUM(kredit), 0),
+            NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::DATE,
+            NULL::VARCHAR, 1 AS urutan
+        FROM data_jurnal
+
+        ORDER BY urutan, trxdate DESC NULLS LAST, jurnal_id, id
+        ");
+    }
+
+
+
+    /* ============================================================
+       RINGKASAN BOM (kartu dashboard di halaman list BOM)
+       ============================================================ */
+    public function q_summary_bom()
+    {
+        $sql = "
+            SELECT
+                (SELECT COUNT(*) FROM sc_trx.bom_mst) AS total_bom,
+                (SELECT COUNT(*) FROM sc_trx.bom_mst WHERE BTRIM(status) = 'A') AS bom_released,
+                (SELECT COUNT(*) FROM sc_trx.bom_mst WHERE BTRIM(status) IN ('I','E')) AS bom_draft,
+                (SELECT COUNT(*) FROM sc_trx.bom_dtl) AS total_komponen
+        ";
+        return $this->db->query($sql)->getRowArray();
+    }
+
+
+
+    /* ============================================================
+       RINGKASAN WORKING ORDER (kartu dashboard di halaman list WO)
+       finish = status A (completed), unfinish = selain A/C/D.
+       ============================================================ */
+    public function q_summary_wo()
+    {
+        $sql = "
+            SELECT
+                (SELECT COUNT(*) FROM sc_trx.workingorder_mst WHERE BTRIM(status) NOT IN ('C','D')) AS total_wo,
+                (SELECT COUNT(*) FROM sc_trx.workingorder_mst WHERE BTRIM(status) = 'A') AS wo_finish,
+                (SELECT COUNT(*) FROM sc_trx.workingorder_mst WHERE BTRIM(status) NOT IN ('A','C','D')) AS wo_unfinish,
+                (SELECT COUNT(*) FROM sc_trx.workingorder_mst WHERE BTRIM(status) = 'F') AS wo_final
+        ";
+        return $this->db->query($sql)->getRowArray();
+    }
+
+
 }

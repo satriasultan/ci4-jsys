@@ -304,216 +304,99 @@ if (!function_exists('base_url')) {
 </div>
 
 <!-- ══════════════════════════════════════
-     MENU GRID
+     MENU GRID — digenerate dari sc_mst.menuprg + sc_mst.role_permissions
+       card = menu root (child='U') | grup = child='S' | item = child='P'
+       hanya menu dengan a_view='t' untuk role yang login yang tampil
 ══════════════════════════════════════ -->
+<?php
+$erpCards = isset($menu_cards) ? $menu_cards : [];
+$erpItems = isset($menu_items) ? $menu_items : [];
+
+/* warna card per kodemenu root (agar stabil walau urutan menuprg berubah) */
+$erpColors = [
+    'I.M' => '#0d6efd', 'I.P' => '#0d6efd', 'I.S' => '#fd7e14', 'I.Q' => '#0dcaf0',
+    'I.R' => '#198754', 'I.J' => '#6f42c1', 'I.L' => '#dc3545', 'I.K' => '#20c997',
+    'I.T' => '#6c757d', 'I.H' => '#ff00a1',
+];
+$erpPalette = ['#0d6efd','#fd7e14','#0dcaf0','#198754','#20c997','#dc3545','#6f42c1','#6c757d','#ff00a1','#17a2b8'];
+
+/* menuprg disimpan HURUF BESAR -> tampilkan Title Case,
+   singkatan (PP, PO, SO, AR, AP, ...) tetap kapital */
+if (!function_exists('erp_menu_title')) {
+    function erp_menu_title($s)
+    {
+        $acr   = ['PP','PO','SO','SOI','DO','WO','AR','AP','COA','BOM','PPH','PPN','XLS','PDF','NDK',
+                  'KB','UMT','JUP','BRG','H/P','P/L'];
+        $kecil = ['of','and','or','the','to','in','on','at','by','for','per','dan','di','ke','dengan','yang'];
+
+        $t = ucwords(strtolower(trim((string) $s)), " \t\r\n\f\v(/-&.");
+        foreach ($acr as $a) {
+            $t = preg_replace('/\b' . preg_quote($a, '/') . '\b/i', $a, $t);
+        }
+        /* kata sambung tetap huruf kecil (kecuali di awal kalimat) */
+        $t = preg_replace_callback('/\s(\w+)/', function ($m) use ($kecil) {
+            return ' ' . (in_array(strtolower($m[1]), $kecil, true) ? strtolower($m[1]) : $m[1]);
+        }, $t);
+        return $t;
+    }
+}
+
+/* kelompokkan item: parentmenu -> parentsub (urutan sudah diatur query) */
+$erpGrouped = [];
+foreach ($erpItems as $it) {
+    $erpGrouped[trim($it->parentmenu)][trim($it->parentsub)][] = $it;
+}
+?>
 <div class="erp-menu-row">
-
-    <!-- MASTER DATA -->
+<?php if (empty($erpCards)): ?>
+    <div class="erp-col" style="max-width:100%;flex:1 1 100%;">
+        <div class="card-erp" style="cursor:default;">
+            <div class="icon-erp" style="color:#adb5bd;"><i class="fa fa-lock"></i></div>
+            <div class="title-erp">Tidak ada menu yang bisa diakses</div>
+            <div class="count-erp">Hubungi administrator untuk pengaturan role</div>
+        </div>
+    </div>
+<?php else: ?>
+<?php $ci = 0; foreach ($erpCards as $card): ?>
+<?php
+    $ck     = trim($card->kodemenu);
+    $color  = isset($erpColors[$ck]) ? $erpColors[$ck] : $erpPalette[$ci % count($erpPalette)];
+    $ddId   = 'dd' . $ci;
+    $groups = isset($erpGrouped[$ck]) ? $erpGrouped[$ck] : [];
+    $total  = 0;
+    foreach ($groups as $g) { $total += count($g); }
+    $cicon  = trim((string) $card->iconmenu) !== '' ? trim($card->iconmenu) : 'fa-folder';
+?>
+    <!-- <?= trim($card->namamenu) ?> -->
     <div class="erp-col">
-        <div class="erp-dropdown" style="--menu-color:#0d6efd;">
-            <input type="checkbox" id="dd0" class="dd-toggle">
-            <label for="dd0" class="card-erp">
-                <div class="icon-erp" style="color:#0d6efd;"><i class="fa fa-database"></i></div>
-                <div class="title-erp">Master Data</div>
-                <div class="count-erp">14 menu</div>
+        <div class="erp-dropdown" style="--menu-color:<?= $color ?>;">
+            <input type="checkbox" id="<?= $ddId ?>" class="dd-toggle">
+            <label for="<?= $ddId ?>" class="card-erp">
+                <div class="icon-erp" style="color:<?= $color ?>;"><i class="fa <?= $cicon ?>"></i></div>
+                <div class="title-erp"><?= erp_menu_title($card->namamenu) ?></div>
+                <div class="count-erp"><?= $total ?> menu</div>
             </label>
             <div class="dd-menu">
-                <div class="dd-group-label">Umum</div>
-                <a class="dd-item" href="<?= base_url('master/data/customer') ?>"><i class="fa fa-users"></i> Master Customer</a>
-                <a class="dd-item" href="<?= base_url('master/data/supplier') ?>"><i class="fa fa-truck"></i> Master Supplier</a>
-                <a class="dd-item" href="<?= base_url('master/data/tax') ?>"><i class="fa fa-percent"></i> Master Tax</a>
-                <a class="dd-item" href="<?= base_url('master/data/currency') ?>"><i class="fa fa-money"></i> Master Currency</a>
-                <a class="dd-item" href="<?= base_url('master/data/coa') ?>"><i class="fa fa-list-alt"></i> Master COA</a>
-                <a class="dd-item" href="<?= base_url('master/data/job') ?>"><i class="fa fa-briefcase"></i> Master Job</a>
-                <a class="dd-item" href="<?= base_url('master/data/location') ?>"><i class="fa fa-building"></i> Master Warehouse</a>
-                <a class="dd-item" href="<?= base_url('master/data/area') ?>"><i class="fa fa-map-marker"></i> Master Sub Location</a>
-                <a class="dd-item" href="<?= base_url('master/data/cc') ?>"><i class="fa fa-sitemap"></i> Master Cost Center</a>
-                <div class="dd-divider"></div>
-                <div class="dd-group-label">Barang</div>
-                <a class="dd-item" href="<?= base_url('master/data/barang') ?>"><i class="fa fa-barcode"></i> Master Barang</a>
-                <a class="dd-item" href="<?= base_url('master/data/golonganbarang') ?>"><i class="fa fa-folder-open"></i> Golongan Barang</a>
-                <a class="dd-item" href="<?= base_url('master/data/jenisproduk') ?>"><i class="fa fa-tags"></i> Jenis Produk</a>
-                <a class="dd-item" href="<?= base_url('master/data/kelompokbarang') ?>"><i class="fa fa-th-large"></i> Kelompok Barang</a>
-                <a class="dd-item" href="<?= base_url('master/data/principal') ?>"><i class="fa fa-star"></i> Master Principal</a>
+<?php $first = true; foreach ($groups as $subKode => $rows): ?>
+<?php if (!$first): ?>                <div class="dd-divider"></div>
+<?php endif; $first = false; ?>
+<?php $subLabel = trim((string) ($rows[0]->namasub ?? '')) !== '' ? $rows[0]->namasub : $subKode; ?>
+                <div class="dd-group-label"><?= erp_menu_title($subLabel) ?></div>
+<?php foreach ($rows as $row): ?>
+<?php
+    $link  = trim((string) $row->linkmenu);
+    $href  = ($link === '' || $link === '#') ? '#' : base_url($link);
+    $ricon = trim((string) $row->iconmenu) !== '' ? trim($row->iconmenu) : 'fa-circle-o';
+?>
+                <a class="dd-item" href="<?= $href ?>"><i class="fa <?= $ricon ?>"></i> <?= erp_menu_title($row->namamenu) ?></a>
+<?php endforeach; ?>
+<?php endforeach; ?>
             </div>
         </div>
     </div>
-
-    <!-- PEMBELIAN -->
-    <div class="erp-col">
-        <div class="erp-dropdown" style="--menu-color:#0d6efd;">
-            <input type="checkbox" id="dd1" class="dd-toggle">
-            <label for="dd1" class="card-erp">
-                <div class="icon-erp" style="color:#0d6efd;"><i class="fa fa-cart-plus"></i></div>
-                <div class="title-erp">Pembelian</div>
-                <div class="count-erp">7 menu</div>
-            </label>
-            <div class="dd-menu">
-                <div class="dd-group-label">Transaksi</div>
-                <a class="dd-item" href="<?= base_url('purchase/trans/pp') ?>"><i class="fa fa-file-text-o"></i> Permintaan Pembelian (PP)</a>
-                <a class="dd-item" href="<?= base_url('purchase/trans/voidpp') ?>"><i class="fa fa-ban"></i> Void PP</a>
-                <a class="dd-item" href="<?= base_url('purchase/trans/po') ?>"><i class="fa fa-file-text"></i> Purchase Order (PO)</a>
-                <a class="dd-item" href="<?= base_url('purchase/trans/voidpo') ?>"><i class="fa fa-ban"></i> Void PO</a>
-                <a class="dd-item" href="<?= base_url('purchase/trans/umb') ?>"><i class="fa fa-money"></i> Uang Muka Pembelian</a>
-                <a class="dd-item" href="<?= base_url('purchase/trans/lpb') ?>"><i class="fa fa-inbox"></i> Penerimaan Pembelian</a>
-                <a class="dd-item" href="<?= base_url('purchase/trans/returbeli') ?>"><i class="fa fa-reply"></i> Retur Pembelian</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- PERSEDIAAN -->
-    <div class="erp-col">
-        <div class="erp-dropdown" style="--menu-color:#0dcaf0;">
-            <input type="checkbox" id="dd2" class="dd-toggle">
-            <label for="dd2" class="card-erp">
-                <div class="icon-erp" style="color:#0dcaf0;"><i class="fa fa-cubes"></i></div>
-                <div class="title-erp">Persediaan</div>
-                <div class="count-erp">6 menu</div>
-            </label>
-            <div class="dd-menu">
-                <div class="dd-group-label">Transaksi</div>
-                <a class="dd-item" href="<?= base_url('persediaan/trans/perintah_transfer') ?>"><i class="fa fa-arrow-right"></i> Perintah Transfer Lokasi</a>
-                <a class="dd-item" href="<?= base_url('persediaan/trans/transfer_lokasi') ?>"><i class="fa fa-exchange"></i> Transfer Antar Lokasi</a>
-                <a class="dd-item" href="<?= base_url('persediaan/trans/ajustment_stock') ?>"><i class="fa fa-sliders"></i> Adjustment Stock</a>
-                <a class="dd-item" href="<?= base_url('persediaan/trans/ajustment_item_value') ?>"><i class="fa fa-pencil-square-o"></i> Adjustment Item (Value)</a>
-                <a class="dd-item" href="<?= base_url('persediaan/trans/pmk_brng') ?>"><i class="fa fa-minus-circle"></i> Pemakaian Barang</a>
-                <a class="dd-item" href="<?= base_url('persediaan/trans/pnm_barang') ?>"><i class="fa fa-plus-circle"></i> Penerimaan Barang</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- PENJUALAN -->
-    <div class="erp-col">
-        <div class="erp-dropdown" style="--menu-color:#fd7e14;">
-            <input type="checkbox" id="dd3" class="dd-toggle">
-            <label for="dd3" class="card-erp">
-                <div class="icon-erp" style="color:#fd7e14;"><i class="fa fa-bar-chart"></i></div>
-                <div class="title-erp">Penjualan</div>
-                <div class="count-erp">6 menu</div>
-            </label>
-            <div class="dd-menu">
-                <div class="dd-group-label">Pre Penjualan</div>
-                <a class="dd-item" href="<?= base_url('sales/presales/priceproposal') ?>"><i class="fa fa-tag"></i> Price Proposal</a>
-                <a class="dd-item" href="<?= base_url('sales/presales/performainvoice') ?>"><i class="fa fa-file-o"></i> Proforma Invoice</a>
-                <div class="dd-divider"></div>
-                <div class="dd-group-label">Post Penjualan</div>
-                <a class="dd-item" href="<?= base_url('sales/postsales/salesorder') ?>"><i class="fa fa-file-text"></i> Sales Order</a>
-                <a class="dd-item" href="<?= base_url('sales/postsales/penjualan') ?>"><i class="fa fa-shopping-cart"></i> Penjualan</a>
-                <a class="dd-item" href="<?= base_url('sales/postsales/soi') ?>"><i class="fa fa-file-text-o"></i> SOI</a>
-                <a class="dd-item" href="<?= base_url('sales/postsales/salesorderexternal') ?>"><i class="fa fa-external-link"></i> SO External</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- PRODUKSI -->
-    <div class="erp-col">
-        <div class="erp-dropdown" style="--menu-color:#198754;">
-            <input type="checkbox" id="dd4" class="dd-toggle">
-            <label for="dd4" class="card-erp">
-                <div class="icon-erp" style="color:#198754;"><i class="fa fa-industry"></i></div>
-                <div class="title-erp">Produksi</div>
-                <div class="count-erp">10 menu</div>
-            </label>
-            <div class="dd-menu">
-                <div class="dd-group-label">Transaksi</div>
-                <a class="dd-item" href="<?= base_url('production/trans/standart_cost') ?>"><i class="fa fa-calculator"></i> Standart Cost</a>
-                <a class="dd-item" href="<?= base_url('production/trans/biaya_standart') ?>"><i class="fa fa-dollar"></i> Biaya Standart Cost</a>
-                <a class="dd-item" href="<?= base_url('production/trans/bom') ?>"><i class="fa fa-list-ol"></i> Bill of Material (BOM)</a>
-                <a class="dd-item" href="<?= base_url('production/trans/workingorder') ?>"><i class="fa fa-gears"></i> Work Order</a>
-                <a class="dd-item" href="<?= base_url('production/trans/woe') ?>"><i class="fa fa-play-circle"></i> Work Order Execution</a>
-                <!-- <a class="dd-item" href="<?= base_url('production/trans/setorbagian') ?>"><i class="fa fa-upload"></i> Setor Antar Bagian</a>
-                <a class="dd-item" href="<?= base_url('production/trans/terimabagian') ?>"><i class="fa fa-download"></i> Terima Antar Bagian</a> -->
-                <a class="dd-item" href="<?= base_url('production/trans/materialrelease') ?>"><i class="fa fa-share-square-o"></i> Material Release</a>
-                <a class="dd-item" href="<?= base_url('production/trans/penerimaanbp') ?>"><i class="fa fa-check-square-o"></i> Penerimaan Brg Produksi</a>
-                <a class="dd-item" href="<?= base_url('production/trans/biaya_produksi_non_material') ?>"><i class="fa fa-cog"></i> Biaya Prod Non Material</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- KEUANGAN & AKUNTANSI -->
-    <div class="erp-col">
-        <div class="erp-dropdown" style="--menu-color:#20c997;">
-            <input type="checkbox" id="dd5" class="dd-toggle">
-            <label for="dd5" class="card-erp">
-                <div class="icon-erp" style="color:#20c997;"><i class="fa fa-money"></i></div>
-                <div class="title-erp">Keuangan & Akuntansi</div>
-                <div class="count-erp">4 menu</div>
-            </label>
-            <div class="dd-menu">
-                <div class="dd-group-label">Accounting</div>
-                <a class="dd-item" href="<?= base_url('ka/accounting/jup') ?>"><i class="fa fa-book"></i> Jurnal Umum Perkiraan</a>
-                <div class="dd-divider"></div>
-                <div class="dd-group-label">Finance</div>
-                <a class="dd-item" href="<?= base_url('ka/finance/umt') ?>"><i class="fa fa-credit-card"></i> Uang Muka Titipan</a>
-                <a class="dd-item" href="<?= base_url('ka/finance/penerimaankb') ?>"><i class="fa fa-arrow-circle-down"></i> Penerimaan Kas/Bank</a>
-                <a class="dd-item" href="<?= base_url('ka/finance/pengeluarankb') ?>"><i class="fa fa-arrow-circle-up"></i> Pengeluaran Kas/Bank</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- AR / AP -->
-    <div class="erp-col">
-        <div class="erp-dropdown" style="--menu-color:#dc3545;">
-            <input type="checkbox" id="dd6" class="dd-toggle">
-            <label for="dd6" class="card-erp">
-                <div class="icon-erp" style="color:#dc3545;"><i class="fa fa-handshake-o"></i></div>
-                <div class="title-erp">AR / AP</div>
-                <div class="count-erp">2 menu</div>
-            </label>
-            <div class="dd-menu">
-                <div class="dd-group-label">Transaksi</div>
-                <a class="dd-item" href="<?= base_url('arap/transaksi/ndk') ?>"><i class="fa fa-exchange"></i> Nota Debit / Kredit</a>
-                <div class="dd-divider"></div>
-                <div class="dd-group-label">Laporan</div>
-                <a class="dd-item" href="<?= base_url('arap/report/lapndk') ?>"><i class="fa fa-file-pdf-o"></i> Lap. Nota Debit & Kredit</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- PAJAK -->
-    <div class="erp-col">
-        <div class="erp-dropdown" style="--menu-color:#6f42c1;">
-            <input type="checkbox" id="dd7" class="dd-toggle">
-            <label for="dd7" class="card-erp">
-                <div class="icon-erp" style="color:#6f42c1;"><i class="fa fa-percent"></i></div>
-                <div class="title-erp">Pajak</div>
-                <div class="count-erp">1 menu</div>
-            </label>
-            <div class="dd-menu">
-                <div class="dd-group-label">Laporan</div>
-                <a class="dd-item" href="<?= base_url('pajak/transaksi/laporan') ?>"><i class="fa fa-file-text"></i> Laporan Pajak</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- TOOLS -->
-    <div class="erp-col">
-        <div class="erp-dropdown" style="--menu-color:#6c757d;">
-            <input type="checkbox" id="dd8" class="dd-toggle">
-            <label for="dd8" class="card-erp">
-                <div class="icon-erp" style="color:#6c757d;"><i class="fa fa-wrench"></i></div>
-                <div class="title-erp">Tools</div>
-                <div class="count-erp">7 menu</div>
-            </label>
-            <div class="dd-menu">
-                <div class="dd-group-label">Setting Awal</div>
-                <a class="dd-item" href="<?= base_url('tools/settingawal') ?>"><i class="fa fa-calendar"></i> Setting Tanggal Awal</a>
-                <a class="dd-item" href="<?= base_url('tools/settingawal/saldoawalhp') ?>"><i class="fa fa-balance-scale"></i> Saldo Awal H/P</a>
-                <a class="dd-item" href="<?= base_url('tools/settingawal/prosessaldoawalhp') ?>"><i class="fa fa-refresh"></i> Proses Saldo Awal H/P</a>
-                <div class="dd-divider"></div>
-                <div class="dd-group-label">Konfigurasi</div>
-                <a class="dd-item" href="<?= base_url('tools/konfigurasi') ?>"><i class="fa fa-cog"></i> Konfigurasi</a>
-                <a class="dd-item" href="<?= base_url('tools/konfigurasi/setting') ?>"><i class="fa fa-sliders"></i> Setting</a>
-                <a class="dd-item" href="<?= base_url('tools/konfigurasi/blockunblockperiod') ?>"><i class="fa fa-lock"></i> Block/Unblock Period</a>
-                <div class="dd-divider"></div>
-                <div class="dd-group-label">Proses</div>
-                <a class="dd-item" href="<?= base_url('tools/proses/tutupbulan') ?>"><i class="fa fa-calendar-check-o"></i> Proses Tutup Bulan</a>
-            </div>
-        </div>
-    </div>
-
+<?php $ci++; endforeach; ?>
+<?php endif; ?>
 </div>
-
 <script>
     /* Satu checkbox aktif sekaligus */
     document.querySelectorAll('.dd-toggle').forEach(cb => {

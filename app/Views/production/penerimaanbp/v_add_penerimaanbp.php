@@ -495,6 +495,8 @@
                     <?php if ($typeform != 'DETAIL' && $dtldata != null): ?>
 
                         <button type="submit"
+                                id="btnFinalPenerimaanbp"
+
                                 onclick="return confirm('Simpan Data?')"
                                 class="btn btn-success btn-lg float-right">
 
@@ -508,6 +510,19 @@
                 </div>
 
             </div>
+
+    <script>
+        /* cegah klik FINAL dua kali (double submit) */
+        $(document).on('submit', '#formStandarCostMst', function () {
+            var btn = document.getElementById('btnFinalPenerimaanbp');
+
+            if (btn && !btn.disabled) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Menyimpan...';
+            }
+        });
+    </script>
+
         </div>
     </form>
         <!-- /.card -->

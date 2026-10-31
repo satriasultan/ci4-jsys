@@ -96,9 +96,9 @@ $this->session = \Config\Services::session();
 
                 <!-- TEXT -->
                 <div style="line-height: 1.1;">
-                    <div style="font-size: 32px; font-weight: 800; color:#ffffff; letter-spacing:1px;">
+                    <!-- <div style="font-size: 32px; font-weight: 800; color:#ffffff; letter-spacing:1px;">
                         J-SYS
-                    </div>
+                    </div> -->
                     <div style="font-size: 18px; color:rgba(255,255,255,0.75); letter-spacing:1.5px;">
                         J-ACCOUNTING
                     </div>

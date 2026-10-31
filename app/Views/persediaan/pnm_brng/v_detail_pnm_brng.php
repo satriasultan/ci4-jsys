@@ -195,7 +195,7 @@ $disabled = $isIT ? '' : 'disabled';
 ?>
 <div class="row">
     <!-- left column -->
-    <form action="<?= base_url('persediaan/trans/final_pmk_barang') ?>" method="post" id="formPemakaianBarang">
+    <form action="<?= base_url('persediaan/trans/final_pnm_barang') ?>" method="post" id="formPemakaianBarang">
         <div class="col-md-12">
             <!-- jquery validation -->
             <div class="card card-primary">
@@ -331,7 +331,7 @@ $disabled = $isIT ? '' : 'disabled';
                     </div>
                     <div class="card-body p-3">
                         <div class="table-responsive">
-                            <table id="tmptabpmksdtl"
+                            <table id="trxtabpnmsdtl"
                                    class="table table-hover align-middle custom-table">
                                 <thead>
                                 <tr>
@@ -353,7 +353,7 @@ $disabled = $isIT ? '' : 'disabled';
                         </div>
                     </div>
                     <div class="card-footer bg-light">
-                        <a href="<?= base_url('persediaan/trans/pmk_brng') ?>"
+                        <a href="<?= base_url('persediaan/trans/pnm_brng') ?>"
                            class="btn btn-default btn-lg">
                             <i class="fa fa-arrow-left mr-2"></i>
                             Kembali
@@ -541,7 +541,7 @@ $disabled = $isIT ? '' : 'disabled';
 
 
 
-<script type="application/javascript" src="<?= base_url('assets/pagejs/persediaan/pmk_brng/pmk_brng_detail_trx.js') ?>"></script>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/persediaan/pnm_brng/pnm_brng_detail_trx.js') ?>"></script>
 <script type="text/javascript">
     $(function() {
         $("#example1").dataTable();

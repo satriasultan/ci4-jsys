@@ -178,6 +178,55 @@
         color: #6b7280;
     }
 </style>
+
+<!-- ================= KARTU RINGKASAN WORKING ORDER ================= -->
+<div class="row mb-3">
+    <div class="col-md-3 col-sm-6">
+        <div class="card text-white border-0" style="background: linear-gradient(135deg, #2563eb, #1e3a8a); border-radius: 12px;">
+            <div class="card-body d-flex justify-content-between align-items-center py-3">
+                <div>
+                    <div style="font-size: 28px; font-weight: 700; line-height: 1;"><?= (int)($summary['total_wo'] ?? 0) ?></div>
+                    <div style="font-size: 13px; opacity: .9; margin-top: 4px;">Total Working Order</div>
+                </div>
+                <i class="fa fa-clipboard-list" style="font-size: 38px; opacity: .45;"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card text-white border-0" style="background: linear-gradient(135deg, #16a34a, #15803d); border-radius: 12px;">
+            <div class="card-body d-flex justify-content-between align-items-center py-3">
+                <div>
+                    <div style="font-size: 28px; font-weight: 700; line-height: 1;"><?= (int)($summary['wo_finish'] ?? 0) ?></div>
+                    <div style="font-size: 13px; opacity: .9; margin-top: 4px;">WO Finish</div>
+                </div>
+                <i class="fa fa-check-circle" style="font-size: 38px; opacity: .45;"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card text-white border-0" style="background: linear-gradient(135deg, #d97706, #b45309); border-radius: 12px;">
+            <div class="card-body d-flex justify-content-between align-items-center py-3">
+                <div>
+                    <div style="font-size: 28px; font-weight: 700; line-height: 1;"><?= (int)($summary['wo_unfinish'] ?? 0) ?></div>
+                    <div style="font-size: 13px; opacity: .9; margin-top: 4px;">WO Unfinish</div>
+                </div>
+                <i class="fa fa-hourglass-half" style="font-size: 38px; opacity: .45;"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card text-white border-0" style="background: linear-gradient(135deg, #7c3aed, #6d28d9); border-radius: 12px;">
+            <div class="card-body d-flex justify-content-between align-items-center py-3">
+                <div>
+                    <div style="font-size: 28px; font-weight: 700; line-height: 1;"><?= (int)($summary['wo_final'] ?? 0) ?></div>
+                    <div style="font-size: 13px; opacity: .9; margin-top: 4px;">WO Final / Active</div>
+                </div>
+                <i class="fa fa-play-circle" style="font-size: 38px; opacity: .45;"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-sm-12">
         <div class="card">

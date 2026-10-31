@@ -1,8 +1,36 @@
 
--- JALANKAN INI DULU
+-- I.R.A.5 - WORK ORDER ENGINEERING (WOE)
+-- SATU FILE: CREATE TABLE + TRIGGER TMP->TRX + TRX->TMP (WOE tidak posting - R5)
+-- Aman dijalankan ulang: blok DROP TABLE hanya dijalankan bila tabel KOSONG.
+-- Jalankan: php writable/dbq.php -m -f DatabaseChanges/PRODUCTION/woe.sql
+BEGIN;
 
-DROP TABLE IF EXISTS sc_tmp.woe
-DROP TABLE IF EXISTS sc_trx.woe
+DO $$
+DECLARE
+    v_tabel TEXT;
+    v_jml   BIGINT;
+    v_ada   BOOLEAN := FALSE;
+BEGIN
+    -- Cek isi tabel secara dinamis (aman walau tabel belum ada sama sekali)
+    FOREACH v_tabel IN ARRAY ARRAY['sc_tmp.woe', 'sc_trx.woe']
+    LOOP
+        IF to_regclass(v_tabel) IS NOT NULL THEN
+            EXECUTE format('SELECT count(*) FROM %s', v_tabel) INTO v_jml;
+            IF v_jml > 0 THEN
+                v_ada := TRUE;
+                RAISE NOTICE 'DROP TABLE dilewati: % berisi % baris.', v_tabel, v_jml;
+            END IF;
+        END IF;
+    END LOOP;
+
+    IF v_ada THEN
+        RAISE NOTICE 'DROP TABLE DILEWATI (tabel berisi data). Tabel dipertahankan; hanya trigger/fungsi yang di-refresh.';
+    ELSE
+        DROP TABLE IF EXISTS sc_tmp.woe CASCADE;
+        DROP TABLE IF EXISTS sc_trx.woe CASCADE;
+        RAISE NOTICE 'DROP TABLE dijalankan (semua tabel kosong) - tabel dibuat ulang.';
+    END IF;
+END $$;
 
 
 --I.R.A.5
@@ -19,7 +47,8 @@ VALUES
 ('P','I.R.A.5','CETAK/PRINT'),
 ('O','I.R.A.5','OBSOLATE'),
 ('C','I.R.A.5','CANCEL'),
-('D','I.R.A.5','DELETE');
+('D','I.R.A.5','DELETE')
+ON CONFLICT (kdtrx, jenistrx) DO NOTHING;
 
 
 
@@ -460,6 +489,4 @@ ON sc_trx.woe
 FOR EACH ROW
 EXECUTE FUNCTION sc_trx.tr_woe();
 
-
-
-
+COMMIT;

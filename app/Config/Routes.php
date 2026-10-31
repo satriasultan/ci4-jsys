@@ -1413,7 +1413,8 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->get('showing_mst_standart_cost_mst(:any)', 'Production::showing_mst_standart_cost_mst$1');
     $routes->add('getBranchInfo_standart_cost', 'Production::getBranchInfo_standart_cost');
     $routes->add('getNextSuffix_standart_cost_mst', 'Production::getNextSuffix_standart_cost_mst');
-    $routes->add('save_standart_cost_dtl', 'Production::save_standart_cost_dtl');
+    // route mati: method Production::save_standart_cost_dtl tidak ada — detail disimpan via save_standart_cost_mst()
+    // $routes->add('save_standart_cost_dtl', 'Production::save_standart_cost_dtl');
     $routes->add('save_standart_cost_mst', 'Production::save_standart_cost_mst');
     $routes->add('clearStandartCostTmp', 'Production::clearStandartCostTmp');
     $routes->add('list_tmp_standart_cost_dtl', 'Production::list_tmp_standart_cost_dtl');
@@ -1437,7 +1438,8 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->get('showing_mst_biaya_standart_mst(:any)', 'Production::showing_mst_biaya_standart_mst$1');
     $routes->add('getBranchInfo_biaya_standart', 'Production::getBranchInfo_biaya_standart');
     $routes->add('getNextSuffix_biaya_standart_mst', 'Production::getNextSuffix_biaya_standart_mst');
-    $routes->add('save_biaya_standart_dtl', 'Production::save_biaya_standart_dtl');
+    // route mati: method Production::save_biaya_standart_dtl tidak ada — detail disimpan via save_biaya_standart_mst()
+    // $routes->add('save_biaya_standart_dtl', 'Production::save_biaya_standart_dtl');
     $routes->add('save_biaya_standart_mst', 'Production::save_biaya_standart_mst');
     $routes->add('clearBiayaStandartTmp', 'Production::clearBiayaStandartTmp');
     $routes->add('list_tmp_biaya_standart_dtl', 'Production::list_tmp_biaya_standart_dtl');
@@ -1462,7 +1464,8 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('getBranchInfo_bom', 'Production::getBranchInfo_bom');
 
     $routes->add('getNextSuffix_bom_mst', 'Production::getNextSuffix_bom_mst');
-    $routes->add('save_bom_dtl', 'Production::save_bom_dtl');
+    // route mati: method Production::save_bom_dtl tidak ada — detail disimpan via save_bom_mst()
+    // $routes->add('save_bom_dtl', 'Production::save_bom_dtl');
     $routes->add('save_bom_mst', 'Production::save_bom_mst');
     $routes->add('clear_bom_Tmp', 'Production::clear_bom_Tmp');
     $routes->add('list_tmp_bom_material_dtl', 'Production::list_tmp_bom_material_dtl');
@@ -1493,9 +1496,11 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->get('showing_trx_workingorder_mst(:any)', 'Production::showing_trx_workingorder_mst$1');
     $routes->add('getBranchInfo_workingorder', 'Production::getBranchInfo_workingorder');
     $routes->add('getNextSuffix_workingorder_mst', 'Production::getNextSuffix_workingorder_mst');
-    $routes->add('save_workingorder_dtl', 'Production::save_workingorder_dtl');
+    // route mati: method Production::save_workingorder_dtl tidak ada — detail disimpan via save_workingorder_mst()
+    // $routes->add('save_workingorder_dtl', 'Production::save_workingorder_dtl');
     $routes->add('save_workingorder_mst', 'Production::save_workingorder_mst');
     $routes->add('save_update_workingorder_bom', 'Production::save_update_workingorder_bom');
+    $routes->add('updateStatusWO', 'Production::updateStatusWO');
 
     $routes->add('clear_workingorder_Tmp', 'Production::clear_workingorder_Tmp');
     $routes->add('list_tmp_workingorder_bom_mst', 'Production::list_tmp_workingorder_bom_mst');
@@ -1557,7 +1562,8 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->get('showing_trx_materialrelease_mst(:any)', 'Production::showing_trx_materialrelease_mst$1');
     $routes->add('getNextSuffix_materialrelease_mst', 'Production::getNextSuffix_materialrelease_mst');
     $routes->add('getBranchInfo_materialrelease', 'Production::getBranchInfo_materialrelease');
-    $routes->add('save_materialrelease_dtl', 'Production::save_materialrelease_dtl');
+    // route mati: method Production::save_materialrelease_dtl tidak ada — detail disimpan via save_materialrelease_mst()
+    // $routes->add('save_materialrelease_dtl', 'Production::save_materialrelease_dtl');
     $routes->add('save_materialrelease_mst', 'Production::save_materialrelease_mst');
     $routes->add('save_materialrelease_from_wo', 'Production::save_materialrelease_from_wo');
     $routes->add('clear_materialrelease_Tmp', 'Production::clear_materialrelease_Tmp');
@@ -1585,7 +1591,8 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->get('showing_trx_penerimaanbp_mst(:any)', 'Production::showing_trx_penerimaanbp_mst$1');
     $routes->add('getNextSuffix_penerimaanbp_mst', 'Production::getNextSuffix_penerimaanbp_mst');
     $routes->add('getBranchInfo_penerimaanbp', 'Production::getBranchInfo_penerimaanbp');
-    $routes->add('save_penerimaanbp_dtl', 'Production::save_penerimaanbp_dtl');
+    // route mati: method Production::save_penerimaanbp_dtl tidak ada — detail disimpan via save_penerimaanbp_mst()
+    // $routes->add('save_penerimaanbp_dtl', 'Production::save_penerimaanbp_dtl');
     $routes->add('save_penerimaanbp_mst', 'Production::save_penerimaanbp_mst');
     $routes->add('save_penerimaanbp_from_wo', 'Production::save_penerimaanbp_from_wo');
     $routes->add('clear_penerimaanbp_Tmp', 'Production::clear_penerimaanbp_Tmp');
@@ -1615,7 +1622,8 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->get('showing_trx_bpnm_mst(:any)', 'Production::showing_trx_bpnm_mst$1');
     $routes->add('getBranchInfo_bpnm', 'Production::getBranchInfo_bpnm');
     $routes->add('getNextSuffix_bpnm_mst', 'Production::getNextSuffix_bpnm_mst');
-    $routes->add('save_bpnm_dtl', 'Production::save_bpnm_dtl');
+    // route mati: method Production::save_bpnm_dtl tidak ada — detail disimpan via save_bpnm_mst()
+    // $routes->add('save_bpnm_dtl', 'Production::save_bpnm_dtl');
     $routes->add('save_bpnm_mst', 'Production::save_bpnm_mst');
     $routes->add('save_bpnm_from_wo', 'Production::save_bpnm_from_wo');
     $routes->add('clear_bpnm_Tmp', 'Production::clear_bpnm_Tmp');
@@ -1629,6 +1637,8 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('update_bpnm_(:any)', 'Production::update_bpnm_$1');
     $routes->add('detail_bpnm_(:any)','Production::detail_bpnm_$1');
     $routes->add('cancel_bpnm_(:any)','Production::cancel_bpnm_$1');
+    $routes->add('laporan_jurnal_transaksi', 'Production::laporan_jurnal_transaksi');
+
 });
 
 

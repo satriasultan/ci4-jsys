@@ -203,6 +203,8 @@ class M_Report extends Model
                 ON TRIM(bm.docno) = TRIM(mr.bomno)
             LEFT JOIN sc_trx.workingorder_bom_mst wbm
                 ON TRIM(wbm.docno) = TRIM(mr.bomno)
+                AND TRIM(wbm.docref) = TRIM(mr.wono)
+
             LEFT JOIN sc_mst.mbarang mb
                 ON TRIM(mb.idbarang) = TRIM(bm.idbarang_jadi)
             CROSS JOIN parameter p
@@ -262,6 +264,8 @@ class M_Report extends Model
                 ON TRIM(mrd.docref) = TRIM(mr.woeno)
             LEFT JOIN sc_trx.workingorder_bom_mst wbm
                 ON TRIM(wbm.docno) = TRIM(mr.bomno)
+                AND TRIM(wbm.docref) = TRIM(mr.wono)
+
             LEFT JOIN LATERAL (
                 SELECT s.newcost
                 FROM sc_mst.standart_cost_dtl s
@@ -328,6 +332,8 @@ class M_Report extends Model
                 ON TRIM(bpd.docref) = TRIM(bp.woeno)
             LEFT JOIN sc_trx.workingorder_bom_mst wbm
                 ON TRIM(wbm.docno) = TRIM(bp.bomno)
+                AND TRIM(wbm.docref) = TRIM(bp.wono)
+
             CROSS JOIN parameter p
             WHERE wo.status NOT IN ('C', 'D')
             AND (p.cabang  IS NULL OR TRIM(p.cabang)  = '' OR TRIM(wo.cabang) = TRIM(p.cabang))
@@ -385,6 +391,8 @@ class M_Report extends Model
                 ON TRIM(pbd.docno) = TRIM(pb.docno)
             LEFT JOIN sc_trx.workingorder_bom_mst wbm
                 ON TRIM(wbm.docno) = TRIM(pb.bomno)
+                AND TRIM(wbm.docref) = TRIM(pb.wono)
+
             CROSS JOIN parameter p
             WHERE wo.status NOT IN ('C', 'D')
             AND (p.cabang  IS NULL OR TRIM(p.cabang)  = '' OR TRIM(wo.cabang) = TRIM(p.cabang))

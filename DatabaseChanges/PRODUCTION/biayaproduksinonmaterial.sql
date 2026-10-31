@@ -1,6 +1,11 @@
 -- =========================================
 -- I.R.A.10 — BIAYA PRODUKSI NON MATERIAL (BPNM)
+-- SATU FILE: CREATE TABLE + TRIGGER TMP->TRX + TRX->TMP + POSTING transaction_dt (WIPINX)
+-- Aman dijalankan ulang: blok DROP TABLE hanya dijalankan bila keempat tabel KOSONG.
+-- Jalankan: php writable/dbq.php -m -f DatabaseChanges/PRODUCTION/biayaproduksinonmaterial.sql
 -- =========================================
+
+BEGIN;
 
 --DELETE FROM sc_mst.trxtype WHERE jenistrx='I.R.A.10';
 INSERT INTO sc_mst.trxtype (kdtrx, jenistrx, uraian)
@@ -14,16 +19,41 @@ VALUES
 ('P','I.R.A.10','CETAK/PRINT'),
 ('O','I.R.A.10','OBSOLATE'),
 ('C','I.R.A.10','CANCEL'),
-('D','I.R.A.10','DELETE');
+('D','I.R.A.10','DELETE')
+ON CONFLICT (kdtrx, jenistrx) DO NOTHING;
 
 
 -- =========================================
--- DROP TABLE (urutan: DTL dulu, baru MST)
+-- 2. DROP TABLE - DIJAGA (hanya bila keempat tabel kosong)
 -- =========================================
-DROP TABLE IF EXISTS sc_tmp.bpnm_dtl CASCADE;
-DROP TABLE IF EXISTS sc_tmp.bpnm_mst CASCADE;
-DROP TABLE IF EXISTS sc_trx.bpnm_dtl CASCADE;
-DROP TABLE IF EXISTS sc_trx.bpnm_mst CASCADE;
+DO $$
+DECLARE
+    v_tabel TEXT;
+    v_jml   BIGINT;
+    v_ada   BOOLEAN := FALSE;
+BEGIN
+    -- Cek isi tabel secara dinamis (aman walau tabel belum ada sama sekali)
+    FOREACH v_tabel IN ARRAY ARRAY['sc_tmp.bpnm_mst', 'sc_tmp.bpnm_dtl', 'sc_trx.bpnm_mst', 'sc_trx.bpnm_dtl']
+    LOOP
+        IF to_regclass(v_tabel) IS NOT NULL THEN
+            EXECUTE format('SELECT count(*) FROM %s', v_tabel) INTO v_jml;
+            IF v_jml > 0 THEN
+                v_ada := TRUE;
+                RAISE NOTICE 'DROP TABLE dilewati: % berisi % baris.', v_tabel, v_jml;
+            END IF;
+        END IF;
+    END LOOP;
+
+    IF v_ada THEN
+        RAISE NOTICE 'DROP TABLE DILEWATI (tabel berisi data). Tabel dipertahankan; hanya trigger/fungsi yang di-refresh.';
+    ELSE
+        DROP TABLE IF EXISTS sc_tmp.bpnm_dtl CASCADE;
+        DROP TABLE IF EXISTS sc_tmp.bpnm_mst CASCADE;
+        DROP TABLE IF EXISTS sc_trx.bpnm_dtl CASCADE;
+        DROP TABLE IF EXISTS sc_trx.bpnm_mst CASCADE;
+        RAISE NOTICE 'DROP TABLE dijalankan (semua tabel kosong) - tabel dibuat ulang.';
+    END IF;
+END $$;
 
 
 -- =========================================
@@ -569,7 +599,7 @@ EXECUTE FUNCTION sc_trx.tr_mst_bpnm_mst();
 
 
 
-BEGIN;
+-- (transaksi tunggal: BEGIN ada di awal file, COMMIT di akhir)
 
 -- ============================================================
 -- BPNM → transaction_dt (journal_type: WIPINX)
@@ -625,10 +655,25 @@ BEGIN
      WHERE BTRIM(idbarang) = BTRIM(COALESCE(v_dtl.idbarang,''))
      LIMIT 1;
 
-    IF v_coa_kredit IS NULL OR BTRIM(v_coa_kredit) = '' THEN
-        -- fallback: pakai akun biaya umum dari konfigurasi (kalau ada)
-        -- kalau tidak ada, pakai pproduksi agar tetap balance
-        v_coa_kredit := v_coa_debet;
+    -- ============================================================
+    -- PENGAMAN (Sprint 2)
+    -- Dulu : kalau akun kredit kosong -> dipakai akun debet (WIP),
+    --        sehingga jurnal menjadi DEBIT WIP / KREDIT WIP (net 0),
+    --        lolos balance check padahal tidak bermakna.
+    -- Sekarang : dihentikan dengan pesan yang jelas.
+    -- ============================================================
+    IF NOT EXISTS (
+        SELECT 1 FROM sc_mst.journal_type WHERE BTRIM(journal_type) = 'WIPINX'
+    ) THEN
+        RAISE EXCEPTION
+            'JOURNAL TYPE WIPINX tidak ditemukan di sc_mst.journal_type. Jalankan script SIMULASI BALANCE terlebih dahulu.';
+    END IF;
+
+    IF COALESCE(BTRIM(v_coa_debet), '') = ''
+       OR COALESCE(BTRIM(v_coa_kredit), '') = '' THEN
+        RAISE EXCEPTION
+            'BIAYA PRODUKSI NON MATERIAL % : akun COA tidak lengkap (debet=%, kredit=%). Isi konfigurasi_umum.pproduksi dan akun pada master barang %.',
+            BTRIM(p_docno), COALESCE(v_coa_debet, ''), COALESCE(v_coa_kredit, ''), BTRIM(COALESCE(v_dtl.idbarang, ''));
     END IF;
 
     -- Harga: pakai dtl.harga; fallback ke nilai/qty
@@ -642,6 +687,16 @@ BEGIN
     END IF;
 
     v_harga := COALESCE(v_harga, 0);
+
+    -- ============================================================
+    -- PENGAMAN : nilai biaya tidak boleh 0 (dokumen biaya tanpa nilai)
+    -- ============================================================
+    IF v_harga <= 0 AND COALESCE(v_dtl.nilai, 0) <= 0 THEN
+        RAISE EXCEPTION
+            'BIAYA PRODUKSI NON MATERIAL % : nilai biaya barang % kosong (harga & nilai = 0).',
+            BTRIM(p_docno), BTRIM(COALESCE(v_dtl.idbarang, ''));
+    END IF;
+
     v_nilai := COALESCE(NULLIF(v_dtl.nilai,0), v_harga * COALESCE(v_dtl.qty,0), 0);
 
     v_idbranch := CASE BTRIM(COALESCE(v_mst.cabang,''))

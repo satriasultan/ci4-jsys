@@ -397,7 +397,7 @@ class Production extends BaseController
     function showing_tmp_standart_cost_mst(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno' and inputby = '$nama'";
+        $param = " and docno=" . $this->db->escape($docno) . " and inputby = '$nama'";
         $data = $this->m_production->q_tmp_standart_cost_mst($param);
         $output = array(
             'status' => true,
@@ -411,7 +411,7 @@ class Production extends BaseController
     function showing_mst_standart_cost_mst(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno=" . $this->db->escape($docno);
         $data = $this->m_production->q_mst_standart_cost_mst($param);
         $output = array(
             'status' => true,
@@ -900,7 +900,7 @@ class Production extends BaseController
         $cek2 = $this->m_production->q_tmp_standart_cost_mst($paramdtl2);
 
 
-        $builder = $this->db->table(' sc_tmp.standart_cost_mst');
+        $builder = $this->db->table('sc_tmp.standart_cost_mst');
 
         //INSERT TRX ERROR
         $builder_trxerror = $this->db->table('sc_mst.trxerror');
@@ -920,7 +920,7 @@ class Production extends BaseController
             );
             $builder_trxerror->insert($infotrxerror);
 
-            return redirect()->to(base_url('/persediaan/trans/add_standart_cost'));
+            return redirect()->to(base_url('/production/trans/standart_cost'));
         } else {
             // Ambil dari request POST
             //$pemohon = strtoupper(trim($this->request->getPost('pemohon')));
@@ -1250,7 +1250,7 @@ class Production extends BaseController
         }
 
         $decoded_docno = hex2bin($docno); // Decode docno yang dikirim dalam bentuk hex
-        $param = " and coalesce(docno,'') = '$decoded_docno'";
+        $param = " and coalesce(docno,'') = " . $this->db->escape($decoded_docno);
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
         $data['typeform'] = 'DETAIL';
@@ -1310,8 +1310,21 @@ class Production extends BaseController
             return redirect()->to(
                 base_url('production/trans/standart_cost')
             )->with(
-                'error',
-                'Document tidak ditemukan'
+                'prod_msg',
+                $this->prod_msg('error', 'Document tidak ditemukan.')
+            );
+        }
+
+        // =====================================
+        // VALIDASI PEMILIK DOKUMEN
+        // =====================================
+        if (trim($dtl['inputby']) !== $nama) {
+
+            return redirect()->to(
+                base_url('production/trans/standart_cost')
+            )->with(
+                'prod_msg',
+                $this->prod_msg('error', 'Dokumen ini bukan milik Anda, tidak dapat dicancel.')
             );
         }
 
@@ -1325,58 +1338,47 @@ class Production extends BaseController
         // =====================================
         if ($status === 'F' || $status === 'P') {
             $info = [
-
                 'status'     => 'C',
                 'updatedate' => date('Y-m-d H:i:s'),
                 'updateby'   => $nama,
-
             ];
 
-// =====================================
-// START TRANSACTION
-// =====================================
             $this->db->transStart();
 
-// =====================================
-// UPDATE MASTER
-// =====================================
-            $this->db
-                ->table('sc_mst.standart_cost_mst')
-                ->where('docno', trim($docno))
-                ->update($info);
+            try {
+                $this->db
+                    ->table('sc_mst.standart_cost_mst')
+                    ->where('docno', trim($docno))
+                    ->whereIn('status', ['F', 'P'])
+                    ->update($info);
 
-// =====================================
-// UPDATE DETAIL
-// =====================================
-            $this->db
-                ->table('sc_mst.standart_cost_dtl')
-                ->where('docno', trim($docno))
-                ->update($info);
+                $errDb = $this->prod_errorDb();
 
-// =====================================
-// COMMIT
-// =====================================
-            $this->db->transComplete();
+                if ($errDb !== '') {
+                    $this->db->transRollback();
+                    return redirect()->to(base_url('production/trans/standart_cost'))->with('prod_msg', $this->prod_msg('error', 'Proses gagal : ' . $errDb));
+                }
+                if ($this->prod_hitungStatus('sc_mst.standart_cost_mst', $docno, null, 'C') <= 0) {
+                    $this->db->transRollback();
+                    return redirect()->to(base_url('production/trans/standart_cost'))->with('prod_msg', $this->prod_msg('warning', 'Dokumen sudah dicancel / berubah oleh proses lain.'));
+                }
 
-// =====================================
-// RESULT
-// =====================================
-            if ($this->db->transStatus() === false) {
+                $this->db
+                    ->table('sc_mst.standart_cost_dtl')
+                    ->where('docno', trim($docno))
+                    ->update($info);
 
-                return redirect()->to(
-                    base_url('production/trans/standart_cost')
-                )->with(
-                    'error',
-                    'Gagal cancel document'
-                );
+                $this->db->transComplete();
+            } catch (\Throwable $e) {
+                $this->db->transRollback();
+                return redirect()->to(base_url('production/trans/standart_cost'))->with('prod_msg', $this->prod_msg('error', $this->prod_pesan_db($e)));
             }
 
-            return redirect()->to(
-                base_url('production/trans/standart_cost')
-            )->with(
-                'success',
-                'Document berhasil dicancel'
-            );
+            if ($this->db->transStatus() === false) {
+                return redirect()->to(base_url('production/trans/standart_cost'))->with('prod_msg', $this->prod_msg('error', 'Gagal cancel document.'));
+            }
+
+            return redirect()->to(base_url('production/trans/standart_cost'))->with('prod_msg', $this->prod_msg('success', 'Standart Cost ' . trim($docno) . ' berhasil dicancel.'));
         }
 
         // =====================================
@@ -1761,7 +1763,7 @@ class Production extends BaseController
     function showing_tmp_biaya_standart_mst(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno' and inputby='$nama'";
+        $param = " and docno=" . $this->db->escape($docno) . " and inputby='$nama'";
         $data = $this->m_production->q_tmp_biaya_standart_mst($param);
         $output = array(
             'status' => true,
@@ -1775,7 +1777,7 @@ class Production extends BaseController
     function showing_mst_biaya_standart_mst(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno=" . $this->db->escape($docno);
         $data = $this->m_production->q_mst_biaya_standart_mst($param);
         $output = array(
             'status' => true,
@@ -2196,7 +2198,7 @@ class Production extends BaseController
         $cek2 = $this->m_production->q_tmp_biaya_standart_mst($paramdtl2);
 
 
-        $builder = $this->db->table(' sc_tmp.biaya_standart_mst');
+        $builder = $this->db->table('sc_tmp.biaya_standart_mst');
 
         //INSERT TRX ERROR
         $builder_trxerror = $this->db->table('sc_mst.trxerror');
@@ -2216,7 +2218,7 @@ class Production extends BaseController
             );
             $builder_trxerror->insert($infotrxerror);
 
-            return redirect()->to(base_url('/persediaan/trans/add_biaya_standart'));
+            return redirect()->to(base_url('/production/trans/biaya_standart'));
         } else {
             // Ambil dari request POST
             //$pemohon = strtoupper(trim($this->request->getPost('pemohon')));
@@ -2547,7 +2549,7 @@ class Production extends BaseController
         }
 
         $decoded_docno = hex2bin($docno); // Decode docno yang dikirim dalam bentuk hex
-        $param = " and coalesce(docno,'') = '$decoded_docno'";
+        $param = " and coalesce(docno,'') = " . $this->db->escape($decoded_docno);
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
         $data['typeform'] = 'DETAIL';
@@ -2607,8 +2609,21 @@ class Production extends BaseController
             return redirect()->to(
                 base_url('production/trans/biaya_standart')
             )->with(
-                'error',
-                'Document tidak ditemukan'
+                'prod_msg',
+                $this->prod_msg('error', 'Document tidak ditemukan.')
+            );
+        }
+
+        // =====================================
+        // VALIDASI PEMILIK DOKUMEN
+        // =====================================
+        if (trim($dtl['inputby']) !== $nama) {
+
+            return redirect()->to(
+                base_url('production/trans/biaya_standart')
+            )->with(
+                'prod_msg',
+                $this->prod_msg('error', 'Dokumen ini bukan milik Anda, tidak dapat dicancel.')
             );
         }
 
@@ -2622,58 +2637,47 @@ class Production extends BaseController
         // =====================================
         if ($status === 'F' || $status === 'P') {
             $info = [
-
                 'status'     => 'C',
                 'updatedate' => date('Y-m-d H:i:s'),
                 'updateby'   => $nama,
-
             ];
 
-// =====================================
-// START TRANSACTION
-// =====================================
             $this->db->transStart();
 
-// =====================================
-// UPDATE MASTER
-// =====================================
-            $this->db
-                ->table('sc_mst.biaya_standart_mst')
-                ->where('docno', trim($docno))
-                ->update($info);
+            try {
+                $this->db
+                    ->table('sc_mst.biaya_standart_mst')
+                    ->where('docno', trim($docno))
+                    ->whereIn('status', ['F', 'P'])
+                    ->update($info);
 
-// =====================================
-// UPDATE DETAIL
-// =====================================
-            $this->db
-                ->table('sc_mst.biaya_standart_dtl')
-                ->where('docno', trim($docno))
-                ->update($info);
+                $errDb = $this->prod_errorDb();
 
-// =====================================
-// COMMIT
-// =====================================
-            $this->db->transComplete();
+                if ($errDb !== '') {
+                    $this->db->transRollback();
+                    return redirect()->to(base_url('production/trans/biaya_standart'))->with('prod_msg', $this->prod_msg('error', 'Proses gagal : ' . $errDb));
+                }
+                if ($this->prod_hitungStatus('sc_mst.biaya_standart_mst', $docno, null, 'C') <= 0) {
+                    $this->db->transRollback();
+                    return redirect()->to(base_url('production/trans/biaya_standart'))->with('prod_msg', $this->prod_msg('warning', 'Dokumen sudah dicancel / berubah oleh proses lain.'));
+                }
 
-// =====================================
-// RESULT
-// =====================================
-            if ($this->db->transStatus() === false) {
+                $this->db
+                    ->table('sc_mst.biaya_standart_dtl')
+                    ->where('docno', trim($docno))
+                    ->update($info);
 
-                return redirect()->to(
-                    base_url('production/trans/biaya_standart')
-                )->with(
-                    'error',
-                    'Gagal cancel document'
-                );
+                $this->db->transComplete();
+            } catch (\Throwable $e) {
+                $this->db->transRollback();
+                return redirect()->to(base_url('production/trans/biaya_standart'))->with('prod_msg', $this->prod_msg('error', $this->prod_pesan_db($e)));
             }
 
-            return redirect()->to(
-                base_url('production/trans/biaya_standart')
-            )->with(
-                'success',
-                'Document berhasil dicancel'
-            );
+            if ($this->db->transStatus() === false) {
+                return redirect()->to(base_url('production/trans/biaya_standart'))->with('prod_msg', $this->prod_msg('error', 'Gagal cancel document.'));
+            }
+
+            return redirect()->to(base_url('production/trans/biaya_standart'))->with('prod_msg', $this->prod_msg('success', 'Biaya Standart ' . trim($docno) . ' berhasil dicancel.'));
         }
 
         // =====================================
@@ -2757,6 +2761,10 @@ class Production extends BaseController
         //auto insert unit
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
+        // Ringkasan kartu dashboard (total / released / draft / komponen)
+        $data['summary'] = $this->m_production->q_summary_bom();
+
+
         return $this->template->render('/production/bom/v_bom',$data);
     }
 
@@ -2858,7 +2866,7 @@ class Production extends BaseController
                 $deleteBtn = '
                 <a class="dropdown-item"
                    style="background-color:#FF7C7CD6;"
-                   href="' . base_url('production/trans/cancelBOM') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
+                   href="' . base_url('production/trans/cancel_bom_') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
                    onclick="return guardPeriodeTutup(event) && confirm(\'Cancel Bill of Material : ' . $docno . '\')">
 
                     <i class="fa fa-trash"></i> Cancel
@@ -3026,6 +3034,23 @@ class Production extends BaseController
         }
 
         $db = \Config\Database::connect();
+
+        // =====================================================
+        // VALIDASI APPROVE (A): BOM harus punya detail/komponen
+        // =====================================================
+        if ($status === 'A') {
+            $jmlDtl = $db->table('sc_trx.bom_dtl')
+                ->where('docno', $docno)
+                ->countAllResults();
+
+            if ($jmlDtl <= 0) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'BOM tidak dapat di-approve karena detail/komponen masih kosong.'
+                ]);
+            }
+        }
+
         $builder = $db->table('sc_trx.bom_mst');
         $builder->where('docno', $docno);
         $info = array('status' => $status);
@@ -3131,7 +3156,7 @@ class Production extends BaseController
     function showing_tmp_bom_mst(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno' and inputby='$nama'";
+        $param = " and docno=" . $this->db->escape($docno) . " and inputby='$nama'";
         $data = $this->m_production->q_tmp_bom_mst($param);
         $output = array(
             'status' => true,
@@ -3145,7 +3170,7 @@ class Production extends BaseController
     function showing_mst_bom_mst(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno=" . $this->db->escape($docno);
         $data = $this->m_production->q_trx_bom_mst($param);
         $output = array(
             'status' => true,
@@ -3740,13 +3765,14 @@ class Production extends BaseController
         $paramdtl = " AND COALESCE(inputby, '') = '$nama'";
         $paramdtl2 = " and coalesce(inputby,'')='$nama'";
 
-        $header = $this->m_production->q_tmp_bom_mst($param);
-        $status = trim($header->getRowArray()['status']);
+        $header = $this->m_production->q_tmp_bom_mst($param)->getRowArray();
+        $status = trim($header['status']);
+        $docno  = trim($header['docno']);
         $cek = $this->m_production->q_tmp_bom_mst($paramdtl);
         $cek2 = $this->m_production->q_tmp_bom_mst($paramdtl2);
 
 
-        $builder = $this->db->table(' sc_tmp.bom_mst');
+        $builder = $this->db->table('sc_tmp.bom_mst');
 
         //INSERT TRX ERROR
         $builder_trxerror = $this->db->table('sc_mst.trxerror');
@@ -3766,52 +3792,38 @@ class Production extends BaseController
             );
             $builder_trxerror->insert($infotrxerror);
 
-            return redirect()->to(base_url('/persediaan/trans/add_bom'));
+            return redirect()->to(base_url('/production/trans/bom'));
         } else {
             // Ambil dari request POST
-            //$pemohon = strtoupper(trim($this->request->getPost('pemohon')));
             $keterangan = strtoupper(trim($this->request->getPost('keterangan')));
-//
 
             // Update data header dulu sebelum set status F
-            $updateHeader = [
-//                'docdate'      => $docdateph,
-//                'pemohon'       => $pemohon,
-                'description'        => $keterangan,
-//                'estpakai' => $estpakaiph,
-            ];
+            $updateHeader = ['description' => $keterangan];
 
-            $builder->where('inputby', $nama);
-            $builder->update($updateHeader);
+            $builder->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->where('status', 'E')
+                    ->update($updateHeader);
 
-            $info = array(
-                'status' => 'F',
-                'updatedate' => date('Y-m-d H:i:s'),
-                'updateby' => $nama
-            );
-            $builder->where('inputby',$nama);
-            if ($builder->update($info)) {
-                $paramerror=" and userid='$nama' and modul='I.R.A.3'";
-                $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
-                $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
+            $info = array('status' => 'F', 'updatedate' => date('Y-m-d H:i:s'), 'updateby' => $nama);
 
-                // $docno = trim(bin2hex(trim($dtlerror['nomorakhir1'])));
+            $this->db->table('sc_tmp.bom_mst')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->where('status', 'E')
+                ->update($info);
 
-                return redirect()->to(base_url('/production/trans/bom'));
-            } else {
-                $infotrxerror = array(
-                    'userid' => $nama,
-                    'errorcode' => 3,
-                    'nomorakhir1' => $cek->getNumRows(),
-                    'nomorakhir2' => $cek2->getNumRows(),
-                    'modul' => 'I.R.A.3',
-                );
-                $builder_trxerror->insert($infotrxerror);
-                return redirect()->to(base_url('/production/trans/bom'));
+            $errDb = $this->prod_errorDb();
+
+            if ($errDb !== '') {
+                return redirect()->to(base_url('/production/trans/bom'))->with('prod_msg', $this->prod_msg('error', 'Proses gagal : ' . $errDb));
             }
 
+            if ($this->prod_hitungStatus('sc_trx.bom_mst', $docno, null, 'F') > 0) {
+                return redirect()->to(base_url('/production/trans/bom'))->with('prod_msg', $this->prod_msg('success', 'BOM ' . $docno . ' berhasil di-final.'));
+            }
 
-
+            return redirect()->to(base_url('/production/trans/bom'))->with('prod_msg', $this->prod_msg('warning', 'Dokumen berubah oleh proses lain. Silakan muat ulang.'));
         }
 
     }
@@ -3820,7 +3832,7 @@ class Production extends BaseController
     {
         $id = $this->request->getGet('id');
 
-        $data = $this->m_production->q_tmp_bom_dtl(" and idurut='$id'");
+        $data = $this->m_production->q_tmp_bom_dtl(" and idurut=" . $this->db->escape($id));
 
         if (!$data) {
             return $this->response->setJSON([
@@ -3985,63 +3997,38 @@ class Production extends BaseController
         // VALIDASI DATA
         // =====================================
         if (!$dtl) {
-
-            return redirect()->to(
-                base_url('production/trans/bom')
-            )->with(
-                'error',
-                'Document tidak ditemukan'
-            );
+            return redirect()->to(base_url('production/trans/bom'))->with('prod_msg', $this->prod_msg('error', 'Document tidak ditemukan.'));
         }
 
-        // =====================================
-        // STATUS
-        // =====================================
+        // VALIDASI PEMILIK DOKUMEN
+        if (trim($dtl['inputby']) !== $nama) {
+            return redirect()->to(base_url('production/trans/bom'))->with('prod_msg', $this->prod_msg('error', 'Dokumen ini bukan milik Anda, tidak dapat diubah.'));
+        }
+
         $status = strtoupper(trim($dtl['status']));
 
-        // =====================================
-        // VALIDASI STATUS
-        // =====================================
         if ($status === 'F' || $status === 'P') {
 
-            $info = [
+            $info = ['status' => 'E', 'updatedate' => date('Y-m-d H:i:s'), 'updateby' => $nama];
 
-                'status'     => 'E',
-                'updatedate' => date('Y-m-d H:i:s'),
-                'updateby'   => $nama,
-
-            ];
-
-            // =====================================
-            // UPDATE
-            // =====================================
-            $update = $this->db
+            // UPDATE (pengaman status : hanya F/P yang boleh dibuka edit)
+            $this->db
                 ->table('sc_trx.bom_mst')
                 ->where('docno', trim($docno))
+                ->whereIn('status', ['F', 'P'])
                 ->update($info);
 
-            // =====================================
-            // SUCCESS
-            // =====================================
-            if ($update) {
+            $errDb = $this->prod_errorDb();
 
-                return redirect()->to(
-                    base_url('production/trans/add_bom')
-                )->with(
-                    'success',
-                    'Document berhasil dibuka untuk edit'
-                );
+            if ($errDb !== '') {
+                return redirect()->to(base_url('production/trans/bom'))->with('prod_msg', $this->prod_msg('error', 'Proses gagal : ' . $errDb));
             }
 
-            // =====================================
-            // FAILED
-            // =====================================
-            return redirect()->to(
-                base_url('production/trans/bom')
-            )->with(
-                'error',
-                'Gagal update document'
-            );
+            if ($this->prod_hitungStatus('sc_trx.bom_mst', $docno, null, 'E') > 0) {
+                return redirect()->to(base_url('production/trans/add_bom'))->with('prod_msg', $this->prod_msg('success', 'BOM ' . trim($docno) . ' berhasil dibuka untuk edit.'));
+            }
+
+            return redirect()->to(base_url('production/trans/bom'))->with('prod_msg', $this->prod_msg('warning', 'Dokumen berubah oleh proses lain. Silakan muat ulang.'));
         }
 
         // =====================================
@@ -4100,7 +4087,7 @@ class Production extends BaseController
         }
 
         $decoded_docno = hex2bin($docno); // Decode docno yang dikirim dalam bentuk hex
-        $param = " and coalesce(docno,'') = '$decoded_docno'";
+        $param = " and coalesce(docno,'') = " . $this->db->escape($decoded_docno);
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
         $data['typeform'] = 'INPUT';
@@ -4147,7 +4134,7 @@ class Production extends BaseController
         // GET DATA
         // =====================================
         $dtl = $this->db
-            ->table('sc_mst.bom_mst')
+            ->table('sc_trx.bom_mst')
             ->where('docno', trim($docno))
             ->get()
             ->getRowArray();
@@ -4156,77 +4143,55 @@ class Production extends BaseController
         // VALIDASI DATA
         // =====================================
         if (!$dtl) {
-
-            return redirect()->to(
-                base_url('production/trans/bom')
-            )->with(
-                'error',
-                'Document tidak ditemukan'
-            );
+            return redirect()->to(base_url('production/trans/bom'))->with('prod_msg', $this->prod_msg('error', 'Document tidak ditemukan.'));
         }
 
-        // =====================================
-        // STATUS
-        // =====================================
+        // VALIDASI PEMILIK DOKUMEN
+        if (trim($dtl['inputby']) !== $nama) {
+            return redirect()->to(base_url('production/trans/bom'))->with('prod_msg', $this->prod_msg('error', 'Dokumen ini bukan milik Anda, tidak dapat dicancel.'));
+        }
+
         $status = strtoupper(trim($dtl['status']));
 
-        // =====================================
-        // VALIDASI STATUS
-        // =====================================
         if ($status === 'F' || $status === 'P') {
-            $info = [
+            $info = ['status' => 'C', 'updatedate' => date('Y-m-d H:i:s'), 'updateby' => $nama];
 
-                'status'     => 'C',
-                'updatedate' => date('Y-m-d H:i:s'),
-                'updateby'   => $nama,
-
-            ];
-
-// =====================================
-// START TRANSACTION
-// =====================================
             $this->db->transStart();
 
-// =====================================
-// UPDATE MASTER
-// =====================================
-            $this->db
-                ->table('sc_mst.bom_mst')
-                ->where('docno', trim($docno))
-                ->update($info);
+            try {
+                $this->db
+                    ->table('sc_trx.bom_mst')
+                    ->where('docno', trim($docno))
+                    ->whereIn('status', ['F', 'P'])
+                    ->update($info);
 
-// =====================================
-// UPDATE DETAIL
-// =====================================
-            $this->db
-                ->table('sc_mst.bom_dtl')
-                ->where('docno', trim($docno))
-                ->update($info);
+                $errDb = $this->prod_errorDb();
 
-// =====================================
-// COMMIT
-// =====================================
-            $this->db->transComplete();
+                if ($errDb !== '') {
+                    $this->db->transRollback();
+                    return redirect()->to(base_url('production/trans/bom'))->with('prod_msg', $this->prod_msg('error', 'Proses gagal : ' . $errDb));
+                }
+                if ($this->prod_hitungStatus('sc_trx.bom_mst', $docno, null, 'C') <= 0) {
+                    $this->db->transRollback();
+                    return redirect()->to(base_url('production/trans/bom'))->with('prod_msg', $this->prod_msg('warning', 'Dokumen sudah dicancel / berubah oleh proses lain.'));
+                }
 
-// =====================================
-// RESULT
-// =====================================
-            if ($this->db->transStatus() === false) {
+                $this->db
+                    ->table('sc_trx.bom_dtl')
+                    ->where('docno', trim($docno))
+                    ->update($info);
 
-                return redirect()->to(
-                    base_url('production/trans/bom')
-                )->with(
-                    'error',
-                    'Gagal cancel document'
-                );
+                $this->db->transComplete();
+            } catch (\Throwable $e) {
+                $this->db->transRollback();
+                return redirect()->to(base_url('production/trans/bom'))->with('prod_msg', $this->prod_msg('error', $this->prod_pesan_db($e)));
             }
 
-            return redirect()->to(
-                base_url('production/trans/bom')
-            )->with(
-                'success',
-                'Document berhasil dicancel'
-            );
+            if ($this->db->transStatus() === false) {
+                return redirect()->to(base_url('production/trans/bom'))->with('prod_msg', $this->prod_msg('error', 'Gagal cancel document.'));
+            }
+
+            return redirect()->to(base_url('production/trans/bom'))->with('prod_msg', $this->prod_msg('success', 'BOM ' . trim($docno) . ' berhasil dicancel.'));
         }
 
         // =====================================
@@ -4312,6 +4277,10 @@ class Production extends BaseController
         //auto insert unit
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
+        // Ringkasan kartu dashboard (total / finish / unfinish / final)
+        $data['summary'] = $this->m_production->q_summary_wo();
+
+
         return $this->template->render('/production/workingorder/v_workingorder',$data);
     }
 
@@ -4413,7 +4382,7 @@ class Production extends BaseController
                 $deleteBtn = '
                 <a class="dropdown-item"
                    style="background-color:#FF7C7CD6;"
-                   href="' . base_url('production/trans/cancelWO') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
+                   href="' . base_url('production/trans/cancel_workingorder_') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
                    onclick="return guardPeriodeTutup(event) && confirm(\'Cancel Working Order : ' . $docno . '\')">
 
                     <i class="fa fa-trash"></i> Cancel
@@ -4579,6 +4548,23 @@ class Production extends BaseController
         }
 
         $db = \Config\Database::connect();
+
+        // =====================================================
+        // VALIDASI APPROVE (A): WO harus sudah punya BOM detail
+        // =====================================================
+        if ($status === 'A') {
+            $jmlDtl = $db->table('sc_trx.workingorder_bom_dtl')
+                ->where('docref', $docno)
+                ->countAllResults();
+
+            if ($jmlDtl <= 0) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Working Order tidak dapat di-approve karena BOM detail masih kosong.'
+                ]);
+            }
+        }
+
         $builder = $db->table('sc_trx.workingorder_mst');
         $builder->where('docno', $docno);
         $info = array('status' => $status);
@@ -4684,7 +4670,7 @@ class Production extends BaseController
     function showing_tmp_workingorder_mst(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno' and inputby='$nama'";
+        $param = " and docno=" . $this->db->escape($docno) . " and inputby='$nama'";
         $data = $this->m_production->q_tmp_workingorder_mst($param);
         $output = array(
             'status' => true,
@@ -4698,7 +4684,7 @@ class Production extends BaseController
     function showing_trx_workingorder_mst(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno=" . $this->db->escape($docno);
         $data = $this->m_production->q_trx_workingorder_mst($param);
         $output = array(
             'status' => true,
@@ -4917,6 +4903,20 @@ class Production extends BaseController
             ]);
         }
 
+        // =====================================================
+        // VALIDASI R1 : BOM harus berstatus APPROVE (A)
+        // agar boleh ditarik ke Working Order.
+        // =====================================================
+        if (strtoupper(trim($bomMst['status'])) !== 'A') {
+
+            $db->transRollback();
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'BOM belum di-approve (status bukan A). Tidak dapat ditarik ke WO.'
+            ]);
+        }
+
         /*
         |--------------------------------------------------------------------------
         | 4. INSERT WORKINGORDER_BOM_MST
@@ -5081,7 +5081,7 @@ class Production extends BaseController
                 disabled>';
             $row[] = $lm->buildunit;
             // $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->ttlcost, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->ttlprice, 2, '.', ',') . '</div>';
             $data[] = $row;
         }
 
@@ -5113,7 +5113,7 @@ class Production extends BaseController
             $row[] = '<div class="ratakanan">'. number_format($lm->buildfor, 2, '.', ',') . '</div>';
             $row[] = $lm->buildunit;
             // $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->ttlcost, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->ttlprice, 2, '.', ',') . '</div>';
             $data[] = $row;
         }
 
@@ -5329,13 +5329,14 @@ class Production extends BaseController
         $paramdtl = " AND COALESCE(inputby, '') = '$nama'";
         $paramdtl2 = " and coalesce(inputby,'')='$nama'";
 
-        $header = $this->m_production->q_tmp_workingorder_mst($param);
-        $status = trim($header->getRowArray()['status']);
+        $header = $this->m_production->q_tmp_workingorder_mst($param)->getRowArray();
+        $status = trim($header['status']);
+        $docno  = trim($header['docno']);
         $cek = $this->m_production->q_tmp_workingorder_mst($paramdtl);
         $cek2 = $this->m_production->q_tmp_workingorder_mst($paramdtl2);
 
 
-        $builder = $this->db->table(' sc_tmp.workingorder_mst');
+        $builder = $this->db->table('sc_tmp.workingorder_mst');
 
         //INSERT TRX ERROR
         $builder_trxerror = $this->db->table('sc_mst.trxerror');
@@ -5355,60 +5356,48 @@ class Production extends BaseController
             );
             $builder_trxerror->insert($infotrxerror);
 
-            return redirect()->to(base_url('/persediaan/trans/add_workingorder'));
+            return redirect()->to(base_url('/production/trans/workingorder'));
         } else {
             // Ambil dari request POST
-            //$pemohon = strtoupper(trim($this->request->getPost('pemohon')));
             $keterangan = strtoupper(trim($this->request->getPost('keterangan')));
             $kdcustomer = strtoupper(trim($this->request->getPost('kdcustomer')));
             $nmcustomer = strtoupper(trim($this->request->getPost('nmcustomer')));
             $alamatcustomer = strtoupper(trim($this->request->getPost('alamatcustomer')));
             $noso = strtoupper(trim($this->request->getPost('noso')));
-//
 
             // Update data header dulu sebelum set status F
             $updateHeader = [
-//                'docdate'      => $docdateph,
-//                'pemohon'       => $pemohon,
                 'noso'              => $noso,
                 'keterangan'        => $keterangan,
                 'kdcustomer'        => $kdcustomer,
                 'nmcustomer'        => $nmcustomer,
                 'alamatcustomer'    => $alamatcustomer,
-//                'estpakai' => $estpakaiph,
             ];
 
-            $builder->where('inputby', $nama);
-            $builder->update($updateHeader);
+            $builder->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->where('status', 'E')
+                    ->update($updateHeader);
 
-            $info = array(
-                'status' => 'F',
-                'updatedate' => date('Y-m-d H:i:s'),
-                'updateby' => $nama
-            );
-            $builder->where('inputby',$nama);
-            if ($builder->update($info)) {
-                $paramerror=" and userid='$nama' and modul='I.R.A.4'";
-                $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
-                $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
+            $info = array('status' => 'F', 'updatedate' => date('Y-m-d H:i:s'), 'updateby' => $nama);
 
-                // $docno = trim(bin2hex(trim($dtlerror['nomorakhir1'])));
+            $this->db->table('sc_tmp.workingorder_mst')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->where('status', 'E')
+                ->update($info);
 
-                return redirect()->to(base_url('/production/trans/workingorder'));
-            } else {
-                $infotrxerror = array(
-                    'userid' => $nama,
-                    'errorcode' => 3,
-                    'nomorakhir1' => $cek->getNumRows(),
-                    'nomorakhir2' => $cek2->getNumRows(),
-                    'modul' => 'I.R.A.4',
-                );
-                $builder_trxerror->insert($infotrxerror);
-                return redirect()->to(base_url('/production/trans/workingorder'));
+            $errDb = $this->prod_errorDb();
+
+            if ($errDb !== '') {
+                return redirect()->to(base_url('/production/trans/workingorder'))->with('prod_msg', $this->prod_msg('error', 'Proses gagal : ' . $errDb));
             }
 
+            if ($this->prod_hitungStatus('sc_trx.workingorder_mst', $docno, null, 'F') > 0) {
+                return redirect()->to(base_url('/production/trans/workingorder'))->with('prod_msg', $this->prod_msg('success', 'Working Order ' . $docno . ' berhasil di-final.'));
+            }
 
-
+            return redirect()->to(base_url('/production/trans/workingorder'))->with('prod_msg', $this->prod_msg('warning', 'Dokumen berubah oleh proses lain. Silakan muat ulang.'));
         }
 
     }
@@ -5417,7 +5406,7 @@ class Production extends BaseController
     {
         $id = $this->request->getGet('id');
 
-        $data = $this->m_production->q_tmp_workingorder_bom_dtl(" and idurut='$id'");
+        $data = $this->m_production->q_tmp_workingorder_bom_dtl(" and idurut=" . $this->db->escape($id));
 
         if (!$data) {
             return $this->response->setJSON([
@@ -5679,63 +5668,38 @@ class Production extends BaseController
         // VALIDASI DATA
         // =====================================
         if (!$dtl) {
-
-            return redirect()->to(
-                base_url('production/trans/workingorder')
-            )->with(
-                'error',
-                'Document tidak ditemukan'
-            );
+            return redirect()->to(base_url('production/trans/workingorder'))->with('prod_msg', $this->prod_msg('error', 'Document tidak ditemukan.'));
         }
 
-        // =====================================
-        // STATUS
-        // =====================================
+        // VALIDASI PEMILIK DOKUMEN
+        if (trim($dtl['inputby']) !== $nama) {
+            return redirect()->to(base_url('production/trans/workingorder'))->with('prod_msg', $this->prod_msg('error', 'Dokumen ini bukan milik Anda, tidak dapat diubah.'));
+        }
+
         $status = strtoupper(trim($dtl['status']));
 
-        // =====================================
-        // VALIDASI STATUS
-        // =====================================
         if ($status === 'F' || $status === 'P') {
 
-            $info = [
+            $info = ['status' => 'E', 'updatedate' => date('Y-m-d H:i:s'), 'updateby' => $nama];
 
-                'status'     => 'E',
-                'updatedate' => date('Y-m-d H:i:s'),
-                'updateby'   => $nama,
-
-            ];
-
-            // =====================================
-            // UPDATE
-            // =====================================
-            $update = $this->db
+            // UPDATE (pengaman status : hanya F/P yang boleh dibuka edit)
+            $this->db
                 ->table('sc_trx.workingorder_mst')
                 ->where('docno', trim($docno))
+                ->whereIn('status', ['F', 'P'])
                 ->update($info);
 
-            // =====================================
-            // SUCCESS
-            // =====================================
-            if ($update) {
+            $errDb = $this->prod_errorDb();
 
-                return redirect()->to(
-                    base_url('production/trans/add_workingorder')
-                )->with(
-                    'success',
-                    'Document berhasil dibuka untuk edit'
-                );
+            if ($errDb !== '') {
+                return redirect()->to(base_url('production/trans/workingorder'))->with('prod_msg', $this->prod_msg('error', 'Proses gagal : ' . $errDb));
             }
 
-            // =====================================
-            // FAILED
-            // =====================================
-            return redirect()->to(
-                base_url('production/trans/workingorder')
-            )->with(
-                'error',
-                'Gagal update document'
-            );
+            if ($this->prod_hitungStatus('sc_trx.workingorder_mst', $docno, null, 'E') > 0) {
+                return redirect()->to(base_url('production/trans/add_workingorder'))->with('prod_msg', $this->prod_msg('success', 'Working Order ' . trim($docno) . ' berhasil dibuka untuk edit.'));
+            }
+
+            return redirect()->to(base_url('production/trans/workingorder'))->with('prod_msg', $this->prod_msg('warning', 'Dokumen berubah oleh proses lain. Silakan muat ulang.'));
         }
 
         // =====================================
@@ -5794,7 +5758,7 @@ class Production extends BaseController
         }
 
         $decoded_docno = hex2bin($docno); // Decode docno yang dikirim dalam bentuk hex
-        $param = " and coalesce(docno,'') = '$decoded_docno'";
+        $param = " and coalesce(docno,'') = " . $this->db->escape($decoded_docno);
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
         $data['typeform'] = 'INPUT';
@@ -5841,7 +5805,7 @@ class Production extends BaseController
         // GET DATA
         // =====================================
         $dtl = $this->db
-            ->table('sc_mst.workingorder_mst')
+            ->table('sc_trx.workingorder_mst')
             ->where('docno', trim($docno))
             ->get()
             ->getRowArray();
@@ -5850,77 +5814,55 @@ class Production extends BaseController
         // VALIDASI DATA
         // =====================================
         if (!$dtl) {
-
-            return redirect()->to(
-                base_url('production/trans/workingorder')
-            )->with(
-                'error',
-                'Document tidak ditemukan'
-            );
+            return redirect()->to(base_url('production/trans/workingorder'))->with('prod_msg', $this->prod_msg('error', 'Document tidak ditemukan.'));
         }
 
-        // =====================================
-        // STATUS
-        // =====================================
+        // VALIDASI PEMILIK DOKUMEN
+        if (trim($dtl['inputby']) !== $nama) {
+            return redirect()->to(base_url('production/trans/workingorder'))->with('prod_msg', $this->prod_msg('error', 'Dokumen ini bukan milik Anda, tidak dapat dicancel.'));
+        }
+
         $status = strtoupper(trim($dtl['status']));
 
-        // =====================================
-        // VALIDASI STATUS
-        // =====================================
         if ($status === 'F' || $status === 'P') {
-            $info = [
+            $info = ['status' => 'C', 'updatedate' => date('Y-m-d H:i:s'), 'updateby' => $nama];
 
-                'status'     => 'C',
-                'updatedate' => date('Y-m-d H:i:s'),
-                'updateby'   => $nama,
-
-            ];
-
-// =====================================
-// START TRANSACTION
-// =====================================
             $this->db->transStart();
 
-// =====================================
-// UPDATE MASTER
-// =====================================
-            $this->db
-                ->table('sc_mst.workingorder_mst')
-                ->where('docno', trim($docno))
-                ->update($info);
+            try {
+                $this->db
+                    ->table('sc_trx.workingorder_mst')
+                    ->where('docno', trim($docno))
+                    ->whereIn('status', ['F', 'P'])
+                    ->update($info);
 
-// =====================================
-// UPDATE DETAIL
-// =====================================
-            $this->db
-                ->table('sc_mst.workingorder_bom_dtl')
-                ->where('docno', trim($docno))
-                ->update($info);
+                $errDb = $this->prod_errorDb();
 
-// =====================================
-// COMMIT
-// =====================================
-            $this->db->transComplete();
+                if ($errDb !== '') {
+                    $this->db->transRollback();
+                    return redirect()->to(base_url('production/trans/workingorder'))->with('prod_msg', $this->prod_msg('error', 'Proses gagal : ' . $errDb));
+                }
+                if ($this->prod_hitungStatus('sc_trx.workingorder_mst', $docno, null, 'C') <= 0) {
+                    $this->db->transRollback();
+                    return redirect()->to(base_url('production/trans/workingorder'))->with('prod_msg', $this->prod_msg('warning', 'Dokumen sudah dicancel / berubah oleh proses lain.'));
+                }
 
-// =====================================
-// RESULT
-// =====================================
-            if ($this->db->transStatus() === false) {
+                $this->db
+                    ->table('sc_trx.workingorder_bom_dtl')
+                    ->where('docno', trim($docno))
+                    ->update($info);
 
-                return redirect()->to(
-                    base_url('production/trans/workingorder')
-                )->with(
-                    'error',
-                    'Gagal cancel document'
-                );
+                $this->db->transComplete();
+            } catch (\Throwable $e) {
+                $this->db->transRollback();
+                return redirect()->to(base_url('production/trans/workingorder'))->with('prod_msg', $this->prod_msg('error', $this->prod_pesan_db($e)));
             }
 
-            return redirect()->to(
-                base_url('production/trans/workingorder')
-            )->with(
-                'success',
-                'Document berhasil dicancel'
-            );
+            if ($this->db->transStatus() === false) {
+                return redirect()->to(base_url('production/trans/workingorder'))->with('prod_msg', $this->prod_msg('error', 'Gagal cancel document.'));
+            }
+
+            return redirect()->to(base_url('production/trans/workingorder'))->with('prod_msg', $this->prod_msg('success', 'Working Order ' . trim($docno) . ' berhasil dicancel.'));
         }
 
         // =====================================
@@ -6055,7 +5997,7 @@ class Production extends BaseController
         }
 
         $decoded_docno = hex2bin($docno); // Decode docno yang dikirim dalam bentuk hex
-        $param = " and coalesce(docno,'') = '$decoded_docno'";
+        $param = " and coalesce(docno,'') = " . $this->db->escape($decoded_docno);
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
         $data['typeform'] = 'DETAIL';
@@ -6811,7 +6753,7 @@ class Production extends BaseController
         $nama=trim($this->session->get('nama'));
         $docno = trim($this->request->getGet('docno')); // Ambil parameter docno dari Ajax
 
-        $param = " and docno='$docno'";
+        $param = " and docno=" . $this->db->escape($docno);
         $data = $this->m_production->q_woe_master($param);
         $output = array(
             'status' => true,
@@ -6825,7 +6767,7 @@ class Production extends BaseController
     function showing_woetemp(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno' and inputby='$nama'";
+        $param = " and docno=" . $this->db->escape($docno) . " and inputby='$nama'";
         $data = $this->m_production->q_woe_master_temp($param);
         $output = array(
             'status' => true,
@@ -7034,7 +6976,7 @@ class Production extends BaseController
         if (empty($docno) or $docno==='') {
             $param_brg = "";
         } else {
-            $param_brg = " and docno='$docno'";
+            $param_brg = " and docno=" . $this->db->escape($docno);
         }
 
         // //idgroup
@@ -7044,7 +6986,7 @@ class Production extends BaseController
 
 
         $databranch = $this->m_global->q_master_branch();
-        $param=" and docno='$docno'";
+        $param=" and docno=" . $this->db->escape($docno);
         $datamst = $this->m_production->q_woe_master($param);
         $datadtl = $this->m_production->q_woe_dtl($param);
         $tampungdtl = $datamst->getResult();
@@ -7169,6 +7111,11 @@ class Production extends BaseController
             }
 
         }
+
+        /* Flash message dari proses FINAL / CANCEL (Sprint 1) */
+        $flash = session()->getFlashdata('prod_msg');
+        $data['message'] = $this->prod_msg_html($flash) . $data['message'];
+
         /* Item Entry Master Check */
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_production->q_tmp_materialrelease_mst($param);
@@ -7296,7 +7243,7 @@ class Production extends BaseController
                 $deleteBtn = '
                 <a class="dropdown-item"
                    style="background-color:#FF7C7CD6;"
-                   href="' . base_url('production/trans/cancelMaterial Release') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
+                   href="' . base_url('production/trans/cancel_materialrelease_') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
                    onclick="return guardPeriodeTutup(event) && confirm(\'Cancel Material Release : ' . $docno . '\')">
 
                     <i class="fa fa-trash"></i> Cancel
@@ -7508,7 +7455,7 @@ class Production extends BaseController
     function showing_tmp_materialrelease_mst(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno' and inputby='$nama'";
+        $param = " and docno=" . $this->db->escape($docno) . " and inputby='$nama'";
         $data = $this->m_production->q_tmp_materialrelease_mst($param);
         $output = array(
             'status' => true,
@@ -7522,7 +7469,7 @@ class Production extends BaseController
     function showing_trx_materialrelease_mst(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno=" . $this->db->escape($docno);
         $data = $this->m_production->q_trx_materialrelease_mst($param);
         $output = array(
             'status' => true,
@@ -7637,13 +7584,21 @@ class Production extends BaseController
             ]);
         }
 
+        // =========================
+        // VALIDASI WO
+        // Hanya WO status FINAL (F) yang boleh ditarik.
+        // WO yang sudah COMPLETED (A) tidak boleh ditarik lagi.
+        // =========================
+        $wono = trim($this->request->getPost('wono'));
 
-        // if (!$doctype_detail) {
-        //     return $this->response->setJSON([
-        //         'success' => false,
-        //         'message' => 'Tipe Detail tidak ditemukan'
-        //     ]);
-        // }
+        $pesanWo = $this->prod_cek_wo($wono);
+
+        if ($pesanWo !== '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $pesanWo
+            ]);
+        }
 
         $db = $this->db;
         $db->transStart();
@@ -7652,12 +7607,20 @@ class Production extends BaseController
         $builderDetail = $db->table('sc_tmp.materialrelease_dtl');
         $oldWoeno  = trim($this->request->getPost('old_woeno'));
         $woeno = trim($this->request->getPost('woeno'));
-        $wono  = trim($this->request->getPost('wono'));
 
         $exists = $builderHeader
             ->where('docno', $docno)
             ->where('inputby', $nama)
             ->countAllResults();
+
+        // WO yang tersimpan di dokumen (untuk deteksi ganti WO)
+        $wonoLama = '';
+        if ($exists > 0) {
+            $rowLama = $this->m_production->q_tmp_materialrelease_doc($docno, $nama)->getRowArray();
+            if ($rowLama) {
+                $wonoLama = trim($rowLama['wono']);
+            }
+        }
 
         $reload = false;
 
@@ -7672,8 +7635,8 @@ class Production extends BaseController
                 'cabang'     => trim($this->request->getPost('cabang')),
                 'docref'     => trim($this->request->getPost('docref')),
                 'docdate'    => trim($this->request->getPost('docdate')),
-                'woeno'     => trim($this->request->getPost('woeno')),
-                'wono'     => trim($this->request->getPost('wono')),
+                'woeno'     => $woeno,
+                'wono'     => $wono,
                 'bomno'     => trim($this->request->getPost('bomno')),
                 'idbarang_jadi'     => trim($this->request->getPost('idbarang_jadi')),
                 'nmbarang_jadi'     => trim($this->request->getPost('nmbarang_jadi')),
@@ -7708,8 +7671,8 @@ class Production extends BaseController
                 ->where('inputby',$nama)
                 ->update([
 
-                    'woeno'        => trim($this->request->getPost('woeno')),
-                    'wono'         => trim($this->request->getPost('wono')),
+                    'woeno'        => $woeno,
+                    'wono'         => $wono,
                     'bomno'        => trim($this->request->getPost('bomno')),
                     'idbarang_jadi'=> trim($this->request->getPost('idbarang_jadi')),
                     'nmbarang_jadi'=> trim($this->request->getPost('nmbarang_jadi')),
@@ -7738,33 +7701,33 @@ class Production extends BaseController
 
         // =========================
         // HAPUS DETAIL GENERATE WOE LAMA
+        // Kalau WO berubah -> bersihkan SEMUA detail dokumen ini supaya
+        // 1 dokumen hanya berisi 1 WO (menjaga akurasi costing & jurnal).
         // =========================
+        // =========================
+        // BERSIHKAN DETAIL DOKUMEN INI SEBELUM GENERATE ULANG DARI WO
+        // (idempoten: tarik ulang / double-click tidak menghasilkan baris ganda)
+        // =========================
+        $delete = $builderDetail
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->delete();
 
-        if (!empty($oldWoeno)) {
-            $delete = $builderDetail
-                ->where('docno', $docno)
-                ->where('inputby', $nama)
-                ->where('docref', $oldWoeno)
-                ->delete();
+        if (!$delete) {
 
-            if (!$delete) {
+            $error = $db->error();
 
-                $error = $db->error();
+            $db->transRollback();
 
-                $db->transRollback();
-
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => $error['message']
-                ]);
-            }
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $error['message']
+            ]);
         }
 
         // =========================
         // AMBIL DATA DETAIL
         // =========================
-
-        $wono = trim($this->request->getPost('wono'));
 
         $list = $db->query("
             SELECT *
@@ -7783,12 +7746,14 @@ class Production extends BaseController
 
         foreach($list as $row){
 
-            $rawUnique = $row->idbarang.'|'.$docno.'|'.microtime(true);
+            // uniqueid deterministik -> aman diulang, tidak menghasilkan baris ganda
+            $rawUnique = $docno . '|' . trim($row->idbarang) . '|' . trim($row->doctype_detail) . '|' . $row->idurut;
 
             $insert = $builderDetail->insert([
 
                 'docno'=>$docno,
-                'docref'=>trim($this->request->getPost('woeno')),
+                'docref'=>$woeno,
+                'doctype_detail'=> $row->doctype_detail,
                 'cabang'=>trim($this->request->getPost('cabang')),
                 'idbarang'=>$row->idbarang,
                 'nmbarang'=>$row->nmbarang,
@@ -7943,7 +7908,7 @@ class Production extends BaseController
         }
 
 
-        if (!$idbarang) {
+        if (!$idbarang && !$idbarangBom) {
             $db->transRollback();
 
             return $this->response->setJSON([
@@ -7992,8 +7957,7 @@ class Production extends BaseController
                 ->where('uniqueid', $uniqueid)
                 ->update([
                     // 'doctype_detail' => $doctype_detail,
-                    'idbarang'       => $idbarang,
-                    'nmbarang'       => $nmbarang,
+                    'idbarang' => $idbarang ?? $idbarangBom,                    'nmbarang'       => $nmbarang,
                     'idbarang_bom'       => $idbarangBom,
                     // 'nmbarang_bom'       => $nmbarangBom,
                     'unit'           => $unit,
@@ -8190,98 +8154,314 @@ class Production extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
-    function final_input_materialrelease(){
-        $nama = trim($this->session->get('nama'));
-        // $loccode = trim($this->session->get('loccode'));
-        $param = " and coalesce(inputby,'')='$nama'";
-        $paramdtl = " AND COALESCE(inputby, '') = '$nama'";
-        $paramdtl2 = " and coalesce(inputby,'')='$nama'";
+    /* ============================================================
+       SPRINT 1 - HELPER PENGAMAN PRODUCTION
+       Dipakai modul Material Release (modul lain menyusul).
+       Semua method di bawah ini TAMBAHAN, tidak mengubah yang lama.
+       ============================================================ */
 
-        $header = $this->m_production->q_tmp_materialrelease_mst($param);
-        $status = trim($header->getRowArray()['status']);
-        $cek = $this->m_production->q_tmp_materialrelease_mst($paramdtl);
-        $cek2 = $this->m_production->q_tmp_materialrelease_mst($paramdtl2);
+    /* Susun data flash message. $type : success | error | warning */
+    private function prod_msg($type, $text)
+    {
+        return ['type' => $type, 'text' => $text];
+    }
 
-
-        $builder = $this->db->table(' sc_tmp.materialrelease_mst');
-
-        //INSERT TRX ERROR
-        $builder_trxerror = $this->db->table('sc_mst.trxerror');
-        $builder_trxerror->where('userid', $nama);
-        $builder_trxerror->where('modul', 'I.R.A.8');
-        $builder_trxerror->delete();
-
-
-        if ($status==='E' and $cek->getNumRows() <= 0)
-        {
-            $infotrxerror = array(
-                'userid' => $nama,
-                'errorcode' => 3,
-                'nomorakhir1' => $cek->getNumRows(),
-                'nomorakhir2' => $cek2->getNumRows(),
-                'modul' => 'I.R.A.8',
-            );
-            $builder_trxerror->insert($infotrxerror);
-
-            return redirect()->to(base_url('/persediaan/trans/add_materialrelease'));
-        } else {
-            // Ambil dari request POST
-            //$pemohon = strtoupper(trim($this->request->getPost('pemohon')));
-            $keterangan = strtoupper(trim($this->request->getPost('keterangan')));
-            $batchno = strtoupper(trim($this->request->getPost('batchno')));
-            // $idlocation = strtoupper(trim($this->request->getPost('idlocation')));
-            // $nmlocation = strtoupper(trim($this->request->getPost('nmlocation')));
-            $bagian = strtoupper(trim($this->request->getPost('bagian')));
-            $tabno = strtoupper(trim($this->request->getPost('tabno')));
-//
-
-            // Update data header dulu sebelum set status F
-            $updateHeader = [
-//                'docdate'      => $docdateph,
-//                'pemohon'       => $pemohon,
-                'keterangan'       => $keterangan,
-                'batchno'           => $batchno,
-                'bagian'           => $bagian,
-                // 'idlocation'           => $idlocation,
-                // 'nmlocation'           => $nmlocation,
-                'tabno'           => $tabno,
-
-//                'estpakai' => $estpakaiph,
-            ];
-
-            $builder->where('inputby', $nama);
-            $builder->update($updateHeader);
-
-            $info = array(
-                'status' => 'F',
-                'updatedate' => date('Y-m-d H:i:s'),
-                'updateby' => $nama
-            );
-            $builder->where('inputby',$nama);
-            if ($builder->update($info)) {
-                $paramerror=" and userid='$nama' and modul='I.R.A.8'";
-                $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
-                $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
-
-                // $docno = trim(bin2hex(trim($dtlerror['nomorakhir1'])));
-
-                return redirect()->to(base_url('/production/trans/materialrelease'));
-            } else {
-                $infotrxerror = array(
-                    'userid' => $nama,
-                    'errorcode' => 3,
-                    'nomorakhir1' => $cek->getNumRows(),
-                    'nomorakhir2' => $cek2->getNumRows(),
-                    'modul' => 'I.R.A.8',
-                );
-                $builder_trxerror->insert($infotrxerror);
-                return redirect()->to(base_url('/production/trans/materialrelease'));
-            }
-
-
-
+    /* Render flash message menjadi alert (kelas sama seperti $message existing). */
+    private function prod_msg_html($flash)
+    {
+        if (empty($flash) || empty($flash['text'])) {
+            return '';
         }
 
+        $cls = 'alert-info';
+        if ($flash['type'] === 'success') {
+            $cls = 'alert-success';
+        } elseif ($flash['type'] === 'error') {
+            $cls = 'alert-danger';
+        } elseif ($flash['type'] === 'warning') {
+            $cls = 'alert-warning';
+        }
+
+        return "<div class='alert " . $cls . "'>" . $flash['text'] . "</div>";
+    }
+
+    /* Cek WO yang akan ditarik.
+       Aturan : hanya WO status 'F' yang boleh ditarik.
+       Return : '' kalau boleh, selain itu pesan error. */
+    private function prod_cek_wo($wono)
+    {
+        $wono = trim($wono);
+
+        if ($wono === '') {
+            return 'Nomor WO belum dipilih.';
+        }
+
+        $dtl = $this->m_production->q_wo_status($wono)->getRowArray();
+
+        if (!$dtl) {
+            return 'WO ' . $wono . ' tidak ditemukan.';
+        }
+
+        $status = strtoupper(trim($dtl['status']));
+
+        if ($status === 'A') {
+            return 'WO ' . $wono . ' sudah COMPLETED, tidak dapat ditarik lagi.';
+        }
+
+        if ($status !== 'F') {
+            return 'WO ' . $wono . ' berstatus ' . $status . '. Hanya WO status FINAL (F) yang dapat ditarik.';
+        }
+
+        return '';
+    }
+
+    /* Cek kunci WO untuk dokumen turunan.
+       Aturan : kalau WO sudah 'A' (completed) maka dokumen turunan terkunci.
+       Return : '' kalau boleh diubah, selain itu pesan error. */
+    private function prod_cek_wo_lock($wono)
+    {
+        $wono = trim($wono);
+
+        if ($wono === '') {
+            return '';
+        }
+
+        $dtl = $this->m_production->q_wo_status($wono)->getRowArray();
+
+        if ($dtl && strtoupper(trim($dtl['status'])) === 'A') {
+            return 'WO ' . $wono . ' sudah COMPLETED. Dokumen ini terkunci dan tidak dapat diubah.';
+        }
+
+        return '';
+    }
+
+    /* Ambil docno draft milik user (authoritative, tidak percaya input client).
+       Return : array ['docno'=>..., 'row'=>...] atau null kalau tidak ada. */
+    private function prod_ambil_draft($table, $docno, $inputby)
+    {
+        $sql = "SELECT * FROM " . $table . "
+                    WHERE coalesce(inputby,'') = ?
+                      AND (? = '' OR trim(docno) = trim(?))
+                    ORDER BY inputdate DESC
+                    LIMIT 1";
+
+        $row = $this->db->query($sql, [$inputby, $docno, $docno])->getRowArray();
+
+        if (!$row) {
+            return null;
+        }
+
+        return ['docno' => trim($row['docno']), 'row' => $row];
+    }
+
+    /* Verifikasi hasil update lewat READ-BACK.
+       Dipakai menggantikan $this->db->affectedRows() yang tidak aman pada
+       driver Postgre CI4 ini (bila query gagal, resultID=false sehingga
+       pg_affected_rows() melempar TypeError dan error asli tertutup).
+       Return : jumlah baris yang cocok dengan status yang diharapkan. */
+    /* Verifikasi hasil update lewat READ-BACK (read-back murni).
+       Menggantikan $this->db->affectedRows() yang tidak aman pada driver
+       Postgre CI4 ini (bila query gagal, resultID=false sehingga
+       pg_affected_rows() melempar TypeError dan error asli tertutup). */
+    private function prod_hitungStatus($table, $docno, $inputby, $status)
+    {
+        $builder = $this->db->table($table)->where('status', $status);
+
+        if ($docno !== null && $docno !== '') {
+            $builder->where('docno', trim($docno));
+        }
+
+        if ($inputby !== null && $inputby !== '') {
+            $builder->where('inputby', $inputby);
+        }
+
+        return $builder->countAllResults();
+    }
+
+    /* Ambil pesan error terakhir dari koneksi Postgre.
+       WAJIB dipanggil SEGERA setelah query yang gagal (sebelum query lain),
+       karena setelah transaksi abort, query berikutnya menutupi error asli. */
+    private function prod_errorDb()
+    {
+        try {
+            if (!empty($this->db->connID)) {
+                return trim((string) pg_last_error($this->db->connID));
+            }
+        } catch (\Throwable $x) {
+            return '';
+        }
+
+        return '';
+    }
+    /* Terjemahkan error database menjadi pesan yang ramah untuk user. */
+    private function prod_pesan_db($e)
+    {
+        $pesan = $e->getMessage();
+
+        if (stripos($pesan, 'NEGATIVE STOCK') !== false) {
+            return 'Stok tidak mencukupi. ' . $pesan;
+        }
+
+        if (stripos($pesan, 'tidak balance') !== false) {
+            return 'Jurnal tidak balance, proses dibatalkan. ' . $pesan;
+        }
+
+        if (stripos($pesan, 'duplicate key') !== false) {
+            return 'Data sudah ada (duplikat). Silakan muat ulang halaman.';
+        }
+
+        if (stripos($pesan, 'foreign key') !== false) {
+            return 'Data terkait tidak ditemukan. Periksa kembali pilihan Anda.';
+        }
+
+        return 'Proses gagal : ' . $pesan;
+    }
+
+
+    function final_input_materialrelease(){
+        $nama = trim($this->session->get('nama'));
+        $url_list = base_url('/production/trans/materialrelease');
+
+        // docno dari form (opsional). Docno authoritative tetap diambil dari draft di DB.
+        $docno = strtoupper(trim($this->request->getPost('docno')));
+
+        // =====================================
+        // AMBIL DRAFT MILIK USER
+        // =====================================
+        $draft = $this->prod_ambil_draft('sc_tmp.materialrelease_mst', $docno, $nama);
+
+        if ($draft === null) {
+            return redirect()->to($url_list)->with(
+                'prod_msg',
+                $this->prod_msg('error', 'Draft Material Release tidak ditemukan. Silakan input ulang.')
+            );
+        }
+
+        $docno = $draft['docno'];
+
+        // =====================================
+        // VALIDASI STATUS DRAFT
+        // =====================================
+        $status = strtoupper(trim($draft['row']['status']));
+
+        if ($status !== 'E') {
+            return redirect()->to($url_list)->with(
+                'prod_msg',
+                $this->prod_msg('warning', 'Dokumen ' . $docno . ' tidak dapat di-final karena statusnya ' . $status . '.')
+            );
+        }
+
+        // =====================================
+        // VALIDASI KUNCI WO (WO sudah A -> terkunci)
+        // =====================================
+        $pesanWo = $this->prod_cek_wo_lock($draft['row']['wono']);
+
+        if ($pesanWo !== '') {
+            return redirect()->to($url_list)->with('prod_msg', $this->prod_msg('error', $pesanWo));
+        }
+
+        // =====================================
+        // VALIDASI DETAIL
+        // =====================================
+        $stat = $this->m_production->q_tmp_materialrelease_dtl_stat($docno, $nama)->getRowArray();
+
+        if (!$stat || (int) $stat['jml'] <= 0) {
+            return redirect()->to($url_list)->with(
+                'prod_msg',
+                $this->prod_msg('error', 'Detail Material Release masih kosong. Tidak dapat di-final.')
+            );
+        }
+
+        if ((int) $stat['qtyinvalid'] > 0) {
+            return redirect()->to($url_list)->with(
+                'prod_msg',
+                $this->prod_msg('error', 'Masih ada ' . $stat['qtyinvalid'] . ' baris detail dengan QTY 0 / tidak valid.')
+            );
+        }
+
+        // =====================================
+        // UPDATE HEADER + SET STATUS FINAL
+        // =====================================
+        $keterangan = trim($this->request->getPost('keterangan'));
+        $batchno    = strtoupper(trim($this->request->getPost('batchno')));
+        $bagian     = strtoupper(trim($this->request->getPost('bagian')));
+        $tabno      = strtoupper(trim($this->request->getPost('tabno')));
+
+        $builder = $this->db->table('sc_tmp.materialrelease_mst');
+
+        $this->db->transStart();
+
+        try {
+            // update data header dulu (tanpa status)
+            $builder->where('docno', $docno);
+            $builder->where('inputby', $nama);
+            $builder->update([
+                'keterangan' => $keterangan,
+                'batchno'    => $batchno,
+                'bagian'     => $bagian,
+                'tabno'      => $tabno,
+                'updateby'   => $nama,
+                'updatedate' => date('Y-m-d H:i:s')
+            ]);
+
+            // set FINAL dengan pengaman status (mencegah double final)
+            $builder->where('docno', $docno);
+            $builder->where('inputby', $nama);
+            $builder->where('status', 'E');
+            $builder->update([
+                'status'     => 'F',
+                'updatedate' => date('Y-m-d H:i:s'),
+                'updateby'   => $nama
+            ]);
+
+            $errDb = $this->prod_errorDb();
+
+            if ($errDb !== '') {
+                $this->db->transRollback();
+
+                return redirect()->to($url_list)->with(
+                    'prod_msg',
+                    $this->prod_msg('error', 'Proses gagal : ' . $errDb)
+                );
+            }
+            $terpengaruh = $this->prod_hitungStatus('sc_trx.materialrelease_mst', $docno, null, 'F');
+
+            if ($terpengaruh <= 0) {
+                $this->db->transRollback();
+
+                return redirect()->to($url_list)->with(
+                    'prod_msg',
+                    $this->prod_msg('warning', 'Dokumen ' . $docno . ' sudah di-final oleh proses lain.')
+                );
+            }
+
+            $this->db->transComplete();
+        } catch (\Throwable $e) {
+            $this->db->transRollback();
+
+            return redirect()->to($url_list)->with(
+                'prod_msg',
+                $this->prod_msg('error', $this->prod_pesan_db($e))
+            );
+        }
+
+        if ($this->db->transStatus() === false) {
+            return redirect()->to($url_list)->with(
+                'prod_msg',
+                $this->prod_msg('error', 'Final Material Release gagal diproses.')
+            );
+        }
+
+        // bersihkan penanda error lama
+        $this->db->table('sc_mst.trxerror')
+            ->where('userid', $nama)
+            ->where('modul', 'I.R.A.8')
+            ->delete();
+
+        return redirect()->to($url_list)->with(
+            'prod_msg',
+            $this->prod_msg('success', 'Material Release ' . $docno . ' berhasil di-final.')
+        );
     }
 
     public function get_materialrelease_dtl()
@@ -8338,6 +8518,7 @@ class Production extends BaseController
             $row = $db->table('sc_tmp.materialrelease_dtl')
                 ->select('docno')
                 ->where('uniqueid', $firstId)
+                ->where('inputby', $nama)
                 ->get()
                 ->getRow();
 
@@ -8350,8 +8531,44 @@ class Production extends BaseController
 
             $docno = $row->docno;
 
+            // =========================
+            // VALIDASI HEADER : hanya draft (E) yang boleh diubah
+            // dan WO belum completed (A)
+            // =========================
+            $header = $this->m_production->q_tmp_materialrelease_doc($docno, $nama)->getRowArray();
+
+            if (!$header) {
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Dokumen tidak ditemukan / bukan milik Anda.'
+                ]);
+            }
+
+            if (strtoupper(trim($header['status'])) !== 'E') {
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Dokumen sudah di-final, detail tidak dapat diubah.'
+                ]);
+            }
+
+            $pesanWo = $this->prod_cek_wo_lock($header['wono']);
+
+            if ($pesanWo !== '') {
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => $pesanWo
+                ]);
+            }
+
             $builder
                 ->whereIn('uniqueid', $ids)
+                ->where('inputby', $nama)
                 ->delete();
 
             if ($db->affectedRows() === 0) {
@@ -8401,7 +8618,7 @@ class Production extends BaseController
 
             return $this->response->setJSON([
                 'status'  => false,
-                'message' => $e->getMessage()
+                'message' => $this->prod_pesan_db($e)
             ]);
         }
     }
@@ -8467,6 +8684,34 @@ class Production extends BaseController
         $status = strtoupper(trim($dtl['status']));
 
         // =====================================
+        // VALIDASI PEMILIK DOKUMEN
+        // =====================================
+        if (trim($dtl['inputby']) !== $nama) {
+
+            return redirect()->to(
+                base_url('production/trans/materialrelease')
+            )->with(
+                'prod_msg',
+                $this->prod_msg('error', 'Dokumen ini bukan milik Anda, tidak dapat diubah.')
+            );
+        }
+
+        // =====================================
+        // VALIDASI KUNCI WO (WO sudah A -> terkunci)
+        // =====================================
+        $pesanWo = $this->prod_cek_wo_lock($dtl['wono']);
+
+        if ($pesanWo !== '') {
+
+            return redirect()->to(
+                base_url('production/trans/materialrelease')
+            )->with(
+                'prod_msg',
+                $this->prod_msg('error', $pesanWo)
+            );
+        }
+
+        // =====================================
         // VALIDASI STATUS
         // =====================================
         if ($status === 'F' || $status === 'P') {
@@ -8480,23 +8725,34 @@ class Production extends BaseController
             ];
 
             // =====================================
-            // UPDATE
+            // UPDATE (pengaman status : hanya F/P yang boleh dibuka edit)
             // =====================================
-            $update = $this->db
+            $this->db
                 ->table('sc_trx.materialrelease_mst')
                 ->where('docno', trim($docno))
+                ->whereIn('status', ['F', 'P'])
                 ->update($info);
 
             // =====================================
             // SUCCESS
             // =====================================
-            if ($update) {
+            $errDb = $this->prod_errorDb();
+
+            if ($errDb !== '') {
+                $this->db->transRollback();
+
+                return redirect()->to($url_list)->with(
+                    'prod_msg',
+                    $this->prod_msg('error', 'Proses gagal : ' . $errDb)
+                );
+            }
+            if ($this->prod_hitungStatus('sc_trx.materialrelease_mst', $docno, null, 'E') > 0) {
 
                 return redirect()->to(
                     base_url('production/trans/add_materialrelease')
                 )->with(
-                    'success',
-                    'Document berhasil dibuka untuk edit'
+                    'prod_msg',
+                    $this->prod_msg('success', 'Material Release ' . trim($docno) . ' berhasil dibuka untuk edit.')
                 );
             }
 
@@ -8506,8 +8762,8 @@ class Production extends BaseController
             return redirect()->to(
                 base_url('production/trans/materialrelease')
             )->with(
-                'error',
-                'Gagal update document'
+                'prod_msg',
+                $this->prod_msg('warning', 'Dokumen berubah oleh proses lain. Silakan muat ulang.')
             );
         }
 
@@ -8517,8 +8773,8 @@ class Production extends BaseController
         return redirect()->to(
             base_url('production/trans/materialrelease')
         )->with(
-            'warning',
-            'Document sedang diproses user lain'
+            'prod_msg',
+            $this->prod_msg('warning', 'Document sedang diproses user lain.')
         );
     }
 
@@ -8567,7 +8823,7 @@ class Production extends BaseController
         }
 
         $decoded_docno = hex2bin($docno); // Decode docno yang dikirim dalam bentuk hex
-        $param = " and coalesce(docno,'') = '$decoded_docno'";
+        $param = " and coalesce(docno,'') = " . $this->db->escape($decoded_docno);
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
         $data['typeform'] = 'INPUT';
@@ -8581,6 +8837,7 @@ class Production extends BaseController
     {
         $nama = trim(session()->get('nama'));
         $logindate = trim($this->session->get('logindate'));
+        $url_list = base_url('production/trans/materialrelease');
 
         /* ====== GUARD PERIODE TUTUP ====== */
         $periode = date('ym', strtotime($logindate));
@@ -8588,10 +8845,11 @@ class Production extends BaseController
 
         if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
             // Set pesan error ke session flash, lalu redirect ke list
-            session()->setFlashdata('periode_error',
-                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.'
+            session()->setFlashdata('periode_error', 'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.');
+            return redirect()->to($url_list)->with(
+                'prod_msg',
+                $this->prod_msg('error', 'Periode ' . $periode . ' sudah TUTUP. Tidak dapat melakukan input.')
             );
-            return redirect()->to(base_url('production/trans/materialrelease'));
         }
         // =====================================
         // GET PARAMETER
@@ -8600,14 +8858,23 @@ class Production extends BaseController
 
         if (empty($id)) {
 
-            return redirect()->to(
-                base_url('production/trans/materialrelease')
+            return redirect()->to($url_list)->with(
+                'prod_msg',
+                $this->prod_msg('error', 'Parameter dokumen tidak lengkap.')
             );
         }
 
         // =====================================
         // DOCNO
         // =====================================
+        if (!ctype_xdigit($id)) {
+
+            return redirect()->to($url_list)->with(
+                'prod_msg',
+                $this->prod_msg('error', 'Parameter dokumen tidak valid.')
+            );
+        }
+
         $docno = hex2bin($id);
 
         // =====================================
@@ -8624,11 +8891,33 @@ class Production extends BaseController
         // =====================================
         if (!$dtl) {
 
-            return redirect()->to(
-                base_url('production/trans/materialrelease')
-            )->with(
-                'error',
-                'Document tidak ditemukan'
+            return redirect()->to($url_list)->with(
+                'prod_msg',
+                $this->prod_msg('error', 'Document tidak ditemukan.')
+            );
+        }
+
+        // =====================================
+        // VALIDASI PEMILIK DOKUMEN
+        // =====================================
+        if (trim($dtl['inputby']) !== $nama) {
+
+            return redirect()->to($url_list)->with(
+                'prod_msg',
+                $this->prod_msg('error', 'Dokumen ini bukan milik Anda, tidak dapat dicancel.')
+            );
+        }
+
+        // =====================================
+        // VALIDASI KUNCI WO (WO sudah A -> terkunci)
+        // =====================================
+        $pesanWo = $this->prod_cek_wo_lock($dtl['wono']);
+
+        if ($pesanWo !== '') {
+
+            return redirect()->to($url_list)->with(
+                'prod_msg',
+                $this->prod_msg('error', $pesanWo)
             );
         }
 
@@ -8654,56 +8943,79 @@ class Production extends BaseController
 // =====================================
             $this->db->transStart();
 
+            try {
 // =====================================
-// UPDATE MASTER
+// UPDATE MASTER (pengaman status : hanya F/P yang boleh jadi C)
 // =====================================
-            $this->db
-                ->table('sc_trx.materialrelease_mst')
-                ->where('docno', trim($docno))
-                ->update($info);
+                $this->db
+                    ->table('sc_trx.materialrelease_mst')
+                    ->where('docno', trim($docno))
+                    ->whereIn('status', ['F', 'P'])
+                    ->update($info);
+
+                $errDb = $this->prod_errorDb();
+
+                if ($errDb !== '') {
+                    $this->db->transRollback();
+
+                    return redirect()->to($url_list)->with(
+                        'prod_msg',
+                        $this->prod_msg('error', 'Proses gagal : ' . $errDb)
+                    );
+                }
+                if ($this->prod_hitungStatus('sc_trx.materialrelease_mst', $docno, null, 'C') <= 0) {
+                    $this->db->transRollback();
+
+                    return redirect()->to($url_list)->with(
+                        'prod_msg',
+                        $this->prod_msg('warning', 'Dokumen sudah dicancel / berubah oleh proses lain.')
+                    );
+                }
 
 // =====================================
 // UPDATE DETAIL
 // =====================================
-            $this->db
-                ->table('sc_trx.materialrelease_dtl')
-                ->where('docno', trim($docno))
-                ->update($info);
+                $this->db
+                    ->table('sc_trx.materialrelease_dtl')
+                    ->where('docno', trim($docno))
+                    ->update($info);
 
 // =====================================
 // COMMIT
 // =====================================
-            $this->db->transComplete();
+                $this->db->transComplete();
+            } catch (\Throwable $e) {
+                $this->db->transRollback();
+
+                return redirect()->to($url_list)->with(
+                    'prod_msg',
+                    $this->prod_msg('error', $this->prod_pesan_db($e))
+                );
+            }
 
 // =====================================
 // RESULT
 // =====================================
             if ($this->db->transStatus() === false) {
 
-                return redirect()->to(
-                    base_url('production/trans/materialrelease')
-                )->with(
-                    'error',
-                    'Gagal cancel document'
+                return redirect()->to($url_list)->with(
+                    'prod_msg',
+                    $this->prod_msg('error', 'Gagal cancel document.')
                 );
             }
 
-            return redirect()->to(
-                base_url('production/trans/materialrelease')
-            )->with(
-                'success',
-                'Document berhasil dicancel'
+            return redirect()->to($url_list)->with(
+                'prod_msg',
+                $this->prod_msg('success', 'Material Release ' . trim($docno) . ' berhasil dicancel.')
             );
         }
 
         // =====================================
         // STATUS INVALID
         // =====================================
-        return redirect()->to(
-            base_url('production/trans/materialrelease')
-        )->with(
-            'warning',
-            'Document tidak bisa dicancel'
+        return redirect()->to($url_list)->with(
+            'prod_msg',
+            $this->prod_msg('warning', 'Document tidak bisa dicancel (status ' . $status . ').')
         );
     }
 
@@ -8761,6 +9073,10 @@ class Production extends BaseController
             }
 
         }
+        /* Flash message dari proses FINAL / CANCEL (Sprint 2) */
+        $flash = session()->getFlashdata('prod_msg');
+        $data['message'] = $this->prod_msg_html($flash) . $data['message'];
+
         /* Item Entry Master Check */
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_production->q_tmp_penerimaanbp_mst($param);
@@ -8888,7 +9204,7 @@ class Production extends BaseController
                 $deleteBtn = '
                 <a class="dropdown-item"
                    style="background-color:#FF7C7CD6;"
-                   href="' . base_url('production/trans/cancelPenerimaan Barang Produksi') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
+                   href="' . base_url('production/trans/cancel_penerimaanbp_') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
                    onclick="return guardPeriodeTutup(event) && confirm(\'Cancel Penerimaan Barang Produksi : ' . $docno . '\')">
 
                     <i class="fa fa-trash"></i> Cancel
@@ -9101,7 +9417,7 @@ class Production extends BaseController
     function showing_tmp_penerimaanbp_mst(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno' and inputby='$nama'";
+        $param = " and docno=" . $this->db->escape($docno) . " and inputby='$nama'";
         $data = $this->m_production->q_tmp_penerimaanbp_mst($param);
         $output = array(
             'status' => true,
@@ -9115,7 +9431,7 @@ class Production extends BaseController
     function showing_trx_penerimaanbp_mst(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno=" . $this->db->escape($docno);
         $data = $this->m_production->q_trx_penerimaanbp_mst($param);
         $output = array(
             'status' => true,
@@ -9238,6 +9554,21 @@ class Production extends BaseController
             ]);
         }
 
+        // =========================
+        // VALIDASI WO (Sprint 2)
+        // Hanya WO status FINAL (F) yang boleh ditarik.
+        // WO yang sudah COMPLETED (A) tidak boleh ditarik lagi.
+        // =========================
+        $wono = trim($this->request->getPost('wono'));
+
+        $pesanWo = $this->prod_cek_wo($wono);
+
+        if ($pesanWo !== '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $pesanWo
+            ]);
+        }
         $db = $this->db;
         $db->transStart();
 
@@ -9333,24 +9664,25 @@ class Production extends BaseController
         // HAPUS DETAIL GENERATE WOE LAMA
         // =========================
 
-        if (!empty($oldWoeno)) {
-            $delete = $builderDetail
-                ->where('docno', $docno)
-                ->where('inputby', $nama)
-                ->where('docref', $oldWoeno)
-                ->delete();
+        // =========================
+        // BERSIHKAN DETAIL DOKUMEN INI SEBELUM GENERATE ULANG DARI WO
+        // (idempoten: tarik ulang / double-click tidak menghasilkan baris ganda)
+        // =========================
+        $delete = $builderDetail
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->delete();
 
-            if (!$delete) {
+        if (!$delete) {
 
-                $error = $db->error();
+            $error = $db->error();
 
-                $db->transRollback();
+            $db->transRollback();
 
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => $error['message']
-                ]);
-            }
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $error['message']
+            ]);
         }
 
         // =========================
@@ -9403,7 +9735,8 @@ class Production extends BaseController
 
         foreach($list as $row){
 
-            $rawUnique = $row->idbarang.'|'.$docno.'|'.microtime(true);
+            // uniqueid deterministik -> aman diulang, tidak menghasilkan baris ganda
+            $rawUnique = $docno . '|' . trim($row->idbarang) . '|' . trim($row->doctype_detail) . '|' . $row->idurut;
             $harga = $row->harga;
             $qty   = $row->qty;
             $nilai = $qty * $harga;
@@ -9412,6 +9745,10 @@ class Production extends BaseController
 
                 'docno'=>$docno,
                 'docref'=>trim($this->request->getPost('woeno')),
+                // Propagasi doctype_detail dari baris WO BOM (pola sama seperti Material Release).
+                // PBP menarik baris MATERIAL; ditulis eksplisit agar tidak bergantung DEFAULT kolom.
+                'doctype_detail'=> $row->doctype_detail,
+
                 'cabang'=>trim($this->request->getPost('cabang')),
                 'idbarang'=>$row->idbarang,
                 'nmbarang'=>$row->nmbarang,
@@ -9866,7 +10203,50 @@ class Production extends BaseController
         $cek2 = $this->m_production->q_tmp_penerimaanbp_mst($paramdtl2);
 
 
-        $builder = $this->db->table(' sc_tmp.penerimaanbp_mst');
+        // =========================
+        // VALIDASI FINAL (Sprint 2)
+        // =========================
+        $url_list = base_url('/production/trans/penerimaanbp');
+        $draft = $this->prod_ambil_draft('sc_tmp.penerimaanbp_mst', '', $nama);
+
+        if ($draft === null) {
+            return redirect()->to($url_list)->with(
+                'prod_msg',
+                $this->prod_msg('error', 'Draft Penerimaan Barang Produksi tidak ditemukan. Silakan input ulang.')
+            );
+        }
+
+        $docno = $draft['docno'];
+
+        if (strtoupper(trim($draft['row']['status'])) !== 'E') {
+            return redirect()->to($url_list)->with(
+                'prod_msg',
+                $this->prod_msg('warning', 'Dokumen ' . $docno . ' tidak dapat di-final karena statusnya ' . strtoupper(trim($draft['row']['status'])) . '.')
+            );
+        }
+
+        $pesanWo = $this->prod_cek_wo_lock($draft['row']['wono']);
+
+        if ($pesanWo !== '') {
+            return redirect()->to($url_list)->with('prod_msg', $this->prod_msg('error', $pesanWo));
+        }
+
+        $stat = $this->m_production->q_tmp_penerimaanbp_dtl_stat($docno, $nama)->getRowArray();
+
+        if (!$stat || (int) $stat['jml'] <= 0) {
+            return redirect()->to($url_list)->with(
+                'prod_msg',
+                $this->prod_msg('error', 'Detail Penerimaan Barang Produksi masih kosong. Tidak dapat di-final.')
+            );
+        }
+
+        if ((int) $stat['qtyinvalid'] > 0) {
+            return redirect()->to($url_list)->with(
+                'prod_msg',
+                $this->prod_msg('error', 'Masih ada ' . $stat['qtyinvalid'] . ' baris detail dengan QTY 0 / tidak valid.')
+            );
+        }
+        $builder = $this->db->table('sc_tmp.penerimaanbp_mst');
 
         //INSERT TRX ERROR
         $builder_trxerror = $this->db->table('sc_mst.trxerror');
@@ -9886,7 +10266,7 @@ class Production extends BaseController
             );
             $builder_trxerror->insert($infotrxerror);
 
-            return redirect()->to(base_url('/persediaan/trans/add_penerimaanbp'));
+            return redirect()->to(base_url('/production/trans/penerimaanbp'));
         } else {
             // Ambil dari request POST
             //$pemohon = strtoupper(trim($this->request->getPost('pemohon')));
@@ -9914,7 +10294,9 @@ class Production extends BaseController
 //                'estpakai' => $estpakaiph,
             ];
 
+            $builder->where('docno', $docno);
             $builder->where('inputby', $nama);
+            $builder->where('status', 'E');
             $builder->update($updateHeader);
 
             $info = array(
@@ -9922,8 +10304,22 @@ class Production extends BaseController
                 'updatedate' => date('Y-m-d H:i:s'),
                 'updateby' => $nama
             );
+            $builder->where('docno', $docno);
             $builder->where('inputby',$nama);
-            if ($builder->update($info)) {
+            $builder->where('status', 'E');
+            $builder->update($info);
+
+            $errDb = $this->prod_errorDb();
+
+            if ($errDb !== '') {
+                $this->db->transRollback();
+
+                return redirect()->to($url_list)->with(
+                    'prod_msg',
+                    $this->prod_msg('error', 'Proses gagal : ' . $errDb)
+                );
+            }
+            if ($this->prod_hitungStatus('sc_trx.penerimaanbp_mst', $docno, null, 'F') > 0) {
                 $paramerror=" and userid='$nama' and modul='I.R.A.9'";
                 $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
                 $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
@@ -10035,6 +10431,41 @@ class Production extends BaseController
             }
 
             $docno = $docnos[0];
+
+            // =========================
+            // VALIDASI HEADER : hanya draft (E) yang boleh diubah,
+            // dan WO belum completed (A)
+            // =========================
+            $header = $db->table('sc_tmp.penerimaanbp_mst')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->get()->getRowArray();
+
+            if (!$header) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Dokumen tidak ditemukan / bukan milik Anda.'
+                ]);
+            }
+
+            if (strtoupper(trim($header['status'])) !== 'E') {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Dokumen sudah di-final, detail tidak dapat diubah.'
+                ]);
+            }
+
+            $pesanWo = $this->prod_cek_wo_lock($header['wono']);
+
+            if ($pesanWo !== '') {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => $pesanWo
+                ]);
+            }
 
             // Hapus detail
             $db->table('sc_tmp.penerimaanbp_dtl')
@@ -10185,8 +10616,36 @@ class Production extends BaseController
             return redirect()->to(
                 base_url('production/trans/penerimaanbp')
             )->with(
-                'error',
-                'Document tidak ditemukan'
+                'prod_msg',
+                $this->prod_msg('error', 'Document tidak ditemukan.')
+            );
+        }
+
+        // =====================================
+        // VALIDASI PEMILIK DOKUMEN
+        // =====================================
+        if (trim($dtl['inputby']) !== $nama) {
+
+            return redirect()->to(
+                base_url('production/trans/penerimaanbp')
+            )->with(
+                'prod_msg',
+                $this->prod_msg('error', 'Dokumen ini bukan milik Anda, tidak dapat diproses.')
+            );
+        }
+
+        // =====================================
+        // VALIDASI KUNCI WO
+        // =====================================
+        $pesanWo = $this->prod_cek_wo_lock($dtl['wono']);
+
+        if ($pesanWo !== '') {
+
+            return redirect()->to(
+                base_url('production/trans/penerimaanbp')
+            )->with(
+                'prod_msg',
+                $this->prod_msg('error', $pesanWo)
             );
         }
 
@@ -10209,23 +10668,33 @@ class Production extends BaseController
             ];
 
             // =====================================
-            // UPDATE
+            // UPDATE (pengaman status : hanya F/P yang boleh dibuka edit)
             // =====================================
-            $update = $this->db
+            $this->db
                 ->table('sc_trx.penerimaanbp_mst')
                 ->where('docno', trim($docno))
+                ->whereIn('status', ['F', 'P'])
                 ->update($info);
 
-            // =====================================
-            // SUCCESS
-            // =====================================
-            if ($update) {
+            $errDb = $this->prod_errorDb();
+
+            if ($errDb !== '') {
+
+                return redirect()->to(
+                    base_url('production/trans/penerimaanbp')
+                )->with(
+                    'prod_msg',
+                    $this->prod_msg('error', 'Proses gagal : ' . $errDb)
+                );
+            }
+
+            if ($this->prod_hitungStatus('sc_trx.penerimaanbp_mst', $docno, null, 'E') > 0) {
 
                 return redirect()->to(
                     base_url('production/trans/add_penerimaanbp')
                 )->with(
-                    'success',
-                    'Document berhasil dibuka untuk edit'
+                    'prod_msg',
+                    $this->prod_msg('success', 'Penerimaan Barang Produksi ' . trim($docno) . ' berhasil dibuka untuk edit.')
                 );
             }
 
@@ -10235,8 +10704,8 @@ class Production extends BaseController
             return redirect()->to(
                 base_url('production/trans/penerimaanbp')
             )->with(
-                'error',
-                'Gagal update document'
+                'prod_msg',
+                $this->prod_msg('warning', 'Dokumen berubah oleh proses lain. Silakan muat ulang.')
             );
         }
 
@@ -10296,7 +10765,7 @@ class Production extends BaseController
         }
 
         $decoded_docno = hex2bin($docno); // Decode docno yang dikirim dalam bentuk hex
-        $param = " and coalesce(docno,'') = '$decoded_docno'";
+        $param = " and coalesce(docno,'') = " . $this->db->escape($decoded_docno);
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
         $data['typeform'] = 'INPUT';
@@ -10356,8 +10825,36 @@ class Production extends BaseController
             return redirect()->to(
                 base_url('production/trans/penerimaanbp')
             )->with(
-                'error',
-                'Document tidak ditemukan'
+                'prod_msg',
+                $this->prod_msg('error', 'Document tidak ditemukan.')
+            );
+        }
+
+        // =====================================
+        // VALIDASI PEMILIK DOKUMEN
+        // =====================================
+        if (trim($dtl['inputby']) !== $nama) {
+
+            return redirect()->to(
+                base_url('production/trans/penerimaanbp')
+            )->with(
+                'prod_msg',
+                $this->prod_msg('error', 'Dokumen ini bukan milik Anda, tidak dapat diproses.')
+            );
+        }
+
+        // =====================================
+        // VALIDASI KUNCI WO
+        // =====================================
+        $pesanWo = $this->prod_cek_wo_lock($dtl['wono']);
+
+        if ($pesanWo !== '') {
+
+            return redirect()->to(
+                base_url('production/trans/penerimaanbp')
+            )->with(
+                'prod_msg',
+                $this->prod_msg('error', $pesanWo)
             );
         }
 
@@ -10378,50 +10875,70 @@ class Production extends BaseController
 
             ];
 
-// =====================================
-// START TRANSACTION
-// =====================================
             $this->db->transStart();
 
-// =====================================
-// UPDATE MASTER
-// =====================================
-            $this->db
-                ->table('sc_trx.penerimaanbp_mst')
-                ->where('docno', trim($docno))
-                ->update($info);
+            try {
+                $this->db
+                    ->table('sc_trx.penerimaanbp_mst')
+                    ->where('docno', trim($docno))
+                    ->whereIn('status', ['F', 'P'])
+                    ->update($info);
 
-// =====================================
-// UPDATE DETAIL
-// =====================================
-            $this->db
-                ->table('sc_trx.penerimaanbp_dtl')
-                ->where('docno', trim($docno))
-                ->update($info);
+                $errDb = $this->prod_errorDb();
 
-// =====================================
-// COMMIT
-// =====================================
-            $this->db->transComplete();
+                if ($errDb !== '') {
+                    $this->db->transRollback();
 
-// =====================================
-// RESULT
-// =====================================
+                    return redirect()->to(
+                        base_url('production/trans/penerimaanbp')
+                    )->with(
+                        'prod_msg',
+                        $this->prod_msg('error', 'Proses gagal : ' . $errDb)
+                    );
+                }
+                if ($this->prod_hitungStatus('sc_trx.penerimaanbp_mst', $docno, null, 'C') <= 0) {
+                    $this->db->transRollback();
+
+                    return redirect()->to(
+                        base_url('production/trans/penerimaanbp')
+                    )->with(
+                        'prod_msg',
+                        $this->prod_msg('warning', 'Dokumen sudah dicancel / berubah oleh proses lain.')
+                    );
+                }
+
+                $this->db
+                    ->table('sc_trx.penerimaanbp_dtl')
+                    ->where('docno', trim($docno))
+                    ->update($info);
+
+                $this->db->transComplete();
+            } catch (\Throwable $e) {
+                $this->db->transRollback();
+
+                return redirect()->to(
+                    base_url('production/trans/penerimaanbp')
+                )->with(
+                    'prod_msg',
+                    $this->prod_msg('error', $this->prod_pesan_db($e))
+                );
+            }
+
             if ($this->db->transStatus() === false) {
 
                 return redirect()->to(
                     base_url('production/trans/penerimaanbp')
                 )->with(
-                    'error',
-                    'Gagal cancel document'
+                    'prod_msg',
+                    $this->prod_msg('error', 'Gagal cancel document.')
                 );
             }
 
             return redirect()->to(
                 base_url('production/trans/penerimaanbp')
             )->with(
-                'success',
-                'Document berhasil dicancel'
+                'prod_msg',
+                $this->prod_msg('success', 'Penerimaan Barang Produksi ' . trim($docno) . ' berhasil dicancel.')
             );
         }
 
@@ -10487,6 +11004,10 @@ class Production extends BaseController
             }
 
         }
+        /* Flash message dari proses FINAL / CANCEL (Sprint 2) */
+        $flash = session()->getFlashdata('prod_msg');
+        $data['message'] = $this->prod_msg_html($flash) . $data['message'];
+
         /* Item Entry Master Check */
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_production->q_tmp_bpnm_mst($param);
@@ -10614,7 +11135,7 @@ class Production extends BaseController
                 $deleteBtn = '
                 <a class="dropdown-item"
                    style="background-color:#FF7C7CD6;"
-                   href="' . base_url('production/trans/cancelBiaya Produksi Non Material') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
+                   href="' . base_url('production/trans/cancel_bpnm_') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
                    onclick="return guardPeriodeTutup(event) && confirm(\'Cancel Biaya Produksi Non Material : ' . $docno . '\')">
 
                     <i class="fa fa-trash"></i> Cancel
@@ -10825,7 +11346,7 @@ class Production extends BaseController
     function showing_tmp_bpnm_mst(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno' and inputby='$nama'";
+        $param = " and docno=" . $this->db->escape($docno) . " and inputby='$nama'";
         $data = $this->m_production->q_tmp_bpnm_mst($param);
         $output = array(
             'status' => true,
@@ -10839,7 +11360,7 @@ class Production extends BaseController
     function showing_trx_bpnm_mst(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
         $nama=trim($this->session->get('nama'));
-        $param = " and docno='$docno'";
+        $param = " and docno=" . $this->db->escape($docno);
         $data = $this->m_production->q_trx_bpnm_mst($param);
         $output = array(
             'status' => true,
@@ -10962,6 +11483,21 @@ class Production extends BaseController
             ]);
         }
 
+        // =========================
+        // VALIDASI WO (Sprint 2)
+        // Hanya WO status FINAL (F) yang boleh ditarik.
+        // WO yang sudah COMPLETED (A) tidak boleh ditarik lagi.
+        // =========================
+        $wono = trim($this->request->getPost('wono'));
+
+        $pesanWo = $this->prod_cek_wo($wono);
+
+        if ($pesanWo !== '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $pesanWo
+            ]);
+        }
         $db = $this->db;
         $db->transStart();
 
@@ -11057,24 +11593,25 @@ class Production extends BaseController
         // HAPUS DETAIL GENERATE WOE LAMA
         // =========================
 
-        if (!empty($oldWoeno)) {
-            $delete = $builderDetail
-                ->where('docno', $docno)
-                ->where('inputby', $nama)
-                ->where('docref', $oldWoeno)
-                ->delete();
+        // =========================
+        // BERSIHKAN DETAIL DOKUMEN INI SEBELUM GENERATE ULANG DARI WO
+        // (idempoten: tarik ulang / double-click tidak menghasilkan baris ganda)
+        // =========================
+        $delete = $builderDetail
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->delete();
 
-            if (!$delete) {
+        if (!$delete) {
 
-                $error = $db->error();
+            $error = $db->error();
 
-                $db->transRollback();
+            $db->transRollback();
 
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => $error['message']
-                ]);
-            }
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $error['message']
+            ]);
         }
 
         // =========================
@@ -11127,7 +11664,8 @@ class Production extends BaseController
 
         foreach($list as $row){
 
-            $rawUnique = $row->idbarang.'|'.$docno.'|'.microtime(true);
+            // uniqueid deterministik -> aman diulang, tidak menghasilkan baris ganda
+            $rawUnique = $docno . '|' . trim($row->idbarang) . '|' . trim($row->doctype_detail) . '|' . $row->idurut;
             $harga = $row->standartcost;
             $qty   = $row->qty;
             $nilai = $qty * $harga;
@@ -11135,6 +11673,11 @@ class Production extends BaseController
             $insert = $builderDetail->insert([
 
                 'docno'=>$docno,
+                // Propagasi doctype_detail dari baris WO BOM (pola sama seperti Material Release).
+                // Tanpa ini kolom jatuh ke DEFAULT 'MATERIAL', sedangkan filter sync BPNM
+                // adalah doctype_detail <> 'MATERIAL' -> dokumen FINAL tapi TIDAK posting.
+                'doctype_detail'=> $row->doctype_detail,
+
                 'docref'=>trim($this->request->getPost('woeno')),
                 'cabang'=>trim($this->request->getPost('cabang')),
                 'idbarang'=>$row->idbarang,
@@ -11394,6 +11937,11 @@ class Production extends BaseController
             $insertDetail = $builderDetail->insert([
                 'docno'          => $docno,
                 // 'doctype_detail' => $doctype_detail,
+                // BPNM = biaya produksi NON MATERIAL. Nilai default kolom 'MATERIAL'
+                // membuat baris tidak pernah diposting (filter sync: doctype_detail <> 'MATERIAL').
+                // Samakan dengan jalur tarik WO (baris BOM COST) -> 'COST'.
+                'doctype_detail' => 'COST',
+
                 'cabang'=>trim($this->request->getPost('cabang')),
                 'idbarang'       => $idbarang,
                 'nmbarang'       => $nmbarang,
@@ -11589,7 +12137,50 @@ class Production extends BaseController
         $cek2 = $this->m_production->q_tmp_bpnm_mst($paramdtl2);
 
 
-        $builder = $this->db->table(' sc_tmp.bpnm_mst');
+        // =========================
+        // VALIDASI FINAL (Sprint 2)
+        // =========================
+        $url_list = base_url('/production/trans/biaya_produksi_non_material');
+        $draft = $this->prod_ambil_draft('sc_tmp.bpnm_mst', '', $nama);
+
+        if ($draft === null) {
+            return redirect()->to($url_list)->with(
+                'prod_msg',
+                $this->prod_msg('error', 'Draft Biaya Produksi Non Material tidak ditemukan. Silakan input ulang.')
+            );
+        }
+
+        $docno = $draft['docno'];
+
+        if (strtoupper(trim($draft['row']['status'])) !== 'E') {
+            return redirect()->to($url_list)->with(
+                'prod_msg',
+                $this->prod_msg('warning', 'Dokumen ' . $docno . ' tidak dapat di-final karena statusnya ' . strtoupper(trim($draft['row']['status'])) . '.')
+            );
+        }
+
+        $pesanWo = $this->prod_cek_wo_lock($draft['row']['wono']);
+
+        if ($pesanWo !== '') {
+            return redirect()->to($url_list)->with('prod_msg', $this->prod_msg('error', $pesanWo));
+        }
+
+        $stat = $this->m_production->q_tmp_bpnm_dtl_stat($docno, $nama)->getRowArray();
+
+        if (!$stat || (int) $stat['jml'] <= 0) {
+            return redirect()->to($url_list)->with(
+                'prod_msg',
+                $this->prod_msg('error', 'Detail Biaya Produksi Non Material masih kosong. Tidak dapat di-final.')
+            );
+        }
+
+        if ((int) $stat['qtyinvalid'] > 0) {
+            return redirect()->to($url_list)->with(
+                'prod_msg',
+                $this->prod_msg('error', 'Masih ada ' . $stat['qtyinvalid'] . ' baris detail dengan QTY 0 / tidak valid.')
+            );
+        }
+        $builder = $this->db->table('sc_tmp.bpnm_mst');
 
         //INSERT TRX ERROR
         $builder_trxerror = $this->db->table('sc_mst.trxerror');
@@ -11609,7 +12200,7 @@ class Production extends BaseController
             );
             $builder_trxerror->insert($infotrxerror);
 
-            return redirect()->to(base_url('/persediaan/trans/add_bpnm'));
+            return redirect()->to(base_url('/production/trans/biaya_produksi_non_material'));
         } else {
             // Ambil dari request POST
             //$pemohon = strtoupper(trim($this->request->getPost('pemohon')));
@@ -11635,7 +12226,9 @@ class Production extends BaseController
 //                'estpakai' => $estpakaiph,
             ];
 
+            $builder->where('docno', $docno);
             $builder->where('inputby', $nama);
+            $builder->where('status', 'E');
             $builder->update($updateHeader);
 
             $info = array(
@@ -11643,8 +12236,22 @@ class Production extends BaseController
                 'updatedate' => date('Y-m-d H:i:s'),
                 'updateby' => $nama
             );
+            $builder->where('docno', $docno);
             $builder->where('inputby',$nama);
-            if ($builder->update($info)) {
+            $builder->where('status', 'E');
+            $builder->update($info);
+
+            $errDb = $this->prod_errorDb();
+
+            if ($errDb !== '') {
+                $this->db->transRollback();
+
+                return redirect()->to($url_list)->with(
+                    'prod_msg',
+                    $this->prod_msg('error', 'Proses gagal : ' . $errDb)
+                );
+            }
+            if ($this->prod_hitungStatus('sc_trx.bpnm_mst', $docno, null, 'F') > 0) {
                 $paramerror=" and userid='$nama' and modul='I.R.A.10'";
                 $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
                 $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
@@ -11724,6 +12331,7 @@ class Production extends BaseController
             $row = $db->table('sc_tmp.bpnm_dtl')
                 ->select('docno')
                 ->where('uniqueid', $firstId)
+                ->where('inputby', $nama)
                 ->get()
                 ->getRow();
 
@@ -11736,8 +12344,43 @@ class Production extends BaseController
 
             $docno = $row->docno;
 
+            // =========================
+            // VALIDASI HEADER : hanya draft (E) yang boleh diubah
+            // =========================
+            $header = $db->table('sc_tmp.bpnm_mst')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->get()->getRowArray();
+
+            if (!$header) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Dokumen tidak ditemukan / bukan milik Anda.'
+                ]);
+            }
+
+            if (strtoupper(trim($header['status'])) !== 'E') {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Dokumen sudah di-final, detail tidak dapat diubah.'
+                ]);
+            }
+
+            $pesanWo = $this->prod_cek_wo_lock($header['wono']);
+
+            if ($pesanWo !== '') {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => $pesanWo
+                ]);
+            }
+
             $builder
                 ->whereIn('uniqueid', $ids)
+                ->where('inputby', $nama)
                 ->delete();
 
             if ($db->affectedRows() === 0) {
@@ -11842,8 +12485,36 @@ class Production extends BaseController
             return redirect()->to(
                 base_url('production/trans/biaya_produksi_non_material')
             )->with(
-                'error',
-                'Document tidak ditemukan'
+                'prod_msg',
+                $this->prod_msg('error', 'Document tidak ditemukan.')
+            );
+        }
+
+        // =====================================
+        // VALIDASI PEMILIK DOKUMEN
+        // =====================================
+        if (trim($dtl['inputby']) !== $nama) {
+
+            return redirect()->to(
+                base_url('production/trans/biaya_produksi_non_material')
+            )->with(
+                'prod_msg',
+                $this->prod_msg('error', 'Dokumen ini bukan milik Anda, tidak dapat diproses.')
+            );
+        }
+
+        // =====================================
+        // VALIDASI KUNCI WO
+        // =====================================
+        $pesanWo = $this->prod_cek_wo_lock($dtl['wono']);
+
+        if ($pesanWo !== '') {
+
+            return redirect()->to(
+                base_url('production/trans/biaya_produksi_non_material')
+            )->with(
+                'prod_msg',
+                $this->prod_msg('error', $pesanWo)
             );
         }
 
@@ -11866,23 +12537,33 @@ class Production extends BaseController
             ];
 
             // =====================================
-            // UPDATE
+            // UPDATE (pengaman status : hanya F/P yang boleh dibuka edit)
             // =====================================
-            $update = $this->db
+            $this->db
                 ->table('sc_trx.bpnm_mst')
                 ->where('docno', trim($docno))
+                ->whereIn('status', ['F', 'P'])
                 ->update($info);
 
-            // =====================================
-            // SUCCESS
-            // =====================================
-            if ($update) {
+            $errDb = $this->prod_errorDb();
+
+            if ($errDb !== '') {
+
+                return redirect()->to(
+                    base_url('production/trans/biaya_produksi_non_material')
+                )->with(
+                    'prod_msg',
+                    $this->prod_msg('error', 'Proses gagal : ' . $errDb)
+                );
+            }
+
+            if ($this->prod_hitungStatus('sc_trx.bpnm_mst', $docno, null, 'E') > 0) {
 
                 return redirect()->to(
                     base_url('production/trans/add_bpnm')
                 )->with(
-                    'success',
-                    'Document berhasil dibuka untuk edit'
+                    'prod_msg',
+                    $this->prod_msg('success', 'Biaya Produksi Non Material ' . trim($docno) . ' berhasil dibuka untuk edit.')
                 );
             }
 
@@ -11892,8 +12573,8 @@ class Production extends BaseController
             return redirect()->to(
                 base_url('production/trans/biaya_produksi_non_material')
             )->with(
-                'error',
-                'Gagal update document'
+                'prod_msg',
+                $this->prod_msg('warning', 'Dokumen berubah oleh proses lain. Silakan muat ulang.')
             );
         }
 
@@ -11953,7 +12634,7 @@ class Production extends BaseController
         }
 
         $decoded_docno = hex2bin($docno); // Decode docno yang dikirim dalam bentuk hex
-        $param = " and coalesce(docno,'') = '$decoded_docno'";
+        $param = " and coalesce(docno,'') = " . $this->db->escape($decoded_docno);
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
         $data['typeform'] = 'INPUT';
@@ -12013,8 +12694,36 @@ class Production extends BaseController
             return redirect()->to(
                 base_url('production/trans/biaya_produksi_non_material')
             )->with(
-                'error',
-                'Document tidak ditemukan'
+                'prod_msg',
+                $this->prod_msg('error', 'Document tidak ditemukan.')
+            );
+        }
+
+        // =====================================
+        // VALIDASI PEMILIK DOKUMEN
+        // =====================================
+        if (trim($dtl['inputby']) !== $nama) {
+
+            return redirect()->to(
+                base_url('production/trans/biaya_produksi_non_material')
+            )->with(
+                'prod_msg',
+                $this->prod_msg('error', 'Dokumen ini bukan milik Anda, tidak dapat diproses.')
+            );
+        }
+
+        // =====================================
+        // VALIDASI KUNCI WO
+        // =====================================
+        $pesanWo = $this->prod_cek_wo_lock($dtl['wono']);
+
+        if ($pesanWo !== '') {
+
+            return redirect()->to(
+                base_url('production/trans/biaya_produksi_non_material')
+            )->with(
+                'prod_msg',
+                $this->prod_msg('error', $pesanWo)
             );
         }
 
@@ -12035,50 +12744,70 @@ class Production extends BaseController
 
             ];
 
-// =====================================
-// START TRANSACTION
-// =====================================
             $this->db->transStart();
 
-// =====================================
-// UPDATE MASTER
-// =====================================
-            $this->db
-                ->table('sc_trx.bpnm_mst')
-                ->where('docno', trim($docno))
-                ->update($info);
+            try {
+                $this->db
+                    ->table('sc_trx.bpnm_mst')
+                    ->where('docno', trim($docno))
+                    ->whereIn('status', ['F', 'P'])
+                    ->update($info);
 
-// =====================================
-// UPDATE DETAIL
-// =====================================
-            $this->db
-                ->table('sc_trx.bpnm_dtl')
-                ->where('docno', trim($docno))
-                ->update($info);
+                $errDb = $this->prod_errorDb();
 
-// =====================================
-// COMMIT
-// =====================================
-            $this->db->transComplete();
+                if ($errDb !== '') {
+                    $this->db->transRollback();
 
-// =====================================
-// RESULT
-// =====================================
+                    return redirect()->to(
+                        base_url('production/trans/biaya_produksi_non_material')
+                    )->with(
+                        'prod_msg',
+                        $this->prod_msg('error', 'Proses gagal : ' . $errDb)
+                    );
+                }
+                if ($this->prod_hitungStatus('sc_trx.bpnm_mst', $docno, null, 'C') <= 0) {
+                    $this->db->transRollback();
+
+                    return redirect()->to(
+                        base_url('production/trans/biaya_produksi_non_material')
+                    )->with(
+                        'prod_msg',
+                        $this->prod_msg('warning', 'Dokumen sudah dicancel / berubah oleh proses lain.')
+                    );
+                }
+
+                $this->db
+                    ->table('sc_trx.bpnm_dtl')
+                    ->where('docno', trim($docno))
+                    ->update($info);
+
+                $this->db->transComplete();
+            } catch (\Throwable $e) {
+                $this->db->transRollback();
+
+                return redirect()->to(
+                    base_url('production/trans/biaya_produksi_non_material')
+                )->with(
+                    'prod_msg',
+                    $this->prod_msg('error', $this->prod_pesan_db($e))
+                );
+            }
+
             if ($this->db->transStatus() === false) {
 
                 return redirect()->to(
                     base_url('production/trans/biaya_produksi_non_material')
                 )->with(
-                    'error',
-                    'Gagal cancel document'
+                    'prod_msg',
+                    $this->prod_msg('error', 'Gagal cancel document.')
                 );
             }
 
             return redirect()->to(
                 base_url('production/trans/biaya_produksi_non_material')
             )->with(
-                'success',
-                'Document berhasil dicancel'
+                'prod_msg',
+                $this->prod_msg('success', 'Biaya Produksi Non Material ' . trim($docno) . ' berhasil dicancel.')
             );
         }
 
@@ -12093,4 +12822,42 @@ class Production extends BaseController
         );
     }
 
+
+    /* ============================================================
+       LAPORAN JURNAL TRANSAKSI (detail Material Release / PBP / BPNM)
+       Dipanggil AJAX oleh tombol "Laporan Jurnal Transaksi" di halaman detail.
+       Mengembalikan baris jurnal (jurnal_hd + jurnal_dt) yang sudah POSTED.
+       ============================================================ */
+    public function laporan_jurnal_transaksi()
+    {
+        try {
+            $docno = trim($this->request->getPost('docno'));
+
+            if ($docno === '') {
+                return $this->response->setJSON([
+                    'status'   => false,
+                    'messages' => 'Doc No tidak ditemukan',
+                    'data'     => []
+                ]);
+            }
+
+            $params = "AND TRIM(jh.docno) = " . $this->db->escape($docno);
+
+            $query = $this->m_production->q_laporan_jurnal_transaksi($params);
+
+            return $this->response->setJSON([
+                'status'   => true,
+                'messages' => 'Data berhasil diambil',
+                'data'     => $query->getResultArray()
+            ]);
+        } catch (\Throwable $e) {
+            log_message('error', 'laporan_jurnal_transaksi: ' . $e->getMessage());
+
+            return $this->response->setJSON([
+                'status'   => false,
+                'messages' => $e->getMessage(),
+                'data'     => []
+            ]);
+        }
+    }
 }

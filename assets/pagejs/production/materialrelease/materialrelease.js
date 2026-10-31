@@ -564,7 +564,7 @@ function updateDetailMaterialRelease(){
         success: function(res){
             if(res.status){
 
-                $('#idurut').val(res.items[0].idurut);
+                $('#idurutMaterial').val(res.items[0].idurut);
                 $('#uniqueid').val(res.items[0].uniqueid);
                 $('#description').val(res.items[0].description);
                 $('#docno').val(res.items[0].docno);

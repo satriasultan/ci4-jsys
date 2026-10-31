@@ -460,6 +460,14 @@
                         Kembali
                     </a>
 
+                    <button type="button"
+                            id="btnLaporanJurnal"
+                            class="btn btn-primary btn-lg"
+                            style="margin-left: 8px;">
+                        <i class="fa fa-book"></i> Laporan Jurnal Transaksi
+                    </button>
+
+
                 </div>
 
             </div>
@@ -602,6 +610,43 @@
 
 
 
+
+<!-- ================= MODAL LAPORAN JURNAL TRANSAKSI ================= -->
+<div class="modal fade" id="modalLaporanJurnal" tabindex="-1" aria-labelledby="modalLaporanJurnalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalLaporanJurnalLabel">
+                    <i class="fa fa-book"></i> Laporan Jurnal Transaksi
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table id="tableLaporanJurnal" class="table table-bordered table-striped table-hover w-100">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Tanggal</th>
+                                <th>Doc No</th>
+                                <th>Pemohon</th>
+                                <th>COA</th>
+                                <th>Nama Perkiraan</th>
+                                <th class="text-end">Debet</th>
+                                <th class="text-end">Kredit</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script type="application/javascript" src="<?= base_url('assets/pagejs/production/penerimaanbp/penerimaanbp_trx.js') ?>"></script>
 <script type="text/javascript">
     $(function() {
@@ -714,4 +759,107 @@
 
     });
 
+</script>
+
+<script type="text/javascript">
+    /* ===== LAPORAN JURNAL TRANSAKSI ===== */
+    function formatNumberJurnal(value) {
+        return parseFloat(value || 0).toLocaleString('id-ID', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    $(document).ready(function () {
+        $('#btnLaporanJurnal').on('click', function () {
+            var docno = ($('#docno').val() || '').trim();
+
+            if (docno === '') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Doc No kosong',
+                    text: 'Dokumen belum memiliki nomor.'
+                });
+                return;
+            }
+
+            $('#tableLaporanJurnal tbody').html(
+                '<tr><td colspan="8" class="text-center"><i class="fa fa-spinner fa-spin"></i> Loading...</td></tr>'
+            );
+            $('#modalLaporanJurnal').modal('show');
+
+            $.ajax({
+                url: '<?= base_url('production/trans/laporan_jurnal_transaksi') ?>',
+                type: 'POST',
+                dataType: 'json',
+                data: { docno: docno },
+                success: function (response) {
+                    if (!response.status) {
+                        Swal.fire({ icon: 'error', title: 'Gagal', text: response.messages });
+                        return;
+                    }
+
+                    if ($.fn.DataTable && $.fn.DataTable.isDataTable('#tableLaporanJurnal')) {
+                        $('#tableLaporanJurnal').DataTable().destroy();
+                    }
+
+                    $('#tableLaporanJurnal').DataTable({
+                        data: response.data,
+                        destroy: true,
+                        paging: false,
+                        searching: false,
+                        ordering: false,
+                        info: false,
+                        columns: [
+                            {
+                                data: null,
+                                render: function (data, type, row, meta) {
+                                    return (row.urutan == 1) ? '' : (meta.row + 1);
+                                }
+                            },
+                            { data: 'trxdate', render: function (d) { return d || ''; } },
+                            { data: 'docno', render: function (d) { return d || ''; } },
+                            {
+                                data: 'nmpemohon',
+                                render: function (d, type, row) { return (row.urutan == 1) ? '' : (d || ''); }
+                            },
+                            {
+                                data: 'idcoa',
+                                render: function (d, type, row) { return (row.urutan == 1) ? '' : (d || ''); }
+                            },
+                            {
+                                data: 'nmcoa',
+                                render: function (d, type, row) {
+                                    return (row.urutan == 1) ? '<b style="font-size:16px">TOTAL</b>' : (d || '');
+                                }
+                            },
+                            {
+                                data: 'debet',
+                                className: 'text-right',
+                                render: function (d) { return formatNumberJurnal(d || 0); }
+                            },
+                            {
+                                data: 'kredit',
+                                className: 'text-right',
+                                render: function (d) { return formatNumberJurnal(d || 0); }
+                            }
+                        ],
+                        createdRow: function (row, data) {
+                            if (data.urutan == 1) {
+                                $(row).css({ 'font-weight': 'bold', 'background-color': '#f1f1f1' });
+                            }
+                        }
+                    });
+
+                    setTimeout(function () {
+                        $('#tableLaporanJurnal').DataTable().columns.adjust();
+                    }, 300);
+                },
+                error: function (xhr) {
+                    console.error(xhr.responseText);
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'Gagal mengambil laporan jurnal' });
+                }
+            });
+        });
+    });
 </script>

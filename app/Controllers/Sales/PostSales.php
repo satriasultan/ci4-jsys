@@ -2801,6 +2801,7 @@ class PostSales extends BaseController
             // ======================================
             $rows = $builder
                 ->select('docno')
+                ->where('inputby', $nama)
                 ->whereIn('uniqueid', $ids)
                 ->get()
                 ->getResultArray();
@@ -2828,13 +2829,37 @@ class PostSales extends BaseController
             }
 
             // ======================================
+            // CEK HEADER MASIH DRAFT (belum final)
+            // ======================================
+            $headerRow = $db->table('sc_tmp.salesorder')
+                ->select('status')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->get()
+                ->getRowArray();
+
+            if (!$headerRow || strtoupper(trim($headerRow['status'])) === 'F') {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Dokumen sudah final, tidak dapat diubah'
+                ]);
+            }
+
+            // ======================================
             // DELETE DETAIL
             // ======================================
             $builder
+                ->where('inputby', $nama)
                 ->whereIn('uniqueid', $ids)
                 ->delete();
 
-            if ($db->affectedRows() === 0) {
+            $sisa = $db->table('sc_tmp.salesorder_dtl')
+                ->where('inputby', $nama)
+                ->whereIn('uniqueid', $ids)
+                ->countAllResults();
+
+            if ($sisa > 0) {
                 $db->transRollback();
                 return $this->response->setJSON([
                     'status'  => false,
@@ -2996,17 +3021,38 @@ class PostSales extends BaseController
     function finalEntrySalesOrder(){
         $nama = trim($this->session->get('nama'));
         // $loccode = trim($this->session->get('loccode'));
-        $param = " and coalesce(inputby,'')='$nama'";
-        $paramdtl = " AND COALESCE(inputby, '') = '$nama' AND (COALESCE(unit, '') = ''  OR qty = '0.00' OR qty = '0' OR COALESCE(nmbarang, '') = '' OR harga = '0.00' OR harga = '0' OR nilai = '0.00' OR nilai = '0') ";
-        $paramdtl2 = " and coalesce(inputby,'')='$nama'";
-
-        $header = $this->m_postsales->q_salesorder_master_temp($param);
-        $status = trim($header->getRowArray()['status']);
-        $cek = $this->m_postsales->q_salesorder_dtl_temp($paramdtl);
-        $cek2 = $this->m_postsales->q_salesorder_dtl_temp($paramdtl2);
-
-
         $builder = $this->db->table('sc_tmp.salesorder');
+
+        // Ambil header draft milik user (bind via Query Builder, hindari interpolasi SQL)
+        $headerRow = $builder
+            ->where('inputby', $nama)
+            ->orderBy('inputdate', 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRowArray();
+
+        $status = $headerRow ? trim($headerRow['status']) : '';
+        $docno  = $headerRow ? trim($headerRow['docno']) : '';
+
+        // Detail tidak valid (unit kosong / qty 0 / nmbarang kosong / harga 0 / nilai 0)
+        $cek = $this->db->table('sc_tmp.salesorder_dtl')
+            ->where('inputby', $nama)
+            ->groupStart()
+                ->where('unit', '')
+                ->orWhere('qty', '0.00')
+                ->orWhere('qty', '0')
+                ->orWhere('nmbarang', '')
+                ->orWhere('harga', '0.00')
+                ->orWhere('harga', '0')
+                ->orWhere('nilai', '0.00')
+                ->orWhere('nilai', '0')
+            ->groupEnd()
+            ->countAllResults();
+
+        // Total detail
+        $cek2 = $this->db->table('sc_tmp.salesorder_dtl')
+            ->where('inputby', $nama)
+            ->countAllResults();
 
         //INSERT TRX ERROR
         $builder_trxerror = $this->db->table('sc_mst.trxerror');
@@ -3015,13 +3061,13 @@ class PostSales extends BaseController
         $builder_trxerror->delete();
 
 
-        if (($status==='E' and $cek->getNumRows() > 0) or ($cek2->getNumRows() <= '0'))
+        if (($status==='E' and $cek > 0) or ($cek2 <= 0))
         {
             $infotrxerror = array(
                 'userid' => $nama,
                 'errorcode' => 3,
-                'nomorakhir1' => $cek->getNumRows(),
-                'nomorakhir2' => $cek2->getNumRows(),
+                'nomorakhir1' => $cek,
+                'nomorakhir2' => $cek2,
                 'modul' => 'I.S.B.1',
             );
             $builder_trxerror->insert($infotrxerror);
@@ -3114,32 +3160,60 @@ class PostSales extends BaseController
                 // 'pemohon'       => $pemohon (jika masih diperlukan nanti bisa ditambahkan)
             ];
 
-            $builder->where('inputby', $nama);
-            $builder->update($updateHeader);
+            try {
+                $this->db->transStart();
 
-            $info = array(
-                'status' => 'F'
-            );
-            $builder->where('inputby',$nama);
-            if ($builder->update($info)) {
-                $paramerror=" and userid='$nama' and modul='I.S.B.1'";
-                $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
-                $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
+                // Update header (scoped ke pemilik + docno)
+                $this->db->table('sc_tmp.salesorder')
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->update($updateHeader);
 
-                // $docno = trim(bin2hex(trim($dtlerror['nomorakhir1'])));
+                // FINALIZE: CAS status E -> F (trigger tmp->trx berjalan di sini)
+                $this->db->table('sc_tmp.salesorder')
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->where('status', 'E')
+                    ->update(['status' => 'F']);
 
-                return redirect()->to(base_url('/sales/postsales/salesorder'));
-            } else {
+                $errDb = $this->sales_errorDb();
+
+                // read-back: trigger sukses akan menghapus baris tmp
+                $sisa = $this->db->table('sc_tmp.salesorder')
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->countAllResults();
+
+                if ($errDb !== '' || $sisa > 0) {
+                    $this->db->transRollback();
+
+                    $infotrxerror = array(
+                        'userid' => $nama,
+                        'errorcode' => 3,
+                        'nomorakhir1' => $cek,
+                        'nomorakhir2' => $cek2,
+                        'modul' => 'I.S.B.1',
+                    );
+                    $builder_trxerror->insert($infotrxerror);
+                    return redirect()->to(base_url('/sales/postsales/addSalesOrder'));
+                }
+
+                $this->db->transComplete();
+            } catch (\Throwable $e) {
+                $this->db->transRollback();
+
                 $infotrxerror = array(
                     'userid' => $nama,
                     'errorcode' => 3,
-                    'nomorakhir1' => $cek->getNumRows(),
-                    'nomorakhir2' => $cek2->getNumRows(),
+                    'nomorakhir1' => $cek,
+                    'nomorakhir2' => $cek2,
                     'modul' => 'I.S.B.1',
                 );
                 $builder_trxerror->insert($infotrxerror);
                 return redirect()->to(base_url('/sales/postsales/addSalesOrder'));
             }
+
+            return redirect()->to(base_url('/sales/postsales/salesorder'));
 
 
 
@@ -4445,6 +4519,7 @@ class PostSales extends BaseController
             // ======================================
             $rows = $builder
                 ->select('docno')
+                ->where('inputby', $nama)
                 ->whereIn('uniqueid', $ids)
                 ->get()
                 ->getResultArray();
@@ -4457,15 +4532,40 @@ class PostSales extends BaseController
                 ]);
             }
 
+            // ======================================
+            // CEK HEADER MASIH DRAFT (belum final)
+            // ======================================
+            $docno = $rows[0]['docno'];
+
+            $headerRow = $db->table('sc_tmp.deliveryorder')
+                ->select('status')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->get()
+                ->getRowArray();
+
+            if (!$headerRow || strtoupper(trim($headerRow['status'])) === 'F') {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Dokumen sudah final, tidak dapat diubah'
+                ]);
+            }
 
             // ======================================
             // DELETE DETAIL
             // ======================================
             $builder
+                ->where('inputby', $nama)
                 ->whereIn('uniqueid', $ids)
                 ->delete();
 
-            if ($db->affectedRows() === 0) {
+            $sisa = $db->table('sc_tmp.deliveryorder_dtl')
+                ->where('inputby', $nama)
+                ->whereIn('uniqueid', $ids)
+                ->countAllResults();
+
+            if ($sisa > 0) {
                 $db->transRollback();
                 return $this->response->setJSON([
                     'status'  => false,
@@ -4906,17 +5006,34 @@ class PostSales extends BaseController
     function finalEntryDeliveryOrder(){
         $nama = trim($this->session->get('nama'));
         // $loccode = trim($this->session->get('loccode'));
-        $param = " and coalesce(inputby,'')='$nama'";
-        $paramdtl = " AND COALESCE(inputby, '') = '$nama' AND (COALESCE(unit, '') = ''  OR qty = '0.00' OR qty = '0' OR COALESCE(nmbarang, '') = '') ";
-        $paramdtl2 = " and coalesce(inputby,'')='$nama'";
-
-        $header = $this->m_postsales->q_deliveryorder_master_temp($param);
-        $status = trim($header->getRowArray()['status']);
-        $cek = $this->m_postsales->q_deliveryorder_dtl_temp($paramdtl);
-        $cek2 = $this->m_postsales->q_deliveryorder_dtl_temp($paramdtl2);
-
-
         $builder = $this->db->table('sc_tmp.deliveryorder');
+
+        // Ambil header draft milik user (bind via Query Builder, hindari interpolasi SQL)
+        $headerRow = $builder
+            ->where('inputby', $nama)
+            ->orderBy('inputdate', 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRowArray();
+
+        $status = $headerRow ? trim($headerRow['status']) : '';
+        $docno  = $headerRow ? trim($headerRow['docno']) : '';
+
+        // Detail tidak valid (unit kosong / qty 0 / nmbarang kosong)
+        $cek = $this->db->table('sc_tmp.deliveryorder_dtl')
+            ->where('inputby', $nama)
+            ->groupStart()
+                ->where('unit', '')
+                ->orWhere('qty', '0.00')
+                ->orWhere('qty', '0')
+                ->orWhere('nmbarang', '')
+            ->groupEnd()
+            ->countAllResults();
+
+        // Total detail
+        $cek2 = $this->db->table('sc_tmp.deliveryorder_dtl')
+            ->where('inputby', $nama)
+            ->countAllResults();
 
         //INSERT TRX ERROR
         $builder_trxerror = $this->db->table('sc_mst.trxerror');
@@ -4925,13 +5042,13 @@ class PostSales extends BaseController
         $builder_trxerror->delete();
 
 
-        if (($status==='E' and $cek->getNumRows() > 0) or ($cek2->getNumRows() <= '0'))
+        if (($status==='E' and $cek > 0) or ($cek2 <= 0))
         {
             $infotrxerror = array(
                 'userid' => $nama,
                 'errorcode' => 3,
-                'nomorakhir1' => $cek->getNumRows(),
-                'nomorakhir2' => $cek2->getNumRows(),
+                'nomorakhir1' => $cek,
+                'nomorakhir2' => $cek2,
                 'modul' => 'I.S.B.2',
             );
             $builder_trxerror->insert($infotrxerror);
@@ -5006,32 +5123,60 @@ class PostSales extends BaseController
                 // 'pemohon'       => $pemohon (jika masih diperlukan nanti bisa ditambahkan)
             ];
 
-            $builder->where('inputby', $nama);
-            $builder->update($updateHeader);
+            try {
+                $this->db->transStart();
 
-            $info = array(
-                'status' => 'F'
-            );
-            $builder->where('inputby',$nama);
-            if ($builder->update($info)) {
-                $paramerror=" and userid='$nama' and modul='I.S.B.2'";
-                $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
-                $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
+                // Update header (scoped ke pemilik + docno)
+                $this->db->table('sc_tmp.deliveryorder')
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->update($updateHeader);
 
-                // $docno = trim(bin2hex(trim($dtlerror['nomorakhir1'])));
+                // FINALIZE: CAS status E -> F (trigger tmp->trx berjalan di sini)
+                $this->db->table('sc_tmp.deliveryorder')
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->where('status', 'E')
+                    ->update(['status' => 'F']);
 
-                return redirect()->to(base_url('/sales/postsales/deliveryorder'));
-            } else {
+                $errDb = $this->sales_errorDb();
+
+                // read-back: trigger sukses akan menghapus baris tmp
+                $sisa = $this->db->table('sc_tmp.deliveryorder')
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->countAllResults();
+
+                if ($errDb !== '' || $sisa > 0) {
+                    $this->db->transRollback();
+
+                    $infotrxerror = array(
+                        'userid' => $nama,
+                        'errorcode' => 3,
+                        'nomorakhir1' => $cek,
+                        'nomorakhir2' => $cek2,
+                        'modul' => 'I.S.B.2',
+                    );
+                    $builder_trxerror->insert($infotrxerror);
+                    return redirect()->to(base_url('/sales/postsales/addDeliveryOrder'));
+                }
+
+                $this->db->transComplete();
+            } catch (\Throwable $e) {
+                $this->db->transRollback();
+
                 $infotrxerror = array(
                     'userid' => $nama,
                     'errorcode' => 3,
-                    'nomorakhir1' => $cek->getNumRows(),
-                    'nomorakhir2' => $cek2->getNumRows(),
+                    'nomorakhir1' => $cek,
+                    'nomorakhir2' => $cek2,
                     'modul' => 'I.S.B.2',
                 );
                 $builder_trxerror->insert($infotrxerror);
                 return redirect()->to(base_url('/sales/postsales/addDeliveryOrder'));
             }
+
+            return redirect()->to(base_url('/sales/postsales/deliveryorder'));
 
 
 
@@ -6359,6 +6504,7 @@ class PostSales extends BaseController
             // ======================================
             $rows = $builder
                 ->select('docno')
+                ->where('inputby', $nama)
                 ->whereIn('uniqueid', $ids)
                 ->get()
                 ->getResultArray();
@@ -6371,15 +6517,40 @@ class PostSales extends BaseController
                 ]);
             }
 
+            // ======================================
+            // CEK HEADER MASIH DRAFT (belum final)
+            // ======================================
+            $docno = $rows[0]['docno'];
+
+            $headerRow = $db->table('sc_tmp.suratjalan')
+                ->select('status')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->get()
+                ->getRowArray();
+
+            if (!$headerRow || strtoupper(trim($headerRow['status'])) === 'F') {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Dokumen sudah final, tidak dapat diubah'
+                ]);
+            }
 
             // ======================================
             // DELETE DETAIL
             // ======================================
             $builder
+                ->where('inputby', $nama)
                 ->whereIn('uniqueid', $ids)
                 ->delete();
 
-            if ($db->affectedRows() === 0) {
+            $sisa = $db->table('sc_tmp.suratjalan_dtl')
+                ->where('inputby', $nama)
+                ->whereIn('uniqueid', $ids)
+                ->countAllResults();
+
+            if ($sisa > 0) {
                 $db->transRollback();
                 return $this->response->setJSON([
                     'status'  => false,
@@ -6493,17 +6664,34 @@ class PostSales extends BaseController
     function finalEntrySuratJalan(){
         $nama = trim($this->session->get('nama'));
         // $loccode = trim($this->session->get('loccode'));
-        $param = " and coalesce(inputby,'')='$nama'";
-        $paramdtl = " AND COALESCE(inputby, '') = '$nama' AND (COALESCE(unit, '') = ''  OR qty = '0.00' OR qty = '0' OR COALESCE(nmbarang, '') = '') ";
-        $paramdtl2 = " and coalesce(inputby,'')='$nama'";
-
-        $header = $this->m_postsales->q_suratjalan_master_temp($param);
-        $status = trim($header->getRowArray()['status']);
-        $cek = $this->m_postsales->q_suratjalan_dtl_temp($paramdtl);
-        $cek2 = $this->m_postsales->q_suratjalan_dtl_temp($paramdtl2);
-
-
         $builder = $this->db->table('sc_tmp.suratjalan');
+
+        // Ambil header draft milik user (bind via Query Builder, hindari interpolasi SQL)
+        $headerRow = $builder
+            ->where('inputby', $nama)
+            ->orderBy('inputdate', 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRowArray();
+
+        $status = $headerRow ? trim($headerRow['status']) : '';
+        $docno  = $headerRow ? trim($headerRow['docno']) : '';
+
+        // Detail tidak valid (unit kosong / qty 0 / nmbarang kosong)
+        $cek = $this->db->table('sc_tmp.suratjalan_dtl')
+            ->where('inputby', $nama)
+            ->groupStart()
+                ->where('unit', '')
+                ->orWhere('qty', '0.00')
+                ->orWhere('qty', '0')
+                ->orWhere('nmbarang', '')
+            ->groupEnd()
+            ->countAllResults();
+
+        // Total detail
+        $cek2 = $this->db->table('sc_tmp.suratjalan_dtl')
+            ->where('inputby', $nama)
+            ->countAllResults();
 
         //INSERT TRX ERROR
         $builder_trxerror = $this->db->table('sc_mst.trxerror');
@@ -6512,13 +6700,13 @@ class PostSales extends BaseController
         $builder_trxerror->delete();
 
 
-        if (($status==='E' and $cek->getNumRows() > 0) or ($cek2->getNumRows() <= '0'))
+        if (($status==='E' and $cek > 0) or ($cek2 <= 0))
         {
             $infotrxerror = array(
                 'userid' => $nama,
                 'errorcode' => 3,
-                'nomorakhir1' => $cek->getNumRows(),
-                'nomorakhir2' => $cek2->getNumRows(),
+                'nomorakhir1' => $cek,
+                'nomorakhir2' => $cek2,
                 'modul' => 'I.S.B.3',
             );
             $builder_trxerror->insert($infotrxerror);
@@ -6593,32 +6781,60 @@ class PostSales extends BaseController
                 // 'pemohon'       => $pemohon (jika masih diperlukan nanti bisa ditambahkan)
             ];
 
-            $builder->where('inputby', $nama);
-            $builder->update($updateHeader);
+            try {
+                $this->db->transStart();
 
-            $info = array(
-                'status' => 'F'
-            );
-            $builder->where('inputby',$nama);
-            if ($builder->update($info)) {
-                $paramerror=" and userid='$nama' and modul='I.S.B.3'";
-                $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
-                $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
+                // Update header (scoped ke pemilik + docno)
+                $this->db->table('sc_tmp.suratjalan')
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->update($updateHeader);
 
-                // $docno = trim(bin2hex(trim($dtlerror['nomorakhir1'])));
+                // FINALIZE: CAS status E -> F (trigger tmp->trx berjalan di sini)
+                $this->db->table('sc_tmp.suratjalan')
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->where('status', 'E')
+                    ->update(['status' => 'F']);
 
-                return redirect()->to(base_url('/sales/postsales/suratjalan'));
-            } else {
+                $errDb = $this->sales_errorDb();
+
+                // read-back: trigger sukses akan menghapus baris tmp
+                $sisa = $this->db->table('sc_tmp.suratjalan')
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->countAllResults();
+
+                if ($errDb !== '' || $sisa > 0) {
+                    $this->db->transRollback();
+
+                    $infotrxerror = array(
+                        'userid' => $nama,
+                        'errorcode' => 3,
+                        'nomorakhir1' => $cek,
+                        'nomorakhir2' => $cek2,
+                        'modul' => 'I.S.B.3',
+                    );
+                    $builder_trxerror->insert($infotrxerror);
+                    return redirect()->to(base_url('/sales/postsales/addSuratJalan'));
+                }
+
+                $this->db->transComplete();
+            } catch (\Throwable $e) {
+                $this->db->transRollback();
+
                 $infotrxerror = array(
                     'userid' => $nama,
                     'errorcode' => 3,
-                    'nomorakhir1' => $cek->getNumRows(),
-                    'nomorakhir2' => $cek2->getNumRows(),
+                    'nomorakhir1' => $cek,
+                    'nomorakhir2' => $cek2,
                     'modul' => 'I.S.B.3',
                 );
                 $builder_trxerror->insert($infotrxerror);
                 return redirect()->to(base_url('/sales/postsales/addSuratJalan'));
             }
+
+            return redirect()->to(base_url('/sales/postsales/suratjalan'));
 
 
 
@@ -7924,7 +8140,7 @@ class PostSales extends BaseController
             ]);
         }
 
-        // >>> BARU: XOR SO / SJ
+        // >>> XOR SO / SJ
         if (($docnoso && $docnosj) || (!$docnoso && !$docnosj)) {
             return $this->response->setJSON([
                 'success' => false,
@@ -7938,10 +8154,9 @@ class PostSales extends BaseController
         $db->transStart();
 
         // =====================================================
-        // >>> BARU: VALIDASI SUMBER (SO atau SJ)
+        // VALIDASI SUMBER (SO atau SJ)
         // =====================================================
         if ($isFromSJ) {
-            // Cek SJ ada
             $sjCek = $db->table('sc_trx.suratjalan')
                 ->select('docno')
                 ->where('docno', $docnosj)
@@ -7957,7 +8172,6 @@ class PostSales extends BaseController
             }
 
             // Ambil SO dari trace SJ -> DO -> SO
-            // suratjalan_dtl.docnodo -> deliveryorder_dtl -> docnoso
             $soDariSj = $db->query("
                 SELECT DISTINCT d.docnoso
                 FROM sc_trx.suratjalan_dtl sj
@@ -7997,16 +8211,10 @@ class PostSales extends BaseController
         $reload = false;
 
         if ($exists == 0) {
-            $isinclusive = strtoupper(trim(
-                $this->request->getPost('isinclusive')
-                ?? 'NO'
-            ));
+            $isinclusive = strtoupper(trim($this->request->getPost('isinclusive') ?? 'NO'));
             $isinclusive = ($isinclusive === 'YES') ? 'YES' : 'NO';
 
-            $isopenprice = strtoupper(trim(
-                $this->request->getPost('isopenprice')
-                ?? 'NO'
-            ));
+            $isopenprice = strtoupper(trim($this->request->getPost('isopenprice') ?? 'NO'));
             $isopenprice = ($isopenprice === 'YES') ? 'YES' : 'NO';
 
             $builderHeader->insert([
@@ -8053,11 +8261,15 @@ class PostSales extends BaseController
             $description = strtoupper($this->request->getPost('description'));
             $idprincipal = strtoupper($this->request->getPost('idprincipal'));
             $idgudang    = strtoupper($this->request->getPost('idgudang'));
-            $idspec      = strtoupper($this->request->getPost('idspec'));
+
+            // >>> FIX: normalisasi idspec (inline, tanpa helper)
+            $idspec = strtoupper(trim($this->request->getPost('idspec') ?? ''));
+            if ($idspec === '' || $idspec === 'NULL') {
+                $idspec = '';
+            }
 
             $nilai = $qty * $harga;
 
-            // >>> FIX: tambah currcode di select
             $h = $db->table('sc_tmp.penjualan')
                 ->select('kurs, idtax, currcode')
                 ->where('docno', $docno)
@@ -8095,7 +8307,7 @@ class PostSales extends BaseController
                     'nilaipajak'    => $nilaipajak,
                     'idtax'         => $idtax,
                     'kurs'          => $kurs,
-                    'currcode'      => $currcode, // >>> FIX: dari $poData jadi $currcode
+                    'currcode'      => $currcode,
                     'idprincipal'   => $idprincipal,
                     'idgudang'      => $idgudang,
                     'idspec'        => $idspec,
@@ -8112,8 +8324,7 @@ class PostSales extends BaseController
             // =====================================================
 
             if ($isFromSJ) {
-                // >>> dari SJ, trace ke SO via uniqueid
-                // Ambil qty dari SJ, field lain dari SO
+                // >>> FIX: idspec dinormalisasi di SQL
                 $soDetails = $db->query("
                     SELECT
                         sj.docno,
@@ -8124,7 +8335,10 @@ class PostSales extends BaseController
                         sj.qty,
                         sj.idgudang,
                         COALESCE(so.idprincipal, '')   AS idprincipal,
-                        COALESCE(so.idspec, '')        AS idspec,
+                        CASE
+                            WHEN so.idspec IS NULL OR UPPER(TRIM(so.idspec)) = 'NULL' THEN ''
+                            ELSE TRIM(so.idspec)
+                        END                            AS idspec,
                         COALESCE(so.harga, 0)          AS harga,
                         COALESCE(so.multidisc, 0)      AS multidisc,
                         COALESCE(so.currcode, 'IDR')   AS currcode,
@@ -8140,7 +8354,7 @@ class PostSales extends BaseController
                     WHERE TRIM(sj.docno) = ?
                 ", [$docnosj])->getResult();
             } else {
-                // SO - seperti semula
+                // >>> FIX: idspec dinormalisasi di SQL
                 $soDetails = $db->query("
                     SELECT
                         docno,
@@ -8151,7 +8365,10 @@ class PostSales extends BaseController
                         qty,
                         idprincipal,
                         idgudang,
-                        idspec,
+                        CASE
+                            WHEN idspec IS NULL OR UPPER(TRIM(idspec)) = 'NULL' THEN ''
+                            ELSE TRIM(idspec)
+                        END             AS idspec,
                         nilaipajak,
                         nilaikonversi,
                         multidisc,
@@ -8177,13 +8394,7 @@ class PostSales extends BaseController
 
             foreach ($soDetails as $row) {
 
-                // =====================================================
-                // HITUNG SISA QTY - BEDA ANTARA SO DAN SJ
-                // =====================================================
                 if ($isFromSJ) {
-                    // Dari SJ:
-                    // sisaQty = qty - (qtypenjualan - qtypenjualanSaatIni)
-                    // qtypenjualanSaatIni = qty di sc_tmp.penjualan_dtl yang belum final
                     $qtyPenjualanSaatIni = 0;
 
                     $existingPenjualan = $db->query("
@@ -8200,9 +8411,6 @@ class PostSales extends BaseController
                     $sisaQty = $row->qty - ($row->qtypenjualan - $qtyPenjualanSaatIni);
 
                 } else {
-                    // Dari SO:
-                    // sisaQty = qty - (qtypenjualan + qtydo - qtyDOSaatIni)
-                    // qtyDOSaatIni = qty di sc_tmp.deliveryorder_dtl yang belum final
                     $qtyDOSaatIni = 0;
 
                     $existingDO = $db->query("
@@ -8227,7 +8435,6 @@ class PostSales extends BaseController
                     ->where($isFromSJ ? 'docnosj' : 'docnoso', $isFromSJ ? $docnosj : $docnoso)
                     ->countAllResults();
 
-                // >>> FIX: nilaiRow pakai sisaQty biar konsisten
                 $nilaiRow = $sisaQty * $row->harga;
 
                 $h = $db->table('sc_tmp.penjualan')
@@ -8238,8 +8445,6 @@ class PostSales extends BaseController
                     ->getRowArray();
 
                 $kurs = $h['kurs'] ?? 1;
-
-                // >>> FIX: idtaxRow salah, harusnya idtax
                 $idtaxRow = $h['idtax'] ?? 'NON';
 
                 $nilaikonversiRow = $nilaiRow * $kurs;
@@ -8259,7 +8464,6 @@ class PostSales extends BaseController
                 if ($duplicate == 0) {
                     $builderDetail->insert([
                         'docno'         => $docno,
-                        // >>> isi docnoso / docnosj sesuai sumber
                         'docnoso'       => $isFromSJ ? null : $docnoso,
                         'docnosj'       => $isFromSJ ? $docnosj : null,
                         'idbarang'      => $row->idbarang,
@@ -8269,7 +8473,7 @@ class PostSales extends BaseController
                         'qty'           => $sisaQty,
                         'idprincipal'   => $row->idprincipal,
                         'idgudang'      => $row->idgudang,
-                        'idspec'        => $row->idspec,
+                        'idspec'        => $row->idspec,   // sudah bersih dari query
                         'harga'         => $row->harga,
                         'multidisc'     => $row->multidisc,
                         'nilaipajak'    => $nilaipajakRow,
@@ -8519,6 +8723,7 @@ class PostSales extends BaseController
             // ======================================
             $rows = $builder
                 ->select('docno')
+                ->where('inputby', $nama)
                 ->whereIn('uniqueid', $ids)
                 ->get()
                 ->getResultArray();
@@ -8546,13 +8751,37 @@ class PostSales extends BaseController
             }
 
             // ======================================
+            // CEK HEADER MASIH DRAFT (belum final)
+            // ======================================
+            $headerRow = $db->table('sc_tmp.penjualan')
+                ->select('status')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->get()
+                ->getRowArray();
+
+            if (!$headerRow || strtoupper(trim($headerRow['status'])) === 'F') {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Dokumen sudah final, tidak dapat diubah'
+                ]);
+            }
+
+            // ======================================
             // DELETE DETAIL
             // ======================================
             $builder
+                ->where('inputby', $nama)
                 ->whereIn('uniqueid', $ids)
                 ->delete();
 
-            if ($db->affectedRows() === 0) {
+            $sisa = $db->table('sc_tmp.penjualan_dtl')
+                ->where('inputby', $nama)
+                ->whereIn('uniqueid', $ids)
+                ->countAllResults();
+
+            if ($sisa > 0) {
                 $db->transRollback();
                 return $this->response->setJSON([
                     'status'  => false,
@@ -8716,17 +8945,38 @@ class PostSales extends BaseController
     function finalEntryPenjualan(){
         $nama = trim($this->session->get('nama'));
         // $loccode = trim($this->session->get('loccode'));
-        $param = " and coalesce(inputby,'')='$nama'";
-        $paramdtl = " AND COALESCE(inputby, '') = '$nama' AND (COALESCE(unit, '') = ''  OR qty = '0.00' OR qty = '0' OR COALESCE(nmbarang, '') = '' OR harga = '0.00' OR harga = '0' OR nilai = '0.00' OR nilai = '0') ";
-        $paramdtl2 = " and coalesce(inputby,'')='$nama'";
-
-        $header = $this->m_postsales->q_penjualan_master_temp($param);
-        $status = trim($header->getRowArray()['status']);
-        $cek = $this->m_postsales->q_penjualan_dtl_temp($paramdtl);
-        $cek2 = $this->m_postsales->q_penjualan_dtl_temp($paramdtl2);
-
-
         $builder = $this->db->table('sc_tmp.penjualan');
+
+        // Ambil header draft milik user (bind via Query Builder, hindari interpolasi SQL)
+        $headerRow = $builder
+            ->where('inputby', $nama)
+            ->orderBy('inputdate', 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRowArray();
+
+        $status = $headerRow ? trim($headerRow['status']) : '';
+        $docno  = $headerRow ? trim($headerRow['docno']) : '';
+
+        // Detail tidak valid (unit kosong / qty 0 / nmbarang kosong / harga 0 / nilai 0)
+        $cek = $this->db->table('sc_tmp.penjualan_dtl')
+            ->where('inputby', $nama)
+            ->groupStart()
+                ->where('unit', '')
+                ->orWhere('qty', '0.00')
+                ->orWhere('qty', '0')
+                ->orWhere('nmbarang', '')
+                ->orWhere('harga', '0.00')
+                ->orWhere('harga', '0')
+                ->orWhere('nilai', '0.00')
+                ->orWhere('nilai', '0')
+            ->groupEnd()
+            ->countAllResults();
+
+        // Total detail
+        $cek2 = $this->db->table('sc_tmp.penjualan_dtl')
+            ->where('inputby', $nama)
+            ->countAllResults();
 
         //INSERT TRX ERROR
         $builder_trxerror = $this->db->table('sc_mst.trxerror');
@@ -8735,19 +8985,35 @@ class PostSales extends BaseController
         $builder_trxerror->delete();
 
 
-        if (($status==='E' and $cek->getNumRows() > 0) or ($cek2->getNumRows() <= '0'))
+        if (($status==='E' and $cek > 0) or ($cek2 <= 0))
         {
             $infotrxerror = array(
                 'userid' => $nama,
                 'errorcode' => 3,
-                'nomorakhir1' => $cek->getNumRows(),
-                'nomorakhir2' => $cek2->getNumRows(),
+                'nomorakhir1' => $cek,
+                'nomorakhir2' => $cek2,
                 'modul' => 'I.S.B.4',
             );
             $builder_trxerror->insert($infotrxerror);
 
             return redirect()->to(base_url('/sales/postsales/addPenjualan'));
         } else {
+            // ======================================
+            // CEK STOK (kurang stok) sebelum final
+            // ======================================
+            $pesanStok = $this->sales_cek_stok_penjualan($docno, $nama);
+            if ($pesanStok !== '') {
+                $infotrxerror = array(
+                    'userid' => $nama,
+                    'errorcode' => 3,
+                    'nomorakhir1' => $cek,
+                    'nomorakhir2' => $cek2,
+                    'modul' => 'I.S.B.4',
+                );
+                $builder_trxerror->insert($infotrxerror);
+                return redirect()->to(base_url('/sales/postsales/addPenjualan'));
+            }
+
             // Ambil dari request POST
             // $pemohon = strtoupper(trim($this->request->getPost('pemohon')));
             // $docdate   = trim($this->request->getPost('docdate'));
@@ -8816,32 +9082,60 @@ class PostSales extends BaseController
                 // 'pemohon'       => $pemohon (jika masih diperlukan nanti bisa ditambahkan)
             ];
 
-            $builder->where('inputby', $nama);
-            $builder->update($updateHeader);
+            try {
+                $this->db->transStart();
 
-            $info = array(
-                'status' => 'F'
-            );
-            $builder->where('inputby',$nama);
-            if ($builder->update($info)) {
-                $paramerror=" and userid='$nama' and modul='I.S.B.4'";
-                $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
-                $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
+                // Update header (scoped ke pemilik + docno)
+                $this->db->table('sc_tmp.penjualan')
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->update($updateHeader);
 
-                // $docno = trim(bin2hex(trim($dtlerror['nomorakhir1'])));
+                // FINALIZE: CAS status E -> F (trigger tmp->trx berjalan di sini)
+                $this->db->table('sc_tmp.penjualan')
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->where('status', 'E')
+                    ->update(['status' => 'F']);
 
-                return redirect()->to(base_url('/sales/postsales/penjualan'));
-            } else {
+                $errDb = $this->sales_errorDb();
+
+                // read-back: trigger sukses akan menghapus baris tmp
+                $sisa = $this->db->table('sc_tmp.penjualan')
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->countAllResults();
+
+                if ($errDb !== '' || $sisa > 0) {
+                    $this->db->transRollback();
+
+                    $infotrxerror = array(
+                        'userid' => $nama,
+                        'errorcode' => 3,
+                        'nomorakhir1' => $cek,
+                        'nomorakhir2' => $cek2,
+                        'modul' => 'I.S.B.4',
+                    );
+                    $builder_trxerror->insert($infotrxerror);
+                    return redirect()->to(base_url('/sales/postsales/addPenjualan'));
+                }
+
+                $this->db->transComplete();
+            } catch (\Throwable $e) {
+                $this->db->transRollback();
+
                 $infotrxerror = array(
                     'userid' => $nama,
                     'errorcode' => 3,
-                    'nomorakhir1' => $cek->getNumRows(),
-                    'nomorakhir2' => $cek2->getNumRows(),
+                    'nomorakhir1' => $cek,
+                    'nomorakhir2' => $cek2,
                     'modul' => 'I.S.B.4',
                 );
                 $builder_trxerror->insert($infotrxerror);
                 return redirect()->to(base_url('/sales/postsales/addPenjualan'));
             }
+
+            return redirect()->to(base_url('/sales/postsales/penjualan'));
 
 
 
@@ -10399,6 +10693,129 @@ class PostSales extends BaseController
     }
 
 
+
+
+    /* ================================================================
+       HELPER PENJUALAN (pola sama seperti helper modul PRODUCTION)
+       ================================================================ */
+
+    /* Flash message (tipe + teks). */
+    private function sales_msg($type, $text)
+    {
+        return ['type' => $type, 'text' => $text];
+    }
+
+    /* Render flash menjadi alert (kelas sama seperti $message existing). */
+    private function sales_msg_html($flash)
+    {
+        if (empty($flash) || empty($flash['text'])) {
+            return '';
+        }
+
+        $cls = 'alert-info';
+        if ($flash['type'] === 'success') {
+            $cls = 'alert-success';
+        } elseif ($flash['type'] === 'error') {
+            $cls = 'alert-danger';
+        } elseif ($flash['type'] === 'warning') {
+            $cls = 'alert-warning';
+        }
+
+        return "<div class='alert " . $cls . "'>" . $flash['text'] . "</div>";
+    }
+
+    /* Verifikasi hasil update lewat READ-BACK.
+       Menggantikan $this->db->affectedRows() yang tidak aman pada driver
+       Postgre CI4 ini (bila query gagal, resultID=false sehingga
+       pg_affected_rows() melempar TypeError dan error asli tertutup). */
+    private function sales_hitungStatus($table, $docno, $inputby, $status)
+    {
+        $builder = $this->db->table($table)->where('status', $status);
+
+        if ($docno !== null && $docno !== '') {
+            $builder->where('docno', trim($docno));
+        }
+
+        if ($inputby !== null && $inputby !== '') {
+            $builder->where('inputby', $inputby);
+        }
+
+        return $builder->countAllResults();
+    }
+
+    /* Ambil pesan error terakhir dari koneksi Postgre.
+       WAJIB dipanggil SEGERA setelah query yang gagal (sebelum query lain),
+       karena setelah transaksi abort, query berikutnya menutupi error asli. */
+    private function sales_errorDb()
+    {
+        try {
+            if (!empty($this->db->connID)) {
+                return trim((string) pg_last_error($this->db->connID));
+            }
+        } catch (\Throwable $x) {
+            return '';
+        }
+
+        return '';
+    }
+
+    /* Terjemahkan error database menjadi pesan yang ramah untuk user. */
+    private function sales_pesan_db($e)
+    {
+        $pesan = $e->getMessage();
+        $db   = $this->sales_errorDb();
+
+        if ($db !== '') {
+            $pesan = $db;
+        }
+
+        return $pesan;
+    }
+
+    /* Cek kecukupan stok untuk draft penjualan (cegah kurang stok).
+       Return : '' bila cukup, selain itu pesan error. */
+    private function sales_cek_stok_penjualan($docno, $inputby)
+    {
+        $rows = $this->db->table('sc_tmp.penjualan_dtl')
+            ->where('docno', $docno)
+            ->where('inputby', $inputby)
+            ->get()
+            ->getResultArray();
+
+        foreach ($rows as $r) {
+            $idbarang = trim((string)($r['idbarang'] ?? ''));
+            $idgudang = trim((string)($r['idgudang'] ?? ''));
+            $idspec   = trim((string)($r['idspec'] ?? ''));
+            $qty      = (float)($r['qty'] ?? 0);
+
+            // Normalisasi: null / '' / 'NULL' / 'null' → ''
+            if ($idspec === '' || strtoupper($idspec) === 'NULL') {
+                $idspec = '';
+            }
+
+            if ($idbarang === '' || $qty <= 0) {
+                continue;
+            }
+
+            $saldo = $this->db->query("
+                SELECT (COALESCE(SUM(qty_in),0) - COALESCE(SUM(qty_out),0)) AS saldo
+                FROM sc_trx.stkblc
+                WHERE TRIM(idbarang) = ?
+                AND TRIM(warehouse) = ?
+                AND COALESCE(NULLIF(TRIM(batch), ''), '') = ?
+            ", [$idbarang, $idgudang, $idspec])->getRowArray();
+
+            $sisa = (float)($saldo['saldo'] ?? 0);
+
+            if ($qty > $sisa) {
+                return 'Stok tidak mencukupi untuk barang ' . $idbarang
+                    . ' (gudang ' . $idgudang . '). Tersedia: ' . $sisa
+                    . ', dibutuhkan: ' . $qty;
+            }
+        }
+
+        return '';
+    }
 
 }
 

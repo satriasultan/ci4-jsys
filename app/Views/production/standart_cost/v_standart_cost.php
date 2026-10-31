@@ -348,7 +348,9 @@
         }
     });
 
-    $("#f_status").select2();
+    $("#f_status").select2({
+        dropdownParent: $('#filter .modal-body'),
+    });
 
     $(".tglrange").on('apply.daterangepicker', function(ev, picker) {
         $(this).val(picker.startDate.format('DD-MM-YYYY') + ' - ' + picker.endDate.format('DD-MM-YYYY'));

@@ -1,6 +1,11 @@
 -- =========================================
 -- I.R.A.9 — PENERIMAAN BARANG PRODUKSI
+-- SATU FILE: CREATE TABLE + TRIGGER TMP->TRX + TRX->TMP + POSTING transaction_dt (WORECV)
+-- Aman dijalankan ulang: blok DROP TABLE hanya dijalankan bila keempat tabel KOSONG.
+-- Jalankan: php writable/dbq.php -m -f DatabaseChanges/PRODUCTION/penerimaanbp.sql
 -- =========================================
+
+BEGIN;
 
 --DELETE FROM sc_mst.trxtype WHERE jenistrx='I.R.A.9';
 INSERT INTO sc_mst.trxtype (kdtrx, jenistrx, uraian)
@@ -14,16 +19,41 @@ VALUES
 ('P','I.R.A.9','CETAK/PRINT'),
 ('O','I.R.A.9','OBSOLATE'),
 ('C','I.R.A.9','CANCEL'),
-('D','I.R.A.9','DELETE');
+('D','I.R.A.9','DELETE')
+ON CONFLICT (kdtrx, jenistrx) DO NOTHING;
 
 
 -- =========================================
--- DROP TABLE (urutan: DTL dulu, baru MST)
+-- 2. DROP TABLE - DIJAGA (hanya bila keempat tabel kosong)
 -- =========================================
-DROP TABLE IF EXISTS sc_tmp.penerimaanbp_dtl CASCADE;
-DROP TABLE IF EXISTS sc_tmp.penerimaanbp_mst CASCADE;
-DROP TABLE IF EXISTS sc_trx.penerimaanbp_dtl CASCADE;
-DROP TABLE IF EXISTS sc_trx.penerimaanbp_mst CASCADE;
+DO $$
+DECLARE
+    v_tabel TEXT;
+    v_jml   BIGINT;
+    v_ada   BOOLEAN := FALSE;
+BEGIN
+    -- Cek isi tabel secara dinamis (aman walau tabel belum ada sama sekali)
+    FOREACH v_tabel IN ARRAY ARRAY['sc_tmp.penerimaanbp_mst', 'sc_tmp.penerimaanbp_dtl', 'sc_trx.penerimaanbp_mst', 'sc_trx.penerimaanbp_dtl']
+    LOOP
+        IF to_regclass(v_tabel) IS NOT NULL THEN
+            EXECUTE format('SELECT count(*) FROM %s', v_tabel) INTO v_jml;
+            IF v_jml > 0 THEN
+                v_ada := TRUE;
+                RAISE NOTICE 'DROP TABLE dilewati: % berisi % baris.', v_tabel, v_jml;
+            END IF;
+        END IF;
+    END LOOP;
+
+    IF v_ada THEN
+        RAISE NOTICE 'DROP TABLE DILEWATI (tabel berisi data). Tabel dipertahankan; hanya trigger/fungsi yang di-refresh.';
+    ELSE
+        DROP TABLE IF EXISTS sc_tmp.penerimaanbp_dtl CASCADE;
+        DROP TABLE IF EXISTS sc_tmp.penerimaanbp_mst CASCADE;
+        DROP TABLE IF EXISTS sc_trx.penerimaanbp_dtl CASCADE;
+        DROP TABLE IF EXISTS sc_trx.penerimaanbp_mst CASCADE;
+        RAISE NOTICE 'DROP TABLE dijalankan (semua tabel kosong) - tabel dibuat ulang.';
+    END IF;
+END $$;
 
 
 -- =========================================
@@ -575,7 +605,7 @@ EXECUTE FUNCTION sc_trx.tr_mst_penerimaanbp_mst();
 -- Tidak DROP TABLE. Aman dijalankan ulang.
 -- ============================================================
 
-BEGIN;
+-- (transaksi tunggal: BEGIN ada di awal file, COMMIT di akhir)
 
 -- ============================================================
 -- STEP 1 — FUNGSI SYNC DETAIL PENERIMAAN BP → transaction_dt

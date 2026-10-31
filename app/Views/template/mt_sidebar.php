@@ -18,7 +18,7 @@
                     </a>
                     <ul aria-expanded="false" class="collapse">
                         <li>
-                            <a href="<?= base_url('dashboard') ?>">Dashboard</a>
+                            <a href="<?= base_url('dashboard/menu') ?>">Dashboard</a>
                         </li>
                     </ul>
                 </li>

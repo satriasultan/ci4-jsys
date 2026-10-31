@@ -2073,11 +2073,11 @@ class M_Postsales extends Model
         return $query->getRow();
     }
 
-    function q_laporan_jurnal_transaksi($params = '')
+    public function q_laporan_jurnal_transaksi($params = '')
     {
         return $this->db->query("
             WITH data_jurnal AS (
-                
+
                 SELECT
                     jd.id,
                     jd.jurnal_id,
@@ -2114,6 +2114,8 @@ class M_Postsales extends Model
                     )
 
                 WHERE 1=1
+                AND jh.status = 'POSTED'
+                AND jd.status = 'POSTED'
                 $params
             )
 
@@ -2181,7 +2183,6 @@ class M_Postsales extends Model
                 id
         ");
     }
-
 
 
 
