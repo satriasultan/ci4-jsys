@@ -195,7 +195,7 @@ $('#cabang').on('change', function () {
 
 
 function loadNextSuffixMR() {
-    
+
     let prefix = $.trim($('#prefix').val()).toUpperCase();
     let infix = $.trim($('#infix').val());
 
@@ -347,7 +347,7 @@ function documentReadable() {
             $('[name="infix"]').val(prefixParts[1]).prop('readonly', true);
             $('[name="suffix"]').val(prefixParts[2]).prop('readonly', true);
             loadNextSuffixMR()
-            
+
             setJtsValue('[name="buildfor"]', convertToDbNumber(item.buildfor));
             // setJtsValue('[name="minimumqty"]', convertToDbNumber(item.minimumqty));
             $('[name="docdate"]')
@@ -494,10 +494,10 @@ function btnInputDetailMaterial() {
     $('#modalDtlMaterialReleaseTitle').text('Tambah Detail Material');
     resetMaterialReleaseModal();
 
-/*    // destroy jika sudah pernah init
-    if ($('#idbarang').hasClass("select2-hidden-accessible")) {
-        $('#idbarang').select2('destroy');
-    }*/
+    /*    // destroy jika sudah pernah init
+        if ($('#idbarang').hasClass("select2-hidden-accessible")) {
+            $('#idbarang').select2('destroy');
+        }*/
 
 
 
@@ -569,7 +569,7 @@ function updateDetailMaterialRelease(){
                 $('#description').val(res.items[0].description);
                 $('#docno').val(res.items[0].docno);
                 // $('#idbarang').val(res.items[0].idbarang);
-                
+
                 var isSub = res.items[0].issub.trim() == 'T';
                 $('#issub').prop('checked', isSub).trigger('change').prop('disabled',true);
                 $('#unit').val(res.items[0].unit);
@@ -590,7 +590,7 @@ function updateDetailMaterialRelease(){
                         // create the option and append to Select2
                         var option = new Option(datax.items[0].nmbarang, datax.items[0].idbarang, true, true);
                         $('[name="idbarang"]').append(option).trigger('change')
-    
+
                         // manually trigger the `select2:select` event
                         $('[name="idbarang"]').trigger({
                             type: 'select2:select',
@@ -617,7 +617,7 @@ function updateDetailMaterialRelease(){
                         // create the option and append to Select2
                         var option = new Option(datax.items[0].nmbarang, datax.items[0].idbarang, true, true);
                         $('[name="idbarang_bom"]').append(option).trigger('change')
-    
+
                         // manually trigger the `select2:select` event
                         $('[name="idbarang_bom"]').trigger({
                             type: 'select2:select',
@@ -755,7 +755,7 @@ $("#idbarang").select2({
                 loccode: '',
                 // docdate:  docdate,
                 //loccode: $('[name="idlocation_dtl"]').val(),
-                term: params.term,  
+                term: params.term,
             };
         },
         processResults: function (data, params) {
@@ -1536,152 +1536,152 @@ function saveMaterialReleaseFromWO(oldWoeno)
 function saveMaterialReleaseDetail(formId) {
 
 
-        // ===============================
-        // Ambil dan validasi qty
-        // ===============================
-        let buildfor = $('#buildfor').val();
-        // let minimumqty = $('#minimumqty').val();
+    // ===============================
+    // Ambil dan validasi qty
+    // ===============================
+    let buildfor = $('#buildfor').val();
+    // let minimumqty = $('#minimumqty').val();
 
-        // ===============================
-        // Siapkan FormData
-        // ===============================
+    // ===============================
+    // Siapkan FormData
+    // ===============================
 
-        let formData = new FormData(document.getElementById(formId));
+    let formData = new FormData(document.getElementById(formId));
 
-        //HEADER
-        formData.append('docref', $('#docref').val());
-        formData.append('cabang', $('#cabang').val());
-        formData.append('pemohon', $('#pemohon').val());
-        formData.append('docno', $('#docno').val());
-        formData.append('docdate', $('#docdate').val());
-        formData.append('idbarang_jadi', $('#idbarang_jadi').val());
-        formData.append('nmbarang_jadi', $('#nmbarang_jadi').val());
-        formData.append('woeno', $('#woeno').val());
-        formData.append('wono', $('#wono').val());
-        formData.append('bomno', $('#bomno').val());
-        formData.append('bagian', $('#bagian').val());
-        formData.append('idlocation', $('#idlocation').val());
-        formData.append('nmlocation', $('#nmlocation').val());
-        formData.append('tabno', $('#tabno').val());
-        formData.append('batchno', $('#batchno').val());
-        formData.append('uniqueid', $('#uniqueid').val());
+    //HEADER
+    formData.append('docref', $('#docref').val());
+    formData.append('cabang', $('#cabang').val());
+    formData.append('pemohon', $('#pemohon').val());
+    formData.append('docno', $('#docno').val());
+    formData.append('docdate', $('#docdate').val());
+    formData.append('idbarang_jadi', $('#idbarang_jadi').val());
+    formData.append('nmbarang_jadi', $('#nmbarang_jadi').val());
+    formData.append('woeno', $('#woeno').val());
+    formData.append('wono', $('#wono').val());
+    formData.append('bomno', $('#bomno').val());
+    formData.append('bagian', $('#bagian').val());
+    formData.append('idlocation', $('#idlocation').val());
+    formData.append('nmlocation', $('#nmlocation').val());
+    formData.append('tabno', $('#tabno').val());
+    formData.append('batchno', $('#batchno').val());
+    formData.append('uniqueid', $('#uniqueid').val());
 
-        formData.append('docdate', $('#docdate').val());
-        formData.append('keterangan', $('#keterangan').val());
-        // formData.append('minimumqty', convertToDbNumber(minimumqty));
-        formData.append('buildunit', $('#buildunit').val());
-        formData.append('buildfor', convertToDbNumber(buildfor));
-        formData.append(
-            'issub',
-            $('#issub').is(':checked') ? 'T' : 'F'
-        );
-        // formData.append('minimumqty', $('#minimumqty').val());
-        formData.append('keterangan', $('#keterangan').val());
-        //DETAIL
-        // formData.append('idbarang', $('#idbarang').val());
-        // formData.append('nmbarangmaterial', $('#nmbarangmaterial').val());
-        // formData.append('unitMaterial', $('#unitMaterial').val());
-        // formData.set('qty', convertToDbNumber(qty));
-        // formData.set('standartcostmaterial', convertToDbNumber(standartcostmaterial));
-        // formData.set('totalcostmaterial', convertToDbNumber(totalcostmaterial));
-        // formData.append('description_detail_material', $('#description_detail_material').val());
+    formData.append('docdate', $('#docdate').val());
+    formData.append('keterangan', $('#keterangan').val());
+    // formData.append('minimumqty', convertToDbNumber(minimumqty));
+    formData.append('buildunit', $('#buildunit').val());
+    formData.append('buildfor', convertToDbNumber(buildfor));
+    formData.append(
+        'issub',
+        $('#issub').is(':checked') ? 'T' : 'F'
+    );
+    // formData.append('minimumqty', $('#minimumqty').val());
+    formData.append('keterangan', $('#keterangan').val());
+    //DETAIL
+    // formData.append('idbarang', $('#idbarang').val());
+    // formData.append('nmbarangmaterial', $('#nmbarangmaterial').val());
+    // formData.append('unitMaterial', $('#unitMaterial').val());
+    // formData.set('qty', convertToDbNumber(qty));
+    // formData.set('standartcostmaterial', convertToDbNumber(standartcostmaterial));
+    // formData.set('totalcostmaterial', convertToDbNumber(totalcostmaterial));
+    // formData.append('description_detail_material', $('#description_detail_material').val());
 
-        // if(detailType === 'MATERIAL'){
-        let qty = $('#qty').val();
-        // let standartcostmaterial = $('#standartcostmaterial').val();
-        // let totalcostmaterial = $('#totalcostmaterial').val();
-        formData.set('qty',convertToDbNumber($('#qty').val()));
-        // formData.set('standartcostmaterial',convertToDbNumber($('#standartcostmaterial').val()));
-        // formData.set('totalcostmaterial',convertToDbNumber($('#totalcostmaterial').val()));
+    // if(detailType === 'MATERIAL'){
+    let qty = $('#qty').val();
+    // let standartcostmaterial = $('#standartcostmaterial').val();
+    // let totalcostmaterial = $('#totalcostmaterial').val();
+    formData.set('qty',convertToDbNumber($('#qty').val()));
+    // formData.set('standartcostmaterial',convertToDbNumber($('#standartcostmaterial').val()));
+    // formData.set('totalcostmaterial',convertToDbNumber($('#totalcostmaterial').val()));
 
-        // }else if(detailType === 'COST'){
-        //     let qtycost = $('#qtycost').val();
-        //     let standartcostcost = $('#standartcostcost').val();
-        //     let totalcostcost = $('#totalcostcost').val();
-        //     formData.set('qtycost',convertToDbNumber($('#qtycost').val()));
-        //     formData.set('standartcostcost',convertToDbNumber($('#standartcostcost').val()));
-        //     formData.set('totalcostcost',convertToDbNumber($('#totalcostcost').val()));
-        // }else if(detailType === 'WIP'){
-        //     let qtywip = $('#qtywip').val();
-        //     let standartcostwip = $('#standartcostwip').val();
-        //     let totalcostwip = $('#totalcostwip').val();
-        //     formData.set('qtywip',convertToDbNumber($('#qtywip').val()));
-        //     formData.set('standartcostwip',convertToDbNumber($('#standartcostwip').val()));
-        //     formData.set('totalcostwip',convertToDbNumber($('#totalcostwip').val()));
-        // }
-        // formData.append('doctype_detail', detailType);
-        // Gabungkan docno
-        formData.set(
-            'docno',
-            $('#prefix').val() + '/' +
-            $('#infix').val() + '/' +
-            $('#suffix').val()
-        );
+    // }else if(detailType === 'COST'){
+    //     let qtycost = $('#qtycost').val();
+    //     let standartcostcost = $('#standartcostcost').val();
+    //     let totalcostcost = $('#totalcostcost').val();
+    //     formData.set('qtycost',convertToDbNumber($('#qtycost').val()));
+    //     formData.set('standartcostcost',convertToDbNumber($('#standartcostcost').val()));
+    //     formData.set('totalcostcost',convertToDbNumber($('#totalcostcost').val()));
+    // }else if(detailType === 'WIP'){
+    //     let qtywip = $('#qtywip').val();
+    //     let standartcostwip = $('#standartcostwip').val();
+    //     let totalcostwip = $('#totalcostwip').val();
+    //     formData.set('qtywip',convertToDbNumber($('#qtywip').val()));
+    //     formData.set('standartcostwip',convertToDbNumber($('#standartcostwip').val()));
+    //     formData.set('totalcostwip',convertToDbNumber($('#totalcostwip').val()));
+    // }
+    // formData.append('doctype_detail', detailType);
+    // Gabungkan docno
+    formData.set(
+        'docno',
+        $('#prefix').val() + '/' +
+        $('#infix').val() + '/' +
+        $('#suffix').val()
+    );
 
-        // ===============================
-        // AJAX SAVE
-        // ===============================
+    // ===============================
+    // AJAX SAVE
+    // ===============================
 
-        $.ajax({
-            url: HOST_URL + 'production/trans/save_materialrelease_mst',
-            type: 'POST',
-            data: formData,
-            dataType: 'json',
-            processData: false,
-            contentType: false,
+    $.ajax({
+        url: HOST_URL + 'production/trans/save_materialrelease_mst',
+        type: 'POST',
+        data: formData,
+        dataType: 'json',
+        processData: false,
+        contentType: false,
 
-            success: function (res) {
+        success: function (res) {
 
-                if (res.success) {
-
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil',
-                        text: res.message || 'Data Saved Success fully',
-                        timer: 800,
-                        showConfirmButton: false
-                    });
-
-                    if (res.reload === true) {
-                        window.location.reload();
-                        return;
-                    }
-
-                    // if(detailType === 'MATERIAL'){
-                    $('#modalDtlMaterialRelease').modal('hide');
-                    reload_materialrelease_dtl();
-                    $('#formMaterialReleaseMaterialDtl')[0].reset();
-                    // } else if(detailType === 'COST'){
-                    //     $('#modalDtlBomCost').modal('hide');
-                    //     reload_materialrelease_cost_dtl();
-                    //     $('#formMaterialReleaseCostDtl')[0].reset();
-                    // } else if(detailType === 'WIP'){
-                    //     $('#modalDtlBomWip').modal('hide');
-                    //     reload_materialrelease_wip_dtl();
-                    //     $('#formMaterialReleaseWipDtl')[0].reset();
-                    // }
-                    documentReadable()
-
-                } else {
-
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Gagal',
-                        text: res.message || 'Gagal menyimpan data'
-                    });
-                }
-            },
-
-            error: function (xhr) {
-                console.error(xhr.responseText);
+            if (res.success) {
 
                 Swal.fire({
-                    icon: 'error',
-                    title: 'Server Error',
-                    text: 'Terjadi kesalahan server'
+                    icon: 'success',
+                    title: 'Berhasil',
+                    text: res.message || 'Data Saved Success fully',
+                    timer: 800,
+                    showConfirmButton: false
+                });
+
+                if (res.reload === true) {
+                    window.location.reload();
+                    return;
+                }
+
+                // if(detailType === 'MATERIAL'){
+                $('#modalDtlMaterialRelease').modal('hide');
+                reload_materialrelease_dtl();
+                $('#formMaterialReleaseMaterialDtl')[0].reset();
+                // } else if(detailType === 'COST'){
+                //     $('#modalDtlBomCost').modal('hide');
+                //     reload_materialrelease_cost_dtl();
+                //     $('#formMaterialReleaseCostDtl')[0].reset();
+                // } else if(detailType === 'WIP'){
+                //     $('#modalDtlBomWip').modal('hide');
+                //     reload_materialrelease_wip_dtl();
+                //     $('#formMaterialReleaseWipDtl')[0].reset();
+                // }
+                documentReadable()
+
+            } else {
+
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Gagal',
+                    text: res.message || 'Gagal menyimpan data'
                 });
             }
-        });
+        },
+
+        error: function (xhr) {
+            console.error(xhr.responseText);
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Server Error',
+                text: 'Terjadi kesalahan server'
+            });
+        }
+    });
 
 
 }
@@ -1746,7 +1746,7 @@ function tabletmpMaterialRelease() {
             }
         });
 
-         $('#tmp_materialreleasedtl tbody').on('click', 'tr', function(e) {
+        $('#tmp_materialreleasedtl tbody').on('click', 'tr', function(e) {
             // Cegah jika yang diklik adalah checkbox itu sendiri (untuk menghindari double trigger)
             if ($(e.target).is('input[type="checkbox"]')) {
                 return;
@@ -1821,12 +1821,12 @@ function getCheckedDetailIds() {
 document.addEventListener('keydown', function(e) {
 
 // CTRL + Q
-if (e.ctrlKey && e.key.toLowerCase() === 'q') {
+    if (e.ctrlKey && e.key.toLowerCase() === 'q') {
 
-e.preventDefault();
+        e.preventDefault();
 
-document.getElementById('btnAddDetailMaterial').click();
-}
+        document.getElementById('btnAddDetailMaterial').click();
+    }
 
 });
 

@@ -1,3 +1,33 @@
+<!-- v_list_ndk -->
+<style>
+    /* ===============================
+       DATATABLE NO WRAP - NOTA DEBIT / KREDIT
+    ================================ */
+    #tablendkTrx {
+        width: 100% !important;
+    }
+
+    #tablendkTrx th,
+    #tablendkTrx td {
+        white-space: nowrap !important;
+        vertical-align: middle;
+    }
+
+    #tablendkTrx_wrapper {
+        width: 100%;
+    }
+
+    /* area scroll horizontal tetap aktif saat kolom melebar */
+    #tablendkTrx_wrapper .dataTables_scrollBody,
+    div.dataTables_scrollBody {
+        overflow-x: auto !important;
+    }
+
+    div.dataTables_scrollHead table,
+    div.dataTables_scrollBody table {
+        margin-bottom: 0 !important;
+    }
+</style>
 <div class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">

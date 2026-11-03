@@ -1914,9 +1914,11 @@ class Persediaan extends BaseController
     }
     /* ============================================================
    CLEAR TRANSFER LOKASI
-   - Status I : Hapus semua (header + detail)
-   - Status E : Cancel (update status → C)
-   - Lainnya  : Redirect saja
+   - Hapus TMP header + detail milik user yang login
+     (status apa pun: I, E, F, P, C) supaya entry yang
+     menggantung benar-benar hilang dari menu transfer_lokasi.
+   - Catatan: TIDAK ada trigger yang menangani status 'C',
+     jadi clear harus menghapus langsung dari controller.
    ============================================================ */
 
     function clearTransferLokasi()
@@ -1931,18 +1933,25 @@ class Persediaan extends BaseController
         }
 
         // -------------------------------------------------
-        // Ambil status dari TMP header user
+        // Ambil semua data TMP header milik user
         // -------------------------------------------------
         $param = " AND COALESCE(inputby,'') = " . $this->db->escape($nama);
         $dtl   = $this->m_persediaan->q_tmp_transfer_location_mst($param);
+        $rows  = $dtl ? $dtl->getResultArray() : [];
 
-        $row = $dtl ? $dtl->getRowArray() : null;
-
-        if (!$row || empty($row['status'])) {
+        if (count($rows) === 0) {
+            // Tidak ada entry menggantung -> tidak perlu di-clear
             return redirect()->to(base_url('persediaan/trans/transfer_lokasi'));
         }
 
-        $status = trim($row['status']);
+        // Kumpulkan docno milik user (untuk hapus detail)
+        $docnos = [];
+        foreach ($rows as $row) {
+            $docno = trim((string) ($row['docno'] ?? ''));
+            if ($docno !== '') {
+                $docnos[] = $docno;
+            }
+        }
 
         // -------------------------------------------------
         // Koneksi DB & transaksi
@@ -1952,103 +1961,52 @@ class Persediaan extends BaseController
 
         try {
             // =================================================
-            // STATUS I = INPUT
-            // Hapus permanen TMP header + detail
+            // HAPUS TMP HEADER + DETAIL MILIK USER
+            // (berlaku untuk semua status: I, E, F, P, C)
             // =================================================
-            if ($status === 'I') {
 
-                // 1. Ambil semua docno user
-                $rows = $db->table('sc_tmp.transfer_location_mst')
-                    ->select('docno')
-                    ->where('inputby', $nama)
-                    ->get()
-                    ->getResultArray();
+            // 1. Hapus detail berdasarkan pemilik entry
+            $db->table('sc_tmp.transfer_location_dtl')
+                ->where('inputby', $nama)
+                ->delete();
 
-                $docnos = array_column($rows, 'docno');
-
-                // 2. Hapus detail dulu (FK safety)
-                if (count($docnos) > 0) {
-                    $db->table('sc_tmp.transfer_location_dtl')
-                        ->whereIn('docno', $docnos)
-                        ->delete();
-                }
-
-                // 3. Hapus header
-                $db->table('sc_tmp.transfer_location_mst')
-                    ->where('inputby', $nama)
+            // 1b. Hapus detail lain dengan docno yang sama (jaga-jaga)
+            if (count($docnos) > 0) {
+                $db->table('sc_tmp.transfer_location_dtl')
+                    ->whereIn('docno', $docnos)
                     ->delete();
-
-                // 4. Cek status transaksi
-                if ($db->transStatus() === false) {
-                    throw new \Exception('Gagal hapus TMP (status I)');
-                }
-
-                $db->transCommit();
-
-                log_message('info',
-                    '[clearTransferLokasi] User=' . $nama .
-                    ' status=I deleted ' . count($docnos) . ' TMP doc(s)');
-
-                return redirect()->to(base_url('persediaan/trans/transfer_lokasi'));
             }
 
-            // =================================================
-            // STATUS E = ENTRY
-            // Cancel via status 'E' → 'C'
-            // Trigger akan hapus TMP header + detail
-            // =================================================
-            elseif ($status === 'E') {
+            // 2. Hapus header
+            $db->table('sc_tmp.transfer_location_mst')
+                ->where('inputby', $nama)
+                ->delete();
 
-                // Update TMP header status ke 'C'
-                // Note: docnotmp, printby, printdate dibiarkan
-                //       (trigger akan baca kondisi saat ini)
-                $db->table('sc_tmp.transfer_location_mst')
-                    ->where('inputby', $nama)
-                    ->update([
-                        'status'     => 'C',
-                        'updatedate' => date('Y-m-d H:i:s'),
-                        'updateby'   => $nama
-                    ]);
-
-                if ($db->transStatus() === false) {
-                    throw new \Exception('Gagal cancel TMP (status E)');
-                }
-
-                $db->transCommit();
-
-                log_message('info',
-                    '[clearTransferLokasi] User=' . $nama .
-                    ' status=E canceled');
-
-                return redirect()->to(base_url('persediaan/trans/transfer_lokasi'));
+            // 3. Cek status transaksi
+            if ($db->transStatus() === false) {
+                throw new \Exception('Gagal hapus TMP Transfer Lokasi');
             }
 
-            // =================================================
-            // STATUS LAIN (F, P, C) — tidak ada aksi
-            // =================================================
-            else {
-                $db->transRollback();
+            $db->transCommit();
 
-                log_message('info',
-                    '[clearTransferLokasi] User=' . $nama .
-                    ' status=' . $status . ' no action');
+            log_message('info',
+                '[clearTransferLokasi] User=' . $nama .
+                ' cleared ' . count($docnos) . ' TMP doc(s)');
 
-                return redirect()->to(base_url('persediaan/trans/transfer_lokasi'));
-            }
+            return redirect()->to(base_url('persediaan/trans/transfer_lokasi'))
+                ->with('success', 'Clear berhasil. ' . count($docnos) . ' entry Transfer Lokasi dihapus.');
 
         } catch (\Throwable $e) {
 
             // Rollback transaksi
-            if ($db->transStatus() === false || $db->transDepth > 0) {
-                $db->transRollback();
-            }
+            $db->transRollback();
 
             log_message('error',
                 '[clearTransferLokasi] User=' . $nama .
-                ' status=' . $status .
                 ' error=' . $e->getMessage());
 
-            return redirect()->to(base_url('persediaan/trans/transfer_lokasi'));
+            return redirect()->to(base_url('persediaan/trans/transfer_lokasi'))
+                ->with('error', 'Clear gagal: ' . $e->getMessage());
         }
     }
 

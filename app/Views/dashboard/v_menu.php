@@ -314,9 +314,9 @@ $erpItems = isset($menu_items) ? $menu_items : [];
 
 /* warna card per kodemenu root (agar stabil walau urutan menuprg berubah) */
 $erpColors = [
-    'I.M' => '#0d6efd', 'I.P' => '#0d6efd', 'I.S' => '#fd7e14', 'I.Q' => '#0dcaf0',
-    'I.R' => '#198754', 'I.J' => '#6f42c1', 'I.L' => '#dc3545', 'I.K' => '#20c997',
-    'I.T' => '#6c757d', 'I.H' => '#ff00a1',
+        'I.M' => '#0d6efd', 'I.P' => '#0d6efd', 'I.S' => '#fd7e14', 'I.Q' => '#0dcaf0',
+        'I.R' => '#198754', 'I.J' => '#6f42c1', 'I.L' => '#dc3545', 'I.K' => '#20c997',
+        'I.T' => '#6c757d', 'I.H' => '#ff00a1',
 ];
 $erpPalette = ['#0d6efd','#fd7e14','#0dcaf0','#198754','#20c997','#dc3545','#6f42c1','#6c757d','#ff00a1','#17a2b8'];
 
@@ -326,7 +326,7 @@ if (!function_exists('erp_menu_title')) {
     function erp_menu_title($s)
     {
         $acr   = ['PP','PO','SO','SOI','DO','WO','AR','AP','COA','BOM','PPH','PPN','XLS','PDF','NDK',
-                  'KB','UMT','JUP','BRG','H/P','P/L'];
+                'KB','UMT','JUP','BRG','H/P','P/L'];
         $kecil = ['of','and','or','the','to','in','on','at','by','for','per','dan','di','ke','dengan','yang'];
 
         $t = ucwords(strtolower(trim((string) $s)), " \t\r\n\f\v(/-&.");
@@ -348,54 +348,54 @@ foreach ($erpItems as $it) {
 }
 ?>
 <div class="erp-menu-row">
-<?php if (empty($erpCards)): ?>
-    <div class="erp-col" style="max-width:100%;flex:1 1 100%;">
-        <div class="card-erp" style="cursor:default;">
-            <div class="icon-erp" style="color:#adb5bd;"><i class="fa fa-lock"></i></div>
-            <div class="title-erp">Tidak ada menu yang bisa diakses</div>
-            <div class="count-erp">Hubungi administrator untuk pengaturan role</div>
-        </div>
-    </div>
-<?php else: ?>
-<?php $ci = 0; foreach ($erpCards as $card): ?>
-<?php
-    $ck     = trim($card->kodemenu);
-    $color  = isset($erpColors[$ck]) ? $erpColors[$ck] : $erpPalette[$ci % count($erpPalette)];
-    $ddId   = 'dd' . $ci;
-    $groups = isset($erpGrouped[$ck]) ? $erpGrouped[$ck] : [];
-    $total  = 0;
-    foreach ($groups as $g) { $total += count($g); }
-    $cicon  = trim((string) $card->iconmenu) !== '' ? trim($card->iconmenu) : 'fa-folder';
-?>
-    <!-- <?= trim($card->namamenu) ?> -->
-    <div class="erp-col">
-        <div class="erp-dropdown" style="--menu-color:<?= $color ?>;">
-            <input type="checkbox" id="<?= $ddId ?>" class="dd-toggle">
-            <label for="<?= $ddId ?>" class="card-erp">
-                <div class="icon-erp" style="color:<?= $color ?>;"><i class="fa <?= $cicon ?>"></i></div>
-                <div class="title-erp"><?= erp_menu_title($card->namamenu) ?></div>
-                <div class="count-erp"><?= $total ?> menu</div>
-            </label>
-            <div class="dd-menu">
-<?php $first = true; foreach ($groups as $subKode => $rows): ?>
-<?php if (!$first): ?>                <div class="dd-divider"></div>
-<?php endif; $first = false; ?>
-<?php $subLabel = trim((string) ($rows[0]->namasub ?? '')) !== '' ? $rows[0]->namasub : $subKode; ?>
-                <div class="dd-group-label"><?= erp_menu_title($subLabel) ?></div>
-<?php foreach ($rows as $row): ?>
-<?php
-    $link  = trim((string) $row->linkmenu);
-    $href  = ($link === '' || $link === '#') ? '#' : base_url($link);
-    $ricon = trim((string) $row->iconmenu) !== '' ? trim($row->iconmenu) : 'fa-circle-o';
-?>
-                <a class="dd-item" href="<?= $href ?>"><i class="fa <?= $ricon ?>"></i> <?= erp_menu_title($row->namamenu) ?></a>
-<?php endforeach; ?>
-<?php endforeach; ?>
+    <?php if (empty($erpCards)): ?>
+        <div class="erp-col" style="max-width:100%;flex:1 1 100%;">
+            <div class="card-erp" style="cursor:default;">
+                <div class="icon-erp" style="color:#adb5bd;"><i class="fa fa-lock"></i></div>
+                <div class="title-erp">Tidak ada menu yang bisa diakses</div>
+                <div class="count-erp">Hubungi administrator untuk pengaturan role</div>
             </div>
         </div>
-    </div>
-<?php $ci++; endforeach; ?>
-<?php endif; ?>
+    <?php else: ?>
+        <?php $ci = 0; foreach ($erpCards as $card): ?>
+            <?php
+            $ck     = trim($card->kodemenu);
+            $color  = isset($erpColors[$ck]) ? $erpColors[$ck] : $erpPalette[$ci % count($erpPalette)];
+            $ddId   = 'dd' . $ci;
+            $groups = isset($erpGrouped[$ck]) ? $erpGrouped[$ck] : [];
+            $total  = 0;
+            foreach ($groups as $g) { $total += count($g); }
+            $cicon  = trim((string) $card->iconmenu) !== '' ? trim($card->iconmenu) : 'fa-folder';
+            ?>
+            <!-- <?= trim($card->namamenu) ?> -->
+            <div class="erp-col">
+                <div class="erp-dropdown" style="--menu-color:<?= $color ?>;">
+                    <input type="checkbox" id="<?= $ddId ?>" class="dd-toggle">
+                    <label for="<?= $ddId ?>" class="card-erp">
+                        <div class="icon-erp" style="color:<?= $color ?>;"><i class="fa <?= $cicon ?>"></i></div>
+                        <div class="title-erp"><?= erp_menu_title($card->namamenu) ?></div>
+                        <div class="count-erp"><?= $total ?> menu</div>
+                    </label>
+                    <div class="dd-menu">
+                        <?php $first = true; foreach ($groups as $subKode => $rows): ?>
+                            <?php if (!$first): ?>                <div class="dd-divider"></div>
+                            <?php endif; $first = false; ?>
+                            <?php $subLabel = trim((string) ($rows[0]->namasub ?? '')) !== '' ? $rows[0]->namasub : $subKode; ?>
+                            <div class="dd-group-label"><?= erp_menu_title($subLabel) ?></div>
+                            <?php foreach ($rows as $row): ?>
+                                <?php
+                                $link  = trim((string) $row->linkmenu);
+                                $href  = ($link === '' || $link === '#') ? '#' : base_url($link);
+                                $ricon = trim((string) $row->iconmenu) !== '' ? trim($row->iconmenu) : 'fa-circle-o';
+                                ?>
+                                <a class="dd-item" href="<?= $href ?>"><i class="fa <?= $ricon ?>"></i> <?= erp_menu_title($row->namamenu) ?></a>
+                            <?php endforeach; ?>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+            <?php $ci++; endforeach; ?>
+    <?php endif; ?>
 </div>
 <script>
     /* Satu checkbox aktif sekaligus */

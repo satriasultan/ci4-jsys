@@ -807,6 +807,33 @@ class Purchase extends BaseController
         $nama       = trim($this->session->get('nama'));
         $logindate  = trim($this->session->get('logindate'));
 
+        // ==========================================
+        // VALIDASI INPUT AWAL CABANG / JOB
+        // ==========================================
+        $cabang = trim((string) $this->request->getPost('cabang'));
+
+        // Cabang wajib dipilih, termasuk untuk user PT JATIM TAMAN STEEL
+        if ($cabang === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Cabang / Job wajib dipilih.'
+            ]);
+        }
+
+        if (!$this->ppIsAllowedInitialBranch($cabang)) {
+            $sessionBranchLabel = trim((string) $this->session->get('nmbranchjob'));
+
+            if ($sessionBranchLabel === '') {
+                $sessionBranchLabel = trim((string) $this->session->get('idbranchjob'));
+            }
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Cabang / Job harus sesuai dengan cabang user login ('
+                    . $sessionBranchLabel . ').'
+            ]);
+        }
+
         $docno = strtoupper($this->request->getPost('docno'));
         $idurut = $this->request->getPost('idurut'); // 🔹 untuk update
 
@@ -852,7 +879,7 @@ class Purchase extends BaseController
             $builderHeader->insert([
                 'docno'      => $docno,
                 'docdate'    => date('Y-m-d', strtotime($this->request->getPost('docdate'))),
-                'cabang'     => $this->request->getPost('cabang'),
+                'cabang'     => $cabang,
                 'pemohon'    => strtoupper($this->request->getPost('pemohon')),
                 'estpakai'   => $this->request->getPost('estpakai'),
                 'status'     => 'E',
@@ -1298,6 +1325,44 @@ class Purchase extends BaseController
         $status = trim(
             (string) ($headerRow['status'] ?? '')
         );
+
+
+        // ==========================================
+        // VALIDASI INPUT AWAL CABANG / JOB
+        // ==========================================
+        $headerCabang = trim(
+            (string) ($headerRow['cabang'] ?? '')
+        );
+
+        // Dokumen yang sudah ada header tetap wajib memiliki cabang
+        if ($headerRow && $headerCabang === '') {
+            return redirect()
+                ->back()
+                ->with(
+                    'error',
+                    'Cabang / Job pada dokumen belum diisi. '
+                        . 'Silakan hapus draft PP lalu input ulang.'
+                );
+        }
+
+        if (
+            $headerCabang !== ''
+            && !$this->ppIsAllowedInitialBranch($headerCabang)
+        ) {
+            $sessionBranchLabel = trim((string) $this->session->get('nmbranchjob'));
+
+            if ($sessionBranchLabel === '') {
+                $sessionBranchLabel = trim((string) $this->session->get('idbranchjob'));
+            }
+
+            return redirect()
+                ->back()
+                ->with(
+                    'error',
+                    'Cabang / Job pada dokumen tidak sesuai dengan cabang user login ('
+                        . $sessionBranchLabel . ').'
+                );
+        }
 
 
         // ==========================================
@@ -12436,6 +12501,94 @@ class Purchase extends BaseController
                 'total_onhand' => (float) $result->total_onhand
             ]
         ]);
+    }
+
+    // ==========================================================
+    // VALIDASI INPUT AWAL CABANG / JOB (KHUSUS ADDPP)
+    // ==========================================================
+
+    private function ppSessionBranchName()
+    {
+        return strtoupper(trim((string) $this->session->get('nmbranchjob')));
+    }
+
+    private function ppCanChooseAnyBranch()
+    {
+        // Normalisasi agar variasi penulisan (PT / PT. / spasi ganda) tetap dikenali
+        $branchKey = preg_replace(
+            '/[^A-Z0-9]/',
+            '',
+            $this->ppSessionBranchName()
+        );
+
+        return $branchKey !== ''
+            && strpos($branchKey, 'PTJATIMTAMANSTEEL') === 0;
+    }
+
+    private function ppCanonicalBranchName($branchName)
+    {
+        $key = preg_replace(
+            '/[^A-Z0-9]/',
+            '',
+            strtoupper(trim((string) $branchName))
+        );
+
+        $aliases = [
+            'PLANI'             => 'PLANTI',
+            'PLAN1'             => 'PLANTI',
+            'PLANT1'            => 'PLANTI',
+            'PLANII'            => 'PLANTII',
+            'PLAN2'             => 'PLANTII',
+            'PLANT2'            => 'PLANTII',
+            'PTJATIMTAMANSTEEL' => 'PTJATIMTAMANSTEELMFG',
+        ];
+
+        return $aliases[$key] ?? $key;
+    }
+
+    private function ppIsAllowedInitialBranch($branchId)
+    {
+        $branchId          = trim((string) $branchId);
+        $sessionBranchId   = trim((string) $this->session->get('idbranchjob'));
+        $sessionBranchName = $this->ppSessionBranchName();
+
+        // Cabang wajib dipilih, termasuk untuk user PT JATIM TAMAN STEEL
+        if ($branchId === '') {
+            return false;
+        }
+
+        // PT JATIM TAMAN STEEL bebas memilih cabang / job
+        if ($this->ppCanChooseAnyBranch()) {
+            return true;
+        }
+
+        // Session lama belum memiliki data cabang -> jangan kunci user
+        if ($sessionBranchId === '' && $sessionBranchName === '') {
+            return true;
+        }
+
+        if ($sessionBranchId !== '' && $branchId === $sessionBranchId) {
+            return true;
+        }
+
+        // Fallback pencocokan nama (PLAN I / PLAN 1 / PLANT I dianggap sama)
+        if ($sessionBranchName !== '') {
+            $row = $this->db->table('sc_mst.branchjob')
+                ->select('nmbranch')
+                ->where('idbranch', $branchId)
+                ->get()
+                ->getRowArray();
+
+            if (
+                $row
+                && $this->ppCanonicalBranchName($row['nmbranch'] ?? '')
+                    === $this->ppCanonicalBranchName($sessionBranchName)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
 }

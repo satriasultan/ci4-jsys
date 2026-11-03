@@ -3801,9 +3801,9 @@ class Production extends BaseController
             $updateHeader = ['description' => $keterangan];
 
             $builder->where('docno', $docno)
-                    ->where('inputby', $nama)
-                    ->where('status', 'E')
-                    ->update($updateHeader);
+                ->where('inputby', $nama)
+                ->where('status', 'E')
+                ->update($updateHeader);
 
             $info = array('status' => 'F', 'updatedate' => date('Y-m-d H:i:s'), 'updateby' => $nama);
 
@@ -5375,9 +5375,9 @@ class Production extends BaseController
             ];
 
             $builder->where('docno', $docno)
-                    ->where('inputby', $nama)
-                    ->where('status', 'E')
-                    ->update($updateHeader);
+                ->where('inputby', $nama)
+                ->where('status', 'E')
+                ->update($updateHeader);
 
             $info = array('status' => 'F', 'updatedate' => date('Y-m-d H:i:s'), 'updateby' => $nama);
 

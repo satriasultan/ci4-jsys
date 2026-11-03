@@ -221,7 +221,7 @@
                                         <div class="col-md-12">
                                             <div class="form-group">
                                                 <label for="kdsalesman">Salesman</label>
-                                                <select name="kdsalesman" id="kdsalesman" class="form-control" required>
+                                                <select name="kdsalesman" id="kdsalesman" class="form-control" >
                                                 </select>
                                             </div>
                                         </div>

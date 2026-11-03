@@ -115,24 +115,32 @@ INSERT INTO sc_mst.menuprg (
 ('JTS', 6, 'I.S.B.6', 'SALES ORDER EXTERNAL',   'I.S',  'I.S.B', 'P', false, 'fa-file-text',  'sales/postsales/salesorderexternal','LEFT','NO');
 
 
--- =========================================================
--- TOOLS (I.T)
--- =========================================================
-INSERT INTO sc_mst.menuprg (
-    branch, urut, kodemenu, namamenu, parentmenu, parentsub,
-    child, holdmenu, iconmenu, linkmenu, menuposition, chold
-) VALUES
-('JTS', 1, 'I.T.A',   'SETTING AWAL',               'I.T',  '0',     'S', false, 'fa-list-alt', '#',                              'LEFT', 'NO'),
-('JTS', 1, 'I.T.A.1', 'SETTING TANGGAL AWAL',       'I.T',  'I.T.A', 'P', false, 'fa-tasks',    'tools/settingawal',              'LEFT', 'NO'),
-('JTS', 2, 'I.T.A.2', 'SALDO AWAL HUTANG/PIUTANG',  'I.T',  'I.T.A', 'P', false, 'fa-handshake-o','tools/settingawal/saldoawalhp','LEFT', 'NO'),
-('JTS', 3, 'I.T.A.3', 'PROSES SALDO AWAL H/P',      'I.T',  'I.T.A', 'P', false, 'fa-money',    'tools/settingawal/prosessaldoawalhp','LEFT','NO'),
-('JTS', 2, 'I.T.B',   'KONFIGURASI',                'I.T',  '0',     'S', false, 'fa-cogs',     '#',                              'LEFT', 'NO'),
-('JTS', 1, 'I.T.B.1', 'KONFIGURASI',                'I.T',  'I.T.B', 'P', false, 'fa-file-text','tools/konfigurasi',              'LEFT', 'NO'),
-('JTS', 2, 'I.T.B.2', 'SETTING',                    'I.T',  'I.T.B', 'P', false, 'fa-file-text','tools/konfigurasi/setting',      'LEFT', 'NO'),
-('JTS', 3, 'I.T.B.3', 'BLOCK/UNBLOCK PERIOD',       'I.T',  'I.T.B', 'P', false, 'fa-file-text','tools/konfigurasi/blockunblockperiod','LEFT','NO'),
-('JTS', 3, 'I.T.C',   'PROSES',                     'I.T',  '0',     'S', false, 'fa-refresh',  '#',                              'LEFT', 'NO'),
-('JTS', 1, 'I.T.C.1', 'PROSES TUTUP BULAN',         'I.T',  'I.T.C', 'P', false, 'fa-file-text','tools/proses/tutupbulan',        'LEFT', 'NO');
 
+BEGIN;
+
+DELETE FROM sc_mst.menuprg WHERE branch = 'JTS' AND (kodemenu LIKE 'I.T.%');
+
+INSERT INTO sc_mst.menuprg (branch, urut, kodemenu, namamenu, parentmenu, parentsub, child, holdmenu, iconmenu, linkmenu, menuposition, chold) VALUES
+('JTS',1,'I.T.A','SETTING AWAL','I.T','0','S',false,'fa-list-alt','#','LEFT','NO'),
+('JTS',1,'I.T.A.1','SETTING TANGGAL AWAL','I.T','I.T.A','P',false,'fa-calendar','tools/settingawal','LEFT','NO'),
+('JTS',2,'I.T.A.2','SALDO AWAL AR/AP','I.T','I.T.A','P',false,'fa-handshake-o','tools/settingawal/saldoawalhp','LEFT','NO'),
+('JTS',3,'I.T.A.3','PROSES SALDO AWAL H/P','I.T','I.T.A','P',false,'fa-money','tools/settingawal/prosessaldoawalhp','LEFT','NO'),
+('JTS',2,'I.T.B','KONFIGURASI','I.T','0','S',false,'fa-cogs','#','LEFT','NO'),
+('JTS',1,'I.T.B.1','KONFIGURASI','I.T','I.T.B','P',false,'fa-file-text-o','tools/konfigurasi','LEFT','NO'),
+('JTS',2,'I.T.B.2','SETTING','I.T','I.T.B','P',false,'fa-sliders','tools/konfigurasi/setting','LEFT','NO'),
+('JTS',3,'I.T.B.3','BLOCK / UNBLOCK PERIOD','I.T','I.T.B','P',false,'fa-lock','tools/konfigurasi/blockunblockperiod','LEFT','NO'),
+('JTS',3,'I.T.C','PROSES','I.T','0','S',false,'fa-refresh','#','LEFT','NO'),
+('JTS',1,'I.T.C.1','PROSES TUTUP BULAN','I.T','I.T.C','P',false,'fa-calendar-check-o','tools/proses/tutupbulan','LEFT','NO'),
+('JTS',4,'I.T.D','IMPORT / EXPORT','I.T','0','S',false,'fa-exchange','#','LEFT','NO'),
+('JTS',1,'I.T.D.1','UPLOAD PP AWAL','I.T','I.T.D','P',false,'fa-file-excel-o','tools/proses/uploadpp','LEFT','NO'),
+('JTS',2,'I.T.D.2','UPLOAD PO AWAL','I.T','I.T.D','P',false,'fa-file-excel-o','tools/proses/uploadPO','LEFT','NO'),
+('JTS',3,'I.T.D.3','UPLOAD SALDO STOCK','I.T','I.T.D','P',false,'fa-cubes','tools/proses/uploadStockAwal','LEFT','NO'),
+('JTS',4,'I.T.D.4','UPLOAD SALDO GLL','I.T','I.T.D','P',false,'fa-book','tools/proses/uploadSaldoAwalGL','LEFT','NO'),
+('JTS',5,'I.T.D.5','UPLOAD SALDO AP','I.T','I.T.D','P',false,'fa-arrow-circle-up','tools/proses/uploadSaldoAwalAP','LEFT','NO'),
+('JTS',6,'I.T.D.6','UPLOAD SALDO AR','I.T','I.T.D','P',false,'fa-arrow-circle-down','tools/proses/uploadSaldoAwalAR','LEFT','NO'),
+('JTS',7,'I.T.D.7','UPLOAD SALDO AKTIVA','I.T','I.T.D','P',false,'fa-building','tools/proses/uploadSaldoAwalAsset','LEFT','NO');
+
+COMMIT;
 
 -- =========================================================
 -- AR/AP (I.L)

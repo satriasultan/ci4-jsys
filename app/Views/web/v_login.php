@@ -267,7 +267,7 @@
 
     <img src="<?php echo base_url('assets/img/logo-depan/jts-icon.png'); ?>" alt="Logo">
 
-    <h3><b>JSYS ACCOUNTING</b></h3>
+    <h3><b>JSYS ACCOUNTING (TESTING & TRIAL) </b></h3>
     <p style="margin-top: -5px; opacity: .8;">Version 0.1 Development</p>
 
     <form id="loginform" action="<?php echo base_url('web/login/proses');?>" method="post">
@@ -309,9 +309,9 @@
             </select>
         </div>
 
-<!--        <div class="recaptcha-box">-->
-<!--            <div class="g-recaptcha" data-sitekey="--><?php //= $recaptha_sitekey ?><!--"></div>-->
-<!--        </div>-->
+        <div class="recaptcha-box">
+            <div class="g-recaptcha" data-sitekey="<?= $recaptha_sitekey ?>"></div>
+        </div>
 
         <span style="color:#ffaaaa;"><?php echo $session->getFlashdata('message');?></span>
 

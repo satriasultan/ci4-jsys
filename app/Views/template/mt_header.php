@@ -77,6 +77,99 @@ $this->session = \Config\Services::session();
     .bg-admin{background:#455A64;}
     .module-title{font-weight:600;}
     .module-desc{font-size:12px;color:#777;}
+
+    /* HEADER */
+    .top-navbar {
+        background: linear-gradient(135deg, #0d47a1, #1976d2);
+    }
+
+    .top-navbar .navbar-brand,
+    .top-navbar .navbar-brand div {
+        color: #ffffff !important;
+    }
+
+    .top-navbar .navbar-brand div {
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+    }
+
+    /* NAVIGATION */
+    .top-navbar .navbar-nav .nav-link {
+        color: #ffffff !important;
+    }
+
+    .top-navbar .navbar-nav .nav-link:hover,
+    .top-navbar .navbar-nav .nav-link:focus {
+        color: #ffffff !important;
+        background: rgba(255,255,255,0.15);
+        border-radius: 6px;
+    }
+
+    /* USER PROFILE */
+    .top-navbar .profile-pic,
+    .top-navbar .profile-pic span {
+        color: #ffffff !important;
+    }
+
+    /* MODULE HEADER */
+    .module-header {
+        background: linear-gradient(135deg, #0d47a1, #1976d2);
+        color: #ffffff;
+    }
+
+    .module-header h5,
+    .module-header small {
+        color: #ffffff !important;
+    }
+
+    .module-version {
+        background: rgba(255,255,255,0.18);
+        color: #ffffff;
+        padding: 6px 12px;
+        border-radius: 20px;
+    }
+
+    /**/
+    .branch-info {
+        width: 210px;
+        height: 36px;
+
+        background: transparent !important;
+        background-color: transparent !important;
+
+        border: 1px solid rgba(255,255,255,0.8) !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+
+        border-radius: 5px;
+        padding: 6px 12px;
+
+        opacity: 1 !important;
+        box-shadow: none !important;
+        cursor: default;
+    }
+
+    .branch-info[readonly] {
+        background: transparent !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        opacity: 1 !important;
+    }
+
+    .branch-info:focus {
+        background: transparent !important;
+        border-color: #ffffff !important;
+        box-shadow: none !important;
+    }
+
+    .branch-info::placeholder {
+        color: #ffffff;
+    }
 </style>
 
 
@@ -99,7 +192,7 @@ $this->session = \Config\Services::session();
                     <!-- <div style="font-size: 32px; font-weight: 800; color:#ffffff; letter-spacing:1px;">
                         J-SYS
                     </div> -->
-                    <div style="font-size: 18px; color:rgba(255,255,255,0.75); letter-spacing:1.5px;">
+                    <div style="font-size:18px; color:#ffffff; font-weight:700; letter-spacing:1.5px;">
                         J-ACCOUNTING
                     </div>
                 </div>
@@ -129,7 +222,7 @@ $this->session = \Config\Services::session();
                 <li class="nav-item">
                     <form class="app-search d-none d-md-block d-lg-block">
 
- <!--                   <a href="<?php /*= base_url('assets/attachment/User_manual_newest.pdf') */?>"
+                        <!--                   <a href="<?php /*= base_url('assets/attachment/User_manual_newest.pdf') */?>"
                        target="_blank"
                        class="btn btn-success btn text-uppercase btn-rounded text-white">
                         Download Manual Book
@@ -139,79 +232,93 @@ $this->session = \Config\Services::session();
                 </li>
 
 
-                <li class="nav-item dropdown ms-3">
-
-                    <a class="nav-link dropdown-toggle text-white" data-bs-toggle="dropdown" href="#">
-                        <i class="fa fa-th-large me-1"></i> Modules
-                    </a>
-
-                    <div class="dropdown-menu module-dropdown">
-
-                        <div class="module-header">
-                            <div>
-                                <h5 class="mb-0"><i class="fa fa-th-large me-2"></i>ERP Applications</h5>
-                                <small>Select your application</small>
-                            </div>
-                            <span class="module-version">J-SYS</span>
-                        </div>
-
-                        <div class="module-body">
-
-                            <div class="row">
-
-                                <div class="col-md-4 module-column">
-                                    <div class="module-category">BUSINESS</div>
-
-                                    <a href="<?= base_url('accounting')?>" class="module-item"><div class="module-icon bg-accounting"><i class="fa fa-calculator"></i></div><div><div class="module-title">Accounting</div><div class="module-desc">Journal & Finance</div></div></a>
-
-                                    <a href="<?= base_url('purchasing')?>" class="module-item"><div class="module-icon bg-purchasing"><i class="fa fa-shopping-cart"></i></div><div><div class="module-title">Purchasing</div><div class="module-desc">Supplier & PO</div></div></a>
-
-                                    <a href="<?= base_url('sales')?>" class="module-item"><div class="module-icon bg-sales"><i class="fa fa-line-chart"></i></div><div><div class="module-title">Sales</div><div class="module-desc">Customer & Invoice</div></div></a>
-
-                                    <a href="<?= base_url('dashboard')?>" class="module-item"><div class="module-icon bg-accounting"><i class="fa fa-chart-pie"></i></div><div><div class="module-title">Dashboard BI</div><div class="module-desc">Executive Dashboard</div></div></a>
-
-                                </div>
-
-                                <div class="col-md-4 module-column">
-
-                                    <div class="module-category">OPERATION</div>
-
-                                    <a href="<?= base_url('production')?>" class="module-item"><div class="module-icon bg-production"><i class="fa fa-industry"></i></div><div><div class="module-title">Production</div><div class="module-desc">Manufacturing</div></div></a>
-
-                                    <a href="<?= base_url('warehouse')?>" class="module-item"><div class="module-icon bg-warehouse"><i class="fa fa-cubes"></i></div><div><div class="module-title">Warehouse</div><div class="module-desc">Inventory</div></div></a>
-
-                                    <a href="<?= base_url('quality')?>" class="module-item"><div class="module-icon bg-production"><i class="fa fa-check-circle"></i></div><div><div class="module-title">Quality</div><div class="module-desc">Quality Control</div></div></a>
-
-                                    <a href="<?= base_url('maintenance')?>" class="module-item"><div class="module-icon bg-warehouse"><i class="fa fa-wrench"></i></div><div><div class="module-title">Maintenance</div><div class="module-desc">Machine</div></div></a>
-
-                                </div>
-
-                                <div class="col-md-4">
-
-                                    <div class="module-category">CORPORATE</div>
-
-                                    <a href="<?= base_url('hris')?>" class="module-item"><div class="module-icon bg-hr"><i class="fa fa-users"></i></div><div><div class="module-title">HRIS</div><div class="module-desc">Employee</div></div></a>
-
-                                    <a href="<?= base_url('dcms')?>" class="module-item"><div class="module-icon bg-dcms"><i class="fa fa-folder-open"></i></div><div><div class="module-title">DCMS</div><div class="module-desc">Documents</div></div></a>
-
-                                    <a href="<?= base_url('approval')?>" class="module-item"><div class="module-icon bg-hr"><i class="fa fa-check-square"></i></div><div><div class="module-title">Approval</div><div class="module-desc">Workflow</div></div></a>
-
-                                    <a href="<?= base_url('administrator')?>" class="module-item"><div class="module-icon bg-admin"><i class="fa fa-cogs"></i></div><div><div class="module-title">Administrator</div><div class="module-desc">Security</div></div></a>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </li>
+<!--                <li class="nav-item dropdown ms-3">-->
+<!---->
+<!--                    <a class="nav-link dropdown-toggle text-white" data-bs-toggle="dropdown" href="#">-->
+<!--                        <i class="fa fa-th-large me-1"></i> Modules-->
+<!--                    </a>-->
+<!---->
+<!--                    <div class="dropdown-menu module-dropdown">-->
+<!---->
+<!--                        <div class="module-header">-->
+<!--                            <div>-->
+<!--                                <h5 class="mb-0"><i class="fa fa-th-large me-2"></i>ERP Applications</h5>-->
+<!--                                <small>Select your application</small>-->
+<!--                            </div>-->
+<!--                            <span class="module-version">J-SYS</span>-->
+<!--                        </div>-->
+<!---->
+<!--                        <div class="module-body">-->
+<!---->
+<!--                            <div class="row">-->
+<!---->
+<!--                                <div class="col-md-4 module-column">-->
+<!--                                    <div class="module-category">BUSINESS</div>-->
+<!---->
+<!--                                    <a href="--><?php //= base_url('accounting')?><!--" class="module-item"><div class="module-icon bg-accounting"><i class="fa fa-calculator"></i></div><div><div class="module-title">Accounting</div><div class="module-desc">Journal & Finance</div></div></a>-->
+<!---->
+<!--                                    <a href="--><?php //= base_url('purchasing')?><!--" class="module-item"><div class="module-icon bg-purchasing"><i class="fa fa-shopping-cart"></i></div><div><div class="module-title">Purchasing</div><div class="module-desc">Supplier & PO</div></div></a>-->
+<!---->
+<!--                                    <a href="--><?php //= base_url('sales')?><!--" class="module-item"><div class="module-icon bg-sales"><i class="fa fa-line-chart"></i></div><div><div class="module-title">Sales</div><div class="module-desc">Customer & Invoice</div></div></a>-->
+<!---->
+<!--                                    <a href="--><?php //= base_url('dashboard')?><!--" class="module-item"><div class="module-icon bg-accounting"><i class="fa fa-chart-pie"></i></div><div><div class="module-title">Dashboard BI</div><div class="module-desc">Executive Dashboard</div></div></a>-->
+<!---->
+<!--                                </div>-->
+<!---->
+<!--                                <div class="col-md-4 module-column">-->
+<!---->
+<!--                                    <div class="module-category">OPERATION</div>-->
+<!---->
+<!--                                    <a href="--><?php //= base_url('production')?><!--" class="module-item"><div class="module-icon bg-production"><i class="fa fa-industry"></i></div><div><div class="module-title">Production</div><div class="module-desc">Manufacturing</div></div></a>-->
+<!---->
+<!--                                    <a href="--><?php //= base_url('warehouse')?><!--" class="module-item"><div class="module-icon bg-warehouse"><i class="fa fa-cubes"></i></div><div><div class="module-title">Warehouse</div><div class="module-desc">Inventory</div></div></a>-->
+<!---->
+<!--                                    <a href="--><?php //= base_url('quality')?><!--" class="module-item"><div class="module-icon bg-production"><i class="fa fa-check-circle"></i></div><div><div class="module-title">Quality</div><div class="module-desc">Quality Control</div></div></a>-->
+<!---->
+<!--                                    <a href="--><?php //= base_url('maintenance')?><!--" class="module-item"><div class="module-icon bg-warehouse"><i class="fa fa-wrench"></i></div><div><div class="module-title">Maintenance</div><div class="module-desc">Machine</div></div></a>-->
+<!---->
+<!--                                </div>-->
+<!---->
+<!--                                <div class="col-md-4">-->
+<!---->
+<!--                                    <div class="module-category">CORPORATE</div>-->
+<!---->
+<!--                                    <a href="--><?php //= base_url('hris')?><!--" class="module-item"><div class="module-icon bg-hr"><i class="fa fa-users"></i></div><div><div class="module-title">HRIS</div><div class="module-desc">Employee</div></div></a>-->
+<!---->
+<!--                                    <a href="--><?php //= base_url('dcms')?><!--" class="module-item"><div class="module-icon bg-dcms"><i class="fa fa-folder-open"></i></div><div><div class="module-title">DCMS</div><div class="module-desc">Documents</div></div></a>-->
+<!---->
+<!--                                    <a href="--><?php //= base_url('approval')?><!--" class="module-item"><div class="module-icon bg-hr"><i class="fa fa-check-square"></i></div><div><div class="module-title">Approval</div><div class="module-desc">Workflow</div></div></a>-->
+<!---->
+<!--                                    <a href="--><?php //= base_url('administrator')?><!--" class="module-item"><div class="module-icon bg-admin"><i class="fa fa-cogs"></i></div><div><div class="module-title">Administrator</div><div class="module-desc">Security</div></div></a>-->
+<!---->
+<!--                                </div>-->
+<!---->
+<!--                            </div>-->
+<!---->
+<!--                        </div>-->
+<!---->
+<!--                    </div>-->
+<!---->
+<!--                </li>-->
             </ul>
             <!-- ============================================================== -->
             <!-- User profile and search -->
             <!-- ============================================================== -->
             <ul class="navbar-nav my-lg-0">
+                <!-- BRANCH / PLANT INFO -->
+                <li class="nav-item d-flex align-items-center me-3">
+                    <div class="input-group input-group-sm">
+        <span class="input-group-text bg-transparent text-white border-light">
+            <i class="fa fa-industry"></i>
+        </span>
+
+                        <input type="text"
+                               class="form-control branch-info"
+                               value="<?= esc(trim(session()->get('nmbranchjob') ?? '')) ?>"
+                               readonly
+                               title="Branch / Plant">
+                    </div>
+                </li>
                 <!-- ============================================================== -->
                 <!-- Comment -->
 

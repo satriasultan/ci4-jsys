@@ -73,34 +73,24 @@ order by msession);");
 
     public function proses()
     {
-        $myconfig   = new MyConfig();
         $model_auth = new MWeb();
 
         // ==========================================
         // INPUT
         // ==========================================
 
-        $username = strtoupper(
-            trim((string) $this->request->getVar('username'))
-        );
-
+        $username = strtoupper(trim((string) $this->request->getVar('username')));
         $password = (string) $this->request->getVar('password');
-
-        $logindate = trim(
-            (string) $this->request->getVar('logindate')
-        );
-
-        $recaptchaResponse = trim(
-            (string) $this->request->getVar('g-recaptcha-response')
-        );
-
-        //$ip = $this->fiky_encryption->getUserIP();
+        $logindate = trim((string) $this->request->getVar('logindate'));
 
         $ip = $this->request->getIPAddress();
 
-// Batasi maksimal 10 request login per IP per 60 detik.
-        $throttler = service('throttler');
+        // ==========================================
+        // RATE LIMITING
+        // Maksimal 10 request / IP / 60 detik
+        // ==========================================
 
+        $throttler = service('throttler');
         $ipKey = 'login-ip-' . hash('sha256', $ip);
 
         if ($throttler->check($ipKey, 10, 60) === false) {
@@ -113,97 +103,17 @@ order by msession);");
                 ]);
         }
 
-
-
         // ==========================================
         // VALIDASI INPUT
         // ==========================================
 
         if ($username === '' || $password === '' || $logindate === '') {
-
             return $this->response->setJSON([
                 'status'   => false,
                 'messages' => 'Username, Password dan Tanggal wajib diisi.',
                 'result'   => 'error'
             ]);
         }
-
-
-//        // ==========================================
-//        // RECAPTCHA
-//        // ==========================================
-//
-//        if ($recaptchaResponse === '') {
-//
-//            return $this->response->setJSON([
-//                'status'   => false,
-//                'messages' => 'Silakan verifikasi reCAPTCHA terlebih dahulu.',
-//                'result'   => 'error'
-//            ]);
-//        }
-//
-//        $secret = $myconfig->recaptha_secret;
-//
-//        $credential = [
-//            'secret'   => $secret,
-//            'response' => $recaptchaResponse,
-//            'remoteip' => $ip
-//        ];
-//
-//        $verify = curl_init();
-//
-//        curl_setopt_array($verify, [
-//            CURLOPT_URL            => 'https://www.google.com/recaptcha/api/siteverify',
-//            CURLOPT_POST           => true,
-//            CURLOPT_POSTFIELDS     => http_build_query($credential),
-//            CURLOPT_RETURNTRANSFER => true,
-//            CURLOPT_CONNECTTIMEOUT => 10,
-//            CURLOPT_TIMEOUT        => 15,
-//            CURLOPT_SSL_VERIFYPEER => true,
-//            CURLOPT_SSL_VERIFYHOST => 2
-//        ]);
-//
-//        $response = curl_exec($verify);
-//
-//        $curlError = curl_error($verify);
-//
-//        curl_close($verify);
-//
-//
-//        // ==========================================
-//        // RECAPTCHA CURL ERROR
-//        // ==========================================
-//
-//        if ($response === false || $response === '' || $curlError !== '') {
-//
-//            log_message(
-//                'error',
-//                'reCAPTCHA CURL Error: ' . $curlError
-//            );
-//
-//            return $this->response->setJSON([
-//                'status'   => false,
-//                'messages' => 'Verifikasi reCAPTCHA gagal. Silakan coba lagi.',
-//                'result'   => 'error'
-//            ]);
-//        }
-//
-//
-//        // ==========================================
-//        // RECAPTCHA RESPONSE
-//        // ==========================================
-//
-//        $status = json_decode($response, true);
-//
-//        if (!is_array($status) || empty($status['success'])) {
-//
-//            return $this->response->setJSON([
-//                'status'   => false,
-//                'messages' => 'Verifikasi reCAPTCHA tidak valid.',
-//                'result'   => 'error'
-//            ]);
-//        }
-
 
         // ==========================================
         // CHECK USER
@@ -215,8 +125,7 @@ order by msession);");
             'NO'
         );
 
-        if (!$gu) {
-
+        if (!$gu || $gu->getNumRows() !== 1) {
             return $this->response->setJSON([
                 'status'   => false,
                 'messages' => 'Username atau Password Salah.',
@@ -226,13 +135,7 @@ order by msession);");
 
         $dtl = $gu->getRowArray();
 
-
-        // ==========================================
-        // LOGIN FAILED
-        // ==========================================
-
-        if ($gu->getNumRows() !== 1 || empty($dtl)) {
-
+        if (empty($dtl)) {
             return $this->response->setJSON([
                 'status'   => false,
                 'messages' => 'Username atau Password Salah.',
@@ -240,98 +143,91 @@ order by msession);");
             ]);
         }
 
-
         // ==========================================
         // SESSION
         // ==========================================
 
         $newdata = [
-            'count'     => $gu->getNumRows(),
-            'user'      => trim($dtl['nik']),
-            'nama'      => trim($dtl['username']),
-            'lvl'       => trim($dtl['level_akses']),
-            'nik'       => trim($dtl['nik']),
-            'loccode'   => trim($dtl['loccode']),
-            'kddept'    => trim($dtl['kddept']),
-            'roleid'    => trim($dtl['roleid']),
-            'site_lang' => trim($dtl['lang']),
-            'logindate' => $logindate
-        ];
+            'count'        => $gu->getNumRows(),
+            'user'         => trim($dtl['nik'] ?? ''),
+            'nama'         => trim($dtl['username'] ?? ''),
+            'lvl'          => trim($dtl['level_akses'] ?? ''),
+            'nik'          => trim($dtl['nik'] ?? ''),
+            'loccode'      => trim($dtl['loccode'] ?? ''),
+            'kddept'       => trim($dtl['kddept'] ?? ''),
+            'roleid'       => trim($dtl['roleid'] ?? ''),
+            'site_lang'    => trim($dtl['lang'] ?? ''),
+            'logindate'    => $logindate,
 
-        //$this->session->set($newdata);
+            // USER PROFILE
+            'nmlengkap'    => trim($dtl['nmlengkap'] ?? ''),
+            'nickname'     => trim($dtl['nickname'] ?? ''),
+            'idbranchjob'  => trim($dtl['idbranchjob'] ?? ''),
+            'nmbranchjob'  => trim($dtl['nmbranchjob'] ?? '')
+        ];
 
         $this->session->regenerate(true);
         $this->session->set($newdata);
 
-         $this->m_global->insertlogtrans(
-                trim($dtl['username']),
-                'L',           // A / R / C (1 huruf)
-                'AUTH',             // kode module dari menuprg
-                'LOGIN'          // kode menu untuk PP
-            );
+        // ==========================================
+        // LOGIN TRANSACTION LOG
+        // ==========================================
 
+        $this->m_global->insertlogtrans(
+            trim($dtl['username']),
+            'L',
+            'AUTH',
+            'LOGIN'
+        );
 
         // ==========================================
         // LOGIN LOG
         // ==========================================
 
-        $blog = $this->db->table('sc_log.log_time');
-
-        $blog->insert([
+        $this->db->table('sc_log.log_time')->insert([
             'nik' => trim($dtl['username']),
             'tgl' => date('Y-m-d H:i:s'),
             'ip'  => $ip
         ]);
 
-
         // ==========================================
         // USER ONLINE
         // ==========================================
 
-        $uonline = $this->db->table('sc_log.useronline');
-
-
-        // Hapus login expired > 2 jam
+        // Hapus login expired lebih dari 2 jam
         $this->db->query("
         DELETE FROM sc_log.useronline
         WHERE tgl <= NOW() - INTERVAL '2 hours'
     ");
 
-
-        // Hapus user yang sedang login sebelumnya
-        $uonline
+        // Hapus sesi online user sebelumnya
+        $this->db->table('sc_log.useronline')
             ->where('username', trim($dtl['username']))
             ->delete();
 
-
         // Insert user online
-        $uonline->insert([
+        $this->db->table('sc_log.useronline')->insert([
             'username'    => trim($dtl['username']),
             'tgl'         => date('Y-m-d H:i:s'),
             'ip'          => $ip,
             'statuslogin' => 'YES'
         ]);
 
-
         // ==========================================
         // UPDATE LAST LOGIN
         // ==========================================
 
-        $upuser = $this->db->table('sc_mst.user');
-
-        $upuser
+        $this->db->table('sc_mst.user')
             ->where('username', trim($dtl['username']))
             ->update([
                 'lastlogin' => date('Y-m-d H:i:s')
             ]);
 
-
         // ==========================================
         // SCHEDULER CUTI
         // ==========================================
 
-        $model_auth->schedular();
-
+        //// belum dipakai $model_auth->schedular();
 
         // ==========================================
         // FLASH MESSAGE
@@ -342,14 +238,6 @@ order by msession);");
             'Form has been successfully submitted'
         );
 
-
-        // ==========================================
-        // REDIRECT
-        // ==========================================
-
-        $redirect = base_url('dashboard/menu');
-
-
         // ==========================================
         // LOGIN SUCCESS
         // ==========================================
@@ -358,7 +246,7 @@ order by msession);");
             'status'   => true,
             'messages' => 'Login Sukses',
             'result'   => 'ok',
-            'redirect' => $redirect
+            'redirect' => base_url('dashboard/menu')
         ]);
     }
 }

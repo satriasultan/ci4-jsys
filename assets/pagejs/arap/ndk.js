@@ -1088,12 +1088,12 @@ function formatPOSelection(repo) {
 
 
 function formatCurrency(repo) {
-if (repo.loading) return repo.text;
-    var markup ="<div class='select2-result-repository__description'>" + repo.currcode +"   <i class='fa fa-circle'></i>   "+ repo.currname +"   <i class='fa fa-circle'></i>   "+  repo.kurs +"  </div>";
-    return markup;
+    if (repo.loading) return repo.text;
+    return repo.currcode || repo.text;
 }
+
 function formatCurrencySelection(repo) {
-    return repo.currname || repo.text;
+    return repo.currcode || repo.text;
 }
 
 // ======================= PEMBELIAN ==================================

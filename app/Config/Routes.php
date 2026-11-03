@@ -439,24 +439,111 @@ $routes->group('/tools/konfigurasi', ["namespace" => "App\Controllers\Tools"], f
 
 
 $routes->group('/tools/proses', ["namespace" => "App\Controllers\Tools"], function ($routes) {
-    /* Proses Tutup Bulan (Accounting Closing) */
+    /* Proses Tutup Bulan (Accounting Closing) - 4 tahap:
+       Registrasi -> Diagnostik -> Mulai Closing -> Tutup Periode */
     $routes->add('tutupbulan', 'Closing::index');
     $routes->add('processTutupBulan', 'Closing::processTutupBulan');
     $routes->add('registerClosingPeriod', 'Closing::registerClosingPeriod');
     $routes->add('getClosingDiagnostics', 'Closing::getClosingDiagnostics');
-    $routes->add('applyClosingChecks', 'Closing::applyClosingChecks');
     $routes->add('startClosingPeriod', 'Closing::startClosingPeriod');
-    $routes->add('submitClosingReview', 'Closing::submitClosingReview');
     $routes->add('closeClosingPeriod', 'Closing::closeClosingPeriod');
     $routes->add('reopenClosingPeriod', 'Closing::reopenClosingPeriod');
-    $routes->add('saveClosingCheck', 'Closing::saveClosingCheck');
     $routes->add('prepareYearEndClosing', 'Closing::prepareYearEndClosing');
     $routes->add('getClosingYearEndJournal', 'Closing::getClosingYearEndJournal');
-    $routes->add('listClosingCoaRule', 'Closing::listClosingCoaRule');
     $routes->add('saveClosingCoaRule', 'Closing::saveClosingCoaRule');
+
+    /* Upload PP / PO (XLS) - dipakai menu I.T.D.1 dan I.T.D.2 */
+    $routes->add('uploadpp', 'PurchaseUpload::uploadpp');
+    $routes->add('uploadpo', 'PurchaseUpload::uploadpo');
+    // Tombol pada halaman upload PP: CALL sc_im.sp_import_lap_pp_to_trx()
+    $routes->post('uploadpp/import', 'PurchaseUpload::importpptotrx');
+    // Tombol pada halaman upload PO: CALL sc_im.sp_import_template_po()
+    $routes->post('uploadpo/import', 'PurchaseUpload::importpototrx');
+    // Kompatibilitas link menu lama yang masih memakai huruf "O" kapital.
+    $routes->add('uploadpO', 'PurchaseUpload::uploadpo');
+
+    /* Upload Saldo Awal Persediaan (XLS) - staging sc_im.stock_persediaan_opening.
+       Alur: upload -> validasi staging -> posting ke sc_trx.stkblc. */
+    $routes->add('uploadstock', 'StockUpload::uploadstock');
+    // Tombol "Validasi Staging": sc_im.fn_validasi_stock_persediaan_opening()
+    $routes->post('uploadstock/validasi', 'StockUpload::validasistock');
+    // Tombol "Import ke Transaksi": sc_im.fn_posting_stock_persediaan_opening()
+    $routes->post('uploadstock/import', 'StockUpload::importstocktotrx');
+    // URL kanonik menu I.T.D.3 memakai camelCase: 'tools/proses/uploadStockAwal'.
+    // Pencocokan route CI4 bersifat case-sensitive, jadi alias ini wajib ada.
+    $routes->add('uploadStockAwal', 'StockUpload::uploadstock');
+    $routes->post('uploadStockAwal/validasi', 'StockUpload::validasistock');
+    $routes->post('uploadStockAwal/import', 'StockUpload::importstocktotrx');
+
+    /* Upload Saldo Awal AP / hutang supplier (XLSX) - staging sc_im.import_ap.
+       Alur: upload -> validasi staging -> proses ke sc_trx.transaction_dt
+       (journal_type OPENAP). */
+    $routes->add('uploadap', 'SaldoAwalAP::uploadap');
+    $routes->post('uploadap/validasi', 'SaldoAwalAP::validasiap');
+    $routes->post('uploadap/proses', 'SaldoAwalAP::prosesap');
+    // URL kanonik menu I.T.D.5 (case-sensitive).
+    $routes->add('uploadSaldoAwalAP', 'SaldoAwalAP::uploadap');
+    $routes->post('uploadSaldoAwalAP/validasi', 'SaldoAwalAP::validasiap');
+    $routes->post('uploadSaldoAwalAP/proses', 'SaldoAwalAP::prosesap');
+
+    /* Upload Saldo Awal AR / piutang customer (XLSX) - staging sc_im.import_ar.
+       Alur: upload -> validasi staging -> proses ke sc_trx.transaction_dt
+       (journal_type OPENAR). */
+    $routes->add('uploadar', 'SaldoAwalAR::uploadar');
+    $routes->post('uploadar/validasi', 'SaldoAwalAR::validasiar');
+    $routes->post('uploadar/proses', 'SaldoAwalAR::prosesar');
+    // URL kanonik menu I.T.D.6 (case-sensitive).
+    $routes->add('uploadSaldoAwalAR', 'SaldoAwalAR::uploadar');
+    $routes->post('uploadSaldoAwalAR/validasi', 'SaldoAwalAR::validasiar');
+    $routes->post('uploadSaldoAwalAR/proses', 'SaldoAwalAR::prosesar');
 
 });
 
+$routes->group('/tools/import', ["namespace" => "App\Controllers\Tools"], function ($routes) {
+    $routes->add('', 'PurchaseUpload::index');
+    $routes->add('uploadpp', 'PurchaseUpload::uploadpp');
+    $routes->post('uploadpp/import', 'PurchaseUpload::importpptotrx');
+    $routes->add('uploadpo', 'PurchaseUpload::uploadpo');
+    $routes->post('uploadpo/import', 'PurchaseUpload::importpototrx');
+
+    /* Upload Saldo Awal Persediaan (menu I.T.D.3).
+       Template: Template_Import_Stock_Persediaan.xlsx, sheet "template_stock_persediaan".
+       Alur: upload -> staging sc_im.stock_persediaan_opening
+             -> validasi -> posting ke sc_trx.stkblc. */
+    // Halaman upload; tambahkan ?template=1 untuk mengunduh template XLSX.
+    $routes->add('uploadstock', 'StockUpload::uploadstock');
+    // Tombol "Validasi Staging": sc_im.fn_validasi_stock_persediaan_opening()
+    $routes->post('uploadstock/validasi', 'StockUpload::validasistock');
+    // Tombol "Import ke Transaksi": sc_im.fn_posting_stock_persediaan_opening()
+    $routes->post('uploadstock/import', 'StockUpload::importstocktotrx');
+
+    // Alias camelCase mengikuti nama menu I.T.D.3 pada aplikasi lama.
+    $routes->add('uploadStockAwal', 'StockUpload::uploadstock');
+    $routes->post('uploadStockAwal/validasi', 'StockUpload::validasistock');
+    $routes->post('uploadStockAwal/import', 'StockUpload::importstocktotrx');
+
+    /* Upload Saldo Awal AP / hutang supplier (menu I.T.D.5).
+       Template: Template_Opening_AP_Staging.xlsx, sheet "template_import".
+       Alur: upload -> staging sc_im.import_ap -> validasi ->
+             proses ke sc_trx.transaction_dt (journal_type OPENAP). */
+    $routes->add('uploadap', 'SaldoAwalAP::uploadap');
+    $routes->post('uploadap/validasi', 'SaldoAwalAP::validasiap');
+    $routes->post('uploadap/proses', 'SaldoAwalAP::prosesap');
+    $routes->add('uploadSaldoAwalAP', 'SaldoAwalAP::uploadap');
+    $routes->post('uploadSaldoAwalAP/validasi', 'SaldoAwalAP::validasiap');
+    $routes->post('uploadSaldoAwalAP/proses', 'SaldoAwalAP::prosesap');
+
+    /* Upload Saldo Awal AR / piutang customer (menu I.T.D.6).
+       Template: Template_opening_ar.xlsx, sheet "template_import".
+       Alur: upload -> staging sc_im.import_ar -> validasi ->
+             proses ke sc_trx.transaction_dt (journal_type OPENAR). */
+    $routes->add('uploadar', 'SaldoAwalAR::uploadar');
+    $routes->post('uploadar/validasi', 'SaldoAwalAR::validasiar');
+    $routes->post('uploadar/proses', 'SaldoAwalAR::prosesar');
+    $routes->add('uploadSaldoAwalAR', 'SaldoAwalAR::uploadar');
+    $routes->post('uploadSaldoAwalAR/validasi', 'SaldoAwalAR::validasiar');
+    $routes->post('uploadSaldoAwalAR/proses', 'SaldoAwalAR::prosesar');
+});
 
 
 
@@ -1373,6 +1460,9 @@ $routes->group('/persediaan/trans', ["namespace" => "App\Controllers\Persediaan"
     $routes->add('list_pmk_brng', 'Persediaan::list_trx_pmk_brng');
     $routes->add('getBranch_pmk_brng', 'Persediaan::getBranch_pmk_brng');
     $routes->add('getNextSuffix_pmk_brng', 'Persediaan::getNextSuffix_pmk_brng');
+    $routes->add('list_trx_pmk_brng_dtl', 'Persediaan::list_trx_pmk_brng_dtl');
+    $routes->post('laporan_jurnal_transaksi_pmk', 'Persediaan::laporan_jurnal_transaksi_pmk');
+
 
 
 
@@ -1398,6 +1488,7 @@ $routes->group('/persediaan/trans', ["namespace" => "App\Controllers\Persediaan"
     $routes->add('getBranch_pnm_brng', 'Persediaan::getBranch_pnm_brng');
     $routes->add('getNextSuffix_pnm_brng', 'Persediaan::getNextSuffix_pnm_brng');
 });
+
 
 
 

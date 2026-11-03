@@ -903,7 +903,9 @@ BEGIN
         'BADREV',
         'UNEARN',
         'UNEREL',
-        'PAYROL'
+        'PAYROL',
+		'OPENAP',
+		'OPENAR'
     )
     THEN
 
@@ -1386,7 +1388,9 @@ BEGIN
             'BADREV',
             'UNEARN',
             'UNEREL',
-            'PAYROL'
+            'PAYROL',
+			'OPENAP',
+			'OPENAR'
         );
 
 

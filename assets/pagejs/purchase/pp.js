@@ -1208,6 +1208,14 @@ let currentKodeSuffix = '';
 $('#cabang').on('change', function () {
     if (skipRoleChange) return; // skip
 
+    // Dokumen PP draft: prefix / infix / suffix / docno sudah final dari header.
+    // Nomor jangan digenerate ulang supaya detail tetap masuk ke header PP yang
+    // sudah ada (savePPDetail menyusun docno dari field prefix / infix / suffix).
+    if (window.ppDraftDocno) {
+        setupEstpakai($('#prefix').val());
+        return;
+    }
+
     let idbranch = $(this).val();
 
     if(idbranch){
@@ -1290,7 +1298,11 @@ $('#cabang').on('change', function () {
 
 
 function loadNextSuffixPP() {
-    
+
+    // Dokumen PP draft: nomor PP sudah final, jangan generate ulang.
+    // Guard ini juga menahan trigger dari blur #prefix.
+    if (window.ppDraftDocno) return;
+
     let prefix = $.trim($('#prefix').val()).toUpperCase();
     let infix = $.trim($('#infix').val());
 
