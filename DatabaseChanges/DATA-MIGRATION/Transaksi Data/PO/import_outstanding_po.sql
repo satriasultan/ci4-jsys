@@ -243,7 +243,26 @@ BEGIN
 END;
 $PROC$;
 
+
+
+
+
+
 COMMIT;
+
+/*update unique id klo null*/
+
+
+update sc_trx.po_dtl set uniqueid=md5(idurut||trim(docno)||trim(idbarang))  where idurut=idurut and trim(coalesce(uniqueid,''))='';
+
+/* tambahkan update manual data untuk ppn ikut master */
+update sc_trx.po set idtax='PPN11' , isinclusive='NO' where docno in (select docno from sc_trx.po_dtl where idtax='PPN');
+update sc_trx.po_dtl set idtax='PPN11' where idtax='PPN';
+
+
+update sc_trx.po set idtax='NON' , isinclusive='NO' where docno in (select docno from sc_trx.po_dtl where idtax='NON PPN');
+update sc_trx.po_dtl set idtax='NON' where idtax='NON PPN';
+
 
 -- Verifikasi struktur staging dan prosedur terpasang.
 SELECT column_name, data_type

@@ -1145,10 +1145,19 @@ class M_Purchase extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->t_po_dtl_temp_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+        if (isset($_POST['order'][0]['column'])) {
+
+            $columnIndex = (int) $_POST['order'][0]['column'] - 1;
+            $direction   = strtolower($_POST['order'][0]['dir'] ?? 'asc');
+
+            if (
+                $columnIndex >= 0 &&
+                isset($this->t_po_dtl_temp_view_column[$columnIndex]) &&
+                in_array($direction, ['asc', 'desc'], true)
+            ) {
+                $columnName = $this->t_po_dtl_temp_view_column[$columnIndex];
+
+                $builder->orderBy($columnName, $direction);
             }
         }
         else if(isset($this->t_po_dtl_temp_view_order))

@@ -187,6 +187,41 @@ function documentReadable(){
             $('[name="interngroup"]').val($.trim(dt.interngroup).toUpperCase());
             $('[name="blacklist"]').val($.trim(dt.blacklist).toUpperCase());
 
+            /* ===== FIELD TAMBAHAN (corporate form) ===== */
+            setOptionIfExists('[name="status"]', dt.status);
+            setOptionIfExists('[name="pkp_non_pkp"]', dt.pkp_non_pkp);
+            setOptionIfExists('[name="import_local"]', dt.import_local);
+            $('[name="createdby"]').val($.trim(dt.createdby || '').toUpperCase());
+            $('[name="createddate"]').val(formatTanggalSupplier(dt.createddate));
+
+            // Currency (select2 - api/globalmodule/list_currency)
+            var currCode = $.trim(dt.currency || '').toUpperCase();
+
+            if (currCode !== '') {
+                $.ajax({
+                    type: 'GET',
+                    url: HOST_URL + 'api/globalmodule/list_currency',
+                    data: {
+                        var: currCode
+                    },
+                    dataType: 'json',
+                    cache: false
+                }).then(function (res) {
+                    var item = (res.items && res.items.length) ? res.items[0] : null;
+                    if (!item) {
+                        return;
+                    }
+                    var option = new Option(item.currcode, item.currcode, true, true);
+                    $('[name="currency"]').append(option).trigger('change');
+                    $('[name="currency"]').trigger({
+                        type: 'select2:select',
+                        params: {
+                            data: item
+                        }
+                    });
+                });
+            }
+
             var isDetail = $('[name="type"]').val() === 'DETAIL';
             if (isDetail) {
                 // disable semua input, textarea, select, dan checkbox/radio
@@ -354,7 +389,12 @@ function saveInputSupplier() {
                     keterangan: $('[name="keterangan"]').val(),
                     
                     interngroup: $('#interngroup').is(':checked') ? 'YES' : 'NO',
-                    blacklist: $('#blacklist').is(':checked') ? 'YES' : 'NO'
+                    blacklist: $('#blacklist').is(':checked') ? 'YES' : 'NO',
+
+                    status: $('[name="status"]').val(),
+                    pkp_non_pkp: $('[name="pkp_non_pkp"]').val(),
+                    currency: $('[name="currency"]').val(),
+                    import_local: $('[name="import_local"]').val()
                 }
             };
 
@@ -671,6 +711,93 @@ $("#idmarket").select2({
     // $("#id_desaktp").val(null).trigger('change');
     // $("#id_kecktp").val(null).trigger('change');
 });
+
+/* =========================================================
+   CURRENCY (select2 - api/globalmodule/list_currency)
+   ========================================================= */
+function formatCurrency(repo) {
+    if (repo.loading) return repo.text;
+    return repo.currcode || repo.text;
+}
+
+function formatCurrencySelection(repo) {
+    return repo.currcode || repo.text;
+}
+
+$("#currency").select2({
+    placeholder: "Ketik/Pilih Currency",
+    allowClear: true,
+    width: '100%',
+    ajax: {
+        url: HOST_URL + 'api/globalmodule/list_currency',
+        type: 'POST',
+        dataType: 'json',
+        delay: 250,
+        data: function(params) {
+            return {
+                _search_: params.term, // search term
+                _page_: params.page,
+                _draw_: true,
+                _start_: 1,
+                _perpage_: 2,
+                _paramglobal_: ''
+            };
+        },
+        processResults: function(data, params) {
+            params.page = params.page || 1;
+
+            return {
+                results: data.items,
+                pagination: {
+                    more: (params.page * 30) < data.total_count
+                }
+            };
+        },
+        cache: true
+    },
+    escapeMarkup: function(markup) {
+        return markup;
+    },
+    templateResult: formatCurrency,
+    templateSelection: formatCurrencySelection
+});
+
+/* =========================================================
+   HELPER : format createddate (YYYY-MM-DD HH:mm:ss -> DD-MM-YYYY HH:mm)
+   ========================================================= */
+function formatTanggalSupplier(val) {
+    if (!val) {
+        return '';
+    }
+
+    var s = $.trim(val);
+    var m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+
+    if (m) {
+        return m[3] + '-' + m[2] + '-' + m[1] + ' ' + m[4] + ':' + m[5];
+    }
+
+    return s;
+}
+
+/* =========================================================
+   HELPER : set nilai select hanya jika option-nya ada
+   (supaya nilai lama yang tidak dikenal tidak berubah)
+   ========================================================= */
+function setOptionIfExists(selector, value) {
+    var v = $.trim(value || '').toUpperCase();
+    var $el = $(selector);
+
+    if (v === '' || $el.length === 0) {
+        return;
+    }
+
+    if ($el.find('option').filter(function() {
+            return $.trim($(this).val()).toUpperCase() === v;
+        }).length > 0) {
+        $el.val(v).trigger('change');
+    }
+}
 
 
 

@@ -441,6 +441,12 @@ class Suppliers extends BaseController
                 ? strtoupper(trim($dataprocess->blacklist))
                 : 'NO';
 
+            /* FIELD TAMBAHAN (form corporate) */
+            $status       = isset($dataprocess->status) ? strtoupper(trim($dataprocess->status)) : '';
+            $pkp_non_pkp  = isset($dataprocess->pkp_non_pkp) ? strtoupper(trim($dataprocess->pkp_non_pkp)) : '';
+            $currency     = isset($dataprocess->currency) ? strtoupper(trim($dataprocess->currency)) : '';
+            $import_local = isset($dataprocess->import_local) ? strtoupper(trim($dataprocess->import_local)) : '';
+
             // $interngroup           = ($dataprocess->interngroup);
             // $blacklist    = ($dataprocess->blacklist);
 
@@ -482,7 +488,10 @@ class Suppliers extends BaseController
                     'blacklist'   => $blacklist,     
                     // 'interngroup' => $interngroup,
                     // 'blacklist'   => $blacklist,
-                    'status'        => 'F',
+                    'status'        => ($status !== '' ? $status : 'F'),
+                    'pkp_non_pkp'   => $pkp_non_pkp,
+                    'currency'      => $currency,
+                    'import_local'  => $import_local,
                     'createdby'       => $createdby,
                     'createddate'     => $createddate,
 
@@ -547,7 +556,10 @@ class Suppliers extends BaseController
                     'keterangan' => $keterangan,
                     // 'interngroup' => $interngroup,
                     // 'blacklist'   => $blacklist,
-                    'status'        => 'F',
+                    'status'        => ($status !== '' ? $status : 'F'),
+                    'pkp_non_pkp'   => $pkp_non_pkp,
+                    'currency'      => $currency,
+                    'import_local'  => $import_local,
                     'updateby'       => $createdby,
                     'updatedate'     => $createddate
                     );

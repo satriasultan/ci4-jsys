@@ -1883,6 +1883,8 @@ $("#batch").select2({
 
     allowClear: true,
 
+    dropdownParent: $("#modalUpdateLPB"),
+
     ajax: {
 
         url: HOST_URL + 'api/globalmodule/list_batch_item',

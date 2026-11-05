@@ -133,7 +133,7 @@ INSERT INTO sc_mst.menuprg (branch, urut, kodemenu, namamenu, parentmenu, parent
 ('JTS',1,'I.T.C.1','PROSES TUTUP BULAN','I.T','I.T.C','P',false,'fa-calendar-check-o','tools/proses/tutupbulan','LEFT','NO'),
 ('JTS',4,'I.T.D','IMPORT / EXPORT','I.T','0','S',false,'fa-exchange','#','LEFT','NO'),
 ('JTS',1,'I.T.D.1','UPLOAD PP AWAL','I.T','I.T.D','P',false,'fa-file-excel-o','tools/proses/uploadpp','LEFT','NO'),
-('JTS',2,'I.T.D.2','UPLOAD PO AWAL','I.T','I.T.D','P',false,'fa-file-excel-o','tools/proses/uploadPO','LEFT','NO'),
+('JTS',2,'I.T.D.2','UPLOAD PO AWAL','I.T','I.T.D','P',false,'fa-file-excel-o','tools/proses/uploadpo','LEFT','NO'),
 ('JTS',3,'I.T.D.3','UPLOAD SALDO STOCK','I.T','I.T.D','P',false,'fa-cubes','tools/proses/uploadStockAwal','LEFT','NO'),
 ('JTS',4,'I.T.D.4','UPLOAD SALDO GLL','I.T','I.T.D','P',false,'fa-book','tools/proses/uploadSaldoAwalGL','LEFT','NO'),
 ('JTS',5,'I.T.D.5','UPLOAD SALDO AP','I.T','I.T.D','P',false,'fa-arrow-circle-up','tools/proses/uploadSaldoAwalAP','LEFT','NO'),

@@ -1015,7 +1015,7 @@ function savePPDetail() {
             } else if (fieldName == 'docdate') {
                 fieldName = 'Tanggal';
             } else if (fieldName == 'keterangan') {
-                fieldName = 'Keterangan';
+                fieldName = 'Keterangan PP';
             }
 
             Swal.fire({
@@ -2104,118 +2104,66 @@ function save_new_spec() {
 }
 
 $("#batch").select2({
-
-    placeholder: "Silahkan pilih spek, click x untuk reset pilihan",
-
-    allowClear: true,
+    placeholder: "Batch/Spec berpengaruh terhadap stock",
     width: '100%',
-    //
-    // // >>> TAMBAHKAN INI
-    dropdownParent: $('#modalDetailPP'),   // <-- UBAH KE INI
+    allowClear: true,
+
+    // Dropdown mengikuti modal
+    dropdownParent: $('#modalDetailPP'),
+
     ajax: {
-
         url: HOST_URL + 'api/globalmodule/list_batch_item',
-
         type: 'POST',
-
         dataType: 'json',
-
         delay: 250,
 
-
         data: function (params) {
-
             return {
-
-                _search_: params.term,
-
-                _page_: params.page,
-
+                _search_: params.term || '',
+                _page_: params.page || 1,
                 _draw_: true,
-
                 _start_: 1,
-
                 _perpage_: 30,
-
                 _paramglobal_: "",
-
-                _parameterx_: $('[name="idbarang"]').val(),
-
+                _parameterx_: $('#modalDetailPP [name="idbarang"]').val(),
                 term: params.term
-
             };
-
         },
-
 
         processResults: function (data, params) {
-
             params.page = params.page || 1;
 
-
-            // =============================================
-            // PASTIKAN VALUE SELECT2 = BATCH
-            // =============================================
-
-            var results = $.map(
-                data.items || [],
-                function (item) {
-
-                    return {
-
-                        id: item.batch,      // VALUE YANG DISIMPAN
-                        text: item.batch,    // TEXT SELECT2
-
-                        batch: item.batch
-
-                    };
-
-                }
-            );
-
+            var results = $.map(data.items || [], function (item) {
+                return {
+                    id: item.batch,
+                    text: item.batch,
+                    batch: item.batch
+                };
+            });
 
             return {
-
                 results: results,
-
                 pagination: {
-
-                    more:
-                        (params.page * 30) <
-                        (data.total_count || 0)
-
+                    more: (params.page * 30) < (data.total_count || 0)
                 }
-
             };
-
         },
 
-
         cache: false
-
     },
-
 
     escapeMarkup: function (markup) {
-
         return markup;
-
     },
 
-
     templateResult: formatBatch,
-
     templateSelection: formatBatchSelection
 
 }).on("select2:select", function (e) {
-    loadStockItem();   // 🔹 tambahkan ini
+    loadStockItem();
+
     var data = e.params.data;
-
-    console.log(
-        'Batch dipilih:',
-        data.batch
-    );
-
+    console.log('Batch dipilih:', data.batch);
 });
 
 /* Format Group */

@@ -1,0 +1,99 @@
+# ================================================================
+# .clineignore
+# Tujuan : menghemat token & sumber daya Cline (DeepSeek)
+# Sintaks: sama dengan .gitignore (gitignore-style pattern)
+#
+# File/folder di bawah ini tidak akan dibaca / diindeks otomatis
+# oleh Cline, jadi konteks tetap ringkas dan hemat token.
+# ================================================================
+
+# ---------------- Dependency / library ----------------
+/vendor/
+**/node_modules/
+**/bower_components/
+
+# ---------------- Runtime CodeIgniter 4 (generate otomatis) ----------------
+# cache, logs, session, uploads, debugbar -> isinya data runtime, bukan kode
+/writable/*
+!/writable/.htaccess
+
+# ---------------- Core framework CodeIgniter 4 ----------------
+# Jarang diubah. Hapus/hapus-komentar baris ini bila butuh referensi internal CI4.
+/system/
+
+# ---------------- Environment & file sensitif ----------------
+.env
+.env.*
+!/env.example
+!/env
+
+# ---------------- VCS / IDE / editor / tooling ----------------
+/.git/
+/.gitignore
+/.idea/
+/.vscode/
+/.junie/
+/.github/
+*.iml
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ---------------- Build, arsip, file sementara ----------------
+/build/
+/dist/
+/coverage/
+/results/
+*.zip
+*.log
+*.bak
+*.tmp
+.phpunit.result.cache
+/phpunit
+/phpunit.xml
+/.phpunit.cache/
+
+# ---------------- Composer lock (besar, tidak perlu dibaca AI) ----------------
+/composer.lock
+
+# ---------------- Root: file bantu / gambar / skrip sementara ----------------
+/0
+/_inspect_cols.php
+/*.png
+/*.jpg
+/*.jpeg
+/*.gif
+
+# ---------------- Aset statis pihak ketiga (biner / bundle besar) ----------------
+# library UI, template, font, gambar, file upload, data JSON besar, dsb.
+/assets/ea/
+/assets/st/
+/assets/files/
+/assets/plugins/
+/assets/global/plugins/
+/assets/global/img/
+/assets/img/
+/assets/dist/
+/assets/json/
+/assets/mrt/
+/assets/attachment/
+/assets/customonline/
+/assets/fonts/
+/assets/sound/
+/assets/pagejs/customjs/
+
+# ---------------- CSS: buang library pihak ketiga, PERTAHANKAN CSS custom aplikasi ----------------
+/assets/css/*
+!/assets/css/fiky-*.css
+!/assets/css/hide-spinner.css
+!/assets/css/styles.css
+!/assets/css/stylesheet.css
+!/assets/css/stylesheet_.css
+
+# ---------------- Bundel minified & source map (tidak berguna untuk AI) ----------------
+**/*.min.js
+**/*.min.css
+**/*.map

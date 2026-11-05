@@ -1838,7 +1838,19 @@ class Globalmodule extends BaseController
 //            $pidlocationPost= "";
 //        }
 
+        $px = trim($this->request->getPost('_parameterx_') ?? '');
 
+// Jika ID barang kosong, jangan tampilkan pilihan batch
+        if ($px === '') {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'total_count' => 0,
+                'items' => [],
+                'incomplete_getResults' => false,
+                'param' => 'ID BARANG KOSONG'
+            ], JSON_PRETTY_PRINT);
+            return;
+        }
 
         if (!empty($varGet) or $varGet!=='') {
             $paramglobal1= " and batch='$varGet'";

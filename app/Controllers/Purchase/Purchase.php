@@ -9350,7 +9350,47 @@ class Purchase extends BaseController
         // =====================================================
         if ($modeEdit) {
 
-            $uniqueid = trim($this->request->getPost('uniqueid'));
+            $idurutEdit = (int) $idurut;
+
+            if ($idurutEdit <= 0) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'ID detail (idurut) tidak valid'
+                ]);
+            }
+
+            // =====================================================
+            // AMBIL BARIS DETAIL YANG AKAN DIUBAH
+            // Hanya baris milik dokumen ini & milik user login
+            // =====================================================
+            $detailRow = $db->table('sc_tmp.lpb_dtl')
+                ->select('uniqueid')
+                ->where('idurut', $idurutEdit)
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->get()
+                ->getRowArray();
+
+            if (!$detailRow) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Data detail tidak ditemukan pada dokumen ' . $docno
+                ]);
+            }
+
+            // 🔧 FIX: uniqueid diambil dari database (di-TRIM),
+            //         tidak pernah ditempel apa adanya ke dalam string SQL
+            $uniqueid = trim((string) ($detailRow['uniqueid'] ?? ''));
+
+            if ($uniqueid === '') {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Uniqueid PO pada detail ini kosong, hapus lalu input ulang detail'
+                ]);
+            }
 
             // ---- Input post
             $qty       = (float) ($this->request->getPost('qty')       ?? 0);
@@ -9375,6 +9415,9 @@ class Purchase extends BaseController
 
             // =====================================================
             // VALIDASI QTY TERHADAP SISA QTY PO
+            // 🔧 FIX: uniqueid dikirim sebagai bind (?), bukan string
+            //         yang ditempel ke SQL (penyebab error PostgreSQL
+            //         "trailing junk after numeric literal")
             // =====================================================
             $poDetail = $db->query("
             SELECT
@@ -9435,11 +9478,15 @@ class Purchase extends BaseController
             // 🔧 FIX: batch langsung dari POST; kalau kosong fallback ke batch PO
             $batchFinal = $batchPost !== '' ? $batchPost : ($poDetail->batch_po ?? '');
 
-            // 🔧 where TRIM pakai false
+            // =====================================================
+            // UPDATE DETAIL — hanya 1 baris pada dokumen ini
+            // (idurut = primary key, docno & inputby sebagai pengunci)
+            // Tidak ada tabel lain yang diubah di mode edit
+            // =====================================================
             $db->table('sc_tmp.lpb_dtl')
+                ->where('idurut', $idurutEdit)
                 ->where('docno', $docno)
                 ->where('inputby', $nama)
-                ->where('TRIM(uniqueid)', $uniqueid, false)
                 ->update([
                     'qty'           => $qty,
                     'qtybonus'      => $qtybonus,
@@ -9462,6 +9509,14 @@ class Purchase extends BaseController
                     'updatedate'    => date('Y-m-d H:i:s')
                 ]);
 
+            if ($db->affectedRows() === 0) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Detail gagal diupdate (data sudah berubah), silakan reload halaman'
+                ]);
+            }
+
             $message = 'Data berhasil diupdate';
 
         } else {
@@ -9477,20 +9532,46 @@ class Purchase extends BaseController
                 ]);
             }
 
-            $poDetails = $db->query("
-            SELECT
-                idbarang, uniqueid, uniqueidpo, nmbarang, capexno, unit,
-                qty, qtylpb, qtyvoid, harga, idtax, currcode, kurs,
-                descriptionpp, descriptionpo, batch, etd, etdnotes
-            FROM sc_trx.po_dtl
-            WHERE TRIM(docno) = ?
-        ", [$docnopo])->getResult();
+            $sql = "
+    SELECT
+        idbarang, uniqueid, uniqueidpo, nmbarang, capexno, unit,
+        qty, qtylpb, qtyvoid, harga, idtax, currcode, kurs,
+        descriptionpp, descriptionpo, batch, etd, etdnotes
+    FROM sc_trx.po_dtl
+    WHERE TRIM(docno) = ?
+";
+
+            $query = $db->query($sql, [$docnopo]);
+
+// ======================================
+// VALIDASI QUERY PO DETAIL
+// ======================================
+            if ($query === false) {
+
+                $error = $db->error();
+
+                log_message('error', 'SAVE LPB DETAIL - QUERY PO FAILED');
+                log_message('error', 'DOCNO PO: ' . $docnopo);
+                log_message('error', 'SQL ERROR: ' . json_encode($error));
+                log_message('error', 'LAST QUERY: ' . $db->getLastQuery());
+
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal membaca detail PO: '
+                        . ($error['message'] ?? 'Database query error')
+                ]);
+            }
+
+            $poDetails = $query->getResult();
 
             if (empty($poDetails)) {
                 $db->transRollback();
+
                 return $this->response->setJSON([
                     'success' => false,
-                    'message' => 'PO tidak ditemukan'
+                    'message' => 'PO tidak ditemukan atau tidak memiliki detail'
                 ]);
             }
 
@@ -10096,7 +10177,7 @@ class Purchase extends BaseController
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
             $row[] = $lm->capexno;
-            $row[] = $lm->idprincipal;
+//            $row[] = $lm->idprincipal;
             $row[] = $lm->idgudang;
 
             // 🔧 batch (sebelumnya idspec)
@@ -10108,7 +10189,7 @@ class Purchase extends BaseController
 
             $row[] = $lm->unit;
             $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 2, '.', ',') . '</div>';
+//            $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 2, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan">'. number_format($lm->harga, 2, '.', ',') . '</div>';
 //            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 2, '.', ',') . '% </div>';
 //            $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 2, '.', ',') . '</div>';
