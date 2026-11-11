@@ -590,7 +590,7 @@ function setJtsValue(selector, value) {
         $el.val(value);
 
         if ($el[0]) {
-            _jtsseparator($el[0]);
+            (typeof jaccseparator === "function" ? jaccseparator : _jtsseparator)($el[0]);
         }
 
     } else {
@@ -602,7 +602,7 @@ function setJtsValue(selector, value) {
 
 
 $(document).on('input', '.jtsseparator', function () {
-    _jtsseparator(this);
+    (typeof jaccseparator === "function" ? jaccseparator : _jtsseparator)(this);
 });
 
 

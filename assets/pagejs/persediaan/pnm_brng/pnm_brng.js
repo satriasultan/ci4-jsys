@@ -1427,7 +1427,7 @@ $('#cabang').on('change', function () {
     if (!idbranch) return;
 
     $.ajax({
-        url: HOST_URL + '/persediaan/trans/getBranch_ajustment_stock',
+        url: HOST_URL + '/persediaan/trans/getBranch_pnm_brng',
         method: 'GET',
         data: {idbranch: idbranch},
         dataType: 'json',

@@ -737,3 +737,16 @@ $BODY$;
 
 ALTER FUNCTION sc_trx.tr_mst_workingorder_mst()
     OWNER TO postgres;
+
+
+-- =========================================
+-- TRIGGER TRX -> TMP
+-- =========================================
+DROP TRIGGER IF EXISTS tr_mst_workingorder_mst
+ON sc_trx.workingorder_mst;
+
+CREATE TRIGGER tr_mst_workingorder_mst
+AFTER UPDATE
+ON sc_trx.workingorder_mst
+FOR EACH ROW
+EXECUTE FUNCTION sc_trx.tr_mst_workingorder_mst();

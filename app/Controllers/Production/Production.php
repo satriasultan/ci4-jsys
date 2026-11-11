@@ -681,6 +681,8 @@ class Production extends BaseController
                     'activedate' => $this->stdCostDateToDb($this->request->getPost('activedate')),
                     'cabang'     => $cabang,
                     'newcost'        => $newcost,
+                    'actualcost'        => $actualcost,
+                    'lastcost'        => $lastcost,
                     'description' => $description_detail,
                     'updateby'    => $nama,
                     'updatedate'  => date('Y-m-d H:i:s')
@@ -715,6 +717,8 @@ class Production extends BaseController
                 //'batch'         => $batch,
                 //'qty'         => $qty,
                 'newcost'        => $newcost,
+                'actualcost'        => $actualcost,
+                'lastcost'        => $lastcost,
                 'description' => $description_detail,
                 'inputby'    => $nama,
                 'inputdate'  => date('Y-m-d H:i:s'),
@@ -841,9 +845,9 @@ class Production extends BaseController
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->actualcost, 5, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->lastcost, 5, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->newcost, 5, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->actualcost, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->lastcost, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->newcost, 4, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -871,9 +875,9 @@ class Production extends BaseController
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->actualcost, 5, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->lastcost, 5, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->newcost, 5, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->actualcost, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->lastcost, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->newcost, 4, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -2010,6 +2014,8 @@ class Production extends BaseController
                     'docdate'    => trim($this->request->getPost('docdate')),
                     'activedate'     => trim($this->request->getPost('activedate')),
                     'newcost'        => $newcost,
+                    'actualcost'        => $actualcost,
+                    'lastcost'        => $lastcost,
                     'description' => $description_detail,
                     'updateby'    => $nama,
                     'updatedate'  => date('Y-m-d H:i:s')
@@ -2043,6 +2049,8 @@ class Production extends BaseController
                 //'batch'         => $batch,
                 //'qty'         => $qty,
                 'newcost'        => $newcost,
+                'actualcost'        => $actualcost,
+                'lastcost'        => $lastcost,
                 'description' => $description_detail,
                 'inputby'    => $nama,
                 'inputdate'  => date('Y-m-d H:i:s'),
@@ -2139,9 +2147,9 @@ class Production extends BaseController
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->actualcost, 5, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->lastcost, 5, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->newcost, 5, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->actualcost, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->lastcost, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->newcost, 4, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -2169,9 +2177,9 @@ class Production extends BaseController
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->actualcost, 5, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->lastcost, 5, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->newcost, 5, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->actualcost, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->lastcost, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->newcost, 4, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -3588,9 +3596,9 @@ class Production extends BaseController
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 5, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 5, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 4, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
@@ -3618,9 +3626,9 @@ class Production extends BaseController
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 5, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 5, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 4, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
@@ -3649,9 +3657,9 @@ class Production extends BaseController
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 5, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 5, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 4, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
@@ -3679,9 +3687,9 @@ class Production extends BaseController
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 5, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 5, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 4, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
@@ -3711,9 +3719,9 @@ class Production extends BaseController
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 5, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 5, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 4, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
@@ -3741,9 +3749,9 @@ class Production extends BaseController
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 5, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 5, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 4, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;

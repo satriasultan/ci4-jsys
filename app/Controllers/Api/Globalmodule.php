@@ -1626,7 +1626,8 @@ class Globalmodule extends BaseController
         $search = strtoupper(trim($this->request->getPost('_search_')));
         $perpage = $this->request->getPost('_perpage_');
         $px = trim($this->request->getPost('_parameterx_'));
-        $docdate = date('Y-m-d', strtotime($this->request->getPost('docdate')));
+        $docdate = trim((string) $this->request->getPost('docdate'));
+        $docdate = ($docdate === '') ? date('Y-m-d') : date('Y-m-d', strtotime($docdate));
         
         $perpage = intval($perpage);
         $page = $this->request->getPost('_page_');
@@ -1652,11 +1653,6 @@ class Globalmodule extends BaseController
         $parameterx = " and coalesce(a.chold,'NO')!='YES'"; // tambahkan a.
         $page = intval($page);
         $limit = $perpage * $page;
-
-        // Jika docdate kosong, gunakan tanggal hari ini
-        if (empty($docdate)) {
-            $docdate = date('Y-m-d');
-        }
 
         // Build parameter untuk query dengan alias a.
         $param = " and (a.idbarang like '%$search%' $paramglobal1 $paramglobal2 $parameterx $paramglobal3) 

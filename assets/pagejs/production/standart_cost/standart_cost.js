@@ -13,6 +13,7 @@ var save_method; //for save method string
 var table;
 var initTable;
 let skipRoleChange = false;
+let isLoadingUpdate = false;
 //"use strict";
 
 /* VIUW UTAMA*/
@@ -416,6 +417,9 @@ function btnInputDetail() {
 
     console.log("INI KENAPA DI SISI");
 
+    // reset flag update agar handler select2:select kembali aktif saat input baru
+    isLoadingUpdate = false;
+
     // reset form
     $('#formStandartCostDtl')[0].reset();
 
@@ -443,7 +447,7 @@ function btnInputDetail() {
     $('#modalDtlStandartCost').modal('show');
 }
 
-var defaultInitialGroupBrng = 'BRG';
+var defaultInitialGroupBrng = '';
 $("#idbarang").select2({
     placeholder: "Choose Your Item List",
     allowClear: true,
@@ -501,21 +505,36 @@ $("#idbarang").select2({
 
     var data = e.params.data;
 
+    // Saat membuka modal update, jangan timpa actualcost/lastcost yang sudah
+    // terisi dari data tersimpan (item master `list_item` tidak membawa field ini).
+    if (isLoadingUpdate) {
+        return;
+    }
+
     $('[name="nmbarang"]').val(data.nmbarang.trim()).prop("readonly", true);
     $('[name="unit"]').val(data.unit.trim()).prop("readonly", true);
+
+    // Actual Cost = harga aktual saat ini
     $('[name="actualcost"]').val(data.actualcost).prop("readonly", true);
-    $('[name="lastcost"]').val(data.newcost).prop("readonly", true);
+
+    // Last Std Cost = harga terakhir (history).
+    // Prioritas: newcost (standard cost final sebelumnya) -> lastcost -> actualcost
+    let lastCostRef = [data.newcost, data.lastcost, data.actualcost]
+        .map(function (v) { var n = parseFloat(v); return isFinite(n) ? n : 0; })
+        .find(function (n) { return n !== 0; });
+
+    $('[name="lastcost"]').val(lastCostRef != null ? lastCostRef : 0).prop("readonly", true);
 
 });
 
 function setJtsValue(selector, value) {
     $(selector).val(value);
-    _jtsseparator($(selector)[0]);
+    (typeof jaccseparator === "function" ? jaccseparator : _jtsseparator)($(selector)[0]);
 }
 
 
 $(document).on('input', '.jtsseparator', function () {
-    _jtsseparator(this);
+    (typeof jaccseparator === "function" ? jaccseparator : _jtsseparator)(this);
 });
 
 
@@ -974,11 +993,6 @@ function updateStandartCost() {
                 $('#idbarang')
                     .append(optionItem)
                     .trigger('change');
-
-                $('#idbarang').trigger({
-                    type: 'select2:select',
-                    params: { data: item }
-                });
 
                 /*
                 =========================

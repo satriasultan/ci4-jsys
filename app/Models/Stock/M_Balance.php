@@ -373,7 +373,7 @@ group by idunit);");
                 a.actualcost
             ) as actualcost,
             COALESCE(
-                CASE WHEN a.idgroup = 'JSA' THEN bs.lastcost ELSE s.lastcost END,
+                CASE WHEN a.idgroup = 'JSA' THEN bs.newcost ELSE s.newcost END,
                 a.lastcost
             ) as lastcost,
             COALESCE(

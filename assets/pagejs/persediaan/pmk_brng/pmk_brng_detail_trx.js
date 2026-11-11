@@ -1123,7 +1123,7 @@ $('#cabang').on('change', function () {
     if (!idbranch) return;
 
     $.ajax({
-        url: HOST_URL + '/persediaan/trans/getBranch_ajustment_stock',
+        url: HOST_URL + '/persediaan/trans/getBranch_pmk_brng',
         method: 'GET',
         data: {idbranch: idbranch},
         dataType: 'json',
@@ -1194,7 +1194,7 @@ $('#cabang').on('change', function () {
                 $el.val(today.format('DD-MM-YYYY'));
             }
 
-            generateDocNumber('JBR', res.infix, currentKodeSuffix + '0001');
+            generateDocNumber('PBL', res.infix, currentKodeSuffix + '0001');
 
         }
     });

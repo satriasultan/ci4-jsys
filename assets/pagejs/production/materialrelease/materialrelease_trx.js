@@ -1384,12 +1384,12 @@ function formatUnitSelection(repo) {
 
 function setJtsValue(selector, value) {
     $(selector).val(value);
-    _jtsseparator($(selector)[0]);
+    (typeof jaccseparator === "function" ? jaccseparator : _jtsseparator)($(selector)[0]);
 }
 
 
 $(document).on('input', '.jtsseparator', function () {
-    _jtsseparator(this);
+    (typeof jaccseparator === "function" ? jaccseparator : _jtsseparator)(this);
 });
 
 

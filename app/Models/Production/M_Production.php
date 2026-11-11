@@ -823,7 +823,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
         $i = 0;
 
         $builder->where("docno = '$docno'");
-        $builder->where("inputby = '$nama'");
+        // $builder->where("inputby = '$nama'");
         $builder->where("doctype_detail = 'MATERIAL'");
         foreach ($this->trx_bom_material_dtl_view_column as $mrp)
         {
@@ -1000,7 +1000,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
         $i = 0;
 
         $builder->where("docno = '$docno'");
-        $builder->where("inputby = '$nama'");
+        // $builder->where("inputby = '$nama'");
         $builder->where("doctype_detail = 'COST'");
         foreach ($this->trx_bom_cost_dtl_view_column as $mrp)
         {
@@ -1177,7 +1177,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
         $i = 0;
 
         $builder->where("docno = '$docno'");
-        $builder->where("inputby = '$nama'");
+        // $builder->where("inputby = '$nama'");
         $builder->where("doctype_detail = 'WIP'");
         foreach ($this->trx_bom_wip_dtl_view_column as $mrp)
         {
@@ -1392,7 +1392,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
         $i = 0;
 
-        // $builder->where("docno = '$docno'");
+        $builder->where("docref = '$docno'");
         $builder->where("inputby = '$nama'");
         // $builder->where("doctype_detail = 'MATERIAL'");
         foreach ($this->tmp_workingorder_bom_mst_view_column as $mrp)
@@ -1479,7 +1479,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
         $i = 0;
 
         $builder->where("docref = '$docno'");
-        $builder->where("inputby = '$nama'");
+        // $builder->where("inputby = '$nama'");
         // $builder->where("doctype_detail = 'MATERIAL'");
         foreach ($this->trx_workingorder_bom_mst_view_column as $mrp)
         {
@@ -1653,8 +1653,8 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
         $i = 0;
 
-        // $builder->where("docno = '$docno'");
-        $builder->where("inputby = '$nama'");
+        $builder->where("docno = '$docno'");
+        // $builder->where("inputby = '$nama'");
         $builder->where("doctype_detail = 'MATERIAL'");
         foreach ($this->trx_workingorder_material_dtl_view_column as $mrp)
         {
@@ -1830,8 +1830,8 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
         $i = 0;
 
-        // $builder->where("docno = '$docno'");
-        $builder->where("inputby = '$nama'");
+        $builder->where("docno = '$docno'");
+        // $builder->where("inputby = '$nama'");
         $builder->where("doctype_detail = 'COST'");
         foreach ($this->trx_workingorder_cost_dtl_view_column as $mrp)
         {
@@ -2007,8 +2007,8 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
         $i = 0;
 
-        // $builder->where("docno = '$docno'");
-        $builder->where("inputby = '$nama'");
+        $builder->where("docno = '$docno'");
+        // $builder->where("inputby = '$nama'");
         $builder->where("doctype_detail = 'WIP'");
         foreach ($this->trx_workingorder_wip_dtl_view_column as $mrp)
         {
