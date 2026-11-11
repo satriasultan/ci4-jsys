@@ -237,7 +237,7 @@ class M_Gobals extends Model
 
     // WAREHOUSE AREA
     function q_mlocation($param){
-        return $this->db->query("select idlocation,nmlocation,chold,description,idcomplex,idbarcode,inputdate,inputby,updatedate,updateby,coalesce(trim(idlocation),'') as id from sc_mst.mlocation where coalesce(trim(idlocation),'')!='' $param ");
+        return $this->db->query("select idlocation,nmlocation,idbranchjob,nmbranchjob,chold,description,idcomplex,idbarcode,inputdate,inputby,updatedate,updateby,coalesce(trim(idlocation),'') as id from sc_mst.mlocation where coalesce(trim(idlocation),'')!='' $param ");
     }
 
     function q_marea($param){

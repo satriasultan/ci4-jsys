@@ -1531,6 +1531,124 @@ class M_Finance extends Model
     ");
     }
 
+    /**
+     * Laporan Jurnal Transaksi Jurnal Umum Perkiraan (JUP).
+     * Sumber data: sc_trx.jurnal_hd + sc_trx.jurnal_dt (POSTED),
+     * keterangan diambil dari dokumen asal sc_trx.jup.
+     */
+    function q_laporan_jurnal_transaksi_jup($params = '')
+    {
+        return $this->db->query("
+        WITH data_jurnal AS (
+
+            SELECT
+                jd.id,
+                jd.jurnal_id,
+
+                TRIM(jd.idcoa) AS idcoa,
+                TRIM(coa.nmcoa) AS nmcoa,
+
+                jd.debet,
+                jd.kredit,
+
+                TRIM(jd.ref_docno) AS ref_docno,
+                TRIM(jd.ref_doctype) AS ref_doctype,
+
+                TRIM(jh.docno) AS docno,
+                TRIM(jh.doctype) AS doctype,
+
+                jh.trxdate,
+
+                TRIM(COALESCE(
+                    NULLIF(jd.keterangan, ''),
+                    NULLIF(jp.keterangan, ''),
+                    NULLIF(jh.keterangan, '')
+                )) AS keterangan
+
+            FROM sc_trx.jurnal_dt jd
+
+            INNER JOIN sc_trx.jurnal_hd jh
+                ON jh.id = jd.jurnal_id
+
+            LEFT JOIN sc_mst.coa coa
+                ON TRIM(coa.idcoa) = TRIM(jd.idcoa)
+
+            LEFT JOIN sc_trx.jup jp
+                ON TRIM(jp.docno) = COALESCE(
+                    NULLIF(TRIM(jd.ref_docno), ''),
+                    NULLIF(TRIM(jh.docno), '')
+                )
+
+            WHERE 1=1
+            AND jh.status = 'POSTED'
+            AND jd.status = 'POSTED'
+            AND UPPER(TRIM(jh.doctype)) = 'JUP'
+            $params
+        )
+
+        /* ============================================
+           DETAIL JURNAL
+        ============================================ */
+
+        SELECT
+            id,
+            jurnal_id,
+            idcoa,
+            nmcoa,
+            debet,
+            kredit,
+            ref_docno,
+            ref_doctype,
+            docno,
+            doctype,
+            trxdate,
+            keterangan,
+
+            0 AS urutan
+
+        FROM data_jurnal
+
+
+        UNION ALL
+
+
+        /* ============================================
+           TOTAL
+        ============================================ */
+
+        SELECT
+            NULL::BIGINT,
+            NULL::BIGINT,
+
+            NULL::VARCHAR,
+            'TOTAL'::VARCHAR,
+
+            COALESCE(SUM(debet), 0),
+            COALESCE(SUM(kredit), 0),
+
+            NULL::VARCHAR,
+            NULL::VARCHAR,
+
+            NULL::VARCHAR,
+            NULL::VARCHAR,
+
+            NULL::DATE,
+
+            NULL::VARCHAR,
+
+            1 AS urutan
+
+        FROM data_jurnal
+
+
+        ORDER BY
+            urutan,
+            trxdate DESC NULLS LAST,
+            jurnal_id,
+            id
+    ");
+    }
+
     public function loadPerSupplier($kdsupplier)
     {
         return $this->db->query("select * from sc_trx.pengeluarankb where kdsupplier = '$kdsupplier'");

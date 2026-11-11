@@ -1122,7 +1122,30 @@ class Persediaan extends BaseController
             $row[] = $lm->idlocation_to;
 //            $row[] = $lm->idlocation_transit;
             $row[] = $lm->description;
-            $row[] = $lm->nmstatus;
+
+            // =========================
+            // STATUS BADGE
+            // =========================
+            $nmstatus   = trim((string) ($lm->nmstatus ?? ''));
+            $statusText = $nmstatus !== '' ? $nmstatus : $status;
+            $statusUp   = strtoupper($statusText);
+
+            if (in_array($status, array('C', 'X'), true) || strpos($statusUp, 'CANCEL') !== false
+                || strpos($statusUp, 'BATAL') !== false || strpos($statusUp, 'DITARIK') !== false) {
+                $badgeClass = 'bg-danger';
+            } elseif ($status === 'P' || strpos($statusUp, 'CETAK') !== false || strpos($statusUp, 'PRINT') !== false) {
+                $badgeClass = 'bg-success';
+            } elseif ($status === 'F' || strpos($statusUp, 'FINAL') !== false || strpos($statusUp, 'APPROV') !== false) {
+                $badgeClass = 'bg-info';
+            } elseif ($status === 'E' || strpos($statusUp, 'REVIS') !== false || strpos($statusUp, 'EDIT') !== false) {
+                $badgeClass = 'bg-warning text-dark';
+            } else {
+                // 'I' / INPUT / OPEN / DRAFT / lainnya
+                $badgeClass = 'bg-secondary';
+            }
+
+            $row[] = '<div class="text-center"><span class="badge badge-status ' . $badgeClass . '">'
+                . htmlspecialchars($statusText) . '</span></div>';
 
 
             $data[] = $row;
@@ -1914,11 +1937,12 @@ class Persediaan extends BaseController
     }
     /* ============================================================
    CLEAR TRANSFER LOKASI
+   - Kembalikan status sc_trx.transfer_location_mst ke 'F'
+     untuk dokumen milik user yang masih tertinggal di status
+     'E' (mis. Edit dibatalkan sebelum finalize).
    - Hapus TMP header + detail milik user yang login
      (status apa pun: I, E, F, P, C) supaya entry yang
      menggantung benar-benar hilang dari menu transfer_lokasi.
-   - Catatan: TIDAK ada trigger yang menangani status 'C',
-     jadi clear harus menghapus langsung dari controller.
    ============================================================ */
 
     function clearTransferLokasi()
@@ -1939,11 +1963,6 @@ class Persediaan extends BaseController
         $dtl   = $this->m_persediaan->q_tmp_transfer_location_mst($param);
         $rows  = $dtl ? $dtl->getResultArray() : [];
 
-        if (count($rows) === 0) {
-            // Tidak ada entry menggantung -> tidak perlu di-clear
-            return redirect()->to(base_url('persediaan/trans/transfer_lokasi'));
-        }
-
         // Kumpulkan docno milik user (untuk hapus detail)
         $docnos = [];
         foreach ($rows as $row) {
@@ -1960,41 +1979,97 @@ class Persediaan extends BaseController
         $db->transBegin();
 
         try {
+            $now = date('Y-m-d H:i:s');
+
+            // =================================================
+            // KEMBALIKAN STATUS TRX KE 'F'
+            // Saat user menekan Edit, updateTransfersLocation()
+            // mengubah status sc_trx.transfer_location_mst
+            // dari 'F'/'P' menjadi 'E'. Jika entry edit dibatalkan
+            // (Clear), status dokumen harus kembali ke 'F'.
+            // =================================================
+            $totalReset = 0;
+
+            // 1) Reset berdasarkan docno yang masih ada di TMP
+            if (count($docnos) > 0) {
+                $placeholders = implode(',', array_fill(0, count($docnos), '?'));
+                $bind = array_merge([$now, $nama], $docnos);
+
+                $db->query(
+                    "UPDATE sc_trx.transfer_location_mst
+                        SET status = 'F', updatedate = ?, updateby = ?
+                      WHERE status = 'E'
+                        AND trim(docno) IN ($placeholders)",
+                    $bind
+                );
+
+                $totalReset += $db->affectedRows();
+            }
+
+            // 2) Reset sisa dokumen milik user yang masih tertinggal
+            //    di status 'E' (mis. Edit lalu langsung Clear tanpa
+            //    menyimpan detail sehingga TMP header tak terbentuk)
+            $db->query(
+                "UPDATE sc_trx.transfer_location_mst
+                    SET status = 'F', updatedate = ?, updateby = ?
+                  WHERE status = 'E'
+                    AND updateby = ?",
+                [$now, $nama, $nama]
+            );
+
+            $totalReset += $db->affectedRows();
+
             // =================================================
             // HAPUS TMP HEADER + DETAIL MILIK USER
             // (berlaku untuk semua status: I, E, F, P, C)
             // =================================================
+            if (count($rows) > 0) {
 
-            // 1. Hapus detail berdasarkan pemilik entry
-            $db->table('sc_tmp.transfer_location_dtl')
-                ->where('inputby', $nama)
-                ->delete();
-
-            // 1b. Hapus detail lain dengan docno yang sama (jaga-jaga)
-            if (count($docnos) > 0) {
+                // 1. Hapus detail berdasarkan pemilik entry
                 $db->table('sc_tmp.transfer_location_dtl')
-                    ->whereIn('docno', $docnos)
+                    ->where('inputby', $nama)
+                    ->delete();
+
+                // 1b. Hapus detail lain dengan docno yang sama (jaga-jaga)
+                if (count($docnos) > 0) {
+                    $db->table('sc_tmp.transfer_location_dtl')
+                        ->whereIn('docno', $docnos)
+                        ->delete();
+                }
+
+                // 2. Hapus header
+                $db->table('sc_tmp.transfer_location_mst')
+                    ->where('inputby', $nama)
                     ->delete();
             }
 
-            // 2. Hapus header
-            $db->table('sc_tmp.transfer_location_mst')
-                ->where('inputby', $nama)
-                ->delete();
-
             // 3. Cek status transaksi
             if ($db->transStatus() === false) {
-                throw new \Exception('Gagal hapus TMP Transfer Lokasi');
+                throw new \Exception('Gagal memproses clear Transfer Lokasi');
             }
 
             $db->transCommit();
 
+            $countTmp = count($rows);
+            $msg = array();
+            if ($countTmp > 0) {
+                $msg[] = $countTmp . ' entry TMP dihapus';
+            }
+            if ($totalReset > 0) {
+                $msg[] = $totalReset . ' dokumen dikembalikan ke status F';
+            }
+
+            $pesan = count($msg) > 0
+                ? 'Clear berhasil. ' . implode(', ', $msg) . '.'
+                : 'Tidak ada entry menggantung untuk di-clear.';
+
             log_message('info',
                 '[clearTransferLokasi] User=' . $nama .
-                ' cleared ' . count($docnos) . ' TMP doc(s)');
+                ' reset=' . $totalReset .
+                ' clearedTmp=' . $countTmp);
 
             return redirect()->to(base_url('persediaan/trans/transfer_lokasi'))
-                ->with('success', 'Clear berhasil. ' . count($docnos) . ' entry Transfer Lokasi dihapus.');
+                ->with('success', $pesan);
 
         } catch (\Throwable $e) {
 
@@ -3364,7 +3439,30 @@ class Persediaan extends BaseController
 
             $row[] = $lm->description;
             $row[] = $lm->inputby;
-            $row[] = $lm->nmstatus;
+
+            // =========================
+            // STATUS BADGE
+            // =========================
+            $nmstatus   = trim((string) ($lm->nmstatus ?? ''));
+            $statusText = $nmstatus !== '' ? $nmstatus : $status;
+            $statusUp   = strtoupper($statusText);
+
+            if (in_array($status, array('C', 'X'), true) || strpos($statusUp, 'CANCEL') !== false
+                || strpos($statusUp, 'BATAL') !== false || strpos($statusUp, 'DITARIK') !== false) {
+                $badgeClass = 'bg-danger';
+            } elseif ($status === 'P' || strpos($statusUp, 'CETAK') !== false || strpos($statusUp, 'PRINT') !== false) {
+                $badgeClass = 'bg-success';
+            } elseif ($status === 'F' || strpos($statusUp, 'FINAL') !== false || strpos($statusUp, 'APPROV') !== false) {
+                $badgeClass = 'bg-info';
+            } elseif ($status === 'E' || strpos($statusUp, 'REVIS') !== false || strpos($statusUp, 'EDIT') !== false) {
+                $badgeClass = 'bg-warning text-dark';
+            } else {
+                // 'I' / INPUT / OPEN / DRAFT / lainnya
+                $badgeClass = 'bg-secondary';
+            }
+
+            $row[] = '<div class="text-center"><span class="badge badge-status ' . $badgeClass . '">'
+                . htmlspecialchars($statusText) . '</span></div>';
 
 
             $data[] = $row;
@@ -3967,6 +4065,51 @@ class Persediaan extends BaseController
     }
 
     /**
+     * Laporan Jurnal Transaksi Pemakaian Barang PNM (read only).
+     * Sumber jurnal: sc_trx.jurnal_hd + sc_trx.jurnal_dt (status POSTED),
+     * cost center diambil dari dokumen asal sc_trx.pnm_brng_mst.
+     */
+    public function laporan_jurnal_transaksi_pnm()
+    {
+        try {
+            $docno = trim($this->request->getPost('docno'));
+
+            if ($docno === '') {
+                return $this->response->setJSON([
+                    'status'   => false,
+                    'messages' => 'Doc No Pemakaian Barang tidak ditemukan',
+                    'data'     => []
+                ]);
+            }
+
+            $params = "
+                AND TRIM(jh.docno) = " . $this->db->escape($docno);
+
+            $query = $this->m_persediaan
+                ->q_laporan_jurnal_transaksi_pnm($params);
+
+            $data = $query->getResultArray();
+
+            return $this->response->setJSON([
+                'status'   => true,
+                'messages' => 'Data berhasil diambil',
+                'data'     => $data
+            ]);
+        } catch (\Throwable $e) {
+            log_message(
+                'error',
+                'laporan_jurnal_transaksi_pnm: ' . $e->getMessage()
+            );
+
+            return $this->response->setJSON([
+                'status'   => false,
+                'messages' => $e->getMessage(),
+                'data'     => []
+            ]);
+        }
+    }
+
+    /**
      * Laporan Jurnal Transaksi Pemakaian Barang (read only).
      * Sumber jurnal: sc_trx.jurnal_hd + sc_trx.jurnal_dt (status POSTED),
      * cost center diambil dari dokumen asal sc_trx.pmk_brng_mst.
@@ -4476,6 +4619,12 @@ class Persediaan extends BaseController
 
         }
 
+        /* Pesan validasi COA dari proses Simpan Final Data (final_pnm_barang) */
+        $flashCoa = session()->getFlashdata('coa_error');
+        if (! empty($flashCoa)) {
+            $data['message'] = "<div class='alert alert-danger'>" . esc($flashCoa) . "</div>";
+        }
+
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_persediaan->q_tmp_pnm_brng_mst($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
@@ -4507,11 +4656,41 @@ class Persediaan extends BaseController
     }
 
 
+    /**
+     * Simpan detail Pemakaian Barang.
+     * Dibungkus try/catch supaya error database (termasuk error COA dari trigger
+     * sc_tmp.tr_tmp_pnm_brng_mst / sc_trx.fn_sync_pnm_brng_dtl_to_transaction)
+     * tampil sebagai pesan JSON yang bisa dibaca user, bukan halaman error database.
+     */
     public function save_pnm_brng_detail()
+    {
+        try {
+            return $this->save_pnm_brng_detail_process();
+        } catch (\Throwable $ex) {
+            try {
+                $this->db->transRollback();
+            } catch (\Throwable $e) {
+            }
+
+            $pesanDb = trim(explode("\n", $ex->getMessage())[0]);
+            $isCoa   = (stripos($pesanDb, 'COA') !== false);
+
+            return $this->response->setJSON([
+                'success' => false,
+                'code'    => $isCoa ? 'COA' : 'DB',
+                'message' => $isCoa
+                    ? 'Data tidak dapat disimpan. ' . $pesanDb . '. Lengkapi COA pada master terlebih dahulu.'
+                    : 'Data gagal disimpan. ' . $pesanDb,
+            ]);
+        }
+    }
+
+    private function save_pnm_brng_detail_process()
     {
         $nama = trim($this->session->get('nama'));
         $docno  = strtoupper($this->request->getPost('docno'));
         $idurut = $this->request->getPost('idurut');
+        $docref = strtoupper(trim((string) $this->request->getPost('docref')));
 
         if (!$docno) {
             return $this->response->setJSON([
@@ -4540,7 +4719,7 @@ class Persediaan extends BaseController
             $insertHeader = $builderHeader->insert([
                 'docno'      => $docno,
                 'doctype'    => 'PNMBRG',
-                'docref'     => trim($this->request->getPost('docref')),
+                'docref'     => $docref,
                 'docdate'    => trim($this->request->getPost('docdate')),
                 'cabang'     => trim($this->request->getPost('cabang')),
 //                'cabang_sent'=> trim($this->request->getPost('cabang_sent')),
@@ -4593,6 +4772,45 @@ class Persediaan extends BaseController
             ]);
         }
 
+        // =========================
+        // CEK COA MASTER (BARANG & COST CENTER)
+        // =========================
+        // Validasi sama dengan trigger sc_trx.fn_sync_pnm_brng_dtl_to_transaction():
+        // COA persediaan dari master barang, COA biaya dari master cost center.
+        // Ditampilkan lebih awal supaya user tahu penyebabnya sejak simpan detail.
+        $hdrRow = $db->table('sc_tmp.pnm_brng_mst')
+            ->select('idcostcenter')
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->get()
+            ->getRowArray();
+        $idcostcenterHdr = trim((string) ($hdrRow['idcostcenter'] ?? ''));
+
+        $cekCoa = $this->m_persediaan->q_cek_coa_item_pnm_brng($idbarang, $idcostcenterHdr)->getResultArray();
+        if (count($cekCoa) > 0) {
+            $pesanCoa = array();
+            foreach ($cekCoa as $rowCoa) {
+                if (strtoupper(trim($rowCoa['jenis'])) === 'BARANG') {
+                    $nmCoa = trim($rowCoa['nama']);
+                    $pesanCoa[] = 'COA Persediaan belum diisi pada master barang: ' . trim($rowCoa['kode'])
+                        . ($nmCoa !== '' ? ' - ' . $nmCoa : '');
+                } else {
+                    $ccCoa = trim($rowCoa['kode']);
+                    $pesanCoa[] = ($ccCoa !== '')
+                        ? 'COA Biaya belum diisi pada master cost center: ' . $ccCoa
+                        : 'Cost center belum dipilih pada header Pemakaian Barang';
+                }
+            }
+
+            $db->transRollback();
+
+            return $this->response->setJSON([
+                'success' => false,
+                'code'    => 'COA',
+                'message' => implode('. ', $pesanCoa) . '. Lengkapi COA pada master terlebih dahulu.',
+            ]);
+        }
+
         $builderDetail = $db->table('sc_tmp.pnm_brng_dtl');
 
         // =========================
@@ -4633,6 +4851,7 @@ class Persediaan extends BaseController
                 ->where('iduniq', $uniqueid)
                 ->update([
                     'doctype'    => 'PNMBRG',
+                    'docref'     => $docref,
                     'idbarang'    => $idbarang,
                     'nmbarang'    => $nmbarang,
                     'idlocation'    => $idlocation,
@@ -4666,6 +4885,7 @@ class Persediaan extends BaseController
             $insertDetail = $builderDetail->insert([
                 'docno'       => $docno,
                 'doctype'    => 'PNMBRG',
+                'docref'     => $docref,
                 'idlocation'    => $idlocation,
                 'idbarang'    => $idbarang,
                 'nmbarang'    => $nmbarang,
@@ -4776,7 +4996,7 @@ class Persediaan extends BaseController
 
         echo json_encode([
             'total_qty'   => number_format($summary['total_qty'], 2, '.', ','),
-            'total_nilai' => number_format($summary['valsum'], 2, '.', ',')
+            'total_nilai' => number_format($summary['valsum'], 4, '.', ',')
         ]);
     }
 
@@ -4815,18 +5035,67 @@ class Persediaan extends BaseController
 
             return redirect()->to(base_url('/persediaan/trans/add_pnm_brg_mst'));
         } else {
-            // Ambil dari request POST
+            /* GUARD COA: cegah error dari trigger sc_tmp.tr_tmp_pnm_brng_mst()
+               (COA persediaan master barang / COA biaya master cost center belum diisi) */
+            $dtlCoa = $this->m_persediaan->q_cek_coa_pnm_brng($nama)->getResultArray();
+            if (count($dtlCoa) > 0) {
+                $listBarang = [];
+                $listCc = [];
+                foreach ($dtlCoa as $rowCoa) {
+                    if (strtoupper(trim($rowCoa['jenis'])) === 'BARANG') {
+                        $listBarang[] = trim($rowCoa['kode']);
+                    } else {
+                        $listCc[] = trim($rowCoa['kode']);
+                    }
+                }
+                $pesan = 'Data belum dapat disimpan. ';
+                if (count($listBarang) > 0) {
+                    $pesan .= 'COA Persediaan belum diisi pada master barang: ' . implode(', ', $listBarang) . '. ';
+                }
+                $listCcKode = array_values(array_filter($listCc, function ($v) {
+                    return trim((string) $v) !== '';
+                }));
+                if (count($listCcKode) > 0) {
+                    $pesan .= 'COA Biaya belum diisi pada master cost center: ' . implode(', ', $listCcKode) . '. ';
+                }
+                if (count($listCcKode) < count($listCc)) {
+                    $pesan .= 'Cost center belum dipilih pada header Pemakaian Barang. ';
+                }
+                $pesan .= 'Lengkapi COA pada master terlebih dahulu.';
+
+                session()->setFlashdata('coa_error', $pesan);
+                return redirect()->to(base_url('/persediaan/trans/add_pnm_brng_mst'));
+            }
+
+
+// Ambil dari request POST
             //$pemohon = strtoupper(trim($this->request->getPost('pemohon')));
             $keterangan = strtoupper(trim($this->request->getPost('keterangan')));
-//
+            $docrefPost = strtoupper(trim((string) $this->request->getPost('docref')));
+
+            // docref header (referensi) disimpan bareng keterangan saat Simpan Final.
+            // Prioritas nilai dari form; fallback ke docref header yang sudah tersimpan.
+            $hdrDocref = $this->m_persediaan->q_tmp_pnm_brng_mst($param)->getRowArray();
+            $docrefHdr = strtoupper(trim((string) ($hdrDocref['docref'] ?? '')));
+            $docrefFinal = ($docrefPost !== '') ? $docrefPost : $docrefHdr;
+
+            // Sinkronkan docref detail dari docref header supaya ref_docno
+            // pada sc_trx.transaction_hd tidak NULL (not-null constraint).
+            if ($docrefFinal !== '') {
+                $this->db->table('sc_tmp.pnm_brng_dtl')
+                    ->where('inputby', $nama)
+                    ->where("coalesce(trim(docref), '') = ''")
+                    ->set('docref', $docrefFinal)
+                    ->update();
+            }
 
             // Update data header dulu sebelum set status F
             $updateHeader = [
-//                'docdate'      => $docdateph,
-//                'pemohon'       => $pemohon,
                 'description'        => $keterangan,
-//                'estpakai' => $estpakaiph,
             ];
+            if ($docrefFinal !== '') {
+                $updateHeader['docref'] = $docrefFinal;
+            }
 
             $builder->where('inputby', $nama);
             $builder->update($updateHeader);
@@ -4837,7 +5106,17 @@ class Persediaan extends BaseController
                 'updateby' => $nama
             );
             $builder->where('inputby',$nama);
-            if ($builder->update($info)) {
+            try {
+                $simpanFinal = $builder->update($info);
+            } catch (\Throwable $ex) {
+                /* Tampilkan pesan yang mudah dibaca, bukan halaman error database */
+                $pesanDb = trim(explode("\n", $ex->getMessage())[0]);
+                $pesanDb = preg_replace('/^pg_query\(\):\s*Query failed:\s*/i', '', $pesanDb);
+                $pesanDb = preg_replace('/^ERROR:\s*/i', '', $pesanDb);
+                session()->setFlashdata('coa_error', 'Data gagal disimpan. ' . $pesanDb);
+                return redirect()->to(base_url('/persediaan/trans/add_pnm_brng_mst'));
+            }
+            if ($simpanFinal) {
                 $paramerror=" and userid='$nama' and modul='I.Q.A.6'";
                 $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
                 $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
@@ -4863,6 +5142,37 @@ class Persediaan extends BaseController
 
     }
 
+    /**
+     * Cek kelengkapan COA (AJAX) sebelum Simpan Final Data Pemakaian Barang.
+     * Mengembalikan daftar barang tanpa COA persediaan dan cost center tanpa COA biaya.
+     */
+    function check_coa_pnm_brng(){
+        $nama = trim($this->session->get('nama'));
+        $rows = $this->m_persediaan->q_cek_coa_pnm_brng($nama)->getResultArray();
+
+        $barang = array();
+        $costcenter = array();
+        foreach ($rows as $row) {
+            if (strtoupper(trim($row['jenis'])) === 'BARANG') {
+                $barang[] = array(
+                    'kode' => trim($row['kode']),
+                    'nama' => trim($row['nama']),
+                );
+            } else {
+                $costcenter[] = array(
+                    'kode' => trim($row['kode']),
+                );
+            }
+        }
+
+        return $this->response->setJSON(array(
+            'status'     => (count($barang) === 0 && count($costcenter) === 0),
+            'barang'     => $barang,
+            'costcenter' => $costcenter,
+        ));
+    }
+
+
     function list_tmp_pnm_brng_dtl(){
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_persediaan->get_tmp_pnm_brng_dtl_view($docno);
@@ -4881,8 +5191,8 @@ class Persediaan extends BaseController
             $row[] = $lm->unit;
 // Menambahkan number_format: (variabel, jumlah desimal, pemisah desimal, pemisah ribuan)
             $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->val, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->valsum, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->val, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->valsum, 4, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -4985,7 +5295,7 @@ class Persediaan extends BaseController
         $param = " and coalesce(docno,'') = '$decoded_docno'";
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
-        $data['typeform'] = 'INPUT';
+        $data['typeform'] = 'DETAIL';
         $data['userlogin'] = $nama;
         $data['docnoParam'] = $decoded_docno;
         $data['dtldata'] = $this->m_persediaan->q_trx_pnm_brng_mst($param)->getRowArray();

@@ -173,8 +173,8 @@
                                 <th>Ket. PO</th>
                                 <th>Ket. PP</th>
                                 <th>No. Capex</th>
-                                <th>No. Faktur</th>
-                                <th>No. SJ</th>
+                           <!--     <th>No. Faktur</th>
+                                <th>No. SJ</th>-->
                                 <th>Ket. LPB</th>
                             </tr>
                         </thead>

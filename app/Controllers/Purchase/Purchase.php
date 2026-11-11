@@ -76,6 +76,10 @@ class Purchase extends BaseController
         //auto insert unit
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
+
+        // Jumlah PP yang masih "Belum Approve" untuk badge di tab Daftar PP Belum Approve
+        $data['pendingCount'] = (int) $this->m_purchase->count_pending_pp_apprv();
+
         return $this->template->render('purchase/pp/v_list_pp',$data);
     }
 
@@ -2968,6 +2972,10 @@ class Purchase extends BaseController
         //auto insert unit
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
+
+        // Jumlah PO yang masih "Belum Approve" untuk badge di tab Daftar PO Belum Approve
+        $data['pendingCount'] = (int) $this->m_purchase->count_pending_po_apprv();
+
         return $this->template->render('purchase/po/v_list_po',$data);
     }
 
@@ -3642,6 +3650,16 @@ class Purchase extends BaseController
 
         echo $this->fiky_encryption
             ->jDatatable($output);
+    }
+
+    /**
+     * Endpoint kecil untuk mengembalikan jumlah PO "Belum Approve" (FINAL USER)
+     * yang dipakai JS untuk memperbarui badge #pending-count.
+     */
+    public function count_po_apprv()
+    {
+        $count = (int) $this->m_purchase->count_pending_po_apprv();
+        echo json_encode(['count' => $count]);
     }
 
     function clearEntryPO()
@@ -8780,8 +8798,8 @@ class Purchase extends BaseController
             $row[] = $jatuhTempo;
 
             $row[] = $lm->keterangan;
-            $row[] = $lm->nofaktur;
-            $row[] = $lm->nosj;
+//            $row[] = $lm->nofaktur;
+//            $row[] = $lm->nosj;
 
             $row[] = $lm->nmbranch;
             $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';

@@ -1248,6 +1248,67 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.Q.A.1' and 
         return $this->db->query("select * from sc_trx.pnm_brng_dtl where docno is not null $param order by idurut desc");
     }
 
+    /**
+     * Cek kelengkapan COA untuk transaksi Pemakaian Barang (I.Q.A.6).
+     * Dipakai sebelum Simpan Final Data, supaya trigger sc_tmp.tr_tmp_pnm_brng_mst()
+     * tidak melempar error "COA persediaan / COA biaya belum diisi".
+     *  - COA persediaan : sc_mst.mbarang.ppersediaan
+     *  - COA biaya      : sc_mst.costcenter.pbiaya
+     */
+    public function q_cek_coa_pnm_brng($nama)
+    {
+        $sql = "
+            SELECT 'BARANG' AS jenis,
+                   COALESCE(BTRIM(d.idbarang), '') AS kode,
+                   COALESCE(BTRIM(m.nmbarang), '') AS nama
+              FROM sc_tmp.pnm_brng_dtl d
+              LEFT JOIN sc_mst.mbarang m ON BTRIM(m.idbarang) = BTRIM(d.idbarang)
+             WHERE COALESCE(d.inputby, '') = ?
+               AND TRIM(COALESCE(m.ppersediaan, '')) = ''
+            UNION
+            SELECT 'COSTCENTER' AS jenis,
+                   COALESCE(BTRIM(COALESCE(NULLIF(BTRIM(d.idcostcenter), ''), h.idcostcenter)), '') AS kode,
+                   '' AS nama
+              FROM sc_tmp.pnm_brng_dtl d
+              JOIN sc_tmp.pnm_brng_mst h
+                ON BTRIM(h.docno) = BTRIM(d.docno)
+               AND COALESCE(h.inputby, '') = COALESCE(d.inputby, '')
+              LEFT JOIN sc_mst.costcenter cc
+                ON BTRIM(cc.idcostcenter) = BTRIM(COALESCE(NULLIF(BTRIM(d.idcostcenter), ''), h.idcostcenter))
+             WHERE COALESCE(d.inputby, '') = ?
+               AND TRIM(COALESCE(cc.pbiaya, '')) = ''
+            ORDER BY 1, 2
+        ";
+        return $this->db->query($sql, [$nama, $nama]);
+    }
+
+    /**
+     * Cek kelengkapan COA untuk 1 item Pemakaian Barang (dipakai saat simpan detail).
+     * Logika mengikuti trigger sc_trx.fn_sync_pnm_brng_dtl_to_transaction():
+     *  - COA persediaan : sc_mst.mbarang.ppersediaan   (barang tidak ada di master = error)
+     *  - COA biaya      : sc_mst.costcenter.pbiaya     (cost center tidak ada / kosong = error)
+     */
+    public function q_cek_coa_item_pnm_brng($idbarang, $idcostcenter)
+    {
+        $sql = "
+            SELECT 'BARANG' AS jenis,
+                   BTRIM(?::text) AS kode,
+                   COALESCE(BTRIM(m.nmbarang), '') AS nama
+              FROM (SELECT 1) x
+              LEFT JOIN sc_mst.mbarang m ON BTRIM(m.idbarang) = BTRIM(?::text)
+             WHERE TRIM(COALESCE(m.ppersediaan, '')) = ''
+            UNION
+            SELECT 'COSTCENTER' AS jenis,
+                   BTRIM(?::text) AS kode,
+                   '' AS nama
+              FROM (SELECT 1) y
+              LEFT JOIN sc_mst.costcenter cc ON BTRIM(cc.idcostcenter) = BTRIM(?::text)
+             WHERE TRIM(COALESCE(cc.pbiaya, '')) = ''
+            ORDER BY 1, 2
+        ";
+        return $this->db->query($sql, [$idbarang, $idbarang, $idcostcenter, $idcostcenter]);
+    }
+
     public function q_tmp_pnm_brng_dtl_summary($param)
     {
         return $this->db->query("select sum(qty) as total_qty , sum(valsum) as valsum  from sc_tmp.pnm_brng_dtl where docno is not null $param;");
@@ -1638,6 +1699,114 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.Q.A.1' and 
 
         FROM data_jurnal
 
+
+        ORDER BY
+            urutan,
+            trxdate DESC NULLS LAST,
+            jurnal_id,
+            id
+        ");
+    }
+
+    /* ============================================================
+       LAPORAN JURNAL TRANSAKSI PEMAKAIAN BARANG (PNM) - READ ONLY
+       Sumber jurnal: sc_trx.jurnal_hd + sc_trx.jurnal_dt (status POSTED),
+       cost center diambil dari dokumen asal sc_trx.pnm_brng_mst.
+       ============================================================ */
+    function q_laporan_jurnal_transaksi_pnm($params = '')
+    {
+        return $this->db->query("
+        WITH data_jurnal AS (
+
+            SELECT
+                jd.id,
+                jd.jurnal_id,
+
+                TRIM(jd.idcoa) AS idcoa,
+                TRIM(coa.nmcoa) AS nmcoa,
+
+                jd.debet,
+                jd.kredit,
+
+                TRIM(jd.ref_docno) AS ref_docno,
+                TRIM(jd.ref_doctype) AS ref_doctype,
+
+                TRIM(jh.docno) AS docno,
+                TRIM(jh.doctype) AS doctype,
+
+                jh.trxdate,
+
+                TRIM(pnm.idcostcenter) AS idcostcenter,
+                TRIM(cc.nmcostcenter) AS nmcostcenter
+
+            FROM sc_trx.jurnal_dt jd
+
+            INNER JOIN sc_trx.jurnal_hd jh
+                ON jh.id = jd.jurnal_id
+
+            LEFT JOIN sc_mst.coa coa
+                ON TRIM(coa.idcoa) = TRIM(jd.idcoa)
+
+            LEFT JOIN sc_trx.pnm_brng_mst pnm
+                ON TRIM(pnm.docno) = COALESCE(
+                    NULLIF(TRIM(jd.ref_docno), ''),
+                    NULLIF(TRIM(jh.docno), '')
+                )
+
+            LEFT JOIN sc_mst.costcenter cc
+                ON TRIM(cc.idcostcenter) = TRIM(pnm.idcostcenter)
+
+            WHERE 1=1
+            AND jh.status = 'POSTED'
+            AND jd.status = 'POSTED'
+            $params
+        )
+
+        SELECT
+            id,
+            jurnal_id,
+            idcoa,
+            nmcoa,
+            debet,
+            kredit,
+            ref_docno,
+            ref_doctype,
+            docno,
+            doctype,
+            trxdate,
+            idcostcenter,
+            nmcostcenter,
+
+            0 AS urutan
+
+        FROM data_jurnal
+
+        UNION ALL
+
+        SELECT
+            NULL::BIGINT,
+            NULL::BIGINT,
+
+            NULL::VARCHAR,
+            'TOTAL'::VARCHAR,
+
+            COALESCE(SUM(debet), 0),
+            COALESCE(SUM(kredit), 0),
+
+            NULL::VARCHAR,
+            NULL::VARCHAR,
+
+            NULL::VARCHAR,
+            NULL::VARCHAR,
+
+            NULL::DATE,
+
+            NULL::VARCHAR,
+            NULL::VARCHAR,
+
+            1 AS urutan
+
+        FROM data_jurnal
 
         ORDER BY
             urutan,

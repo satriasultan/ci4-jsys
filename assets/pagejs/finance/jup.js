@@ -156,26 +156,9 @@ function documentReadable(){
             //     $('#btnDPWrapper').attr('title','PO sudah ada Down Payment');
             // }
 
-            setJtsValue('[name="balance"]', convertToDbNumber(json.dataTables.items[0].balance));
-            let balanceValue = ($('#balance').val()) || 0;
-                
-            if (balanceValue != 0) {
-                // Disable tombol submit atau form
-                $('button[type="submit"]').prop('disabled', true);
-                // Atau disable seluruh input di form
-                // $('#formJUPDetail :input').prop('disabled', true);
-                
-                // Tampilkan notifikasi bahwa form sudah tidak bisa digunakan
-                Swal.fire({
-                    icon: 'info',
-                    title: 'Form Terkunci',
-                    text: `Form telah dikunci karena balance bernilai ${balanceValue}. Tidak dapat menyimpan data baru.`,
-                    timer: 3000,
-                    showConfirmButton: true
-                });
-            } else {
-                $('button[type="submit"]').prop('disabled', false);
-            }
+            // Balance TIDAK diambil dari header, selalu dihitung ulang
+            // dari seluruh baris detail yang tampil (lihat hitungBalanceJUP()).
+            hitungBalanceJUP();
             // setJtsValue('[name="jumlahpajak"]', convertToDbNumber(json.dataTables.items[0].jumlahpajak));
             // setJtsValue('[name="total"]', convertToDbNumber(json.dataTables.items[0].total));
             // $('[name="estpakai"]').val(json.dataTables.items[0].estpakai);
@@ -324,6 +307,9 @@ $("#idcoa").select2({
     // $('[name="nmbarang"]').val(data.nmbarang.trim()).prop("readonly", true);
     // $('[name="unit"]').val(data.unit.trim()).prop("readonly", true);
     // $("#batch").val(null).trigger('change');
+
+    // isi otomatis DK + Nilai dari sisa balance agar balance menjadi 0
+    isiSisaBalanceJUP();
 });
 
 
@@ -439,8 +425,250 @@ $('#tabjupdtl tbody').on('change', '.row-check', function () {
     $('#checkAll').prop('checked', total === checked);
 });
 
+/* =========================================================
+   BALANCE JUP = TOTAL DEBIT - TOTAL KREDIT (dari baris detail)
+   ========================================================= */
+function parseJUPNilai(raw) {
+    if (raw === null || raw === undefined) return 0;
+
+    let text = $('<div>').html(String(raw)).text(); // buang tag HTML (mis. <div class="ratakanan">)
+    text = $.trim(text).replace(/\s/g, '');        // buang spasi (mis. 1 000.00 / 1.000,00)
+
+    if (text === '') return 0;
+
+    const lastComma = text.lastIndexOf(',');
+    const lastDot = text.lastIndexOf('.');
+    let normalized;
+
+    if (lastComma !== -1 && lastDot !== -1) {
+        // dua separator: yang muncul terakhir adalah pemisah desimal
+        normalized = (lastComma > lastDot)
+            ? text.replace(/\./g, '').replace(',', '.')  // 1.000,50 -> 1000.50
+            : text.replace(/,/g, '');                    // 1,000.50 -> 1000.50
+    } else if (lastComma !== -1) {
+        // hanya koma: 1,000,000 (ribuan) atau 1500,50 (desimal)
+        const parts = text.split(',');
+
+        normalized = (parts.length === 2 && parts[1].length !== 3)
+            ? parts[0] + '.' + parts[1]
+            : text.replace(/,/g, '');
+    } else {
+        normalized = text;                               // 1,000.00 / 1000.5 / 1000
+    }
+
+    const nilai = parseFloat(normalized);
+
+    return isNaN(nilai) ? 0 : nilai;
+}
+
+function isJUPdebit(dk) {
+    return ['DEBIT', 'D', 'DR'].indexOf(dk) !== -1;
+}
+
+function isJUPkredit(dk) {
+    return ['KREDIT', 'K', 'CREDIT', 'CR'].indexOf(dk) !== -1;
+}
+
+function formatJUPBalance(value) {
+    const nilai = Math.abs(Number(value) || 0);
+    const teks = nilai.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+
+    return (Number(value) < 0 ? '-' : '') + teks;
+}
+
+/* Hitung ulang field balance dari SELURUH baris detail yang tampil */
+function hitungBalanceJUP() {
+    if (!$.fn.dataTable.isDataTable('#tabjupdtl')) {
+        return 0;
+    }
+
+    const rows = $('#tabjupdtl').DataTable().rows().data();
+
+    let totalDebit = 0;
+    let totalKredit = 0;
+
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+
+        if (!row) continue;
+
+        const dk = $.trim(String(row[4] || '')).toUpperCase();
+        const nilai = parseJUPNilai(row[6]);
+
+        if (isJUPdebit(dk)) {
+            totalDebit += nilai;
+        } else if (isJUPkredit(dk)) {
+            totalKredit += nilai;
+        }
+    }
+
+    let balance = totalDebit - totalKredit;
+
+    // sisa pembulatan kecil dianggap balance
+    if (Math.abs(balance) < 0.005) balance = 0;
+
+    $('#balance').val(formatJUPBalance(balance));
+
+    return balance;
+}
+
+/* =========================================================
+   AUTO ISI NILAI SISA BALANCE SAAT COA DIPILIH (MODE TAMBAH)
+   Sisa = |debit - kredit|, DK diisi sisi penutupnya sehingga
+   setelah detail disimpan balance menjadi 0.
+   ========================================================= */
+function isiSisaBalanceJUP() {
+    // hanya berlaku pada halaman tambah JUP (modal detail tersedia)
+    if (!document.getElementById('nilai') || !document.getElementById('dk')) return;
+    if (!document.getElementById('idurut')) return;
+
+    // hanya untuk mode tambah (bukan update)
+    if ($.trim(String($('#idurut').val() || '')) !== '') return;
+
+    // jangan timpa nilai yang sudah diisi user
+    const nilaiSekarang = $.trim(String($('#nilai').val() || ''));
+    if (nilaiSekarang !== '' && parseJUPNilai(nilaiSekarang) !== 0) return;
+
+    // balance = total debit - total kredit dari detail yang tampil
+    const balance = hitungBalanceJUP();
+
+    // sudah balance -> tidak ada sisa yang perlu ditutup
+    if (Math.abs(balance) < 0.005) return;
+
+    const sisa = Math.abs(balance);
+
+    // balance minus (kredit > debit) -> perlu DEBIT, sebaliknya perlu KREDIT
+    $('#dk').val(balance < 0 ? 'D' : 'K');
+
+    // tampilkan dengan separator ribuan + 2 desimal (mis. 1,000.00)
+    setJtsValue('#nilai', formatJUPBalance(sisa));
+}
+
+/* Rapikan tampilan angka input Nilai agar seragam dengan Balance/kolom tabel
+   (ribuan koma + 2 desimal). Nilai tetap dibaca ulang lewat parseJUPNilai(). */
+$(document).on('blur', '#nilai', function () {
+    if ($.trim(String(this.value || '')) === '') return;
+
+    setJtsValue('#nilai', formatJUPBalance(parseJUPNilai(this.value)));
+});
+
+
+/* Balance selalu dihitung ulang setiap datatable detail selesai draw */
 $('#tabjupdtl').on('draw.dt', function () {
     $('#checkAll').prop('checked', false);
+    hitungBalanceJUP();
+});
+/* =========================================================
+   SUBMIT FORM "SIMPAN FINAL DATA" (#formPO)
+   Satu jalur submit: validasi -> konfirmasi -> submit native.
+   ========================================================= */
+var jupFinalSubmitting = false;
+
+function submitFinalJUP() {
+    var form = document.getElementById('formPO');
+
+    if (!form) return false;
+    if (jupFinalSubmitting) return false;
+
+    /* 1) wajib ada minimal satu baris detail perkiraan */
+    var rowCount = ($.fn.dataTable && $.fn.dataTable.isDataTable('#tabjupdtl'))
+        ? $('#tabjupdtl').DataTable().rows().count()
+        : $('#tabjupdtl tbody tr').length;
+
+    if (rowCount < 1) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Detail Masih Kosong',
+            text: 'Tambahkan minimal satu baris detail perkiraan sebelum menyimpan final data.'
+        });
+
+        return false;
+    }
+
+    /* 2) balance harus nol (total debit = total kredit) */
+    var balance = hitungBalanceJUP();
+
+    if (Math.abs(balance) >= 0.005) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Balance Tidak Nol',
+            text: 'Total Debit dan Total Kredit harus sama sebelum data disimpan. Balance saat ini: ' + formatJUPBalance(balance)
+        });
+
+        return false;
+    }
+
+    /* 3) konfirmasi, lalu submit sekali saja (tombol dikunci) */
+    var $btn = $('#formPO button[type="submit"]').first();
+
+    Swal.fire({
+        icon: 'question',
+        title: 'Simpan Final Data',
+        text: 'Data JUP yang sudah final tidak dapat diubah lagi. Lanjutkan?',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Simpan',
+        cancelButtonText: 'Batal'
+    }).then(function (result) {
+        if (!result.isConfirmed) return;
+
+        jupFinalSubmitting = true;
+
+        $btn
+            .data('labelAsli', $btn.html())
+            .prop('disabled', true)
+            .html('<i class="fa fa-spinner fa-spin me-1"></i> Menyimpan...');
+
+        form.submit();
+    });
+
+    return false;
+}
+
+/* tombol "Simpan Final Data" pada form header JUP */
+$(document).on('click', '#formPO button[type="submit"]', function (e) {
+    e.preventDefault();
+
+    return submitFinalJUP();
+});
+
+/* pengaman tambahan (mis. submit lewat tombol Enter) */
+$(document).on('submit', '#formPO', function (e) {
+    if (jupFinalSubmitting) return true;
+
+    var balance = hitungBalanceJUP();
+
+    if (Math.abs(balance) >= 0.005) {
+        e.preventDefault();
+
+        Swal.fire({
+            icon: 'warning',
+            title: 'Balance Tidak Nol',
+            text: 'Total Debit dan Total Kredit harus sama sebelum data disimpan. Balance saat ini: ' + formatJUPBalance(balance)
+        });
+
+        return false;
+    }
+
+    return true;
+});
+
+/* bila halaman dibuka kembali dari cache (back/forward), pulihkan tombol */
+$(window).on('pageshow', function () {
+    jupFinalSubmitting = false;
+
+    $('#formPO button[type="submit"]').each(function () {
+        var $b = $(this);
+        var label = $b.data('labelAsli');
+
+        $b.prop('disabled', false);
+
+        if (label) {
+            $b.html(label);
+        }
+    });
 });
 function getSelectedPODetail(){
     return $('#tabjupdtl tbody .row-check:checked')
@@ -502,13 +730,19 @@ function btnUpdateDetail(){
                 $('#idurut').val(res.data.idurut);
                 $('#uniqueid').val(res.data.uniqueid);
                 $('#remarks').val(res.data.remarks);
-                $('#dk').val(res.data.dk.trim());
-                $('#cabangdtl').val(res.data.cabang);
+                var dkVal = (res.data.dk || '').trim().toUpperCase();
+                if (dkVal === 'DEBIT' || dkVal === 'DR') {
+                    dkVal = 'D';
+                } else if (dkVal === 'KREDIT' || dkVal === 'CR') {
+                    dkVal = 'K';
+                }
+                $('#dk').val(dkVal);
+                setSelect2Ajax('#cabangdtl', res.data.cabang, res.data.cabang);
                 // $('#docnoppmodal').val(res.data.docnopp);
                 $('#idcoa').val(res.data.idcoa);
                 $('#nmcoa').val(res.data.nmcoa);
                 // setJtsValue('[name="multidisc"]', convertToDbNumber(res.data.multidisc));
-                setJtsValue('[name="nilai"]', convertToDbNumber(res.data.nilai));
+                setJtsValue('[name="nilai"]', formatJUPBalance(convertToDbNumber(res.data.nilai)));
                 setSelect2Ajax('#idcoa', res.data.idcoa, res.data.idcoa);
 
 
@@ -757,7 +991,8 @@ function saveJUPDetail() {
         
         let nilai = $('#nilai').val();
         // formData.set('multidisc', convertToDbNumber(multidisc));
-        formData.set('nilai', convertToDbNumber(nilai));
+        // pakai parseJUPNilai agar separator ribuan/desimal (1,000.00 / 1.000,00) terbaca benar
+        formData.set('nilai', parseJUPNilai(nilai));
         // formData.set('nilai', convertToDbNumber(nilai));
         // formData.set('remarks', $('#remarks').val());
         // formData.set('uniqueid', $('#uniqueid').val());
@@ -873,6 +1108,7 @@ function btnInputDetail() {
     
     // 🔹 Clear select2
     $('#idcoa').val(null).trigger('change');
+    $('#cabangdtl').val(null).trigger('change');
 
     // Jika ada select2 lain, lakukan hal sama
     // $('#selectlain').val(null).trigger('change');
@@ -1125,6 +1361,50 @@ $("#cabang").select2({
     //table.DataTable().ajax.reload(); //reload datatable ajax
     ///table.append().search( $(this).val() ).draw();
     //$('#filter').modal('hide');
+});
+
+
+/* Cost Center pada modal detail - select2 dari cabang (list_branchjob) */
+var defaultInitialBranchDtl = '';
+$("#cabangdtl").select2({
+    placeholder: "Ketik/Pilih Cabang / Cost Center",
+    allowClear: true,
+    width: '100%',
+    maximumSelectionLength: 1,
+    multiple: false,
+    ajax: {
+        url: HOST_URL + 'api/globalmodule/list_branchjob',
+        type: 'POST',
+        dataType: 'json',
+        delay: 250,
+        data: function(params) {
+            return {
+                _search_: params.term, // search term
+                _page_: params.page,
+                _draw_: true,
+                _start_: 1,
+                _perpage_: 2,
+                _paramglobal_: defaultInitialBranchDtl,
+                _parameterx_: defaultInitialBranchDtl,
+                term: params.term,
+            };
+        },
+        processResults: function (data, params) {
+            params.page = params.page || 1;
+            return {
+                results: data.items,
+                pagination: {
+                    more: (params.page * 30) < data.total_count
+                }
+            };
+        },
+        cache: false
+    },
+    escapeMarkup: function(markup) {
+        return markup;
+    },
+    templateResult: formatBranch, // memakai formatter branch global
+    templateSelection: formatBranchSelection
 });
 /* Format Group */
 function formatBranch(repo) {

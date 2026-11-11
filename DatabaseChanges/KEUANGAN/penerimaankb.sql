@@ -1,7 +1,8 @@
 -- Revisi Penerimaan Kas/Bank:
 -- 1) nilaiakhir disimpan hanya di penerimaankb_dtl (TMP dan TRX).
 -- 2) Nilai jurnal penggunaan diambil dari COALESCE(d.nilaiakhir, d.nilai).
--- 3) Tidak menambah/mengubah kolom sc_trx.transaction_dt.
+-- 3) transaction_dt menyimpan currency/kurs/nilai posting dan nilai sumber asli
+--    secara terpisah pada kolom currcode_trans, kurs_trans, nilai_trans.
 -- 4) Tidak DROP tabel, sehingga data existing tidak dihapus.
 -- CATATAN PENTING:
 -- 1) BANKIN diasumsikan sebagai journal_type untuk Penerimaan Kas/Bank.
@@ -56,7 +57,7 @@ CREATE TABLE IF NOT EXISTS sc_tmp.penerimaankb
     jthtempo     NUMERIC(18,2),
     isinclusive  CHARACTER(6),
     currcode     CHARACTER(3),
-    kurs         NUMERIC(18,2),
+    kurs         NUMERIC(18,6),
     dpp          NUMERIC(18,2),
     jumlahpajak  NUMERIC(18,2),
     total        NUMERIC(18,2),
@@ -91,7 +92,7 @@ CREATE TABLE IF NOT EXISTS sc_trx.penerimaankb
     jthtempo     NUMERIC(18,2),
     isinclusive  CHARACTER(6),
     currcode     CHARACTER(3),
-    kurs         NUMERIC(18,2),
+    kurs         NUMERIC(18,6),
     dpp          NUMERIC(18,2),
     jumlahpajak  NUMERIC(18,2),
     total        NUMERIC(18,2),
@@ -124,7 +125,7 @@ CREATE TABLE IF NOT EXISTS sc_tmp.penerimaankb_dtl
     nilai       NUMERIC(18,2),
     nilaiakhir  NUMERIC(18,2),
     currcode    CHARACTER(3),
-    kurs        NUMERIC(18,2),
+    kurs        NUMERIC(18,6),
     uniqueid    VARCHAR(64),
     status      CHARACTER(6),
     inputby     VARCHAR(50),
@@ -152,7 +153,7 @@ CREATE TABLE IF NOT EXISTS sc_trx.penerimaankb_dtl
     nilai       NUMERIC(18,2),
     nilaiakhir  NUMERIC(18,2),
     currcode    CHARACTER(3),
-    kurs        NUMERIC(18,2),
+    kurs        NUMERIC(18,6),
     uniqueid    VARCHAR(64),
     status      CHARACTER(6),
     inputby     VARCHAR(50),
@@ -176,13 +177,43 @@ ALTER TABLE sc_trx.penerimaankb ADD COLUMN IF NOT EXISTS alamatcustomer TEXT;
 ALTER TABLE sc_tmp.penerimaankb_dtl ADD COLUMN IF NOT EXISTS nilaiakhir NUMERIC(18,2);
 ALTER TABLE sc_trx.penerimaankb_dtl ADD COLUMN IF NOT EXISTS nilaiakhir NUMERIC(18,2);
 ALTER TABLE sc_tmp.penerimaankb_dtl ADD COLUMN IF NOT EXISTS currcode CHARACTER(3);
-ALTER TABLE sc_tmp.penerimaankb_dtl ADD COLUMN IF NOT EXISTS kurs NUMERIC(18,2);
+ALTER TABLE sc_tmp.penerimaankb_dtl ADD COLUMN IF NOT EXISTS kurs NUMERIC(18,6);
 ALTER TABLE sc_trx.penerimaankb_dtl ADD COLUMN IF NOT EXISTS currcode CHARACTER(3);
-ALTER TABLE sc_trx.penerimaankb_dtl ADD COLUMN IF NOT EXISTS kurs NUMERIC(18,2);
+ALTER TABLE sc_trx.penerimaankb_dtl ADD COLUMN IF NOT EXISTS kurs NUMERIC(18,6);
 ALTER TABLE sc_tmp.penerimaankb_dtl ADD COLUMN IF NOT EXISTS jurnalref VARCHAR(30) DEFAULT 'NO';
 ALTER TABLE sc_tmp.penerimaankb_dtl ADD COLUMN IF NOT EXISTS nilai_ref NUMERIC(18,2) DEFAULT 0;
 ALTER TABLE sc_trx.penerimaankb_dtl ADD COLUMN IF NOT EXISTS jurnalref VARCHAR(30) DEFAULT 'NO';
 ALTER TABLE sc_trx.penerimaankb_dtl ADD COLUMN IF NOT EXISTS nilai_ref NUMERIC(18,2) DEFAULT 0;
+
+-- Pastikan presisi kurs sumber cukup untuk disimpan sampai 6 desimal.
+ALTER TABLE sc_tmp.penerimaankb
+    ALTER COLUMN kurs TYPE NUMERIC(18,6) USING kurs::NUMERIC(18,6);
+ALTER TABLE sc_trx.penerimaankb
+    ALTER COLUMN kurs TYPE NUMERIC(18,6) USING kurs::NUMERIC(18,6);
+ALTER TABLE sc_tmp.penerimaankb_dtl
+    ALTER COLUMN kurs TYPE NUMERIC(18,6) USING kurs::NUMERIC(18,6);
+ALTER TABLE sc_trx.penerimaankb_dtl
+    ALTER COLUMN kurs TYPE NUMERIC(18,6) USING kurs::NUMERIC(18,6);
+
+-- =========================================================
+-- TAMBAHAN KOLOM CURRENCY/NILAI ASLI DI TRANSACTION_DT
+-- Kolom currcode/kurs/nilai tetap menjadi nilai posting.
+-- Kolom *_trans menyimpan nilai sumber sebelum normalisasi.
+-- =========================================================
+ALTER TABLE sc_trx.transaction_dt
+    ADD COLUMN IF NOT EXISTS currcode_trans CHAR(3),
+    ADD COLUMN IF NOT EXISTS kurs_trans NUMERIC(18,6),
+    ADD COLUMN IF NOT EXISTS nilai_trans NUMERIC(18,6);
+
+-- Backfill terbaik untuk data transaction_dt yang sudah ada.
+-- Nilai sumber historis yang sebelumnya sudah dinormalisasi tidak dapat dipulihkan.
+UPDATE sc_trx.transaction_dt
+SET currcode_trans = COALESCE(NULLIF(BTRIM(currcode_trans), ''), NULLIF(BTRIM(currcode), ''), 'IDR'),
+    kurs_trans = COALESCE(NULLIF(kurs_trans, 0), NULLIF(kurs, 0), 1),
+    nilai_trans = COALESCE(nilai_trans, nilai, 0)
+WHERE currcode_trans IS NULL OR BTRIM(currcode_trans) = ''
+   OR kurs_trans IS NULL OR kurs_trans = 0
+   OR nilai_trans IS NULL;
 
 -- =========================================================
 -- FINALISASI TMP: E -> F
@@ -458,9 +489,9 @@ EXECUTE FUNCTION sc_trx.penerimaankb();
 -- =========================================================
 -- PATCH: sinkronisasi Penerimaan Kas/Bank ke transaction_dt
 -- journal_type = BANKIN
--- nilaiakhir TIDAK ditambahkan sebagai kolom transaction_dt.
 -- transaction_dt.nilai, dpp, dan total menggunakan penerimaankb_dtl.nilaiakhir.
--- Jika nilaiakhir NULL, gunakan nilai sebagai fallback.
+-- currcode/kurs transaction_dt tetap IDR/1; kolom *_trans menyimpan sumber asli.
+-- nilai_trans mengambil NEW.nilai (fallback nilaiakhir).
 -- =========================================================
 
 DO $$
@@ -575,6 +606,7 @@ BEGIN
         idbranch, cabang, type_in_out, ref_docno, ref_doctype,
         source_table, source_id, source_line_id, kdsupplier, nsupplier,
         nilai, dpp, pajak, total, idtax, isinclusive, currcode, kurs,
+        currcode_trans, kurs_trans, nilai_trans,
         idcoa, counter_idcoa, debet_kredit,
         module, direction, stock_effect, accounting_effect, asset_effect,
         keterangan, createdby, createddate, updatedby, updateddate
@@ -585,8 +617,10 @@ BEGIN
         BTRIM(COALESCE(v_header.kdcustomer, '')), BTRIM(COALESCE(v_header.nmcustomer, '')),
         v_nilai, v_nilai, 0, v_nilai, 'NON',
         COALESCE(NULLIF(UPPER(BTRIM(v_header.isinclusive)), ''), 'NO'),
+        'IDR', 1,
         COALESCE(NULLIF(BTRIM(NEW.currcode), ''), NULLIF(BTRIM(v_header.currcode), ''), 'IDR'),
-         COALESCE(NULLIF(NEW.kurs, 0), NULLIF(v_header.kurs, 0), 1),
+        COALESCE(NULLIF(NEW.kurs, 0), NULLIF(v_header.kurs, 0), 1),
+        COALESCE(NEW.nilai, NEW.nilaiakhir, v_nilai),
         v_coa_detail, v_coa_bank, v_dc,
         'FINANCE', 'IN', 'NONE', 'YES', 'NONE', v_desc,
         COALESCE(v_header.inputby, 'SYSTEM'), COALESCE(v_header.inputdate, CURRENT_TIMESTAMP),
@@ -615,6 +649,9 @@ BEGIN
         isinclusive = EXCLUDED.isinclusive,
         currcode = EXCLUDED.currcode,
         kurs = EXCLUDED.kurs,
+        currcode_trans = EXCLUDED.currcode_trans,
+        kurs_trans = EXCLUDED.kurs_trans,
+        nilai_trans = EXCLUDED.nilai_trans,
         idcoa = EXCLUDED.idcoa,
         counter_idcoa = EXCLUDED.counter_idcoa,
         debet_kredit = EXCLUDED.debet_kredit,
@@ -631,11 +668,51 @@ BEGIN
 END;
 $$;
 
+
+-- =========================================================
+-- PATCH SUMBER NILAI BANKIN:
+-- nilai transaction_dt mengikuti nilaiakhir.
+-- Mata uang transaction_dt selalu IDR dengan kurs 1.
+-- Fungsi AFTER sync BANKIN di bawah tetap tidak diubah.
+-- =========================================================
+CREATE OR REPLACE FUNCTION sc_trx.fn_prepare_penerimaankb_detail_BANKIN()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF NEW.nilaiakhir IS NULL THEN
+        RAISE EXCEPTION
+            'Nilai akhir wajib diisi pada Penerimaan KB, detail idurut %.',
+            NEW.idurut;
+    END IF;
+
+    -- Jangan menimpa NEW.nilai, NEW.currcode, dan NEW.kurs.
+    -- Nilai asli diperlukan oleh trigger AFTER untuk kolom *_trans.
+    -- Nilai posting transaction_dt tetap memakai nilaiakhir,
+    -- sedangkan currcode/kurs transaction_dt tetap IDR/1.
+
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS tr_penerimaankb_detail_00_prepare_BANKIN
+ON sc_trx.penerimaankb_dtl;
+
+CREATE TRIGGER tr_penerimaankb_detail_00_prepare_BANKIN
+BEFORE INSERT OR UPDATE ON sc_trx.penerimaankb_dtl
+FOR EACH ROW
+EXECUTE FUNCTION sc_trx.fn_prepare_penerimaankb_detail_BANKIN();
+
 DROP TRIGGER IF EXISTS tr_penerimaankb_detail_BANKIN ON sc_trx.penerimaankb_dtl;
 CREATE TRIGGER tr_penerimaankb_detail_BANKIN
 AFTER INSERT OR UPDATE OR DELETE ON sc_trx.penerimaankb_dtl
 FOR EACH ROW
 EXECUTE FUNCTION sc_trx.fn_sync_penerimaankb_detail_BANKIN();
+
+-- Tidak menormalisasi ulang kolom sumber penerimaankb_dtl.
+-- NEW.nilai, NEW.currcode, dan NEW.kurs harus tetap menyimpan nilai asli.
+-- Nilai posting transaction_dt dihitung dari COALESCE(nilaiakhir, nilai)
+-- di fungsi fn_sync_penerimaankb_detail_BANKIN().
 
 -- Tidak menghapus baris transaction_dt existing secara massal.
 

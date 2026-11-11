@@ -263,6 +263,15 @@ update sc_trx.po_dtl set idtax='PPN11' where idtax='PPN';
 update sc_trx.po set idtax='NON' , isinclusive='NO' where docno in (select docno from sc_trx.po_dtl where idtax='NON PPN');
 update sc_trx.po_dtl set idtax='NON' where idtax='NON PPN';
 
+UPDATE sc_trx.po AS po
+SET
+    alamatsupplier = sup.alamat,
+    --alamatkirim    = sup.alamat,
+    jthtempo       = sup.jthtempo,
+    keterangan     = sup.nmsupplier
+FROM sc_mst.mstsupplier AS sup
+WHERE TRIM(po.kdsupplier) = TRIM(sup.kdsupplier) and trim(keterangan)='';
+
 
 -- Verifikasi struktur staging dan prosedur terpasang.
 SELECT column_name, data_type

@@ -120,6 +120,12 @@ function tablePOApprvTrx(){
                 },
             ],
 
+            "drawCallback": function () {
+                // Setelah tabel reload (mis. setelah approve/disapprove),
+                // perbarui jumlah badge dari endpoint khusus.
+                loadPendingCount();
+            },
+
         });
 
     };
@@ -132,6 +138,32 @@ function reload_tablePOApprvTrx()
 {
     var table = $('#tablepoapprvTrx');
     table.DataTable().ajax.reload(); //reload datatable ajax
+}
+
+// Ambil jumlah "Belum Approve" (FINAL USER) langsung dari server agar badge
+// #pending-count tidak bergantung pada recordsTotal DataTable (yang untuk PO
+// mencakup status lain selain FINAL USER).
+function loadPendingCount()
+{
+    $.ajax({
+        url: HOST_URL + 'purchase/trans/count_po_apprv',
+        type: 'POST',
+        dataType: 'json',
+        success: function (res) {
+            var total = 0;
+
+            if (res && res.count !== undefined) {
+                total = res.count;
+            }
+
+            if ($('#pending-count').length) {
+                $('#pending-count').text(total || 0);
+            }
+        },
+        error: function () {
+            // Jika request gagal, biarkan nilai badge yang sedang tampil.
+        }
+    });
 }
 
 $('#btn-filter-tx').click(function(){ //button filter event click
@@ -620,7 +652,7 @@ $("#docnopp").select2({
     escapeMarkup: function(markup) {
         return markup;
     }, // let our custom formatter work
-    // minimumInputLength: 1,
+    minimumInputLength: 2, // mulai pencarian setelah 2 karakter agar loading lebih cepat
     templateResult: formatPP, // omitted for brevity, see the source of this page
     templateSelection: formatPPSelection // omitted for brevity, see the source of this page
 }).on("select2:select", function (e) {
@@ -3007,6 +3039,27 @@ $(document).ready(function() {
     tablePOApprvTrx();
     tablePODetail();
     //read_qrcode();
+
+    // Isi badge jumlah "Daftar PO Belum Approve" saat halaman pertama dibuka,
+    // independen dari proses draw DataTable yang ada di hidden tab.
+    if ($('#pending-count').length) {
+        loadPendingCount();
+
+        // Saat tab "Daftar PO Belum Approve" dibuka, samakan ulang ukuran kolom
+        // dan reload datanya supaya hitungan docno selalu ter-update.
+        var $pendingTab = $('#pending-tab');
+        if ($pendingTab.length) {
+            $pendingTab.on('shown.bs.tab', function () {
+                var $tbl = $('#tablepoapprvTrx');
+                if ($tbl.length) {
+                    $tbl.DataTable().columns.adjust();
+                    $tbl.DataTable().ajax.reload(null, false);
+                }
+                loadPendingCount();
+            });
+        }
+    }
+
     $('#checkboxnik').change(function() {
         // this will contain a reference to the checkbox
         if (this.checked) {

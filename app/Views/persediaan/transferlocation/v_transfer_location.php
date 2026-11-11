@@ -100,12 +100,119 @@
     }
 
     /* Center kolom kecil */
+    /* Body cell dasar */
+    #tTrxTransferLocaton tbody td {
+        vertical-align: middle;
+        padding: 9px 10px;
+        border-color: #e5e7eb;
+        color: #374151;
+    }
+
+    /* Center kolom: No, Action, Document, Docdate, From-WH, To-WH, Status */
     #tTrxTransferLocaton tbody td:nth-child(1),
     #tTrxTransferLocaton tbody td:nth-child(2),
+    #tTrxTransferLocaton tbody td:nth-child(3),
     #tTrxTransferLocaton tbody td:nth-child(4),
-    #tTrxTransferLocaton tbody td:nth-child(7),
-    #tTrxTransferLocaton tbody td:nth-child(9) {
+    #tTrxTransferLocaton tbody td:nth-child(5),
+    #tTrxTransferLocaton tbody td:nth-child(6),
+    #tTrxTransferLocaton tbody td:nth-child(8) {
         text-align: center;
+    }
+
+    /* Description rata kiri + wrap */
+    #tTrxTransferLocaton tbody td:nth-child(7) {
+        text-align: left;
+        white-space: normal;
+        min-width: 180px;
+    }
+
+    /* STATUS BADGE */
+    #tTrxTransferLocaton .badge-status {
+        display: inline-block;
+        min-width: 80px;
+        padding: 6px 12px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .4px;
+        text-transform: uppercase;
+        border-radius: 30px;
+    }
+
+    /* ===============================
+       DATATABLE CONTROLS (bs4 integration)
+    ================================ */
+    .card-body .dataTables_wrapper { padding: 2px 4px 0; }
+
+    .card-body .dataTables_wrapper .dt-buttons { margin-bottom: 12px; }
+
+    .card-body .dataTables_wrapper .dt-buttons .dt-button.btn {
+        background: #1f2937;
+        border: none;
+        color: #fff;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 6px 14px;
+        margin-right: 6px;
+        box-shadow: none;
+    }
+
+    .card-body .dataTables_wrapper .dt-buttons .dt-button.btn:hover {
+        background: #374151;
+    }
+
+    .card-body .dataTables_wrapper .dataTables_filter label {
+        font-weight: 600;
+        color: #374151;
+        font-size: 13px;
+    }
+
+    .card-body .dataTables_wrapper .dataTables_filter input {
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 5px 10px;
+        outline: none;
+        transition: .2s ease-in-out;
+    }
+
+    .card-body .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: #1f2937;
+        box-shadow: 0 0 0 3px rgba(31,41,55,.12);
+    }
+
+    .card-body .dataTables_wrapper .dataTables_info {
+        color: #6b7280;
+        font-size: 13px;
+        padding-top: 12px;
+    }
+
+    .card-body .dataTables_wrapper .dataTables_paginate {
+        padding-top: 8px;
+    }
+
+    .card-body .dataTables_wrapper .dataTables_paginate .page-link {
+        border: 1px solid #e5e7eb;
+        color: #374151;
+        border-radius: 8px !important;
+        margin: 0 2px;
+        padding: 5px 11px;
+        font-size: 13px;
+    }
+
+    .card-body .dataTables_wrapper .dataTables_paginate .page-item.active .page-link {
+        background: linear-gradient(135deg, #1f2937, #374151);
+        border-color: #1f2937;
+        color: #fff;
+    }
+
+    .card-body .dataTables_wrapper .dataTables_paginate .page-link:hover {
+        background: #e9f2ff;
+        color: #1f2937;
+    }
+
+    .card-body .dataTables_wrapper .dataTables_paginate .page-item.disabled .page-link {
+        color: #adb5bd;
+        background: #f8f9fa;
     }
 
 /* header */
@@ -191,7 +298,7 @@
                     </div>
                 </div>
             </div><!-- /.card-header -->
-            <div class="card-body table-responsive" style='overflow-x:scroll;'>
+            <div class="card-body table-responsive" style='overflow-x:auto;'>
                 <table id="tTrxTransferLocaton" class="table table-bordered table-striped" >
                     <thead>
                     <tr>

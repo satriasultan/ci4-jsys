@@ -22,9 +22,9 @@ var initTable;
               window.PMK_DETAIL_ENDPOINT sebelum file ini di-load,
               sehingga sumber data diambil dari sc_trx.*
    ============================================================ */
-var PMK_DETAIL_ENDPOINT = window.PMK_DETAIL_ENDPOINT || {
-    master: 'persediaan/trans/showing_pmk_brng_mst_tmp',
-    detail: 'persediaan/trans/list_tmp_pmk_brng_dtl',
+var PMK_DETAIL_ENDPOINT = window.PNM_DETAIL_ENDPOINT || window.PMK_DETAIL_ENDPOINT || {
+    master: 'persediaan/trans/showing_pmk_brng_mst',
+    detail: 'persediaan/trans/list_trx_pmk_brng_dtl',
     journal: 'persediaan/trans/laporan_jurnal_transaksi_pmk'
 };
 

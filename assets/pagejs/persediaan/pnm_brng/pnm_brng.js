@@ -301,7 +301,10 @@ $("#idbarang").select2({
     var data = e.params.data;
 
     $('[name="nmbarang"]').val(data.nmbarang.trim()).prop("readonly", true);
-    $('[name="unit"]').val(data.unit.trim()).prop("readonly", true);
+
+    // Satuan default dari item, tetap bisa diganti (selectable)
+    setUnitDtl(data.unit);
+
     //$('[name="batch"]').val(data.batch.trim()).prop("readonly", true);
 
     let qty = (data.sisaonhand && data.sisaonhand !== '') ? data.sisaonhand : 0;
@@ -353,10 +356,20 @@ function getSisaStock() {
             $('[name="nmbarang"]').val((data.nmbarang || '').trim()).prop("readonly", true);
 
             $('[name="qtystock"]').val((data.qty || '').trim()).prop("readonly", false);
-            $('[name="val"]').val((data.avg_cost || '').trim()).prop("readonly", false);
-            $('[name="valsum"]').val((data.avg_cost || '').trim()).prop("readonly", true);
-            $('[name="unit"]').val((data.unit || '').trim()).prop("readonly", true);
+
+            // Harga (avg cost) bisa mengandung 4 desimal -> tampilkan dengan separator
+            setJtsValue('#val', (data.avg_cost || '').trim());
+            $('[name="val"]').prop("readonly", false);
+
+            // Satuan tidak ditimpa jika user sudah memilih (tetap selectable)
+            if ($.trim($('#unit').val() || '') === '') {
+                setUnitDtl(data.unit);
+            }
             $('[name="currency"]').val((data.defaultcurrency || '').trim()).prop("readonly", true);
+
+            // Nilai selalu = qty x harga (bukan disamakan dengan avg cost)
+            $('[name="valsum"]').prop("readonly", true);
+            hitungValsumDtl();
 
      /*       if (data.batch) {
                 $('#batch').val(data.batch).trigger('change');
@@ -442,6 +455,68 @@ $("#batch").select2({
 });
 
 
+// ===============================
+// SATUAN (UNIT) — pilih dari master mbarang_unit
+// ===============================
+$("#unit").select2({
+    placeholder: "Pilih Satuan",
+    allowClear: true,
+    width: "100%",
+    dropdownParent: $("#modalDetailpnm"),
+
+    ajax: {
+        url: HOST_URL + 'api/globalmodule/list_unit_item',
+        type: 'POST',
+        dataType: 'json',
+        delay: 250,
+
+        data: function (params) {
+            return {
+                idbarang: $.trim($('#idbarang').val() || ''),
+                _search_: params.term || ''
+            };
+        },
+
+        processResults: function (data) {
+
+            return {
+                results: $.map((data && data.items) || [], function (item) {
+
+                    return {
+                        id: $.trim(item.idunit),
+                        text: $.trim(item.idunit),
+                        conv_value: item.conv_value,
+                        cdefault: $.trim(item.cdefault || '')
+                    };
+
+                })
+            };
+        },
+
+        cache: false
+    }
+});
+
+
+// Set satuan terpilih (default dari item) — tetap bisa diubah user
+function setUnitDtl(unit) {
+
+    unit = $.trim(unit || '');
+
+    let $unit = $('#unit');
+
+    if (unit === '') {
+        $unit.empty().val(null).trigger('change');
+        return;
+    }
+
+    $unit.empty()
+        .append(new Option(unit, unit, true, true))
+        .val(unit)
+        .trigger('change');
+}
+
+
 function formatBatch(repo) {
 
     if (repo.loading) return repo.text;
@@ -459,42 +534,202 @@ function formatBatchSelection(repo) {
 }
 
 
-function setJtsValue(selector, value) {
-    $(selector).val(value);
-    _jtsseparator($(selector)[0]);
+/* =========================================================
+ * FORMAT ANGKA DETAIL (Qty / Harga / Nilai)
+ * Menggantikan _jtsseparator khusus field detail, karena
+ * _jtsseparator global bermasalah untuk input desimal:
+ *   - "3000."  -> "3,000" (titik desimal hilang, tidak bisa lanjut ketik)
+ *   - lebih dari satu titik -> fungsi berhenti (return) sehingga
+ *     tampilan bisa campur koma & titik, mis. "3,000.1,100"
+ * Aturan formatter ini:
+ *   - koma SELALU pemisah ribuan (dibuang saat hitung)
+ *   - hanya satu titik desimal; titik berikutnya diabaikan
+ *   - jumlah desimal dibatasi sesuai kolom numeric database:
+ *       qty / qtystock  numeric(18,2) -> 2 desimal
+ *       val / valsum    numeric(18,4) -> 4 desimal
+ *   - titik desimal di akhir tetap ditampilkan agar user bisa lanjut
+ *     mengetik angka desimal
+ *   - posisi kursor dipertahankan saat mengetik di tengah angka
+ * ========================================================= */
+const JTS_DECIMAL_LIMIT = {
+    qty: 2,
+    val: 4,
+    valsum: 2   // tampilan 2 desimal; nilai yang disimpan tetap 4 desimal
+};
+
+function jtsFormatNumber(raw, maxDec) {
+    let str = (raw === null || raw === undefined) ? '' : String(raw);
+
+    // hanya izinkan digit, titik, dan koma
+    str = str.replace(/[^0-9.,]/g, '');
+
+    // koma = pemisah ribuan -> dibuang
+    str = str.replace(/,/g, '');
+
+    if (str === '') return '';
+
+    let endsWithDot = /\.$/.test(str);
+
+    // hanya titik pertama yang dianggap desimal, sisanya digabung
+    let parts = str.split('.');
+    let intPart = parts.shift() || '';
+    let decPart = parts.join('');
+
+    // buang nol di depan (007 -> 7)
+    intPart = intPart.replace(/^0+(?=\d)/, '');
+
+    if (maxDec !== null && maxDec !== undefined && maxDec >= 0) {
+        decPart = decPart.substring(0, maxDec);
+    }
+
+    intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+    if (decPart !== '') {
+        return (intPart === '' ? '0' : intPart) + '.' + decPart;
+    }
+
+    if (endsWithDot) {
+        return (intPart === '' ? '0' : intPart) + '.';
+    }
+
+    return intPart;
 }
 
+function jtsSetCaretByDigits(el, formatted, digitsBefore) {
+    let target = 0;
 
+    if (digitsBefore > 0) {
+        let seen = 0;
+        for (let i = 0; i < formatted.length; i++) {
+            if (/[0-9]/.test(formatted.charAt(i))) {
+                seen++;
+                if (seen === digitsBefore) {
+                    target = i + 1;
+                    break;
+                }
+            }
+        }
+        if (target === 0) target = formatted.length;
+    }
+
+    try {
+        el.setSelectionRange(target, target);
+    } catch (e) {
+        // input type tertentu tidak mendukung setSelectionRange
+    }
+}
+
+function jtsApplyNumberFormat(el, maxDec) {
+    let oldValue = el.value || '';
+    let caretAtEnd = (el.selectionStart === null || el.selectionStart === oldValue.length);
+    let caretPos = (el.selectionStart === null) ? oldValue.length : el.selectionStart;
+    let digitsBefore = (oldValue.substring(0, caretPos).match(/[0-9]/g) || []).length;
+
+    let formatted = jtsFormatNumber(oldValue, maxDec);
+
+    if (formatted === oldValue) return;
+
+    el.value = formatted;
+
+    if (document.activeElement !== el) return;
+
+    if (caretAtEnd) {
+        try {
+            el.setSelectionRange(formatted.length, formatted.length);
+        } catch (e) {
+            // abaikan
+        }
+        return;
+    }
+
+    jtsSetCaretByDigits(el, formatted, digitsBefore);
+}
+
+function setJtsValue(selector, value) {
+    let el = $(selector)[0];
+    if (!el) return;
+
+    let raw = (value === null || value === undefined) ? '' : String(value).trim();
+
+    if (raw === '') {
+        el.value = '';
+        return;
+    }
+
+    let maxDec = JTS_DECIMAL_LIMIT.hasOwnProperty(el.id) ? JTS_DECIMAL_LIMIT[el.id] : 4;
+    el.value = jtsFormatNumber(raw, maxDec);
+}
+
+// Format saat mengetik (qty, harga, nilai)
+$(document).on('input', '#qty, #val, #valsum', function () {
+    let maxDec = JTS_DECIMAL_LIMIT.hasOwnProperty(this.id) ? JTS_DECIMAL_LIMIT[this.id] : 4;
+    jtsApplyNumberFormat(this, maxDec);
+});
+
+// Field .jtsseparator lain (jika ada) tetap memakai helper global
 $(document).on('input', '.jtsseparator', function () {
+    if (JTS_DECIMAL_LIMIT.hasOwnProperty(this.id)) return; // sudah ditangani formatter detail
     _jtsseparator(this);
 });
 
 function new_spec() {
+
+    let idlocation_dtl = $('[name="idlocation_dtl"]').val();
+    let idbarang = $('[name="idbarang"]').val();
+
+    if (!idbarang || !idlocation_dtl) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Peringatan',
+            text: 'Pilih Gudang dan ID Barang terlebih dahulu'
+        });
+        return;
+    }
+
     Swal.fire({
         title: 'New Batch/Specification',
         html: '<input type="text" id="newbatch" class="swal2-input" style="text-transform: uppercase;" placeholder="New Batch/Spec">',
         confirmButtonText: 'Process',
         focusConfirm: false,
         preConfirm: () => {
-            const newbatch = Swal.getPopup().querySelector('#newbatch').value
+            const newbatch = $.trim(Swal.getPopup().querySelector('#newbatch').value).toUpperCase()
             //const password = Swal.getPopup().querySelector('#password').value
             if (!newbatch) {
                 Swal.showValidationMessage(`Fill The New Batch`)
+                return false
             }
             return {newbatch: newbatch}
         }
     }).then((result) => {
+
+        if (!result.isConfirmed || !result.value) return;
+
+        let newBatchValue = result.value.newbatch;
+
         $.ajax({
             type: "POST",
             url: HOST_URL + 'api/globalmodule/add_newbatch' + '',
             dataType: 'json',
             data: {
-                'loccode': $('[name="idlocation_dtl"]').val(),
-                'idbarang': $('[name="idbarang"]').val(),
-                'batch': result.value.newbatch,
+                'loccode': idlocation_dtl,
+                'idbarang': idbarang,
+                'batch': newBatchValue,
             },
             success: function (datax) {
                 if (datax.status) {
+
+                    // tampilkan batch baru pada dropdown lalu pilih otomatis
+                    let $batch = $('#batch');
+                    let exists = $batch.find('option').filter(function () {
+                        return $(this).val() === newBatchValue;
+                    }).length > 0;
+
+                    if (!exists) {
+                        $batch.append(new Option(newBatchValue, newBatchValue, true, true));
+                    }
+
+                    $batch.val(newBatchValue).trigger('change');
+
                     Swal.fire({
                         icon: 'success',
                         title: 'Berhasil',
@@ -698,6 +933,7 @@ function updatepnmBrgDtl() {
             $('[name="idlocation_dtl"]').empty().trigger('change');
             $('#idbarang').empty().trigger('change');
             $('#batch').empty().trigger('change');
+            $('#unit').empty().trigger('change');
             $('#iduniq').val(res.data.iduniq);
             if (!json.dataTables.status) return;
 
@@ -734,7 +970,7 @@ function updatepnmBrgDtl() {
             $('#qtystock').val(data.qtystock);
 
             $('#nmbarang').val(data.nmbarang);
-            $('#unit').val(data.unit);
+            setUnitDtl(data.unit); // satuan tersimpan, tetap bisa diubah
 // Contoh implementasi saat data diterima dari AJAX
 
             // $('#qty').val(data.qty);
@@ -745,6 +981,11 @@ function updatepnmBrgDtl() {
             setJtsValue('#qty', data.qty);
             setJtsValue('#val', data.val);
             setJtsValue('#valsum', data.valsum);
+
+            // Jika nilai tersimpan kosong / 0 padahal qty & harga ada, hitung ulang (qty x harga)
+            if (convertToDbNumber(data.valsum) === 0) {
+                hitungValsumDtl();
+            }
 
 
 //             $('#qty').val(_jtsseparator(data.qty));
@@ -818,6 +1059,9 @@ function updatepnmBrgDtl() {
                     type: 'select2:select',
                     params: { data: item }
                 });
+
+                // Kembalikan satuan yang tersimpan (handler di atas mengisi satuan default item)
+                setUnitDtl(data.unit);
 
                 /*
                 =========================
@@ -1018,6 +1262,13 @@ function savePnmBrg() {
         let valVal = parseFloat(convertToDbNumber(varval)) || 0;
         let valValsum = parseFloat(convertToDbNumber(varvalsum)) || 0;
 
+        // Nilai selalu = Qty x Harga.
+        // Tampilan #valsum 2 desimal, tetapi yang dikirim/disimpan tetap 4 desimal
+        // (kolom valsum numeric(18,4)) supaya tidak kehilangan presisi.
+        if (qty > 0 && valVal > 0) {
+            valValsum = Number((qty * valVal).toFixed(4));
+        }
+
 
         // ===============================
         // Siapkan FormData
@@ -1089,7 +1340,7 @@ function savePnmBrg() {
 
                     Swal.fire({
                         icon: 'warning',
-                        title: 'Gagal',
+                        title: (res.code === 'COA') ? 'COA Belum Lengkap' : 'Gagal',
                         text: res.message || 'Gagal menyimpan data'
                     });
                 }
@@ -1153,6 +1404,7 @@ function btnInputDetail() {
     $('#idlocation_dtl').val(null).trigger('change');
     $('#batch').val(null).trigger('change');
     $('#idbarang').val(null).trigger('change');
+    $('#unit').empty().val(null).trigger('change');
     $('#idurut').val('');
     $('#modalDetailPemakaianBarang').text('Tambah Item Detail');
     $('#modalDetailpnm').modal('show');
@@ -1798,7 +2050,7 @@ $("#idlocation_dtl").select2({
         $('#batch').val(null);
 
         $('[name="nmbarang"]').val('');
-        $('[name="unit"]').val('');
+        $('#unit').empty().val(null).trigger('change');
         $('[name="qtystock"]').val(0);
 
     });
@@ -2081,24 +2333,94 @@ $("#idcostcenter").select2({
 console.log('PNM_BRNG.JS berhasil dimuat');
 
 $(document).on('input change', '#qty, #val', function () {
-    console.log('Input berubah:', this.id, $(this).val());
+    hitungValsumDtl();
+});
 
-    function toNumber(value) {
-        return parseFloat(
-            String(value || '').replace(/\./g, '').replace(',', '.')
-        ) || 0;
-    }
+/**
+ * Hitung Nilai (valsum) = Qty x Harga.
+ * - Qty & Harga dibaca dengan convertToDbNumber() => separator ribuan ',' dan desimal '.'
+ * - Nilai dihitung & dibulatkan 4 desimal (kolom valsum = numeric(18,4))
+ * - TAMPILAN di input #valsum hanya 2 desimal (mis. 12,345.68)
+ * - Nilai yang dikirim ke server tetap 4 desimal (lihat savePnmBrg)
+ */
+function hitungValsumDtl() {
 
-    const qty = toNumber($('#qty').val());
-    const harga = toNumber($('#val').val());
-    const total = qty * harga;
+    let qty = convertToDbNumber($('#qty').val());
+    let val = convertToDbNumber($('#val').val());
 
-    $('#valsum').val(total.toLocaleString('id-ID', {
+    // bulatkan 4 desimal untuk menghindari noise floating point
+    let total = Number((qty * val).toFixed(4));
+
+    // tampilan cukup 2 desimal, penyimpanan tetap 4 desimal
+    $('#valsum').val(total.toLocaleString('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     }));
 
-    console.log('Hasil perhitungan:', total);
+    return total;
+}
+
+
+/**
+ * Guard sebelum Simpan Final Data.
+ * Cegah submit bila master barang belum punya COA persediaan (ppersediaan)
+ * atau master cost center belum punya COA biaya (pbiaya).
+ * Tanpa guard ini trigger DB melempar error:
+ * "COA persediaan belum diisi pada master barang: ..."
+ */
+$(document).on('submit', '#formPenerimaanBarang', function (e) {
+    var form = this;
+    e.preventDefault();
+
+    $.ajax({
+        url: HOST_URL + 'persediaan/trans/check_coa_pnm_brng',
+        type: 'POST',
+        dataType: 'json',
+        success: function (res) {
+            if (res && res.status === true) {
+                form.submit(); // lanjutkan submit normal
+                return;
+            }
+
+            var escHtml = function (t) {
+                return $('<div>').text(t == null ? '' : String(t)).html();
+            };
+            var html = '';
+
+            if (res && res.barang && res.barang.length > 0) {
+                html += '<div style="text-align:left;margin-bottom:8px;">' +
+                    '<b>COA Persediaan belum diisi pada master barang:</b><ul style="margin-bottom:0;">';
+                $.each(res.barang, function (i, b) {
+                    html += '<li>' + escHtml(b.kode) + (b.nama ? ' - ' + escHtml(b.nama) : '') + '</li>';
+                });
+                html += '</ul></div>';
+            }
+
+            if (res && res.costcenter && res.costcenter.length > 0) {
+                html += '<div style="text-align:left;">' +
+                    '<b>COA Biaya belum diisi pada master cost center:</b><ul style="margin-bottom:0;">';
+                $.each(res.costcenter, function (i, c) {
+                    html += '<li>' + escHtml(c.kode) + '</li>';
+                });
+                html += '</ul></div>';
+            }
+
+            if (html === '') {
+                html = 'Data master COA belum lengkap.';
+            }
+
+            Swal.fire({
+                icon: 'warning',
+                title: 'Tidak Dapat Disimpan',
+                html: html + '<div style="margin-top:8px;"><small>Lengkapi COA pada master barang / cost center terlebih dahulu.</small></div>'
+            });
+        },
+        error: function () {
+            Swal.fire('Error', 'Gagal memeriksa kelengkapan COA master barang.', 'error');
+        }
+    });
+
+    return false;
 });
 
 

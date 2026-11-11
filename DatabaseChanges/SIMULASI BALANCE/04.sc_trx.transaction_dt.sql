@@ -195,18 +195,23 @@ CREATE TABLE sc_trx.transaction_dt
 
     qty NUMERIC(18,6) DEFAULT 0,
     harga NUMERIC(18,6) DEFAULT 0,
-    bruto NUMERIC(18,2) DEFAULT 0,
-    discount NUMERIC(18,2) DEFAULT 0,
-    nilai NUMERIC(18,2) DEFAULT 0,
-    dpp NUMERIC(18,2) DEFAULT 0,
-    pajak NUMERIC(18,2) DEFAULT 0,
-    total NUMERIC(18,2) DEFAULT 0,
+    bruto NUMERIC(18,6) DEFAULT 0,
+    discount NUMERIC(18,6) DEFAULT 0,
+    nilai NUMERIC(18,6) DEFAULT 0,
+    dpp NUMERIC(18,6) DEFAULT 0,
+    pajak NUMERIC(18,6) DEFAULT 0,
+    total NUMERIC(18,6) DEFAULT 0,
 
     idtax CHAR(20) DEFAULT 'NON',
     isinclusive CHAR(6) DEFAULT 'NO',
 
     currcode CHAR(3) DEFAULT 'IDR',
     kurs NUMERIC(18,6) DEFAULT 1,
+
+    /* Nilai asli transaksi untuk laporan buku besar detail */
+    currcode_trans CHAR(3),
+    kurs_trans NUMERIC(18,6),
+    nilai_trans NUMERIC(18,6),
 
     /* PRIMARY ACCOUNT / PRIMARY COA */
     idcoa VARCHAR(20) DEFAULT '',
@@ -215,8 +220,8 @@ CREATE TABLE sc_trx.transaction_dt
     counter_idcoa VARCHAR(20) DEFAULT '',
     debet_kredit CHAR(1) DEFAULT 'D',
 
-    debet NUMERIC(18,2) DEFAULT 0,
-    kredit NUMERIC(18,2) DEFAULT 0,
+    debet NUMERIC(18,6) DEFAULT 0,
+    kredit NUMERIC(18,6) DEFAULT 0,
 
     /* SNAPSHOT ROUTING */
     module VARCHAR(30) DEFAULT '',
@@ -344,6 +349,60 @@ BEGIN
     END IF;
 END;
 $$;
+
+
+/* ============================================================
+   1.1A CURRENCY TRANSACTION + PRECISION NILAI
+   ============================================================
+
+   currcode / kurs / nilai:
+       nilai dalam currency dasar transaction_dt (dapat dinormalisasi IDR/1).
+
+   currcode_trans / kurs_trans / nilai_trans:
+       snapshot currency dan nilai asli transaksi untuk laporan
+       buku besar detail.
+
+   Catatan:
+       Data historis diisi dari currcode/kurs/nilai yang tersedia.
+       Jika data lama sudah lebih dahulu dinormalisasi menjadi IDR/1,
+       currency dan kurs asal tidak dapat direkonstruksi dari data tersebut.
+   ============================================================ */
+
+ALTER TABLE sc_trx.transaction_dt
+    ADD COLUMN IF NOT EXISTS currcode_trans CHAR(3),
+    ADD COLUMN IF NOT EXISTS kurs_trans NUMERIC(18,6),
+    ADD COLUMN IF NOT EXISTS nilai_trans NUMERIC(18,6);
+
+-- Perbesar presisi seluruh kolom nominal transaction_dt dari 18,2 ke 18,6.
+ALTER TABLE sc_trx.transaction_dt
+    ALTER COLUMN bruto TYPE NUMERIC(18,6) USING bruto::NUMERIC(18,6),
+    ALTER COLUMN discount TYPE NUMERIC(18,6) USING discount::NUMERIC(18,6),
+    ALTER COLUMN nilai TYPE NUMERIC(18,6) USING nilai::NUMERIC(18,6),
+    ALTER COLUMN dpp TYPE NUMERIC(18,6) USING dpp::NUMERIC(18,6),
+    ALTER COLUMN pajak TYPE NUMERIC(18,6) USING pajak::NUMERIC(18,6),
+    ALTER COLUMN total TYPE NUMERIC(18,6) USING total::NUMERIC(18,6),
+    ALTER COLUMN debet TYPE NUMERIC(18,6) USING debet::NUMERIC(18,6),
+    ALTER COLUMN kredit TYPE NUMERIC(18,6) USING kredit::NUMERIC(18,6);
+
+-- Backfill untuk transaksi existing; nilai yang sudah terisi tidak ditimpa.
+UPDATE sc_trx.transaction_dt
+SET
+    currcode_trans = COALESCE(
+        NULLIF(BTRIM(currcode_trans), ''),
+        NULLIF(BTRIM(currcode), ''),
+        'IDR'
+    ),
+    kurs_trans = COALESCE(
+        NULLIF(kurs_trans, 0),
+        NULLIF(kurs, 0),
+        1
+    ),
+    nilai_trans = COALESCE(nilai_trans, nilai, 0)
+WHERE currcode_trans IS NULL
+   OR BTRIM(currcode_trans) = ''
+   OR kurs_trans IS NULL
+   OR kurs_trans = 0
+   OR nilai_trans IS NULL;
 
 
 /* ============================================================
@@ -1335,6 +1394,29 @@ DECLARE
 
 
 BEGIN
+
+    /*
+       Simpan currency/nilai asli transaksi sebelum normalisasi
+       currency dasar (currcode/kurs/nilai) oleh proses lain.
+       Nilai yang dikirim eksplisit pada kolom *_trans tetap diprioritaskan.
+    */
+    NEW.currcode_trans := COALESCE(
+        NULLIF(BTRIM(NEW.currcode_trans), ''),
+        NULLIF(BTRIM(NEW.currcode), ''),
+        'IDR'
+    );
+
+    NEW.kurs_trans := COALESCE(
+        NULLIF(NEW.kurs_trans, 0),
+        NULLIF(NEW.kurs, 0),
+        1
+    );
+
+    NEW.nilai_trans := COALESCE(
+        NEW.nilai_trans,
+        NEW.nilai,
+        0
+    );
 
     /* ========================================================
        1. VALIDATE JOURNAL TYPE + LOAD ROUTE
@@ -2620,3 +2702,51 @@ Stock:
        TAHAP 11-16 posting / reverse
 
    ============================================================ */
+
+
+/* ============================================================
+   FINAL SAFETY PATCH - TRANSACTION CURRENCY DETAIL
+   ============================================================ */
+ALTER TABLE sc_trx.transaction_dt
+    ADD COLUMN IF NOT EXISTS currcode_trans CHAR(3),
+    ADD COLUMN IF NOT EXISTS kurs_trans NUMERIC(18,6),
+    ADD COLUMN IF NOT EXISTS nilai_trans NUMERIC(18,6);
+
+ALTER TABLE sc_trx.transaction_dt
+    ALTER COLUMN bruto TYPE NUMERIC(18,6) USING bruto::NUMERIC(18,6),
+    ALTER COLUMN discount TYPE NUMERIC(18,6) USING discount::NUMERIC(18,6),
+    ALTER COLUMN nilai TYPE NUMERIC(18,6) USING nilai::NUMERIC(18,6),
+    ALTER COLUMN dpp TYPE NUMERIC(18,6) USING dpp::NUMERIC(18,6),
+    ALTER COLUMN pajak TYPE NUMERIC(18,6) USING pajak::NUMERIC(18,6),
+    ALTER COLUMN total TYPE NUMERIC(18,6) USING total::NUMERIC(18,6),
+    ALTER COLUMN debet TYPE NUMERIC(18,6) USING debet::NUMERIC(18,6),
+    ALTER COLUMN kredit TYPE NUMERIC(18,6) USING kredit::NUMERIC(18,6);
+
+UPDATE sc_trx.transaction_dt
+SET
+    currcode_trans = COALESCE(
+        NULLIF(BTRIM(currcode_trans), ''),
+        NULLIF(BTRIM(currcode), ''),
+        'IDR'
+    ),
+    kurs_trans = COALESCE(NULLIF(kurs_trans, 0), NULLIF(kurs, 0), 1),
+    nilai_trans = COALESCE(nilai_trans, nilai, 0)
+WHERE currcode_trans IS NULL
+   OR BTRIM(currcode_trans) = ''
+   OR kurs_trans IS NULL
+   OR kurs_trans = 0
+   OR nilai_trans IS NULL;
+
+
+/* Verifikasi:
+SELECT column_name, data_type, numeric_precision, numeric_scale
+FROM information_schema.columns
+WHERE table_schema = 'sc_trx'
+  AND table_name = 'transaction_dt'
+  AND column_name IN (
+      'currcode_trans', 'kurs_trans', 'nilai_trans',
+      'bruto', 'discount', 'nilai', 'dpp', 'pajak', 'total',
+      'debet', 'kredit'
+  )
+ORDER BY ordinal_position;
+*/

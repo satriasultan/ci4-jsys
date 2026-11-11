@@ -1,3 +1,4 @@
+<link rel="stylesheet" href="<?= base_url('assets/css/corp-form.css') ?>" />
 <style>
 
     .section-block {
@@ -165,6 +166,8 @@
 
 
 </style>
+<div class="corp-form-container">
+
 <div class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
@@ -200,7 +203,7 @@ $disabled = $isIT ? '' : 'disabled';
             <!-- jquery validation -->
             <div class="card card-primary">
                 <div class="card-header">
-                    <h3 class="card-title"><?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> Pemakaian Barang</h3>
+                    <h3 class="card-title"><i class="fa fa-file-text-o"></i> <?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> Pemakaian Barang</h3>
                 </div>
                 <!-- /.card-header -->
                 <!-- form start -->
@@ -354,7 +357,7 @@ $disabled = $isIT ? '' : 'disabled';
                     </div>
                     <div class="card-footer bg-light">
                         <a href="<?= base_url('persediaan/trans/pmk_brng') ?>"
-                           class="btn btn-default btn-lg">
+                           class="btn btn-default float-left">
                             <i class="fa fa-arrow-left mr-2"></i>
                             Kembali
                         </a>
@@ -378,6 +381,7 @@ $disabled = $isIT ? '' : 'disabled';
     </div>
     <!--/.col (right) -->
 </div>
+</div><!-- /.corp-form-container -->
 
 
 

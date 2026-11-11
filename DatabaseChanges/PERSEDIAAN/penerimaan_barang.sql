@@ -4,10 +4,23 @@
    ----------------------------------------------------------------------------
    - TIDAK menyentuh TAHAP 0-33
    - Hanya drop & recreate tabel + trigger + function PNM BRNG
-   - journal_type = STKIN
+   - journal_type = STKINX
    ============================================================================ */
 
 BEGIN;
+
+/* Validasi master sebelum object PNM lama dihapus */
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM sc_mst.journal_type
+        WHERE BTRIM(journal_type) = 'STKINX'
+    ) THEN
+        RAISE EXCEPTION 'Journal type STKINX tidak ditemukan di sc_mst.journal_type';
+    END IF;
+END;
+$$;
 
 /* ============================================================================
    STEP 1 — DROP OBJECT PNM BRNG SAJA
@@ -33,7 +46,7 @@ DROP TABLE IF EXISTS sc_trx.pnm_brng_mst CASCADE;
    ============================================================================ */
 
 CREATE TABLE sc_tmp.pnm_brng_mst (
-    idurut             BIGSERIAL PRIMARY KEY,
+    idurut             BIGSERIAL,
     docno              VARCHAR(30) NOT NULL,
     doctype            VARCHAR(20) DEFAULT 'PNMBRG',
     docdate            VARCHAR(20),
@@ -140,6 +153,12 @@ CREATE TABLE sc_trx.pnm_brng_dtl (
     idlocation   VARCHAR(10),
     idcoa        VARCHAR(20)
 );
+
+
+ALTER TABLE sc_tmp.pnm_brng_dtl ALTER COLUMN val    TYPE numeric(18,4);
+ALTER TABLE sc_tmp.pnm_brng_dtl ALTER COLUMN valsum TYPE numeric(18,4);
+ALTER TABLE sc_trx.pnm_brng_dtl ALTER COLUMN val    TYPE numeric(18,4);
+ALTER TABLE sc_trx.pnm_brng_dtl ALTER COLUMN valsum TYPE numeric(18,4);
 
 
 /* ============================================================================
@@ -399,13 +418,10 @@ EXECUTE FUNCTION sc_trx.tr_trx_pnm_brng_mst();
    STEP 6 — SYNC DETAIL PNM → TRANSACTION_DT
    ============================================================================ */
 
-CREATE OR REPLACE FUNCTION sc_trx.fn_sync_pnm_brng_dtl_to_transaction(
-    p_docno    TEXT,
-    p_uniqueid TEXT
-)
-RETURNS VOID
-LANGUAGE plpgsql
-AS $$
+CREATE OR REPLACE FUNCTION sc_trx.fn_sync_pnm_brng_dtl_to_transaction(p_docno text, p_uniqueid text)
+ RETURNS void
+ LANGUAGE plpgsql
+AS $function$
 DECLARE
     v_hdr       sc_trx.pnm_brng_mst%ROWTYPE;
     v_dtl       sc_trx.pnm_brng_dtl%ROWTYPE;
@@ -416,147 +432,107 @@ DECLARE
     v_total     NUMERIC(18,2);
     v_coa_persediaan TEXT;
     v_coa_costcenter TEXT;
-    v_exists    BOOLEAN;
 BEGIN
-
-    SELECT * INTO v_hdr
-    FROM sc_trx.pnm_brng_mst
-    WHERE BTRIM(docno) = BTRIM(p_docno);
-
-    IF NOT FOUND THEN RETURN; END IF;
-
-    SELECT * INTO v_dtl
-    FROM sc_trx.pnm_brng_dtl
-    WHERE BTRIM(docno) = BTRIM(p_docno)
-      AND iduniq = p_uniqueid;
+    SELECT *
+      INTO v_hdr
+      FROM sc_trx.pnm_brng_mst
+     WHERE RTRIM(docno) = RTRIM(p_docno);
 
     IF NOT FOUND THEN RETURN; END IF;
 
-    /* Branch */
-    v_idbranch := CASE BTRIM(COALESCE(v_hdr.cabang, ''))
+    SELECT *
+      INTO v_dtl
+      FROM sc_trx.pnm_brng_dtl
+     WHERE RTRIM(docno) = RTRIM(p_docno)
+       AND iduniq = p_uniqueid;
+
+    IF NOT FOUND THEN RETURN; END IF;
+
+    v_idbranch := CASE RTRIM(v_hdr.cabang)
         WHEN 'JTS1' THEN 'JTS'::CHAR(20)
         WHEN 'JTS2' THEN 'JTS'::CHAR(20)
-        ELSE BTRIM(COALESCE(v_hdr.cabang, ''))::CHAR(20)
+        ELSE RTRIM(v_hdr.cabang)::CHAR(20)
     END;
 
-    /* Nilai */
     v_qty   := COALESCE(v_dtl.qty, 0);
     v_val   := COALESCE(v_dtl.val, 0);
-    v_total := COALESCE(NULLIF(v_dtl.valsum, 0), v_val * v_qty, 0);
+    v_total := COALESCE(NULLIF(v_dtl.valsum, 0), v_val * v_qty);
 
-    /* COA persediaan dari master barang */
     SELECT NULLIF(BTRIM(COALESCE(m.ppersediaan, '')), '')
-    INTO v_coa_persediaan
-    FROM sc_mst.mbarang m
-    WHERE BTRIM(m.idbarang) = BTRIM(v_dtl.idbarang)
-    LIMIT 1;
+      INTO v_coa_persediaan
+      FROM sc_mst.mbarang m
+     WHERE BTRIM(m.idbarang) = BTRIM(v_dtl.idbarang)
+     LIMIT 1;
 
-    /* COA biaya dari cost center */
     SELECT NULLIF(BTRIM(COALESCE(cc.pbiaya, '')), '')
-    INTO v_coa_costcenter
-    FROM sc_mst.costcenter cc
-    WHERE BTRIM(cc.idcostcenter) = BTRIM(COALESCE(v_dtl.idcostcenter, v_hdr.idcostcenter))
-    LIMIT 1;
+      INTO v_coa_costcenter
+      FROM sc_mst.costcenter cc
+     WHERE BTRIM(cc.idcostcenter) = BTRIM(COALESCE(v_dtl.idcostcenter, v_hdr.idcostcenter))
+     LIMIT 1;
 
     IF COALESCE(v_coa_persediaan, '') = '' THEN
-        RAISE EXCEPTION
-            'COA persediaan belum diisi pada master barang: %',
-            BTRIM(v_dtl.idbarang);
+        RAISE EXCEPTION 'COA persediaan belum diisi pada master barang: %', BTRIM(v_dtl.idbarang);
     END IF;
 
     IF COALESCE(v_coa_costcenter, '') = '' THEN
-        RAISE EXCEPTION
-            'COA biaya belum diisi pada master cost center: %',
-            BTRIM(COALESCE(v_dtl.idcostcenter, v_hdr.idcostcenter));
+        RAISE EXCEPTION 'COA biaya belum diisi pada master cost center: %', BTRIM(COALESCE(v_dtl.idcostcenter, v_hdr.idcostcenter));
     END IF;
 
-    v_tx_uid := MD5(BTRIM(p_docno) || '|' || COALESCE(v_dtl.iduniq, '') || '|pnm');
+    v_tx_uid := MD5(RTRIM(p_docno) || '|' || COALESCE(v_dtl.iduniq, ''));
 
-    /* Cek existing */
-    SELECT EXISTS (
-        SELECT 1 FROM sc_trx.transaction_dt
-        WHERE BTRIM(docno) = BTRIM(p_docno)
-          AND uniqueid = v_tx_uid
-    ) INTO v_exists;
-
-    IF v_exists THEN
-        UPDATE sc_trx.transaction_dt SET
-            journal_type    = 'STKIN',
-            type_in_out     = 'IN',
-            docdate         = COALESCE(v_hdr.docdate::DATE, CURRENT_DATE),
-            idbranch        = v_idbranch,
-            cabang          = BTRIM(COALESCE(v_hdr.cabang, '')),
-            idbarang        = BTRIM(COALESCE(v_dtl.idbarang, '')),
-            namabarang      = BTRIM(COALESCE(v_dtl.nmbarang, '')),
-            idunit          = BTRIM(COALESCE(v_dtl.unit, '')),
-            warehouse       = BTRIM(COALESCE(v_dtl.idlocation, '')),
-            idarea          = BTRIM(COALESCE(v_dtl.idlocation, '')),
-            bin             = '',
-            batch           = BTRIM(COALESCE(v_dtl.batch, '')),
-            lotno           = '',
-            qty             = v_qty,
-            harga           = v_val,
-            bruto           = v_total,
-            discount        = 0,
-            nilai           = v_total,
-            dpp             = v_total,
-            pajak           = 0,
-            total           = v_total,
-            idtax           = 'NON',
-            currcode        = 'IDR',
-            kurs            = 1,
-            idcoa           = v_coa_persediaan,
-            counter_idcoa   = v_coa_costcenter,
-            debet_kredit    = 'D',
-            keterangan      = COALESCE(v_dtl.description, ''),
-            updatedby       = v_hdr.updateby,
-            updateddate     = CURRENT_TIMESTAMP
-        WHERE BTRIM(docno) = BTRIM(p_docno)
-          AND uniqueid = v_tx_uid;
-    ELSE
-        INSERT INTO sc_trx.transaction_dt (
-            uniqueid, source_uniqueid,
-            docno, doctype, journal_type, line_no, docdate,
-            idbranch, cabang, type_in_out,
-            ref_docno, ref_doctype,
-            idbarang, namabarang, idunit, idarea, warehouse,
-            bin, batch, lotno,
-            qty, harga, bruto, discount, nilai, dpp, pajak, total,
-            idtax, isinclusive, currcode, kurs,
-            idcoa, counter_idcoa, debet_kredit,
-            keterangan, createdby
-        )
-        VALUES (
-            v_tx_uid,
-            COALESCE(v_dtl.iduniq, ''),
-            BTRIM(p_docno),
-            'PNMBRG',
-            'STKIN',
-            GREATEST(COALESCE(v_dtl.idurut, 1), 1),
-            COALESCE(v_hdr.docdate::DATE, CURRENT_DATE),
-            v_idbranch,
-            BTRIM(COALESCE(v_hdr.cabang, '')),
-            'IN',
-            BTRIM(COALESCE(v_dtl.docref, '')),
-            'PNM',
-            BTRIM(COALESCE(v_dtl.idbarang, '')),
-            BTRIM(COALESCE(v_dtl.nmbarang, '')),
-            BTRIM(COALESCE(v_dtl.unit, '')),
-            BTRIM(COALESCE(v_dtl.idlocation, '')),
-            BTRIM(COALESCE(v_dtl.idlocation, '')),
-            '',
-            BTRIM(COALESCE(v_dtl.batch, '')),
-            '',
-            v_qty, v_val, v_total, 0, v_total, v_total, 0, v_total,
-            'NON', 'NO', 'IDR', 1,
-            v_coa_persediaan, v_coa_costcenter, 'D',
-            COALESCE(v_dtl.description, ''),
-            COALESCE(v_hdr.inputby, 'SYSTEM')
-        );
-    END IF;
-
+    INSERT INTO sc_trx.transaction_dt (
+        uniqueid, source_uniqueid, docno, doctype, journal_type,
+        line_no, docdate, idbranch, cabang, type_in_out,
+        ref_docno, ref_doctype,
+        idbarang, namabarang, idunit, idarea, warehouse,
+        bin, batch, lotno,
+        qty, harga, bruto, discount, nilai, dpp, pajak, total,
+        idcoa, counter_idcoa, debet_kredit,
+        createdby
+    )
+    VALUES (
+        v_tx_uid, v_dtl.iduniq, RTRIM(p_docno), 'PNMBRG', 'STKINX',
+        v_dtl.idurut,
+        COALESCE(NULLIF(BTRIM(v_hdr.docdate), '')::DATE, CURRENT_DATE),
+        v_idbranch, RTRIM(v_hdr.cabang), 'IN',
+        RTRIM(v_dtl.docref), 'PNM',
+        RTRIM(v_dtl.idbarang), RTRIM(v_dtl.nmbarang), RTRIM(v_dtl.unit),
+        RTRIM(v_dtl.idlocation), RTRIM(v_dtl.idlocation),
+        '', RTRIM(v_dtl.batch), '',
+        v_qty, v_val, v_total, 0, v_total, 0, 0, v_total,
+        v_coa_persediaan, v_coa_costcenter, 'D',
+        RTRIM(v_hdr.inputby)
+    )
+    ON CONFLICT (uniqueid) DO UPDATE
+       SET source_uniqueid = EXCLUDED.source_uniqueid,
+           docno           = EXCLUDED.docno,
+           doctype         = EXCLUDED.doctype,
+           journal_type    = EXCLUDED.journal_type,
+           line_no         = EXCLUDED.line_no,
+           docdate         = EXCLUDED.docdate,
+           idbranch        = EXCLUDED.idbranch,
+           cabang          = EXCLUDED.cabang,
+           type_in_out     = EXCLUDED.type_in_out,
+           ref_docno       = EXCLUDED.ref_docno,
+           ref_doctype     = EXCLUDED.ref_doctype,
+           idbarang        = EXCLUDED.idbarang,
+           namabarang      = EXCLUDED.namabarang,
+           idunit          = EXCLUDED.idunit,
+           idarea          = EXCLUDED.idarea,
+           warehouse       = EXCLUDED.warehouse,
+           batch           = EXCLUDED.batch,
+           qty             = EXCLUDED.qty,
+           harga           = EXCLUDED.harga,
+           bruto           = EXCLUDED.bruto,
+           nilai           = EXCLUDED.nilai,
+           total           = EXCLUDED.total,
+           idcoa           = EXCLUDED.idcoa,
+           counter_idcoa   = EXCLUDED.counter_idcoa,
+           debet_kredit    = EXCLUDED.debet_kredit,
+           updateddate     = CURRENT_TIMESTAMP;
 END;
-$$;
+$function$;
+
 
 
 /* ============================================================================
@@ -578,7 +554,7 @@ BEGIN
 
     ELSIF TG_OP = 'DELETE' THEN
         DELETE FROM sc_trx.transaction_dt
-        WHERE uniqueid = MD5(BTRIM(OLD.docno) || '|' || COALESCE(OLD.iduniq, '') || '|pnm')
+        WHERE uniqueid = MD5(BTRIM(OLD.docno) || '|' || COALESCE(OLD.iduniq, ''))
           AND BTRIM(doctype) = 'PNMBRG';
         RETURN OLD;
     END IF;
@@ -638,8 +614,11 @@ COMMIT;
       - sc_trx.pnm_brng_dtl
       - function & trigger PNM BRNG
    2. TIDAK menyentuh TAHAP 0-33.
-   3. journal_type = STKIN (harus ada di sc_mst.journal_type).
+   3. journal_type = STKINX (harus ada di sc_mst.journal_type).
    4. Insert ke transaction_dt akan trigger TAHAP 04, 06, 07 (kalau ada).
    5. Pastikan kolom `pbiaya` ada di `sc_mst.costcenter`.
    6. Pastikan `ppersediaan` ada di `sc_mst.mbarang`.
    ============================================================================ */
+   
+   
+   

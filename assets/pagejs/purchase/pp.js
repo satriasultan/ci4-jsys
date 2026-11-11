@@ -136,6 +136,11 @@ function tablePPApprvTrx(){
                     json.recordsTotal = json.dataTables.recordsTotal;
                     json.recordsFiltered = json.dataTables.recordsFiltered;
                     json.data = json.dataTables.data;
+
+                    // update badge merah "Daftar PP Belum Approve"
+                    var jmlPending = json.dataTables.recordsTotal || 0;
+                    $('#pending-count').text(jmlPending);
+
                     return JSON.stringify(json); // return JSON string
                 }
             },
@@ -147,6 +152,15 @@ function tablePPApprvTrx(){
                     "orderable": false, //set not orderable
                 },
             ],
+
+            "drawCallback": function () {
+                // Pastikan badge selalu mengikuti recordsTotal terbaru
+                // setiap kali tabel selesai di-draw / di-reload.
+                var json = this.api().ajax.json();
+                if (json) {
+                    $('#pending-count').text(json.recordsTotal || 0);
+                }
+            },
 
         });
 
@@ -161,6 +175,41 @@ function reload_tablePPApprvTrx()
     var table = $('#tableppapprvTrx');
     table.DataTable().ajax.reload(); //reload datatable ajax
     //console.log('HALO HALO BANDUNG');
+}
+
+// Ambil jumlah "Belum Approve" langsung dari server agar badge
+// #pending-count langsung terisi di awal load, tanpa harus menunggu
+// DataTable tab tersembunyi (hidden tab) melakukan draw.
+function loadPendingCount()
+{
+    $.ajax({
+        url: HOST_URL + 'purchase/trans/list_pp_apprv',
+        type: 'POST',
+        dataType: 'json',
+        data: {
+            draw: 1,
+            start: 0,
+            length: 1,
+            'search[value]': '',
+            'search[regex]': 'false',
+            'order[0][column]': 0,
+            'order[0][dir]': 'asc'
+        },
+        success: function (res) {
+            var total = 0;
+
+            if (res && res.dataTables && res.dataTables.recordsTotal !== undefined) {
+                total = res.dataTables.recordsTotal;
+            } else if (res && res.recordsTotal !== undefined) {
+                total = res.recordsTotal;
+            }
+
+            $('#pending-count').text(total || 0);
+        },
+        error: function () {
+            // Jika request gagal, biarkan nilai badge yang sedang tampil.
+        }
+    });
 }
 
 
@@ -2438,6 +2487,27 @@ $(document).ready(function() {
     tablePPDetail();
     // tableItem();
     //read_qrcode();
+
+    // Isi badge jumlah "Daftar PP Belum Approve" saat halaman pertama dibuka,
+    // independen dari proses draw DataTable yang ada di hidden tab.
+    if ($('#pending-count').length) {
+        loadPendingCount();
+
+        // Saat tab "Daftar PP Belum Approve" dibuka, samakan ulang ukuran kolom
+        // dan reload datanya supaya hitungan docno selalu ter-update.
+        var $pendingTab = $('#pending-tab');
+        if ($pendingTab.length) {
+            $pendingTab.on('shown.bs.tab', function () {
+                var $tbl = $('#tableppapprvTrx');
+                if ($tbl.length) {
+                    $tbl.DataTable().columns.adjust();
+                    $tbl.DataTable().ajax.reload(null, false);
+                }
+                loadPendingCount();
+            });
+        }
+    }
+
     $('#checkboxnik').change(function() {
         // this will contain a reference to the checkbox
         if (this.checked) {

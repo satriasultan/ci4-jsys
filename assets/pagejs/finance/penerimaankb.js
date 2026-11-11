@@ -432,7 +432,10 @@ function hitungBalance() {
     $('#balance').val(selisih.toFixed(2));
 
     // Tombol final hanya aktif bila #total = #totalalokasi
-    $('button[type="submit"]').prop('disabled', Math.abs(selisih) > 0.005);
+    const $btnFinal = $('#btnFinalEntryPenerimaanKB');
+    if ($btnFinal.length) {
+        $btnFinal.prop('disabled', Math.abs(selisih) > 0.005);
+    }
 
     return selisih;
 }
@@ -1972,6 +1975,7 @@ $("#kdcustomer").select2({
 // });
 
 let currentKodeSuffix = '';
+let penerimaanKBDocnoAuto = ''; // nomor bukti hasil auto-generate (boleh ditimpa saat cabang berubah)
 let skipRoleChange = false;
 
 $('#cabang').on('change', function () {
@@ -1993,7 +1997,7 @@ $('#cabang').on('change', function () {
 
                     currentKodeSuffix = res.kode_suffix; // PT / PA / PB
                     $('#infix').val(res.infix);          // YYMM
-                    $('#prefix').val('BKM');             // default
+                    $('#prefix').val(res.prefix || 'BKM'); // default
                     defaultInitialPP = currentKodeSuffix
                     var infix = (res.infix || '').toString();
                     if (infix.length === 4) {
@@ -2042,12 +2046,32 @@ $('#cabang').on('change', function () {
                         $el.val(today.format('DD-MM-YYYY'));
                     }
 
-                    // Nomor dokumen hanya diisi otomatis bila belum ada.
-                    // Nomor yang sudah ada / diisi user tidak ditimpa.
-                    if ($.trim($('#docno').val() || '') === '') {
-                        $('#suffix').val(currentKodeSuffix + '0001');
-                        $('#docno').val(
-                            'BKM/' + res.infix + '/' + currentKodeSuffix + '0001'
+                    // Nomor bukti diisi otomatis memakai nomor terakhir yang
+                    // tersimpan di server (next_suffix).
+                    // Nomor yang sudah tersimpan / diisi user tidak ditimpa.
+                    var docnoNow = $.trim($('#docno').val() || '');
+
+                    if (docnoNow === '' || docnoNow === penerimaanKBDocnoAuto) {
+
+                        var nextSuffix = $.trim(res.next_suffix || '');
+
+                        if (nextSuffix === '') {
+                            nextSuffix = currentKodeSuffix + '0001';
+                        }
+
+                        var newDocno = ($.trim(res.prefix || '') || 'BKM')
+                            + '/' + res.infix + '/' + nextSuffix;
+
+                        $('#suffix').val(nextSuffix);
+                        $('#docno').val(newDocno);
+
+                        penerimaanKBDocnoAuto = newDocno;
+
+                        $('#suffix').attr(
+                            'title',
+                            res.last_docno
+                                ? 'Nomor bukti terakhir: ' + res.last_docno
+                                : 'Belum ada nomor bukti'
                         );
                     }
                     $('#kdcustomer').prop('disabled', false);

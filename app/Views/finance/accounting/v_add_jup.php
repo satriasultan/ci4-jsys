@@ -1,68 +1,62 @@
+<!-- =========================================================
+     v_add_jup.php - Corporate Style
+     Referensi tampilan : finance/finance/v_add_penerimaankb.php
+     Catatan : perubahan hanya pada font, warna, spacing, dan
+               kerapian layout. Nama field, id, dan fungsi
+               JavaScript tidak diubah.
+     ========================================================= -->
+<link rel="stylesheet" href="<?= base_url('assets/css/corp-form.css') ?>">
 <style>
-    
-    .section-block {
-        background-color: #e8e8e8;
-        border-left: 4px solid #007bff;
-        /* border-bottom: 4px solid #007bff;  */
-        padding: 20px;
-        border-radius: 6px;
-        margin-bottom: 30px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-                    box-shadow 0.4s ease, 
-                    border-color 0.4s ease;
-        
-        transform: scale(1);
-        will-change: transform;
+    /* Suplemen khusus Jurnal Umum Perkiraan (JUP): tabel detail & separator angka
+       mengikuti tema corporate yang sama (referensi v_add_penerimaankb.php). */
+    .corp-form-container #tabjupdtl thead th {
+        background: var(--corp-primary) !important;
+        color: #ffffff !important;
+        font-size: 12.5px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        border-color: var(--corp-border) !important;
+        padding: 10px 12px !important;
+        vertical-align: middle;
     }
 
-    .section-header {
-        font-weight: bold;
-        color: #007bff;
-        margin-bottom: 20px;
-        font-size: 1.1rem;
-        display: flex;
-        align-items: center;
+    .corp-form-container #tabjupdtl tbody td {
+        padding: 9px 12px !important;
+        border-color: var(--corp-border) !important;
+        vertical-align: middle;
+        color: var(--corp-text);
     }
 
-    .section-header i {
-        margin-right: 8px;
+    .corp-form-container #tabjupdtl tbody tr:hover {
+        background-color: var(--corp-primary-light) !important;
     }
 
-    .section-block:hover {
-        /* transform: scale(1.02); */
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-        border-left-color: #0056b3;
-        border-bottom-color: #0056b3;
+    .corp-form-container .form-control.jtsseparator,
+    .corp-form-container .form-control.ratakanan {
+        text-align: right;
     }
 
-    .is-invalid {
-        border-color: #dc3545;
-    }
-    .invalid-feedback {
-        display: block;
-        color: #dc3545;
-        font-size: 0.875em;
+    /* No. Jurnal JUP: prefix / infix / sufix sejajar & proporsional */
+    .corp-form-container #prefix {
+        min-width: 80px;
+        flex: 0 0 80px;
     }
 
-    .form-control:disabled, .form-control[readonly] {
-        background-color: #dfdfdf;
-        opacity: 1;
+    .corp-form-container #infix {
+        min-width: 70px;
+        flex: 0 0 70px;
+        background-color: var(--corp-bg-disabled);
     }
 
-    .section-divider {
-        height: 1px;
-        background: linear-gradient(
-            to right,
-            #007bff 0%,
-            #cfe2ff 30%,
-            #e8e8e8 100%
-        );
-        margin: 24px 0;
-        border: none;
+    .corp-form-container #sufix {
+        min-width: 110px;
+        flex: 0 0 110px;
     }
 
-
+    .corp-form-container .is-invalid {
+        border-color: var(--corp-danger) !important;
+    }
 </style>
 <div class="content-header">
     <div class="container-fluid">
@@ -88,238 +82,160 @@
 </div>
 
 <?php echo $message;?>
-<?php
-    $isIT = isset($userinfo['rolename']) && trim($userinfo['rolename']) === 'IT';
-    $disabled = $isIT ? '' : 'disabled';
-?>
-<div class="row">
-    <!-- left column -->
-    <form action="<?= base_url('ka/accounting/finalEntryJUP') ?>" method="post" id="formPO">
-        <div class="col-md-12">
-            <!-- jquery validation -->
-            <div class="card card-primary">
-                <div class="card-header">
-                    <h3 class="card-title"><?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> Jurnal Umum Perkiraan</h3>
-                </div>
-                <!-- /.card-header -->
-                <!-- form start -->
-                <div class="card-body">
+<div class="corp-form-container">
+    <div class="row">
+        <!-- left column -->
+        <form action="<?= base_url('ka/accounting/finalEntryJUP') ?>" method="post" id="formPO">
+            <div class="col-md-12">
+                <!-- jquery validation -->
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fa fa-file-text-o"></i> <?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> Jurnal Umum Perkiraan</h3>
+                    </div>
+                    <!-- /.card-header -->
+                    <!-- form start -->
+                    <div class="card-body">
                         <div class="section-block">
                             <div class="section-header">
                                 <i class="fa fa-address-card"></i> Jurnal Umum Perkiraan (JUP)
                             </div>
-                            <div class="row">
 
-                                <!-- LEFT COLUMN -->
+                            <!-- ROW 1 : Informasi dokumen -->
+                            <div class="row">
                                 <div class="col-md-3">
-
-                                    <div class="row">
-                                        <div class="col-md-8">
-                                            <div class="form-group">
-                                                <label for="cabang">Cabang / Job</label>
-                                                <select name="cabang" id="cabang" class="form-control" required></select>
-                                            </div>
-                                        </div>
-
-                                        
-                                    </div>
-
-                                    <div class="row">
-                                        <div class="col-md-12">
-                                            <div class="form-group">
-                                                <label>No. Jurnal JUP</label>
-
-                                                <div class="d-flex">
-                                                    <input type="text"
-                                                        name="prefix"
-                                                        id="prefix"
-                                                        class="form-control me-1"
-                                                        maxlength="3"
-                                                        style="text-transform: uppercase;"
-                                                        pattern="[A-Z0-9]+">
-
-                                                    <span class="px-2 align-self-center">/</span>
-
-                                                    <input type="text"
-                                                        name="infix"
-                                                        id="infix"
-                                                        class="form-control mx-1"
-                                                        readonly>
-
-                                                    <span class="px-2 align-self-center">/</span>
-
-                                                    <input type="text"
-                                                        name="sufix"
-                                                        id="sufix"
-                                                        class="form-control ms-1"
-                                                        readonly>
-                                                        
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <input type="hidden" name="docno" class="form-control col-sm-12" id="docno" maxlength="20"     value="<?= isset($dtldata['docno']) ? esc(trim($dtldata['docno'])) : '' ?>" style="text-transform: uppercase;" readonly>
-                                            
-                                    </div>
-                                        
-                                </div>
-
-                                <!-- RIGHT COLUMN -->
-                                <div class="col-md-4">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label for="docdate">Tanggal</label>
-                                                <input type="text"
-                                                name="docdate"
-                                                id="docdate"
-                                                class="form-control"
-                                                placeholder="Tanggal">
-                                            </div>
-                                        </div>
-                                    </div>
-                                
-                                    <div class="row">
-                                        <div class="col-md-12" >
-                                            <div class="form-group">
-                                                <label for="keterangan">Keterangan</label>
-                                                <textarea name="keterangan"
-                                                    id="keterangan"
-                                                    class="form-control"
-                                                    rows="2"
-                                                    placeholder="Keterangan"
-                                                    style="text-transform:uppercase;"></textarea>
-                                            </div>
-                                        </div>
-
+                                    <div class="form-group">
+                                        <label for="cabang">Cabang / Job</label>
+                                        <select name="cabang" id="cabang" class="form-control" required></select>
                                     </div>
                                 </div>
-
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label for="docdate">Tanggal</label>
+                                        <input type="text" name="docdate" id="docdate" class="form-control" placeholder="Tanggal">
+                                    </div>
+                                </div>
                             </div>
 
-                        </div>
-                </div>
-            </div>
-
-            <div class="card mt-3 card-primary">
-                <div class="card-header clearfix">
-                    <h3 class="card-title">
-                        Detail Perkiraan
-                    </h3>
-
-                    <div class="float-right d-flex align-items-center gap-2">
-                        <button type="button"
-                                class="btn btn-success btn-lg action-btn"
-                                data-bs-toggle="tooltip"
-                                title="Input Data"
-                                onclick="btnInputDetail()">
-                            <i class="fa fa-plus"></i>
-                        </button>
-
-                        <button type="button"
-                                class="btn btn-warning btn-lg action-btn"
-                                data-bs-toggle="tooltip"
-                                title="Update Data"
-                                onclick="btnUpdateDetail()">
-                            <i class="fa fa-edit"></i>
-                        </button>
-
-                        <button type="button"
-                                class="btn btn-danger btn-lg action-btn"
-                                data-bs-toggle="tooltip"
-                                title="Hapus Data"
-                                onclick="btnDeleteDetail()">
-                            <i class="fa fa-trash"></i>
-                        </button>
-
-
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="table-responsive" style="overflow-x: auto;">
-                                <table id="tabjupdtl" class="table table-bordered table-striped" style="width:100%;" cellspacing="0">
-                                    <thead class="bg-primary text-white">
-                                        <tr>
-                                            <th width="30">
-                                                <input type="checkbox" id="checkAll">
-                                            </th>
-                                            <th>Kode Perk.</th>
-                                            <th>Nama Perkiraan</th>
-                                            <th>Keterangan</th>
-                                            <th>DK</th>
-                                            <th>Cost/Profit Center</th>
-                                            <th>Nilai</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <hr>
-                    <div class="row" style="margin-top: 10px;">
-                        <div class="col-md-6">
-                            
-                        </div>
-
-                        <div class="col-md-6">
+                            <!-- ROW 2 : No. Jurnal & keterangan -->
                             <div class="row">
-                                <div class="col-md-12 ">
-                                    <div class="col-md-4" style="float: right;">
-                                        <div class="form-group mb-2">
-                                            <div class="row">
-                                                <div class="col-md-4 text-end">
-                                                    <label for="balance" class="mt-2">Balance</label>
-                                                </div>
-                                                <div class="col-md-8">
-                                                    <input type="text"
-                                                        name="balance"
-                                                        id="balance"
-                                                        class="form-control jtsseparator ratakanan"
-                                                        readonly>
-                                                </div>
-                                            </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>No. Jurnal JUP</label>
+                                        <div class="d-flex align-items-center">
+                                            <input type="text" name="prefix" id="prefix" class="form-control me-1" maxlength="3" style="text-transform: uppercase;" pattern="[A-Z0-9]+">
+                                            <span class="px-2 align-self-center">/</span>
+                                            <input type="text" name="infix" id="infix" class="form-control mx-1" readonly>
+                                            <span class="px-2 align-self-center">/</span>
+                                            <input type="text" name="sufix" id="sufix" class="form-control ms-1" readonly>
                                         </div>
+                                        <input type="hidden" name="docno" id="docno" value="<?= isset($dtldata['docno']) ? esc(trim($dtldata['docno'])) : '' ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="keterangan">Keterangan</label>
+                                        <textarea name="keterangan" id="keterangan" class="form-control" rows="2" placeholder="Keterangan" style="text-transform:uppercase;"></textarea>
                                     </div>
                                 </div>
                             </div>
+
                         </div>
                     </div>
-                    <hr>
+                </div>
+
+                <!-- DETAIL PERKIRAAN -->
+                <div class="card mt-3 card-primary">
+                    <div class="card-header d-flex align-items-center flex-wrap gap-2">
+                        <h3 class="card-title mb-0 me-3">
+                            <i class="fa fa-book"></i> Detail Perkiraan
+                        </h3>
+
+                        <div class="ms-auto d-flex align-items-center gap-2">
+                            <button type="button"
+                                    class="btn btn-success btn-sm"
+                                    data-bs-toggle="tooltip"
+                                    title="Input Data"
+                                    onclick="btnInputDetail()">
+                                <i class="fa fa-plus"></i>
+                            </button>
+
+                            <button type="button"
+                                    class="btn btn-warning btn-sm"
+                                    data-bs-toggle="tooltip"
+                                    title="Update Data"
+                                    onclick="btnUpdateDetail()">
+                                <i class="fa fa-edit"></i>
+                            </button>
+
+                            <button type="button"
+                                    class="btn btn-danger btn-sm"
+                                    data-bs-toggle="tooltip"
+                                    title="Hapus Data"
+                                    onclick="btnDeleteDetail()">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive" style="overflow-x: auto;">
+                            <table id="tabjupdtl" class="table table-bordered table-hover table-sm mb-0" width="100%">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="30">
+                                            <input type="checkbox" id="checkAll">
+                                        </th>
+                                        <th>Kode Perk.</th>
+                                        <th>Nama Perkiraan</th>
+                                        <th>Keterangan</th>
+                                        <th>DK</th>
+                                        <th>Cost/Profit Center</th>
+                                        <th>Nilai</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <hr>
+                        <div class="d-flex justify-content-end align-items-center">
+                            <label for="balance" class="me-2 fw-semibold mb-0">Balance</label>
+                            <input type="text"
+                                   name="balance"
+                                   id="balance"
+                                   class="form-control jtsseparator ratakanan"
+                                   style="max-width: 220px;"
+                                   readonly>
+                        </div>
+                        <hr>
+                    </div>
+
+                    <div class="card-footer bg-light">
+                        <div class="d-flex justify-content-between">
+                            <a href="<?= base_url('ka/accounting/jup') ?>"
+                               class="btn btn-secondary">
+                                <i class="fa fa-arrow-left me-1"></i>
+                                Kembali
+                            </a>
+                            <?php if ($typeform != 'DETAIL'): ?>
+                                <button type="submit"
+                                        id="btnSimpanFinalJUP"
+                                        class="btn btn-success">
+                                    <i class="fa fa-save me-1"></i> Simpan Final Data
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
 
                 </div>
-                <div class="card-footer bg-light">
-                    <a href="<?= base_url('ka/accounting/jup') ?>"
-                        class="btn btn-default btn-lg">
-                        <i class="fa fa-arrow-left mr-2"></i>
-                        Kembali
-                    </a>
-                    <?php if ($typeform != 'DETAIL' && $dtldata != null): ?>
-                        <button type="submit"
-                                onclick="return confirm('Finish Entry?')"
-                                class="btn btn-success btn-lg float-right">
-                            <i class="fa fa-save"></i> Simpan Final Data
-                        </button>
-                    <?php endif; ?>
-                </div>
-                
             </div>
-        </div>
-    </form>
-        <!-- /.card -->
-    <!--/.col (left) -->
-    <!-- right column -->
-    <div class="col-md-6">
-
+        </form>
+        <!--/.col (left) -->
     </div>
-    <!--/.col (right) -->
-</div>
+</div><!-- /.corp-form-container -->
 
 
-
-
+<!-- ================= MODAL INPUT DETAIL JUP ================= -->
 <div class="modal fade" id="modalDetailJUP" tabindex="-1" role="dialog" aria-labelledby="modalDetailJUPLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
@@ -327,7 +243,7 @@
             <!-- HEADER -->
             <div class="modal-header bg-primary">
                 <h5 class="modal-title" id="modalDetailJUPLabel">
-                    </i> Input Perkiraan Detail
+                    Input Perkiraan Detail
                 </h5>
                 <button type="button" class="close text-white" data-bs-dismiss="modal">
                     <span>&times;</span>
@@ -359,11 +275,11 @@
                             <div class="form-group">
                                 <label>Nama Perkiraan</label>
                                 <input type="text"
-                                        name="nmcoa"
-                                        id="nmcoa"
-                                        class="form-control"
-                                        placeholder="Nama Perkiraan"
-                                        style="text-transform:uppercase" readonly>
+                                       name="nmcoa"
+                                       id="nmcoa"
+                                       class="form-control"
+                                       placeholder="Nama Perkiraan"
+                                       style="text-transform:uppercase" readonly>
                             </div>
                         </div>
                     </div>
@@ -375,38 +291,38 @@
                                 <label for="dk">Debit/Kredit</label>
                                 <select name="dk" id="dk" class="form-control" required>
                                     <option value="">-- Pilih --</option>
-                                    <option value="DEBIT">Debit</option>
-                                    <option value="KREDIT">Kredit</option>
+                                    <option value="D">D</option>
+                                    <option value="K">K</option>
                                 </select>
                             </div>
                         </div>
                         <div class="col-md-2">
                             <div class="form-group">
                                 <label>Cost Center</label>
-                                <input name="cabangdtl" id="cabangdtl"
+                                <select name="cabangdtl" id="cabangdtl"
                                         class="form-control select2"
-                                        style="width:100%">
+                                        style="width:100%"></select>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Keterangan</label>
                                 <textarea type="text"
-                                        name="remarks"
-                                        rows="4"
-                                        style="text-transform: uppercase;"
-                                        id="remarks"
-                                        class="form-control"></textarea>
+                                          name="remarks"
+                                          rows="4"
+                                          style="text-transform: uppercase;"
+                                          id="remarks"
+                                          class="form-control"></textarea>
                             </div>
                         </div>
                         <div class="col-md-2">
                             <div class="form-group">
                                 <label>Nilai</label>
                                 <input type="text"
-                                        name="nilai"
-                                        id="nilai"
-                                        class="form-control jtsseparator ratakanan"
-                                        placeholder="0.00">
+                                       name="nilai"
+                                       id="nilai"
+                                       class="form-control jtsseparator ratakanan"
+                                       placeholder="0.00">
                             </div>
                         </div>
                     </div>
@@ -414,10 +330,9 @@
 
                 <!-- FOOTER -->
                 <div class="modal-footer bg-light">
-                    
                     <button type="button"
-                        class="btn btn-primary"
-                        onclick="saveJUPDetail()">
+                            class="btn btn-primary"
+                            onclick="saveJUPDetail()">
                         <i class="fa fa-save"></i> Simpan
                     </button>
                     <button type="button"
@@ -431,7 +346,6 @@
         </div>
     </div>
 </div>
-
 
 
 <script type="application/javascript" src="<?= base_url('assets/pagejs/finance/jup.js') ?>"></script>

@@ -222,7 +222,9 @@ function initSelect2Barang() {
         console.log("Selected:", data);
 
         $('[name="nmbarang"]').val((data.nmbarang || '').trim());
-        $('[name="spec"]').val((data.batch || '').trim());
+
+        /* Isi dropdown Batch / Specification (berhierarki dari idbarang) */
+        loadBatchOptions(data.idbarang, data.batch);
 
         $('#qtystock_raw').val(data.sisaonhand || 0);
 
@@ -250,6 +252,117 @@ function initSelect2Barang() {
         }
     });
 }
+
+/* ============================================================
+   SELECT2 BATCH — BERHIERARKI DENGAN #idbarang
+   Menampilkan daftar batch dari barang terpilih pada gudang asal.
+   ============================================================ */
+function loadBatchOptions(idbarang, preselectBatch) {
+
+    idbarang = (idbarang || '').trim();
+
+    /* Reset dropdown batch */
+    if ($('#batch').data('select2')) {
+        $('#batch').select2('destroy');
+    }
+    $('#batch').empty().removeData('batch-stock');
+
+    if (!idbarang) return;
+
+    $.ajax({
+        type: 'POST',
+        url: HOST_URL + 'api/globalmodule/list_stock_by_location',
+        dataType: 'json',
+        data: {
+            _search_:  idbarang,
+            _page_:    1,
+            _perpage_: 200,
+            loccode:   $('#idlocation_from').val() || ''
+        },
+        success: function (data) {
+
+            var rows = (data.items || []).filter(function (r) {
+                return ((r.idbarang || '').trim()).toUpperCase() === idbarang.toUpperCase();
+            });
+
+            /* Gabung per batch (stock dijumlahkan antar lot/bin) */
+            var map = {};
+            var order = [];
+
+            rows.forEach(function (r) {
+                var b = (r.batch || '').trim();
+
+                if (!(b in map)) {
+                    map[b] = {
+                        batch:      b,
+                        lotno:      (r.lotno || '').trim(),
+                        unit:       (r.unit || '').trim(),
+                        sisaonhand: 0
+                    };
+                    order.push(b);
+                }
+                map[b].sisaonhand += parseFloat(r.sisaonhand || 0) || 0;
+            });
+
+            var pb = (preselectBatch || '').trim();
+
+            /* Pastikan batch terpilih tetap tampil walau stock 0 */
+            if (pb !== '' && !(pb in map)) {
+                map[pb] = { batch: pb, lotno: '', unit: '', sisaonhand: 0 };
+                order.push(pb);
+            }
+
+            /* Build option */
+            order.forEach(function (b) {
+                var lbl = b !== '' ? b : '(Tanpa Batch)';
+                $('#batch').append(new Option(lbl, b, false, false));
+            });
+
+            $('#batch').data('batch-stock', map);
+
+            /* Samakan pola init dengan #idbarang: cukup width 100% + dropdownParent
+               ke modal. Select2 lalu memposisikan panel relatif terhadap modal
+               sehingga menempel tepat di bawah field, selebar kolom, tanpa geser. */
+            $('#batch').select2({
+                placeholder: 'Pilih Batch / Specification',
+                allowClear: true,
+                width: '100%',
+                minimumInputLength: 0,
+                multiple: false,
+                closeOnSelect: true,
+                dropdownParent: $('#modalDetailSPK')
+            });
+
+            /* Preselect */
+            if (pb !== '' && (pb in map)) {
+                $('#batch').val(pb).trigger('change');
+            } else if (order.length === 1) {
+                $('#batch').val(order[0]).trigger('change');
+            } else if ('' in map) {
+                $('#batch').val('').trigger('change');
+            }
+        },
+        error: function (xhr) {
+            console.error('[loadBatchOptions] Failed:', xhr.status);
+        }
+    });
+}
+
+function getSelectedBatchRow() {
+    var map = $('#batch').data('batch-stock') || {};
+    var val = ($('#batch').val() || '').toString();
+    return map[val] || null;
+}
+
+/* Ketika user mengganti batch → sinkronkan qty & stock */
+$(document).on('select2:select', '#batch', function () {
+    var row = getSelectedBatchRow();
+    if (!row) return;
+
+    $('#qtystock_raw').val(row.sisaonhand || 0);
+    setReadableNumber('#qtystock', row.sisaonhand || 0);
+    setReadableNumber('#qty', row.sisaonhand || 0);
+});
 
 /* ============================================================
    SELECT2 UNIT — SESUAI RESPONSE list_unit_item
@@ -849,6 +962,9 @@ function updateTransferLocationDetail() {
                     $('#idbarang').trigger('change');
                     $('#nmbarang').val(itemBarang.nmbarang ?? '');
 
+                    /* STEP 3b — Isi dropdown Batch / Specification */
+                    loadBatchOptions(itemBarang.idbarang, item.batch);
+
                     /* STEP 4 — Set qty & stock */
                     setReadableNumber('#qty',      item.qty      || 0);
                     setReadableNumber('#qtystock', item.qtystock || itemBarang.sisaonhand || 0);
@@ -1052,9 +1168,18 @@ function saveTransferStock() {
         /* Potong max 150 karakter */
         nmbarang = nmbarang.substring(0, 150);
 
-        /* 4. Batch & Lotno */
-        var batch = (dataBarang && dataBarang.batch) ? (dataBarang.batch || '').trim() : '';
-        var lotno = (dataBarang && dataBarang.lotno) ? (dataBarang.lotno || '').trim() : '';
+        /* 4. Batch & Lotno — prioritaskan dari dropdown #batch */
+        var batchRow = getSelectedBatchRow();
+        var batch = '';
+        var lotno = '';
+
+        if (batchRow) {
+            batch = (batchRow.batch || '').trim();
+            lotno = (batchRow.lotno || '').trim();
+        } else {
+            batch = (dataBarang && dataBarang.batch) ? (dataBarang.batch || '').trim() : '';
+            lotno = (dataBarang && dataBarang.lotno) ? (dataBarang.lotno || '').trim() : '';
+        }
 
         /* ================================================
            AMBIL DATA UNIT
@@ -1202,6 +1327,11 @@ function saveTransferStock() {
                     }
                     $('#unit').empty();
 
+                    if ($('#batch').data('select2')) {
+                        $('#batch').select2('destroy');
+                    }
+                    $('#batch').empty().removeData('batch-stock');
+
                 } else {
                     Swal.fire({ icon: 'warning', title: 'Gagal',
                         text: res.message || 'Gagal menyimpan data' });
@@ -1228,6 +1358,7 @@ $('#btnAddDetail').on('click', function (e) {
     var suffix             = $.trim($('[name="suffix"]').val());
     var idlocation_from    = $.trim($('[name="idlocation_from"]').val());
     var idlocation_to      = $.trim($('[name="idlocation_to"]').val());
+    var idlocation_transit = $.trim($('[name="idlocation_transit"]').val());
 
     function showWarning(msg) {
         Swal.fire({
@@ -1272,6 +1403,13 @@ $('#btnAddDetail').on('click', function (e) {
         return false;
     }
 
+    if (!idlocation_transit) {
+        e.preventDefault();
+        showWarning('Gudang Transit belum dipilih!');
+        $('[name="idlocation_transit"]').focus();
+        return false;
+    }
+
     if (idlocation_from === idlocation_to) {
         e.preventDefault();
         showWarning('Gudang Asal dan Gudang Tujuan tidak boleh sama!');
@@ -1293,6 +1431,11 @@ function btnInputDetail() {
         $('#unit').select2('destroy');
     }
     $('#unit').empty();
+
+    if ($('#batch').data('select2')) {
+        $('#batch').select2('destroy');
+    }
+    $('#batch').empty().removeData('batch-stock');
 
     $('#idurut').val('');
     $('#conversion_factor').val(1);
@@ -1558,6 +1701,7 @@ $("#idlocation_from").select2({
                 _perpage_: 2,
                 _paramglobal_: defaultInitialLocationFrom,
                 _parameterx_: defaultInitialLocationFrom,
+                _branchjob_: $('#cabang').val() || '',
                 term: params.term
             };
         },
@@ -1568,7 +1712,7 @@ $("#idlocation_from").select2({
                 pagination: { more: (params.page * 30) < data.total_count }
             };
         },
-        cache: true
+        cache: false
     },
     escapeMarkup: function (markup) { return markup; },
     templateResult: formatLocation,
@@ -1595,6 +1739,7 @@ $("#idlocation_to").select2({
                 _perpage_: 2,
                 _paramglobal_: defaultInitialLocationTo,
                 _parameterx_: defaultInitialLocationTo,
+                _branchjob_: $('#cabang_sent').val() || '',
                 term: params.term
             };
         },
@@ -1605,7 +1750,7 @@ $("#idlocation_to").select2({
                 pagination: { more: (params.page * 30) < data.total_count }
             };
         },
-        cache: true
+        cache: false
     },
     escapeMarkup: function (markup) { return markup; },
     templateResult: formatLocation,
@@ -1651,12 +1796,57 @@ $("#idlocation_transit").select2({
 
 function formatLocation(repo) {
     if (repo.loading) return repo.text;
-    return "<div class='select2-result-repository__description'>" + repo.idlocation + "   <i class='fa fa-circle-o'></i>   " + repo.nmlocation + "</div>";
+    var branch = (repo.nmbranchjob || '').toString().trim();
+    var branchLabel = branch !== '' ? " <small class='text-muted'>(" + branch + ")</small>" : "";
+    return "<div class='select2-result-repository__description'>" + repo.idlocation + "   <i class='fa fa-circle-o'></i>   " + repo.nmlocation + branchLabel + "</div>";
 }
 
 function formatLocationSelection(repo) {
     return repo.nmlocation || repo.text;
 }
+
+/* ============================================================
+   HIERARKI BRANCH → LOCATION
+   Cabang (idbranchjob) mem-filter Gudang Asal (idlocation)
+   Cabang Sent (idbranchjob) mem-filter Gudang Tujuan (idlocation_to)
+   ============================================================ */
+$('#cabang').on('change', function () {
+    if (skipRoleChange) return;
+
+    // Reset gudang asal karena cabang berubah
+    if ($('#idlocation_from').val()) {
+        $('#idlocation_from').val(null).trigger('change');
+    }
+});
+
+$('#cabang_sent').on('change', function () {
+    if (skipRoleChange) return;
+
+    // Reset gudang tujuan karena cabang sent berubah
+    if ($('#idlocation_to').val()) {
+        $('#idlocation_to').val(null).trigger('change');
+    }
+});
+
+// Gudang Asal hanya boleh dibuka setelah Cabang dipilih
+$('#idlocation_from').on('select2:opening', function (e) {
+    if (skipRoleChange) return;
+    if (!$('#cabang').val()) {
+        e.preventDefault();
+        Swal.fire({ icon: 'warning', title: 'Peringatan', text: 'Pilih Cabang / Job terlebih dahulu!' });
+        return false;
+    }
+});
+
+// Gudang Tujuan hanya boleh dibuka setelah Cabang Sent dipilih
+$('#idlocation_to').on('select2:opening', function (e) {
+    if (skipRoleChange) return;
+    if (!$('#cabang_sent').val()) {
+        e.preventDefault();
+        Swal.fire({ icon: 'warning', title: 'Peringatan', text: 'Pilih Cabang / Job (Sent) terlebih dahulu!' });
+        return false;
+    }
+});
 
 /* ============================================================
    DELETE DETAIL

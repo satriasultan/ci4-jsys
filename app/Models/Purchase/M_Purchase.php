@@ -508,6 +508,17 @@ class M_Purchase extends Model
         $builder = $this->_get_query_front_pp_apprv();
         return $builder->countAllResults();
     }
+
+    /**
+     * Hitung jumlah PP yang masih "Belum Approve" tanpa bergantung pada
+     * parameter Datatable ($_POST search/order). Dipakai untuk mengisi badge
+     * #pending-count langsung dari server saat halaman list di-render.
+     */
+    public function count_pending_pp_apprv()
+    {
+        $builder = $this->db->table($this->t_front_pp_apprv_view);
+        return $builder->countAllResults();
+    }
     public function get_t_front_pp_apprv_view_by_id($id)
     {
         $builder = $this->_get_query_front_pp_apprv();
@@ -1418,6 +1429,18 @@ class M_Purchase extends Model
     public function t_front_po_apprv_view_count_all()
     {
         $builder = $this->_get_query_front_po_apprv();
+        return $builder->countAllResults();
+    }
+
+    /**
+     * Hitung jumlah PO yang masih "Belum Approve" (yang benar-benar tampil di
+     * tabel #tablepoapprvTrx, yaitu status FINAL USER). Dipakai untuk mengisi
+     * badge #pending-count.
+     */
+    public function count_pending_po_apprv()
+    {
+        $builder = $this->db->table($this->t_front_po_apprv_view);
+        $builder->where('status_desc', 'FINAL USER');
         return $builder->countAllResults();
     }
     public function get_t_front_po_apprv_view_by_id($id)

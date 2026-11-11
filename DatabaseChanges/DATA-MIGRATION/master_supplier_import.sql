@@ -143,3 +143,8 @@ update  sc_mst.customer SET status='F';
 -- FROM sc_mst.mstsupplier
 -- ORDER BY kdsupplier
 -- LIMIT 20;
+
+
+
+
+

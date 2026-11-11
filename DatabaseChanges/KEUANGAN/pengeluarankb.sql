@@ -1,7 +1,7 @@
 -- Revisi Pengeluaran Kas/Bank:
 -- 1) nilaiakhir disimpan hanya di pengeluarankb_dtl (TMP dan TRX).
 -- 2) Nilai jurnal penggunaan diambil dari COALESCE(d.nilaiakhir, d.nilai).
--- 3) Tidak menambah/mengubah kolom sc_trx.transaction_dt.
+-- 3) transaction_dt menyimpan currency/kurs/nilai posting dan nilai sumber asli terpisah.
 -- 4) Tidak DROP tabel, sehingga data existing tidak dihapus.
 BEGIN;
 
@@ -157,6 +157,31 @@ ALTER TABLE sc_tmp.pengeluarankb_dtl ADD COLUMN IF NOT EXISTS currcode CHARACTER
 ALTER TABLE sc_tmp.pengeluarankb_dtl ADD COLUMN IF NOT EXISTS kurs NUMERIC(18,2);
 ALTER TABLE sc_trx.pengeluarankb_dtl ADD COLUMN IF NOT EXISTS currcode CHARACTER(3);
 ALTER TABLE sc_trx.pengeluarankb_dtl ADD COLUMN IF NOT EXISTS kurs NUMERIC(18,2);
+-- Snapshot nilai sumber sebelum dinormalisasi untuk jurnal BANKOT.
+ALTER TABLE sc_tmp.pengeluarankb_dtl
+    ADD COLUMN IF NOT EXISTS currcode_trans CHAR(3),
+    ADD COLUMN IF NOT EXISTS kurs_trans NUMERIC(18,6),
+    ADD COLUMN IF NOT EXISTS nilai_trans NUMERIC(18,6);
+
+ALTER TABLE sc_trx.pengeluarankb_dtl
+    ADD COLUMN IF NOT EXISTS currcode_trans CHAR(3),
+    ADD COLUMN IF NOT EXISTS kurs_trans NUMERIC(18,6),
+    ADD COLUMN IF NOT EXISTS nilai_trans NUMERIC(18,6);
+
+-- Pastikan sumber kurs dan nilai dapat menyimpan presisi asli.
+ALTER TABLE sc_tmp.pengeluarankb_dtl
+    ALTER COLUMN kurs TYPE NUMERIC(18,6) USING kurs::NUMERIC(18,6),
+    ALTER COLUMN nilai TYPE NUMERIC(18,6) USING nilai::NUMERIC(18,6);
+
+ALTER TABLE sc_trx.pengeluarankb_dtl
+    ALTER COLUMN kurs TYPE NUMERIC(18,6) USING kurs::NUMERIC(18,6),
+    ALTER COLUMN nilai TYPE NUMERIC(18,6) USING nilai::NUMERIC(18,6);
+
+-- Kolom currency asli pada transaction detail ledger.
+ALTER TABLE sc_trx.transaction_dt
+    ADD COLUMN IF NOT EXISTS currcode_trans CHAR(3),
+    ADD COLUMN IF NOT EXISTS kurs_trans NUMERIC(18,6),
+    ADD COLUMN IF NOT EXISTS nilai_trans NUMERIC(18,6);
 
 -- =========================================================
 -- FINALISASI TMP: E -> F
@@ -238,13 +263,15 @@ BEGIN
         -- DETAIL FINAL
         INSERT INTO sc_trx.pengeluarankb_dtl (
             docno, nobukti, idcoa, nmcoa, remarks, dk, cabang,
-            nilai, nilaiakhir, currcode, kurs, uniqueid, status, inputby, inputdate,
+            nilai, nilaiakhir, currcode, kurs, currcode_trans, kurs_trans, nilai_trans,
+            uniqueid, status, inputby, inputdate,
             updateby, updatedate, docnotmp, jurnalref, nilai_ref
         )
         SELECT
             v_new_docno, d.nobukti, d.idcoa, d.nmcoa,
             d.remarks, d.dk, d.cabang, d.nilai,
-            COALESCE(d.nilaiakhir, d.nilai), d.currcode, d.kurs, d.uniqueid,
+            COALESCE(d.nilaiakhir, d.nilai), d.currcode, d.kurs,
+            d.currcode_trans, d.kurs_trans, d.nilai_trans, d.uniqueid,
             'F', d.inputby, d.inputdate, d.updateby,
             d.updatedate, d.docnotmp, d.jurnalref,
             COALESCE(d.nilai_ref, 0)
@@ -344,13 +371,15 @@ BEGIN
         -- DETAIL REVISI
         INSERT INTO sc_trx.pengeluarankb_dtl (
             docno, nobukti, idcoa, nmcoa, remarks, dk, cabang,
-            nilai, nilaiakhir, currcode, kurs, uniqueid, status, inputby, inputdate,
+            nilai, nilaiakhir, currcode, kurs, currcode_trans, kurs_trans, nilai_trans,
+            uniqueid, status, inputby, inputdate,
             updateby, updatedate, docnotmp, jurnalref, nilai_ref
         )
         SELECT
             NEW.docnotmp, d.nobukti, d.idcoa, d.nmcoa,
             d.remarks, d.dk, d.cabang, d.nilai,
-            COALESCE(d.nilaiakhir, d.nilai), d.currcode, d.kurs, d.uniqueid,
+            COALESCE(d.nilaiakhir, d.nilai), d.currcode, d.kurs,
+            d.currcode_trans, d.kurs_trans, d.nilai_trans, d.uniqueid,
             'F', d.inputby, d.inputdate, d.updateby,
             d.updatedate, d.docnotmp, d.jurnalref,
             COALESCE(d.nilai_ref, 0)
@@ -478,12 +507,15 @@ BEGIN
 
         INSERT INTO sc_tmp.pengeluarankb_dtl (
             docno, nobukti, idcoa, nmcoa, remarks, dk, cabang,
-            nilai, nilaiakhir, currcode, kurs, uniqueid, status, inputby, inputdate,
+            nilai, nilaiakhir, currcode, kurs, currcode_trans, kurs_trans, nilai_trans,
+            uniqueid, status, inputby, inputdate,
             updateby, updatedate, docnotmp, jurnalref, nilai_ref
         )
         SELECT
             d.docno, d.nobukti, d.idcoa, d.nmcoa, d.remarks, d.dk, d.cabang,
-            d.nilai, COALESCE(d.nilaiakhir, d.nilai), d.currcode, d.kurs, d.uniqueid, d.status, d.inputby, d.inputdate,
+            d.nilai, COALESCE(d.nilaiakhir, d.nilai), d.currcode, d.kurs,
+            d.currcode_trans, d.kurs_trans, d.nilai_trans,
+            d.uniqueid, d.status, d.inputby, d.inputdate,
             d.updateby, d.updatedate, NEW.docno, d.jurnalref, d.nilai_ref
         FROM sc_trx.pengeluarankb_dtl d
         WHERE BTRIM(d.docno) = BTRIM(NEW.docno);
@@ -505,9 +537,8 @@ EXECUTE FUNCTION sc_trx.pengeluarankb();
 -- =========================================================
 -- PATCH: sinkronisasi Pengeluaran Kas/Bank ke transaction_dt
 -- journal_type = BANKOT
--- nilaiakhir TIDAK ditambahkan sebagai kolom transaction_dt.
 -- transaction_dt.nilai, dpp, dan total menggunakan pengeluarankb_dtl.nilaiakhir.
--- Jika nilaiakhir NULL, gunakan nilai sebagai fallback.
+-- currcode_trans, kurs_trans, dan nilai_trans menyimpan nilai sumber sebelum normalisasi.
 -- =========================================================
 
 DO $$
@@ -622,6 +653,7 @@ BEGIN
         idbranch, cabang, type_in_out, ref_docno, ref_doctype,
         source_table, source_id, source_line_id, kdsupplier, nsupplier,
         nilai, dpp, pajak, total, idtax, isinclusive, currcode, kurs,
+        currcode_trans, kurs_trans, nilai_trans,
         idcoa, counter_idcoa, debet_kredit,
         module, direction, stock_effect, accounting_effect, asset_effect,
         keterangan, createdby, createddate, updatedby, updateddate
@@ -632,8 +664,11 @@ BEGIN
         BTRIM(COALESCE(v_header.kdsupplier, '')), BTRIM(COALESCE(v_header.nmsupplier, '')),
         v_nilai, v_nilai, 0, v_nilai, 'NON',
         COALESCE(NULLIF(UPPER(BTRIM(v_header.isinclusive)), ''), 'NO'),
-        COALESCE(NULLIF(BTRIM(NEW.currcode), ''), NULLIF(BTRIM(v_header.currcode), ''), 'IDR'),
-         COALESCE(NULLIF(NEW.kurs, 0), NULLIF(v_header.kurs, 0), 1),
+        'IDR',
+        1,
+        COALESCE(NULLIF(BTRIM(NEW.currcode_trans), ''), NULLIF(BTRIM(NEW.currcode), ''), NULLIF(BTRIM(v_header.currcode), ''), 'IDR'),
+        COALESCE(NULLIF(NEW.kurs_trans, 0), NULLIF(NEW.kurs, 0), NULLIF(v_header.kurs, 0), 1),
+        COALESCE(NEW.nilai_trans, NEW.nilai, NEW.nilaiakhir, 0),
         v_coa_detail, v_coa_bank, v_dc,
         'FINANCE', 'OUT', 'NONE', 'YES', 'NONE', v_desc,
         COALESCE(v_header.inputby, 'SYSTEM'), COALESCE(v_header.inputdate, CURRENT_TIMESTAMP),
@@ -662,6 +697,9 @@ BEGIN
         isinclusive = EXCLUDED.isinclusive,
         currcode = EXCLUDED.currcode,
         kurs = EXCLUDED.kurs,
+        currcode_trans = EXCLUDED.currcode_trans,
+        kurs_trans = EXCLUDED.kurs_trans,
+        nilai_trans = EXCLUDED.nilai_trans,
         idcoa = EXCLUDED.idcoa,
         counter_idcoa = EXCLUDED.counter_idcoa,
         debet_kredit = EXCLUDED.debet_kredit,
@@ -677,6 +715,63 @@ BEGIN
     RETURN NEW;
 END;
 $$;
+
+
+/* ============================================================================
+   PATCH TAMBAHAN — NORMALISASI SUMBER NILAI & CURRENCY BANKOT
+   - Tidak mengubah isi fn_sync_pengeluarankb_detail_BANKOT().
+   - nilaiakhir wajib diisi; NEW.nilai disamakan dengan NEW.nilaiakhir.
+   - currcode dipastikan IDR sebelum trigger AFTER melakukan sinkronisasi.
+   - Tidak DROP atau CREATE ulang tabel.
+   ============================================================================ */
+
+CREATE OR REPLACE FUNCTION sc_trx.fn_prepare_pengeluarankb_detail_BANKOT()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF TG_OP IN ('INSERT', 'UPDATE') THEN
+        IF NEW.nilaiakhir IS NULL THEN
+            RAISE EXCEPTION
+                'nilaiakhir wajib diisi pada Pengeluaran KB, dokumen %, detail %.',
+                BTRIM(NEW.docno), NEW.idurut;
+        END IF;
+
+        -- Simpan nilai sumber sebelum kolom posting dinormalisasi.
+        NEW.currcode_trans := COALESCE(
+            NULLIF(BTRIM(NEW.currcode_trans), ''),
+            NULLIF(BTRIM(NEW.currcode), ''),
+            'IDR'
+        );
+        NEW.kurs_trans := COALESCE(
+            NULLIF(NEW.kurs_trans, 0),
+            NULLIF(NEW.kurs, 0),
+            1
+        );
+        NEW.nilai_trans := COALESCE(
+            NEW.nilai_trans,
+            NEW.nilai,
+            NEW.nilaiakhir
+        );
+
+        -- Nilai yang dipakai jurnal tetap IDR.
+        NEW.nilai := NEW.nilaiakhir;
+        NEW.currcode := 'IDR';
+        NEW.kurs := 1;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS tr_pengeluarankb_detail_00_prepare_BANKOT
+ON sc_trx.pengeluarankb_dtl;
+
+CREATE TRIGGER tr_pengeluarankb_detail_00_prepare_BANKOT
+BEFORE INSERT OR UPDATE
+ON sc_trx.pengeluarankb_dtl
+FOR EACH ROW
+EXECUTE FUNCTION sc_trx.fn_prepare_pengeluarankb_detail_BANKOT();
 
 DROP TRIGGER IF EXISTS tr_pengeluarankb_detail_BANKOT ON sc_trx.pengeluarankb_dtl;
 CREATE TRIGGER tr_pengeluarankb_detail_BANKOT

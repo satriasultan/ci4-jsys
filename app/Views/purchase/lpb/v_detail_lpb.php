@@ -1,3 +1,4 @@
+<link rel="stylesheet" href="<?= base_url('assets/css/corp-form.css') ?>" />
 <style>
     
     .section-block {
@@ -224,6 +225,8 @@
         border-bottom: 1px solid #dee2e6 !important;
     }
 </style>
+<div class="corp-form-container">
+
 <div class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
@@ -259,7 +262,7 @@
             <!-- jquery validation -->
             <div class="card card-primary">
                 <div class="card-header">
-                    <h3 class="card-title"><?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> Penerimaan Pembelian</h3>
+                    <h3 class="card-title"><i class="fa fa-file-text-o"></i> <?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> Penerimaan Pembelian</h3>
                 </div>
                 <!-- /.card-header -->
                 <!-- form start -->
@@ -663,6 +666,12 @@
                         <i class="fa fa-arrow-left mr-2"></i>
                         Kembali
                     </a>
+
+                    <button type="button"
+                            id="btnLaporanJurnal"
+                            class="btn btn-primary btn-lg ms-2">
+                        <i class="fa fa-book"></i> Laporan Jurnal Transaksi
+                    </button>
                 </div>
                 
             </div>
@@ -673,12 +682,6 @@
     <!-- right column -->
     <div class="accounting-toolbar">
 
-        <button type="button"
-                id="btnLaporanJurnal"
-                class="btn btn-primary">
-            <i class="fa fa-book"></i> Laporan Jurnal Transaksi
-        </button>
-
         <button class="accounting-btn btn-pembayaran" id="btnPembayaran">
             <i class="fas fa-money-bill-wave"></i>
             <span>Pembayaran</span>
@@ -687,6 +690,7 @@
     </div>
     <!--/.col (right) -->
 </div>
+</div><!-- /.corp-form-container -->
 
 
 

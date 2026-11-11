@@ -1,70 +1,47 @@
-<!-- v_add_penerimaankb.php -->
-
+<!-- =========================================================
+     v_add_penerimaankb.php - Corporate Style
+     Referensi tampilan : persediaan/pnm_brng/v_add_pnm_brg.php
+     Catatan : perubahan hanya pada font, warna, spacing, dan
+               kerapian layout. Nama field, id, dan fungsi
+               JavaScript tidak diubah.
+     ========================================================= -->
+<link rel="stylesheet" href="<?= base_url('assets/css/corp-form.css') ?>">
 <style>
-    
-    .section-block {
-        background-color: #e8e8e8;
-        border-left: 4px solid #007bff;
-        /* border-bottom: 4px solid #007bff;  */
-        padding: 20px;
-        border-radius: 6px;
-        margin-bottom: 30px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-                    box-shadow 0.4s ease, 
-                    border-color 0.4s ease;
-        
-        transform: scale(1);
-        will-change: transform;
+    /* Suplemen khusus Penerimaan Kas/Bank: tabel detail & separator angka
+       mengikuti tema corporate yang sama. */
+    .corp-form-container #tabpenerimaankbdtl thead th {
+        background: var(--corp-primary) !important;
+        color: #ffffff !important;
+        font-size: 12.5px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        border-color: var(--corp-border) !important;
+        padding: 10px 12px !important;
+        vertical-align: middle;
     }
 
-    .section-header {
-        font-weight: bold;
-        color: #007bff;
-        margin-bottom: 20px;
-        font-size: 1.1rem;
-        display: flex;
-        align-items: center;
+    .corp-form-container #tabpenerimaankbdtl tbody td {
+        padding: 9px 12px !important;
+        border-color: var(--corp-border) !important;
+        vertical-align: middle;
+        color: var(--corp-text);
     }
 
-    .section-header i {
-        margin-right: 8px;
+    .corp-form-container #tabpenerimaankbdtl tbody tr:hover {
+        background-color: var(--corp-primary-light) !important;
     }
 
-    .section-block:hover {
-        /* transform: scale(1.02); */
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-        border-left-color: #0056b3;
-        border-bottom-color: #0056b3;
+    .corp-form-container .allocation-empty {
+        color: var(--corp-text-muted);
+        font-weight: 600;
+        text-align: center;
     }
 
-    .is-invalid {
-        border-color: #dc3545;
+    .corp-form-container .form-control.jtsseparator,
+    .corp-form-container .form-control.ratakanan {
+        text-align: right;
     }
-    .invalid-feedback {
-        display: block;
-        color: #dc3545;
-        font-size: 0.875em;
-    }
-
-    .form-control:disabled, .form-control[readonly] {
-        background-color: #dfdfdf;
-        opacity: 1;
-    }
-
-    .section-divider {
-        height: 1px;
-        background: linear-gradient(
-            to right,
-            #007bff 0%,
-            #cfe2ff 30%,
-            #e8e8e8 100%
-        );
-        margin: 24px 0;
-        border: none;
-    }
-
-
 </style>
 <div class="content-header">
     <div class="container-fluid">
@@ -94,6 +71,7 @@
     $isIT = isset($userinfo['rolename']) && trim($userinfo['rolename']) === 'IT';
     $disabled = $isIT ? '' : 'disabled';
 ?>
+<div class="corp-form-container">
 <div class="row">
     <!-- left column -->
     <form action="<?= base_url('ka/finance/finalEntryPenerimaanKB') ?>" method="post" id="formPO">
@@ -101,7 +79,7 @@
             <!-- jquery validation -->
             <div class="card card-primary">
                 <div class="card-header">
-                    <h3 class="card-title"><?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> Penerimaan Kas/Bank</h3>
+                    <h3 class="card-title"><i class="fa fa-file-text-o"></i> <?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> Penerimaan Kas/Bank</h3>
                 </div>
                 <!-- /.card-header -->
                 <!-- form start -->
@@ -116,7 +94,7 @@
                                 <div class="col-md-3">
 
                                     <div class="row">
-                                        <div class="col-md-8">
+                                        <div class="col-md-12">
                                             <div class="form-group">
                                                 <label for="cabang">Cabang / Job</label>
                                                 <select name="cabang" id="cabang" class="form-control" required></select>
@@ -403,8 +381,9 @@
                             Kembali
                         </a>
 
-                        <?php if ($typeform != 'DETAIL' && $dtldata != null): ?>
+                        <?php if ($typeform != 'DETAIL'): ?>
                             <button type="submit"
+                                    id="btnFinalEntryPenerimaanKB"
                                     class="btn btn-success"
                                     onclick="return confirm('Finish Entry?')">
                                 <i class="fa fa-save me-1"></i>
@@ -599,7 +578,9 @@
 
 
 
-<script type="application/javascript" src="<?= base_url('assets/pagejs/finance/penerimaankb.js') ?>"></script>
+</div><!-- /.corp-form-container -->
+
+<script type="application/javascript" src="<?= base_url('assets/pagejs/finance/penerimaankb.js') ?>?v=20261111b"></script>
 <script type="text/javascript">
     $(function() {
         $("#example1").dataTable();

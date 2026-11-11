@@ -67,6 +67,7 @@
                             type="button" 
                             role="tab">
                         Daftar PP Belum Approve
+                        <span class="badge bg-danger ms-1" id="pending-count"><?= (int) ($pendingCount ?? 0) ?></span>
                     </button>
                 </li>
             </ul>
@@ -179,7 +180,7 @@
 <!-- /.modal -->
 
 
-<script type="application/javascript" src="<?= base_url('assets/pagejs/purchase/pp.js') ?>"></script>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/purchase/pp.js') ?>?v=20261111"></script>
 <script type="text/javascript">
     $(function() {
         $("#example1").dataTable();

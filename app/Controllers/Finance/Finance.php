@@ -47,6 +47,13 @@ class Finance extends BaseController
             }
 
         }
+
+        // Pesan gagal/sukses dari proses update JUP (tombol Update di daftar JUP)
+        $flashUpdate = $this->session->getFlashdata('jup_update_error');
+        if (!empty($flashUpdate)) {
+            $data['message'] .= "<div class='alert alert-danger'>" . esc($flashUpdate) . "</div>";
+        }
+
         /* Item Entry Master Check */
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_finance->q_jup_master_temp($param);
@@ -362,7 +369,7 @@ class Finance extends BaseController
     function addJUP()
     {
         /* Penambahan Squence */
-        $data['title']="Input PO";
+        $data['title']="Input Jurnal Umum Perkiraan";
         $dtlbranch=$this->m_global->q_branch()->getRowArray();
         $branch=$dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
@@ -397,6 +404,18 @@ class Finance extends BaseController
                 $data['message']="";
             }
 
+        }
+
+        // Pesan gagal simpan final karena balance tidak nol
+        $flashBalance = $this->session->getFlashdata('jup_balance_error');
+        if (!empty($flashBalance)) {
+            $data['message'] .= "<div class='alert alert-danger'>" . esc($flashBalance) . "</div>";
+        }
+
+        // Pesan gagal simpan final karena detail belum lengkap / belum ada
+        $flashFinal = $this->session->getFlashdata('jup_final_error');
+        if (!empty($flashFinal)) {
+            $data['message'] .= "<div class='alert alert-warning'>" . esc($flashFinal) . "</div>";
         }
 
         $param = " and trim(inputby)='$nama'";
@@ -543,13 +562,8 @@ class Finance extends BaseController
     {
         $nama   = trim($this->session->get('nama'));
         $docno  = strtoupper(trim($this->request->getPost('docno')));
-        // ID detail harus berbeda dari ID header.
-// Ambil dari hidden field khusus detail.
-        $idurutRaw = trim((string) (
-            $post['detail_idurut']
-            ?? $post['idurut_detail']
-            ?? ''
-        ));
+        // ID detail dari hidden field #idurut pada modal (formJUPDetail).
+        $idurutRaw = trim((string) ($this->request->getPost('idurut') ?? ''));
 
         $idurut = null;
 
@@ -616,14 +630,32 @@ class Finance extends BaseController
         $insertCount = 0;
         $message = '';
 
+        // -----------------------------------------------------
+        // Cabang header sebagai default Cost Center detail.
+        // uq_transaction_hd tidak memuat kolom cabang, sehingga
+        // transaction_dt dengan arah (D/K) sama tetapi cabang berbeda
+        // akan bentrok saat simpan final. Cost Center kosong ('')
+        // selalu dianggap sama dengan cabang header.
+        // -----------------------------------------------------
+        $headerRow = $builderHeader
+            ->select('cabang')
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->get()
+            ->getRowArray();
 
+        $cabangHeader = strtoupper(trim((string) ($headerRow['cabang'] ?? '')));
 
         $idcoa    = $this->request->getPost('idcoa');
         $nmcoa    = strtoupper($this->request->getPost('nmcoa'));
         $nilai       = $this->request->getPost('nilai') ?: 0;
         $remarks = strtoupper($this->request->getPost('remarks'));
         $dk = strtoupper($this->request->getPost('dk'));
-        $cabangdtl = strtoupper($this->request->getPost('cabangdtl'));
+        $cabangdtl = strtoupper(trim((string) $this->request->getPost('cabangdtl')));
+
+        if ($cabangdtl === '') {
+            $cabangdtl = $cabangHeader;
+        }
 
         // CEK MODE: ADD atau EDIT
         if (!empty($idurut)) {
@@ -684,8 +716,8 @@ class Finance extends BaseController
 
         $getBalance = $db->table('sc_tmp.jup_dtl')
             ->select("
-                SUM(CASE WHEN dk='DEBIT' THEN nilai ELSE 0 END) AS total_debit,
-                SUM(CASE WHEN dk='KREDIT' THEN nilai ELSE 0 END) AS total_kredit
+                SUM(CASE WHEN UPPER(TRIM(COALESCE(dk,''))) IN ('DEBIT','D','DR') THEN nilai ELSE 0 END) AS total_debit,
+                SUM(CASE WHEN UPPER(TRIM(COALESCE(dk,''))) IN ('KREDIT','K','CREDIT','CR') THEN nilai ELSE 0 END) AS total_kredit
             ")
             ->where('docno', $docno)
             ->get()
@@ -740,29 +772,163 @@ class Finance extends BaseController
 
 
 
+    /**
+     * Buka dokumen JUP yang sudah final / cetak ke halaman input untuk direvisi.
+     *
+     * Alur yang dipakai (sesuai trigger database sc_trx.tr_jup()):
+     *   status sc_trx.jup diubah F -> E, lalu trigger menyalin header + detail
+     *   ke sc_tmp.jup / sc_tmp.jup_dtl dengan docnotmp = docno.
+     *   Dengan docnotmp terisi, "Simpan Final Data" berikutnya memperbarui
+     *   dokumen yang sama (tidak membuat nomor dokumen baru).
+     */
     function updateJUP()
     {
-        $nama = trim($this->session->get('nama'));
-        $docno = hex2bin($this->request->getGet('id'));
-        $param = " and coalesce(docno,'')='$docno'";
-        $dtl = $this->m_finance->q_jup_master($param)->getRowArray();
-        $status = trim($dtl['status']);
+        $nama = trim((string) $this->session->get('nama'));
+        $urlBack = base_url('ka/accounting/jup');
 
-        if ($status === 'F' || $status === 'P') {
-            // Update hanya status di tabel sc_trx.standart_usage_mst
-            $info = array(
-                'status' => 'E',
-            );
-            $builder = $this->db->table('sc_trx.po');
-            $builder->where('trim(docno)', $docno);
-            $builder->update($info);
-
-            // Redirect ke halaman addStdUsage
-            return redirect()->to(base_url('ka/accounting/addJUP'));
-        } else {
-            // Jika status bukan 'F', redirect ke halaman mrpgroup
-            return redirect()->to(base_url('ka/accounting/jup'));
+        if ($nama === '') {
+            return redirect()->to($urlBack);
         }
+
+        // id / docno dikirim dalam bentuk hex (lihat tombol Update di list JUP)
+        $idHex = trim((string) $this->request->getGet('id'));
+        if ($idHex === '') {
+            $idHex = trim((string) $this->request->getGet('docno'));
+        }
+
+        $docno = '';
+        if ($idHex !== '' && ctype_xdigit($idHex) && strlen($idHex) % 2 === 0) {
+            $docno = trim((string) hex2bin($idHex));
+        }
+
+        if ($docno === '') {
+            $this->session->setFlashdata('jup_update_error',
+                'Dokumen JUP tidak valid. Silakan pilih data dari daftar JUP.');
+            return redirect()->to($urlBack);
+        }
+
+        $db = \Config\Database::connect();
+
+        try {
+            $header = $db->table('sc_trx.jup')
+                ->select('docno, status')
+                ->where('docno', $docno)
+                ->get()
+                ->getRowArray();
+
+            if (!$header) {
+                $this->session->setFlashdata('jup_update_error',
+                    'Dokumen JUP ' . esc($docno) . ' tidak ditemukan.');
+                return redirect()->to($urlBack);
+            }
+
+            $status = strtoupper(trim((string) $header['status']));
+
+            if (!in_array($status, ['F', 'P'], true)) {
+                $this->session->setFlashdata('jup_update_error',
+                    'Dokumen JUP ' . esc($docno) . ' berstatus ' . esc($status) . ' sehingga tidak dapat diupdate. '
+                    . 'Hanya dokumen FINAL USER (F) atau CETAK/PRINT (P) yang dapat diupdate.');
+                return redirect()->to($urlBack);
+            }
+
+            // Satu dokumen hanya boleh diedit satu user pada satu waktu karena
+            // trigger menyalin dokumen ke tabel temporary (sc_tmp.jup).
+            $draft = $db->table('sc_tmp.jup')
+                ->select('inputby')
+                ->where('docno', $docno)
+                ->get()
+                ->getRowArray();
+
+            if ($draft && trim((string) $draft['inputby']) !== $nama) {
+                $this->session->setFlashdata('jup_update_error',
+                    'Dokumen JUP ' . esc($docno) . ' sedang diedit oleh user lain ('
+                    . esc(trim((string) $draft['inputby'])) . ').');
+                return redirect()->to($urlBack);
+            }
+
+            $now = date('Y-m-d H:i:s');
+
+            $db->transBegin();
+
+            // Aplikasi hanya mendukung satu draft JUP per user, jadi draft lama
+            // (milik user ini) dan sisa draft dokumen ini dibersihkan dulu.
+            $db->table('sc_tmp.jup_dtl')->where('inputby', $nama)->orWhere('docno', $docno)->delete();
+            $db->table('sc_tmp.jup')->where('inputby', $nama)->orWhere('docno', $docno)->delete();
+
+            // Status P (cetak) dinormalkan ke F dulu, sebab trigger tr_jup()
+            // hanya menyalin dokumen ke temporary saat transisi F -> E.
+            if ($status === 'P') {
+                $db->table('sc_trx.jup')
+                    ->where('docno', $docno)
+                    ->where('status', 'P')
+                    ->update([
+                        'status'     => 'F',
+                        'updateby'   => $nama,
+                        'updatedate' => $now,
+                    ]);
+            }
+
+            // F -> E : trigger sc_trx.tr_jup() menyalin header + detail ke
+            // sc_tmp.jup / sc_tmp.jup_dtl beserta docnotmp = docno.
+            $db->table('sc_trx.jup')
+                ->where('docno', $docno)
+                ->where('status', 'F')
+                ->update([
+                    'status'     => 'E',
+                    'updateby'   => $nama,
+                    'updatedate' => $now,
+                ]);
+
+            $tempHeader = $db->table('sc_tmp.jup')->where('docno', $docno)->countAllResults();
+
+            if ((int) $tempHeader === 0) {
+                $db->transRollback();
+                $this->session->setFlashdata('jup_update_error',
+                    'Dokumen JUP ' . esc($docno) . ' gagal dibuka untuk diupdate. Silakan hubungi administrator.');
+                return redirect()->to($urlBack);
+            }
+
+            // Hasil salinan trigger memakai inputby pembuat dokumen; alihkan ke
+            // user yang melakukan update agar halaman input (addJUP) menampilkannya.
+            $db->table('sc_tmp.jup')
+                ->where('docno', $docno)
+                ->update([
+                    'inputby'    => $nama,
+                    'updateby'   => $nama,
+                    'updatedate' => $now,
+                ]);
+
+            $db->table('sc_tmp.jup_dtl')
+                ->where('docno', $docno)
+                ->update([
+                    'inputby'    => $nama,
+                    'updateby'   => $nama,
+                    'updatedate' => $now,
+                ]);
+
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+                $this->session->setFlashdata('jup_update_error',
+                    'Dokumen JUP ' . esc($docno) . ' gagal dibuka untuk diupdate.');
+                return redirect()->to($urlBack);
+            }
+
+            $db->transCommit();
+        } catch (\Throwable $e) {
+            $db->transRollback();
+
+            log_message('error', 'updateJUP gagal buka dokumen {docno}: {pesan}', [
+                'docno' => $docno,
+                'pesan' => $e->getMessage(),
+            ]);
+
+            $this->session->setFlashdata('jup_update_error',
+                'Dokumen JUP ' . esc($docno) . ' gagal dibuka untuk diupdate: ' . esc($e->getMessage()));
+            return redirect()->to($urlBack);
+        }
+
+        // Draft sudah tersalin ke sc_tmp.jup / sc_tmp.jup_dtl.
+        return redirect()->to(base_url('ka/accounting/addJUP'));
     }
 
     function showing_juptrx(){
@@ -849,6 +1015,12 @@ class Finance extends BaseController
 
         try {
 
+            // docno yang terpengaruh (dipakai untuk hitung ulang balance header)
+            $docnoList = array_values(array_unique(array_column(
+                $db->table('sc_tmp.jup_dtl')->select('docno')->whereIn('idurut', $ids)->get()->getResultArray(),
+                'docno'
+            )));
+
             $builder
                 ->whereIn('idurut', $ids)
                 ->delete();
@@ -859,6 +1031,25 @@ class Finance extends BaseController
                     'status'  => false,
                     'message' => 'Data tidak ditemukan'
                 ]);
+            }
+
+            // HITUNG ULANG BALANCE HEADER (balance = total debit - total kredit)
+            foreach ($docnoList as $docnoDtl) {
+                $docnoDtl = trim((string) $docnoDtl);
+
+                if ($docnoDtl === '') {
+                    continue;
+                }
+
+                $balanceDtl = $this->getJUPTempBalance($docnoDtl);
+
+                $db->table('sc_tmp.jup')
+                    ->where('docno', $docnoDtl)
+                    ->update([
+                        'balance'    => $balanceDtl['balance'],
+                        'updateby'   => trim((string) $this->session->get('nama')),
+                        'updatedate' => date('Y-m-d H:i:s')
+                    ]);
             }
 
             $db->transCommit();
@@ -940,6 +1131,40 @@ class Finance extends BaseController
     }
 
 
+    /**
+     * Total debit, total kredit dan balance (debit - kredit) dari detail JUP temporary.
+     */
+    private function getJUPTempBalance($docno)
+    {
+        $docno = trim((string) $docno);
+
+        if ($docno === '') {
+            return [
+                'total_debit'  => 0.0,
+                'total_kredit' => 0.0,
+                'balance'      => 0.0,
+            ];
+        }
+
+        $row = $this->db->table('sc_tmp.jup_dtl')
+            ->select("
+                COALESCE(SUM(CASE WHEN UPPER(TRIM(COALESCE(dk,''))) IN ('DEBIT','D','DR') THEN nilai ELSE 0 END),0) AS total_debit,
+                COALESCE(SUM(CASE WHEN UPPER(TRIM(COALESCE(dk,''))) IN ('KREDIT','K','CREDIT','CR') THEN nilai ELSE 0 END),0) AS total_kredit
+            ")
+            ->where('docno', $docno)
+            ->get()
+            ->getRowArray();
+
+        $totalDebit  = (float) ($row['total_debit'] ?? 0);
+        $totalKredit = (float) ($row['total_kredit'] ?? 0);
+
+        return [
+            'total_debit'  => $totalDebit,
+            'total_kredit' => $totalKredit,
+            'balance'      => $totalDebit - $totalKredit,
+        ];
+    }
+
     function finalEntryJUP(){
         $nama = trim($this->session->get('nama'));
         // $loccode = trim($this->session->get('loccode'));
@@ -948,15 +1173,41 @@ class Finance extends BaseController
         $paramdtl2 = " and coalesce(inputby,'')='$nama'";
 
         $header = $this->m_finance->q_jup_master_temp($param);
-        $status = trim($header->getRowArray()['status']);
+        $headerRow = $header->getRowArray();
+
+        if (!$headerRow) {
+            $this->session->setFlashdata('jup_balance_error', 'Data header JUP tidak ditemukan. Silakan ulangi input JUP.');
+            return redirect()->to(base_url('/ka/accounting/addJUP'));
+        }
+
+        $status = trim($headerRow['status'] ?? '');
         $cek = $this->m_finance->q_jup_dtl_temp($paramdtl);
         $cek2 = $this->m_finance->q_jup_dtl_temp($paramdtl2);
+
+        // VALIDASI BALANCE: total debit harus sama dengan total kredit
+        $jupBalance = $this->getJUPTempBalance($headerRow['docno'] ?? '');
 
 
         $builder = $this->db->table('sc_tmp.jup');
 
         //INSERT TRX ERROR
         $builder_trxerror = $this->db->table('sc_mst.trxerror');
+
+        // =====================================================
+        // TOLAK SIMPAN FINAL JIKA TOTAL DEBIT <> TOTAL KREDIT
+        // (balance harus 0, tidak boleh hanya mengandalkan validasi client)
+        // =====================================================
+        if (abs($jupBalance['balance']) > 0.005)
+        {
+            $this->session->setFlashdata('jup_balance_error',
+                'Total Debit (' . number_format($jupBalance['total_debit'], 2, '.', ',') . ') ' .
+                'dengan Total Kredit (' . number_format($jupBalance['total_kredit'], 2, '.', ',') . ') tidak sama. ' .
+                'Balance harus 0 sebelum data disimpan (balance saat ini: ' .
+                number_format($jupBalance['balance'], 2, '.', ',') . ').');
+
+            return redirect()->to(base_url('/ka/accounting/addJUP'));
+        }
+
         $builder_trxerror->where('userid', $nama);
         $builder_trxerror->where('modul', 'I.K.A.1');
         $builder_trxerror->delete();
@@ -972,6 +1223,13 @@ class Finance extends BaseController
                 'modul' => 'I.K.A.1',
             );
             $builder_trxerror->insert($infotrxerror);
+
+            // Beri pesan yang jelas agar tombol "Simpan Final Data" tidak
+            // terkesan tidak berfungsi (penyebab penolakan selalu ditampilkan)
+            $this->session->setFlashdata('jup_final_error',
+                $cek->getNumRows() > 0
+                    ? 'Simpan final ditolak: ada ' . $cek->getNumRows() . ' baris detail yang belum lengkap (Debit/Kredit, Nilai, Nama Perkiraan, atau Keterangan masih kosong).'
+                    : 'Simpan final ditolak: belum ada detail perkiraan yang diinput.');
 
             return redirect()->to(base_url('/ka/accounting/addJUP'));
         } else {
@@ -1010,7 +1268,25 @@ class Finance extends BaseController
                 'status' => 'F'
             );
             $builder->where('inputby',$nama);
-            if ($builder->update($info)) {
+
+            // -------------------------------------------------
+            // UPDATE status F memicu trigger sc_tmp.tr_jup_finalize().
+            // Jika trigger gagal (mis. bentrok uq_transaction_hd),
+            // tampilkan pesan yang bisa dibaca user, bukan error page.
+            // -------------------------------------------------
+            try {
+                $simpanFinal = $builder->update($info);
+            } catch (\Throwable $e) {
+                log_message('error', 'finalEntryJUP gagal simpan final: {pesan}', [
+                    'pesan' => $e->getMessage(),
+                ]);
+
+                $this->session->setFlashdata('jup_final_error', $this->buildJUPFinalErrorMessage($e));
+
+                return redirect()->to(base_url('/ka/accounting/addJUP'));
+            }
+
+            if ($simpanFinal) {
                 $paramerror=" and userid='$nama' and modul='I.K.A.1'";
                 $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
                 $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
@@ -1027,6 +1303,10 @@ class Finance extends BaseController
                     'modul' => 'I.K.A.1',
                 );
                 $builder_trxerror->insert($infotrxerror);
+
+                $this->session->setFlashdata('jup_final_error',
+                    'Simpan final gagal disimpan. Periksa kembali detail perkiraan (Debit/Kredit, Nilai, Nama Perkiraan, Keterangan, dan Cost Center) lalu coba lagi.');
+
                 return redirect()->to(base_url('/ka/accounting/addJUP'));
             }
 
@@ -1034,6 +1314,40 @@ class Finance extends BaseController
 
         }
 
+    }
+
+    /**
+     * Pesan ramah untuk kegagalan simpan final JUP (exception dari trigger DB).
+     */
+    private function buildJUPFinalErrorMessage(\Throwable $e)
+    {
+        $raw = (string) $e->getMessage();
+
+        // Bentrok unique key header transaksi:
+        // UNIQUE (docno, doctype, journal_type, type_in_out, idbranch, ref_docno, ref_doctype)
+        // -> terjadi bila ada lebih dari satu baris arah (D/K) yang sama
+        //    dengan cabang/Cost Center berbeda pada satu dokumen.
+        if (stripos($raw, 'uq_transaction_hd') !== false) {
+            return 'Simpan final gagal: kunci header transaksi bentrok (uq_transaction_hd). '
+                . 'Penyebab umumnya ada lebih dari satu baris detail dengan arah (Debit/Kredit) '
+                . 'dan cabang sama tetapi Cost Center berbeda, sehingga header hanya mendukung '
+                . 'satu baris per arah. Samakan Cost Center pada baris detail tersebut, lalu simpan ulang.';
+        }
+
+        // COA / nilai / DK tidak valid (validasi di sc_trx.fn_sync_jup_detail_jvgenl)
+        if (preg_match('/COA .* tidak ditemukan|COA JUP kosong|DK JUP harus|Nilai JUP tidak boleh negatif/i', $raw)) {
+            return 'Simpan final ditolak: ' . trim(preg_replace('/\s+/', ' ', $raw));
+        }
+
+        $singkat = trim(preg_replace('/\s+/', ' ', $raw));
+
+        if (function_exists('mb_substr')) {
+            $singkat = mb_substr($singkat, 0, 300);
+        } else {
+            $singkat = substr($singkat, 0, 300);
+        }
+
+        return 'Simpan final gagal diproses oleh database: ' . $singkat;
     }
 
     public function finalEntryPO_DP()
@@ -3173,10 +3487,22 @@ class Finance extends BaseController
         $logindate = $this->session->get('logindate'); // dd-mm-yyyy
         $infix = date('ym', strtotime($logindate));
 
+        // =========================================================
+        // NOMOR BUKTI TERAKHIR (AUTO SUFFIX) UNTUK CABANG INI
+        // Prefix default No. Bukti Penerimaan Kas/Bank = BKM
+        // =========================================================
+        $prefix   = 'BKM';
+        $lastInfo = $this->getLastSuffixPenerimaanKB($prefix, $infix, $kodeSuffix);
+
         return $this->response->setJSON([
             'success'      => true,
             'kode_suffix'  => $kodeSuffix,
-            'infix'        => $infix
+            'infix'        => $infix,
+            'prefix'       => $prefix,
+            'last_docno'   => $lastInfo['last_docno'],
+            'last_number'  => $lastInfo['last_number'],
+            'last_suffix'  => $lastInfo['last_suffix'],
+            'next_suffix'  => $lastInfo['next_suffix']
         ]);
     }
 
@@ -3186,28 +3512,50 @@ class Finance extends BaseController
         $infix       = trim($this->request->getGet('infix'));
         $kodeSuffix  = trim($this->request->getGet('kode_suffix'));
 
-        $like = $prefix . '/' . $infix . '/' . $kodeSuffix;
-
-        $row = $this->db->table('sc_trx.penerimaankb')
-            ->select('docno')
-            ->like('docno', $like, 'after')
-            ->orderBy('docno', 'DESC')
-            ->limit(1)
-            ->get()
-            ->getRowArray();
-
-        if ($row) {
-            $parts = explode('/', $row['docno']);
-            $last  = substr($parts[2], 2); // ambil angka setelah PT/PA/PB
-            $next  = str_pad(((int)$last) + 1, 4, '0', STR_PAD_LEFT);
-        } else {
-            $next = '0001';
-        }
+        $lastInfo = $this->getLastSuffixPenerimaanKB($prefix, $infix, $kodeSuffix);
 
         return $this->response->setJSON([
-            'success' => true,
-            'suffix'  => $kodeSuffix . $next
+            'success'     => true,
+            'suffix'      => $lastInfo['next_suffix'],
+            'last_docno'  => $lastInfo['last_docno'],
+            'last_suffix' => $lastInfo['last_suffix']
         ]);
+    }
+
+    /**
+     * Ambil nomor bukti terakhir sekaligus nomor berikutnya (auto suffix)
+     * dari sc_trx.penerimaankb untuk prefix / infix / kode suffix tertentu.
+     *
+     * Contoh: prefix=BKM, infix=2611, kodeSuffix=PA
+     *   last_docno  = BKM/2611/PA0001
+     *   last_number = 1
+     *   last_suffix = PA0001
+     *   next_suffix = PA0002
+     */
+    private function getLastSuffixPenerimaanKB(string $prefix, string $infix, string $kodeSuffix): array
+    {
+        $sql = "SELECT docno,
+                       CAST(SUBSTRING(split_part(TRIM(docno), '/', 3) FROM 3) AS INTEGER) AS nomor
+                FROM sc_trx.penerimaankb
+                WHERE split_part(TRIM(docno), '/', 1) = ?
+                  AND split_part(TRIM(docno), '/', 2) = ?
+                  AND UPPER(split_part(TRIM(docno), '/', 3)) LIKE ?
+                  AND SUBSTRING(split_part(TRIM(docno), '/', 3) FROM 3) ~ '^[0-9]+$'
+                ORDER BY nomor DESC
+                LIMIT 1";
+
+        $row = $this->db->query($sql, [$prefix, $infix, $kodeSuffix . '%'])->getRowArray();
+
+        $lastNo = $row ? (int) $row['nomor'] : 0;
+
+        return [
+            'last_docno'  => $row ? trim((string) $row['docno']) : '',
+            'last_number' => $lastNo,
+            'last_suffix' => $lastNo > 0
+                ? $kodeSuffix . str_pad((string) $lastNo, 4, '0', STR_PAD_LEFT)
+                : '',
+            'next_suffix' => $kodeSuffix . str_pad((string) ($lastNo + 1), 4, '0', STR_PAD_LEFT)
+        ];
     }
 
     public function initPenerimaanKBHeader()
@@ -4349,6 +4697,105 @@ class Finance extends BaseController
             log_message(
                 'error',
                 'laporan_jurnal_transaksi_penerimaankb: '
+                . $e->getMessage()
+            );
+
+
+            return $this->response
+                ->setJSON([
+
+                    'status'   => false,
+
+                    'messages' => $e->getMessage(),
+
+                    'data'     => []
+
+                ]);
+
+        }
+
+    }
+
+    /**
+     * Laporan Jurnal Transaksi Jurnal Umum Perkiraan (JUP) (read only).
+     * Sumber jurnal: sc_trx.jurnal_hd + sc_trx.jurnal_dt (status POSTED),
+     * keterangan diambil dari dokumen asal sc_trx.jup.
+     */
+    public function laporan_jurnal_transaksi_jup()
+    {
+        try {
+
+            // =================================================
+            // GET DOCNO
+            // =================================================
+
+            $docno = trim(
+                $this->request->getPost('docno')
+            );
+
+
+            // =================================================
+            // VALIDASI
+            // =================================================
+
+            if ($docno === '') {
+
+                return $this->response
+                    ->setJSON([
+
+                        'status'   => false,
+
+                        'messages' => 'Doc No Jurnal Umum Perkiraan tidak ditemukan',
+
+                        'data'     => []
+
+                    ]);
+
+            }
+
+
+            // =================================================
+            // PARAMETER QUERY
+            // =================================================
+
+            $params = "
+
+            AND TRIM(jh.docno) = " .
+                $this->db->escape($docno);
+
+
+            // =================================================
+            // GET DATA
+            // =================================================
+
+            $query = $this->m_finance
+                ->q_laporan_jurnal_transaksi_jup($params);
+
+
+            $data = $query->getResultArray();
+
+
+            // =================================================
+            // RESPONSE
+            // =================================================
+
+            return $this->response
+                ->setJSON([
+
+                    'status'   => true,
+
+                    'messages' => 'Data berhasil diambil',
+
+                    'data'     => $data
+
+                ]);
+
+        }
+        catch (\Throwable $e) {
+
+            log_message(
+                'error',
+                'laporan_jurnal_transaksi_jup: '
                 . $e->getMessage()
             );
 

@@ -1301,7 +1301,15 @@ class Globalmodule extends BaseController
         $page = intval($page);
         $limit = $perpage * $page;
 
-        $param=" and (idlocation like '%$search%' $paramglobal1 $paramglobal2 ) or (nmlocation like '%$search%' $paramglobal1 $paramglobal2 ) order by nmlocation asc";
+        // Hierarki gudang -> branch: filter sc_mst.mlocation.idbranchjob
+        $branchJob   = trim((string) $this->request->getPost('_branchjob_'));
+        $paramBranch = '';
+        if ($branchJob !== '') {
+            $branchJobEsc = str_replace("'", "''", $branchJob);
+            $paramBranch  = " and trim(coalesce(idbranchjob,'')) = trim('$branchJobEsc') ";
+        }
+
+        $param=" and (idlocation like '%$search%' $paramglobal1 $paramglobal2 $paramBranch ) or (nmlocation like '%$search%' $paramglobal1 $paramglobal2 $paramBranch ) order by nmlocation asc";
         $getResult = $this->m_global->q_mlocation($param)->getResult();
         $count = $this->m_global->q_mlocation($param)->getNumRows();
         header('Content-Type: application/json');

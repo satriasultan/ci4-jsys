@@ -84,8 +84,8 @@
                                         <!-- <th style="min-width:100px; text-align:center; vertical-align:middle;">Tanggal Kirim</th> -->
                                         <th style="min-width:100px; text-align:center; vertical-align:middle;">Tanggal Jatuh Tempo</th>
                                         <th style="min-width:400px; text-align:center; vertical-align:middle;">Keterangan</th>
-                                        <th style="min-width:400px; text-align:center; vertical-align:middle;">No. Faktur</th>
-                                        <th style="min-width:400px; text-align:center; vertical-align:middle;">No. SJ</th>
+               <!--                         <th style="min-width:400px; text-align:center; vertical-align:middle;">No. Faktur</th>
+                                        <th style="min-width:400px; text-align:center; vertical-align:middle;">No. SJ</th>-->
                                         <th style="min-width:150px; text-align:center; vertical-align:middle;">Cost Center</th>
                                         <th style="min-width:80px; text-align:center; vertical-align:middle;">Status</th>
                                     </tr>

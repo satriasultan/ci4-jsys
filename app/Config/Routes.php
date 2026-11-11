@@ -235,18 +235,23 @@ $routes->group('/ka/accounting', ["namespace" => "App\Controllers\Finance"], fun
 
 
     $routes->add('save_jup_detail', 'Finance::save_jup_detail');
-    $routes->get('updateJUP(:any)', 'Finance::updateJUP$1');
+    // Buka dokumen JUP final/cetak untuk direvisi. Parameter (id/docno hex)
+    // dikirim lewat query string, bukan lewat segmen URL.
+    $routes->get('updateJUP', 'Finance::updateJUP');
+    $routes->get('updateJUP/(:any)', 'Finance::updateJUP');
 
     $routes->add('deleteJUPDtl', 'Finance::deleteJUPDtl');
     $routes->add('show_jup', 'Finance::show_jup');
-    $routes->add('api_jup(:any)', 'Finance::api_jup$1');
+    // Laporan jurnal transaksi (jurnal_hd + jurnal_dt) untuk dokumen JUP
+    $routes->post('laporan_jurnal_transaksi_jup', 'Finance::laporan_jurnal_transaksi_jup');
+    $routes->add('api_jup(:any)', 'Finance::api_jup');
     $routes->add('list_trx_jup_dtl', 'Finance::list_trx_jup_dtl');
     $routes->add('showing_juptrx', 'Finance::showing_juptrx');
     $routes->add('getBranchInfoJUP', 'Finance::getBranchInfoJUP');
     $routes->add('getNextSuffixJUP', 'Finance::getNextSuffixJUP');
     $routes->add('initJUPHeader', 'Finance::initJUPHeader');
     $routes->add('saveJUPDetail', 'Finance::saveJUPDetail');
-    $routes->add("get_jup_detail(:any)", "Finance::get_jup_detail$1");
+    $routes->add("get_jup_detail(:any)", "Finance::get_jup_detail");
     $routes->add("delete_jup_detail", "Finance::delete_jup_detail");
 
 });
@@ -624,6 +629,7 @@ $routes->group('/purchase/trans', ["namespace" => "App\Controllers\Purchase"], f
     $routes->add('po', 'Purchase::po');
     $routes->add('list_po', 'Purchase::list_po');
     $routes->add('list_po_apprv', 'Purchase::list_po_apprv');
+    $routes->add('count_po_apprv', 'Purchase::count_po_apprv');
 
     $routes->add('addPO', 'Purchase::addPO');
     $routes->add('detailPO', 'Purchase::detailPO');
@@ -1477,6 +1483,7 @@ $routes->group('/persediaan/trans', ["namespace" => "App\Controllers\Persediaan"
     $routes->add('get_tmp_pnm_brng_dtl(:any)', 'Persediaan::get_tmp_pnm_brng_dtl$1');
     $routes->add('delete_pnm_brng', 'Persediaan::delete_pnm_brng');
     $routes->add('final_pnm_barang', 'Persediaan::final_pnm_barang');
+    $routes->add('check_coa_pnm_brng', 'Persediaan::check_coa_pnm_brng');
     $routes->add('get_summary_pnm', 'Persediaan::get_summary_pnm');
 
     $routes->add('updatepnmBrg', 'Persediaan::updatepnmBrg');
@@ -1487,6 +1494,8 @@ $routes->group('/persediaan/trans', ["namespace" => "App\Controllers\Persediaan"
     $routes->add('list_pnm_brng', 'Persediaan::list_trx_pnm_brng');
     $routes->add('getBranch_pnm_brng', 'Persediaan::getBranch_pnm_brng');
     $routes->add('getNextSuffix_pnm_brng', 'Persediaan::getNextSuffix_pnm_brng');
+    $routes->add('list_trx_pnm_brng_dtl', 'Persediaan::list_trx_pnm_brng_dtl');
+    $routes->post('laporan_jurnal_transaksi_pnm', 'Persediaan::laporan_jurnal_transaksi_pnm');
 });
 
 

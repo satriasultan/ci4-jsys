@@ -1,3 +1,4 @@
+<link rel="stylesheet" href="<?= base_url('assets/css/corp-form.css') ?>" />
 <style>
     
     .section-block {
@@ -167,6 +168,8 @@
     }
 
 </style>
+<div class="corp-form-container">
+
 <div class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
@@ -202,7 +205,7 @@
             <!-- jquery validation -->
             <div class="card card-primary">
                 <div class="card-header">
-                    <h3 class="card-title"><?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> Penerimaan Kas/Bank</h3>
+                    <h3 class="card-title"><i class="fa fa-file-text-o"></i> <?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> Penerimaan Kas/Bank</h3>
                 </div>
                 <!-- /.card-header -->
                 <!-- form start -->
@@ -490,19 +493,13 @@
                         <i class="fa fa-arrow-left mr-2"></i>
                         Kembali
                     </a>
-                </div>
-                <!--/.col (left) -->
-                <!-- right column -->
-                <div class="accounting-toolbar">
 
                     <button type="button"
                             id="btnLaporanJurnalPenerimaanKB"
-                            class="btn btn-primary">
+                            class="btn btn-primary btn-lg ms-2">
                         <i class="fa fa-book"></i> Laporan Jurnal Transaksi
                     </button>
-
                 </div>
-                
             </div>
         </div>
     </form>
@@ -510,6 +507,7 @@
 
     <!--/.col (right) -->
 </div>
+</div><!-- /.corp-form-container -->
 
 
 
