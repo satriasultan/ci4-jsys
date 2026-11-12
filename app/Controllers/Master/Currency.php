@@ -328,7 +328,9 @@ class Currency extends BaseController
         $paramx = " AND idlocation = '$loccode'";
         $dtllocation = $this->m_location->q_mlocation($paramx)->getRowArray();
 
-        $data['title'] = ucfirst("INPUT CUSTOMER: " . $dtllocation['idlocation'] . ' - ' . $dtllocation['nmlocation']);
+        $dataloc_id = isset($dtllocation['idlocation']) ? trim($dtllocation['idlocation']) : '';
+        $dataloc_nm = isset($dtllocation['nmlocation']) ? trim($dtllocation['nmlocation']) : '';
+        $data['title'] = ucfirst("INPUT CURRENCY: " . $dataloc_id . ' - ' . $dataloc_nm);
         $dtlbranch = $this->m_global->q_branch()->getRowArray();
         $branch = $dtlbranch['branch'];
 
@@ -386,7 +388,9 @@ class Currency extends BaseController
         $paramx = " AND idlocation = '$loccode'";
         $dtllocation = $this->m_location->q_mlocation($paramx)->getRowArray();
 
-        $data['title'] = ucfirst("EDIT CUSTOMER: " . $dtllocation['idlocation'] . ' - ' . $dtllocation['nmlocation']);
+        $dataloc_id = isset($dtllocation['idlocation']) ? trim($dtllocation['idlocation']) : '';
+        $dataloc_nm = isset($dtllocation['nmlocation']) ? trim($dtllocation['nmlocation']) : '';
+        $data['title'] = ucfirst("EDIT CURRENCY: " . $dataloc_id . ' - ' . $dataloc_nm);
         $dtlbranch = $this->m_global->q_branch()->getRowArray();
         $branch = $dtlbranch['branch'];
 
@@ -459,7 +463,9 @@ class Currency extends BaseController
         $paramx = " AND idlocation = '$loccode'";
         $dtllocation = $this->m_location->q_mlocation($paramx)->getRowArray();
 
-        $data['title'] = ucfirst("DETAIL CUSTOMER: " . $dtllocation['idlocation'] . ' - ' . $dtllocation['nmlocation']);
+        $dataloc_id = isset($dtllocation['idlocation']) ? trim($dtllocation['idlocation']) : '';
+        $dataloc_nm = isset($dtllocation['nmlocation']) ? trim($dtllocation['nmlocation']) : '';
+        $data['title'] = ucfirst("DETAIL CURRENCY: " . $dataloc_id . ' - ' . $dataloc_nm);
         $dtlbranch = $this->m_global->q_branch()->getRowArray();
         $branch = $dtlbranch['branch'];
 
@@ -576,12 +582,36 @@ class Currency extends BaseController
             ]);
         }
 
-        // Set docno sama dengan inputby
-        $idcurrency = isset($data->body->idcurrency) ? trim($data->body->idcurrency) : 'No Docno Provided';
+        // Set idcurrency dari modal popup exchange rate
+        $idcurrency = isset($data->body->idcurrency) ? trim((string) $data->body->idcurrency) : '';
+
+        if ($idcurrency === '') {
+            return $this->response->setJSON([
+                'status' => false,
+                'message' => 'Currency is not selected.'
+            ]);
+        }
+
+        /* Exchange date dari modal popup : format DD-MM-YYYY HH:mm:ss
+           kolom sc_mst.exchangerate.exchangedate bertipe timestamp => simpan tanggal + jam */
+        $exchangedate_input = isset($data->body->exchangedate) ? trim((string) $data->body->exchangedate) : '';
+        if ($exchangedate_input !== '' && strtotime($exchangedate_input) !== false) {
+            $exchangedate = date('Y-m-d H:i:s', strtotime($exchangedate_input));
+        } else {
+            $exchangedate = $inputdate; // default : tanggal + jam saat ini
+        }
+
+        // Nilai exchange rate (NUMERIC 18,4) => selalu 4 digit desimal
+        $nilai_input = isset($data->body->nilai) ? str_replace(',', '', trim((string) $data->body->nilai)) : '';
+        $nilai = ($nilai_input === '' || !is_numeric($nilai_input)) ? 0 : (float) $nilai_input;
 
         // Data untuk disimpan ke database
         $data_insert = [
-            'idcurr' => $idcurrency,
+            'idcurr'       => $idcurrency,
+            'exchangedate' => $exchangedate,
+            'nilai'        => number_format($nilai, 4, '.', ''),
+            'createdby'    => substr($inputby, 0, 20), // kolom character(20)
+            'createddate'  => $inputdate,
         ];
 
         // Insert ke database
@@ -592,13 +622,13 @@ class Currency extends BaseController
         if ($insert) {
             return $this->response->setJSON([
                 'status' => true,
-                'message' => 'Supplier successfully created!',
+                'message' => 'Exchange rate successfully created!',
                 'idcurrency' => $idcurrency
             ]);
         } else {
             return $this->response->setJSON([
                 'status' => false,
-                'message' => 'Failed to create Supplier. Please try again.'
+                'message' => 'Failed to create exchange rate. Please try again.'
             ]);
         }
     }
@@ -621,10 +651,27 @@ class Currency extends BaseController
             $row[] = $lm->id;
             // $row[] = '<input class=" " maxlength="50" style="text-transform: uppercase;margin:0px; background-color:#d6d5d5;width: 100%" type="text" id="nmsupplier_' . htmlspecialchars($lm->id, ENT_QUOTES, 'UTF-8') . '" name="nmsupplier_' . htmlspecialchars($lm->id, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($lm->nmsupplier, ENT_QUOTES, 'UTF-8') . '" disabled >';
             // $row[] = '<input type="text" class=" ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;"  id="pricelst_'.$lm->id.'" name="pricelst_'.$lm->id.'" value="'.number_format($lm->pricelst, 2, '.', '').'" disabled >';
-            $row[] = '<input type="text" class="" style="margin:0px; background-color:#d6d5d5;width: 100%;" id="exchangedate_'.$lm->id.'" name="exchangedate_'.$lm->id.'" value="'.($lm->exchangedate ? htmlspecialchars(date('d-m-Y H:i:s', strtotime($lm->exchangedate)), ENT_QUOTES, 'UTF-8') : '').'" disabled >';
+            /* Exchange date & nilai ditampilkan sebagai text (read only).
+               Input / update data dilakukan melalui modal popup "Exchange Rate"
+               (lihat currency.js : openExchangeRateModal()). */
+            $exchangedate_display = $lm->exchangedate ? date('d-m-Y H:i:s', strtotime($lm->exchangedate)) : '';
+
+            $row[] = '<span class="exchange-date">' . htmlspecialchars($exchangedate_display, ENT_QUOTES, 'UTF-8') . '</span>';
 
 
-            $row[] = '<input type="text" class=" ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;" id="nilai_'.$lm->id.'" name="nilai_'.$lm->id.'" value="'.number_format($lm->nilai, 2, '.', ',').'" disabled >';
+            /* Tampilkan nilai exchange rate sesuai presisi kolom (NUMERIC 18,4).
+               Format angka polos: titik = pemisah desimal, TANPA pemisah ribuan/koma.
+               Selalu tampil tepat 4 digit di belakang koma (contoh: 17000.0000). */
+            $nilai_display = number_format((float) $lm->nilai, 4, '.', '');
+
+            $row[] = '<span class="exchange-nilai">' . $nilai_display . '</span>';
+
+            /* Tombol Update : membuka modal popup berisi Exchange Date & Price */
+            $row[] = '<button type="button" class="btn btn-sm btn-primary btn-edit-exchange"'
+                . ' data-id="' . htmlspecialchars($lm->id, ENT_QUOTES, 'UTF-8') . '"'
+                . ' data-exchangedate="' . htmlspecialchars($exchangedate_display, ENT_QUOTES, 'UTF-8') . '"'
+                . ' data-nilai="' . $nilai_display . '"'
+                . ' title="Update Exchange Rate"><i class="fa fa-pencil"></i></button>';
             // $row[] = '<input type="text" class=" ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;" id="pricelst_'.$lm->idurut.'" name="pricelst_'.$lm->idurut.'" value="'.number_format($lm->pricelst, 2, ',', '.').'" disabled >';
 
 
@@ -663,7 +710,8 @@ class Currency extends BaseController
                 $exchangedate = null;
 
                 if ($exchangedate_input && strtotime($exchangedate_input)) {
-                    $exchangedate = date('Y-m-d', strtotime($exchangedate_input));
+                    // kolom sc_mst.exchangerate.exchangedate bertipe timestamp => simpan tanggal + jam
+                    $exchangedate = date('Y-m-d H:i:s', strtotime($exchangedate_input));
                 }
                 // $category = $update['category'] ?? '';
 

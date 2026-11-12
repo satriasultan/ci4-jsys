@@ -381,7 +381,7 @@ var PO_LOCK_TEXT_FIELDS = [
 
 // field header PO yang dikunci (select / select2)
 var PO_LOCK_SELECT_FIELDS = [
-    'cabang', 'kdsupplier', 'idtax', 'currcode'
+    'cabang', 'kdsupplier', 'idtax', 'currcode', 'paymenttype', 'polokal'
 ];
 
 // flag global : header PO sudah dikunci / belum
@@ -795,6 +795,21 @@ $("#idtax").select2({
 
     hitungPajak();
 
+});
+
+
+// ======================= PAYMENT TYPE & PO LOKAL / IMPORT ==================================
+
+$("#paymenttype").select2({
+    placeholder: "Pilih Payment Type",
+    allowClear: true,
+    width: '100%'
+});
+
+$("#polokal").select2({
+    placeholder: "Pilih Lokal / Import",
+    allowClear: true,
+    width: '100%'
 });
 
 
@@ -1321,6 +1336,8 @@ function savePODetail() {
     formData.append('kurs', convertToDbNumber($('#kurs').val()));
     formData.append('alamatkirim', $('#alamatkirim').val());
     formData.append('keterangan', $('#keterangan').val());
+    formData.append('paymenttype', $('#paymenttype').val() || '');
+    formData.append('polokal', $('#polokal').val() || '');
     formData.append('capexno', $('#capexno').val());
     // ==========================================
     // 🔹 BATCH, ETD, ETD NOTES
@@ -1485,6 +1502,37 @@ function btnInputDetail() {
         $('#cabang').focus();
         return;
     }
+
+    // PAYMENT TYPE WAJIB
+    let paymenttype = ($('#paymenttype').val() || '').trim();
+
+    if (paymenttype === '') {
+        Swal.fire({
+            title: 'Peringatan',
+            text: 'Payment Type wajib dipilih sebelum input detail.',
+            icon: 'warning',
+            confirmButtonText: 'OK'
+        });
+
+        $('#paymenttype').select2('open');
+        return;
+    }
+
+    // PO LOKAL / IMPORT WAJIB
+    let polokal = ($('#polokal').val() || '').trim();
+
+    if (polokal === '') {
+        Swal.fire({
+            title: 'Peringatan',
+            text: 'PO Lokal / Import wajib dipilih sebelum input detail.',
+            icon: 'warning',
+            confirmButtonText: 'OK'
+        });
+
+        $('#polokal').select2('open');
+        return;
+    }
+
     $('#formPODetail')[0].reset();
 
 
@@ -1561,9 +1609,68 @@ $("#kdsupplier").select2({
         $("#alamatsupplier").val(selectedData.alamat || '').prop('readonly', true);
         $("#nmsupplier").val(selectedData.nmsupplier || '');
         $("#jthtempo").val(selectedData.jthtempo || '')
+
+        // Keterangan otomatis diisi nama supplier
+        $("#keterangan").val($.trim(selectedData.nmsupplier || ''));
+
+        // Pajak otomatis mengikuti status PKP supplier (pkp_non_pkp)
+        applySupplierTax(selectedData);
+
         // $("#phone").val(selectedData.phone || '').prop('disabled', true);
     }
 });
+
+
+// =========================================================
+// PAJAK OTOMATIS MENGIKUTI STATUS PKP SUPPLIER
+// Sumber data : sc_mst.mstsupplier.pkp_non_pkp
+//   - NULL / '' / 'NON PPN'  -> Pajak = NON
+//   - 'PPN'                  -> Pajak = PPN11
+// =========================================================
+function taxCodeBySupplier(supplier) {
+
+    var pkp = $.trim(
+        (supplier && supplier.pkp_non_pkp !== null &&
+         supplier.pkp_non_pkp !== undefined) ?
+            String(supplier.pkp_non_pkp) : ''
+    ).toUpperCase();
+
+    // 'NON PPN' juga mengandung kata PPN, jadi harus dibandingkan persis
+    if (pkp === 'PPN') {
+        return 'PPN11';
+    }
+
+    return 'NON';
+}
+
+function applySupplierTax(supplier) {
+
+    if (!supplier) {
+        return;
+    }
+
+    // pastikan kolom pkp_non_pkp benar-benar ada pada response supplier
+    if (!Object.prototype.hasOwnProperty.call(supplier, 'pkp_non_pkp')) {
+        console.warn('Kolom pkp_non_pkp tidak ditemukan pada data supplier.');
+        return;
+    }
+
+    var idtax = taxCodeBySupplier(supplier);
+    var current = $.trim($('#idtax').val() || '').toUpperCase();
+
+    // sudah sesuai -> tidak perlu request ulang
+    if (current === idtax) {
+        return;
+    }
+
+    loadDefaultTax(
+        idtax,
+        'Supplier terpilih berstatus ' +
+            (idtax === 'PPN11' ? 'PKP (PPN)' : 'NON PKP') +
+            ', tetapi kode pajak "' + idtax +
+            '" tidak ditemukan di Master Tax.'
+    );
+}
 
 
 // =====================================================
@@ -1806,7 +1913,7 @@ function loadDefaultCurrency(currcode, kurs = null, docdate = null) {
 // =====================================================
 // AUTO LOAD TAX DARI API
 // =====================================================
-function loadDefaultTax(idtax) {
+function loadDefaultTax(idtax, notFoundMessage) {
 
     idtax = $.trim(idtax || '');
 
@@ -1839,6 +1946,14 @@ function loadDefaultTax(idtax) {
                     idtax
                 );
 
+                if (notFoundMessage) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Pajak tidak ditemukan',
+                        text: notFoundMessage
+                    });
+                }
+
                 return;
             }
 
@@ -1866,7 +1981,7 @@ function loadDefaultTax(idtax) {
             var option = new Option(
 
                 taxData.nmtax,
-                taxData.idtax,
+                $.trim(taxData.idtax),
 
                 true,
                 true

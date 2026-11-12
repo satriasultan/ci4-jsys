@@ -37,10 +37,13 @@ class M_Tax extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
+        if(!empty($_POST['order'])) // here order processing
         {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->t_tax_mst_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+            // 2 kolom awal tabel (No, Action) tidak ikut dipetakan ke kolom DB
+            $idx = (int) $_POST['order']['0']['column'] - 2;
+
+            if ($idx >= 0 && isset($this->t_tax_mst_view_column[$idx])) {
+                $builder->orderBy($this->t_tax_mst_view_column[$idx], $_POST['order']['0']['dir']);
             }
         }
         else if(isset($this->t_tax_mst_view_order))
@@ -137,10 +140,13 @@ class M_Tax extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
+        if(!empty($_POST['order'])) // here order processing
         {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->t_tax_dtl_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+            // kolom 0 = checkbox, jadi index kolom DB = column - 1
+            $idx = (int) $_POST['order']['0']['column'] - 1;
+
+            if ($idx >= 0 && isset($this->t_tax_dtl_view_column[$idx])) {
+                $builder->orderBy($this->t_tax_dtl_view_column[$idx], $_POST['order']['0']['dir']);
             }
         }
         else if(isset($this->t_tax_dtl_view_order))

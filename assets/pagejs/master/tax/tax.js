@@ -12,6 +12,41 @@
 var save_method; //for save method string
 var table;
 //"use strict";
+
+/* ================= BOOTSTRAP 5 MODAL HELPER =================
+   Catatan : project memakai Bootstrap 5 (tanpa plugin jQuery),
+   sehingga $('#modal').modal('show') TIDAK tersedia.
+   Gunakan helper di bawah ini. */
+function showBsModal(selector) {
+    var el = document.querySelector(selector);
+    if (!el || !window.bootstrap || !bootstrap.Modal) {
+        return false;
+    }
+    bootstrap.Modal.getOrCreateInstance(el).show();
+    return true;
+}
+
+function hideBsModal(selector) {
+    var el = document.querySelector(selector);
+    if (!el || !window.bootstrap || !bootstrap.Modal) {
+        return false;
+    }
+    var inst = bootstrap.Modal.getInstance(el);
+    if (inst) {
+        inst.hide();
+    }
+    return true;
+}
+
+/* idtax master (scope form master, bukan hidden field modal) */
+function masterIdtax() {
+    return $.trim($('#formInputTaxMst [name="idtax"]').val() || '');
+}
+
+function masterType() {
+    return $.trim($('#formInputTaxMst [name="type"]').val() || '');
+}
+
 function tableSupplier(){
     // var lg = languageDatatable;
     var initTable = function () {
@@ -80,13 +115,13 @@ function reload_table()
 $('#btn-filter').click(function(){ //button filter event click
     var table = $('#t_tax');
     table.DataTable().ajax.reload(); //reload datatable ajax
-    $('#filter').modal('hide');
+    hideBsModal('#filter');
 });
 $('#btn-reset').click(function(){ //button reset event click
     $('#form-filter')[0].reset();
     var table = $('#t_tax');
     table.DataTable().ajax.reload(); //reload datatable ajax
-    $('#filter').modal('hide');
+    hideBsModal('#filter');
 });
 
 //EDIT ITEM
@@ -98,28 +133,33 @@ function documentReadable(){
     // });
     $.ajax({
         type: 'GET',
-        url: HOST_URL + 'master/data/getMasterTax' + '?var=' + $('[name="id"]').val(),
+        url: HOST_URL + 'master/data/getMasterTax' + '?var=' + $('#formInputTaxMst [name="id"]').val(),
         dataType: 'json',
         dataFilter: function(data) {
             var json = jQuery.parseJSON(data);
+            if (!json || !json.dataTables || !json.dataTables.items || !json.dataTables.items.length) {
+                return data;
+            }
+
             var dt = json.dataTables.items[0]; // data pertama
 
-            // Isi semua field dengan trim
-            $('[name="idtax"]').val($.trim(dt.idtax));
-            $('[name="nmtax"]').val($.trim(dt.nmtax).toUpperCase());
+            // Isi field master (scope form master)
+            $('#formInputTaxMst [name="id"]').val($.trim(dt.id));
+            $('#idtax_mst').val($.trim(dt.idtax));
+            $('#nmtax_mst').val($.trim(dt.nmtax).toUpperCase());
 
         },
         complete: function(){
-            $("#loadMe").modal("hide");
+            hideBsModal('#loadMe');
         },
         error: function (jqXHR, textStatus, errorThrown)
         {
             console.log("Failed To Loading Data");
-            $("#loadMe").modal("hide");
+            hideBsModal('#loadMe');
         }
     });
 
-    $("#loadMe").modal("hide");
+    hideBsModal('#loadMe');
 }
 /* FOR INPUT FUNCTION */
 
@@ -145,6 +185,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     setViewMode();
+
+    // halaman INPUT langsung siap diisi (tanpa klik Update)
+    if (masterType() === 'INPUT') {
+        setEditMode();
+    }
 });
 
 /* ================= MODE ================= */
@@ -154,23 +199,29 @@ function setViewMode(){
     $('#btnSave').addClass('d-none');
     $('#btnCancel').addClass('d-none');
 
-    $('#idtax').prop('readonly', true).addClass('bg-light');
-    $('#nmtax').prop('readonly', true).addClass('bg-light');
+    $('#idtax_mst').prop('readonly', true).addClass('bg-light');
+    $('#nmtax_mst').prop('readonly', true).addClass('bg-light');
 }
 
 function setEditMode(){
+    // mode DETAIL tidak boleh diedit
+    if (masterType() === 'DETAIL') {
+        setViewMode();
+        return;
+    }
+
     $('#btnUpdate').addClass('d-none');
     $('#btnSave').removeClass('d-none');
     $('#btnCancel').removeClass('d-none');
 
-    // RULE FIELD
-    if ($('[name="type"]').val() === 'INPUT') {
-        $('#idtax').prop('readonly', false).addClass('bg-light'); // PK tidak boleh edit
+    // RULE FIELD : Kode Pajak hanya bisa diisi pada saat INPUT
+    if (masterType() === 'INPUT') {
+        $('#idtax_mst').prop('readonly', false).removeClass('bg-light').focus();
     } else {
-        $('#idtax').prop('readonly', true).addClass('bg-light'); // PK tidak boleh edit
+        $('#idtax_mst').prop('readonly', true).addClass('bg-light');
     }
 
-    $('#nmtax').prop('readonly', false).removeClass('bg-light');
+    $('#nmtax_mst').prop('readonly', false).removeClass('bg-light');
 }
 
 
@@ -356,8 +407,8 @@ function saveData(){
         success: function(res){
             if(res.status){
 
-                $('#id').val(res.id);
-                $('#idtax').val(res.idtax);
+                $('#id_mst').val(res.id);
+                $('#idtax_mst').val(res.idtax);
 
                 // reload data DULU
                 reloadByIdTax(res.id);
@@ -366,7 +417,7 @@ function saveData(){
                 setViewMode();
 
                 // redirect jika INPUT
-                if ($('[name="type"]').val() === 'INPUT') {
+                if (masterType() === 'INPUT') {
                     window.location.href =
                         HOST_URL + 'master/data/update_tax?id=' + res.id;
                     return;
@@ -399,13 +450,13 @@ function reloadByIdTax(id){
 
             const dt = json.dataTables.items[0];
 
-            $('#id').val($.trim(dt.id));
-            $('#idtax').val($.trim(dt.idtax));
-            $('#nmtax').val($.trim(dt.nmtax));
+            $('#id_mst').val($.trim(dt.id));
+            $('#idtax_mst').val($.trim(dt.idtax));
+            $('#nmtax_mst').val($.trim(dt.nmtax));
 
             // hanya atur FIELD, BUKAN MODE
-            $('#idtax').prop('readonly', true).addClass('bg-light');
-            $('#nmtax').prop('readonly', true).addClass('bg-light');
+            $('#idtax_mst').prop('readonly', true).addClass('bg-light');
+            $('#nmtax_mst').prop('readonly', true).addClass('bg-light');
         },
         error: function(){
             alert('Server error saat load data');
@@ -450,10 +501,9 @@ function tableTaxDetail(){
                 "url": HOST_URL + 'master/data/list_tax_detail',
                 "type": "POST",
                 "data": function(data) {
-                    data.tglrange = $('#tglrange').val();
-                    data.status_filter = $('#status_filter').val(); //A,P,S,ALL
-                    data.id =  $('[name="id"]').val();
-                    data.idtax =  $('[name="idtax"]').val();
+                    // scope ke form master (id dan idtax tidak boleh dobel id)
+                    data.id    = $('#formInputTaxMst [name="id"]').val();
+                    data.idtax = masterIdtax();
 
                     // data.idgroup = $('#idgroup').val();
                 },
@@ -475,12 +525,14 @@ function tableTaxDetail(){
                     "searchable": false,
                     "className": "text-center",
                     "render": function (data, type, row) {
-                        // row[1] = kolom ID (ID Tax)
+                        // row[0] = kolom ID (PK surrogate) dari server
                         return '<input type="checkbox" class="row-check" value="' + row[0] + '">';
                     }
                 },
                 {
-                    "targets": [ -1 ],
+                    // pemetaan kolom order di server hanya untuk 6 kolom,
+                    // supaya tidak error saat sorting kolom lain
+                    "targets": "_all",
                     "orderable": false
                 }
             ]
@@ -525,25 +577,70 @@ function getSelectedTaxDetail(){
 
 function getCheckedDetailIds(){
     let ids = [];
-    $('.row-check:checked').each(function(){
+    $('#tblMasterPajakDetail tbody .row-check:checked').each(function(){
         ids.push($(this).val());
     });
     return ids;
 }
 
 
+/* data sementara untuk modal (dipakai saat event shown.bs.modal) */
+var taxDetailPendingData = null;
+
+function resetTaxDetailForm(){
+    var form = document.getElementById('formTaxDetail');
+    if (form) { form.reset(); }
+
+    $('#iddtl').val('');
+    $('#idtax_dtl').val('');
+    $('#status').val('P');
+    $('#chold').val('NO');
+
+    $('#prk_masukan, #prk_keluaran, #prk_fpj_msk, #prk_fpj_klr, #prk_fpj_msk_rep, #prk_fpj_klr_rep')
+        .each(function(){
+            var $el = $(this);
+            $el.empty();
+            if ($el.hasClass('select2-hidden-accessible')) {
+                $el.trigger('change');
+            }
+        });
+}
+
 function btnInputDetail(){
-    // reset form modal
-    $('#formTaxDetail')[0].reset();
-    $('#modalTaxDetailLabel').text('Tambah Tax Detail');
-    $('#modalTaxDetail').modal('show');
+    if (!masterIdtax()) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Master Tax belum tersimpan',
+            text: 'Isi dan simpan Kode Pajak master terlebih dahulu'
+        });
+        return;
+    }
+
+    taxDetailPendingData = null;
+    resetTaxDetailForm();
+
+    $('#modalTaxDetailLabel').html('<i class="fa fa-plus"></i> Input Tax Detail');
+
+    if (!showBsModal('#modalTaxDetail')) {
+        alert('Komponen modal tidak tersedia');
+    }
 }
 
 function setSelect2Ajax(selector, value, text) {
-    if (!value) return;
+    var $el = $(selector);
 
-    let option = new Option(text || value, value, true, true);
-    $(selector).append(option).trigger('change');
+    $el.empty();
+
+    if (value) {
+        var option = new Option(text || value, value, true, true);
+        $el.append(option);
+    }
+
+    $el.trigger('change');
+
+    if ($el.hasClass('select2-hidden-accessible')) {
+        $el.trigger('change.select2');
+    }
 }
 
 function btnUpdateDetail(){
@@ -567,33 +664,43 @@ function btnUpdateDetail(){
         data: { id: id },
         dataType: 'json',
         success: function(res){
-            if(res.status){
-                // isi form modal
-                $('#id').val(res.data.id);
-                $('#iddtl').val(res.data.iddtl);
-                $('#idtax').val(res.data.idtax);
-                $('#idgrouptax').val(res.data.idgrouptax);
-                $('#nmgrouptax').val(res.data.nmgrouptax);
-                $('#kodepajak').val(res.data.kodepajak);
-                $('#percentation').val(res.data.percentation);
-                setSelect2Ajax('#prk_masukan',     res.data.prk_masukan,     res.data.prk_masukan);
-                setSelect2Ajax('#prk_keluaran',    res.data.prk_keluaran,    res.data.prk_keluaran);
-                setSelect2Ajax('#prk_fpj_msk',     res.data.prk_fpj_msk,     res.data.prk_fpj_msk);
-                setSelect2Ajax('#prk_fpj_klr',     res.data.prk_fpj_klr,     res.data.prk_fpj_klr);
-                setSelect2Ajax('#prk_fpj_msk_rep', res.data.prk_fpj_msk_rep, res.data.prk_fpj_msk_rep);
-                setSelect2Ajax('#prk_fpj_klr_rep', res.data.prk_fpj_klr_rep, res.data.prk_fpj_klr_rep);
-                $('#rumus_dpp_lain').val(res.data.rumus_dpp_lain);
-                $('#rumus_pajak').val(res.data.rumus_pajak);
+            if(res.status && res.data){
+                // siapkan data, isi form dilakukan saat modal tampil
+                taxDetailPendingData = res.data;
 
+                $('#modalTaxDetailLabel').html('<i class="fa fa-edit"></i> Update Tax Detail');
 
-
-                $('#modalTaxDetailLabel').text('Update Tax Detail');
-                $('#modalTaxDetail').modal('show');
+                if (!showBsModal('#modalTaxDetail')) {
+                    alert('Komponen modal tidak tersedia');
+                }
             }else{
                 alert(res.message || 'Data tidak ditemukan');
             }
         }
     });
+}
+
+/* Isi form modal dari data detail (dipanggil setelah modal tampil) */
+function applyTaxDetailForm(row) {
+    if (!row) {
+        return;
+    }
+
+    $('#iddtl').val(row.id || '');
+    $('#idtax_dtl').val($.trim(row.idtax || masterIdtax()));
+    $('#idgrouptax').val($.trim(row.idgrouptax));
+    $('#nmgrouptax').val($.trim(row.nmgrouptax));
+    $('#kodepajak').val($.trim(row.kodepajak));
+    $('#percentation').val(row.percentation === null ? '' : row.percentation);
+    $('#rumus_dpp_lain').val($.trim(row.rumus_dpp_lain));
+    $('#rumus_pajak').val($.trim(row.rumus_pajak));
+
+    setSelect2Ajax('#prk_masukan',     $.trim(row.prk_masukan),     $.trim(row.prk_masukan));
+    setSelect2Ajax('#prk_keluaran',    $.trim(row.prk_keluaran),    $.trim(row.prk_keluaran));
+    setSelect2Ajax('#prk_fpj_msk',     $.trim(row.prk_fpj_msk),     $.trim(row.prk_fpj_msk));
+    setSelect2Ajax('#prk_fpj_klr',     $.trim(row.prk_fpj_klr),     $.trim(row.prk_fpj_klr));
+    setSelect2Ajax('#prk_fpj_msk_rep', $.trim(row.prk_fpj_msk_rep), $.trim(row.prk_fpj_msk_rep));
+    setSelect2Ajax('#prk_fpj_klr_rep', $.trim(row.prk_fpj_klr_rep), $.trim(row.prk_fpj_klr_rep));
 }
 function btnDeleteDetail(){
     const ids = getCheckedDetailIds();
@@ -621,19 +728,13 @@ function btnDeleteDetail(){
     });
 }
 
-$('#checkAllDetail').on('change', function(){
-    $('.row-check').prop('checked', this.checked);
-});
-
-// auto uncheck checkAll jika salah satu dilepas
-$(document).on('change','.row-check', function(){
-    if(!this.checked){
-        $('#checkAllDetail').prop('checked', false);
-    }
-});
-
-
 function initSelect2COA(){
+    // cukup diinisialisasi sekali (hindari re-init saat modal dibuka ulang)
+    if (window.__taxDetailSelect2Ready) {
+        return;
+    }
+    window.__taxDetailSelect2Ready = true;
+
     $("#prk_masukan").select2({
         dropdownParent: $('#modalTaxDetail'), // WAJIB di modal
         placeholder: "Pilih Perkiraan",
@@ -1010,12 +1111,46 @@ function initSelect2COA(){
 }
 $('#modalTaxDetail').on('shown.bs.modal', function () {
     initSelect2COA();
+
+    // isi data update (jika ada) setelah select2 siap
+    applyTaxDetailForm(taxDetailPendingData);
+
+    // pastikan idtax detail selalu mengacu ke master
+    if (!$.trim($('#idtax_dtl').val())) {
+        $('#idtax_dtl').val(masterIdtax());
+    }
+
+    taxDetailPendingData = null;
+
+    $('#idgrouptax').trigger('focus');
 });
 
 
 function saveTaxDetail(){
 
     if(!confirm('Simpan data Tax Detail?')) return;
+
+    var idtax = $.trim($('#idtax_dtl').val()) || masterIdtax();
+    $('#idtax_dtl').val(idtax);
+
+    if (!idtax) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Kode Pajak kosong',
+            text: 'Simpan Master Tax terlebih dahulu'
+        });
+        return;
+    }
+
+    if (!$.trim($('#idgrouptax').val())) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Jenis belum diisi',
+            text: 'Jenis pajak wajib diisi'
+        });
+        $('#idgrouptax').trigger('focus');
+        return;
+    }
 
     $.ajax({
         url: HOST_URL + 'master/data/save_tax_detail',
@@ -1026,10 +1161,14 @@ function saveTaxDetail(){
 
             if(res.status){
 
-                alert('Data Tax Detail berhasil disimpan');
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil',
+                    text: res.message || 'Data Tax Detail berhasil disimpan'
+                });
 
                 // tutup modal
-                $('#modalTaxDetail').modal('hide');
+                hideBsModal('#modalTaxDetail');
 
                 // reload datatable (tanpa reset paging)
                 $('#tblMasterPajakDetail')
@@ -1037,16 +1176,25 @@ function saveTaxDetail(){
                     .ajax.reload(null, false);
 
                 // reset form setelah simpan
-                $('#formTaxDetail')[0].reset();
+                taxDetailPendingData = null;
+                resetTaxDetailForm();
 
             }else{
-                alert(res.message || 'Gagal menyimpan data');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: res.message || 'Gagal menyimpan data'
+                });
             }
 
         },
         error: function(xhr){
             console.error(xhr.responseText);
-            alert('Terjadi kesalahan server');
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Terjadi kesalahan server'
+            });
         }
     });
 }
@@ -1088,31 +1236,27 @@ $(document).ready(function() {
     // var valueToScroll = 80;
     // $(".card").scrollTop(valueToScroll);
 
-    console.log($('[name="type"]').val() + " loging ")
-    if ($('[name="type"]').val() === 'UPDATE') {
+    if (masterType() === 'UPDATE') {
         documentReadable();
     }
-    if ($('[name="type"]').val() === 'DETAIL') {
 
-        $('#btnSave').hide();
+    if (masterType() === 'DETAIL') {
 
-        // disable semua input
-        $('#formTaxDetail')
+        $('#btnSave').addClass('d-none');
+        $('#btnUpdate').addClass('d-none');
+
+        // disable semua input master
+        $('#formInputTaxMst')
             .find('input, textarea, select')
             .prop('disabled', true);
 
-        $('#formTaxDetail')
-            .find('select.select2')
-            .prop('disabled', true)
-            .trigger('change.select2');
-
         // 🔥 disable SEMUA tombol di halaman
-        $('button, .btn')
+        $('.corp-form-container .card .card-actions button')
             .prop('disabled', true)
             .addClass('disabled');
 
-        // kecuali tombol tertentu
-        $('#btnClose, #btnBack')
+        // kecuali tombol navigasi di footer
+        $('.corp-form-container .card-footer .btn')
             .prop('disabled', false)
             .removeClass('disabled');
 

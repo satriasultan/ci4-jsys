@@ -4020,6 +4020,34 @@ class Purchase extends BaseController
             ]);
         }
 
+        // =====================================================
+        // VALIDASI HEADER BARU: PAYMENT TYPE & PO LOKAL/IMPORT WAJIB
+        // (hanya untuk pembuatan header pertama kali)
+        // =====================================================
+        $headerExists = $this->db->table('sc_tmp.po')
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->countAllResults();
+
+        if ($headerExists == 0) {
+            $paymenttypeChk = strtoupper(trim((string) $this->request->getPost('paymenttype')));
+            if (!in_array($paymenttypeChk, ['LC', 'TT', 'CASH', 'GIRO'], true)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Payment Type wajib dipilih sebelum input detail'
+                ]);
+            }
+
+            $polokalChk = strtoupper(trim((string) $this->request->getPost('polokal')));
+            if (!in_array($polokalChk, ['LOKAL', 'IMPORT'], true)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'PO Lokal / Import wajib dipilih sebelum input detail'
+                ]);
+            }
+        }
+
+
         $db = $this->db;
         $db->transStart();
 
@@ -4049,6 +4077,13 @@ class Purchase extends BaseController
 
             $isinclusive = ($isinclusive === 'YES') ? 'YES' : 'NO';
 
+            // PAYMENT TYPE & PO LOKAL / IMPORT (char(20), nullable)
+            $paymenttype = strtoupper(trim((string) $this->request->getPost('paymenttype')));
+            $paymenttype = in_array($paymenttype, ['LC', 'TT', 'CASH', 'GIRO'], true) ? $paymenttype : null;
+
+            $polokal = strtoupper(trim((string) $this->request->getPost('polokal')));
+            $polokal = in_array($polokal, ['LOKAL', 'IMPORT'], true) ? $polokal : null;
+
             $builderHeader->insert([
                 'docno'          => $docno,
                 'cabang'         => $this->request->getPost('cabang'),
@@ -4064,6 +4099,8 @@ class Purchase extends BaseController
                 'currcode'       => strtoupper($this->request->getPost('currcode')),
                 'kurs'           => strtoupper($this->request->getPost('kurs')),
                 'keterangan'     => strtoupper($this->request->getPost('keterangan')),
+                'paymenttype'    => $paymenttype,
+                'polokal'        => $polokal,
                 'status'         => 'E',
                 'inputby'        => $nama,
                 'inputdate'      => date('Y-m-d H:i:s')
@@ -4918,6 +4955,10 @@ class Purchase extends BaseController
             $syarat   = trim($this->request->getPost('syarat'));
             $isinclusive = $this->request->getPost('isinclusive') ? 'YES' : 'NO';
 
+            // PAYMENT TYPE & PO LOKAL / IMPORT (char(20), nullable)
+            $paymenttype = strtoupper(trim((string) $this->request->getPost('paymenttype')));
+            $polokal     = strtoupper(trim((string) $this->request->getPost('polokal')));
+
 
 
             // **BERSIHKAN FORMAT KURS**
@@ -4957,6 +4998,15 @@ class Purchase extends BaseController
                 'syarat'         => strtoupper($syarat)
                 // 'pemohon'       => $pemohon (jika masih diperlukan nanti bisa ditambahkan)
             ];
+
+            // PAYMENT TYPE & PO LOKAL / IMPORT (hanya diisi bila nilainya valid)
+            if (in_array($paymenttype, ['LC', 'TT', 'CASH', 'GIRO'], true)) {
+                $updateHeader['paymenttype'] = $paymenttype;
+            }
+
+            if (in_array($polokal, ['LOKAL', 'IMPORT'], true)) {
+                $updateHeader['polokal'] = $polokal;
+            }
 
             $builder->where('inputby', $nama);
             $builder->update($updateHeader);

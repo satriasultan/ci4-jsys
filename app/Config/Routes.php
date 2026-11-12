@@ -1304,6 +1304,7 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
     $routes->add('globalmodule/list_supplier', 'Globalmodule::list_supplier');
     $routes->add('globalmodule/list_outstanding_po', 'Globalmodule::list_outstanding_po');
     $routes->add('globalmodule/list_batch_item', 'Globalmodule::list_batch_item');
+    $routes->add('globalmodule/list_capex', 'Globalmodule::list_capex');
     $routes->add('globalmodule/add_newbatch', 'Globalmodule::add_newbatch');
     $routes->add('globalmodule/list_market', 'Globalmodule::list_market');
     /*adding 27/01/2026 for jsystem*/

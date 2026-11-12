@@ -1483,6 +1483,26 @@
                                     </div>
 
                                     <input type="hidden" name="docno" id="docno" maxlength="20" value="<?= isset($dtldata['docno']) ? esc(trim($dtldata['docno'])) : '' ?>" style="text-transform: uppercase;" readonly>
+
+                                    <div class="form-group">
+                                        <label for="paymenttype">Payment Type <span class="text-danger">*</span></label>
+                                        <select name="paymenttype" id="paymenttype" class="form-control select2">
+                                            <option value="">-- Pilih Payment Type --</option>
+                                            <?php foreach (['LC', 'TT', 'CASH', 'GIRO'] as $pay): ?>
+                                                <option value="<?= $pay ?>" <?= (isset($dtldata['paymenttype']) && trim($dtldata['paymenttype']) === $pay) ? 'selected' : '' ?>><?= $pay ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group mb-0">
+                                        <label for="polokal">PO Lokal / Import <span class="text-danger">*</span></label>
+                                        <select name="polokal" id="polokal" class="form-control select2">
+                                            <option value="">-- Pilih Lokal / Import --</option>
+                                            <?php foreach (['LOKAL', 'IMPORT'] as $pol): ?>
+                                                <option value="<?= $pol ?>" <?= (isset($dtldata['polokal']) && trim($dtldata['polokal']) === $pol) ? 'selected' : '' ?>><?= $pol ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <!-- KOLOM 2 : TANGGAL -->

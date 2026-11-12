@@ -372,53 +372,98 @@ class Tax extends BaseController
 
     public function save_tax_master()
     {
-        if (!$this->request->isAJAX()) {
-            return $this->response->setJSON(['status'=>false]);
+        $db     = \Config\Database::connect();
+        $req    = $this->request;
+        $idtax  = strtoupper(trim((string) $req->getPost('idtax')));
+        $nmtax  = strtoupper(trim((string) $req->getPost('nmtax')));
+        $type   = strtoupper(trim((string) $req->getPost('type')));
+        // sc_mst.tax_mst.createdby = character(20)
+        $nama   = substr(trim((string) $this->session->get('nama')), 0, 20);
+
+        // ===============================
+        // VALIDASI
+        // ===============================
+        if ($idtax === '' || $nmtax === '') {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Kode Pajak dan Keterangan wajib diisi'
+            ]);
         }
 
-        $db = \Config\Database::connect();
+        if (strlen($idtax) > 20 || strlen($nmtax) > 50) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Panjang Kode Pajak maksimal 20 dan Keterangan maksimal 50 karakter'
+            ]);
+        }
 
-        $id     = $this->request->getPost('id');
-        $idtax  = strtoupper(trim($this->request->getPost('idtax')));
-        $nmtax  = strtoupper(trim($this->request->getPost('nmtax')));
-        $type = strtoupper(trim($this->request->getPost('type')));
+        $db->transBegin();
 
-        // cek existing by idtax
-        $row = $db->table('sc_mst.tax_mst')
-            ->where('idtax', $idtax)
-            ->where('status','P')
-            ->get()
-            ->getRow();
+        try {
 
-        if ($row) {
-            // UPDATE (idtax TIDAK diubah)
-            $db->table('sc_mst.tax_mst')
-                ->where('id', $row->id)
-                ->update([
-                    'nmtax'      => $nmtax,
+            // PRIMARY KEY sc_mst.tax_mst = idtax (status tidak boleh difilter)
+            $row = $db->table('sc_mst.tax_mst')
+                ->select('id, idtax')
+                ->where('idtax', $idtax)
+                ->get()
+                ->getRow();
+
+            if ($row) {
+                // UPDATE (idtax TIDAK diubah)
+                $db->table('sc_mst.tax_mst')
+                    ->where('id', $row->id)
+                    ->update([
+                        'nmtax'       => $nmtax,
+                        'createdby'   => $nama,
+                        'createddate' => date('Y-m-d H:i:s')
+                    ]);
+
+                $newId   = $row->id;
+                $message = 'Master Tax berhasil diupdate';
+
+            } else {
+                // INSERT
+                $db->table('sc_mst.tax_mst')->insert([
+                    'idtax'       => $idtax,
+                    'nmtax'       => $nmtax,
+                    'status'      => 'P',
+                    'chold'       => 'NO',
+                    'createdby'   => $nama,
                     'createddate' => date('Y-m-d H:i:s')
                 ]);
 
-            $newId = $row->id;
+                $newId   = $db->insertID();
+                $message = 'Master Tax berhasil disimpan';
+            }
 
-        } else {
-            // INSERT
-            $db->table('sc_mst.tax_mst')->insert([
-                'idtax'      => $idtax,
-                'nmtax'      => $nmtax,
-                'status'     => 'P',
-                'createdby' => date('Y-m-d H:i:s')
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Gagal menyimpan Master Tax'
+                ]);
+            }
+
+            $db->transCommit();
+
+            return $this->response->setJSON([
+                'status'  => true,
+                'message' => $message,
+                'id'      => $newId,
+                'idtax'   => $idtax,
+                'type'    => $type
             ]);
 
-            $newId = $db->insertID();
-        }
+        } catch (\Throwable $e) {
 
-        return $this->response->setJSON([
-            'status' => true,
-            'id'     => $newId,
-            'idtax'  => $idtax,
-            'type'  => $type
-        ]);
+            $db->transRollback();
+
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => $e->getMessage()
+            ]);
+        }
     }
 
 
@@ -501,87 +546,121 @@ class Tax extends BaseController
     {
         $request = service('request');
         $db      = \Config\Database::connect();
-        $builder = $db->table('sc_mst.tax_dtl');
+
+        $iddtl = trim((string) $request->getPost('iddtl'));
+        // sc_mst.tax_dtl.createdby = character(20)
+        $nama  = substr(trim((string) $this->session->get('nama')), 0, 20);
 
         // ===============================
-        // DATA (UPPERCASE)
+        // DATA (UPPERCASE + POTONG SESUAI PANJANG KOLOM)
         // ===============================
         $data = [
-            'idtax'           => strtoupper(trim($request->getPost('idtax'))),
-            'idgrouptax'      => strtoupper(trim($request->getPost('idgrouptax'))),
-            'nmgrouptax'      => strtoupper(trim($request->getPost('nmgrouptax'))),
-            'kodepajak'       => strtoupper(trim($request->getPost('kodepajak'))),
+            'idtax'           => substr(strtoupper(trim((string) $request->getPost('idtax'))), 0, 20),
+            'idgrouptax'      => substr(strtoupper(trim((string) $request->getPost('idgrouptax'))), 0, 50),
+            'nmgrouptax'      => substr(strtoupper(trim((string) $request->getPost('nmgrouptax'))), 0, 50),
+            'kodepajak'       => substr(strtoupper(trim((string) $request->getPost('kodepajak'))), 0, 20),
 
-            'prk_masukan'     => strtoupper(trim($request->getPost('prk_masukan'))),
-            'prk_keluaran'    => strtoupper(trim($request->getPost('prk_keluaran'))),
-            'prk_fpj_msk'     => strtoupper(trim($request->getPost('prk_fpj_msk'))),
-            'prk_fpj_klr'     => strtoupper(trim($request->getPost('prk_fpj_klr'))),
-            'prk_fpj_msk_rep' => strtoupper(trim($request->getPost('prk_fpj_msk_rep'))),
-            'prk_fpj_klr_rep' => strtoupper(trim($request->getPost('prk_fpj_klr_rep'))),
+            'prk_masukan'     => substr(strtoupper(trim((string) $request->getPost('prk_masukan'))), 0, 20),
+            'prk_keluaran'    => substr(strtoupper(trim((string) $request->getPost('prk_keluaran'))), 0, 20),
+            'prk_fpj_msk'     => substr(strtoupper(trim((string) $request->getPost('prk_fpj_msk'))), 0, 20),
+            'prk_fpj_klr'     => substr(strtoupper(trim((string) $request->getPost('prk_fpj_klr'))), 0, 20),
+            'prk_fpj_msk_rep' => substr(strtoupper(trim((string) $request->getPost('prk_fpj_msk_rep'))), 0, 20),
+            'prk_fpj_klr_rep' => substr(strtoupper(trim((string) $request->getPost('prk_fpj_klr_rep'))), 0, 20),
 
-            'rumus_dpp_lain'  => strtoupper(trim($request->getPost('rumus_dpp_lain'))),
-            'rumus_pajak'     => strtoupper(trim($request->getPost('rumus_pajak'))),
+            'rumus_dpp_lain'  => substr(strtoupper(trim((string) $request->getPost('rumus_dpp_lain'))), 0, 20),
+            'rumus_pajak'     => substr(strtoupper(trim((string) $request->getPost('rumus_pajak'))), 0, 20),
 
             'percentation'    => (float) $request->getPost('percentation'),
-            'status'          => strtoupper($request->getPost('status') ?? 'ACTIVE'),
-            'chold'           => strtoupper($request->getPost('chold') ?? 'NO'),
+            'status'          => 'P',
+            'chold'           => strtoupper(trim((string) $request->getPost('chold'))) ?: 'NO',
         ];
 
         // ===============================
         // VALIDASI MINIMAL
         // ===============================
-        if (
-            empty($data['idtax']) ||
-            empty($data['idgrouptax'])
-            // empty($data['idgrouptax']) ||
-            // empty($data['kodepajak'])
-        ) {
+        if ($data['idtax'] === '' || $data['idgrouptax'] === '') {
             return $this->response->setJSON([
                 'status'  => false,
-                'message' => 'Field wajib belum lengkap'
+                'message' => 'Kode Pajak dan Jenis wajib diisi'
             ]);
         }
 
-        // ===============================
-        // CEK DATA EXIST (PK KOMPOSIT)
-        // ===============================
-        $exists = $builder
-            ->where('idtax', $data['idtax'])
-            ->where('idgrouptax', $data['idgrouptax'])
-            ->get()
-            ->getRowArray();
+        if ($data['percentation'] < 0 || $data['percentation'] > 100) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Persentase pajak harus di antara 0 - 100'
+            ]);
+        }
 
-        // ===============================
-        // TRANSAKSI
-        // ===============================
         $db->transBegin();
 
         try {
 
-            if ($exists) {
+            if ($iddtl !== '') {
                 // ===============================
-                // UPDATE (TANPA PRIMARY KEY)
+                // UPDATE BERDASARKAN ID (PK surrogate)
                 // ===============================
-                $updateData = $data;
-                unset($updateData['idtax'], $updateData['idgrouptax']);
+                $exists = $db->table('sc_mst.tax_dtl')
+                    ->select('id')
+                    ->where('id', (int) $iddtl)
+                    ->get()
+                    ->getRowArray();
 
-                $builder
-                    ->where('idtax', $data['idtax'])
-                    ->where('idgrouptax', $data['idgrouptax'])
-                    ->update($updateData);
+                if (!$exists) {
+                    $db->transRollback();
+
+                    return $this->response->setJSON([
+                        'status'  => false,
+                        'message' => 'Data Tax Detail tidak ditemukan'
+                    ]);
+                }
+
+                $db->table('sc_mst.tax_dtl')
+                    ->where('id', (int) $iddtl)
+                    ->update($data);
 
                 $message = 'Data Tax Detail berhasil diupdate';
+                $newId   = (int) $iddtl;
 
             } else {
                 // ===============================
-                // INSERT
+                // CEK DATA EXIST (PK KOMPOSIT)
                 // ===============================
-                $builder->insert($data);
-                $message = 'Data Tax Detail berhasil disimpan';
+                $exists = $db->table('sc_mst.tax_dtl')
+                    ->select('id')
+                    ->where('idtax', $data['idtax'])
+                    ->where('idgrouptax', $data['idgrouptax'])
+                    ->get()
+                    ->getRowArray();
+
+                if ($exists) {
+                    // Update detail yang sudah ada (idtax + idgrouptax sama)
+                    unset($data['idtax'], $data['idgrouptax']);
+
+                    $db->table('sc_mst.tax_dtl')
+                        ->where('id', $exists['id'])
+                        ->update($data);
+
+                    $message = 'Data Tax Detail berhasil diupdate';
+                    $newId   = (int) $exists['id'];
+
+                } else {
+                    // ===============================
+                    // INSERT
+                    // ===============================
+                    $data['createdby']   = $nama;
+                    $data['createddate'] = date('Y-m-d H:i:s');
+
+                    $db->table('sc_mst.tax_dtl')->insert($data);
+
+                    $newId   = $db->insertID();
+                    $message = 'Data Tax Detail berhasil disimpan';
+                }
             }
 
             if ($db->transStatus() === false) {
                 $db->transRollback();
+
                 return $this->response->setJSON([
                     'status'  => false,
                     'message' => 'Gagal menyimpan data'
@@ -592,7 +671,8 @@ class Tax extends BaseController
 
             return $this->response->setJSON([
                 'status'  => true,
-                'message' => $message
+                'message' => $message,
+                'id'      => $newId
             ]);
 
         } catch (\Throwable $e) {

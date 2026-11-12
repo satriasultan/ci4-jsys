@@ -121,6 +121,9 @@ ALTER TABLE sc_mst.currency
 ADD CONSTRAINT currency_currcode_unique
 UNIQUE (currcode);
 
+ALTER TABLE sc_mst.exchangerate
+ALTER COLUMN nilai TYPE NUMERIC(18,4)
+USING nilai::NUMERIC(18,4);
 /* nilai coa persediaan*/
 BEGIN;
 

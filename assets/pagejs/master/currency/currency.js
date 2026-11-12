@@ -517,11 +517,14 @@ function tableExchangeRate(){
         //Set column definition initialisation properties.
         "columnDefs": [
             {
-                "targets": [ -1 ], //last column
-                "render": function (data, type, full, meta) {
-                    return "" + data + "</div>";
-                },
+                "targets": [ 3 ], // kolom Action (tombol Update via modal popup)
                 "orderable": false, //set not orderable
+                "searchable": false,
+                "render": function (data, type, full, meta) {
+                    // tombol Update hanya untuk form UPDATE (bukan INPUT / DETAIL)
+                    var typeform = $('[name="typeform"]').val();
+                    return (typeform === 'UPDATE') ? data : '';
+                }
             },
             {
                 'targets': 0,
@@ -541,10 +544,11 @@ function tableExchangeRate(){
         }
     });
 
-    $('#t_exchange').on('draw.dt', function () {
-        $('#t_exchange .jtsseparator').each(function () {
-            _jtsseparator(this);
-        });
+    /* UPDATE : tombol pensil di setiap baris => buka modal popup Exchange Rate.
+       Input inline pada tabel sudah tidak dipakai lagi. */
+    $('#t_exchange').on('click', '.btn-edit-exchange', function (e) {
+        e.preventDefault();
+        openExchangeRateModal('UPDATE', this);
     });
 
 
@@ -571,134 +575,89 @@ function tableExchangeRate(){
 
 
 
-    $('#delete_exchange').on('click', function(e){
-        // ajax adding data to database
+    /* DELETE : berdasarkan checklist pada kolom Act */
+    $('#delete_exchange').on('click', function (e) {
         e.preventDefault();
-        const $button = $(this);
-        if(isEditing) {
-            reloadtableExchangeRate();  // Reload table to restore initial data
-            $button.html('<i class="fa fa-trash"></i> Delete').removeClass('btn-secondary').addClass('btn-danger');
 
-            $("#update_exchange").html('<i class="fa fa-gear"></i> Update');  // Kembali ke tombol Update
-            $(".btn-success").show();
-            $(".btn-info").show();
-            $(".btn-aksi").show();
+        var rows_selected = table.column(0).checkboxes.selected().toArray(); // Konversi ke array
 
-            isEditing = false;
-            // checkTableData()
-        } else {
-            var form = $('#frm-examplee');
-            var formdata = false;
-            if (window.FormData){
-                formdata = new FormData(form[0]);
-            } var idcurrency = $('[name="idcurrency"]').val();  // Ambil nilai docno dari input field
-
-            var rows_selected = table.column(0).checkboxes.selected().toArray(); // Konversi ke array
-            var length_selected = rows_selected.length;
-            //console.log(" TEST " + table.column(0).checkboxes.selected().length);
-
-            if (length_selected > 0) {
-                // Iterate over all selected checkboxes
-                $.each(rows_selected, function(index, rowId){
-                    // console
-                    // Create a hidden element
-                    $(form).append(
-                        $('<input>')
-                            .attr('type', 'hidden')
-                            .attr('name', 'id[]')
-                            .val(rowId)
-                    );
-                    /* DELETE PP SETELAH PEMILIHAN & CLICK*/
-                    Swal.fire({
-                        title: 'Warning..!!!',
-                        text: 'Some Exchange details will be removed, are you sure? ' + rows_selected,
-                        backdrop: true,
-                        allowOutsideClick: false,
-                        showConfirmButton: true,
-                        showDenyButton: true,
-                        showCancelButton: false,
-                        confirmButtonText: `Ok`,
-                        icon: 'question',
-                        //denyButtonText: `Don't save`,
-                    }).then((result) => {
-                        /* Read more about isConfirmed, isDenied below */
-                        if (result.isConfirmed) {
-                            /* AJAX EDIT HERE */
-                            // console.log('BEKANTAL');
-                            var formdata = new FormData();
-                            formdata.append('idcurrency', $('[name="idcurrency"]').val()); // Tambahkan docno
-                            rows_selected.forEach(function(rowId) {
-                                formdata.append('id[]', rowId); // Tambahkan ID dari database
-                            });
-                            $.ajax({
-                                url: HOST_URL + 'master/data/deleteExchangeRate',
-                                type: "POST",
-                                data: formdata ? formdata : form.serialize(),
-                                cache       : false,
-                                contentType : false,
-                                processData : false,
-                                datatype : "JSON",
-                                dataFilter: function (data) {
-                                    var json = jQuery.parseJSON(data);
-                                    if (json.status) //if success close modal and reload ajax table
-                                    {
-                                        Swal.fire({
-                                            title: 'Success...!!!',
-                                            text: json.messages,
-                                            backdrop: true,
-                                            allowOutsideClick: false,
-                                            showConfirmButton: true,
-                                            showDenyButton: false,
-                                            showCancelButton: false,
-                                            confirmButtonText: `Ok`,
-                                            icon: 'success',
-                                            //denyButtonText: `Don't save`,
-                                        });
-                                        // Reload table dulu, setelah selesai baru checkTableData()
-                                        documentReadable()
-                                        table.column(0).checkboxes.deselectAll();
-                                        $('#t_exchange').DataTable().ajax.reload(function () {
-                                            // checkTableData(); // Panggil setelah reload selesai
-                                        });
-
-                                    }
-                                }, error: function (jqXHR, textStatus, errorThrown) {
-                                    // alert('Gagal Menyimpan / Ubah data / data sudah ada');
-                                    swal({
-                                        title: "Galat!!",
-                                        text: json.messages,
-                                        type: "error"
-                                    });
-                                    documentReadable()
-                                    reloadtableExchangeRate();
-
-                                }
-                            });
-
-                        }
-
-                    })
-                });
-                // Edit
-            } else {
-                Swal.fire({
-                    title: 'Ooops..!!!',
-                    text: 'Minimal 1 Pilihan' + e,
-                    backdrop: true,
-                    allowOutsideClick: false,
-                    showConfirmButton: false,
-                    showDenyButton: true,
-                    showCancelButton: false,
-                    confirmButtonText: `Ok`,
-                    icon: 'question',
-                    //denyButtonText: `Don't save`,
-                });
-            }
-            // Prevent actual form submission
-            e.preventDefault();
+        if (rows_selected.length <= 0) {
+            Swal.fire({
+                title: 'Ooops..!!!',
+                text: 'Minimal 1 Pilihan',
+                backdrop: true,
+                allowOutsideClick: false,
+                showConfirmButton: true,
+                showDenyButton: false,
+                showCancelButton: false,
+                confirmButtonText: `Ok`,
+                icon: 'question',
+            });
+            return;
         }
-    });
 
+        Swal.fire({
+            title: 'Warning..!!!',
+            text: 'Some Exchange details will be removed, are you sure? ' + rows_selected,
+            backdrop: true,
+            allowOutsideClick: false,
+            showConfirmButton: true,
+            showDenyButton: true,
+            showCancelButton: false,
+            confirmButtonText: `Ok`,
+            icon: 'question',
+        }).then((result) => {
+            if (!result.isConfirmed) return;
+
+            var formdata = new FormData();
+            formdata.append('idcurrency', $('[name="idcurrency"]').val()); // Tambahkan idcurrency
+            rows_selected.forEach(function (rowId) {
+                formdata.append('id[]', rowId); // Tambahkan ID dari database
+            });
+
+            $.ajax({
+                url: HOST_URL + 'master/data/deleteExchangeRate',
+                type: "POST",
+                data: formdata,
+                cache: false,
+                contentType: false,
+                processData: false,
+                dataType: "json",
+                success: function (json) {
+                    if (json && json.status) {
+                        Swal.fire({
+                            title: 'Success...!!!',
+                            text: json.messages,
+                            backdrop: true,
+                            allowOutsideClick: false,
+                            showConfirmButton: true,
+                            showDenyButton: false,
+                            showCancelButton: false,
+                            confirmButtonText: `Ok`,
+                            icon: 'success',
+                        });
+                        table.column(0).checkboxes.deselectAll();
+                        reloadtableExchangeRate();
+                    } else {
+                        Swal.fire({
+                            title: 'Gagal!!',
+                            text: (json && json.messages) ? json.messages : 'Failed to delete data',
+                            icon: 'error',
+                            allowOutsideClick: false
+                        });
+                    }
+                },
+                error: function () {
+                    Swal.fire({
+                        title: "Galat!!",
+                        text: 'Unable to process request.',
+                        icon: "error",
+                        allowOutsideClick: false
+                    });
+                }
+            });
+        });
+    });
 }
 
 
@@ -716,11 +675,163 @@ function reloadtableExchangeRate() {
 }
 
 
+/* =========================================================
+ * MODAL POPUP EXCHANGE RATE (Insert / Update)
+ * Tabel #t_exchange hanya read only: checklist utk Delete,
+ * tombol pensil utk Update => keduanya memakai modal ini.
+ * ========================================================= */
+function showExchangeRateModal() {
+    var el = document.getElementById('modal_exchange');
+    if (!el) return;
+
+    if (window.bootstrap && window.bootstrap.Modal) {
+        window.bootstrap.Modal.getOrCreateInstance(el).show();
+    } else if ($.fn.modal) {
+        $('#modal_exchange').modal('show');
+    }
+}
+
+function hideExchangeRateModal() {
+    var el = document.getElementById('modal_exchange');
+    if (!el) return;
+
+    if (window.bootstrap && window.bootstrap.Modal) {
+        window.bootstrap.Modal.getOrCreateInstance(el).hide();
+    } else if ($.fn.modal) {
+        $('#modal_exchange').modal('hide');
+    }
+}
+
+/* Tanggal + jam saat ini dengan format DD-MM-YYYY HH:mm:ss */
+function currentExchangeDateValue() {
+    var d = new Date();
+    var p = function (n) { return (n < 10 ? '0' : '') + n; };
+
+    return p(d.getDate()) + '-' + p(d.getMonth() + 1) + '-' + d.getFullYear()
+        + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+}
+
+/* Set value input exchange date + sinkronkan daterangepicker */
+function setExchangeDateValue(value) {
+    var $input = $('#md_exchangedate');
+    $input.val(value || '');
+
+    var drp = $input.data('daterangepicker');
+    if (drp && typeof moment === 'function') {
+        var m = moment(value, 'DD-MM-YYYY HH:mm:ss', true);
+        if (m.isValid()) {
+            drp.setStartDate(m);
+            drp.setEndDate(m);
+        }
+    }
+}
+
+/* Dipanggil oleh button "Insert Exchange Rate" */
 function insertNewExchange() {
+    openExchangeRateModal('INSERT', null);
+}
+
+/* mode : 'INSERT' atau 'UPDATE'; button : tombol pensil pada baris tabel */
+function openExchangeRateModal(mode, button) {
+    var isUpdate = (mode === 'UPDATE');
+    var $button = button ? $(button) : null;
+
+    $('#md_exchange_type').val(isUpdate ? 'UPDATE' : 'INSERT');
+    $('#md_exchange_id').val(isUpdate && $button ? ($button.attr('data-id') || '') : '');
+    $('#modal_exchange_label').html('<i class="fa fa-exchange"></i> ' + (isUpdate ? 'Update Exchange Rate' : 'Insert Exchange Rate'));
+    $('#md_exchange_error').hide().text('');
+
+    var dateValue = (isUpdate && $button) ? ($button.attr('data-exchangedate') || '') : currentExchangeDateValue();
+    var nilaiValue = (isUpdate && $button) ? ($button.attr('data-nilai') || '') : '';
+
+    setExchangeDateValue(dateValue);
+    $('#md_nilai').val(nilaiValue);
+
+    showExchangeRateModal();
+}
+
+/* Simpan data dari modal popup : INSERT (tambah) atau UPDATE (per baris) */
+function saveExchangeRate() {
+    var mode = $('#md_exchange_type').val();
+    var idcurrency = $('[name="idcurrency"]').val();
+    var id = $('#md_exchange_id').val();
+    var exchangedate = $.trim($('#md_exchangedate').val() || '');
+    var nilaiRaw = $.trim($('#md_nilai').val() || '');
+    var $error = $('#md_exchange_error');
+    var $save = $('#md_exchange_save');
+
+    var showError = function (msg) { $error.text(msg).show(); };
+
+    $error.hide().text('');
+
+    if (!idcurrency) {
+        showError('Currency is not selected.');
+        return;
+    }
+
+    if (exchangedate === '' || !/^\d{2}-\d{2}-\d{4} \d{2}:\d{2}:\d{2}$/.test(exchangedate)) {
+        showError('Exchange date is required with format DD-MM-YYYY HH:mm:ss.');
+        return;
+    }
+
+    if (nilaiRaw === '') {
+        showError('Price is required.');
+        return;
+    }
+
+    // rapikan nilai menjadi tepat 4 digit desimal (NUMERIC 18,4)
+    normalizeNilaiExchange(document.getElementById('md_nilai'), true);
+    var nilai = convertToDbNumber($('#md_nilai').val());
+
+    $save.prop('disabled', true);
+
+    if (mode === 'UPDATE') {
+        if (!id) {
+            $save.prop('disabled', false);
+            showError('Exchange rate data is not valid.');
+            return;
+        }
+
+        $.ajax({
+            url: HOST_URL + 'master/data/update_exchangerate',
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                updates: [{ idurut: id, exchangedate: exchangedate, nilai: nilai }],
+                masterData: { idcurrency: idcurrency }
+            },
+            success: function (resp) {
+                $save.prop('disabled', false);
+
+                if (resp && resp.status === 'success') {
+                    hideExchangeRateModal();
+                    Swal.fire({
+                        title: 'Success...!!!',
+                        text: 'Successfully updated exchange rate',
+                        icon: 'success',
+                        confirmButtonText: 'Ok',
+                        allowOutsideClick: false
+                    });
+                    reloadtableExchangeRate();
+                } else {
+                    showError((resp && resp.message) ? resp.message : 'Failed to update data.');
+                }
+            },
+            error: function () {
+                $save.prop('disabled', false);
+                showError('Failed to update data. Please try again.');
+            }
+        });
+
+        return;
+    }
+
     var fillData = {
         'key': '1203jD0j120dkjjKODNOoimdi)D(J)Jmjid0sjd0ijme09wjei0kjisdjfDSojiodksOjO',
         'body': {
-            idcurrency: $('[name="idcurrency"]').val()
+            idcurrency: idcurrency,
+            exchangedate: exchangedate,
+            nilai: nilai
         }
     };
 
@@ -731,146 +842,114 @@ function insertNewExchange() {
         contentType: "application/json",
         data: JSON.stringify(fillData),
         success: function (datax) {
-            Swal.fire({
-                icon: datax.status ? 'success' : 'error',
-                title: datax.status ? 'Success!' : 'Failed...',
-                text: datax.message,
-                allowOutsideClick: false
-            });
-            if (datax.status) {
+            $save.prop('disabled', false);
+
+            if (datax && datax.status) {
+                hideExchangeRateModal();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: datax.message,
+                    allowOutsideClick: false
+                });
                 reloadtableExchangeRate();
-                // $('#insertsikbsp').modal('hide');
+            } else {
+                showError((datax && datax.message) ? datax.message : 'Unable to save data.');
             }
         },
         error: function () {
-            Swal.fire({
-                icon: 'error',
-                title: 'Oops...',
-                text: 'Unable to process request.',
-                allowOutsideClick: false
-            });
+            $save.prop('disabled', false);
+            showError('Unable to process request.');
         }
     });
 }
+
 
 
 $(document).on('keyup blur change', '.jtsseparator', function () {
     _jtsseparator(this);
 });
 
-let isEditing = false;
-
-// Handle Update Button Click
-$("#update_exchange").click(function (e) {
-    e.preventDefault();
-    const $button = $(this);
-
-    if (!isEditing) {
-        // Aktifkan semua input dan dropdown
-        $('#t_exchange').find('input').prop('disabled', false).each(function () {
-            $(this).css("background-color", "#ffffff");
-            if ($(this).hasClass('jtsseparator')) {
-                _jtsseparator(this);
-            }
-        });
-
-        // Nonaktifkan kolom tertentu
-        // $('#t_exchange').find('input[name="docno"], input[name="supplierchoosen"]')
-        //     .prop('disabled', true).css("background-color", "#e9ecef");
-
-        // // Inisialisasi dropdown currency di setiap baris
-        // $('#t_exchange tbody tr').each(function () {
-        //     let row = $(this);
-        //     let currentCurrency = row.find('input[name^="currency_"]').val();
-        //     initCurrencyDropdown(row, currentCurrency);
-        // });
-
-        $(".btn-success, .btn-info, .btn-aksi").hide();
-        $button.html('<i class="fa fa-save"></i> Save Update');
-        isEditing = true;
-
-        $("#delete_exchange").html('<i class="fa fa-times"></i> Cancel Update')
-            .removeClass('btn-danger').addClass('btn-secondary');
-
-    } else {
-        // Kumpulkan data yang diperbarui
-        let updatedData = [];
-        $("#t_exchange tbody tr").each(function () {
-            const row = $(this);
-
-            // Ambil idurut dari name attribute
-            const firstInput = row.find("input[name^='exchangedate']");
-            if (firstInput.length === 0) return;
-
-            const nameAttr = firstInput.attr("name");
-            const idurut = nameAttr.split("_")[1];
-
-            // Ambil nilai dari form
-            const exchangedate = row.find(`input[name='exchangedate_${idurut}']`).val() || null;
-
-            const nilai = convertToDbNumber(row.find(`input[name='nilai_${idurut}']`).val()) || 0;
-
-            // Simpan data jika idurut valid
-            if (idurut) {
-                updatedData.push({
-                    idurut,
-                    exchangedate,
-                    nilai
-                });
-            }
-        });
-
-        const masterData = {
-            idcurrency: $('[name="idcurrency"]').val()
-        };
-
-        // Kirim data ke server melalui AJAX
-        $.ajax({
-            url: HOST_URL + "master/data/update_exchangerate",
-            type: "POST",
-            data: {
-                updates: updatedData,
-                masterData: masterData
-            },
-            success: function (response) {
-                Swal.fire({
-                    title: 'Success...!!!',
-                    text: 'Successfully updated data',
-                    icon: 'success',
-                    confirmButtonText: 'Ok',
-                    allowOutsideClick: false
-                });
-                documentReadable();
-                reloadtableExchangeRate();
-            },
-            error: function () {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Oops...',
-                    text: 'Failed to update data. Please try again.'
-                });
-            }
-        });
-
-        // Nonaktifkan semua input setelah disimpan
-        $('#t_exchange').find('input, textarea').prop('disabled', true).css("background-color", "#d6d5d5");
-
-        // $('input[name="curr_ori"], input[name="curr_idr"]')
-        // $('input[name="curr_idr"]')
-
-        //     .prop('disabled', false).css("background-color", "#ffffff");
-
-        $button.html('<i class="fa fa-gear"></i> Update');
-        $(".btn-success, .btn-info, .btn-aksi").show();
-        isEditing = false;
-
-        $("#delete_exchange").html('<i class="fa fa-trash"></i> Delete')
-            .removeClass('btn-secondary').addClass('btn-danger');
-
-        documentReadable();
-        reloadtableExchangeRate();
-    }
+/*
+ * Khusus kolom exchange rate (nilai).
+ * Format angka polos: hanya digit + satu titik desimal, TANPA koma / pemisah ribuan.
+ * Presisi desimal mengikuti kolom NUMERIC(18,4) => maksimal 4 digit.
+ */
+$(document).on('keyup input change blur', '.nilai-exchange', function (e) {
+    normalizeNilaiExchange(this, e.type === 'blur' || e.type === 'change');
 });
+
+function normalizeNilaiExchange(objek, trimDanglingDot) {
+    if (!objek) return;
+
+    const oldValue = String(objek.value === null || objek.value === undefined ? '' : objek.value);
+
+    let caret = null;
+    try {
+        caret = objek.selectionStart;
+    } catch (err) {
+        caret = null;
+    }
+
+    // buang koma (tidak dipakai pada field ini) & karakter selain digit/titik
+    let raw = oldValue
+        .replace(/,/g, '')
+        .replace(/[^0-9.]/g, '');
+
+    if (raw === '') {
+        objek.value = '';
+        return;
+    }
+
+    const dotIndex = raw.indexOf('.');
+    let integerPart = dotIndex === -1 ? raw : raw.slice(0, dotIndex);
+    let decimalPart = dotIndex === -1 ? '' : raw.slice(dotIndex + 1).replace(/\./g, '');
+
+    // maksimal 4 digit desimal (NUMERIC 18,4)
+    decimalPart = decimalPart.slice(0, 4);
+
+    // buang nol di depan (007 -> 7), sisakan satu digit
+    integerPart = integerPart.replace(/^0+(?=\d)/, '');
+    if (integerPart === '') integerPart = '0';
+
+    let output = integerPart;
+    if (dotIndex !== -1) {
+        output = integerPart + '.' + decimalPart;
+    }
+
+    /* Saat blur/change: nilai dirapikan menjadi tepat 4 digit desimal
+       (presisi kolom NUMERIC 18,4), contoh: 114.8 -> 114.8000, 17000 -> 17000.0000. */
+    if (trimDanglingDot) {
+        const parts = output.split('.');
+        let decPart = parts.length > 1 ? parts[1] : '';
+        while (decPart.length < 4) {
+            decPart += '0';
+        }
+        output = parts[0] + '.' + decPart;
+    }
+
+    objek.value = output;
+
+    // pertahankan posisi caret
+    if (caret !== null && typeof objek.setSelectionRange === 'function') {
+        let newCaret;
+        if (caret >= oldValue.length) {
+            newCaret = output.length;
+        } else {
+            const before = oldValue.slice(0, caret).replace(/,/g, '').replace(/[^0-9.]/g, '');
+            newCaret = Math.min(before.length, output.length);
+        }
+        try {
+            objek.setSelectionRange(newCaret, newCaret);
+        } catch (err) {
+            /* input type tertentu tidak mendukung setSelectionRange */
+        }
+    }
+}
+
+/* NOTE : tombol Update inline (#update_exchange) sudah dihapus.
+   Update exchange rate dilakukan per baris lewat tombol pensil (modal popup),
+   lihat openExchangeRateModal() & saveExchangeRate(). */
 
 function formatNumber(value) {
     if (!value) return '0';

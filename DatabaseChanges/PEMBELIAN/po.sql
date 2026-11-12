@@ -1,12 +1,14 @@
 -- ============================================================
--- PO.SQL - ONE RUN INSTALL SCRIPT (FINAL REBUILD)
--- Semua object PO dibuat ulang dalam 1 transaction.
+-- PO.SQL - PATCH NON-DESTRUCTIVE (PRESERVE TRANSACTIONS)
+-- Tidak DROP table. CREATE TABLE IF NOT EXISTS hanya membuat tabel jika belum ada.
+-- Kolom tambahan diterapkan dengan ALTER TABLE ... ADD COLUMN IF NOT EXISTS.
 -- Perubahan:
 --   - Tambah kolom: batch character(100) di po_dtl (tmp & trx)
 --   - Tambah kolom: etd date, etdnotes character(100) di po_dtl (tmp & trx)
 --   - uniqueidpo ikut ter-copy di semua INSERT ... SELECT po_dtl
 --   - batch, etd, etdnotes ikut ter-copy di semua INSERT ... SELECT po_dtl
 --   - Trigger auto-isi uniqueidpo (AFTER INSERT sc_tmp.po_dtl)
+--   - Tambah paymenttype CHAR(20) dan polokal CHAR(20) di header PO tmp & trx
 -- Jika ada error, PostgreSQL akan melakukan ROLLBACK.
 -- ============================================================
 
@@ -15,16 +17,10 @@ BEGIN;
 -- ============================================================
 -- DROP OBJECT TABLE LAMA
 -- ============================================================
-
-DROP TABLE IF EXISTS sc_tmp.po_dtl CASCADE;
-DROP TABLE IF EXISTS sc_trx.po_dtl CASCADE;
-DROP TABLE IF EXISTS sc_tmp.po CASCADE;
-DROP TABLE IF EXISTS sc_trx.po CASCADE;
-
 -- ============================================================
 -- TABLE: sc_tmp.po (HEADER TMP)
 -- ============================================================
-CREATE TABLE sc_tmp.po
+CREATE TABLE IF NOT EXISTS sc_tmp.po
 (
     idurut serial NOT NULL,
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
@@ -66,7 +62,7 @@ ALTER TABLE IF EXISTS sc_tmp.po
 -- ============================================================
 -- TABLE: sc_trx.po (HEADER TRX)
 -- ============================================================
-CREATE TABLE sc_trx.po
+CREATE TABLE IF NOT EXISTS sc_trx.po
 (
     idurut serial NOT NULL,
     docno character(30) COLLATE pg_catalog."default" NOT NULL,
@@ -108,7 +104,7 @@ ALTER TABLE IF EXISTS sc_trx.po
 -- ============================================================
 -- TABLE: sc_tmp.po_dtl (DETAIL TMP)
 -- ============================================================
-CREATE TABLE sc_tmp.po_dtl
+CREATE TABLE IF NOT EXISTS sc_tmp.po_dtl
 (
     idurut SERIAL PRIMARY KEY,
     docno CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
@@ -154,7 +150,7 @@ ALTER TABLE IF EXISTS sc_tmp.po_dtl
 -- ============================================================
 -- TABLE: sc_trx.po_dtl (DETAIL TRX)
 -- ============================================================
-CREATE TABLE sc_trx.po_dtl
+CREATE TABLE IF NOT EXISTS sc_trx.po_dtl
 (
     idurut SERIAL PRIMARY KEY,
     docno CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
@@ -196,6 +192,29 @@ TABLESPACE pg_default;
 
 ALTER TABLE IF EXISTS sc_trx.po_dtl
     OWNER to postgres;
+
+-- ============================================================
+-- PATCH KOLOM NON-DESTRUCTIVE
+-- Aman untuk tabel yang sudah berisi transaksi.
+-- ============================================================
+
+ALTER TABLE sc_tmp.po
+    ADD COLUMN IF NOT EXISTS paymenttype CHAR(20),
+    ADD COLUMN IF NOT EXISTS polokal CHAR(20);
+
+ALTER TABLE sc_trx.po
+    ADD COLUMN IF NOT EXISTS paymenttype CHAR(20),
+    ADD COLUMN IF NOT EXISTS polokal CHAR(20);
+
+ALTER TABLE sc_tmp.po_dtl
+    ADD COLUMN IF NOT EXISTS batch CHARACTER(100),
+    ADD COLUMN IF NOT EXISTS etd DATE,
+    ADD COLUMN IF NOT EXISTS etdnotes CHARACTER(100);
+
+ALTER TABLE sc_trx.po_dtl
+    ADD COLUMN IF NOT EXISTS batch CHARACTER(100),
+    ADD COLUMN IF NOT EXISTS etd DATE,
+    ADD COLUMN IF NOT EXISTS etdnotes CHARACTER(100);
 
 -- ============================================================
 -- FUNCTION + TRIGGER: AUTO-ISI uniqueidpo DI sc_tmp.po_dtl
@@ -336,7 +355,8 @@ BEGIN
             idtax, isinclusive, currcode, kurs, dpp, docnoumb,
             jumlahpajak, total, syarat,
             keterangan, status, inputby, inputdate,
-            updateby, updatedate, printby, printdate, printcount
+            updateby, updatedate, printby, printdate, printcount,
+            paymenttype, polokal
         )
         SELECT
             idurut, v_docno, cabang, docdate, senddate, pemohon, kdsupplier,
@@ -344,7 +364,8 @@ BEGIN
             idtax, isinclusive, currcode, kurs, dpp, docnoumb,
             jumlahpajak, total, syarat,
             keterangan, 'F', inputby, inputdate,
-            updateby, updatedate, printby, printdate, printcount
+            updateby, updatedate, printby, printdate, printcount,
+            paymenttype, polokal
         FROM sc_tmp.po
         WHERE rtrim(docno) = rtrim(OLD.docno)
             AND inputby = v_inputby
@@ -496,14 +517,16 @@ BEGIN
          idtax, isinclusive, currcode, kurs, dpp, docnoumb,
          jumlahpajak, total, syarat,
          keterangan, status, inputby, inputdate,
-         updateby, updatedate, printby, printdate, printcount, docnotmp)
+         updateby, updatedate, printby, printdate, printcount, docnotmp,
+         paymenttype, polokal)
         SELECT
             idurut, NEW.docnotmp, cabang, docdate, senddate, pemohon, kdsupplier,
             nmsupplier, alamatsupplier, alamatkirim, jthtempo,
             idtax, isinclusive, currcode, kurs, dpp, docnoumb,
             jumlahpajak, total, syarat,
             keterangan, status, inputby, inputdate,
-            updateby, updatedate, printby, printdate, printcount, docnotmp
+            updateby, updatedate, printby, printdate, printcount, docnotmp,
+            paymenttype, polokal
         FROM sc_tmp.po
         WHERE rtrim(docno) = rtrim(NEW.docno);
 
@@ -711,7 +734,8 @@ BEGIN
             idtax, isinclusive, currcode, kurs, dpp, docnoumb,
             jumlahpajak, total, syarat,
             keterangan, status, inputby, inputdate, updateby, updatedate,
-            printby, printdate, printcount, docnotmp
+            printby, printdate, printcount, docnotmp,
+            paymenttype, polokal
         )
         SELECT
             idurut, NEW.docno, cabang, docdate, senddate, pemohon, kdsupplier,
@@ -719,7 +743,8 @@ BEGIN
             idtax, isinclusive, currcode, kurs, dpp, docnoumb,
             jumlahpajak, total, syarat,
             keterangan, status, inputby, inputdate, updateby, updatedate,
-            printby, printdate, printcount, NEW.docno
+            printby, printdate, printcount, NEW.docno,
+            paymenttype, polokal
         FROM sc_trx.po
         WHERE docno = NEW.docno;
     END IF;
@@ -752,8 +777,11 @@ COMMIT;
 SELECT table_schema, column_name, data_type
 FROM information_schema.columns
 WHERE table_schema IN ('sc_tmp','sc_trx')
-  AND table_name = 'po_dtl'
-  AND column_name IN ('batch','etd','etdnotes')
+  AND (
+      (table_name = 'po' AND column_name IN ('paymenttype','polokal'))
+      OR
+      (table_name = 'po_dtl' AND column_name IN ('batch','etd','etdnotes'))
+  )
 ORDER BY table_schema, column_name;
 
 SELECT event_object_schema, event_object_table, trigger_name
