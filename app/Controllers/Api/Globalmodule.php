@@ -8,13 +8,13 @@ class Globalmodule extends BaseController
 {
 
     function index() {
-			echo json_encode([
-				'syahadat' => 'أَشْهَدُ أَنْ لَا إِلَٰهَ إِلَّا اللَّهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّهِ',
-				'tauhid' => 'لَا إِلَٰهَ إِلَّا اللَّهُ',
-				'sholawat' => 'اللَّهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ وَعَلَىٰ آلِ مُحَمَّدٍ',
-				'dzikir' => 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ، أَسْتَغْفِرُ اللَّهَ الْعَظِيمَ'
-			], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-		}
+        echo json_encode([
+            'syahadat' => 'أَشْهَدُ أَنْ لَا إِلَٰهَ إِلَّا اللَّهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّهِ',
+            'tauhid' => 'لَا إِلَٰهَ إِلَّا اللَّهُ',
+            'sholawat' => 'اللَّهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ وَعَلَىٰ آلِ مُحَمَّدٍ',
+            'dzikir' => 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ، أَسْتَغْفِرُ اللَّهَ الْعَظِيمَ'
+        ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    }
 
     function option_trxtype(){
 
@@ -219,9 +219,9 @@ class Globalmodule extends BaseController
     }
 
 
-     function list_branchjob(){
+    function list_branchjob(){
 
-         $branch = $this->session->get('branch');
+        $branch = $this->session->get('branch');
         $idbu = $this->session->get('idbu');
         $param_c="";
         //$count = $this->m_instock->q_kdgroup_param($param_c)->getNumRows();
@@ -460,7 +460,7 @@ class Globalmodule extends BaseController
     }
 
 
-    
+
     function list_lvljabatan_nm(){
         $branch = $this->session->get('branch');
         $idbu = $this->session->get('idbu');
@@ -1628,12 +1628,12 @@ class Globalmodule extends BaseController
         $px = trim($this->request->getPost('_parameterx_'));
         $docdate = trim((string) $this->request->getPost('docdate'));
         $docdate = ($docdate === '') ? date('Y-m-d') : date('Y-m-d', strtotime($docdate));
-        
+
         $perpage = intval($perpage);
         $page = $this->request->getPost('_page_');
         $varGet = trim($this->request->getGet('var'));
         $varPost = trim($this->request->getPost('var'));
-        
+
         if (!empty($varGet) or $varGet!=='') {
             $paramglobal1 = " and a.idbarang='$varGet'"; // tambahkan a.
         } else {
@@ -1658,11 +1658,11 @@ class Globalmodule extends BaseController
         $param = " and (a.idbarang like '%$search%' $paramglobal1 $paramglobal2 $parameterx $paramglobal3) 
                 or (a.nmbarang like '%$search%' $paramglobal1 $paramglobal2 $parameterx $paramglobal3) 
                 order by a.nmbarang asc";
-        
+
         // Panggil model dengan parameter docdate
         $getResult = $this->m_balance->q_item_std_cost_param($param, $docdate)->getResult();
         $count = $this->m_balance->q_item_std_cost_param($param, $docdate)->getNumRows();
-        
+
         header('Content-Type: application/json');
         echo json_encode(
             array(
@@ -1683,11 +1683,11 @@ class Globalmodule extends BaseController
         $docdate = trim($this->request->getVar('docdate'));
         $wono    = trim($this->request->getVar('wono'));
         // $var     = trim($this->request->getVar('var'));
-        
+
         // Baca parameter GET (untuk else)
         $varGet  = trim($this->request->getGet('var'));
         $varPost = trim($this->request->getPost('var'));
-        
+
         // Siapkan parameter tambahan untuk ID spesifik
         $paramId = "";
         if (!empty($varGet) && $varGet !== '') {
@@ -1706,7 +1706,7 @@ class Globalmodule extends BaseController
         if (!empty($search)) {
             $param = " AND (a.idbarang ILIKE '%{$search}%' OR a.nmbarang ILIKE '%{$search}%')";
         }
-        
+
         // Tambahkan filter ID jika ada (dari GET atau POST)
         $param .= $paramId;
 
@@ -1714,7 +1714,7 @@ class Globalmodule extends BaseController
         $result = $this->m_balance
             ->q_item_bom_param($param, $docdate, $wono)
             ->getResult();
-        
+
         $count = count($result);
 
         return $this->response->setJSON([
@@ -1892,6 +1892,75 @@ class Globalmodule extends BaseController
             JSON_PRETTY_PRINT
         );
     }
+    /* ==========================================================
+     * LIST NO. CAPEX (SELECT2) - sc_im.capex
+     * value    : docno (trim)
+     * tampilan : docno || desc_jns
+     * ========================================================== */
+    public function list_capex()
+    {
+        try {
+            $search  = strtoupper(trim($this->request->getPost('_search_') ?? ''));
+            $perpage = (int) ($this->request->getPost('_perpage_') ?? 30);
+            $page    = (int) ($this->request->getPost('_page_') ?? 1);
+
+            if ($perpage <= 0) $perpage = 30;
+            if ($page <= 0) $page = 1;
+
+            $offset = ($page - 1) * $perpage;
+
+            $where  = "";
+            $params = [];
+
+            if ($search !== '') {
+                $where    = " AND (upper(trim(docno)) LIKE ? OR upper(coalesce(desc_jns, '')) LIKE ?) ";
+                $params[] = "%{$search}%";
+                $params[] = "%{$search}%";
+            }
+
+            $sqlCount  = "SELECT count(*) AS total FROM sc_im.capex WHERE 1 = 1 {$where}";
+            $countRow  = $this->db->query($sqlCount, $params)->getRowArray();
+
+            $sqlData = "SELECT trim(docno) AS docno, coalesce(desc_jns, '') AS desc_jns
+                          FROM sc_im.capex
+                         WHERE 1 = 1 {$where}
+                         ORDER BY trim(docno) DESC
+                         LIMIT ? OFFSET ?";
+
+            $paramsData   = $params;
+            $paramsData[] = $perpage;
+            $paramsData[] = $offset;
+
+            $rows = $this->db->query($sqlData, $paramsData)->getResultArray();
+
+            $items = [];
+            foreach ($rows as $row) {
+                $docno = trim($row['docno']);
+                $desc  = trim($row['desc_jns']);
+
+                $items[] = [
+                    'id'       => $docno,
+                    'text'     => ($desc !== '') ? $docno . ' || ' . $desc : $docno,
+                    'docno'    => $docno,
+                    'desc_jns' => $desc,
+                ];
+            }
+
+            return $this->response->setJSON([
+                'total_count'           => (int) ($countRow['total'] ?? 0),
+                'items'                 => $items,
+                'incomplete_getResults' => false,
+            ]);
+        } catch (\Throwable $e) {
+            return $this->response->setJSON([
+                'total_count'           => 0,
+                'items'                 => [],
+                'incomplete_getResults' => false,
+                'message'               => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     /* BATCH PER ITEM & PERGUDANG */
     /* INSERT NEW BATCH */
     function add_newbatch(){
@@ -1936,7 +2005,7 @@ class Globalmodule extends BaseController
     /* INSERT NEW BATCH */
 
 
-    
+
     function list_market(){
         $branch = $this->session->get('branch');
         $idbu = $this->session->get('idbu');
@@ -1988,7 +2057,7 @@ class Globalmodule extends BaseController
     }
 
 
-    
+
     function list_gradecust(){
         $branch = $this->session->get('branch');
         $idbu = $this->session->get('idbu');
@@ -2040,7 +2109,7 @@ class Globalmodule extends BaseController
     }
 
 
-    
+
     function list_salesman(){
         $branch = $this->session->get('branch');
         $idbu = $this->session->get('idbu');
@@ -2092,7 +2161,7 @@ class Globalmodule extends BaseController
     }
 
 
-    
+
     function list_kolektor(){
         $branch = $this->session->get('branch');
         $idbu = $this->session->get('idbu');
@@ -2143,8 +2212,8 @@ class Globalmodule extends BaseController
 
     }
 
-    
-    
+
+
     function list_coa(){
         $branch = $this->session->get('branch');
         $idbu = $this->session->get('idbu');
@@ -2263,7 +2332,7 @@ class Globalmodule extends BaseController
 
 
 
-     function list_tax(){
+    function list_tax(){
         $branch = $this->session->get('branch');
         $idbu = $this->session->get('idbu');
         $param_c="";
@@ -2314,9 +2383,9 @@ class Globalmodule extends BaseController
     }
 
 
-    
 
-        function list_customer(){
+
+    function list_customer(){
         $branch = $this->session->get('branch');
         $idbu = $this->session->get('idbu');
         $param_c="";
@@ -2368,8 +2437,8 @@ class Globalmodule extends BaseController
 
 
 
-    
-        function list_golonganbarang(){
+
+    function list_golonganbarang(){
         $branch = $this->session->get('branch');
         $idbu = $this->session->get('idbu');
         $param_c="";
@@ -2421,7 +2490,7 @@ class Globalmodule extends BaseController
 
 
 
-    
+
     function list_jenisproduk(){
         $branch = $this->session->get('branch');
         $idbu = $this->session->get('idbu');
@@ -2474,8 +2543,8 @@ class Globalmodule extends BaseController
 
 
 
-    
-    
+
+
     function list_kelompokbarang(){
         $branch = $this->session->get('branch');
         $idbu = $this->session->get('idbu');
@@ -2528,9 +2597,9 @@ class Globalmodule extends BaseController
 
 
 
-    
-    
-    
+
+
+
     function list_principal(){
         $branch = $this->session->get('branch');
         $idbu = $this->session->get('idbu');
@@ -3043,7 +3112,7 @@ class Globalmodule extends BaseController
         );
 
     }
-    
+
     function list_bom(){
         $branch = $this->session->get('branch');
         $idbu = $this->session->get('idbu');
@@ -3323,7 +3392,7 @@ class Globalmodule extends BaseController
         $OYE = $db->table($table)
             ->set('status', 'P')
             ->set('printby', $nama)
-            ->set('printdate', date('Y-m-d H:i:s')) 
+            ->set('printdate', date('Y-m-d H:i:s'))
             ->set('printcount', 'COALESCE(printcount, 0) + 1', false)
             ->where('docno', $docno)
             ->update();

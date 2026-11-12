@@ -706,7 +706,13 @@ function btnUpdateDetail(){
                 $('#description').val(res.data.description);
                 $('#docno').val(res.data.docno);
                 $('#idbarang').val(res.data.idbarang);
-                $('#capexno').val(res.data.capexno);
+
+                // Capex (select2 ajax) - docno tersimpan di DB, isi ulang option-nya
+                var selectedCapex = $.trim(res.data.capexno || '');
+                $('#capexno').empty().val(null).trigger('change');
+                if (selectedCapex !== '') {
+                    setSelect2Ajax('#capexno', selectedCapex, selectedCapex);
+                }
                 $('#nmbarang').val(res.data.nmbarang);
                 var selectedSpec = $.trim(res.data.batch || '');
                 var selectedItem = $.trim(res.data.idbarang || '');
@@ -1236,6 +1242,7 @@ function btnInputDetail() {
     // 🔹 Clear select2
     $('#idbarang').val(null).trigger('change');
     $('#batch').empty().val(null).trigger('change');
+    $('#capexno').empty().val(null).trigger('change');
 
     // 🔹 Reset unit juga
     if ($('#unit').data('select2')) {
@@ -2223,6 +2230,83 @@ function formatBatch(repo) {
 }
 function formatBatchSelection(repo) {
     return repo.batch || repo.text;
+}
+
+
+/* ============================================================
+   SELECT2 NO. CAPEX (sc_im.capex)
+   value    : docno
+   tampilan : docno || desc_jns
+   ============================================================ */
+$("#capexno").select2({
+    placeholder: "No. Capex Jika Ada",
+    width: '100%',
+    allowClear: true,
+    minimumInputLength: 0,
+
+    // Dropdown di-append ke parent input (form-group .capex-field yang
+    // position: relative) supaya posisinya rata kiri tepat di bawah input,
+    // tidak bergeser mengikuti offset modal.
+    dropdownParent: $('#capexno').parent(),
+
+    ajax: {
+        url: HOST_URL + 'api/globalmodule/list_capex',
+        type: 'POST',
+        dataType: 'json',
+        delay: 250,
+
+        data: function (params) {
+            return {
+                _search_: params.term || '',
+                _page_: params.page || 1,
+                _perpage_: 30,
+                term: params.term
+            };
+        },
+
+        processResults: function (data, params) {
+            params.page = params.page || 1;
+
+            var results = $.map(data.items || [], function (item) {
+                return {
+                    id: item.docno,
+                    text: item.text,
+                    docno: item.docno,
+                    desc_jns: item.desc_jns || ''
+                };
+            });
+
+            return {
+                results: results,
+                pagination: {
+                    more: (params.page * 30) < (data.total_count || 0)
+                }
+            };
+        },
+
+        cache: false
+    },
+
+    escapeMarkup: function (markup) {
+        return markup;
+    },
+
+    templateResult: formatCapex,
+    templateSelection: formatCapexSelection
+
+}).on("select2:select", function (e) {
+    console.log('Capex dipilih:', e.params.data.docno);
+});
+
+/* Format Capex */
+function formatCapex(repo) {
+    if (repo.loading) return repo.text;
+    var markup = "<div class='select2-result-repository__description'>" + repo.docno +
+        (repo.desc_jns ? "   <i class='fa fa-circle-o'></i>   " + repo.desc_jns : "") + "</div>";
+    return markup;
+}
+function formatCapexSelection(repo) {
+    return repo.docno || repo.text;
 }
 
 

@@ -822,6 +822,21 @@
         box-sizing: border-box !important;
     }
 
+    /* Jangkar posisi dropdown Select2 No. Capex.
+       Parent input dibuat position: relative supaya dropdown Select2
+       (yang di-append ke parent ini) rata kiri tepat di bawah input,
+       tidak bergeser mengikuti offset modal. */
+    #modalDetailPP .capex-field {
+        position: relative;
+    }
+
+    #modalDetailPP .capex-field .select2-container,
+    #modalDetailPP .capex-field .select2-dropdown {
+        min-width: 0 !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
 
 
     /* ============================================
@@ -1304,15 +1319,11 @@
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <div class="form-group">
+                                <div class="form-group capex-field">
                                     <label>No. Capex</label>
-                                    <input type="text"
-                                           name="capexno"
-                                           id="capexno"
-                                           maxlength="30"
-                                           class="form-control"
-                                           style="text-transform: uppercase;"
-                                           placeholder="No. Capex Jika Ada">
+                                    <select name="capexno" id="capexno"
+                                            class="form-control select2"
+                                            style="width:100%"></select>
                                 </div>
                             </div>
                         </div>
