@@ -1392,7 +1392,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
         $i = 0;
 
-        $builder->where("docref = '$docno'");
+        // $builder->where("docref = '$docno'");
         $builder->where("inputby = '$nama'");
         // $builder->where("doctype_detail = 'MATERIAL'");
         foreach ($this->tmp_workingorder_bom_mst_view_column as $mrp)

@@ -171,8 +171,7 @@ class Production extends BaseController
                 $detailBtn = '
                 <a class="dropdown-item"
                    style="background-color:#3badf6;"
-                   href="' . base_url('production/trans/detailStandartCost') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
-                   onclick="return confirm(\'View Detail Standard Cost : ' . $docno . '\')">
+                   href="' . base_url('production/trans/detailStandartCost') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '">
 
                     <i class="fa fa-eye"></i> Detail
 
@@ -1543,8 +1542,7 @@ class Production extends BaseController
                 $detailBtn = '
                 <a class="dropdown-item"
                    style="background-color:#3badf6;"
-                   href="' . base_url('production/trans/detailBiayaStandart') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
-                   onclick="return confirm(\'View Detail Biaya Standart Produksi : ' . $docno . '\')">
+                   href="' . base_url('production/trans/detailBiayaStandart') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '">
 
                     <i class="fa fa-eye"></i> Detail
 
@@ -2857,8 +2855,7 @@ class Production extends BaseController
                 $detailBtn = '
                 <a class="dropdown-item"
                    style="background-color:#3badf6;"
-                   href="' . base_url('production/trans/detail_bom_') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
-                   onclick="return confirm(\'View Detail Bill of Material : ' . $docno . '\')">
+                   href="' . base_url('production/trans/detail_bom_') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '">
 
                     <i class="fa fa-eye"></i> Detail
 
@@ -4373,8 +4370,7 @@ class Production extends BaseController
                 $detailBtn = '
                 <a class="dropdown-item"
                    style="background-color:#3badf6;"
-                   href="' . base_url('production/trans/detail_workingorder_') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
-                   onclick="return confirm(\'View Detail Working Order : ' . $docno . '\')">
+                   href="' . base_url('production/trans/detail_workingorder_') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '">
 
                     <i class="fa fa-eye"></i> Detail
 
@@ -6065,8 +6061,7 @@ class Production extends BaseController
                 $detailBtn =
                     '<a class="dropdown-item" 
                     style="background-color:#3badf6;" 
-                    href="' . base_url('production/trans/detailWOE') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'View Detail Work Order Execution : ' . $docno . '\')">
+                    href="' . base_url('production/trans/detailWOE') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '">
                     <i class="fa fa-eye"></i> Detail Work Order Execution 
                 </a>';
             }
@@ -7234,8 +7229,7 @@ class Production extends BaseController
                 $detailBtn = '
                 <a class="dropdown-item"
                    style="background-color:#3badf6;"
-                   href="' . base_url('production/trans/detail_materialrelease_') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
-                   onclick="return confirm(\'View Detail Material Release : ' . $docno . '\')">
+                   href="' . base_url('production/trans/detail_materialrelease_') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '">
 
                     <i class="fa fa-eye"></i> Detail
 
@@ -9195,8 +9189,7 @@ class Production extends BaseController
                 $detailBtn = '
                 <a class="dropdown-item"
                    style="background-color:#3badf6;"
-                   href="' . base_url('production/trans/detail_penerimaanbp_') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
-                   onclick="return confirm(\'View Detail Penerimaan Barang Produksi : ' . $docno . '\')">
+                   href="' . base_url('production/trans/detail_penerimaanbp_') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '">
 
                     <i class="fa fa-eye"></i> Detail
 
@@ -11126,8 +11119,7 @@ class Production extends BaseController
                 $detailBtn = '
                 <a class="dropdown-item"
                    style="background-color:#3badf6;"
-                   href="' . base_url('production/trans/detail_bpnm_') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
-                   onclick="return confirm(\'View Detail Biaya Produksi Non Material : ' . $docno . '\')">
+                   href="' . base_url('production/trans/detail_bpnm_') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '">
 
                     <i class="fa fa-eye"></i> Detail
 
