@@ -1398,6 +1398,19 @@
         line-height: 1.4 !important;
     }
 
+    /* =========================================================
+       HINT FIELD DESIMAL
+    ========================================================= */
+    .corp-form-container .po-field-hint {
+        display: block;
+        margin-top: 3px;
+        font-size: 11px;
+        line-height: 1.3;
+        font-style: italic;
+        color: var(--corp-text-muted);
+    }
+
+
 </style>
 <div class="corp-form-container">
 
@@ -1532,7 +1545,8 @@
                                                    name="jthtempo"
                                                    id="jthtempo"
                                                    class="form-control ratakanan jtsseparator"
-                                                   placeholder="0.00">
+                                                   inputmode="numeric"
+                                                   placeholder="0">
                                             <div class="input-group-append">
                                                 <span class="input-group-text">hari</span>
                                             </div>
@@ -1592,9 +1606,10 @@
                                         <input type="text"
                                                name="kurs"
                                                id="kurs"
-                                               class="form-control ratakanan"
+                                               class="form-control ratakanan jtsseparator"
                                                placeholder="Nilai tukar akan muncul disini"
                                                readonly>
+                                        <small class="po-field-hint">Gunakan titik (.) untuk desimal</small>
                                     </div>
 
                                     <div class="form-group">
@@ -1928,6 +1943,7 @@
                                            id="qty"
                                            class="form-control jtsseparator ratakanan"
                                            placeholder="0.00">
+                                    <small class="po-field-hint">Gunakan titik (.) untuk desimal</small>
                                 </div>
                             </div>
 
@@ -1959,6 +1975,7 @@
                                             <i class="fa fa-history"></i>
                                         </button>
                                     </div>
+                                    <small class="po-field-hint">Gunakan titik (.) untuk desimal</small>
                                 </div>
                             </div>
 
@@ -2193,7 +2210,14 @@
     </div>
 </div><!-- /.corp-form-container -->
 
-<script type="application/javascript" src="<?= base_url('assets/pagejs/purchase/po.js') ?>"></script>
+<?php
+    /* cache-buster : memastikan browser selalu memakai po.js versi terbaru.
+       Tanpa ini file lama masih terpakai sehingga angka bisa tampil
+       seperti 33,333.000,000 dan desimal tidak bisa diketik. */
+    $po_js_path = ROOTPATH . 'assets/pagejs/purchase/po.js';
+    $po_js_ver  = is_file($po_js_path) ? filemtime($po_js_path) : date('Ymd');
+?>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/purchase/po.js') ?>?v=<?= $po_js_ver ?>"></script>
 <script type="text/javascript">
     // jumlah detail temp milik user (dikirim dari controller) → dipakai untuk mengunci header PO
     var PO_DETAIL_COUNT = <?= (int) ($detailcount ?? 0) ?>;

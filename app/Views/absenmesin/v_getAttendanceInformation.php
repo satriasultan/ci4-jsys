@@ -64,7 +64,7 @@ if ( $zk->connect() ):
             //$zk->setUser(1, '1', 'Admin', '', LEVEL_ADMIN);
             $user = $zk->getUser();
             sleep(1);
-            while(list($uid, $userdata) = each($user)):
+            foreach ($user as $uid => $userdata):
                 if ($userdata[2] == LEVEL_ADMIN)
                     $role = 'ADMIN';
                 elseif ($userdata[2] == LEVEL_USER)
@@ -80,7 +80,7 @@ if ( $zk->connect() ):
                     <td><?php echo $userdata[3] ?>&nbsp;</td>
                 </tr>
             <?php
-        endwhile;
+        endforeach;
         } catch (Exception $e) {
             header("HTTP/1.0 404 Not Found");
             header('HTTP', true, 500); // 500 internal server error
@@ -104,7 +104,7 @@ if ( $zk->connect() ):
         <!?php
         $attendance = $zk->getAttendance();
         sleep(1);
-        while(list($idx, $attendancedata) = each($attendance)):
+        foreach ($attendance as $idx => $attendancedata):
             if ( $attendancedata[2] == 14 )
                 $status = 'Check Out';
             else
@@ -119,7 +119,7 @@ if ( $zk->connect() ):
                 <td><!?php echo date( "H:i:s", strtotime( $attendancedata[3] ) ) ?></td>
             </tr>
         <!?php
-        endwhile
+        endforeach
         ?>
     </table-->
 

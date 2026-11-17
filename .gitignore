@@ -84,6 +84,7 @@ phpunit
 # Composer
 #-------------------------
 vendor/
+!vendor/.gitkeep
 
 #-------------------------
 # IDE / Development Files
@@ -125,9 +126,9 @@ nb-configuration.xml
 /phpunit*.xml
 /.phpunit.*.cache
 
-
-
-
+#-------------------------
+# Framework / Project Folders
+#-------------------------
 system/*
 writable/*
 vendor/*
@@ -135,46 +136,50 @@ public/*
 Plugins/*
 /soap/*
 
-
-# Kecualikan folder app/Config
-!app/
+#-------------------------
+# Application (app/)
+#-------------------------
+# Abaikan semua isi app/ terlebih dahulu
 app/*
+
+# Kecualikan folder yang memang perlu di-track
 !app/Config/
 !app/Config/**
+
 !app/Models/
 !app/Models/**
+
 !app/Controllers/
 !app/Controllers/**
+
 !app/Views/
 !app/Views/**
 
-app/Libraries
-# !app/Libraries/Default_style.php
-!app\Libraries\Default_style.php
-!app\Libraries\Fiky_report.php
+# Penting: unignore folder Libraries DULU agar Git mau menelusurinya
+!app/Libraries/
 
+# Abaikan SEMUA isi Libraries (file & folder)
+app/Libraries/*
+
+# Izinkan HANYA file PHP di root Libraries (bukan di subfolder)
+!app/Libraries/*.php
+#-------------------------
+# Assets
+#-------------------------
 # Abaikan semua file di folder assets
 assets/*
 
 # Kecualikan folder assets/pagejs
 !assets/pagejs/
-
-# Termasuk semua file dalam assets/pagejs
 !assets/pagejs/**
 
 # Kecualikan folder assets/json
 !assets/json/
-
-# Termasuk semua file dalam assets/json
 !assets/json/**
 
 # Kecualikan folder assets/mrt
 !assets/mrt/
-
-# Termasuk semua file dalam assets/mrt
 !assets/mrt/**
 
-
-# Kecualikan folder assets/mrt
-!assets\css\fiky-selectize.css
-
+# Kecualikan file CSS spesifik (perbaikan backslash -> slash)
+!assets/css/fiky-selectize.css

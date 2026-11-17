@@ -71,6 +71,22 @@ order by msession);");
 
     }
 
+    /**
+     * Mengembalikan token CSRF yang masih berlaku.
+     * Dipakai oleh form login (AJAX) sebelum setiap submit, karena
+     * Config\Security::$regenerate = true membuat token hanya bisa
+     * dipakai satu kali (token lama langsung tidak valid).
+     */
+    public function token()
+    {
+        return $this->response
+            ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->setJSON(array(
+                'csrf_token_name' => csrf_token(),
+                'csrf_token'      => csrf_hash(),
+            ));
+    }
+
     public function proses()
     {
         $model_auth = new MWeb();

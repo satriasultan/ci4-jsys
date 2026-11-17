@@ -188,7 +188,12 @@
 <!-- /.modal -->
 
 
-<script type="application/javascript" src="<?= base_url('assets/pagejs/purchase/po.js') ?>?v=20261111"></script>
+<?php
+    /* cache-buster mengikuti tanggal modifikasi file po.js */
+    $po_js_path = ROOTPATH . 'assets/pagejs/purchase/po.js';
+    $po_js_ver  = is_file($po_js_path) ? filemtime($po_js_path) : '20261111';
+?>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/purchase/po.js') ?>?v=<?= $po_js_ver ?>"></script>
 <script type="text/javascript">
     $(function() {
         $("#example1").dataTable();

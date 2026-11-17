@@ -116,15 +116,13 @@ function documentReadable() {
             const branch2 = $.getJSON(HOST_URL + 'api/globalmodule/list_branchjob', { var: item.cabang_sent });
             const locFrom = $.getJSON(HOST_URL + 'api/globalmodule/list_mlocation', { var: item.idlocation_from });
             const locTo = $.getJSON(HOST_URL + 'api/globalmodule/list_mlocation', { var: item.idlocation_to });
-            const locTransit = $.getJSON(HOST_URL + 'api/globalmodule/list_mlocation', { var: item.idlocation_transit });
 
-            $.when(branch1, branch2, locFrom, locTo, locTransit)
-                .done(function (b1, b2, l1, l2, l3) {
+            $.when(branch1, branch2, locFrom, locTo)
+                .done(function (b1, b2, l1, l2) {
                     setSelect2('[name="cabang"]',             b1[0].items[0], 'nmbranch', 'idbranch', true);
                     setSelect2('[name="cabang_sent"]',        b2[0].items[0], 'nmbranch', 'idbranch', true);
                     setSelect2('[name="idlocation_from"]',    l1[0].items[0], 'nmlocation', 'idlocation', true);
                     setSelect2('[name="idlocation_to"]',      l2[0].items[0], 'nmlocation', 'idlocation', true);
-                    setSelect2('[name="idlocation_transit"]', l3[0].items[0], 'nmlocation', 'idlocation', true);
                 });
         })
         .fail(function () {
@@ -1298,7 +1296,7 @@ function saveTransferStock() {
         formData.set('idlocation_from',    $('#idlocation_from').val());
         formData.set('cabang_sent',        $('#cabang_sent').val());
         formData.set('idlocation_to',      $('#idlocation_to').val());
-        formData.set('idlocation_transit', $('#idlocation_transit').val());
+        formData.set('idlocation_transit', $('#idlocation_transit').val() || '');
         formData.set('description',        $('#description').val());
         formData.set('docdate',            $('#docdate').val());
         formData.set('docref',             $('#docref').val());
@@ -1378,7 +1376,6 @@ $('#btnAddDetail').on('click', function (e) {
     var suffix             = $.trim($('[name="suffix"]').val());
     var idlocation_from    = $.trim($('[name="idlocation_from"]').val());
     var idlocation_to      = $.trim($('[name="idlocation_to"]').val());
-    var idlocation_transit = $.trim($('[name="idlocation_transit"]').val());
 
     function showWarning(msg) {
         Swal.fire({
@@ -1420,13 +1417,6 @@ $('#btnAddDetail').on('click', function (e) {
         e.preventDefault();
         showWarning('Gudang Tujuan belum dipilih!');
         $('[name="idlocation_to"]').focus();
-        return false;
-    }
-
-    if (!idlocation_transit) {
-        e.preventDefault();
-        showWarning('Gudang Transit belum dipilih!');
-        $('[name="idlocation_transit"]').focus();
         return false;
     }
 
@@ -1699,7 +1689,7 @@ $("#cabang_sent").select2({
 });
 
 /* ============================================================
-   SELECT2 LOCATION — FROM / TO / TRANSIT
+   SELECT2 LOCATION — FROM / TO
    ============================================================ */
 var defaultInitialLocationFrom = '';
 
@@ -1777,42 +1767,8 @@ $("#idlocation_to").select2({
     templateSelection: formatLocationSelection
 });
 
-var defaultInitialLocationTransit = '';
-
-$("#idlocation_transit").select2({
-    placeholder: " -- Pilih Gudang Transit -- ",
-    allowClear: true,
-    multiple: false,
-    ajax: {
-        url: HOST_URL + 'api/globalmodule/list_mlocation',
-        type: 'POST',
-        dataType: 'json',
-        delay: 250,
-        data: function (params) {
-            return {
-                _search_: params.term,
-                _page_: params.page,
-                _draw_: true,
-                _start_: 1,
-                _perpage_: 2,
-                _paramglobal_: defaultInitialLocationTransit,
-                _parameterx_: defaultInitialLocationTransit,
-                term: params.term
-            };
-        },
-        processResults: function (data, params) {
-            params.page = params.page || 1;
-            return {
-                results: data.items,
-                pagination: { more: (params.page * 30) < data.total_count }
-            };
-        },
-        cache: true
-    },
-    escapeMarkup: function (markup) { return markup; },
-    templateResult: formatLocation,
-    templateSelection: formatLocationSelection
-});
+/* Catatan: field Gudang Transit (idlocation_transit) tidak digunakan,
+   sehingga select2 untuk field tersebut tidak diinisialisasi. */
 
 function formatLocation(repo) {
     if (repo.loading) return repo.text;

@@ -1355,6 +1355,18 @@
         margin: 0 !important;
         line-height: 1.4 !important;
     }
+    /* =========================================================
+       HINT FIELD DESIMAL
+    ========================================================= */
+    .corp-form-container .lpb-field-hint {
+        display: block;
+        margin-top: 3px;
+        font-size: 11px;
+        line-height: 1.3;
+        font-style: italic;
+        color: var(--corp-text-muted);
+    }
+
 </style>
 <div class="corp-form-container">
 
@@ -1531,12 +1543,33 @@
                                     </div>
 
                                     <div class="form-group">
+                                        <label for="paymenttype">Payment Type</label>
+                                        <select name="paymenttype" id="paymenttype" class="form-control select2">
+                                            <option value="">-- Pilih Payment Type --</option>
+                                            <?php foreach (['LC', 'TT', 'CASH', 'GIRO'] as $pay): ?>
+                                                <option value="<?= $pay ?>" <?= (isset($dtldata['paymenttype']) && trim($dtldata['paymenttype']) === $pay) ? 'selected' : '' ?>><?= $pay ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="polokal">PO Lokal / Import</label>
+                                        <select name="polokal" id="polokal" class="form-control select2">
+                                            <option value="">-- Pilih Lokal / Import --</option>
+                                            <?php foreach (['LOKAL', 'IMPORT'] as $pol): ?>
+                                                <option value="<?= $pol ?>" <?= (isset($dtldata['polokal']) && trim($dtldata['polokal']) === $pol) ? 'selected' : '' ?>><?= $pol ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
                                         <label for="kurs">Nilai Tukar</label>
                                         <input type="text"
                                                name="kurs"
                                                id="kurs"
                                                class="form-control ratakanan jtsseparator"
                                                placeholder="Nilai tukar akan muncul disini">
+                                        <small class="lpb-field-hint">Gunakan titik (.) untuk desimal</small>
                                     </div>
 
                                     <div class="form-group">
@@ -1950,6 +1983,7 @@
                                            id="qty"
                                            class="form-control jtsseparator ratakanan"
                                            placeholder="0.00">
+                                    <small class="lpb-field-hint">Gunakan titik (.) untuk desimal</small>
                                 </div>
                             </div>
                             <div class="col-md-3">
@@ -1960,6 +1994,7 @@
                                            id="qtybonus"
                                            class="form-control jtsseparator ratakanan"
                                            placeholder="0.00">
+                                    <small class="lpb-field-hint">Gunakan titik (.) untuk desimal</small>
                                 </div>
                             </div>
                             <div class="col-md-3">
@@ -1970,6 +2005,7 @@
                                            id="harga"
                                            class="form-control jtsseparator ratakanan"
                                            placeholder="0.00">
+                                    <small class="lpb-field-hint">Gunakan titik (.) untuk desimal</small>
                                 </div>
                             </div>
 
@@ -2147,7 +2183,12 @@
     </div>
 </div><!-- /.corp-form-container -->
 
-<script type="application/javascript" src="<?= base_url('assets/pagejs/purchase/lpb.js') ?>"></script>
+<?php
+    /* cache-buster : memastikan browser selalu memakai lpb.js versi terbaru. */
+    $lpb_js_path = ROOTPATH . 'assets/pagejs/purchase/lpb.js';
+    $lpb_js_ver  = is_file($lpb_js_path) ? filemtime($lpb_js_path) : date('Ymd');
+?>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/purchase/lpb.js') ?>?v=<?= $lpb_js_ver ?>"></script>
 <script type="text/javascript">
     $(function() {
         $("#example1").dataTable();

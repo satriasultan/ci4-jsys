@@ -333,6 +333,9 @@
 <script>
     $(document).ready(function () {
 
+        // URL endpoint pengambil token CSRF terbaru
+        const CSRF_TOKEN_URL = '<?php echo base_url('web/login/token'); ?>';
+
         // =========================================
         // FLATPICKR
         // =========================================
@@ -396,13 +399,49 @@
             form.find('input, select, button').prop('disabled', true);
 
             // =================================================
-            // AJAX
+            // AMBIL TOKEN CSRF TERBARU
+            // $regenerate = true membuat token hanya bisa dipakai
+            // satu kali, sehingga token pada halaman ini sudah
+            // tidak valid setelah percobaan login sebelumnya.
             // =================================================
 
             $.ajax({
-                url: form.attr('action'),
+                url: CSRF_TOKEN_URL,
+                type: 'GET',
+                dataType: 'json',
+                cache: false
+            })
+            .done(function (token) {
+
+                const data = new URLSearchParams(formData);
+
+                data.set(token.csrf_token_name, token.csrf_token);
+
+                postLogin(data.toString());
+
+            })
+            .fail(function () {
+
+                unlockLoginForm();
+
+                showLoginError('Sesi halaman login sudah berakhir. Silakan coba lagi.');
+
+            });
+
+        });
+
+        // =================================================
+        // AJAX LOGIN
+        // =================================================
+
+        function postLogin(payload) {
+
+            const button = $('#loginform').find('.btn-login');
+
+            $.ajax({
+                url: $('#loginform').attr('action'),
                 type: 'POST',
-                data: formData,
+                data: payload,
                 dataType: 'json',
 
                 success: function (response) {
@@ -438,9 +477,19 @@
 
                     unlockLoginForm();
 
-                    showLoginError(
-                        'Terjadi kesalahan saat proses login. Silakan coba lagi.'
-                    );
+                    if (xhr.status === 403) {
+
+                        showLoginError(
+                            'Token keamanan kedaluwarsa. Silakan klik LOGIN sekali lagi.'
+                        );
+
+                    } else {
+
+                        showLoginError(
+                            'Terjadi kesalahan saat proses login. Silakan coba lagi.'
+                        );
+
+                    }
 
                     if (typeof grecaptcha !== 'undefined') {
                         grecaptcha.reset();
@@ -448,7 +497,7 @@
                 }
             });
 
-        });
+        }
 
 
         // =========================================

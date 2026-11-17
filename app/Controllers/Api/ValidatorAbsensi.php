@@ -72,7 +72,7 @@ class ValidatorAbsensi extends BaseController
 
             if ($zk->connect()) {
                 $attendance = $zk->getAttendance();
-                while( list($idx, $attendancedata) = each($attendance) ) {
+                foreach ($attendance as $idx => $attendancedata) {
 
                     $useratt = array (
                         'userid' => $idx,
@@ -146,7 +146,7 @@ class ValidatorAbsensi extends BaseController
 
             if ($zk->connect()) {
                 $attendance = $zk->getAttendance();
-                while( list($idx, $attendancedata) = each($attendance) ) {
+                foreach ($attendance as $idx => $attendancedata) {
 
                     $useratt = array (
                         'userid' => $idx,
@@ -220,7 +220,7 @@ class ValidatorAbsensi extends BaseController
 
             if ($zk->connect()) {
                 $attendance = $zk->getAttendance();
-                while( list($idx, $attendancedata) = each($attendance) ) {
+                foreach ($attendance as $idx => $attendancedata) {
 
                     $useratt = array (
                         'userid' => $idx,

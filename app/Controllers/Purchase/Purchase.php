@@ -4783,6 +4783,36 @@ class Purchase extends BaseController
     }
 
 
+    /* Format angka untuk tampilan grid / view :
+       bila seluruh digit desimalnya 0 (mis. 33.333,0000) -> tampil tanpa desimal,
+       bila ada digit selain 0 (mis. 33.333,5000) -> tetap 4 digit desimal. */
+    private function formatPoNumber($value, $decimals = 4)
+    {
+        $num = round((float) $value, $decimals);
+
+        if ($decimals > 0 && abs($num - round($num)) < 0.0000001) {
+            $decimals = 0;
+        }
+
+        return number_format($num, $decimals, '.', ',');
+    }
+
+
+    /* Format angka untuk tampilan grid / view LPB :
+       bila seluruh digit desimalnya 0 (mis. 33.333,0000) -> tampil tanpa desimal,
+       bila ada digit selain 0 (mis. 33.333,5000) -> tetap 4 digit desimal. */
+    private function formatLpbNumber($value, $decimals = 4)
+    {
+        $num = round((float) $value, $decimals);
+
+        if ($decimals > 0 && abs($num - round($num)) < 0.0000001) {
+            $decimals = 0;
+        }
+
+        return number_format($num, $decimals, '.', ',');
+    }
+
+
     function list_tmp_po_dtl(){
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_purchase->get_t_po_dtl_temp_view($docno);
@@ -4816,9 +4846,9 @@ class Purchase extends BaseController
             $row[] = $lm->etdnotes;
 
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. $this->formatPoNumber($lm->qty) . '</div>';
             /*$row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 2, '.', ',') . '</div>';*/
-            $row[] = '<div class="ratakanan">'. number_format($lm->harga, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. $this->formatPoNumber($lm->harga) . '</div>';
 
             // Multi Disc & Total Disc tetap di-comment
 //        $multidisctype = trim($lm->multidisctype ?? '');
@@ -4834,7 +4864,7 @@ class Purchase extends BaseController
 //            '</div>';
 //        $row[] = '<div class="ratakanan">'. number_format($lm->totaldiscount, 2, '.', ',') . '</div>';
 
-            $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan text-bold">'. $this->formatPoNumber($lm->nilai) . '</div>';
             $row[] = $lm->descriptionpo;
             $row[] = $lm->descriptionpp;
             $data[] = $row;
@@ -9336,6 +9366,14 @@ class Purchase extends BaseController
         $docnopo = strtoupper(trim($this->request->getPost('docnopo') ?? ''));
         $idurut  = $this->request->getPost('idurut');
 
+        // PAYMENT TYPE (char(20), nullable) : hanya nilai yang dikenal
+        $paymenttype = strtoupper(trim((string) $this->request->getPost('paymenttype')));
+        $paymenttype = in_array($paymenttype, ['LC', 'TT', 'CASH', 'GIRO'], true) ? $paymenttype : null;
+
+        // PO LOKAL / IMPORT (char(20), nullable) : hanya nilai yang dikenal
+        $polokal = strtoupper(trim((string) $this->request->getPost('polokal')));
+        $polokal = in_array($polokal, ['LOKAL', 'IMPORT'], true) ? $polokal : null;
+
         if (!$docno) {
             return $this->response->setJSON([
                 'success' => false,
@@ -9351,7 +9389,7 @@ class Purchase extends BaseController
         $poData = null;
         if (!$modeEdit) {
             $poData = $db->table('sc_trx.po')
-                ->select('currcode, kurs, idtax, isinclusive')
+                ->select('currcode, kurs, idtax, isinclusive, keterangan, paymenttype, polokal')
                 ->where('docno', $docnopo)
                 ->get()
                 ->getRowArray();
@@ -9384,6 +9422,25 @@ class Purchase extends BaseController
             $isinclusive = strtoupper(trim($poData['isinclusive'] ?? 'NO'));
             $isinclusive = ($isinclusive === 'YES') ? 'YES' : 'NO';
 
+            // 🔧 Keterangan header LPB: pakai isian user, kalau kosong
+            //    ikut keterangan header PO (hasil Tarik Data PO Detail)
+            $keteranganHeader = trim((string) $this->request->getPost('keterangan'));
+            if ($keteranganHeader === '' && !empty($poData['keterangan'])) {
+                $keteranganHeader = trim((string) $poData['keterangan']);
+            }
+
+            // 🔧 Payment Type & PO Lokal / Import : pakai isian user, kalau
+            //    kosong ikut header PO (kolom sc_trx.po)
+            if ($paymenttype === null) {
+                $paymenttype = strtoupper(trim((string) ($poData['paymenttype'] ?? '')));
+                $paymenttype = in_array($paymenttype, ['LC', 'TT', 'CASH', 'GIRO'], true) ? $paymenttype : null;
+            }
+
+            if ($polokal === null) {
+                $polokal = strtoupper(trim((string) ($poData['polokal'] ?? '')));
+                $polokal = in_array($polokal, ['LOKAL', 'IMPORT'], true) ? $polokal : null;
+            }
+
             $db->table('sc_tmp.lpb')->insert([
                 'docno'          => $docno,
                 'cabang'         => $this->request->getPost('cabang'),
@@ -9400,7 +9457,9 @@ class Purchase extends BaseController
                 'nofaktur'       => strtoupper($this->request->getPost('nofaktur')),
                 'currcode'       => strtoupper($currcode),
                 'kurs'           => $kurs ?: 1,
-                'keterangan'     => strtoupper($this->request->getPost('keterangan')),
+                'paymenttype'    => $paymenttype,
+                'polokal'        => $polokal,
+                'keterangan'     => strtoupper($keteranganHeader),
                 'pemohon'        => strtoupper($this->request->getPost('pemohon') ?? $nama),
                 'status'         => 'E',
                 'inputby'        => $nama,
@@ -9408,6 +9467,24 @@ class Purchase extends BaseController
             ]);
 
             $reload = true;
+        } else {
+            // header sudah ada : simpan perubahan Payment Type & PO Lokal / Import
+            $updateTmpHeader = [];
+
+            if ($paymenttype !== null) {
+                $updateTmpHeader['paymenttype'] = $paymenttype;
+            }
+
+            if ($polokal !== null) {
+                $updateTmpHeader['polokal'] = $polokal;
+            }
+
+            if (!empty($updateTmpHeader)) {
+                $db->table('sc_tmp.lpb')
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->update($updateTmpHeader);
+            }
         }
 
         $insertCount = 0;
@@ -9881,6 +9958,27 @@ class Purchase extends BaseController
             $builder->where('trim(docno)', $docno);
             $builder->update($info);
 
+            /* Kolom paymenttype & polokal belum ikut disalin oleh fungsi trigger
+               sc_trx.tr_lpb(), jadi disalin manual ke header temporary. */
+            $paymenttypeHeader = strtoupper(trim((string) ($dtl['paymenttype'] ?? '')));
+            $polokalHeader     = strtoupper(trim((string) ($dtl['polokal'] ?? '')));
+
+            $updateTmpHeader = [];
+
+            if ($paymenttypeHeader !== '') {
+                $updateTmpHeader['paymenttype'] = $paymenttypeHeader;
+            }
+
+            if ($polokalHeader !== '') {
+                $updateTmpHeader['polokal'] = $polokalHeader;
+            }
+
+            if (!empty($updateTmpHeader)) {
+                $this->db->table('sc_tmp.lpb')
+                    ->where('trim(docno)', $docno)
+                    ->update($updateTmpHeader);
+            }
+
             // Redirect ke halaman addStdUsage
             return redirect()->to(base_url('purchase/trans/addLPB'));
         } else {
@@ -10256,14 +10354,14 @@ class Purchase extends BaseController
             $row[] = $lm->etdnotes;
 
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. $this->formatLpbNumber($lm->qty) . '</div>';
 //            $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->harga, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. $this->formatLpbNumber($lm->harga) . '</div>';
 //            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 2, '.', ',') . '% </div>';
 //            $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 2, '.', ',') . '</div>';
 //            $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 2, '.', ',') . '</div>';
 //            $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan text-bold">'. $this->formatLpbNumber($lm->nilai) . '</div>';
             $row[] = $lm->descriptionpo;
             $row[] = $lm->descriptionpp;
             $data[] = $row;
@@ -10304,14 +10402,14 @@ class Purchase extends BaseController
             $row[] = $lm->etdnotes;
 
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->harga, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. $this->formatLpbNumber($lm->qty) . '</div>';
+            $row[] = '<div class="ratakanan">'. $this->formatLpbNumber($lm->qtybonus) . '</div>';
+            $row[] = '<div class="ratakanan">'. $this->formatLpbNumber($lm->harga) . '</div>';
 //            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 2, '.', ',') . '</div>';
 //            $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 2, '.', ',') . '</div>';
 //            $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 2, '.', ',') . '</div>';
 //            $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan text-bold">'. $this->formatLpbNumber($lm->nilai) . '</div>';
             $row[] = $lm->descriptionpo;
             $row[] = $lm->descriptionpp;
             $data[] = $row;
@@ -10335,7 +10433,8 @@ class Purchase extends BaseController
         $paramdtl2 = " and coalesce(inputby,'')='$nama'";
 
         $header = $this->m_purchase->q_lpb_master_temp($param);
-        $status = trim($header->getRowArray()['status']);
+        $headerRow = $header->getRowArray() ?: [];
+        $status = trim($headerRow['status'] ?? '');
         $cek = $this->m_purchase->q_lpb_dtl_temp($paramdtl);
         $cek2 = $this->m_purchase->q_lpb_dtl_temp($paramdtl2);
 
@@ -10374,6 +10473,26 @@ class Purchase extends BaseController
             // $currcode   = trim($this->request->getPost('currcode'));
             $nosj   = trim($this->request->getPost('nosj'));
             $nofaktur   = trim($this->request->getPost('nofaktur'));
+
+            // PAYMENT TYPE (char(20), nullable) : hanya nilai yang dikenal
+            $paymenttype   = strtoupper(trim((string) $this->request->getPost('paymenttype')));
+            $paymenttype   = in_array($paymenttype, ['LC', 'TT', 'CASH', 'GIRO'], true) ? $paymenttype : null;
+
+            if ($paymenttype === null) {
+                // fallback: nilai yang sudah tersimpan di header sc_tmp.lpb
+                $paymenttype = strtoupper(trim((string) ($headerRow['paymenttype'] ?? '')));
+                $paymenttype = in_array($paymenttype, ['LC', 'TT', 'CASH', 'GIRO'], true) ? $paymenttype : null;
+            }
+
+            // PO LOKAL / IMPORT (char(20), nullable) : hanya nilai yang dikenal
+            $polokal   = strtoupper(trim((string) $this->request->getPost('polokal')));
+            $polokal   = in_array($polokal, ['LOKAL', 'IMPORT'], true) ? $polokal : null;
+
+            if ($polokal === null) {
+                // fallback: nilai yang sudah tersimpan di header sc_tmp.lpb
+                $polokal = strtoupper(trim((string) ($headerRow['polokal'] ?? '')));
+                $polokal = in_array($polokal, ['LOKAL', 'IMPORT'], true) ? $polokal : null;
+            }
             // $kurs   = trim($this->request->getPost('kurs'));
             // $isinclusive   = trim($this->request->getPost('isinclusive'));
             // $idtax   = trim($this->request->getPost('idtax'));
@@ -10420,6 +10539,14 @@ class Purchase extends BaseController
                 // 'pemohon'       => $pemohon (jika masih diperlukan nanti bisa ditambahkan)
             ];
 
+            if ($paymenttype !== null) {
+                $updateHeader['paymenttype'] = $paymenttype;
+            }
+
+            if ($polokal !== null) {
+                $updateHeader['polokal'] = $polokal;
+            }
+
             $builder->where('inputby', $nama);
             $builder->update($updateHeader);
 
@@ -10428,6 +10555,29 @@ class Purchase extends BaseController
             );
             $builder->where('inputby',$nama);
             if ($builder->update($info)) {
+                /* Kolom paymenttype & polokal belum ikut dipindahkan oleh fungsi
+                   trigger sc_tmp.tr_lpb_finalize(), jadi disimpan langsung ke
+                   header transaksi memakai idurut yang sama. */
+                $idurutHeader = (int) ($headerRow['idurut'] ?? 0);
+
+                if ($idurutHeader > 0) {
+                    $updateTrxHeader = [];
+
+                    if ($paymenttype !== null) {
+                        $updateTrxHeader['paymenttype'] = $paymenttype;
+                    }
+
+                    if ($polokal !== null) {
+                        $updateTrxHeader['polokal'] = $polokal;
+                    }
+
+                    if (!empty($updateTrxHeader)) {
+                        $this->db->table('sc_trx.lpb')
+                            ->where('idurut', $idurutHeader)
+                            ->update($updateTrxHeader);
+                    }
+                }
+
                 $paramerror=" and userid='$nama' and modul='I.P.A.6'";
                 $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
                 $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();

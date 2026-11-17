@@ -1538,13 +1538,8 @@
                                                 required></select>
                                     </div>
 
-                                    <div class="form-group">
-                                        <label for="idlocation_transit">Gudang Transit</label>
-                                        <select name="idlocation_transit"
-                                                id="idlocation_transit"
-                                                class="form-control"
-                                                required></select>
-                                    </div>
+                                    <!-- Gudang Transit tidak digunakan, field disembunyikan -->
+                                    <input type="hidden" name="idlocation_transit" id="idlocation_transit" value="">
 
                                     <div class="form-group mb-0">
                                         <label for="keterangan">Keterangan</label>

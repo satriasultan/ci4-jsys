@@ -189,8 +189,14 @@ function documentReadable(){
             );
             $('[name="alamatsupplier"]').val(json.dataTables.items[0].alamatsupplier);
             $('[name="keterangan"]').val(json.dataTables.items[0].keterangan);
+            // simpan nilai awal agar auto-fill dari PO berikutnya tetap sinkron
+            lastAutoKeteranganPO = $.trim(json.dataTables.items[0].keterangan || '');
             $('[name="nosj"]').val(json.dataTables.items[0].nosj);
             $('[name="nofaktur"]').val(json.dataTables.items[0].nofaktur);
+            $('[name="paymenttype"]').val($.trim(json.dataTables.items[0].paymenttype || '')).trigger('change.select2');
+            lastAutoPaymentTypePO = $.trim(json.dataTables.items[0].paymenttype || '').toUpperCase();
+            $('[name="polokal"]').val($.trim(json.dataTables.items[0].polokal || '')).trigger('change.select2');
+            lastAutoPolokalPO = $.trim(json.dataTables.items[0].polokal || '').toUpperCase();
             $('[name="syarat"]').val(json.dataTables.items[0].syarat);
 
             setJtsValue('[name="dpp"]', convertToDbNumber(json.dataTables.items[0].dpp));
@@ -402,6 +408,11 @@ function setToDisapproved(docno) {
 
 var defaultInitialPO = '';
 var defaultInitialSupPO = '';
+// nilai keterangan header LPB yang terakhir diisi otomatis dari PO
+var lastAutoKeteranganPO = '';
+// nilai payment type & lokal/import header LPB yang terakhir diisi otomatis dari PO
+var lastAutoPaymentTypePO = '';
+var lastAutoPolokalPO = '';
 $("#docnopo").select2({
     placeholder: "Choose Your PO",
     allowClear: true,
@@ -443,7 +454,44 @@ $("#docnopo").select2({
     templateResult: formatPO,
     templateSelection: formatPOSelection
 }).on("select2:select", function (e) {
-    var data = e.params.data;
+    var data = e.params.data || {};
+
+    // =====================================================
+    // KETERANGAN HEADER LPB OTOMATIS DARI KETERANGAN PO
+    // (mengikuti PO yang dipilih pada Tarik Data PO Detail)
+    // Nilai yang sudah diubah manual tidak ditimpa.
+    // =====================================================
+    var ketPO   = $.trim(data.keterangan || '');
+    var $ketLPB = $('[name="keterangan"]');
+    var ketNow  = $.trim($ketLPB.val() || '');
+
+    if (ketNow === '' || ketNow === lastAutoKeteranganPO) {
+        $ketLPB.val(ketPO);
+        lastAutoKeteranganPO = ketPO;
+    }
+
+    // =====================================================
+    // PAYMENT TYPE & PO LOKAL / IMPORT OTOMATIS DARI HEADER PO
+    // (kolom sc_trx.po, dikirim oleh api/globalmodule/list_po)
+    // Nilai yang sudah diubah manual tidak ditimpa.
+    // =====================================================
+    var payPO  = $.trim(data.paymenttype || '').toUpperCase();
+    var $pay   = $('#paymenttype');
+    var payNow = $.trim($pay.val() || '').toUpperCase();
+
+    if (payPO !== '' && (payNow === '' || payNow === lastAutoPaymentTypePO)) {
+        $pay.val(payPO).trigger('change.select2');
+        lastAutoPaymentTypePO = payPO;
+    }
+
+    var polPO  = $.trim(data.polokal || '').toUpperCase();
+    var $pol   = $('#polokal');
+    var polNow = $.trim($pol.val() || '').toUpperCase();
+
+    if (polPO !== '' && (polNow === '' || polNow === lastAutoPolokalPO)) {
+        $pol.val(polPO).trigger('change.select2');
+        lastAutoPolokalPO = polPO;
+    }
 });
 
 /* Format Group */
@@ -526,6 +574,18 @@ $("#currcode").select2({
     setJtsValue('[name="kurs"]', convertToDbNumber(data.kurs));
 });
 
+$("#paymenttype").select2({
+    placeholder: "-- Pilih Payment Type --",
+    allowClear: true,
+    width: '100%'
+});
+
+$("#polokal").select2({
+    placeholder: "-- Pilih Lokal / Import --",
+    allowClear: true,
+    width: '100%'
+});
+
 
 
 
@@ -581,16 +641,196 @@ $("#idtax").select2({
 
 
 
-function setJtsValue(selector, value) {
-    $(selector).val(value);
-    _jtsseparator($(selector)[0]);
+/* =========================================================
+ * FORMAT ANGKA LPB (separator)
+ * Kolom numeric LPB memakai NUMERIC(18,4) -> tampilan angka
+ * mengikuti 4 digit desimal; bila seluruh digit desimalnya 0
+ * (mis. 33.333,0000) ditampilkan tanpa desimal (33.333), bila
+ * ada digit selain 0 (mis. 33.333,5000) tetap 4 digit desimal.
+ * PENGECUALIAN : Jatuh Tempo (jthtempo) = jumlah hari,
+ * wajib bilangan bulat tanpa digit desimal.
+ * ========================================================= */
+const LPB_DECIMAL_DIGITS = 4;
+const LPB_INTEGER_FIELDS = ['jthtempo'];
+
+function lpbMaxDecimals(el) {
+    if (!el) return LPB_DECIMAL_DIGITS;
+
+    let key = String(el.id || $(el).attr('name') || '').trim().toLowerCase();
+
+    return LPB_INTEGER_FIELDS.indexOf(key) !== -1 ? 0 : LPB_DECIMAL_DIGITS;
 }
 
+/* Format saat mengetik : koma = pemisah ribuan, titik = desimal.
+   Titik di akhir tetap ditampilkan agar user bisa lanjut mengetik desimal. */
+function lpbFormatTypedNumber(raw, maxDec) {
+    let str = (raw === null || raw === undefined) ? '' : String(raw);
 
+    str = str.replace(/[^0-9.,]/g, '');   // hanya digit, titik, koma
+    str = str.replace(/,/g, '');          // koma = pemisah ribuan -> dibuang
 
+    if (str === '') return '';
 
+    let endsWithDot = /\.$/.test(str);
+
+    // hanya titik pertama yang dianggap desimal
+    let parts = str.split('.');
+    let intPart = parts.shift() || '';
+    let decPart = parts.join('');
+
+    intPart = intPart.replace(/^0+(?=\d)/, '');   // 007 -> 7
+
+    if (maxDec >= 0) {
+        decPart = decPart.substring(0, maxDec);
+    }
+
+    intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+    if (decPart !== '') {
+        return (intPart === '' ? '0' : intPart) + '.' + decPart;
+    }
+
+    if (endsWithDot && maxDec > 0) {
+        return (intPart === '' ? '0' : intPart) + '.';
+    }
+
+    return intPart;
+}
+
+function lpbSetCaretByDigits(el, formatted, digitsBefore) {
+    let target = 0;
+
+    if (digitsBefore > 0) {
+        let seen = 0;
+        for (let i = 0; i < formatted.length; i++) {
+            if (/[0-9]/.test(formatted.charAt(i))) {
+                seen++;
+                if (seen === digitsBefore) {
+                    target = i + 1;
+                    break;
+                }
+            }
+        }
+        if (target === 0) target = formatted.length;
+    }
+
+    try {
+        el.setSelectionRange(target, target);
+    } catch (err) {
+        /* input type tertentu tidak mendukung setSelectionRange */
+    }
+}
+
+function lpbApplySeparatorFormat(el, maxDec) {
+    if (!el) return;
+
+    let oldValue = el.value || '';
+    let caretAtEnd = (el.selectionStart === null || el.selectionStart === oldValue.length);
+    let caretPos = (el.selectionStart === null) ? oldValue.length : el.selectionStart;
+    let digitsBefore = (oldValue.substring(0, caretPos).match(/[0-9]/g) || []).length;
+
+    let formatted = lpbFormatTypedNumber(oldValue, maxDec);
+
+    if (formatted === oldValue) return;
+
+    el.value = formatted;
+
+    if (document.activeElement !== el) return;
+
+    if (caretAtEnd) {
+        try {
+            el.setSelectionRange(formatted.length, formatted.length);
+        } catch (err) {
+            // abaikan
+        }
+        return;
+    }
+
+    lpbSetCaretByDigits(el, formatted, digitsBefore);
+}
+
+/* Nilai siap pakai (dipakai setJtsValue & saat blur) : dibulatkan lalu
+   dipadding tepat sesuai jumlah desimal kolom. Bila seluruh digit
+   desimalnya 0 (mis. 33.333,0000) maka ditampilkan tanpa desimal (33.333);
+   bila ada digit selain 0 (mis. 33.333,5000) tetap 4 digit desimal. */
+function lpbFormatValue(value, maxDec) {
+    let raw = (value === null || value === undefined) ? '' : String(value).trim();
+
+    if (raw === '' || raw === '.') return '';
+
+    let num = convertToDbNumber(raw);
+
+    if (!isFinite(num)) return '';
+
+    if (!num) num = 0;   // -0 / NaN kecil -> 0
+
+    if (maxDec <= 0) {
+        return Math.round(num).toLocaleString('en-US');
+    }
+
+    let text = num.toLocaleString('en-US', {
+        minimumFractionDigits: maxDec,
+        maximumFractionDigits: maxDec
+    });
+
+    let dotPos = text.lastIndexOf('.');
+
+    if (dotPos !== -1 && /^0+$/.test(text.substring(dotPos + 1))) {
+        return text.substring(0, dotPos);
+    }
+
+    return text;
+}
+
+function setJtsValue(selector, value) {
+    let el = $(selector)[0];
+
+    if (!el) return;
+
+    el.value = lpbFormatValue(value, lpbMaxDecimals(el));
+}
+
+/* Rapikan angka yang sudah terlanjur tampil, mis. sisa format lama
+   "33,333.000,000" atau nilai 6 desimal dari master currency. */
+function lpbNormalizeSeparatorFields() {
+    $('.jtsseparator').each(function () {
+        if ($.trim(this.value) === '') return;
+        if (!/[0-9]/.test(this.value)) return;
+
+        let maxDec = lpbMaxDecimals(this);
+        let formatted = lpbFormatValue(this.value, maxDec);
+
+        if (formatted !== this.value) {
+            this.value = formatted;
+        }
+    });
+}
+
+/* Buang handler lama bila masih terpasang supaya angka tidak diformat
+   dua kali dan caret tidak meloncat saat user mengetik desimal. */
+$(document).off('input', '.jtsseparator');
+$(document).off('focusout', '.jtsseparator');
+$(document).off('keyup', '.jtsseparator');
+$(document).off('blur', '.jtsseparator');
+$(document).off('change', '.jtsseparator');
+
+/* Saat mengetik : koma = pemisah ribuan, titik = desimal,
+   digit desimal dibatasi maxDec (4 untuk numeric, 0 untuk Jatuh Tempo). */
 $(document).on('input', '.jtsseparator', function () {
-    _jtsseparator(this);
+    lpbApplySeparatorFormat(this, lpbMaxDecimals(this));
+});
+
+/* Saat keluar dari input : angka dirapikan tepat 4 digit desimal,
+   Jatuh Tempo dirapikan menjadi bilangan bulat. */
+$(document).on('focusout', '.jtsseparator', function () {
+    if ($.trim(this.value) === '') return;
+
+    this.value = lpbFormatValue(this.value, lpbMaxDecimals(this));
+});
+
+/* Saat halaman siap : rapikan semua angka yang sudah terisi. */
+$(function () {
+    lpbNormalizeSeparatorFields();
 });
 
 
@@ -961,10 +1201,7 @@ $(document).on('input', '.form-control', function () {
         let diskon = (nilaiAwal * multidisc) / 100;
         let nilaiAkhir = nilaiAwal - diskon;
 
-        $('#nilai').val(nilaiAkhir.toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }));
+        setJtsValue('#nilai', nilaiAkhir);
     }
 });
 
@@ -1144,6 +1381,8 @@ function saveLPBDetail() {
     formData.append('biayavol', convertToDbNumber($('#biayavol').val()));
     formData.append('biayavol2', convertToDbNumber($('#biayavol2').val()));
     formData.append('keterangan', $('#keterangan').val());
+    formData.append('paymenttype', ($('#paymenttype').val() || '').toUpperCase());
+    formData.append('polokal', ($('#polokal').val() || '').toUpperCase());
 
     // docno gabungan
     formData.set('docno', $('#prefix').val() + '/' + $('#infix').val() + '/' + $('#suffix').val());
@@ -1341,7 +1580,7 @@ $("#kdsupplier").select2({
 
         $("#alamatsupplier").val(selectedData.alamat || '').prop('disabled', true);
         defaultInitialSupPO = selectedData.kdsupplier
-        $("#jthtempo").val(selectedData.jthtempo || '')
+        setJtsValue('#jthtempo', selectedData.jthtempo || '');
     }
 });
 
@@ -2166,12 +2405,18 @@ function setLPBHeaderLock(isLocked) {
 
     $('#currcode').prop('disabled', isLocked);
 
+    $('#paymenttype').prop('disabled', isLocked);
+
+    $('#polokal').prop('disabled', isLocked);
+
     $('#isinclusive').prop('disabled', isLocked);
 
     $('#cabang').trigger('change.select2');
     $('#kdsupplier').trigger('change.select2');
     $('#idtax').trigger('change.select2');
     $('#currcode').trigger('change.select2');
+    $('#paymenttype').trigger('change.select2');
+    $('#polokal').trigger('change.select2');
 }
 
 

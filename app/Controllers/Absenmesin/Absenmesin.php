@@ -310,7 +310,7 @@ class Absenmesin extends BaseController
         $this->db->truncate('sc_tmp.mc_checkinout');
         if ($zk->connect()){
             $user = $zk->getUser();
-            while( list($uid, $get) = each($user) ) {
+            foreach ($user as $uid => $get) {
                 if ($get[2] == LEVEL_ADMIN)
                     $role = 'ADMIN';
                 elseif($get[2] == LEVEL_USER)
@@ -336,7 +336,7 @@ class Absenmesin extends BaseController
             }
 
             $attendance = $zk->getAttendance();
-            while( list($idx, $attendancedata) = each($attendance) ) {
+            foreach ($attendance as $idx => $attendancedata) {
                 /*            echo 'Index: '.$idx;
                             echo 'ID: '.$attendancedata[0];
                             echo 'Status: '.$attendancedata[1];
@@ -396,7 +396,7 @@ class Absenmesin extends BaseController
         $this->db->truncate('sc_tmp.mc_userinfo');
         if ($zk->connect()) {
             $user = $zk->getUser();
-            while( list($uid, $get) = each($user) ) {
+            foreach ($user as $uid => $get) {
                 if ($get[2] == LEVEL_ADMIN)
                     $role = 'ADMIN';
                 elseif($get[2] == LEVEL_USER)
@@ -505,7 +505,7 @@ class Absenmesin extends BaseController
             $this->db->truncate('sc_tmp.mc_checkinout');
             if ($zk->connect()) {
                 $attendance = $zk->getAttendance();
-                while( list($idx, $attendancedata) = each($attendance) ) {
+                foreach ($attendance as $idx => $attendancedata) {
 
                     $useratt = array (
                         'userid' => $idx,
@@ -580,7 +580,7 @@ class Absenmesin extends BaseController
             $this->db->truncate('sc_tmp.mc_checkinout');
             if ($zk->connect()) {
                 $attendance = $zk->getAttendance();
-                while( list($idx, $attendancedata) = each($attendance) ) {
+                foreach ($attendance as $idx => $attendancedata) {
 
                     $useratt = array (
                         'userid' => $idx,

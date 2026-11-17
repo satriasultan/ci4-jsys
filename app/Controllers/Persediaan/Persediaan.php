@@ -1268,7 +1268,8 @@ class Persediaan extends BaseController
                 'estpakai'      => $this->request->getPost('estpakai'),
                 'idlocation_from'    => strtoupper(trim($this->request->getPost('idlocation_from'))),
                 'idlocation_to'      => strtoupper(trim($this->request->getPost('idlocation_to'))),
-                'idlocation_transit' => strtoupper(trim($this->request->getPost('idlocation_transit'))),
+                // idlocation_transit tidak digunakan pada form input (field disembunyikan)
+                'idlocation_transit' => strtoupper(trim((string) $this->request->getPost('idlocation_transit'))),
                 'status'        => 'E',
                 'description'   => strtoupper(trim($this->request->getPost('description'))),
                 'inputby'       => $nama,

@@ -75,6 +75,10 @@ use Psr\Log\LoggerInterface;
  *
  * For security be sure to declare any new methods as protected or private.
  */
+/* PHP 8.2+ : banyak property model/library dibuat dinamis lewat BaseController
+   (mis. $this->m_global). Atribut ini mencegah deprecation "Creation of dynamic
+   property" (fatal pada PHP 9) tanpa mengubah struktur kode yang ada. */
+#[\AllowDynamicProperties]
 class BaseController extends Controller
 {
     /**

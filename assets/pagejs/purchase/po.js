@@ -815,14 +815,14 @@ $("#polokal").select2({
 
 function hitungPajak() {
 
-    let dpp = $('#dpp').val().replace(/,/g,'');
+    let dpp = convertToDbNumber($('#dpp').val());
     let idtax = $('#idtax').val();
 
     if(!dpp) dpp = 0;
 
     if(!idtax){
-        $('#jumlahpajak').val('0');
-        $('#total').val(dpp);
+        setJtsValue('#jumlahpajak', 0);
+        setJtsValue('#total', dpp);
         return;
     }
 
@@ -836,24 +836,208 @@ function hitungPajak() {
             let percent = res.percent || 0;
 
             let jumlahPajak = dpp * percent / 100;
-            let total = parseFloat(dpp) + jumlahPajak;
+            let total = dpp + jumlahPajak;
 
-            $('#jumlahpajak').val(jumlahPajak.toLocaleString());
-            $('#total').val(total.toLocaleString());
+            setJtsValue('#jumlahpajak', jumlahPajak);
+            setJtsValue('#total', total);
 
         }
     });
 
 }
 
-function setJtsValue(selector, value) {
-    $(selector).val(value);
-    _jtsseparator($(selector)[0]);
+/* =========================================================
+ * FORMAT ANGKA PO (separator)
+ * Kolom numeric PO memakai NUMERIC(18,4) -> tampilan angka
+ * selalu mengikuti 4 digit desimal.
+ * PENGECUALIAN : Jatuh Tempo (jthtempo) = jumlah hari,
+ * wajib bilangan bulat tanpa digit desimal.
+ * ========================================================= */
+const PO_DECIMAL_DIGITS = 4;
+const PO_INTEGER_FIELDS = ['jthtempo'];
+
+function poMaxDecimals(el) {
+    if (!el) return PO_DECIMAL_DIGITS;
+
+    let key = String(el.id || $(el).attr('name') || '').trim().toLowerCase();
+
+    return PO_INTEGER_FIELDS.indexOf(key) !== -1 ? 0 : PO_DECIMAL_DIGITS;
 }
 
+/* Format saat mengetik : koma = pemisah ribuan, titik = desimal.
+   Titik di akhir tetap ditampilkan agar user bisa lanjut mengetik desimal. */
+function poFormatTypedNumber(raw, maxDec) {
+    let str = (raw === null || raw === undefined) ? '' : String(raw);
 
+    str = str.replace(/[^0-9.,]/g, '');   // hanya digit, titik, koma
+    str = str.replace(/,/g, '');          // koma = pemisah ribuan -> dibuang
+
+    if (str === '') return '';
+
+    let endsWithDot = /\.$/.test(str);
+
+    // hanya titik pertama yang dianggap desimal
+    let parts = str.split('.');
+    let intPart = parts.shift() || '';
+    let decPart = parts.join('');
+
+    intPart = intPart.replace(/^0+(?=\d)/, '');   // 007 -> 7
+
+    if (maxDec >= 0) {
+        decPart = decPart.substring(0, maxDec);
+    }
+
+    intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+    if (decPart !== '') {
+        return (intPart === '' ? '0' : intPart) + '.' + decPart;
+    }
+
+    if (endsWithDot && maxDec > 0) {
+        return (intPart === '' ? '0' : intPart) + '.';
+    }
+
+    return intPart;
+}
+
+function poSetCaretByDigits(el, formatted, digitsBefore) {
+    let target = 0;
+
+    if (digitsBefore > 0) {
+        let seen = 0;
+        for (let i = 0; i < formatted.length; i++) {
+            if (/[0-9]/.test(formatted.charAt(i))) {
+                seen++;
+                if (seen === digitsBefore) {
+                    target = i + 1;
+                    break;
+                }
+            }
+        }
+        if (target === 0) target = formatted.length;
+    }
+
+    try {
+        el.setSelectionRange(target, target);
+    } catch (err) {
+        /* input type tertentu tidak mendukung setSelectionRange */
+    }
+}
+
+function poApplySeparatorFormat(el, maxDec) {
+    if (!el) return;
+
+    let oldValue = el.value || '';
+    let caretAtEnd = (el.selectionStart === null || el.selectionStart === oldValue.length);
+    let caretPos = (el.selectionStart === null) ? oldValue.length : el.selectionStart;
+    let digitsBefore = (oldValue.substring(0, caretPos).match(/[0-9]/g) || []).length;
+
+    let formatted = poFormatTypedNumber(oldValue, maxDec);
+
+    if (formatted === oldValue) return;
+
+    el.value = formatted;
+
+    if (document.activeElement !== el) return;
+
+    if (caretAtEnd) {
+        try {
+            el.setSelectionRange(formatted.length, formatted.length);
+        } catch (err) {
+            // abaikan
+        }
+        return;
+    }
+
+    poSetCaretByDigits(el, formatted, digitsBefore);
+}
+
+/* Nilai siap pakai (dipakai setJtsValue & saat blur) :
+   dibulatkan lalu dipadding tepat sesuai jumlah desimal kolom.
+   Bila seluruh digit desimalnya 0 (mis. 33.333,0000) maka ditampilkan
+   tanpa desimal (33.333); bila ada digit selain 0 (mis. 33.333,5000)
+   tetap ditampilkan 4 digit desimal. */
+function poFormatValue(value, maxDec) {
+    let raw = (value === null || value === undefined) ? '' : String(value).trim();
+
+    if (raw === '' || raw === '.') return '';
+
+    let num = convertToDbNumber(raw);
+
+    if (!isFinite(num)) return '';
+
+    if (!num) num = 0;   // -0 / NaN kecil -> 0
+
+    if (maxDec <= 0) {
+        return Math.round(num).toLocaleString('en-US');
+    }
+
+    let text = num.toLocaleString('en-US', {
+        minimumFractionDigits: maxDec,
+        maximumFractionDigits: maxDec
+    });
+
+    let dotPos = text.lastIndexOf('.');
+
+    if (dotPos !== -1 && /^0+$/.test(text.substring(dotPos + 1))) {
+        return text.substring(0, dotPos);
+    }
+
+    return text;
+}
+
+function setJtsValue(selector, value) {
+    let el = $(selector)[0];
+
+    if (!el) return;
+
+    el.value = poFormatValue(value, poMaxDecimals(el));
+}
+
+/* Rapikan angka yang sudah terlanjur tampil, misalnya :
+   - sisa format lama "33,333.000,000"
+   - nilai 6 desimal dari master currency (kolom kurs NUMERIC(18,6))
+   Dipanggil otomatis saat halaman siap. */
+function poNormalizeSeparatorFields() {
+    $('.jtsseparator').each(function () {
+        if ($.trim(this.value) === '') return;
+        if (!/[0-9]/.test(this.value)) return;
+
+        let maxDec = poMaxDecimals(this);
+        let formatted = poFormatValue(this.value, maxDec);
+
+        if (formatted !== this.value) {
+            this.value = formatted;
+        }
+    });
+}
+
+/* Buang handler lama bila masih terpasang (mis. sisa _jtsseparator /
+   _fikyseparator dari module lain) supaya angka tidak diformat dua kali
+   dan caret tidak meloncat saat user mengetik desimal. */
+$(document).off('input', '.jtsseparator');
+$(document).off('focusout', '.jtsseparator');
+$(document).off('keyup', '.jtsseparator');
+$(document).off('blur', '.jtsseparator');
+$(document).off('change', '.jtsseparator');
+
+/* Saat mengetik : koma = pemisah ribuan, titik = desimal,
+   digit desimal dibatasi maxDec (4 untuk numeric, 0 untuk Jatuh Tempo). */
 $(document).on('input', '.jtsseparator', function () {
-    _jtsseparator(this);
+    poApplySeparatorFormat(this, poMaxDecimals(this));
+});
+
+/* Saat keluar dari input : angka dirapikan tepat 4 digit desimal,
+   Jatuh Tempo dirapikan menjadi bilangan bulat. */
+$(document).on('focusout', '.jtsseparator', function () {
+    if ($.trim(this.value) === '') return;
+
+    this.value = poFormatValue(this.value, poMaxDecimals(this));
+});
+
+/* Saat halaman siap : rapikan semua angka yang sudah terisi. */
+$(function () {
+    poNormalizeSeparatorFields();
 });
 
 
@@ -1111,9 +1295,9 @@ $(document).on('input', '.form-control', function () {
     // Jika sedang dalam mode edit, gunakan currentEditId
     if (currentEditId) {
         // Baca nilai qty, harga, dan multidisc
-        let qty = parseFloat($('#qty').val().replace(/,/g, '')) || 0;
-        let harga = parseFloat($('#harga').val().replace(/,/g, '')) || 0;
-        // let multidisc = parseFloat($('#multidisc').val().replace(/,/g, '')) || 0;
+        let qty = convertToDbNumber($('#qty').val());
+        let harga = convertToDbNumber($('#harga').val());
+        // let multidisc = convertToDbNumber($('#multidisc').val());
 
         // Hitung nilai awal (qty * harga)
         let nilaiAwal = qty * harga;
@@ -1125,10 +1309,8 @@ $(document).on('input', '.form-control', function () {
         let nilaiAkhir = nilaiAwal;
 
         // Format ke en-US: separator ribuan = koma, desimal = titik
-        $('#nilai').val(nilaiAkhir.toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }));
+        // (mengikuti 4 digit desimal kolom NUMERIC(18,4))
+        setJtsValue('#nilai', nilaiAkhir);
     }
 });
 
@@ -1608,7 +1790,7 @@ $("#kdsupplier").select2({
 
         $("#alamatsupplier").val(selectedData.alamat || '').prop('readonly', true);
         $("#nmsupplier").val(selectedData.nmsupplier || '');
-        $("#jthtempo").val(selectedData.jthtempo || '')
+        setJtsValue('#jthtempo', selectedData.jthtempo);
 
         // Keterangan otomatis diisi nama supplier
         $("#keterangan").val($.trim(selectedData.nmsupplier || ''));
@@ -2658,11 +2840,8 @@ function showHistoryHarga()
 
                 $.each(res.data,function(i,row){
 
-                    // Format harga dengan toLocaleString
-                    let hargaFormatted = parseFloat(row.harga).toLocaleString('en-US', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                    });
+                    // Format harga mengikuti 4 digit desimal (NUMERIC 18,4)
+                    let hargaFormatted = poFormatValue(row.harga, PO_DECIMAL_DIGITS);
 
                     html+=`
                     <tr>
@@ -2694,10 +2873,7 @@ $(document).on('click','.pilihHarga',function(){
 
     let harga = $(this).data('harga');
 
-    let hargaFormatted = parseFloat(harga).toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    });
+    let hargaFormatted = poFormatValue(harga, PO_DECIMAL_DIGITS);
 
     $('#harga').val(hargaFormatted);
 
