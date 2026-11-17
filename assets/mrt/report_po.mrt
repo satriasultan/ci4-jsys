@@ -1,10 +1,10 @@
 {
-  "ReportGuid": "722c8d10c4cdd957d69b2845e130a661",
+  "ReportGuid": "8929b8534c9977dea0ae763245085176",
   "ReportName": "Report",
   "ReportAlias": "Report",
   "ReportFile": "report_po.mrt",
   "ReportCreated": "/Date(1731911425000+0700)/",
-  "ReportChanged": "/Date(1776219067000+0700)/",
+  "ReportChanged": "/Date(1794804445000+0700)/",
   "EngineVersion": "EngineV2",
   "CalculationMode": "Interpretation",
   "ReportUnit": "Centimeters",
@@ -59,7 +59,7 @@
             "Type": "System.String"
           }
         },
-        "NameInSource": "api_po.branch"
+        "NameInSource": "api_po_new.branch"
       },
       "1": {
         "Ident": "StiDataTableSource",
@@ -67,188 +67,251 @@
         "Alias": "detail",
         "Columns": {
           "0": {
+            "Name": "batch",
+            "Index": -1,
+            "NameInSource": "batch",
+            "Alias": "batch",
+            "Type": "System.String"
+          },
+          "1": {
+            "Name": "capexno",
+            "Index": -1,
+            "NameInSource": "capexno",
+            "Alias": "capexno",
+            "Type": "System.String"
+          },
+          "2": {
+            "Name": "category",
+            "Index": -1,
+            "NameInSource": "category",
+            "Alias": "category",
+            "Type": "System.String"
+          },
+          "3": {
             "Name": "currcode",
             "Index": -1,
             "NameInSource": "currcode",
             "Alias": "currcode",
             "Type": "System.String"
           },
-          "1": {
+          "4": {
             "Name": "descriptionpo",
             "Index": -1,
             "NameInSource": "descriptionpo",
             "Alias": "descriptionpo",
             "Type": "System.String"
           },
-          "2": {
+          "5": {
             "Name": "descriptionpp",
             "Index": -1,
             "NameInSource": "descriptionpp",
             "Alias": "descriptionpp",
             "Type": "System.String"
           },
-          "3": {
+          "6": {
             "Name": "docno",
             "Index": -1,
             "NameInSource": "docno",
             "Alias": "docno",
             "Type": "System.String"
           },
-          "4": {
+          "7": {
             "Name": "docnopp",
             "Index": -1,
             "NameInSource": "docnopp",
             "Alias": "docnopp",
             "Type": "System.String"
           },
-          "5": {
+          "8": {
             "Name": "docnotmp",
             "Index": -1,
             "NameInSource": "docnotmp",
             "Alias": "docnotmp",
             "Type": "System.String"
           },
-          "6": {
+          "9": {
+            "Name": "etd",
+            "Index": -1,
+            "NameInSource": "etd",
+            "Alias": "etd",
+            "Type": "System.DateTime"
+          },
+          "10": {
+            "Name": "etdnotes",
+            "Index": -1,
+            "NameInSource": "etdnotes",
+            "Alias": "etdnotes",
+            "Type": "System.String"
+          },
+          "11": {
             "Name": "harga",
             "Index": -1,
             "NameInSource": "harga",
             "Alias": "harga",
             "Type": "System.String"
           },
-          "7": {
+          "12": {
             "Name": "idbarang",
             "Index": -1,
             "NameInSource": "idbarang",
             "Alias": "idbarang",
             "Type": "System.String"
           },
-          "8": {
+          "13": {
+            "Name": "idhistory_price",
+            "Index": -1,
+            "NameInSource": "idhistory_price",
+            "Alias": "idhistory_price",
+            "Type": "System.String"
+          },
+          "14": {
             "Name": "idtax",
             "Index": -1,
             "NameInSource": "idtax",
             "Alias": "idtax",
             "Type": "System.String"
           },
-          "9": {
+          "15": {
             "Name": "idurut",
             "Index": -1,
             "NameInSource": "idurut",
             "Alias": "idurut",
             "Type": "System.String"
           },
-          "10": {
+          "16": {
             "Name": "inputby",
             "Index": -1,
             "NameInSource": "inputby",
             "Alias": "inputby",
             "Type": "System.String"
           },
-          "11": {
+          "17": {
             "Name": "inputdate",
             "Index": -1,
             "NameInSource": "inputdate",
             "Alias": "inputdate",
             "Type": "System.String"
           },
-          "12": {
+          "18": {
             "Name": "kurs",
             "Index": -1,
             "NameInSource": "kurs",
             "Alias": "kurs",
             "Type": "System.String"
           },
-          "13": {
+          "19": {
             "Name": "multidisc",
             "Index": -1,
             "NameInSource": "multidisc",
             "Alias": "multidisc",
             "Type": "System.String"
           },
-          "14": {
+          "20": {
+            "Name": "multidisctype",
+            "Index": -1,
+            "NameInSource": "multidisctype",
+            "Alias": "multidisctype",
+            "Type": "System.String"
+          },
+          "21": {
             "Name": "nilai",
             "Index": -1,
             "NameInSource": "nilai",
             "Alias": "nilai",
             "Type": "System.String"
           },
-          "15": {
+          "22": {
             "Name": "nilaikonversi",
             "Index": -1,
             "NameInSource": "nilaikonversi",
             "Alias": "nilaikonversi",
             "Type": "System.String"
           },
-          "16": {
+          "23": {
             "Name": "nilaipajak",
             "Index": -1,
             "NameInSource": "nilaipajak",
             "Alias": "nilaipajak",
             "Type": "System.String"
           },
-          "17": {
+          "24": {
             "Name": "nmbarang",
             "Index": -1,
             "NameInSource": "nmbarang",
             "Alias": "nmbarang",
             "Type": "System.String"
           },
-          "18": {
+          "25": {
             "Name": "qty",
             "Index": -1,
             "NameInSource": "qty",
             "Alias": "qty",
             "Type": "System.String"
           },
-          "19": {
+          "26": {
             "Name": "qtybonus",
             "Index": -1,
             "NameInSource": "qtybonus",
             "Alias": "qtybonus",
             "Type": "System.String"
           },
-          "20": {
+          "27": {
             "Name": "qtylpb",
             "Index": -1,
             "NameInSource": "qtylpb",
             "Alias": "qtylpb",
             "Type": "System.String"
           },
-          "21": {
+          "28": {
             "Name": "qtyvoid",
             "Index": -1,
             "NameInSource": "qtyvoid",
             "Alias": "qtyvoid",
             "Type": "System.String"
           },
-          "22": {
+          "29": {
             "Name": "status",
             "Index": -1,
             "NameInSource": "status",
             "Alias": "status",
             "Type": "System.String"
           },
-          "23": {
+          "30": {
+            "Name": "totaldiscount",
+            "Index": -1,
+            "NameInSource": "totaldiscount",
+            "Alias": "totaldiscount",
+            "Type": "System.String"
+          },
+          "31": {
             "Name": "uniqueid",
             "Index": -1,
             "NameInSource": "uniqueid",
             "Alias": "uniqueid",
             "Type": "System.String"
           },
-          "24": {
+          "32": {
+            "Name": "uniqueidpo",
+            "Index": -1,
+            "NameInSource": "uniqueidpo",
+            "Alias": "uniqueidpo",
+            "Type": "System.String"
+          },
+          "33": {
             "Name": "unit",
             "Index": -1,
             "NameInSource": "unit",
             "Alias": "unit",
             "Type": "System.String"
           },
-          "25": {
+          "34": {
             "Name": "updateby",
             "Index": -1,
             "NameInSource": "updateby",
             "Alias": "updateby",
             "Type": "System.String"
           },
-          "26": {
+          "35": {
             "Name": "updatedate",
             "Index": -1,
             "NameInSource": "updatedate",
@@ -256,7 +319,7 @@
             "Type": "System.String"
           }
         },
-        "NameInSource": "api_po.detail"
+        "NameInSource": "api_po_new.detail"
       },
       "2": {
         "Ident": "StiDataTableSource",
@@ -299,7 +362,7 @@
             "Type": "System.String"
           }
         },
-        "NameInSource": "api_po.info"
+        "NameInSource": "api_po_new.info"
       },
       "3": {
         "Ident": "StiDataTableSource",
@@ -468,69 +531,90 @@
             "Type": "System.String"
           },
           "23": {
+            "Name": "paymenttype",
+            "Index": -1,
+            "NameInSource": "paymenttype",
+            "Alias": "paymenttype",
+            "Type": "System.String"
+          },
+          "24": {
             "Name": "pemohon",
             "Index": -1,
             "NameInSource": "pemohon",
             "Alias": "pemohon",
             "Type": "System.String"
           },
-          "24": {
+          "25": {
+            "Name": "polokal",
+            "Index": -1,
+            "NameInSource": "polokal",
+            "Alias": "polokal",
+            "Type": "System.String"
+          },
+          "26": {
             "Name": "printby",
             "Index": -1,
             "NameInSource": "printby",
             "Alias": "printby",
             "Type": "System.String"
           },
-          "25": {
+          "27": {
+            "Name": "printcount",
+            "Index": -1,
+            "NameInSource": "printcount",
+            "Alias": "printcount",
+            "Type": "System.String"
+          },
+          "28": {
             "Name": "printdate",
             "Index": -1,
             "NameInSource": "printdate",
             "Alias": "printdate",
             "Type": "System.String"
           },
-          "26": {
+          "29": {
             "Name": "senddate",
             "Index": -1,
             "NameInSource": "senddate",
             "Alias": "senddate",
             "Type": "System.DateTime"
           },
-          "27": {
+          "30": {
             "Name": "status",
             "Index": -1,
             "NameInSource": "status",
             "Alias": "status",
             "Type": "System.String"
           },
-          "28": {
+          "31": {
             "Name": "syarat",
             "Index": -1,
             "NameInSource": "syarat",
             "Alias": "syarat",
             "Type": "System.String"
           },
-          "29": {
+          "32": {
             "Name": "terbilang",
             "Index": -1,
             "NameInSource": "terbilang",
             "Alias": "terbilang",
             "Type": "System.String"
           },
-          "30": {
+          "33": {
             "Name": "total",
             "Index": -1,
             "NameInSource": "total",
             "Alias": "total",
             "Type": "System.String"
           },
-          "31": {
+          "34": {
             "Name": "updateby",
             "Index": -1,
             "NameInSource": "updateby",
             "Alias": "updateby",
             "Type": "System.String"
           },
-          "32": {
+          "35": {
             "Name": "updatedate",
             "Index": -1,
             "NameInSource": "updatedate",
@@ -538,15 +622,15 @@
             "Type": "System.String"
           }
         },
-        "NameInSource": "api_po.master"
+        "NameInSource": "api_po_new.master"
       }
     },
     "Databases": {
       "0": {
         "Ident": "StiJsonDatabase",
-        "Name": "api_po",
-        "Alias": "api_po",
-        "PathData": "C:\\xampp\\htdocs\\ci4-jsys\\assets\\json\\api_po.json"
+        "Name": "api_po_new",
+        "Alias": "api_po_new",
+        "PathData": "C:\\xampp\\htdocs\\ci4-jsys\\assets\\json\\api_po_new.json"
       }
     }
   },
@@ -740,7 +824,7 @@
               "Ident": "StiText",
               "Name": "Text31",
               "Guid": "892d3eec1ef5ae8aaccb06de10a43610",
-              "ClientRectangle": "5.4,3,6.4,0.6",
+              "ClientRectangle": "5.4,3,4.6,0.6",
               "Interaction": {
                 "Ident": "StiInteraction"
               },
@@ -1288,6 +1372,30 @@
               "Type": "SystemVariables"
             },
             "30": {
+              "Ident": "StiText",
+              "Name": "Text66",
+              "Guid": "b8aab40902a8a8509e373ae7467b3dc5",
+              "ClientRectangle": "10,3,1.8,0.6",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "ETD"
+              },
+              "HorAlignment": "Center",
+              "VertAlignment": "Center",
+              "Border": "Top, Bottom;;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "Margins": {
+                "Left": 3,
+                "Right": 0,
+                "Top": 0,
+                "Bottom": 0
+              },
+              "Type": "Expression"
+            },
+            "31": {
               "Ident": "StiHorizontalLinePrimitive",
               "Name": "HorizontalLinePrimitive1",
               "ClientRectangle": "0.2,1,20.2,0.0254",
@@ -1371,14 +1479,13 @@
               "Ident": "StiText",
               "Name": "Text161",
               "Guid": "ce591af651f70da25d418a03e40cc56e",
-              "ClientRectangle": "5.4,0,6.4,0.4",
+              "ClientRectangle": "5.4,0,4.6,0.4",
               "Interaction": {
                 "Ident": "StiInteraction"
               },
               "Text": {
-                "Value": "{Trim(detail.descriptionpo)}"
+                "Value": "{detail.descriptionpp}"
               },
-              "HorAlignment": "Center",
               "Border": ";;;;;;;solid:0,0,0",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -1391,7 +1498,7 @@
                 "Top": 0,
                 "Bottom": 0
               },
-              "Type": "Expression"
+              "Type": "DataColumn"
             },
             "3": {
               "Ident": "StiText",
@@ -1566,6 +1673,36 @@
                 "Bottom": 0
               },
               "Type": "Expression"
+            },
+            "9": {
+              "Ident": "StiText",
+              "Name": "Text67",
+              "Guid": "6d432b2287b9af94c60ba7959f2a1cc8",
+              "ClientRectangle": "10,0,1.8,0.4",
+              "Interaction": {
+                "Ident": "StiInteraction"
+              },
+              "Text": {
+                "Value": "{detail.etd}"
+              },
+              "HorAlignment": "Center",
+              "Border": ";;;;;;;solid:0,0,0",
+              "Brush": "solid:",
+              "TextBrush": "solid:Black",
+              "TextOptions": {
+                "WordWrap": true
+              },
+              "Margins": {
+                "Left": 3,
+                "Right": 0,
+                "Top": 0,
+                "Bottom": 0
+              },
+              "TextFormat": {
+                "Ident": "StiCustomFormatService",
+                "StringFormat": "dd-MMM-yyyy"
+              },
+              "Type": "DataColumn"
             }
           },
           "CanGrow": false,

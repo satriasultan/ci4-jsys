@@ -169,7 +169,7 @@ function initSelect2Barang() {
         dropdownAutoWidth: true,
         closeOnSelect: true,
         multiple: false,
-        dropdownParent: $('#modalDetailPMK'),
+        dropdownParent: $(document.body), // hindari zoom modal (#app-zoom)
         escapeMarkup: function (markup) { return markup; },
         ajax: {
             url: HOST_URL + 'api/globalmodule/list_stock_by_location',
@@ -265,7 +265,7 @@ function initSelect2Unit(idbarang, callback) {
         placeholder: "Pilih Satuan...",
         allowClear: true,
         width: '100%',
-        dropdownParent: $('#modalDetailPMK'),
+        dropdownParent: $(document.body), // hindari zoom modal (#app-zoom)
         minimumInputLength: 0,
         ajax: {
             url: HOST_URL + 'api/globalmodule/list_unit_item',
@@ -403,7 +403,7 @@ function initSelect2UnitWithPreload(idbarang, selectedUnit, callback) {
                 placeholder: "Pilih Satuan...",
                 allowClear: true,
                 width: '100%',
-                dropdownParent: $('#modalDetailPMK'),
+                dropdownParent: $(document.body), // hindari zoom modal (#app-zoom)
                 data: results
             })
                 .on("select2:select", function (e) {
@@ -772,7 +772,7 @@ function updatePmkBrgDtl() {
                         placeholder: 'Pilih Gudang',
                         width: '100%',
                         allowClear: false,
-                        dropdownParent: $('#modalDetailPMK')
+                        dropdownParent: $(document.body) // hindari zoom modal (#app-zoom)
                     });
 
                     /* STEP 3 — Load barang */
@@ -813,7 +813,7 @@ function updatePmkBrgDtl() {
                         placeholder: 'Pilih Barang',
                         width: '100%',
                         allowClear: false,
-                        dropdownParent: $('#modalDetailPMK')
+                        dropdownParent: $(document.body) // hindari zoom modal (#app-zoom)
                     });
 
                     $('#idbarang').trigger('change');
@@ -1202,7 +1202,7 @@ function initSelect2LocationDtl() {
         allowClear: true,
         width: '100%',
         multiple: false,
-        dropdownParent: $('#modalDetailPMK'),
+        dropdownParent: $(document.body), // hindari zoom modal (#app-zoom)
         ajax: {
             url: HOST_URL + 'api/globalmodule/list_mlocation',
             type: 'POST',
@@ -1591,6 +1591,25 @@ var audio = document.getElementById('chatAudio');
 
 function play() {
     audio.play();
+}
+
+
+function setReadableNumber(selector, value) {
+
+    const $el = $(selector);
+
+    if (!$el.length) {
+        return;
+    }
+
+    if (typeof setJtsValue === 'function') {
+        setJtsValue(
+            selector,
+            convertToDbNumber(value)
+        );
+    } else {
+        $el.val(value ?? '');
+    }
 }
 
 /* ============================================================

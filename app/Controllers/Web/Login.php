@@ -82,6 +82,7 @@ order by msession);");
         $username = strtoupper(trim((string) $this->request->getVar('username')));
         $password = (string) $this->request->getVar('password');
         $logindate = trim((string) $this->request->getVar('logindate'));
+        $cabang = trim((string) $this->request->getVar('cabang'));
 
         $ip = $this->request->getIPAddress();
 
@@ -147,6 +148,24 @@ order by msession);");
         // SESSION
         // ==========================================
 
+        
+        $dbBranch = trim($dtl['idbranchjob'] ?? '');
+
+        if ($dbBranch === '01') {
+            $finalBranch = $cabang !== '' ? $cabang : $dbBranch;
+        } else {
+            $finalBranch = $dbBranch;
+        }
+
+        $branchNames = [
+            '01'    => 'PT JATIM TAMAN STEEL MFG',
+            '01.01' => 'PLANT I',
+            '01.02' => 'PLANT II',
+        ];
+
+        $finalBranchName = $branchNames[$finalBranch]
+            ?? trim($dtl['nmbranchjob'] ?? '');
+
         $newdata = [
             'count'        => $gu->getNumRows(),
             'user'         => trim($dtl['nik'] ?? ''),
@@ -162,8 +181,8 @@ order by msession);");
             // USER PROFILE
             'nmlengkap'    => trim($dtl['nmlengkap'] ?? ''),
             'nickname'     => trim($dtl['nickname'] ?? ''),
-            'idbranchjob'  => trim($dtl['idbranchjob'] ?? ''),
-            'nmbranchjob'  => trim($dtl['nmbranchjob'] ?? '')
+            'idbranchjob'  => $finalBranch,
+            'nmbranchjob'  => $finalBranchName
         ];
 
         $this->session->regenerate(true);

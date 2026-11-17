@@ -1126,7 +1126,7 @@
                                         <div class="form-group">
                                             <label class="form-label">Build For</label>
                                             <div class="form-group">
-                                                <input type="text" name="buildfor" id="buildfor" class="form-control ratakanan jtsseparator" placeholder="Build Qty For" required>
+                                                <input type="text" name="buildfor" id="buildfor" class="form-control ratakanan jaccseparator" placeholder="Build Qty For" required>
                                             </div>
                                         </div>
                                     </div>
@@ -1174,8 +1174,8 @@
                 <div class="card-body p-3">
                     <div class="table-responsive">
                         <table id="trx_bpnmdtl"
-                                class="table table-hover align-middle custom-table">
-                            <thead>
+                                class="table table-bordered table-striped table-hover align-middle">
+                            <thead class="bg-primary text-white">
                             <tr>
                                 <th class="text-center" width="40">
                                     <input type="checkbox" id="checkAll">
@@ -1314,7 +1314,7 @@
                             <input type="text"
                                     name="qty"
                                     id="qty"
-                                    class="form-control jtsseparator ratakanan"
+                                    class="form-control jaccseparator ratakanan"
                                     placeholder="Qty Barang"
                                     style="text-transform:uppercase">
                         </div>

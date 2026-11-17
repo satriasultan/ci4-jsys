@@ -431,7 +431,7 @@ $("#idbarang").select2({
     allowClear: true,
     width:'100%',
     minimumInputLength: 2, // hanya query saat user mengetik -> jauh lebih cepat
-    dropdownParent: $('#modalDetailPP .modal-body'),
+    dropdownParent: $("#idbarang").parent(),
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_item',
         type: 'POST',
@@ -795,6 +795,7 @@ function btnUpdateDetail(){
                 $('#unit').val(res.data.unit);
                 $('#qty').val(res.data.qty);
                 setSelect2Ajax('#idbarang', res.data.idbarang, res.data.idbarang);
+                setSelect2Ajax('#unit', res.data.unit, res.data.unit);
 
                 $('#modalDetailPPLabel').text('Update PP Detail');
                 $('#modalDetailPP').modal('show');
@@ -2165,7 +2166,7 @@ $("#batch").select2({
     allowClear: true,
 
     // Dropdown mengikuti modal
-    dropdownParent: $('#modalDetailPP'),
+    dropdownParent: $("#batch").parent(),
 
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_batch_item',
@@ -2328,7 +2329,7 @@ function initSelect2Unit(idbarang, callback) {
         placeholder: "Pilih Satuan...",
         allowClear: true,
         width: '100%',
-        dropdownParent: $('#modalDetailPP'),    // <-- BENAR
+        dropdownParent:  $('#unit').parent(),    // <-- BENAR
         minimumInputLength: 0,
         ajax: {
             url: HOST_URL + 'api/globalmodule/list_unit_item',

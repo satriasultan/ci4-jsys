@@ -343,29 +343,29 @@ function documentReadable() {
             $('#ttlprice').text(
                 convertToDbNumber(item.ttlprice || 0)
                     .toLocaleString('en-US', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
+                        minimumFractionDigits: 4,
+                        maximumFractionDigits: 4
                     })
             );
             $('#ttlmaterial').text(
                 convertToDbNumber(item.ttlmaterial || 0)
                     .toLocaleString('en-US', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
+                        minimumFractionDigits: 4,
+                        maximumFractionDigits: 4
                     })
             );
             $('#ttlcost').text(
                 convertToDbNumber(item.ttlcost || 0)
                     .toLocaleString('en-US', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
+                        minimumFractionDigits: 4,
+                        maximumFractionDigits: 4
                     })
             );
             $('#ttlwip').text(
                 convertToDbNumber(item.ttlwip || 0)
                     .toLocaleString('en-US', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
+                        minimumFractionDigits: 4,
+                        maximumFractionDigits: 4
                     })
             );
             $.ajax({
@@ -601,7 +601,7 @@ function setJtsValue(selector, value) {
 }
 
 
-$(document).on('input', '.jtsseparator', function () {
+$(document).on('input', '.jaccseparator', function () {
     (typeof jaccseparator === "function" ? jaccseparator : _jtsseparator)(this);
 });
 

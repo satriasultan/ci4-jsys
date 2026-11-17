@@ -988,6 +988,19 @@
 <?php
     $isIT = isset($userinfo['rolename']) && trim($userinfo['rolename']) === 'IT';
     $disabled = $isIT ? '' : 'disabled';
+
+    /* =====================================================
+     * AUTOFILL INPUT AWAL CABANG / JOB
+     * Cabang mengikuti session user login.
+     * Hanya PT JATIM TAMAN STEEL yang boleh memilih bebas.
+     * ===================================================== */
+    $sessionBranchId   = trim((string) session()->get('idbranchjob'));
+    $sessionBranchName = strtoupper(trim((string) session()->get('nmbranchjob')));
+
+    // Normalisasi agar variasi penulisan (PT / PT. / spasi ganda) tetap dikenali
+    $sessionBranchKey = preg_replace('/[^A-Z0-9]/', '', $sessionBranchName);
+    $canChooseBranch  = $sessionBranchKey !== ''
+            && strpos($sessionBranchKey, 'PTJATIMTAMANSTEEL') === 0;
 ?>
 <div class="row">
     <!-- left column -->
@@ -1014,7 +1027,10 @@
                                     <div class="col-md-12">
                                         <div class="form-group">
                                             <label for="cabang">Cabang / Job</label>
-                                            <select name="cabang" id="cabang" class="form-control" required></select>
+                                            <select name="cabang" id="cabang" class="form-control" required
+                                                    data-session-branch-id="<?= esc($sessionBranchId) ?>"
+                                                    data-session-branch-name="<?= esc($sessionBranchName) ?>"
+                                                    data-can-choose-branch="<?= $canChooseBranch ? '1' : '0' ?>"></select>
                                         </div>
                                     </div>
                                 </div>
@@ -1124,7 +1140,7 @@
                                         <div class="form-group">
                                             <label class="form-label">Build For</label>
                                             <div class="form-group">
-                                                <input type="text" name="buildfor" id="buildfor" class="form-control ratakanan jtsseparator" placeholder="Build Qty For" required>
+                                                <input type="text" name="buildfor" id="buildfor" class="form-control ratakanan jaccseparator" placeholder="Build Qty For" required>
                                             </div>
                                         </div>
                                     </div>
@@ -1207,9 +1223,9 @@
                     <div class="table-responsive">
 
                         <table id="tmp_penerimaanbpdtl"
-                                class="table table-hover align-middle custom-table">
+                                class="table table-bordered table-striped table-hover align-middle">
 
-                            <thead>
+                            <thead class="bg-primary text-white">
                             <tr>
                                 <th class="text-center" width="40">
                                     <input type="checkbox" id="checkAll">
@@ -1373,7 +1389,7 @@
                             <input type="text"
                                     name="qty"
                                     id="qty"
-                                    class="form-control jtsseparator ratakanan"
+                                    class="form-control jaccseparator ratakanan"
                                     placeholder="Qty Barang"
                                     onchange="hitungTotalCost()"
                                     onkeyup="hitungTotalCost()"
@@ -1392,13 +1408,13 @@
                                     id="harga"
                                     onchange="hitungTotalCost()"
                                     onkeyup="hitungTotalCost()"
-                                    class="form-control jtsseparator ratakanan">
+                                    class="form-control jaccseparator ratakanan">
                         </div>
                         <div class="col-md-2">
                             <label class="form-label">Nilai</label>
                             <input name="nilai"
                                     id="nilai"
-                                    class="form-control jtsseparator ratakanan"
+                                    class="form-control jaccseparator ratakanan"
                                     readonly>
                         </div>
                         <div class="col-md-6">
@@ -1442,6 +1458,183 @@
 
 <script type="application/javascript" src="<?= base_url('assets/pagejs/production/penerimaanbp/penerimaanbp.js') ?>"></script>
 <script type="text/javascript">
+    /* ==========================================================
+     * AUTOFILL INPUT AWAL CABANG / JOB (SESSION USER LOGIN)
+     * - Cabang otomatis mengikuti cabang user login
+     * - Hanya user PT JATIM TAMAN STEEL yang boleh memilih bebas
+     * - PLAN I / PLAN 1 / PLANT I dianggap cabang yang sama
+     * ========================================================== */
+    function normalizeBranchKey(name) {
+        return (name || '').toString().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    }
+
+    function canonicalBranchKey(name) {
+        var key = normalizeBranchKey(name);
+
+        var aliases = {
+            'PLANI': 'PLANTI',
+            'PLAN1': 'PLANTI',
+            'PLANT1': 'PLANTI',
+            'PLANII': 'PLANTII',
+            'PLAN2': 'PLANTII',
+            'PLANT2': 'PLANTII',
+            'PTJATIMTAMANSTEEL': 'PTJATIMTAMANSTEELMFG'
+        };
+
+        return aliases[key] || key;
+    }
+
+    function findBranchByName(branchName, callback) {
+        var keyword = (branchName || '').toString().trim();
+
+        if (keyword === '') {
+            callback(null);
+            return;
+        }
+
+        function pick(items) {
+            var expected = canonicalBranchKey(keyword);
+
+            for (var i = 0; i < items.length; i++) {
+                var itemName = items[i].nmbranch || items[i].text || '';
+
+                if (canonicalBranchKey(itemName) === expected) {
+                    return items[i];
+                }
+            }
+
+            return null;
+        }
+
+        $.ajax({
+            type: 'POST',
+            url: HOST_URL + 'api/globalmodule/list_branchjob',
+            data: {
+                _search_: keyword,
+                _page_: 1,
+                _perpage_: 50,
+                _draw_: true,
+                _start_: 1
+            },
+            dataType: 'json'
+        }).done(function (data) {
+            var items = (data && data.items) ? data.items : [];
+            var match = pick(items);
+
+            if (match) {
+                callback(match);
+                return;
+            }
+
+            // Fallback: ambil seluruh cabang lalu cocokkan nama
+            $.ajax({
+                type: 'POST',
+                url: HOST_URL + 'api/globalmodule/list_branchjob',
+                data: {
+                    _search_: '',
+                    _page_: 1,
+                    _perpage_: 100,
+                    _draw_: true,
+                    _start_: 1
+                },
+                dataType: 'json'
+            }).done(function (allData) {
+                var allItems = (allData && allData.items) ? allData.items : [];
+                callback(pick(allItems));
+            }).fail(function () {
+                callback(null);
+            });
+        }).fail(function () {
+            callback(null);
+        });
+    }
+
+    function findBranchFromSession(branchId, branchName, callback) {
+        if (branchId !== '') {
+            $.ajax({
+                type: 'GET',
+                url: HOST_URL + 'api/globalmodule/list_branchjob',
+                data: { var: branchId },
+                dataType: 'json'
+            }).done(function (data) {
+                var items = (data && data.items) ? data.items : [];
+
+                if (items.length > 0) {
+                    callback(items[0]);
+                    return;
+                }
+
+                findBranchByName(branchName, callback);
+            }).fail(function () {
+                findBranchByName(branchName, callback);
+            });
+            return;
+        }
+
+        findBranchByName(branchName, callback);
+    }
+
+    function applyInitialBranch(item, canChoose, fireChange) {
+        var $cabang = $('#cabang');
+
+        if (!$cabang.length || !item) {
+            return;
+        }
+
+        var branchId = (item.id || item.idbranch || '').toString().trim();
+        var branchName = (item.nmbranch || item.text || '').toString().trim();
+
+        if (branchId === '') {
+            return;
+        }
+
+        // Jangan biarkan option tanpa label bila nama cabang tidak ditemukan.
+        if (branchName === '') {
+            branchName = branchId;
+        }
+
+        var optionExists = $cabang.find('option').filter(function () {
+            return ($(this).val() || '').toString() === branchId;
+        }).length > 0;
+
+        if (canChoose) {
+            // PT JATIM TAMAN STEEL: tetap default ke cabang login,
+            // tetapi user boleh mencari / memilih cabang lain.
+            if (!optionExists) {
+                $cabang.append(new Option(branchName, branchId, true, true));
+            } else {
+                $cabang.val(branchId);
+            }
+
+            $cabang.prop('disabled', false);
+        } else {
+            // User lain: kunci ke cabang login.
+            $cabang.empty();
+            $cabang.append(new Option(branchName, branchId, true, true));
+            $cabang.prop('disabled', true);
+        }
+
+        if (fireChange === false) {
+            // Update tampilan Select2 saja. Handler change modul tidak dipanggil
+            // agar nomor dokumen draft tidak digenerate ulang.
+            $cabang.trigger('change.select2');
+        } else {
+            // Catatan: Select2 4.0.13 tidak menyediakan method disable/enable,
+            // cukup gunakan prop('disabled') agar container ikut ter-update.
+            $cabang.trigger('change');
+        }
+
+        // Select2 tetap menampilkan tombol clear (allowClear: true) walau
+        // elemen sedang disabled. Klik-nya sudah diabaikan plugin, tetapi
+        // tombolnya membingungkan user, jadi sembunyikan saat dikunci.
+        if ($cabang.prop('disabled')) {
+            $cabang
+                .next('.select2-container')
+                .find('.select2-selection__clear')
+                .remove();
+        }
+    }
+
     $(function() {
         $("#example1").dataTable();
         $("#example2").dataTable();
@@ -1455,6 +1648,62 @@
         if (dtldata && dtldata.docno && dtldata.docno.trim() !== '') {
             $('#docno').val(dtldata.docno.trim()).prop('readonly', true);
         }
+
+        /* AUTOFILL INPUT AWAL CABANG / JOB */
+        var hasDraftDoc = dtldata && dtldata.docno && dtldata.docno.toString().trim() !== '';
+        var draftCabang = hasDraftDoc ? (dtldata.cabang || '').toString().trim() : '';
+
+        var $cabangInput = $('#cabang');
+        var sessionBranchId = ($cabangInput.attr('data-session-branch-id') || '').toString().trim();
+        var sessionBranchName = ($cabangInput.attr('data-session-branch-name') || '').toString().trim();
+        var canChooseBranch = ($cabangInput.attr('data-can-choose-branch') || '0').toString() === '1';
+
+        // Dokumen draft: cabang header sudah tersimpan, jadi ikuti data header.
+        var initialBranchId = draftCabang !== '' ? draftCabang : sessionBranchId;
+        var initialBranchName = draftCabang !== '' ? '' : sessionBranchName;
+
+        // Draft selalu dikunci agar cabang header tidak berubah diam-diam.
+        var lockBranch = !canChooseBranch || hasDraftDoc;
+
+        // Nomor draft sudah final: seed prefix / infix / suffix dari docno
+        // agar save detail tetap memakai docno header draft (tidak tergenerate ulang).
+        if (hasDraftDoc) {
+            var draftDocnoParts = dtldata.docno.toString().trim().split('/');
+
+            if (draftDocnoParts.length === 3) {
+                $('#prefix').val(draftDocnoParts[0].trim());
+                $('#infix').val(draftDocnoParts[1].trim());
+                $('#suffix').val(draftDocnoParts[2].trim());
+            }
+        }
+
+        findBranchFromSession(initialBranchId, initialBranchName, function (item) {
+            if (!item) {
+                if (!lockBranch) {
+                    return;
+                }
+
+                if (initialBranchId !== '') {
+                    // Fallback: tetap kunci memakai data yang tersedia
+                    // agar user tidak terhambat bila lookup nama gagal.
+                    item = {
+                        id: initialBranchId,
+                        nmbranch: initialBranchName || initialBranchId
+                    };
+                } else {
+                    Swal.fire({
+                        title: 'Peringatan',
+                        text: 'Cabang / Job user login tidak ditemukan. Silakan hubungi IT.',
+                        icon: 'warning',
+                        confirmButtonText: 'OK'
+                    });
+
+                    return;
+                }
+            }
+
+            applyInitialBranch(item, !lockBranch, !hasDraftDoc);
+        });
 
 
         $('#docdate').daterangepicker({

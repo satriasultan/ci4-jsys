@@ -1447,9 +1447,9 @@
                 <div class="card-body p-4">
                     <div class="table-responsive">
                         <table id="trx_workingorderbommst"
-                                class="table table-hover align-middle custom-table">
+                                class="table table-bordered table-striped table-hover align-middle">
 
-                            <thead>
+                            <thead class="bg-primary text-white">
                             <tr>
                                 <!-- <th>Act</th> -->
                                 <th>No. BOM</th>
@@ -1545,9 +1545,9 @@
                                 <div class="detail-tab-body">
                                     <div class="table-responsive">
                                         <table id="trx_workingordermaterialdtl"
-                                            class="table table-modern">
+                                            class="table table-bordered table-striped table-hover align-middle">
 
-                                            <thead>
+                                            <thead class="bg-primary text-white">
                                                 <tr>
                                                     <th>Doc No. WO</th>
                                                     <th>Doc No. BOM</th>
@@ -1592,9 +1592,9 @@
                                 <div class="detail-tab-body">
                                     <div class="table-responsive">
                                         <table id="trx_workingordercostdtl"
-                                            class="table table-modern">
+                                            class="table table-bordered table-striped table-hover align-middle">
 
-                                            <thead>
+                                            <thead class="bg-primary text-white">
                                                 <tr>
                                                     <th>Doc No. WO</th>
                                                     <th>Doc No. BOM</th>
@@ -1639,9 +1639,9 @@
                                 <div class="detail-tab-body">
                                     <div class="table-responsive">
                                         <table id="trx_workingorderwipdtl"
-                                            class="table table-modern">
+                                            class="table table-bordered table-striped table-hover align-middle">
 
-                                            <thead>
+                                            <thead class="bg-primary text-white">
                                                 <tr>
                                                     <th>Doc No. WO</th>
                                                     <th>Doc No. BOM</th>

@@ -23,7 +23,7 @@ function table_penerimaanbp() {
         table.DataTable({
             "processing": true, //Feature control the processing indicator.
             "serverSide": true, //Feature control DataTables' server-side processing mode.
-            "order": [], //Initial no order.
+            "order": [[2, 'asc']], //Initial no order.
             "language": languageDatatable(),
             "paging": true,
             "lengthChange": false,
@@ -361,29 +361,29 @@ function documentReadable() {
             $('#ttlprice').text(
                 convertToDbNumber(item.ttlprice || 0)
                     .toLocaleString('en-US', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
+                        minimumFractionDigits: 4,
+                        maximumFractionDigits: 4
                     })
             );
             // $('#ttlmaterial').text(
             //     convertToDbNumber(item.ttlmaterial || 0)
             //         .toLocaleString('en-US', {
-            //             minimumFractionDigits: 2,
-            //             maximumFractionDigits: 2
+            //             minimumFractionDigits: 4,
+            //             maximumFractionDigits: 4
             //         })
             // );
             // $('#ttlcost').text(
             //     convertToDbNumber(item.ttlcost || 0)
             //         .toLocaleString('en-US', {
-            //             minimumFractionDigits: 2,
-            //             maximumFractionDigits: 2
+            //             minimumFractionDigits: 4,
+            //             maximumFractionDigits: 4
             //         })
             // );
             // $('#ttlwip').text(
             //     convertToDbNumber(item.ttlwip || 0)
             //         .toLocaleString('en-US', {
-            //             minimumFractionDigits: 2,
-            //             maximumFractionDigits: 2
+            //             minimumFractionDigits: 4,
+            //             maximumFractionDigits: 4
             //         })
             // );
             $.ajax({
@@ -1427,8 +1427,8 @@ function hitungTotalCost() {
 
     $('#nilai').val(
         nilai.toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
+            minimumFractionDigits: 4,
+            maximumFractionDigits: 4
         })
     );
 }
@@ -1451,7 +1451,7 @@ function setJtsValue(selector, value) {
 }
 
 
-$(document).on('input', '.jtsseparator', function () {
+$(document).on('input', '.jaccseparator', function () {
     (typeof jaccseparator === "function" ? jaccseparator : _jtsseparator)(this);
 });
 

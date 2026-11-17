@@ -171,7 +171,7 @@ function initSelect2Barang() {
         dropdownAutoWidth: true,
         closeOnSelect: true,
         multiple: false,
-        dropdownParent: $('#modalDetailSPK'),
+        dropdownParent: $(document.body), // hindari zoom modal (#app-zoom)
         escapeMarkup: function (markup) { return markup; },
         ajax: {
             url: HOST_URL + 'api/globalmodule/list_stock_by_location',
@@ -253,6 +253,26 @@ function initSelect2Barang() {
     });
 }
 
+
+function setReadableNumber(selector, value) {
+
+    const $el = $(selector);
+
+    if (!$el.length) {
+        return;
+    }
+
+    if (typeof setJtsValue === 'function') {
+        setJtsValue(
+            selector,
+            convertToDbNumber(value)
+        );
+    } else {
+        $el.val(value ?? '');
+    }
+}
+
+
 /* ============================================================
    SELECT2 BATCH — BERHIERARKI DENGAN #idbarang
    Menampilkan daftar batch dari barang terpilih pada gudang asal.
@@ -330,7 +350,7 @@ function loadBatchOptions(idbarang, preselectBatch) {
                 minimumInputLength: 0,
                 multiple: false,
                 closeOnSelect: true,
-                dropdownParent: $('#modalDetailSPK')
+                dropdownParent: $(document.body) // hindari zoom modal (#app-zoom)
             });
 
             /* Preselect */
@@ -385,7 +405,7 @@ function initSelect2Unit(idbarang, callback) {
         placeholder: "Pilih Satuan...",
         allowClear: true,
         width: '100%',
-        dropdownParent: $('#modalDetailSPK'),
+        dropdownParent: $(document.body), // hindari zoom modal (#app-zoom)
         minimumInputLength: 0,
         ajax: {
             url: HOST_URL + 'api/globalmodule/list_unit_item',
@@ -541,7 +561,7 @@ function initSelect2UnitWithPreload(idbarang, selectedUnit, callback) {
                 placeholder: "Pilih Satuan...",
                 allowClear: true,
                 width: '100%',
-                dropdownParent: $('#modalDetailSPK'),
+                dropdownParent: $(document.body), // hindari zoom modal (#app-zoom)
                 data: results          /* ← preload data */
             })
                 .on("select2:select", function (e) {
@@ -956,7 +976,7 @@ function updateTransferLocationDetail() {
                         placeholder: 'Pilih Barang',
                         width: '100%',
                         allowClear: false,
-                        dropdownParent: $('#modalDetailSPK')
+                        dropdownParent: $(document.body) // hindari zoom modal (#app-zoom)
                     });
 
                     $('#idbarang').trigger('change');

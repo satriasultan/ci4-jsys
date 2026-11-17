@@ -449,9 +449,10 @@ function btnInputDetail() {
 
 var defaultInitialGroupBrng = '';
 $("#idbarang").select2({
-    placeholder: "Choose Your Item List",
+    placeholder: "Ketik minimal 2 huruf untuk mencari barang...",
     allowClear: true,
     width: '100%',
+    minimumInputLength : 2,
     dropdownParent: $('#modalDtlStandartCost .modal-body'),
     ajax: {
         url: HOST_URL + 'api/globalmodule/list_item_std_cost',
@@ -523,7 +524,11 @@ $("#idbarang").select2({
         .map(function (v) { var n = parseFloat(v); return isFinite(n) ? n : 0; })
         .find(function (n) { return n !== 0; });
 
-    $('[name="lastcost"]').val(lastCostRef != null ? lastCostRef : 0).prop("readonly", true);
+    let finalLastCost = (lastCostRef != null) ? lastCostRef : 0;
+
+    // Set via helper (biar formatting/event konsisten), lalu kunci
+    setJtsValue('#lastcost', finalLastCost);
+    $('[name="lastcost"]').prop("readonly", true);
 
 });
 
@@ -533,7 +538,7 @@ function setJtsValue(selector, value) {
 }
 
 
-$(document).on('input', '.jtsseparator', function () {
+$(document).on('input', '.jaccseparator', function () {
     (typeof jaccseparator === "function" ? jaccseparator : _jtsseparator)(this);
 });
 

@@ -535,7 +535,7 @@ function setJtsValue(selector, value) {
 }
 
 
-$(document).on('input', '.jtsseparator', function () {
+$(document).on('input', '.jaccseparator', function () {
     (typeof jaccseparator === "function" ? jaccseparator : _jtsseparator)(this);
 });
 

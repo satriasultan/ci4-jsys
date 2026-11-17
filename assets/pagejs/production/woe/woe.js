@@ -21,7 +21,7 @@ function tableWOETrx(){
         table.DataTable({
             "processing": true, //Feature control the processing indicator.
             "serverSide": true, //Feature control DataTables' server-side processing mode.
-            "order": [], //Initial no order.
+            "order": [[2, 'asc']], //Initial no order.
             "language":  languageDatatable(),
             "paging": true,
             "lengthChange": false,
@@ -250,7 +250,7 @@ function setJtsValue(selector, value) {
 
 
 
-$(document).on('input', '.jtsseparator', function () {
+$(document).on('input', '.jaccseparator', function () {
     (typeof jaccseparator === "function" ? jaccseparator : _jtsseparator)(this);
 });
 

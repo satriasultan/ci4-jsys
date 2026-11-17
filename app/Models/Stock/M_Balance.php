@@ -1754,6 +1754,11 @@ FROM (
             TRIM(sb.idbarang) ILIKE {$escaped}
             OR TRIM(COALESCE(sb.batch,'')) ILIKE {$escaped}
             OR TRIM(COALESCE(sb.lotno,'')) ILIKE {$escaped}
+            OR TRIM(sb.idbarang) IN (
+                SELECT TRIM(mb.idbarang)
+                FROM sc_mst.mbarang mb
+                WHERE TRIM(COALESCE(mb.nmbarang,'')) ILIKE {$escaped}
+            )
         )", null, false);
         }
 
@@ -1808,6 +1813,11 @@ FROM (
             TRIM(sb.idbarang) ILIKE {$s}
             OR TRIM(COALESCE(sb.batch,'')) ILIKE {$s}
             OR TRIM(COALESCE(sb.lotno,'')) ILIKE {$s}
+            OR TRIM(sb.idbarang) IN (
+                SELECT TRIM(mb.idbarang)
+                FROM sc_mst.mbarang mb
+                WHERE TRIM(COALESCE(mb.nmbarang,'')) ILIKE {$s}
+            )
         )";
         }
 

@@ -6,6 +6,24 @@ use CodeIgniter\Model;
 
 class M_Production extends Model
 {
+    /**
+     * Order docno natural:
+     * prefix (WO, WO2, WO3, ...) -> infix YYMM -> suffix.
+     */
+    private function _order_natural_docno($builder, $dir = 'asc')
+    {
+        $dir = strtolower((string) $dir) === 'desc' ? 'desc' : 'asc';
+
+        $builder->orderBy(
+            "COALESCE(NULLIF(substring(trim(split_part(trim(docno), '/', 1)) from '[0-9]+'), '')::int, 0)",
+            $dir,
+            false
+        );
+        $builder->orderBy("trim(split_part(trim(docno), '/', 2))", $dir, false);
+        $builder->orderBy("trim(split_part(trim(docno), '/', 3))", $dir, false);
+        $builder->orderBy("trim(docno)", $dir, false);
+    }
+
     //STANDART COST
 
 
@@ -149,7 +167,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
     /* TEMPORARY STANDART COST */
 
     var $tmp_standart_cost_dtl_view = "sc_tmp.standart_cost_dtl";
-    var $tmp_standart_cost_dtl_view_column = array('urut','idbarang','nmbarang','unit','actualcost','lastcost','newcost');
+    var $tmp_standart_cost_dtl_view_column = array('idbarang','nmbarang','unit','actualcost','lastcost','newcost','description');
     var $tmp_standart_cost_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_tmp_standart_cost_dtl($docno)
     {
@@ -236,7 +254,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
     /* STANDART COST MST TEMPORARY STANDART COST */
 
     var $mst_standart_cost_dtl_view = "sc_mst.standart_cost_dtl";
-    var $mst_standart_cost_dtl_view_column = array('urut','idbarang','nmbarang','unit','actualcost','lastcost','newcost');
+    var $mst_standart_cost_dtl_view_column = array('idurut', 'idbarang','nmbarang','unit','actualcost','lastcost','newcost','description');
     var $mst_standart_cost_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_mst_standart_cost_dtl($docno)
     {
@@ -429,7 +447,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
     /* TEMPORARY STANDART COST */
 
     var $tmp_biaya_standart_dtl_view = "sc_tmp.biaya_standart_dtl";
-    var $tmp_biaya_standart_dtl_view_column = array('urut','idbarang','nmbarang','unit','actualcost','lastcost','newcost');
+    var $tmp_biaya_standart_dtl_view_column = array('idbarang','nmbarang','unit','actualcost','lastcost','newcost','description');
     var $tmp_biaya_standart_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_tmp_biaya_standart_dtl($docno)
     {
@@ -516,7 +534,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
     /* STANDART COST MST TEMPORARY STANDART COST */
 
     var $mst_biaya_standart_dtl_view = "sc_mst.biaya_standart_dtl";
-    var $mst_biaya_standart_dtl_view_column = array('urut','idbarang','nmbarang','unit','actualcost','lastcost','newcost');
+    var $mst_biaya_standart_dtl_view_column = array('idbarang','nmbarang','unit','actualcost','lastcost','newcost','description');
     var $mst_biaya_standart_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_mst_biaya_standart_dtl($docno)
     {
@@ -650,19 +668,19 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->trx_bom_mst_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+        if (isset($_POST['order']['0']['column'])) {
+            $__col = (int) $_POST['order']['0']['column'];
+            $__dir = $_POST['order']['0']['dir'] ?? 'asc';
+
+            if ($__col === 2) {
+                $this->_order_natural_docno($builder, $__dir);
+            } elseif ($__col != 0 && isset($this->trx_bom_mst_view_column[$__col - 1])) {
+                $builder->orderBy($this->trx_bom_mst_view_column[$__col - 1], $__dir);
             }
+        } else {
+            $this->_order_natural_docno($builder, 'asc');
         }
-        else if(isset($this->trx_bom_mst_view_order))
-        {
-            $order = $this->trx_bom_mst_view_order;
-            foreach ($order as $key => $mrpgroup){
-                $builder->orderBy($key, $mrpgroup);
-            }
-        }
+
         return $builder;
     }
 
@@ -722,7 +740,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
 
     var $tmp_bom_material_dtl_view = "sc_tmp.bom_dtl";
-    var $tmp_bom_material_dtl_view_column = array('urut','idbarang','nmbarang','unit','actualcost','lastcost','newcost');
+    var $tmp_bom_material_dtl_view_column = array('idbarang','nmbarang','qty','unit','standartcost','totalcost','description');
     var $tmp_bom_material_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_tmp_bom_material_dtl($docno)
     {
@@ -809,7 +827,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
 
     var $trx_bom_material_dtl_view = "sc_trx.bom_dtl";
-    var $trx_bom_material_dtl_view_column = array('urut','idbarang','nmbarang','unit','actualcost','lastcost','newcost');
+    var $trx_bom_material_dtl_view_column = array('idbarang','nmbarang','qty','unit','standartcost','totalcost','description');
     var $trx_bom_material_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_trx_bom_material_dtl($docno)
     {
@@ -899,7 +917,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
 
     var $tmp_bom_cost_dtl_view = "sc_tmp.bom_dtl";
-    var $tmp_bom_cost_dtl_view_column = array('urut','idbarang','nmbarang','unit','actualcost','lastcost','newcost');
+    var $tmp_bom_cost_dtl_view_column = array('idbarang','nmbarang','qty','unit','standartcost','totalcost','description');
     var $tmp_bom_cost_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_tmp_bom_cost_dtl($docno)
     {
@@ -986,7 +1004,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
 
     var $trx_bom_cost_dtl_view = "sc_trx.bom_dtl";
-    var $trx_bom_cost_dtl_view_column = array('urut','idbarang','nmbarang','unit','actualcost','lastcost','newcost');
+    var $trx_bom_cost_dtl_view_column = array('idbarang','nmbarang','qty','unit','standartcost','totalcost','description');
     var $trx_bom_cost_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_trx_bom_cost_dtl($docno)
     {
@@ -1076,7 +1094,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
 
     var $tmp_bom_wip_dtl_view = "sc_tmp.bom_dtl";
-    var $tmp_bom_wip_dtl_view_column = array('urut','idbarang','nmbarang','unit','actualcost','lastcost','newcost');
+    var $tmp_bom_wip_dtl_view_column = array('idbarang','nmbarang','qty','unit','standartcost','totalcost','description');
     var $tmp_bom_wip_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_tmp_bom_wip_dtl($docno)
     {
@@ -1163,7 +1181,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
 
     var $trx_bom_wip_dtl_view = "sc_trx.bom_dtl";
-    var $trx_bom_wip_dtl_view_column = array('urut','idbarang','nmbarang','unit','actualcost','lastcost','newcost');
+    var $trx_bom_wip_dtl_view_column = array('idbarang','nmbarang','qty','unit','standartcost','totalcost','description');
     var $trx_bom_wip_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_trx_bom_wip_dtl($docno)
     {
@@ -1271,7 +1289,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
     left outer join sc_mst.customer c on a.kdcustomer=c.kdcustomer
     left outer join sc_mst.kotakab d on c.kota_kantor=d.kodekotakab
     ) as x";
-    var $trx_workingorder_mst_view_column = array('docno','docdate','activatedate');
+    var $trx_workingorder_mst_view_column = array('docno','docdate');
     var $trx_workingorder_mst_view_order = array('docno' => 'desc'); // default order
     private function _get_trx_workingorder_mst()
     {
@@ -1306,19 +1324,19 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->trx_workingorder_mst_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+        if (isset($_POST['order']['0']['column'])) {
+            $__col = (int) $_POST['order']['0']['column'];
+            $__dir = $_POST['order']['0']['dir'] ?? 'asc';
+
+            if ($__col === 2) {
+                $this->_order_natural_docno($builder, $__dir);
+            } elseif ($__col != 0 && isset($this->trx_workingorder_mst_view_column[$__col - 1])) {
+                $builder->orderBy($this->trx_workingorder_mst_view_column[$__col - 1], $__dir);
             }
+        } else {
+            $this->_order_natural_docno($builder, 'asc');
         }
-        else if(isset($this->trx_workingorder_mst_view_order))
-        {
-            $order = $this->trx_workingorder_mst_view_order;
-            foreach ($order as $key => $mrpgroup){
-                $builder->orderBy($key, $mrpgroup);
-            }
-        }
+
         return $builder;
     }
 
@@ -1379,7 +1397,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
 
     var $tmp_workingorder_bom_mst_view = "sc_tmp.workingorder_bom_mst";
-    var $tmp_workingorder_bom_mst_view_column = array('urut','kdcustomer','nmcustomer','unit','actualcost','lastcost','newcost');
+    var $tmp_workingorder_bom_mst_view_column = array('docno','desc_bom','idbarang_jadi','nmbarang_jadi','buildfor','buildunit','ttlprice');
     var $tmp_workingorder_bom_mst_view_order = array("docno" => 'desc'); // default order
     private function _get_query_tmp_workingorder_bom_mst($docno)
     {
@@ -1465,7 +1483,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
 
     var $trx_workingorder_bom_mst_view = "sc_trx.workingorder_bom_mst";
-    var $trx_workingorder_bom_mst_view_column = array('urut','kdcustomer','nmcustomer','unit','actualcost','lastcost','newcost');
+    var $trx_workingorder_bom_mst_view_column = array('docno','desc_bom','idbarang_jadi','nmbarang_jadi','buildfor','buildunit','ttlprice');
     var $trx_workingorder_bom_mst_view_order = array("docno" => 'desc'); // default order
     private function _get_query_trx_workingorder_bom_mst($docno)
     {
@@ -1502,19 +1520,15 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->trx_workingorder_bom_mst_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+        if (isset($_POST['order']['0']['column'])) {
+            $__col = (int) $_POST['order']['0']['column'];
+            $__dir = $_POST['order']['0']['dir'] ?? 'asc';
+
+            if (isset($this->trx_workingorder_bom_mst_view_column[$__col])) {
+                $builder->orderBy($this->trx_workingorder_bom_mst_view_column[$__col], $__dir);
             }
         }
-        else if(isset($this->trx_workingorder_bom_mst_view_order))
-        {
-            $order = $this->trx_workingorder_bom_mst_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
-            }
-        }
+
         return $builder;
     }
 
@@ -1553,7 +1567,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
 
     var $tmp_workingorder_material_dtl_view = "sc_tmp.workingorder_bom_dtl";
-    var $tmp_workingorder_material_dtl_view_column = array('urut','idbarang','nmbarang','unit','actualcost','lastcost','newcost');
+    var $tmp_workingorder_material_dtl_view_column = array('docref','docno','idbarang','nmbarang','qty','unit','standartcost','totalcost','description');
     var $tmp_workingorder_material_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_tmp_workingorder_material_dtl($docno)
     {
@@ -1590,19 +1604,15 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->tmp_workingorder_material_dtl_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+        if (isset($_POST['order']['0']['column'])) {
+            $__col = (int) $_POST['order']['0']['column'];
+            $__dir = $_POST['order']['0']['dir'] ?? 'asc';
+
+            if (isset($this->tmp_workingorder_material_dtl_view_column[$__col])) {
+                $builder->orderBy($this->tmp_workingorder_material_dtl_view_column[$__col], $__dir);
             }
         }
-        else if(isset($this->tmp_workingorder_material_dtl_view_order))
-        {
-            $order = $this->tmp_workingorder_material_dtl_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
-            }
-        }
+
         return $builder;
     }
 
@@ -1640,7 +1650,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
 
     var $trx_workingorder_material_dtl_view = "sc_trx.workingorder_bom_dtl";
-    var $trx_workingorder_material_dtl_view_column = array('urut','idbarang','nmbarang','unit','actualcost','lastcost','newcost');
+    var $trx_workingorder_material_dtl_view_column = array('docref','docno','idbarang','nmbarang','qty','unit','standartcost','totalcost','description');
     var $trx_workingorder_material_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_trx_workingorder_material_dtl($docno)
     {
@@ -1677,19 +1687,15 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->trx_workingorder_material_dtl_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+        if (isset($_POST['order']['0']['column'])) {
+            $__col = (int) $_POST['order']['0']['column'];
+            $__dir = $_POST['order']['0']['dir'] ?? 'asc';
+
+            if (isset($this->trx_workingorder_material_dtl_view_column[$__col])) {
+                $builder->orderBy($this->trx_workingorder_material_dtl_view_column[$__col], $__dir);
             }
         }
-        else if(isset($this->trx_workingorder_material_dtl_view_order))
-        {
-            $order = $this->trx_workingorder_material_dtl_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
-            }
-        }
+
         return $builder;
     }
 
@@ -1730,7 +1736,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
 
     var $tmp_workingorder_cost_dtl_view = "sc_tmp.workingorder_bom_dtl";
-    var $tmp_workingorder_cost_dtl_view_column = array('urut','idbarang','nmbarang','unit','actualcost','lastcost','newcost');
+    var $tmp_workingorder_cost_dtl_view_column = array('docref','docno','idbarang','nmbarang','qty','unit','standartcost','totalcost','description');
     var $tmp_workingorder_cost_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_tmp_workingorder_cost_dtl($docno)
     {
@@ -1767,19 +1773,15 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->tmp_workingorder_cost_dtl_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+        if (isset($_POST['order']['0']['column'])) {
+            $__col = (int) $_POST['order']['0']['column'];
+            $__dir = $_POST['order']['0']['dir'] ?? 'asc';
+
+            if (isset($this->tmp_workingorder_cost_dtl_view_column[$__col])) {
+                $builder->orderBy($this->tmp_workingorder_cost_dtl_view_column[$__col], $__dir);
             }
         }
-        else if(isset($this->tmp_workingorder_cost_dtl_view_order))
-        {
-            $order = $this->tmp_workingorder_cost_dtl_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
-            }
-        }
+
         return $builder;
     }
 
@@ -1817,7 +1819,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
 
     var $trx_workingorder_cost_dtl_view = "sc_trx.workingorder_bom_dtl";
-    var $trx_workingorder_cost_dtl_view_column = array('urut','idbarang','nmbarang','unit','actualcost','lastcost','newcost');
+    var $trx_workingorder_cost_dtl_view_column = array('docref','docno','idbarang','nmbarang','qty','unit','standartcost','totalcost','description');
     var $trx_workingorder_cost_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_trx_workingorder_cost_dtl($docno)
     {
@@ -1854,19 +1856,15 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->trx_workingorder_cost_dtl_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+        if (isset($_POST['order']['0']['column'])) {
+            $__col = (int) $_POST['order']['0']['column'];
+            $__dir = $_POST['order']['0']['dir'] ?? 'asc';
+
+            if (isset($this->trx_workingorder_cost_dtl_view_column[$__col])) {
+                $builder->orderBy($this->trx_workingorder_cost_dtl_view_column[$__col], $__dir);
             }
         }
-        else if(isset($this->trx_workingorder_cost_dtl_view_order))
-        {
-            $order = $this->trx_workingorder_cost_dtl_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
-            }
-        }
+
         return $builder;
     }
 
@@ -1907,7 +1905,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
 
     var $tmp_workingorder_wip_dtl_view = "sc_tmp.workingorder_bom_dtl";
-    var $tmp_workingorder_wip_dtl_view_column = array('urut','idbarang','nmbarang','unit','actualcost','lastcost','newcost');
+    var $tmp_workingorder_wip_dtl_view_column = array('docref','docno','idbarang','nmbarang','qty','unit','standartcost','totalcost','description');
     var $tmp_workingorder_wip_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_tmp_workingorder_wip_dtl($docno)
     {
@@ -1944,19 +1942,15 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->tmp_workingorder_wip_dtl_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+        if (isset($_POST['order']['0']['column'])) {
+            $__col = (int) $_POST['order']['0']['column'];
+            $__dir = $_POST['order']['0']['dir'] ?? 'asc';
+
+            if (isset($this->tmp_workingorder_wip_dtl_view_column[$__col])) {
+                $builder->orderBy($this->tmp_workingorder_wip_dtl_view_column[$__col], $__dir);
             }
         }
-        else if(isset($this->tmp_workingorder_wip_dtl_view_order))
-        {
-            $order = $this->tmp_workingorder_wip_dtl_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
-            }
-        }
+
         return $builder;
     }
 
@@ -1994,7 +1988,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
 
     var $trx_workingorder_wip_dtl_view = "sc_trx.workingorder_bom_dtl";
-    var $trx_workingorder_wip_dtl_view_column = array('urut','idbarang','nmbarang','unit','actualcost','lastcost','newcost');
+    var $trx_workingorder_wip_dtl_view_column = array('docref','docno','idbarang','nmbarang','qty','unit','standartcost','totalcost','description');
     var $trx_workingorder_wip_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_trx_workingorder_wip_dtl($docno)
     {
@@ -2031,19 +2025,15 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->trx_workingorder_wip_dtl_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+        if (isset($_POST['order']['0']['column'])) {
+            $__col = (int) $_POST['order']['0']['column'];
+            $__dir = $_POST['order']['0']['dir'] ?? 'asc';
+
+            if (isset($this->trx_workingorder_wip_dtl_view_column[$__col])) {
+                $builder->orderBy($this->trx_workingorder_wip_dtl_view_column[$__col], $__dir);
             }
         }
-        else if(isset($this->trx_workingorder_wip_dtl_view_order))
-        {
-            $order = $this->trx_workingorder_wip_dtl_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
-            }
-        }
+
         return $builder;
     }
 
@@ -2414,19 +2404,19 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo woest column 0
-                $builder->orderBy($this->t_front_woe_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+        if (isset($_POST['order']['0']['column'])) {
+            $__col = (int) $_POST['order']['0']['column'];
+            $__dir = $_POST['order']['0']['dir'] ?? 'asc';
+
+            if ($__col === 2) {
+                $this->_order_natural_docno($builder, $__dir);
+            } elseif ($__col != 0 && isset($this->t_front_woe_view_column[$__col - 1])) {
+                $builder->orderBy($this->t_front_woe_view_column[$__col - 1], $__dir);
             }
+        } else {
+            $this->_order_natural_docno($builder, 'asc');
         }
-        else if(isset($this->t_front_woe_view_order))
-        {
-            $order = $this->t_front_woe_view_order;
-            foreach ($order as $key => $mrpgroup){
-                $builder->orderBy($key, $mrpgroup);
-            }
-        }
+
         return $builder;
     }
 
@@ -2521,19 +2511,19 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->trx_materialrelease_mst_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+        if (isset($_POST['order']['0']['column'])) {
+            $__col = (int) $_POST['order']['0']['column'];
+            $__dir = $_POST['order']['0']['dir'] ?? 'asc';
+
+            if ($__col === 2) {
+                $this->_order_natural_docno($builder, $__dir);
+            } elseif ($__col != 0 && isset($this->trx_materialrelease_mst_view_column[$__col - 1])) {
+                $builder->orderBy($this->trx_materialrelease_mst_view_column[$__col - 1], $__dir);
             }
+        } else {
+            $this->_order_natural_docno($builder, 'asc');
         }
-        else if(isset($this->trx_materialrelease_mst_view_order))
-        {
-            $order = $this->trx_materialrelease_mst_view_order;
-            foreach ($order as $key => $mrpgroup){
-                $builder->orderBy($key, $mrpgroup);
-            }
-        }
+
         return $builder;
     }
 
@@ -2593,7 +2583,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
 
     var $tmp_materialrelease_dtl_view = "sc_tmp.materialrelease_dtl";
-    var $tmp_materialrelease_dtl_view_column = array('urut','idbarang','nmbarang','unit','actualcost','lastcost','newcost');
+    var $tmp_materialrelease_dtl_view_column = array('issub','idbarang','nmbarang','spec','qty','unit','description');
     var $tmp_materialrelease_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_tmp_materialrelease_dtl($docno)
     {
@@ -2680,7 +2670,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
 
     var $trx_materialrelease_dtl_view = "sc_trx.materialrelease_dtl";
-    var $trx_materialrelease_dtl_view_column = array('urut','idbarang','nmbarang','unit','actualcost','lastcost','newcost');
+    var $trx_materialrelease_dtl_view_column = array('issub','idbarang','nmbarang','spec','qty','unit','description');
     var $trx_materialrelease_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_trx_materialrelease_dtl($docno)
     {
@@ -2821,19 +2811,19 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->trx_penerimaanbp_mst_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+        if (isset($_POST['order']['0']['column'])) {
+            $__col = (int) $_POST['order']['0']['column'];
+            $__dir = $_POST['order']['0']['dir'] ?? 'asc';
+
+            if ($__col === 2) {
+                $this->_order_natural_docno($builder, $__dir);
+            } elseif ($__col != 0 && isset($this->trx_penerimaanbp_mst_view_column[$__col - 1])) {
+                $builder->orderBy($this->trx_penerimaanbp_mst_view_column[$__col - 1], $__dir);
             }
+        } else {
+            $this->_order_natural_docno($builder, 'asc');
         }
-        else if(isset($this->trx_penerimaanbp_mst_view_order))
-        {
-            $order = $this->trx_penerimaanbp_mst_view_order;
-            foreach ($order as $key => $mrpgroup){
-                $builder->orderBy($key, $mrpgroup);
-            }
-        }
+
         return $builder;
     }
 
@@ -2893,7 +2883,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
 
     var $tmp_penerimaanbp_dtl_view = "sc_tmp.penerimaanbp_dtl";
-    var $tmp_penerimaanbp_dtl_view_column = array('urut','idbarang','nmbarang','unit','actualcost','lastcost','newcost');
+    var $tmp_penerimaanbp_dtl_view_column = array('issub','idbarang','nmbarang','spec','qty','unit','harga','nilai','description');
     var $tmp_penerimaanbp_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_tmp_penerimaanbp_dtl($docno)
     {
@@ -2980,7 +2970,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
 
     var $trx_penerimaanbp_dtl_view = "sc_trx.penerimaanbp_dtl";
-    var $trx_penerimaanbp_dtl_view_column = array('urut','idbarang','nmbarang','unit','actualcost','lastcost','newcost');
+    var $trx_penerimaanbp_dtl_view_column = array('issub','idbarang','nmbarang','spec','qty','unit','harga','nilai','description');
     var $trx_penerimaanbp_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_trx_penerimaanbp_dtl($docno)
     {
@@ -3120,19 +3110,19 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->trx_bpnm_mst_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+        if (isset($_POST['order']['0']['column'])) {
+            $__col = (int) $_POST['order']['0']['column'];
+            $__dir = $_POST['order']['0']['dir'] ?? 'asc';
+
+            if ($__col === 2) {
+                $this->_order_natural_docno($builder, $__dir);
+            } elseif ($__col != 0 && isset($this->trx_bpnm_mst_view_column[$__col - 1])) {
+                $builder->orderBy($this->trx_bpnm_mst_view_column[$__col - 1], $__dir);
             }
+        } else {
+            $this->_order_natural_docno($builder, 'asc');
         }
-        else if(isset($this->trx_bpnm_mst_view_order))
-        {
-            $order = $this->trx_bpnm_mst_view_order;
-            foreach ($order as $key => $mrpgroup){
-                $builder->orderBy($key, $mrpgroup);
-            }
-        }
+
         return $builder;
     }
 
@@ -3192,7 +3182,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
 
     var $tmp_bpnm_dtl_view = "sc_tmp.bpnm_dtl";
-    var $tmp_bpnm_dtl_view_column = array('urut','idbarang','nmbarang','unit','actualcost','lastcost','newcost');
+    var $tmp_bpnm_dtl_view_column = array('issub','idbarang','nmbarang','spec','qty','unit','harga','nilai','description');
     var $tmp_bpnm_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_tmp_bpnm_dtl($docno)
     {
@@ -3279,7 +3269,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
 
     var $trx_bpnm_dtl_view = "sc_trx.bpnm_dtl";
-    var $trx_bpnm_dtl_view_column = array('urut','idbarang','nmbarang','unit','actualcost','lastcost','newcost');
+    var $trx_bpnm_dtl_view_column = array('issub','idbarang','nmbarang','spec','qty','unit','harga','nilai','description');
     var $trx_bpnm_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_trx_bpnm_dtl($docno)
     {

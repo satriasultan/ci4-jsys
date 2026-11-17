@@ -479,7 +479,7 @@ $disabled = $isIT ? '' : 'disabled';
                             <input type="text"
                                    name="qty"
                                    id="qty"
-                                   class="form-control jtsseparator text-end"
+                                   class="form-control jaccseparator text-end"
                                    placeholder="0.00" required>
                         </div>
 
@@ -520,7 +520,7 @@ $disabled = $isIT ? '' : 'disabled';
                             <input type="text"
                                    name="valqty"
                                    id="valqty"
-                                   class="form-control jtsseparator text-end"
+                                   class="form-control jaccseparator text-end"
                                    placeholder="0.00" required>
                         </div>
  */ ?>

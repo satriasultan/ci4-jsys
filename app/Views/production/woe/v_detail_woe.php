@@ -1133,7 +1133,7 @@
                                                 <input type="text"
                                                 name="buildfor"
                                                 id="buildfor"
-                                                class="form-control ratakanan jtsseparator" readonly
+                                                class="form-control ratakanan jaccseparator" readonly
                                                 placeholder="Quantity">
                                             </div>
                                         </div>

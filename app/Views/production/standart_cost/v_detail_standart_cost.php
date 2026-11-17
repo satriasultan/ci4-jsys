@@ -1132,8 +1132,8 @@
                 </div>
                 <div class="card-body p-3">
                     <div class="table-responsive">
-                        <table id="tmp_stdcost" class="table table-hover align-middle custom-table">
-                            <thead>
+                        <table id="tmp_stdcost" class="table table-bordered table-striped table-hover align-middle">
+                            <thead class="bg-primary text-white">
                             <tr>
                                 <th class="text-center" width="40">
                                     <input type="checkbox" id="checkAll">
@@ -1229,7 +1229,7 @@
                             <input type="text"
                                    name="actualcost"
                                    id="actualcost"
-                                   class="form-control jtsseparator text-end getsisastock"
+                                   class="form-control jaccseparator text-end getsisastock"
                                    placeholder="0.00" readonly>
                         </div>
                         <div class="col-md-2">
@@ -1237,7 +1237,7 @@
                             <input type="text"
                                    name="lastcost"
                                    id="lastcost"
-                                   class="form-control jtsseparator text-end getsisastock"
+                                   class="form-control jaccseparator text-end getsisastock"
                                    placeholder="0.00" readonly>
                         </div>
                         <div class="col-md-2">
@@ -1245,7 +1245,7 @@
                             <input type="text"
                                    name="newcost"
                                    id="newcost"
-                                   class="form-control jtsseparator text-end"
+                                   class="form-control jaccseparator text-end"
                                    placeholder="0.00" required>
                         </div>
 
@@ -1278,7 +1278,7 @@
                             <input type="text"
                                    name="valqty"
                                    id="valqty"
-                                   class="form-control jtsseparator text-end"
+                                   class="form-control jaccseparator text-end"
                                    placeholder="0.00" required>
                         </div>
  */ ?>

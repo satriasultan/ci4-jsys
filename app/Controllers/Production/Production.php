@@ -3596,7 +3596,7 @@ class Production extends BaseController
             $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             $row[] = $lm->unit;
             $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 4, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 4, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -3626,7 +3626,7 @@ class Production extends BaseController
             $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             $row[] = $lm->unit;
             $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 4, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 4, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -3657,7 +3657,7 @@ class Production extends BaseController
             $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             $row[] = $lm->unit;
             $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 4, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 4, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -3687,7 +3687,7 @@ class Production extends BaseController
             $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             $row[] = $lm->unit;
             $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 4, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 4, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -3719,7 +3719,7 @@ class Production extends BaseController
             $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             $row[] = $lm->unit;
             $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 4, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 4, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -3749,7 +3749,7 @@ class Production extends BaseController
             $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             $row[] = $lm->unit;
             $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 4, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 4, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -5076,16 +5076,16 @@ class Production extends BaseController
             $row[] = $lm->desc_bom;
             $row[] = $lm->idbarang_jadi;
             $row[] = $lm->nmbarang_jadi;
-            // $row[] = '<div class="ratakanan">'. number_format($lm->buildfor, 2, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->buildfor, 4, '.', ',') . '</div>';
             $row[] = '
             <input type="text"
-                class="form-control form-control-sm jtsseparator ratakanan buildfor-input"
+                class="form-control form-control-sm jaccseparator ratakanan buildfor-input"
                 data-id="'.$lm->docno.'"
-                value="'.number_format($lm->buildfor, 2, '.', ',').'"
+                value="'.number_format($lm->buildfor, 4, '.', ',').'"
                 disabled>';
             $row[] = $lm->buildunit;
-            // $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->ttlprice, 2, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->ttlprice, 4, '.', ',') . '</div>';
             $data[] = $row;
         }
 
@@ -5114,10 +5114,10 @@ class Production extends BaseController
             $row[] = $lm->desc_bom;
             $row[] = $lm->idbarang_jadi;
             $row[] = $lm->nmbarang_jadi;
-            $row[] = '<div class="ratakanan">'. number_format($lm->buildfor, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->buildfor, 4, '.', ',') . '</div>';
             $row[] = $lm->buildunit;
-            // $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->ttlprice, 2, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->ttlprice, 4, '.', ',') . '</div>';
             $data[] = $row;
         }
 
@@ -5146,10 +5146,10 @@ class Production extends BaseController
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 4, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -5178,10 +5178,10 @@ class Production extends BaseController
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 4, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -5211,10 +5211,10 @@ class Production extends BaseController
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 4, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -5243,10 +5243,10 @@ class Production extends BaseController
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 4, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -5277,10 +5277,10 @@ class Production extends BaseController
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 4, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -5309,10 +5309,10 @@ class Production extends BaseController
             //item
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 4, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -6166,7 +6166,7 @@ class Production extends BaseController
             $row[] = $lm->idbarang_jadi;
             $row[] = $lm->batchno;
             // $row[] = $lm->buildfor;
-            $row[] = '<div class="ratakanan">'. number_format($lm->buildfor, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->buildfor, 4, '.', ',') . '</div>';
             $row[] = $lm->keterangan;
             $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
 
@@ -8105,10 +8105,10 @@ class Production extends BaseController
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
             $row[] = $lm->spec;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             $row[] = $lm->unit;
-            // $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 2, '.', ',') . '</div>';
-            // $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 2, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 4, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 4, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -8141,7 +8141,7 @@ class Production extends BaseController
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
             $row[] = $lm->spec;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             $row[] = $lm->unit;
             $row[] = $lm->description;
             $data[] = $row;
@@ -10138,10 +10138,10 @@ class Production extends BaseController
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
             $row[] = $lm->spec;
-            $row[] = '<div class="ratakanan" data-export="'.$lm->qty.'">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan" data-export="'.$lm->qty.'">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan" data-export="'.$lm->harga.'">'. number_format($lm->harga, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan" data-export="'.$lm->nilai.'">'. number_format($lm->nilai, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan" data-export="'.$lm->harga.'">'. number_format($lm->harga, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan" data-export="'.$lm->nilai.'">'. number_format($lm->nilai, 4, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -10174,10 +10174,10 @@ class Production extends BaseController
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
             $row[] = $lm->spec;
-            $row[] = '<div class="ratakanan" data-export="'.$lm->qty.'">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan" data-export="'.$lm->qty.'">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan" data-export="'.$lm->harga.'">'. number_format($lm->harga, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan" data-export="'.$lm->nilai.'">'. number_format($lm->nilai, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan" data-export="'.$lm->harga.'">'. number_format($lm->harga, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan" data-export="'.$lm->nilai.'">'. number_format($lm->nilai, 4, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -12071,10 +12071,10 @@ class Production extends BaseController
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
             $row[] = $lm->spec;
-            $row[] = '<div class="ratakanan" data-export="'.$lm->qty.'">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan" data-export="'.$lm->qty.'">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan" data-export="'.$lm->harga.'">'. number_format($lm->harga, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan" data-export="'.$lm->nilai.'">'. number_format($lm->nilai, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan" data-export="'.$lm->harga.'">'. number_format($lm->harga, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan" data-export="'.$lm->nilai.'">'. number_format($lm->nilai, 4, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }
@@ -12107,10 +12107,10 @@ class Production extends BaseController
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
             $row[] = $lm->spec;
-            $row[] = '<div class="ratakanan" data-export="'.$lm->qty.'">'. number_format($lm->qty, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan" data-export="'.$lm->qty.'">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan" data-export="'.$lm->harga.'">'. number_format($lm->harga, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan" data-export="'.$lm->nilai.'">'. number_format($lm->nilai, 2, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan" data-export="'.$lm->harga.'">'. number_format($lm->harga, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan" data-export="'.$lm->nilai.'">'. number_format($lm->nilai, 4, '.', ',') . '</div>';
             $row[] = $lm->description;
             $data[] = $row;
         }

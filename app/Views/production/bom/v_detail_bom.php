@@ -1464,7 +1464,7 @@
                                         <div class="col-md-3">
                                             <label class="form-label">Build For</label>
                                                 <div class="form-group">
-                                                    <input type="text" name="buildfor" id="buildfor" class="form-control ratakanan jtsseparator" placeholder="Build Qty For" required>
+                                                    <input type="text" name="buildfor" id="buildfor" class="form-control ratakanan jaccseparator" placeholder="Build Qty For" required>
                                                 </div>
                                         </div>
                                         <div class="col-md-3">
@@ -1480,7 +1480,7 @@
                                         <div class="col-md-3">
                                             <label class="form-label">Minimum QTY</label>
                                             <div class="form-group">
-                                                <input type="text" name="minimumqty" id="minimumqty" class="form-control ratakanan jtsseparator" placeholder="Build Qty For" >
+                                                <input type="text" name="minimumqty" id="minimumqty" class="form-control ratakanan jaccseparator" placeholder="Build Qty For" >
                                             </div>
                                         </div>
                                 </div>
@@ -1577,9 +1577,9 @@
                                 <div class="detail-tab-body">
                                     <div class="table-responsive">
                                         <table id="trx_bommaterialdtl"
-                                            class="table table-modern">
+                                            class="table table-bordered table-striped table-hover align-middle">
 
-                                            <thead>
+                                            <thead class="bg-primary text-white">
                                                 <tr>
                                                     <th class="text-center" width="50">
                                                         <input type="checkbox" id="checkAll">
@@ -1638,9 +1638,9 @@
                                 <div class="detail-tab-body">
                                     <div class="table-responsive">
                                         <table id="trx_bomcostdtl"
-                                            class="table table-modern">
+                                            class="table table-bordered table-striped table-hover align-middle">
 
-                                            <thead>
+                                            <thead class="bg-primary text-white">
                                                 <tr>
                                                     <th class="text-center" width="50">
                                                         <input type="checkbox" id="checkAllCost">
@@ -1698,9 +1698,9 @@
                                 <div class="detail-tab-body">
                                     <div class="table-responsive">
                                         <table id="trx_bomwipdtl"
-                                            class="table table-modern">
+                                            class="table table-bordered table-striped table-hover align-middle">
 
-                                            <thead>
+                                            <thead class="bg-primary text-white">
                                                 <tr>
                                                     <th class="text-center" width="50">
                                                         <input type="checkbox" id="checkAllWip">
@@ -1820,7 +1820,7 @@
                             <input type="text"
                                     name="qtymaterial"
                                     id="qtymaterial"
-                                    class="form-control jtsseparator ratakanan"
+                                    class="form-control jaccseparator ratakanan"
                                     placeholder="Qty Barang"
                                     onchange="hitungTotalCostMaterial()"
                                     onkeyup="hitungTotalCostMaterial()"
@@ -1841,7 +1841,7 @@
                                    id="standartcostmaterial"
                                    onchange="hitungTotalCostMaterial()"
                                    onkeyup="hitungTotalCostMaterial()"
-                                   class="form-control jtsseparator ratakanan"
+                                   class="form-control jaccseparator ratakanan"
                                    placeholder="Standart Cost"
                                    style="text-transform:uppercase">
                         </div>
@@ -1851,7 +1851,7 @@
                             <input type="text"
                                    name="totalcostmaterial"
                                    id="totalcostmaterial"
-                                   class="form-control jtsseparator ratakanan"
+                                   class="form-control jaccseparator ratakanan"
                                    placeholder="Total cost material"
                                    style="text-transform:uppercase" readonly>
                         </div>
@@ -1946,7 +1946,7 @@
                             <input type="text"
                                     name="qtymaterial"
                                     id="qtymaterial"
-                                    class="form-control jtsseparator ratakanan"
+                                    class="form-control jaccseparator ratakanan"
                                     placeholder="Qty Barang"
                                     onchange="hitungTotalCostCost()"
                                     onkeyup="hitungTotalCostCost()"
@@ -1965,7 +1965,7 @@
                             <input type="text"
                                    name="standartcostmaterial"
                                    id="standartcostmaterial"
-                                   class="form-control jtsseparator ratakanan"
+                                   class="form-control jaccseparator ratakanan"
                                    placeholder="Standart Cost"
                                    style="text-transform:uppercase" readonly>
                         </div>
@@ -1975,7 +1975,7 @@
                             <input type="text"
                                    name="totalcostmaterial"
                                    id="totalcostmaterial"
-                                   class="form-control jtsseparator ratakanan"
+                                   class="form-control jaccseparator ratakanan"
                                    placeholder="Total cost material"
                                    style="text-transform:uppercase" readonly>
                         </div>
