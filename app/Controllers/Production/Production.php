@@ -3056,6 +3056,56 @@ class Production extends BaseController
             }
         }
 
+        // =====================================================
+        // VALIDASI UNRELEASE (F):
+        // BOM tidak boleh di-unrelease bila masih dipakai/ditarik
+        // oleh Working Order, baik draft (sc_tmp) maupun trx (sc_trx)
+        // =====================================================
+        if ($status === 'F') {
+
+            // 1) Sudah ditarik WO (transaksi) — WO batal (C) dikecualikan
+            $refTrx = $db->query("
+                SELECT DISTINCT TRIM(b.docref) AS docref
+                FROM sc_trx.workingorder_bom_mst b
+                LEFT JOIN sc_trx.workingorder_mst w
+                       ON TRIM(w.docno) = TRIM(b.docref)
+                WHERE TRIM(b.docno) = ?
+                  AND COALESCE(UPPER(TRIM(w.status)), '') <> 'C'
+                ORDER BY 1
+            ", [$docno])->getResultArray();
+
+            if (!empty($refTrx)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'BOM sudah ditarik WO nomor '
+                        . implode(', ', array_column($refTrx, 'docref'))
+                        . '. BOM tidak dapat di-unrelease.'
+                ]);
+            }
+
+            // 2) Sedang diproses tarik WO (draft user di sc_tmp)
+            $refTmp = $db->query("
+                SELECT TRIM(b.docref) AS docref, TRIM(b.inputby) AS inputby
+                FROM sc_tmp.workingorder_bom_mst b
+                WHERE TRIM(b.docno) = ?
+                ORDER BY b.inputdate DESC NULLS LAST
+                LIMIT 1
+            ", [$docno])->getRowArray();
+
+            if ($refTmp) {
+                $message = 'BOM sedang diproses tarik WO oleh ' . trim($refTmp['inputby']);
+
+                if (trim($refTmp['docref']) !== '') {
+                    $message .= ' (WO ' . trim($refTmp['docref']) . ')';
+                }
+
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => $message . '. BOM tidak dapat di-unrelease.'
+                ]);
+            }
+        }
+
         $builder = $db->table('sc_trx.bom_mst');
         $builder->where('docno', $docno);
         $info = array('status' => $status);
@@ -3801,21 +3851,37 @@ class Production extends BaseController
         } else {
             // Ambil dari request POST
             $keterangan = strtoupper(trim($this->request->getPost('keterangan')));
+            $idbarang_jadi = strtoupper(trim($this->request->getPost('idbarang_jadi')));
+            $buildfor_raw   = $this->request->getPost('buildfor');
+            $minimumqty_raw = $this->request->getPost('minimumqty');
+
+            // buang pemisah ribuan (koma atau titik tergantung format), lalu pastikan desimal pakai titik
+            $buildfor   = str_replace(',', '', (string) $buildfor_raw);   // "23,687.7078" -> "23687.7078"
+            $minimumqty = str_replace(',', '', (string) $minimumqty_raw);
+
+            // validasi kalau bukan angka, fallback 0
+            $buildfor   = is_numeric($buildfor)   ? $buildfor   : 0;
+            $minimumqty = is_numeric($minimumqty) ? $minimumqty : 0;
 
             // Update data header dulu sebelum set status F
-            $updateHeader = ['description' => $keterangan];
+            $updateHeader = [
+                'keterangan' => $keterangan,
+                'idbarang_jadi' => $idbarang_jadi,
+                'buildfor' => $buildfor,
+                'minimumqty' => $minimumqty
+                ];
 
-            $builder->where('docno', $docno)
-                ->where('inputby', $nama)
-                ->where('status', 'E')
+            $builder->where('TRIM(docno)', $docno)
+                ->where('TRIM(inputby)', $nama)
+                ->where('TRIM(status)', 'E')
                 ->update($updateHeader);
 
             $info = array('status' => 'F', 'updatedate' => date('Y-m-d H:i:s'), 'updateby' => $nama);
 
             $this->db->table('sc_tmp.bom_mst')
-                ->where('docno', $docno)
-                ->where('inputby', $nama)
-                ->where('status', 'E')
+                ->where('TRIM(docno)', $docno)
+                ->where('TRIM(inputby)', $nama)
+                ->where('TRIM(status)', 'E')
                 ->update($info);
 
             $errDb = $this->prod_errorDb();

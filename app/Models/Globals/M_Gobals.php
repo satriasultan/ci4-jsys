@@ -625,11 +625,28 @@ group by docno order by docno asc");
     public function q_workingorder_item($param)
     {
         return $this->db->query("
-            SELECT
-                trim(a.idbarang) as id,
-                a.*
-            FROM sc_trx.workingorder_bom_dtl a
-            WHERE 1=1 AND TRIM(doctype_detail) = 'MATERIAL'
+            SELECT *
+            FROM (
+                SELECT DISTINCT
+                    TRIM(b.idbarang_jadi) AS id,
+                    TRIM(b.idbarang_jadi) AS idbarang,
+                    COALESCE(
+                        NULLIF(TRIM(m.nmbarang), ''),
+                        NULLIF(TRIM(b.nmbarang_jadi), ''),
+                        TRIM(b.idbarang_jadi)
+                    ) AS nmbarang,
+                    COALESCE(
+                        NULLIF(TRIM(m.unit), ''),
+                        NULLIF(TRIM(b.buildunit), '')
+                    ) AS unit,
+                    b.buildfor AS qty,
+                    b.*
+                FROM sc_trx.workingorder_bom_mst b
+                LEFT JOIN sc_mst.mbarang m
+                       ON TRIM(m.idbarang) = TRIM(b.idbarang_jadi)
+                WHERE COALESCE(TRIM(b.idbarang_jadi), '') <> ''
+            ) x
+            WHERE 1=1
             $param
         ");
     }
