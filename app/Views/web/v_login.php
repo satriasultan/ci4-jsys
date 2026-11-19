@@ -303,9 +303,9 @@
         <div class="form-group mt-3">
 
             <select class="form-control select2" name="cabang" id="cabang" required>
-                <option value="JTS">PT JATIM TAMAN STEEL.MFG</option>
-                <option value="P1">PLANT 1</option>
-                <option value="P2">PLANT 2</option>
+                <option value="01">PT JATIM TAMAN STEEL.MFG</option>
+                <option value="01.01">PLANT 1</option>
+                <option value="01.02">PLANT 2</option>
             </select>
         </div>
 
