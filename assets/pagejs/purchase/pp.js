@@ -555,10 +555,10 @@ function tablePPDetail(){
             "serverSide": true, //Feature control DataTables' server-side processing mode.
             "language":  languageDatatable(),
             "paging": false,
-            "lengthChange": true,
+            "lengthChange": false,
             "searching": true,
             "ordering": true,
-            "info": true,
+            "info": false,
             "autoWidth": false,
             "responsive": false,
             "bFilter":true,
@@ -596,8 +596,26 @@ function tablePPDetail(){
                     "targets": [ -1 ],
                     "orderable": false
                 }
-            ]
+            ],
+            // setiap tabel detail selesai di-load -> update info total baris
+            "drawCallback": function (settings) {
+                updatePPDetailFooter(settings);
+                updatePPDetailCheckedCount();
+            }
         });
+
+        // info jumlah baris tercentang (kiri toolbar grid, tepat di atas header check-all)
+        var $toolbarRow = $('#tabppdtl_wrapper').children('.row').first();
+        if ($toolbarRow.length && !$toolbarRow.find('#ppDetailCheckedCount').length) {
+            $toolbarRow.prepend(
+                '<div class="po-detail-checkinfo is-empty" id="ppDetailCheckedCount">' +
+                    '<i class="fa fa-check-square-o"></i>' +
+                    '<span>Terpilih: <strong>0</strong> item</span>' +
+                '</div>'
+            );
+        }
+        updatePPDetailFooter();
+        updatePPDetailCheckedCount();
 
         $('#tabppdtl tbody').on('click', 'tr', function(e) {
             // Cegah jika yang diklik adalah checkbox itu sendiri (untuk menghindari double trigger)
@@ -628,24 +646,85 @@ function reload_table_pp_dtl()
 }
 
 
+/* Footer grid detail PP :
+   - total seluruh detail yang sudah terinput (tanpa filter search)
+   - info jumlah baris hasil pencarian (muncul hanya saat search diisi) */
+function updatePPDetailFooter(settings) {
+    var json  = (settings && settings.json) ? settings.json : {};
+    var total = parseInt(json.recordsTotal, 10);
+    var shown = parseInt(json.recordsFiltered, 10);
+
+    if (isNaN(total)) { total = parseInt(settings && settings._iRecordsTotal, 10) || 0; }
+    if (isNaN(shown)) { shown = parseInt(settings && settings._iRecordsDisplay, 10) || 0; }
+
+    var term = '';
+    if (settings && settings.oPreviousSearch) {
+        term = $.trim(settings.oPreviousSearch.sSearch || '');
+    }
+
+    var $totalRow = $('#ppDetailTotalRow');
+    if ($totalRow.length) {
+        $totalRow.text(total.toLocaleString('id-ID'));
+    }
+
+    var $filterInfo = $('#ppDetailFilterInfo');
+    if ($filterInfo.length) {
+        if (term !== '') {
+            $filterInfo
+                .html('<i class="fa fa-filter"></i>Hasil pencarian &ldquo;' +
+                      $('<div>').text(term).html() +
+                      '&rdquo;: <strong>' + shown.toLocaleString('id-ID') + '</strong> baris')
+                .show();
+        } else {
+            $filterInfo.text('').hide();
+        }
+    }
+}
+
+
+/* Info jumlah baris detail yang dicentang (badge di atas header grid) */
+function updatePPDetailCheckedCount() {
+    var count = $('#tabppdtl tbody .row-check:checked').length;
+    var $info = $('#ppDetailCheckedCount');
+
+    if (!$info.length) {
+        return;
+    }
+
+    $info.find('strong').text(count.toLocaleString('id-ID'));
+    $info.toggleClass('is-empty', count === 0);
+    $info.toggleClass('has-selection', count > 0);
+}
+
+
 
 // CHECK ALL
 $('#tabppdtl thead').on('change', '#checkAll', function () {
     const checked = this.checked;
 
     $('#tabppdtl tbody .row-check').prop('checked', checked);
+    $('#tabppdtl tbody tr').toggleClass('po-row-checked', checked);
+    $('#checkAll').prop('indeterminate', false);
+    updatePPDetailCheckedCount();
 });
 
 // JIKA SALAH SATU ROW UNCHECK → CHECKALL MATI
 $('#tabppdtl tbody').on('change', '.row-check', function () {
+    $(this).closest('tr').toggleClass('po-row-checked', this.checked);
+
     const total = $('#tabppdtl tbody .row-check').length;
     const checked = $('#tabppdtl tbody .row-check:checked').length;
 
-    $('#checkAll').prop('checked', total === checked);
+    $('#checkAll')
+        .prop('checked', total > 0 && total === checked)
+        .prop('indeterminate', checked > 0 && checked < total);
+    updatePPDetailCheckedCount();
 });
 
 $('#tabppdtl').on('draw.dt', function () {
-    $('#checkAll').prop('checked', false);
+    $('#checkAll').prop('checked', false).prop('indeterminate', false);
+    $('#tabppdtl tbody tr').removeClass('po-row-checked');
+    updatePPDetailCheckedCount();
 });
 function getSelectedPPDetail(){
     return $('#tabppdtl tbody .row-check:checked')
@@ -661,6 +740,220 @@ function getCheckedDetailIds(){
     });
     return ids;
 }
+
+
+/* =========================================================
+   SHORTCUT KEYBOARD & TOOLTIP TOMBOL DETAIL PP
+   Ctrl + Q = Input Data
+   Ctrl + E = Update Data
+   Ctrl + D = Hapus Data
+========================================================= */
+function initPPDetailShortcutTooltips() {
+    // hanya untuk halaman entry PP (ada grid detail)
+    if (!$('#tabppdtl').length) {
+        return;
+    }
+
+    var $buttons = $('.header-actions [data-bs-toggle="tooltip"], .header-actions [data-toggle="tooltip"]');
+
+    if (!$buttons.length) {
+        return;
+    }
+
+    if (window.bootstrap && window.bootstrap.Tooltip) {
+        $buttons.each(function () {
+            if (!window.bootstrap.Tooltip.getInstance(this)) {
+                new window.bootstrap.Tooltip(this, {
+                    placement: 'bottom',
+                    container: 'body'
+                });
+            }
+        });
+    } else if ($.fn.tooltip) {
+        $buttons.tooltip({
+            placement: 'bottom',
+            container: 'body'
+        });
+    }
+}
+
+function isPPDetailShortcutBlocked(e) {
+    // jangan ganggu saat modal / dialog sedang terbuka
+    if ($('.modal.show').length || $('.swal2-container').length) {
+        return true;
+    }
+
+    // jangan trigger saat user sedang mengetik / memilih di form
+    var tagName = (e.target && e.target.tagName ? e.target.tagName : '').toLowerCase();
+
+    if (tagName === 'textarea' || tagName === 'select') {
+        return true;
+    }
+
+    if (tagName === 'input') {
+        // checkbox / radio / tombol tidak menghalangi shortcut
+        var inputType = (e.target.type || 'text').toLowerCase();
+        var nonTypingTypes = ['checkbox', 'radio', 'button', 'submit', 'reset'];
+
+        if (nonTypingTypes.indexOf(inputType) === -1) {
+            return true;
+        }
+    }
+
+    if (e.target && e.target.isContentEditable) {
+        return true;
+    }
+
+    if ($(e.target).closest('.select2-container--open').length) {
+        return true;
+    }
+
+    return false;
+}
+
+$(document).on('keydown.ppDetailShortcut', function (e) {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) {
+        return;
+    }
+
+    // shortcut hanya aktif di halaman entry PP (ada grid detail)
+    if (!$('#tabppdtl').length) {
+        return;
+    }
+
+    var key = (e.key || '').toLowerCase();
+
+    // Ctrl + W / Ctrl + Shift + W menutup tab / window browser → dicegah
+    if (key === 'w') {
+        e.preventDefault();
+        e.stopPropagation();
+
+        return false;
+    }
+
+    if (e.shiftKey) {
+        return;
+    }
+
+    if (key !== 'q' && key !== 'e' && key !== 'd') {
+        return;
+    }
+
+    if (isPPDetailShortcutBlocked(e)) {
+        return;
+    }
+
+    e.preventDefault();
+
+    if (key === 'q') {
+        btnInputDetail();
+    } else if (key === 'e') {
+        btnUpdateDetail();
+    } else {
+        btnDeleteDetail();
+    }
+});
+
+/* =========================================================
+   SHORTCUT SIMPAN DETAIL PP
+   Ctrl + Alt + S = savePPDetail() (aktif saat modal Detail /
+   Update PP sedang terbuka)
+========================================================= */
+$(document).on('keydown.ppSaveDetailShortcut', function (e) {
+    if (!(e.ctrlKey || e.metaKey) || !e.altKey || e.shiftKey) {
+        return;
+    }
+
+    if ((e.key || '').toLowerCase() !== 's') {
+        return;
+    }
+
+    // hanya saat modal input / update detail PP terbuka
+    if (!$('#modalDetailPP').hasClass('show')) {
+        return;
+    }
+
+    // jangan bentrok saat dialog konfirmasi sedang tampil
+    if ($('.swal2-container').length) {
+        return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    savePPDetail();
+});
+
+/* =========================================================
+   GUARD TUTUP TAB / HALAMAN (Ctrl + W) — ENTRY PP
+   Chrome/Edge mengabaikan preventDefault untuk Ctrl + W,
+   sehingga tab tetap tertutup. Karena itu dipakai konfirmasi
+   native beforeunload: tab hanya tertutup bila user memilih
+   "Leave", sedangkan "Cancel"/"Stay" tetap di halaman ini.
+   Guard aktif hanya di halaman Entry PP (ada #formPP).
+========================================================= */
+var ppLeaveGuard = {
+    allowed: false
+};
+
+function allowPPLeave() {
+    ppLeaveGuard.allowed = true;
+}
+
+// izinkan sementara (untuk klik link) — aktif kembali bila navigasi dibatalkan
+function allowPPLeaveTemporary() {
+    ppLeaveGuard.allowed = true;
+
+    setTimeout(function () {
+        ppLeaveGuard.allowed = false;
+    }, 3000);
+}
+
+// simpan final / submit form → boleh meninggalkan halaman
+$(document).on('submit', '#formPP', function () {
+    allowPPLeave();
+});
+
+// navigasi normal via link (mis. tombol Back / Clear) → boleh meninggalkan halaman
+$(document).on('click', 'a[href]', function () {
+    var $link = $(this);
+    var href = String($link.attr('href') || '').trim();
+    var target = String($link.attr('target') || '').toLowerCase();
+
+    if (href === '' || href.charAt(0) === '#' || href.indexOf('javascript:') === 0) {
+        return;
+    }
+
+    // tab / unduhan baru tidak meninggalkan halaman ini
+    if (target === '_blank' || $link.is('[download]')) {
+        return;
+    }
+
+    allowPPLeaveTemporary();
+});
+
+$(window).on('beforeunload', function (e) {
+    if (ppLeaveGuard.allowed || $('#formPP').length === 0) {
+        return;
+    }
+
+    var message = 'Ctrl + W dinonaktifkan pada halaman Entry PP. Pilih Cancel / Stay agar tab tidak tertutup.';
+
+    e.preventDefault();
+
+    if (e.originalEvent) {
+        e.originalEvent.returnValue = message;
+    }
+
+    e.returnValue = message;
+
+    return message;
+});
+
+$(function () {
+    initPPDetailShortcutTooltips();
+});
+
 
 
 
@@ -797,7 +1090,7 @@ function btnUpdateDetail(){
                 setSelect2Ajax('#idbarang', res.data.idbarang, res.data.idbarang);
                 setSelect2Ajax('#unit', res.data.unit, res.data.unit);
 
-                $('#modalDetailPPLabel').text('Update PP Detail');
+                $('#modalDetailPPLabel').attr('data-mode', 'update').text('Update PP Detail');
                 $('#modalDetailPP').modal('show');
                 // 🔹 Panggil setelah modal show, beri jeda agar select2 selesai render
                 setTimeout(function () {
@@ -1192,6 +1485,7 @@ function savePPDetail() {
                     // }
 
                     if (res.reload === true) {
+                        allowPPLeave();
                         window.location.reload();
                         return;
                     }
@@ -1253,7 +1547,7 @@ function btnInputDetail() {
 
     $('#idurut').val(''); // pastikan id kosong (mode insert)
 
-    $('#modalDetailPPLabel').text('Tambah Item Detail');
+    $('#modalDetailPPLabel').attr('data-mode', 'input').text('Tambah Item Detail');
     $('#modalDetailPP').modal('show');
 }
 

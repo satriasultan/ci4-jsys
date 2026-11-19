@@ -4229,7 +4229,8 @@ class Purchase extends BaseController
 
                 $nilaipajak = $nilai * $totalPersentase / 100;
             } else {
-                $nilaipajak = $nilai;
+                // idtax NON / kosong → tidak ada pajak
+                $nilaipajak = 0;
             }
 
             // =====================================================
@@ -4814,10 +4815,10 @@ class Purchase extends BaseController
 
 
     function list_tmp_po_dtl(){
-        $docno = trim($this->request->getPost('docno')); // ambil dari POST
+        $docno = trim((string) $this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_purchase->get_t_po_dtl_temp_view($docno);
         $data = array();
-        $no = $_POST['start'];
+        $no = (int) ($_POST['start'] ?? 0);
         foreach ($list as $lm) {
             $no++;
             $row = array();
@@ -4828,8 +4829,12 @@ class Purchase extends BaseController
             //item
             $row[] = $lm->docnopp;
             $row[] = $lm->idbarang;
-            $row[] = $lm->nmbarang;
-            $row[] = $lm->batch;
+            $row[] = '<div class="po-cell-ellipsis" title="' .
+                htmlspecialchars((string) $lm->nmbarang, ENT_QUOTES) . '">' .
+                $lm->nmbarang . '</div>';
+            $row[] = '<div class="po-cell-ellipsis po-cell-ellipsis-sm" title="' .
+                htmlspecialchars((string) $lm->batch, ENT_QUOTES) . '">' .
+                $lm->batch . '</div>';
             $row[] = $lm->capexno;
 
             // =========================================
@@ -4843,7 +4848,9 @@ class Purchase extends BaseController
             // =========================================
             // 🔹 ETD NOTES (menggantikan Total Disc)
             // =========================================
-            $row[] = $lm->etdnotes;
+            $row[] = '<div class="po-cell-ellipsis" title="' .
+                htmlspecialchars((string) $lm->etdnotes, ENT_QUOTES) . '">' .
+                $lm->etdnotes . '</div>';
 
             $row[] = $lm->unit;
             $row[] = '<div class="ratakanan">'. $this->formatPoNumber($lm->qty) . '</div>';
@@ -4865,13 +4872,22 @@ class Purchase extends BaseController
 //        $row[] = '<div class="ratakanan">'. number_format($lm->totaldiscount, 2, '.', ',') . '</div>';
 
             $row[] = '<div class="ratakanan text-bold">'. $this->formatPoNumber($lm->nilai) . '</div>';
-            $row[] = $lm->descriptionpo;
-            $row[] = $lm->descriptionpp;
+
+            // 🔹 Nilai setelah dikonversi ke base currency (IDR)
+            $row[] = '<div class="ratakanan">'. $this->formatPoNumber($lm->nilaikonversi) . '</div>';
+
+            $row[] = '<div class="po-cell-ellipsis" title="' .
+                htmlspecialchars((string) $lm->descriptionpo, ENT_QUOTES) . '">' .
+                $lm->descriptionpo . '</div>';
+
+            $row[] = '<div class="po-cell-ellipsis" title="' .
+                htmlspecialchars((string) $lm->descriptionpp, ENT_QUOTES) . '">' .
+                $lm->descriptionpp . '</div>';
             $data[] = $row;
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => (int) ($_POST['draw'] ?? 1),
             "recordsTotal" => $this->m_purchase->t_po_dtl_temp_view_count_all($docno),
             "recordsFiltered" => $this->m_purchase->t_po_dtl_temp_view_count_filtered($docno),
             "data" => $data,
@@ -10329,10 +10345,10 @@ class Purchase extends BaseController
     }
 
     function list_tmp_lpb_dtl(){
-        $docno = trim($this->request->getPost('docno'));
+        $docno = trim((string) $this->request->getPost('docno'));
         $list = $this->m_purchase->get_t_lpb_dtl_temp_view($docno);
         $data = array();
-        $no = $_POST['start'];
+        $no = (int) ($_POST['start'] ?? 0);
         foreach ($list as $lm) {
             $no++;
             $row = array();
@@ -10341,17 +10357,23 @@ class Purchase extends BaseController
             //item
             $row[] = $lm->docnopo;
             $row[] = $lm->idbarang;
-            $row[] = $lm->nmbarang;
+            $row[] = '<div class="lpb-cell-ellipsis" title="' .
+                htmlspecialchars((string) $lm->nmbarang, ENT_QUOTES) . '">' .
+                $lm->nmbarang . '</div>';
             $row[] = $lm->capexno;
 //            $row[] = $lm->idprincipal;
             $row[] = $lm->idgudang;
 
             // 🔧 batch (sebelumnya idspec)
-            $row[] = $lm->batch;
+            $row[] = '<div class="lpb-cell-ellipsis lpb-cell-ellipsis-sm" title="' .
+                htmlspecialchars((string) $lm->batch, ENT_QUOTES) . '">' .
+                $lm->batch . '</div>';
 
             // 🔧 ETD & ETD Notes
             $row[] = !empty($lm->etd) ? date('d-m-Y', strtotime($lm->etd)) : '';
-            $row[] = $lm->etdnotes;
+            $row[] = '<div class="lpb-cell-ellipsis" title="' .
+                htmlspecialchars((string) $lm->etdnotes, ENT_QUOTES) . '">' .
+                $lm->etdnotes . '</div>';
 
             $row[] = $lm->unit;
             $row[] = '<div class="ratakanan">'. $this->formatLpbNumber($lm->qty) . '</div>';
@@ -10362,13 +10384,21 @@ class Purchase extends BaseController
 //            $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 2, '.', ',') . '</div>';
 //            $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 2, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan text-bold">'. $this->formatLpbNumber($lm->nilai) . '</div>';
-            $row[] = $lm->descriptionpo;
-            $row[] = $lm->descriptionpp;
+
+            // 🔹 Nilai setelah dikonversi ke base currency (IDR)
+            $row[] = '<div class="ratakanan">'. $this->formatLpbNumber($lm->nilaikonversi) . '</div>';
+
+            $row[] = '<div class="lpb-cell-ellipsis" title="' .
+                htmlspecialchars((string) $lm->descriptionpo, ENT_QUOTES) . '">' .
+                $lm->descriptionpo . '</div>';
+            $row[] = '<div class="lpb-cell-ellipsis" title="' .
+                htmlspecialchars((string) $lm->descriptionpp, ENT_QUOTES) . '">' .
+                $lm->descriptionpp . '</div>';
             $data[] = $row;
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => (int) ($_POST['draw'] ?? 1),
             "recordsTotal" => $this->m_purchase->t_lpb_dtl_temp_view_count_all($docno),
             "recordsFiltered" => $this->m_purchase->t_lpb_dtl_temp_view_count_filtered($docno),
             "data" => $data,

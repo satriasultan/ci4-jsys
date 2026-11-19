@@ -2030,6 +2030,9 @@ class Report extends BaseController
             SELECT COUNT(*) AS total
             FROM sc_trx.lpb_dtl dtl
             INNER JOIN sc_trx.lpb lp ON TRIM(lp.docno) = TRIM(dtl.docno)
+            LEFT JOIN sc_trx.po_dtl pd
+                   ON TRIM(pd.docno) = TRIM(dtl.docnopo)
+                  AND TRIM(pd.uniqueidpo) = TRIM(dtl.uniqueidpo)
             $whereSql
         ";
         $totalRow  = $this->db->query($sqlCount, $bind)->getRowArray();
@@ -2045,13 +2048,17 @@ class Report extends BaseController
                 TRIM(lp.kdsupplier)                   AS kdsupplier,
                 TRIM(lp.nmsupplier)                   AS nmsupplier,
                 TRIM(lp.alamatsupplier)               AS alamatsupplier,
-                TRIM(lp.pemohon)                      AS pemohon,
+                TRIM(lp.inputby)                      AS pemohon,
                 TRIM(dtl.docnopo)                     AS docnopo,
+                TRIM(COALESCE(pd.docnopp, ''))        AS docnopp,
                 TRIM(dtl.idbarang)                    AS idbarang,
                 TRIM(dtl.nmbarang)                    AS nmbarang,
                 TRIM(dtl.unit)                        AS unit,
                 dtl.qty                               AS qty,
                 dtl.qtybonus                          AS qtybonus,
+                pd.qty                                AS qtypo,
+                pd.qtylpb                             AS qtylpb,
+                pd.qtyvoid                            AS qtyvoid,
                 dtl.harga                             AS harga,
                 dtl.multidisc                         AS multidisc,
                 dtl.totaldiscount                     AS totaldiscount,
@@ -2061,13 +2068,21 @@ class Report extends BaseController
                 dtl.descriptionpo                     AS descriptionpo,
                 dtl.descriptionpp                     AS descriptionpp,
                 TRIM(dtl.capexno)                     AS capexno,
+                TRIM(COALESCE(pd.batch, ''))          AS batch,
+                TO_CHAR(pd.etd, 'DD-MM-YYYY')         AS etd,
+                TRIM(COALESCE(pd.etdnotes, ''))       AS etdnotes,
+                TRIM(COALESCE(pd.category, ''))       AS category,
                 dtl.currcode                          AS currcode,
                 dtl.kurs                              AS kurs,
+                TRIM(COALESCE(pd.currcode, ''))       AS currcode_po,
                 lp.nofaktur                           AS nofaktur,
                 lp.nosj                               AS nosj,
                 lp.keterangan                         AS keterangan_lpb
             FROM sc_trx.lpb_dtl dtl
             INNER JOIN sc_trx.lpb lp ON TRIM(lp.docno) = TRIM(dtl.docno)
+            LEFT JOIN sc_trx.po_dtl pd
+                   ON TRIM(pd.docno) = TRIM(dtl.docnopo)
+                  AND TRIM(pd.uniqueidpo) = TRIM(dtl.uniqueidpo)
             $whereSql
             ORDER BY lp.docdate DESC, dtl.docno, dtl.idurut
             LIMIT ? OFFSET ?
@@ -2139,11 +2154,15 @@ class Report extends BaseController
                 TRIM(lp.alamatsupplier)               AS alamatsupplier,
                 TRIM(lp.inputby)                      AS pemohon,
                 TRIM(dtl.docnopo)                     AS docnopo,
+                TRIM(COALESCE(pd.docnopp, ''))        AS docnopp,
                 TRIM(dtl.idbarang)                    AS idbarang,
                 TRIM(dtl.nmbarang)                    AS nmbarang,
                 TRIM(dtl.unit)                        AS unit,
                 dtl.qty                               AS qty,
                 dtl.qtybonus                          AS qtybonus,
+                pd.qty                                AS qtypo,
+                pd.qtylpb                             AS qtylpb,
+                pd.qtyvoid                            AS qtyvoid,
                 dtl.harga                             AS harga,
                 dtl.multidisc                         AS multidisc,
                 dtl.totaldiscount                     AS totaldiscount,
@@ -2153,13 +2172,21 @@ class Report extends BaseController
                 dtl.descriptionpo                     AS descriptionpo,
                 dtl.descriptionpp                     AS descriptionpp,
                 TRIM(dtl.capexno)                     AS capexno,
+                TRIM(COALESCE(pd.batch, ''))          AS batch,
+                TO_CHAR(pd.etd, 'DD-MM-YYYY')         AS etd,
+                TRIM(COALESCE(pd.etdnotes, ''))       AS etdnotes,
+                TRIM(COALESCE(pd.category, ''))       AS category,
                 dtl.currcode                          AS currcode,
                 dtl.kurs                              AS kurs,
+                TRIM(COALESCE(pd.currcode, ''))       AS currcode_po,
                 lp.nofaktur                           AS nofaktur,
                 lp.nosj                               AS nosj,
                 lp.keterangan                         AS keterangan_lpb
             FROM sc_trx.lpb_dtl dtl
             INNER JOIN sc_trx.lpb lp ON TRIM(lp.docno) = TRIM(dtl.docno)
+            LEFT JOIN sc_trx.po_dtl pd
+                   ON TRIM(pd.docno) = TRIM(dtl.docnopo)
+                  AND TRIM(pd.uniqueidpo) = TRIM(dtl.uniqueidpo)
             $whereSql
             ORDER BY lp.docdate DESC, dtl.docno, dtl.idurut
         ";
@@ -2182,23 +2209,35 @@ class Report extends BaseController
         $judulLaporan = 'LAPORAN PENERIMAAN BARANG (LPB)';
 
         $sheet->setCellValue('A1', $judulLaporan);
-        $sheet->mergeCells('A1:Z1');   // 26 kolom (A..Z)
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
         $sheet->getStyle('A1')->getAlignment()->setHorizontal('center');
 
-        /* --- Header: 26 kolom --- */
+        /* --- Header: 35 kolom (termasuk kolom tambahan dari sc_trx.po_dtl) --- */
         $headers = [
             'No. LPB', 'Tanggal', 'Cabang',
             'Kode Supplier', 'Nama Supplier', 'Alamat Supplier', 'Pemohon',
-            'No. PO', 'ID Barang', 'Nama Barang', 'Satuan',
-            'Qty', 'Qty Bonus', 'Harga', 'Disc', 'Total Disc', 'Jumlah',
-            'PPN', 'Nilai Konversi', 'Kurs',
+            'No. PO', 'No. PP', 'ID Barang', 'Nama Barang', 'Satuan',
+            'Qty', 'Qty Bonus', 'Qty PO', 'Qty LPB', 'Qty Void',
+            'Harga', 'Disc', 'Total Disc', 'Jumlah',
+            'PPN', 'Nilai Konversi', 'Kurs', 'Currcode',
             'Keterangan PO', 'Keterangan PP', 'No. Capex',
+            'Batch', 'ETD', 'Ket. ETD', 'Kategori',
             'No. Faktur', 'No. SJ', 'Keterangan LPB'
-        ];  // 26 kolom ✅
+        ];  // 35 kolom ✅
         $sheet->fromArray($headers, null, 'A3');
 
-        $lastCol = 'Z'; // 26 kolom
+        $lastCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($headers));
+        $sheet->mergeCells("A1:{$lastCol}1");
+
+        /* kolom angka: Qty, Qty Bonus, Qty PO, Qty LPB, Qty Void, Harga, Disc, Total Disc, Jumlah, PPN, Nilai Konversi, Kurs */
+        $numericHeaders = ['Qty', 'Qty Bonus', 'Qty PO', 'Qty LPB', 'Qty Void', 'Harga', 'Disc', 'Total Disc', 'Jumlah', 'PPN', 'Nilai Konversi', 'Kurs'];
+        $numericCols    = [];
+        foreach ($headers as $i => $h) {
+            if (in_array($h, $numericHeaders, true)) {
+                $numericCols[] = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i + 1);
+            }
+        }
+
         $sheet->getStyle("A3:{$lastCol}3")->getFont()->setBold(true);
         $sheet->getStyle("A3:{$lastCol}3")->getFill()
             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
@@ -2214,13 +2253,14 @@ class Report extends BaseController
             $rowData = [
                 $r['docno'], $r['docdate'], $r['cabang'],
                 $r['kdsupplier'], $r['nmsupplier'], $r['alamatsupplier'], $r['pemohon'],
-                $r['docnopo'], $r['idbarang'], $r['nmbarang'], $r['unit'],
-                $r['qty'], $r['qtybonus'], $r['harga'],
-                $r['multidisc'], $r['totaldiscount'], $r['nilai'],
-                $r['nilaipajak'], $r['nilaikonversi'], $r['kurs'],
+                $r['docnopo'], $r['docnopp'], $r['idbarang'], $r['nmbarang'], $r['unit'],
+                $r['qty'], $r['qtybonus'], $r['qtypo'], $r['qtylpb'], $r['qtyvoid'],
+                $r['harga'], $r['multidisc'], $r['totaldiscount'], $r['nilai'],
+                $r['nilaipajak'], $r['nilaikonversi'], $r['kurs'], $r['currcode_po'],
                 $r['descriptionpo'], $r['descriptionpp'], $r['capexno'],
+                $r['batch'], $r['etd'], $r['etdnotes'], $r['category'],
                 $r['nofaktur'], $r['nosj'], $r['keterangan_lpb']
-            ];  // 26 kolom ✅ — MATCH dengan header
+            ];  // 35 kolom ✅ — MATCH dengan header
 
             $sheet->fromArray($rowData, null, 'A' . $rowNum);
 
@@ -2252,10 +2292,10 @@ class Report extends BaseController
         }
 
         /* ====== FORMAT ANGKA ====== */
-        // Kolom L..T = Qty, Qty Bonus, Harga, Disc, Total Disc, Jumlah, PPN, Nilai Konversi, Kurs
+        // Kolom angka mengikuti posisi header (Qty .. Kurs), dihitung otomatis
         $firstDataRow = 4;
         $lastDataRow  = max(4, $rowNum - 1);
-        foreach (['L','M','N','O','P','Q','R','S','T'] as $col) {
+        foreach ($numericCols as $col) {
             $sheet->getStyle("{$col}{$firstDataRow}:{$col}{$lastDataRow}")
                 ->getNumberFormat()->setFormatCode('#,##0.00');
         }

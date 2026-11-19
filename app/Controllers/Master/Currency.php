@@ -439,6 +439,7 @@ class Currency extends BaseController
                 ->with('error', 'Data currency tidak ditemukan.');
         }
         $data['currency'] = $currency;
+        $data['exchange_setting'] = $this->m_currency->getExchangeRateSetting();
 
         // Hak akses
         $role = trim($this->session->get('roleid'));
@@ -514,6 +515,7 @@ class Currency extends BaseController
                 ->with('error', 'Data currency tidak ditemukan.');
         }
         $data['currency'] = $currency;
+        $data['exchange_setting'] = $this->m_currency->getExchangeRateSetting();
 
         // Hak akses
         $role = trim($this->session->get('roleid'));
@@ -592,18 +594,28 @@ class Currency extends BaseController
             ]);
         }
 
-        /* Exchange date dari modal popup : format DD-MM-YYYY HH:mm:ss
-           kolom sc_mst.exchangerate.exchangedate bertipe timestamp => simpan tanggal + jam */
+        /* Exchange date dari modal popup : format DD-MM-YYYY.
+           Kolom timestamp tetap diisi jam 00:00:00 agar satu tanggal
+           hanya mewakili satu kurs (padanan exchangedate::date). */
         $exchangedate_input = isset($data->body->exchangedate) ? trim((string) $data->body->exchangedate) : '';
         if ($exchangedate_input !== '' && strtotime($exchangedate_input) !== false) {
-            $exchangedate = date('Y-m-d H:i:s', strtotime($exchangedate_input));
+            $exchangedate = date('Y-m-d 00:00:00', strtotime($exchangedate_input));
         } else {
-            $exchangedate = $inputdate; // default : tanggal + jam saat ini
+            $exchangedate = date('Y-m-d 00:00:00'); // default : tanggal hari ini, jam selalu 00:00:00
         }
 
         // Nilai exchange rate (NUMERIC 18,4) => selalu 4 digit desimal
         $nilai_input = isset($data->body->nilai) ? str_replace(',', '', trim((string) $data->body->nilai)) : '';
         $nilai = ($nilai_input === '' || !is_numeric($nilai_input)) ? 0 : (float) $nilai_input;
+
+        // Proteksi : tanggal hanya boleh satu data & nilai tidak boleh sama dengan kurs terakhir
+        $validasi = $this->_validateExchangeRate($idcurrency, $exchangedate, $nilai);
+        if (!$validasi['ok']) {
+            return $this->response->setJSON([
+                'status' => false,
+                'message' => $validasi['message']
+            ]);
+        }
 
         // Data untuk disimpan ke database
         $data_insert = [
@@ -653,8 +665,9 @@ class Currency extends BaseController
             // $row[] = '<input type="text" class=" ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;"  id="pricelst_'.$lm->id.'" name="pricelst_'.$lm->id.'" value="'.number_format($lm->pricelst, 2, '.', '').'" disabled >';
             /* Exchange date & nilai ditampilkan sebagai text (read only).
                Input / update data dilakukan melalui modal popup "Exchange Rate"
-               (lihat currency.js : openExchangeRateModal()). */
-            $exchangedate_display = $lm->exchangedate ? date('d-m-Y H:i:s', strtotime($lm->exchangedate)) : '';
+               (lihat currency.js : openExchangeRateModal()).
+               Jam selalu 00:00:00 sehingga yang ditampilkan hanya tanggalnya. */
+            $exchangedate_display = $lm->exchangedate ? date('d-m-Y', strtotime($lm->exchangedate)) : '';
 
             $row[] = '<span class="exchange-date">' . htmlspecialchars($exchangedate_display, ENT_QUOTES, 'UTF-8') . '</span>';
 
@@ -710,8 +723,8 @@ class Currency extends BaseController
                 $exchangedate = null;
 
                 if ($exchangedate_input && strtotime($exchangedate_input)) {
-                    // kolom sc_mst.exchangerate.exchangedate bertipe timestamp => simpan tanggal + jam
-                    $exchangedate = date('Y-m-d H:i:s', strtotime($exchangedate_input));
+                    // kolom timestamp => disimpan sebagai tanggal + jam 00:00:00 (satu tanggal = satu kurs)
+                    $exchangedate = date('Y-m-d 00:00:00', strtotime($exchangedate_input));
                 }
                 // $category = $update['category'] ?? '';
 
@@ -720,6 +733,28 @@ class Currency extends BaseController
 
                 if (empty($idurut)) {
                     continue; // Skip jika idurut kosong
+                }
+
+                $idcurrency = isset($masterData['idcurrency']) ? trim((string) $masterData['idcurrency']) : '';
+                if ($idcurrency === '') {
+                    $response[] = [
+                        'idurut' => $idurut,
+                        'status' => false,
+                        'message' => 'Currency is not selected.'
+                    ];
+                    continue;
+                }
+
+                // Proteksi : tanggal tidak boleh bentrok dengan data lain
+                // dan nilai tidak boleh sama dengan kurs terakhir
+                $validasi = $this->_validateExchangeRate($idcurrency, $exchangedate, $nilai, $idurut);
+                if (!$validasi['ok']) {
+                    $response[] = [
+                        'idurut' => $idurut,
+                        'status' => false,
+                        'message' => $validasi['message']
+                    ];
+                    continue;
                 }
 
                 // Ambil data supplier sebelumnya dari database
@@ -734,9 +769,9 @@ class Currency extends BaseController
                     'updatedate' => date('Y-m-d H:i:s')
                 ];
 
-                // Update berdasarkan idurut dan docno = nama
+                // Update berdasarkan idurut dan idcurr
                 $builder->where('id', $idurut);
-                $builder->where('idcurr', $masterData['idcurrency']);
+                $builder->where('idcurr', $idcurrency);
 
                 if ($builder->update($infoupdate)) {
                     $response[] = [
@@ -758,10 +793,14 @@ class Currency extends BaseController
             // $builderMaster->where('docno', $masterData['docno']);
             // $builderMaster->update(['status' => 'E']); // Status untuk master
 
-            // Berikan respons ke frontend
+            // Berikan respons ke frontend (error jika ada baris yang ditolak proteksi)
+            $failed = array_values(array_filter($response, static function ($row) {
+                return empty($row['status']);
+            }));
+
             echo json_encode([
-                'status' => 'success',
-                'message' => 'Data updated successfully',
+                'status' => empty($failed) ? 'success' : 'error',
+                'message' => empty($failed) ? 'Data updated successfully' : $failed[0]['message'],
                 'results' => $response
             ]);
         } else {
@@ -792,6 +831,620 @@ class Currency extends BaseController
 
         echo json_encode(['status' => true, 'messages' => 'Data Deleted Successfully']);
     }
+
+    /* =========================================================
+     * PROTEKSI EXCHANGE DATE & NILAI
+     * 1. Satu currency hanya boleh punya satu data per tanggal.
+     *    Rentang tanggal dihitung dari 00:00:00 s/d 23:59:59
+     *    (padanan exchangedate::date pada PostgreSQL), jadi jam
+     *    berapa pun dianggap tanggal yang sama.
+     * 2. Nilai yang sama dengan exchange rate terakhir tidak boleh
+     *    diinput lagi karena masih memakai kurs terakhir.
+     * ========================================================= */
+    private function _getExchangeRateByDate($idcurr, $dateOnly, $excludeId = null)
+    {
+        $builder = $this->db->table('sc_mst.exchangerate')
+            ->select('id, nilai, exchangedate')
+            ->where('idcurr', $idcurr)
+            ->where('exchangedate >=', $dateOnly . ' 00:00:00')
+            ->where('exchangedate <', date('Y-m-d 00:00:00', strtotime($dateOnly . ' +1 day')));
+
+        if ($excludeId !== null && $excludeId !== '') {
+            $builder->where('id <>', $excludeId);
+        }
+
+        return $builder->orderBy('id', 'DESC')->limit(1)->get()->getRowArray();
+    }
+
+    private function _getLastExchangeRate($idcurr, $excludeId = null)
+    {
+        $builder = $this->db->table('sc_mst.exchangerate')
+            ->select('id, nilai, exchangedate')
+            ->where('idcurr', $idcurr);
+
+        if ($excludeId !== null && $excludeId !== '') {
+            $builder->where('id <>', $excludeId);
+        }
+
+        return $builder->orderBy('exchangedate', 'DESC')
+            ->orderBy('id', 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRowArray();
+    }
+
+    private function _validateExchangeRate($idcurr, $exchangedate, $nilai, $excludeId = null)
+    {
+        $nilaiBaru = number_format((float) $nilai, 4, '.', '');
+        $timestamp = ($exchangedate !== null && $exchangedate !== '')
+            ? strtotime((string) $exchangedate)
+            : false;
+
+        // Tanggal asli baris yang sedang diupdate (jika ada)
+        $currentDateOnly = null;
+        if ($excludeId !== null && $excludeId !== '') {
+            $current = $this->db->table('sc_mst.exchangerate')
+                ->select('exchangedate')
+                ->where('id', $excludeId)
+                ->where('idcurr', $idcurr)
+                ->get()
+                ->getRowArray();
+
+            if ($current && !empty($current['exchangedate'])) {
+                $currentDateOnly = date('Y-m-d', strtotime((string) $current['exchangedate']));
+            }
+        }
+
+        // 1. Proteksi tanggal : tidak boleh ada 2 data untuk tanggal yang sama
+        if ($timestamp !== false) {
+            $dateOnly = date('Y-m-d', $timestamp);
+
+            // Saat update dan tanggal tidak berubah, proteksi tanggal dilewati
+            if ($dateOnly !== $currentDateOnly) {
+                $existing = $this->_getExchangeRateByDate($idcurr, $dateOnly, $excludeId);
+
+                if ($existing) {
+                    return [
+                        'ok'      => false,
+                        'message' => 'Exchange date ' . date('d-m-Y', $timestamp) . ' sudah terisi (nilai: '
+                            . number_format((float) $existing['nilai'], 4, '.', '') . '). '
+                            . 'Satu tanggal hanya boleh satu data kurs, silakan gunakan Update.',
+                    ];
+                }
+            }
+        }
+
+        // 2. Proteksi nilai : nilai sama dengan kurs terakhir tidak perlu disimpan
+        $last = $this->_getLastExchangeRate($idcurr, $excludeId);
+        if ($last && number_format((float) $last['nilai'], 4, '.', '') === $nilaiBaru) {
+            return [
+                'ok'      => false,
+                'message' => 'Nilai kurs ' . $nilaiBaru . ' sama dengan exchange rate terakhir ('
+                    . date('d-m-Y', strtotime((string) $last['exchangedate'])) . '). '
+                    . 'Tidak bisa disimpan karena masih memakai exchange rate terakhir.',
+            ];
+        }
+
+        return ['ok' => true, 'message' => ''];
+    }
+
+    /* =========================================================
+     * PENGATURAN & SINKRONISASI EXCHANGE RATE OTOMATIS
+     * ========================================================= */
+    public function getExchangeSetting()
+    {
+        return $this->response->setJSON([
+            'status'  => true,
+            'setting' => $this->m_currency->getExchangeRateSetting(),
+        ]);
+    }
+
+    public function saveExchangeSetting()
+    {
+        $mode = strtolower(trim((string) $this->request->getPost('mode')));
+        if (!in_array($mode, ['auto', 'manual'], true)) {
+            $mode = 'manual';
+        }
+
+        $apiUrl = $this->_normalizeExchangeApiUrl((string) $this->request->getPost('api_url'));
+        if ($apiUrl === '') {
+            $apiUrl = 'https://api.frankfurter.dev/v2/rate/{FROM}/{TO}';
+        }
+        if (!preg_match('#^https?://#i', $apiUrl)) {
+            return $this->response->setJSON([
+                'status'   => false,
+                'messages' => 'API URL harus diawali dengan http:// atau https://.',
+            ]);
+        }
+        if (strpos($apiUrl, '{FROM}') === false) {
+            return $this->response->setJSON([
+                'status'   => false,
+                'messages' => 'API URL wajib mengandung placeholder {FROM} untuk kode currency (contoh: https://api.frankfurter.dev/v2/rate/{FROM}/{TO}).',
+            ]);
+        }
+
+        $baseCurrency = strtoupper(trim((string) $this->request->getPost('base_currency')));
+        if ($baseCurrency === '') {
+            $baseCurrency = 'IDR';
+        }
+
+        $aliasInput = $this->request->getPost('code_alias');
+        $codeAlias = [];
+        if (is_array($aliasInput)) {
+            foreach ($aliasInput as $key => $value) {
+                $key = strtoupper(trim((string) $key));
+                $value = strtoupper(trim((string) $value));
+                if ($key !== '' && $value !== '') {
+                    $codeAlias[$key] = $value;
+                }
+            }
+        }
+
+        $nama = trim($this->session->get('nama'));
+        $saved = $this->m_currency->saveExchangeRateSetting([
+            'mode'          => $mode,
+            'api_url'       => $apiUrl,
+            'base_currency' => $baseCurrency,
+            'code_alias'    => $codeAlias,
+            'updatedby'     => $nama,
+        ]);
+
+        return $this->response->setJSON([
+            'status'   => $saved,
+            'messages' => $saved ? 'Pengaturan exchange rate berhasil disimpan.' : 'Gagal menyimpan pengaturan exchange rate.',
+            'setting'  => $this->m_currency->getExchangeRateSetting(),
+        ]);
+    }
+
+    public function testExchangeApi()
+    {
+        $currcode = strtoupper(trim((string) $this->request->getPost('currcode')));
+        if ($currcode === '') {
+            $currcode = 'USD';
+        }
+
+        $setting = $this->m_currency->getExchangeRateSetting();
+
+        $apiUrl = $this->_normalizeExchangeApiUrl((string) $this->request->getPost('api_url'));
+        if ($apiUrl !== '' && preg_match('#^https?://#i', $apiUrl)) {
+            $setting['api_url'] = $apiUrl;
+        }
+
+        $baseCurrency = strtoupper(trim((string) $this->request->getPost('base_currency')));
+        if ($baseCurrency !== '') {
+            $setting['base_currency'] = $baseCurrency;
+        }
+
+        $aliasInput = $this->request->getPost('code_alias');
+        if (is_array($aliasInput)) {
+            $codeAlias = [];
+            foreach ($aliasInput as $key => $value) {
+                $key = strtoupper(trim((string) $key));
+                $value = strtoupper(trim((string) $value));
+                if ($key !== '' && $value !== '') {
+                    $codeAlias[$key] = $value;
+                }
+            }
+            $setting['code_alias'] = $codeAlias;
+        }
+
+        $result = $this->_fetchExchangeRateFromApi($currcode, $setting);
+
+        if (!$result['ok'] || $result['rate'] === null) {
+            return $this->response->setJSON([
+                'status'   => false,
+                'messages' => $result['error'] !== '' ? $result['error'] : 'Gagal mengambil exchange rate dari API.',
+                'url'      => $result['url'],
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'status'   => true,
+            'messages' => 'API berhasil diakses.',
+            'rate'     => $result['rate'],
+            'nilai'    => number_format((float) $result['rate'], 4, '.', ''),
+            'from'     => $result['from'],
+            'to'       => $result['to'],
+            'date'     => $result['date'],
+            'url'      => $result['url'],
+        ]);
+    }
+
+
+    public function fetchExchangeRate()
+    {
+        $idcurrency = (int) $this->request->getPost('idcurrency');
+        if ($idcurrency <= 0) {
+            return $this->response->setJSON([
+                'status'   => false,
+                'messages' => 'Currency tidak valid.',
+            ]);
+        }
+
+        $setting = $this->m_currency->getExchangeRateSetting();
+        if (strtolower((string) $setting['mode']) !== 'auto') {
+            return $this->response->setJSON([
+                'status'   => false,
+                'messages' => 'Mode pengambilan exchange rate masih MANUAL. Aktifkan mode OTOMATIS di menu Pengaturan.',
+            ]);
+        }
+
+        $currency = $this->m_currency->q_mstcurrency(' AND id = ' . $idcurrency)->getRowArray();
+        if (!$currency) {
+            return $this->response->setJSON([
+                'status'   => false,
+                'messages' => 'Data currency tidak ditemukan.',
+            ]);
+        }
+
+        $currcode = trim($currency['currcode']);
+        $result = $this->_fetchExchangeRateFromApi($currcode, $setting);
+
+        if (!$result['ok'] || $result['rate'] === null) {
+            return $this->response->setJSON([
+                'status'   => false,
+                'messages' => $result['error'] !== '' ? $result['error'] : 'Gagal mengambil exchange rate dari API.',
+                'url'      => $result['url'],
+            ]);
+        }
+
+        $nama = trim($this->session->get('nama'));
+        $now = date('Y-m-d H:i:s');
+        $nilai_rate = number_format((float) $result['rate'], 4, '.', '');
+
+        /* MODE OTOMATIS :
+           - Exchange date mengikuti tanggal kurs dari response API dan selalu jam 00:00:00.
+           - Satu tanggal hanya boleh satu data kurs => tanggal yang sudah ada tidak dioverwrite
+             (perubahan nilai pada tanggal yang sama dilakukan lewat modal Update). */
+        $rateDate = $this->_resolveExchangeDate(isset($result['date']) ? $result['date'] : '');
+        $exchangedate = $rateDate . ' 00:00:00';
+
+        $existing = $this->_getExchangeRateByDate($idcurrency, $rateDate);
+        if ($existing !== null) {
+            $nilai_tersimpan = number_format((float) $existing['nilai'], 4, '.', '');
+
+            return $this->response->setJSON([
+                'status'          => false,
+                'messages'        => 'Exchange date ' . date('d-m-Y', strtotime($rateDate))
+                    . ' sudah terisi (kurs tersimpan: ' . $nilai_tersimpan
+                    . ', kurs API: ' . $nilai_rate . '). Data tidak dioverwrite.',
+                'nilai'           => $nilai_rate,
+                'nilai_tersimpan' => $nilai_tersimpan,
+                'from'            => $result['from'],
+                'to'              => $result['to'],
+                'idcurrency'      => $idcurrency,
+            ]);
+        }
+
+        $insert = $this->db->table('sc_mst.exchangerate')->insert([
+            'idcurr'       => $idcurrency,
+            'exchangedate' => $exchangedate,
+            'nilai'        => $nilai_rate,
+            'createdby'    => substr($nama, 0, 20),
+            'createddate'  => $now,
+        ]);
+
+        if (!$insert) {
+            return $this->response->setJSON([
+                'status'   => false,
+                'messages' => 'Gagal menyimpan exchange rate ke database.',
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'status'     => true,
+            'messages'   => 'Exchange rate ' . $result['from'] . ' -> ' . $result['to'] . ' ('
+                . number_format((float) $result['rate'], 4, '.', '') . ') tanggal '
+                . date('d-m-Y', strtotime($rateDate)) . ' berhasil disimpan.',
+            'nilai'      => number_format((float) $result['rate'], 4, '.', ''),
+            'from'       => $result['from'],
+            'to'         => $result['to'],
+            'date'       => $rateDate,
+            'idcurrency' => $idcurrency,
+        ]);
+    }
+
+    public function syncAllExchangeRate()
+    {
+        $setting = $this->m_currency->getExchangeRateSetting();
+        if (strtolower((string) $setting['mode']) !== 'auto') {
+            return $this->response->setJSON([
+                'status'   => false,
+                'messages' => 'Mode pengambilan exchange rate masih MANUAL. Aktifkan mode OTOMATIS terlebih dahulu.',
+            ]);
+        }
+
+        $list = $this->m_currency->q_mstcurrency('')->getResultArray();
+        $nama = trim($this->session->get('nama'));
+        $now = date('Y-m-d H:i:s');
+        $success = 0;
+        $skipped = 0;
+        $failed = 0;
+        $details = [];
+
+        foreach ($list as $row) {
+            $currcode = strtoupper(trim($row['currcode']));
+            $idcurr = (int) $row['id'];
+
+            if ($currcode === strtoupper((string) $setting['base_currency'])) {
+                /* Tampilkan juga kurs terakhir yang tersimpan (biasanya 1.0000) */
+                $lastBase = $this->_getLastExchangeRate($idcurr);
+                $message = 'Base currency, dilewati.';
+
+                if ($lastBase) {
+                    $message .= ' Kurs terakhir: ' . number_format((float) $lastBase['nilai'], 4, '.', '')
+                        . ' (' . date('d-m-Y', strtotime((string) $lastBase['exchangedate'])) . ').';
+                }
+
+                $details[] = ['currcode' => $currcode, 'status' => 'SKIP', 'message' => $message];
+                continue;
+            }
+
+            $result = $this->_fetchExchangeRateFromApi($currcode, $setting);
+            if (!$result['ok'] || $result['rate'] === null) {
+                $failed++;
+                $details[] = ['currcode' => $currcode, 'status' => 'FAILED', 'message' => $result['error']];
+                continue;
+            }
+
+            $nilai_rate = number_format((float) $result['rate'], 4, '.', '');
+
+            /* MODE OTOMATIS :
+               - Exchange date mengikuti tanggal kurs dari response API, selalu jam 00:00:00
+                 (satu tanggal hanya satu kurs).
+               - Tanggal yang sudah ada dilewati (tidak dioverwrite). */
+            $rateDate = $this->_resolveExchangeDate(isset($result['date']) ? $result['date'] : '');
+
+            $existing = $this->_getExchangeRateByDate($idcurr, $rateDate);
+            if ($existing !== null) {
+                $skipped++;
+                $nilai_tersimpan = number_format((float) $existing['nilai'], 4, '.', '');
+
+                $details[] = [
+                    'currcode'        => $currcode,
+                    'status'          => 'SKIP',
+                    'message'         => 'Exchange date ' . date('d-m-Y', strtotime($rateDate))
+                        . ' sudah ada (kurs tersimpan: ' . $nilai_tersimpan
+                        . ', kurs API: ' . $nilai_rate . '), data tidak dioverwrite.',
+                    'nilai_tersimpan' => $nilai_tersimpan,
+                    'nilai_api'       => $nilai_rate,
+                ];
+                continue;
+            }
+
+            $insert = $this->db->table('sc_mst.exchangerate')->insert([
+                'idcurr'       => $idcurr,
+                'exchangedate' => $rateDate . ' 00:00:00',
+                'nilai'        => $nilai_rate,
+                'createdby'    => substr($nama, 0, 20),
+                'createddate'  => $now,
+            ]);
+
+            if ($insert) {
+                $success++;
+                $details[] = [
+                    'currcode' => $currcode,
+                    'status'   => 'SUCCESS',
+                    'message'  => date('d-m-Y', strtotime($rateDate)) . ' 00:00:00 = ' . $nilai_rate,
+                ];
+            } else {
+                $failed++;
+                $details[] = ['currcode' => $currcode, 'status' => 'FAILED', 'message' => 'Insert gagal.'];
+            }
+        }
+
+        return $this->response->setJSON([
+            'status'   => true,
+            'messages' => 'Sync selesai. Berhasil: ' . $success . ', Dilewati: ' . $skipped . ', Gagal: ' . $failed . '.',
+            'success'  => $success,
+            'skipped'  => $skipped,
+            'failed'   => $failed,
+            'details'  => $details,
+        ]);
+    }
+
+
+    /* Tentukan tanggal kurs (Y-m-d) dari response API.
+       Jam tidak pernah dipakai : exchange date selalu disimpan 00:00:00.
+       Tanggal kosong / tidak valid / tanggal masa depan => pakai tanggal hari ini. */
+    private function _resolveExchangeDate($apiDate)
+    {
+        $value = trim((string) $apiDate);
+
+        if ($value !== '') {
+            $timestamp = strtotime($value);
+
+            if ($timestamp !== false) {
+                $dateOnly = date('Y-m-d', $timestamp);
+
+                if ($dateOnly <= date('Y-m-d')) {
+                    return $dateOnly;
+                }
+            }
+        }
+
+        return date('Y-m-d');
+    }
+
+    /* Normalisasi URL API : contoh statis (mis. .../rate/USD/IDR) diubah
+       menjadi template .../rate/{FROM}/{TO} agar bisa dipakai semua currency. */
+    private function _normalizeExchangeApiUrl($apiUrl)
+    {
+        $apiUrl = trim((string) $apiUrl);
+        if ($apiUrl === '') {
+            return '';
+        }
+
+        $apiUrl = preg_replace('#([?&]from=)[A-Za-z]{3}#i', '${1}{FROM}', $apiUrl, 1);
+        $apiUrl = preg_replace('#([?&]to=)[A-Za-z]{3}#i', '${1}{TO}', $apiUrl, 1);
+
+        if (strpos($apiUrl, '{FROM}') === false
+            && preg_match('#/rate/[A-Za-z]{3}/[A-Za-z]{3}#', $apiUrl)) {
+            $apiUrl = preg_replace('#/rate/[A-Za-z]{3}/[A-Za-z]{3}#', '/rate/{FROM}/{TO}', $apiUrl, 1);
+        }
+
+        return $apiUrl;
+    }
+
+    /* Ambil exchange rate dari API sesuai kode currency + setting. */
+    private function _fetchExchangeRateFromApi($currcode, array $setting)
+    {
+        $from = strtoupper(trim((string) $currcode));
+        $to = strtoupper(trim((string) $setting['base_currency']));
+
+        if (isset($setting['code_alias'][$from]) && trim((string) $setting['code_alias'][$from]) !== '') {
+            $from = strtoupper(trim((string) $setting['code_alias'][$from]));
+        }
+
+        $url = str_replace(['{FROM}', '{TO}'], [$from, $to], (string) $setting['api_url']);
+
+        $response = $this->_httpGetJson($url);
+        if (!$response['ok']) {
+            return [
+                'ok'    => false,
+                'rate'  => null,
+                'from'  => $from,
+                'to'    => $to,
+                'url'   => $url,
+                'date'  => '',
+                'error' => $response['error'],
+            ];
+        }
+
+        $rate = $this->_extractRateFromJson($response['json'], $to);
+
+        return [
+            'ok'    => $rate !== null,
+            'rate'  => $rate,
+            'from'  => $from,
+            'to'    => $to,
+            'url'   => $url,
+            'date'  => isset($response['json']['date']) ? (string) $response['json']['date'] : '',
+            'error' => $rate === null ? 'Rate tidak ditemukan pada response API.' : '',
+        ];
+    }
+
+    /* Mendukung format response v2 (rate) dan v1 (rates.{TO}). */
+    private function _extractRateFromJson($json, $to)
+    {
+        if (!is_array($json)) {
+            return null;
+        }
+
+        if (isset($json['rate']) && is_numeric($json['rate'])) {
+            return (float) $json['rate'];
+        }
+
+        if (isset($json['rates']) && is_array($json['rates'])) {
+            if (isset($json['rates'][$to]) && is_numeric($json['rates'][$to])) {
+                return (float) $json['rates'][$to];
+            }
+            foreach ($json['rates'] as $value) {
+                if (is_numeric($value)) {
+                    return (float) $value;
+                }
+            }
+        }
+
+        return null;
+    }
+
+
+    private function _httpGetJson($url)
+    {
+        if (!function_exists('curl_init')) {
+            return ['ok' => false, 'error' => 'Extension cURL tidak tersedia pada server.', 'http' => 0, 'json' => null];
+        }
+
+        $request = function ($verifyPeer) use ($url) {
+            $ch = curl_init($url);
+            $options = [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_CONNECTTIMEOUT => 10,
+                CURLOPT_TIMEOUT        => 20,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_USERAGENT      => 'JAccounting-ExchangeRate/1.0',
+                CURLOPT_HTTPHEADER     => ['Accept: application/json'],
+            ];
+
+            if ($verifyPeer) {
+                $caBundle = $this->_resolveCaBundle();
+                if ($caBundle !== null) {
+                    $options[CURLOPT_CAINFO] = $caBundle;
+                }
+            } else {
+                $options[CURLOPT_SSL_VERIFYPEER] = false;
+                $options[CURLOPT_SSL_VERIFYHOST] = 0;
+            }
+
+            curl_setopt_array($ch, $options);
+
+            $body = curl_exec($ch);
+            $http = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $error = curl_error($ch);
+
+            return ['body' => $body, 'http' => $http, 'error' => $error];
+        };
+
+        $result = $request(true);
+
+        /* Fallback : CA bundle lokal belum terkonfigurasi pada server. */
+        if ($result['body'] === false && stripos($result['error'], 'ssl') !== false) {
+            $result = $request(false);
+        }
+
+        if ($result['body'] === false) {
+            return [
+                'ok'    => false,
+                'error' => $result['error'] !== '' ? $result['error'] : 'Gagal mengakses API.',
+                'http'  => $result['http'],
+                'json'  => null,
+            ];
+        }
+
+        if ($result['http'] < 200 || $result['http'] >= 300) {
+            return [
+                'ok'    => false,
+                'error' => 'API mengembalikan HTTP ' . $result['http'] . '.',
+                'http'  => $result['http'],
+                'json'  => json_decode($result['body'], true),
+            ];
+        }
+
+        $json = json_decode($result['body'], true);
+        if (!is_array($json)) {
+            return [
+                'ok'    => false,
+                'error' => 'Response API bukan JSON yang valid.',
+                'http'  => $result['http'],
+                'json'  => null,
+            ];
+        }
+
+        return ['ok' => true, 'error' => '', 'http' => $result['http'], 'json' => $json];
+    }
+
+    private function _resolveCaBundle()
+    {
+        $candidates = [
+            ini_get('curl.cainfo'),
+            ini_get('openssl.cafile'),
+            '/etc/ssl/certs/ca-certificates.crt',
+            '/etc/pki/tls/certs/ca-bundle.crt',
+            '/usr/local/share/ca-certificates/cacert.pem',
+            'C:\\xampp\\apache\\bin\\curl-ca-bundle.crt',
+            'D:\\XAMPP85\\apache\\bin\\curl-ca-bundle.crt',
+        ];
+
+        foreach ($candidates as $path) {
+            if (!empty($path) && is_file($path)) {
+                return $path;
+            }
+        }
+
+        return null;
+    }
+
 
     //END CURRENCY
 

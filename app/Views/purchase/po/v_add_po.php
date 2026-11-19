@@ -644,6 +644,118 @@
         resize: vertical;
     }
 
+    /* textarea 1 baris (mis. ETD Notes) agar tingginya sejajar input lain */
+    .corp-form-container .modal textarea.form-control.po-textarea-compact {
+        height: 40px !important;
+        min-height: 40px !important;
+        max-height: 40px !important;
+        padding: 8px 11px !important;
+        line-height: 20px;
+        resize: none;
+        overflow-y: auto;
+    }
+
+    /* =========================================================
+       MODAL UPDATE PO — FIELD COMPACT
+       field entry disamakan dengan tinggi 1 row grid detail (± 28px)
+    ========================================================= */
+    .corp-form-container #modalUpdatePO .modal-header {
+        padding: 10px 16px;
+    }
+
+    .corp-form-container #modalUpdatePO .modal-header .modal-title {
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+    .corp-form-container #modalUpdatePO .modal-body {
+        padding: 12px 16px 4px;
+    }
+
+    .corp-form-container #modalUpdatePO .form-group {
+        margin-bottom: 8px;
+    }
+
+    .corp-form-container #modalUpdatePO .form-group > label {
+        display: block;
+        margin-bottom: 3px;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1.2;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        color: var(--corp-text-muted);
+    }
+
+    /* tinggi field = tinggi 1 row datatable detail */
+    .corp-form-container #modalUpdatePO .form-control,
+    .corp-form-container #modalUpdatePO select.form-control,
+    .corp-form-container #modalUpdatePO input.form-control,
+    .corp-form-container #modalUpdatePO textarea.form-control {
+        height: 28px !important;
+        min-height: 28px !important;
+        max-height: 28px !important;
+        padding: 3px 8px !important;
+        font-size: 12.5px !important;
+        line-height: 20px !important;
+        border-radius: 3px !important;
+    }
+
+    .corp-form-container #modalUpdatePO textarea.form-control {
+        resize: none;
+        overflow-y: auto;
+    }
+
+    /* Keterangan PO & PP dibuat lebih tinggi (4 baris) */
+    .corp-form-container #modalUpdatePO textarea#descriptionpo,
+    .corp-form-container #modalUpdatePO textarea#descriptionpp {
+        height: auto !important;
+        min-height: 88px !important;
+        max-height: none !important;
+        resize: vertical;
+    }
+
+    .corp-form-container #modalUpdatePO .po-field-hint {
+        margin-top: 2px;
+        font-size: 10px;
+        line-height: 1.2;
+    }
+
+    /* tombol history harga mengikuti tinggi field */
+    .corp-form-container #modalUpdatePO .input-group .btn {
+        height: 28px;
+        padding: 0 9px;
+        font-size: 12.5px;
+    }
+
+    /* select2 mengikuti tinggi field */
+    .corp-form-container #modalUpdatePO .select2-container .select2-selection--single {
+        height: 28px !important;
+        min-height: 28px !important;
+        border-radius: 3px !important;
+    }
+
+    .corp-form-container #modalUpdatePO .select2-container .select2-selection--single .select2-selection__rendered {
+        padding: 0 24px 0 8px !important;
+        line-height: 26px !important;
+        font-size: 12.5px !important;
+        font-weight: 600 !important;
+    }
+
+    .corp-form-container #modalUpdatePO .select2-container .select2-selection--single .select2-selection__arrow {
+        height: 26px !important;
+        right: 4px !important;
+    }
+
+    .corp-form-container #modalUpdatePO .modal-footer {
+        padding: 8px 16px;
+    }
+
+    .corp-form-container #modalUpdatePO .modal-footer .btn {
+        padding: 5px 14px;
+        font-size: 12.5px;
+    }
+
     .corp-form-container .modal .select2-container {
         width: 100% !important;
     }
@@ -1410,6 +1522,269 @@
         color: var(--corp-text-muted);
     }
 
+    /* =========================================================
+       GRID DETAIL PO - KOMPAK, NO WRAP, SCROLL DI DALAM GRID
+       - tinggi area ± 20 baris, sisanya di-scroll di dalam grid
+       - header kolom & kotak search menempel saat grid di-scroll
+       - teks panjang dipotong 1 baris + tooltip judul
+    ========================================================= */
+    /* footer grid : total baris detail & info hasil search */
+    .corp-form-container .po-detail-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        margin-top: -1px;
+        padding: 7px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--corp-text-muted);
+        background: #f4f7fb;
+        border: 1px solid var(--corp-primary);
+        border-top: 0;
+        border-radius: 0 0 6px 6px;
+    }
+
+    .corp-form-container .po-detail-footer i {
+        margin-right: 5px;
+        color: var(--corp-primary);
+    }
+
+    .corp-form-container .po-detail-footer strong {
+        color: var(--corp-primary);
+        font-weight: 700;
+    }
+
+    .corp-form-container .po-detail-footer-right {
+        display: none;
+        color: var(--corp-primary);
+    }
+
+    .corp-form-container .po-detail-scroll {
+        max-height: 720px;
+        max-height: min(760px, 78vh);
+        overflow: auto;
+        border: 1px solid var(--corp-primary);
+        border-radius: 6px 6px 0 0;
+        background: #ffffff;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, .06);
+    }
+
+    .corp-form-container .po-detail-scroll::-webkit-scrollbar {
+        width: 12px;
+        height: 12px;
+    }
+
+    .corp-form-container .po-detail-scroll::-webkit-scrollbar-track {
+        background: #eef2f7;
+    }
+
+    .corp-form-container .po-detail-scroll::-webkit-scrollbar-thumb {
+        background: #19385f;
+        border: 2px solid #eef2f7;
+        border-radius: 6px;
+    }
+
+    .corp-form-container .po-detail-scroll::-webkit-scrollbar-thumb:hover {
+        background: #152a45;
+    }
+
+    .corp-form-container .po-detail-scroll #tabppdtl {
+        margin-bottom: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        /* WAJIB visible: overflow:hidden pada tabel mematikan header sticky */
+        overflow: visible !important;
+    }
+
+    /* Toolbar DataTables (kotak search) tetap terlihat di atas grid */
+    .corp-form-container .po-detail-scroll .dataTables_wrapper > .row:first-child {
+        position: sticky;
+        top: 0;
+        z-index: 6;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: nowrap;
+        height: 48px;
+        margin: 0 !important;
+        padding: 0 8px !important;
+        background: #ffffff !important;
+        border-bottom: 1px solid #c3ccd8;
+    }
+
+    .corp-form-container .po-detail-scroll .dataTables_wrapper > .row:first-child > div {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex: 0 0 auto !important;
+        width: auto !important;
+        max-width: 100%;
+        min-width: 0;
+        padding: 0 !important;
+    }
+
+    /* dropdown "Show ... data per page" tidak dipakai (paging off) */
+    .corp-form-container .po-detail-scroll .dataTables_length {
+        display: none !important;
+    }
+
+    .corp-form-container .po-detail-scroll .dataTables_filter {
+        text-align: right;
+        justify-content: flex-end;
+    }
+
+    .corp-form-container .po-detail-scroll .dataTables_filter label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0 !important;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .4px;
+        text-transform: uppercase;
+        color: var(--corp-primary);
+        white-space: nowrap;
+    }
+
+    .corp-form-container .po-detail-scroll .dataTables_filter input {
+        width: 220px !important;
+        height: 32px !important;
+        min-height: 32px !important;
+        padding: 4px 10px !important;
+        margin: 0 !important;
+        font-size: 12.5px !important;
+        font-weight: 600;
+        line-height: 1.4 !important;
+        color: var(--corp-text);
+        background: #ffffff;
+        border: 1px solid #c3ccd8 !important;
+        border-radius: 6px !important;
+        box-shadow: none;
+        -webkit-appearance: none !important;
+        appearance: none !important;
+    }
+
+    .corp-form-container .po-detail-scroll .dataTables_filter input:focus {
+        border-color: var(--corp-primary) !important;
+        box-shadow: 0 0 0 2px rgba(25, 56, 95, .12) !important;
+        outline: none;
+    }
+
+    /* info jumlah baris tercentang (kiri toolbar grid, tepat di atas header check-all) */
+    .corp-form-container .po-detail-scroll .po-detail-checkinfo {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: flex-start !important;
+        gap: 6px;
+        margin: 0 auto 0 0 !important;   /* dorong ke kiri, kotak search tetap di kanan */
+        padding: 4px 10px !important;
+        font-size: 11.5px;
+        font-weight: 700;
+        line-height: 1.2;
+        letter-spacing: .2px;
+        color: #1f5f8b;
+        background: #eef4fb;
+        border: 1px solid #c3ccd8;
+        border-radius: 999px;
+        white-space: nowrap;
+    }
+
+    .corp-form-container .po-detail-scroll .po-detail-checkinfo strong {
+        font-size: 12.5px;
+        font-weight: 700;
+    }
+
+    .corp-form-container .po-detail-scroll .po-detail-checkinfo.is-empty {
+        color: #7b8794;
+        background: #f3f5f8;
+        border-color: #d7dee7;
+    }
+
+    .corp-form-container .po-detail-scroll .po-detail-checkinfo.has-selection {
+        color: #0f5132;
+        background: #d1e7dd;
+        border-color: #a3cfbb;
+    }
+
+    .corp-form-container .po-detail-scroll #tabppdtl thead th {
+        position: sticky !important;
+        top: 48px !important;              /* tepat di bawah toolbar grid */
+        z-index: 3 !important;
+        padding: 9px 9px !important;
+        font-size: 12.5px !important;
+        line-height: 1.25 !important;
+        letter-spacing: .2px;
+        white-space: nowrap !important;
+        vertical-align: middle !important;
+        border-bottom: 2px solid #102a45 !important;
+    }
+
+    .corp-form-container .po-detail-scroll #tabppdtl tbody td {
+        padding: 4px 9px !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        line-height: 1.25 !important;
+        white-space: nowrap !important;
+        vertical-align: middle !important;
+        border: 1px solid #c3ccd8 !important;
+    }
+
+    .corp-form-container .po-detail-scroll #tabppdtl tbody tr:nth-child(even) td {
+        background: #f6f8fb !important;
+    }
+
+    .corp-form-container .po-detail-scroll #tabppdtl tbody tr:hover td {
+        background: #fff0b3 !important;
+        color: #000000 !important;
+    }
+
+    .corp-form-container .po-detail-scroll #tabppdtl tbody tr.selected td {
+        background: #dcebfa !important;
+        color: #000000 !important;
+        font-weight: 700 !important;
+    }
+
+    /* baris yang checkbox-nya tercentang → warna baris ikut berubah */
+    .corp-form-container .po-detail-scroll #tabppdtl tbody tr.po-row-checked td {
+        background: #d6e8fb !important;
+        color: #000000 !important;
+        border-color: #9dc4e8 !important;
+    }
+
+    .corp-form-container .po-detail-scroll #tabppdtl tbody tr.po-row-checked:hover td {
+        background: #c6def8 !important;
+    }
+
+    /* aksen kiri pada kolom checkbox */
+    .corp-form-container .po-detail-scroll #tabppdtl tbody tr.po-row-checked td:first-child {
+        box-shadow: inset 3px 0 0 0 #19385f;
+    }
+
+    .corp-form-container .po-detail-scroll #tabppdtl .po-cell-ellipsis {
+        display: block;
+        max-width: 240px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* Variasi lebih pendek (mis. Batch/Spec) */
+    .corp-form-container .po-detail-scroll #tabppdtl .po-cell-ellipsis-sm {
+        max-width: 150px;
+    }
+
+    /* Kolom checkbox tetap sempit agar kolom data lain lega */
+    .corp-form-container .po-detail-scroll #tabppdtl thead th:first-child,
+    .corp-form-container .po-detail-scroll #tabppdtl tbody td:first-child {
+        width: 42px !important;
+        min-width: 42px !important;
+        max-width: 42px !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        text-align: center;
+    }
 
 </style>
 <div class="corp-form-container">
@@ -1649,24 +2024,30 @@
                         <div class="header-actions">
                             <button type="button"
                                     class="btn btn-success btn-lg action-btn"
+                                    id="btnPODetailInput"
                                     data-bs-toggle="tooltip"
-                                    title="Input Data"
+                                    data-bs-placement="bottom"
+                                    title="Input Data (Ctrl + Q)"
                                     onclick="btnInputDetail()">
                                 <i class="fa fa-plus"></i>
                             </button>
 
                             <button type="button"
                                     class="btn btn-warning btn-lg action-btn"
+                                    id="btnPODetailUpdate"
                                     data-bs-toggle="tooltip"
-                                    title="Update Data"
+                                    data-bs-placement="bottom"
+                                    title="Update Data (Ctrl + E)"
                                     onclick="btnUpdateDetail()">
                                 <i class="fa fa-edit"></i>
                             </button>
 
                             <button type="button"
                                     class="btn btn-danger btn-lg action-btn"
+                                    id="btnPODetailDelete"
                                     data-bs-toggle="tooltip"
-                                    title="Hapus Data"
+                                    data-bs-placement="bottom"
+                                    title="Hapus Data (Ctrl + D)"
                                     onclick="btnDeleteDetail()">
                                 <i class="fa fa-trash"></i>
                             </button>
@@ -1675,14 +2056,14 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-12">
-                                <div class="table-responsive" style="overflow-x: auto;">
+                                <div class="po-detail-scroll">
                                     <table id="tabppdtl" class="table table-bordered table-striped" style="width:100%;" cellspacing="0">
                                         <thead class="bg-primary text-white">
                                         <tr>
                                             <th width="30">
                                                 <input type="checkbox" id="checkAll">
                                             </th>
-                                            <th>PP</th>
+                                            <th>No. PP</th>
                                             <th>ID Barang</th>
                                             <th>Nama Barang</th>
                                             <th>Batch/Spec</th>
@@ -1693,7 +2074,8 @@
                                             <th>Qty</th>
                                             <!--<th>Bonus Qty</th>-->
                                             <th>Harga</th>
-                                            <th>Nilai</th>
+                                            <th title="Nilai barang dalam mata uang PO (valas)">Nilai</th>
+                                            <th title="Nilai dalam IDR (Nilai x Kurs)">Nilai (IDR)</th>
                                             <th>Keterangan PO</th>
                                             <th>Keterangan PP</th>
                                         </tr>
@@ -1701,6 +2083,14 @@
                                         <tbody>
                                         </tbody>
                                     </table>
+                                </div>
+                                <div class="po-detail-footer">
+                                    <div class="po-detail-footer-left">
+                                        <i class="fa fa-list-ol"></i>
+                                        Total detail terinput:
+                                        <strong id="poDetailTotalRow">0</strong> baris
+                                    </div>
+                                    <div class="po-detail-footer-right" id="poDetailFilterInfo"></div>
                                 </div>
                             </div>
                         </div>
@@ -1833,17 +2223,17 @@
                     <!-- FOOTER -->
                     <div class="modal-footer bg-light">
                         <button type="button"
-                                class="btn btn-primary"
-                                onclick="savePODetail()">
-                            <i class="fa fa-save"></i> Proses
-                        </button>
-                        <button type="button"
                                 class="btn btn-secondary"
                                 data-bs-dismiss="modal"
                                 onclick="$('#modalDetailPO').modal('hide')">
                             <i class="fa fa-times"></i> Batal
                         </button>
-
+                        <button type="button"
+                                class="btn btn-primary"
+                                title="Proses (Ctrl + Alt + S)"
+                                onclick="savePODetail()">
+                            <i class="fa fa-save"></i> Proses
+                        </button>
                     </div>
                 </form>
             </div>
@@ -1919,7 +2309,7 @@
                         </div>
 
                         <!-- =========================================
-                             ROW 2 — Satuan, Qty, Bonus, Harga, Nilai
+                             ROW 2 — Satuan, Qty, Harga, Nilai
                              ========================================= -->
                         <div class="row">
 
@@ -1935,7 +2325,7 @@
                                 </div>
                             </div>
 
-                            <div class="col-md-2">
+                            <div class="col-md-3">
                                 <div class="form-group">
                                     <label>Quantity</label>
                                     <input type="text"
@@ -1947,28 +2337,17 @@
                                 </div>
                             </div>
 
-                            <div class="col-md-2">
-                                <!-- <div class="form-group">
-                                     <label>Bonus Quantity</label>
-                                     <input type="text"
-                                            name="qtybonus"
-                                            id="qtybonus"
-                                            class="form-control jtsseparator ratakanan"
-                                            placeholder="0.00">
-                                 </div>-->
-                            </div>
-
-                            <div class="col-md-3">
+                            <div class="col-md-4 row">
                                 <div class="form-group">
-                                    <label>Harga</label>
-                                    <div class="input-group">
+                                    <label class="form-label">Harga</label>
+                                    <div class="input-group ">
                                         <input type="text"
                                                name="harga"
                                                id="harga"
-                                               class="form-control jtsseparator ratakanan"
+                                               class="col-sm-10 form-control jtsseparator ratakanan"
                                                placeholder="0.00">
                                         <button type="button"
-                                                class="btn btn-info"
+                                                class="col-sm-2 btn btn-info"
                                                 id="btnHistoryHarga"
                                                 onclick="showHistoryHarga()"
                                                 title="History Harga">
@@ -2030,7 +2409,7 @@
                                     <textarea name="etdnotes"
                                               id="etdnotes"
                                               rows="1"
-                                              class="form-control"
+                                              class="form-control po-textarea-compact"
                                               style="text-transform: uppercase;"
                                               placeholder="Keterangan ETD"></textarea>
                                 </div>
@@ -2062,7 +2441,7 @@
                                     <label>Keterangan PO</label>
                                     <textarea name="descriptionpo"
                                               id="descriptionpo"
-                                              rows="2"
+                                              rows="4"
                                               class="form-control"
                                               style="text-transform: uppercase;"
                                               placeholder="Keterangan PO"></textarea>
@@ -2074,7 +2453,7 @@
                                     <label>Keterangan PP</label>
                                     <textarea name="descriptionpp"
                                               id="descriptionpp"
-                                              rows="2"
+                                              rows="4"
                                               class="form-control"
                                               style="text-transform: uppercase;"
                                               readonly></textarea>
@@ -2111,6 +2490,7 @@
 
                         <button type="button"
                                 class="btn btn-primary"
+                                title="Simpan (Ctrl + Alt + S)"
                                 onclick="savePODetail()">
                             <i class="fa fa-save"></i> Simpan
                         </button>

@@ -30,14 +30,28 @@
         background: #cbd5e1; box-shadow: none;
         transform: none; cursor: not-allowed;
     }
-    #tblPreviewLPB_wrapper { overflow-x: auto; }
-    #tblPreviewLPB { font-size: 12.5px; }
-    #tblPreviewLPB thead th { white-space: nowrap; background: linear-gradient(
-                    135deg,
-                    #1f2937,
-                    #374151
-            ) !important; }
-    #tblPreviewLPB tbody td { white-space: nowrap; }
+    /* ===== Preview Table ===== */
+    #previewWrapper .card-header { background: #f8fafc; }
+    #tblPreviewLPB_wrapper {
+        overflow-x: auto;
+        overflow-y: auto;
+        max-height: 68vh;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+    }
+    #tblPreviewLPB { font-size: 12.5px; margin-bottom: 0; }
+    #tblPreviewLPB thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        white-space: nowrap;
+        vertical-align: middle;
+        color: #fff !important;
+        border-color: #374151 !important;
+        background: linear-gradient(135deg, #1f2937, #374151) !important;
+    }
+    #tblPreviewLPB tbody td { white-space: nowrap; vertical-align: middle; }
+    #tblPreviewLPB tbody tr:hover { background: #eef6ff; }
     .preview-info {
         font-size: 12px; color: #64748b;
         padding: 6px 10px; background: #f8fafc;
@@ -79,11 +93,23 @@
 
 <div class="row">
     <div class="col-md-12">
-        <div class="card card-primary">
-            <div class="card-header">
-                <h3 class="card-title mb-0" style="color: white;">
+        <div class="card card-outline card-primary">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                <h3 class="card-title mb-0" style="color:white;">
                     <i class="fa fa-filter"></i> Filter
                 </h3>
+                <div class="d-flex flex-wrap" style="gap:8px;">
+                    <button type="button" class="btn btn-tarik-modern" id="btnTarikData" onclick="tarikData()">
+                        <i class="fa fa-search"></i> Tarik Data
+                    </button>
+                    <button type="button" class="btn btn-excel-modern" id="btnCetakExcel"
+                            onclick="submitLaporan()" disabled>
+                        <i class="fa fa-file-excel-o"></i> Cetak Excel
+                    </button>
+                    <button type="button" class="btn btn-default" onclick="resetLaporanParam()">
+                        <i class="fa fa-refresh"></i> Reset
+                    </button>
+                </div>
             </div>
 
             <div class="card-body">
@@ -130,39 +156,42 @@
                     </div>
                 </form>
             </div>
-            <div class="card-footerd-flex justify-content-between align-items-center flex-wrap">
-                <div class="d-flex flex-wrap" style="gap:8px;">
-                    <button type="button" class="btn btn-tarik-modern" id="btnTarikData" onclick="tarikData()">
-                        <i class="fa fa-search"></i> Tarik Data
-                    </button>
-                    <button type="button" class="btn btn-excel-modern" id="btnCetakExcel"
-                            onclick="submitLaporan()" disabled>
-                        <i class="fa fa-file-excel-o"></i> Cetak Excel
-                    </button>
-                    <button type="button" class="btn btn-default" onclick="resetLaporanParam()">
-                        <i class="fa fa-refresh"></i> Reset
-                    </button>
-                </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== PREVIEW TABLE ===== -->
+<div class="row" id="previewWrapper" style="display:none;">
+    <div class="col-md-12">
+        <div class="card card-outline card-info">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0">
+                    <i class="fa fa-table"></i> Preview Data
+                </h3>
+                <span class="preview-info" id="previewInfo">-</span>
             </div>
-             <div class="card-body" id="previewWrapper" style="display:none;">
+            <div class="card-body">
                 <div id="tblPreviewLPB_wrapper">
                     <table id="tblPreviewLPB" class="table table-bordered table-striped table-hover" style="width:100%">
                         <thead class="bg-primary text-white">
                             <tr>
-                                <th>No</th>
                                 <th>No. LPB</th>
                                 <th>Tanggal</th>
                                 <th>Cabang</th>
                                 <th>Kode Supplier</th>
                                 <th>Nama Supplier</th>
-                                <th>Alamat</th>
+                                <th>Alamat Supplier</th>
                                 <th>Pemohon</th>
                                 <th>No. PO</th>
+                                <th>No. PP</th>
                                 <th>ID Barang</th>
                                 <th>Nama Barang</th>
                                 <th>Satuan</th>
                                 <th>Qty</th>
                                 <th>Qty Bonus</th>
+                                <th>Qty PO</th>
+                                <th>Qty LPB</th>
+                                <th>Qty Void</th>
                                 <th>Harga</th>
                                 <th>Disc</th>
                                 <th>Total Disc</th>
@@ -170,16 +199,21 @@
                                 <th>PPN</th>
                                 <th>Nilai Konversi</th>
                                 <th>Kurs</th>
-                                <th>Ket. PO</th>
-                                <th>Ket. PP</th>
+                                <th>Currcode</th>
+                                <th>Keterangan PO</th>
+                                <th>Keterangan PP</th>
                                 <th>No. Capex</th>
-                           <!--     <th>No. Faktur</th>
-                                <th>No. SJ</th>-->
-                                <th>Ket. LPB</th>
+                                <th>Batch</th>
+                                <th>ETD</th>
+                                <th>Ket. ETD</th>
+                                <th>Kategori</th>
+                                <th>No. Faktur</th>
+                                <th>No. SJ</th>
+                                <th>Keterangan LPB</th>
                             </tr>
                         </thead>
                         <tbody id="tblPreviewLPBBody">
-                            <tr><td colspan="27" class="text-center text-muted">Belum ada data.</td></tr>
+                            <tr><td colspan="35" class="text-center text-muted">Belum ada data.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -203,21 +237,6 @@
         </div>
     </div>
 </div>
-
-<!-- ===== PREVIEW TABLE ===== -->
-<!-- <div class="row" >
-    <div class="col-md-12">
-        <div class="card card-outline card-info">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h3 class="card-title mb-0">
-                    <i class="fa fa-table"></i> Preview Data
-                </h3>
-                <span class="preview-info" id="previewInfo">-</span>
-            </div>
-           
-        </div>
-    </div>
-</div> -->
 
 <iframe name="downloadFrame" style="display:none;"></iframe>
 

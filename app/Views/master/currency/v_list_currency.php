@@ -45,6 +45,11 @@
                         <a class="dropdown-item" href="#"  onclick="reload_table()"><i class="fa fa-refresh"></i><?php echo '    Reload'; ?> </a>
                     </div>
                 </div>
+                <a class="btn btn-warning btn-sm" href="#" data-bs-toggle="modal" data-bs-target="#modal_exchange_setting"
+                    title="Pengaturan pengambilan exchange rate otomatis">
+                    <i class="fa fa-cog"></i> Pengaturan Kurs Otomatis
+                </a>
+                <span class="badge bg-secondary" id="exchange_mode_badge" style="margin-left:5px;vertical-align:middle;color:#000 !important;font-weight:600;">MANUAL</span>
             </div><!-- /.card-header -->
 			<div class="card-body table-responsive m-t-40" style='overflow-x:scroll;' cellspacing="0" width="100%">
 				<table id="tcurrency" class="table table-bordered table-striped" >
@@ -121,6 +126,90 @@
 </div>
 <!-- /.modal -->
 
+<!-- Modal Pengaturan Exchange Rate Otomatis -->
+<div class="modal fade" id="modal_exchange_setting" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title"><i class="fa fa-cog"></i> Pengaturan Exchange Rate Otomatis</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="form_exchange_setting">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Mode Pengambilan Kurs</label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="exr_mode_auto">
+                                    <label class="form-check-label" for="exr_mode_auto" id="exr_mode_label">MANUAL</label>
+                                </div>
+                                <small class="text-muted">
+                                    OTOMATIS : kurs diambil dari API dan disimpan ke tabel exchange rate.
+                                    MANUAL : kurs hanya diinput manual oleh user.
+                                </small>
+                                <input type="hidden" id="exr_mode" name="mode" value="manual">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Base Currency (mata uang tujuan)</label>
+                                <input type="text" class="form-control" id="exr_base_currency" name="base_currency"
+                                    value="IDR" maxlength="5" placeholder="IDR">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>API URL Template</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="exr_api_url" name="api_url"
+                                value="https://api.frankfurter.dev/v2/rate/{FROM}/{TO}"
+                                placeholder="https://api.frankfurter.dev/v2/rate/{FROM}/{TO}">
+                            <button type="button" class="btn btn-outline-secondary" id="exr_btn_preset"
+                                title="Gunakan template Frankfurter">Frankfurter</button>
+                        </div>
+                        <small class="text-muted">
+                            Gunakan placeholder <code>{FROM}</code> untuk kode currency asal dan <code>{TO}</code> untuk base currency.
+                            Contoh : <code>https://api.frankfurter.dev/v2/rate/{FROM}/{TO}</code>.
+                            URL statis seperti <code>.../rate/USD/IDR</code> akan otomatis diubah menjadi template.
+                        </small>
+                    </div>
+                    <div class="form-group">
+                        <label>Mapping Kode Currency (opsional)</label>
+                        <textarea class="form-control" id="exr_code_alias" name="code_alias" rows="2"
+                            placeholder="YEN=JPY"></textarea>
+                        <small class="text-muted">
+                            Format <code>KODE_DB=KODE_API</code> dipisahkan koma atau baris baru.
+                            Default : <code>YEN=JPY</code> (API Frankfurter memakai JPY).
+                        </small>
+                    </div>
+                    <div class="form-group">
+                        <label>Test API</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="exr_test_code" value="USD" maxlength="5"
+                                placeholder="USD">
+                            <button type="button" class="btn btn-info" id="exr_btn_test">
+                                <i class="fa fa-flask"></i> Test API
+                            </button>
+                            <button type="button" class="btn btn-success" id="exr_btn_sync">
+                                <i class="fa fa-refresh"></i> Sync Semua Currency
+                            </button>
+                        </div>
+                        <div class="mt-2" id="exr_test_result"></div>
+                    </div>
+                    <div id="exr_sync_result" class="mt-2"></div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-default" data-bs-dismiss="modal">Tutup</button>
+                    <button type="submit" class="btn btn-primary" id="exr_btn_save">
+                        <i class="fa fa-save"></i> Simpan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- /.modal -->
 
 <script type="application/javascript" src="<?= base_url('assets/pagejs/master/currency/currency.js') ?>"></script>
 <script type="text/javascript">

@@ -57,7 +57,7 @@ function tableSupplier(){
             //Set column definition initialisation properties.
             "columnDefs": [
                 {
-                    "targets": [ -1 ], //last column
+                    "targets": [ 1 ], //Action column
                     "orderable": false, //set not orderable
                 },
             ],
@@ -258,6 +258,10 @@ $('#formInputSupplier').bootstrapValidator({
                 notEmpty: {
                     message: 'The field can not be empty'
                 },
+                stringLength: {
+                    max: 20,
+                    message: 'Maksimal 20 karakter'
+                }
             }
         },
         nmsupplier: {
@@ -301,6 +305,30 @@ $('#formInputSupplier').bootstrapValidator({
 
 
 function saveInputSupplier() {
+    let kdsupplier = $.trim($('[name="kdsupplier"]').val()).toUpperCase();
+
+    if (kdsupplier === '') {
+        Swal.fire({
+            icon: 'error',
+            title: 'Validation Error',
+            text: 'Kode Supplier tidak boleh kosong!'
+        });
+        $('[name="kdsupplier"]').focus();
+        return false;
+    }
+
+    if (kdsupplier.length > 20) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Validation Error',
+            text: 'Kode Supplier maksimal 20 karakter!'
+        });
+        $('[name="kdsupplier"]').focus();
+        return false;
+    }
+
+    $('[name="kdsupplier"]').val(kdsupplier);
+
     let typeform = $('[name="type"]').val(); // Ambil tipe form (INPUT / UPDATE)
 
     Swal.fire({

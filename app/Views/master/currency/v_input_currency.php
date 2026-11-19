@@ -727,6 +727,9 @@
                             <div class="row exchange-toolbar">
                                 <div class="col-sm-6">
                                     <button type="button" id="btn_insert_" onclick="insertNewExchange()" class="btn btn-success"><i class="fa fa-plus"></i> Insert Exchange Rate</button>
+                                    <?php if (isset($exchange_setting['mode']) && strtolower($exchange_setting['mode']) === 'auto'): ?>
+                                    <button type="button" id="btn_auto_exchange" onclick="autoFetchExchangeRate()" class="btn btn-info"><i class="fa fa-cloud-download"></i> Ambil Kurs Otomatis</button>
+                                    <?php endif; ?>
                                 </div>
                                 <div class="col-sm-6">
                                     <div class="float-right">
@@ -925,11 +928,13 @@
                 <input type="hidden" id="md_exchange_id" value="">
                 <div class="form-group">
                     <label for="md_exchangedate">Exchange Date</label>
-                    <input type="text" id="md_exchangedate" name="md_exchangedate" class="form-control" autocomplete="off" placeholder="DD-MM-YYYY HH:mm:ss">
+                    <input type="text" id="md_exchangedate" name="md_exchangedate" class="form-control" autocomplete="off" placeholder="DD-MM-YYYY">
+                    <small class="text-muted">Satu tanggal hanya boleh satu data kurs, jam selalu disimpan 00:00:00.</small>
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
                     <label for="md_nilai">Exchange Rate (gunakan titik untuk pemisah desimal)</label>
                     <input type="text" id="md_nilai" name="md_nilai" inputmode="decimal" class="form-control nilai-exchange" autocomplete="off" placeholder="0.0000">
+                    <small class="text-muted">Nilai yang sama dengan exchange rate terakhir tidak dapat disimpan.</small>
                 </div>
                 <div id="md_exchange_error"></div>
             </div>
@@ -971,10 +976,11 @@
         // $('#exchangedate').on('cancel.daterangepicker', function(ev, picker) {
         //     $(this).val('');
         // });
-        /* DATE TIME PICKER kolom exchange date :
+        /* DATE PICKER kolom exchange date :
            - #md_exchangedate  => input di modal popup Exchange Rate (Insert / Update)
            - [id^="exchangedate_"] => input lama (bila masih dipakai)
-           format DD-MM-YYYY HH:mm:ss, sehingga bisa memilih tanggal + jam. */
+           Hanya memilih tanggal (DD-MM-YYYY) karena exchange date selalu
+           disimpan dengan jam 00:00:00 agar satu tanggal = satu kurs. */
         function initExchangeDateTimePicker() {
             // Temukan input exchange date (modal popup & input lama)
             $('[id^="exchangedate_"], #md_exchangedate').each(function () {
@@ -987,18 +993,14 @@
                     autoUpdateInput: false,
                     singleDatePicker: true,
                     showDropdowns: true,
-                    timePicker: true,
-                    timePicker24Hour: true,
-                    timePickerSeconds: true,
-                    timePickerIncrement: 1,
                     locale: {
-                        format: 'DD-MM-YYYY HH:mm:ss'
+                        format: 'DD-MM-YYYY'
                     },
                     cancelLabel: 'Clear'
                 });
 
                 $input.on('apply.daterangepicker', function (ev, picker) {
-                    $(this).val(picker.startDate.format('DD-MM-YYYY HH:mm:ss'));
+                    $(this).val(picker.startDate.format('DD-MM-YYYY'));
                 });
 
                 $input.on('cancel.daterangepicker', function (ev, picker) {

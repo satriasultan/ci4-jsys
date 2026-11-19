@@ -208,7 +208,22 @@ class M_Purchase extends Model
     //WO TEMP
     /* WO DETAIL */
     var $t_pp_dtl_temp_view = "sc_tmp.pp_dtl";
-    var $t_pp_dtl_temp_view_column = array('idurut','idbarang','nmbarang','unit','qty','description');
+    /* kolom yang ikut dicari pada kotak search grid detail PP
+       (WAJIB nama kolom yang benar-benar ada di sc_tmp.pp_dtl) */
+    var $t_pp_dtl_temp_view_column = array(
+        'idbarang', 'nmbarang', 'batch', 'capexno', 'unit', 'qty', 'description',
+    );
+    /* pemetaan index kolom DataTables -> kolom sc_tmp.pp_dtl (untuk ORDER BY)
+       index 0 = kolom checkbox (tidak diurutkan) */
+    var $t_pp_dtl_temp_order_column = array(
+        1 => 'idbarang',
+        2 => 'nmbarang',
+        3 => 'batch',
+        4 => 'capexno',
+        5 => 'unit',
+        6 => 'qty',
+        7 => 'description',
+    );
     var $t_pp_dtl_temp_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_t_pp_dtl_temp($docno)
     {
@@ -217,46 +232,41 @@ class M_Purchase extends Model
         $nama=trim($this->session->get('nama'));
 
         $builder = $this->db->table($this->t_pp_dtl_temp_view);
-        $builder->orderBy('idurut');
-
-        $i = 0;
 
         // $builder->where("docno = '$docno'");
         $builder->where("inputby = '$nama'");
-        foreach ($this->t_pp_dtl_temp_view_column as $mrp)
+
+        $keyword = trim((string) ($_POST['search']['value'] ?? ''));
+
+        if ($keyword !== '') // if datatable send POST for search
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            $builder->groupStart(); // open bracket. query Where with OR clause better with bracket. because maybe can combine with other WHERE with AND.
+
+            foreach ($this->t_pp_dtl_temp_view_column as $mrp)
             {
-
-                if($i===0) // first loop
-                {
-                    $builder->groupStart(); // open bracket. query Where with OR clause better with bracket. because maybe can combine with other WHERE with AND.
-                    $builder->like("upper(cast(" . strtoupper($mrp) . " as varchar))", strtoupper($_POST['search']['value']));
-                }
-                else
-                {
-                    $builder->orLike("upper(cast(" . strtoupper($mrp) . " as varchar))", strtoupper($_POST['search']['value']));
-                }
-
-                if(count($this->t_pp_dtl_temp_view_column) - 1 == $i) //last loop
-                    $builder->groupEnd(); //close bracket
+                $builder->orLike("upper(cast(" . strtoupper($mrp) . " as varchar))", strtoupper($keyword));
             }
-            $i++;
+
+            $builder->groupEnd(); //close bracket
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->t_pp_dtl_temp_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+        // ORDER BY : hanya kolom yang benar-benar ada di tabel
+        if (isset($_POST['order'][0]['column'])) {
+
+            $columnIndex = (int) $_POST['order'][0]['column'];
+            $direction   = strtolower($_POST['order'][0]['dir'] ?? 'asc');
+
+            if (
+                isset($this->t_pp_dtl_temp_order_column[$columnIndex]) &&
+                in_array($direction, ['asc', 'desc'], true)
+            ) {
+                $builder->orderBy($this->t_pp_dtl_temp_order_column[$columnIndex], $direction);
             }
         }
-        else if(isset($this->t_pp_dtl_temp_view_order))
-        {
-            $order = $this->t_pp_dtl_temp_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
-            }
-        }
+
+        // default / tie-breaker : urutan input detail
+        $builder->orderBy('idurut', 'asc');
+
         return $builder;
     }
 
@@ -264,8 +274,9 @@ class M_Purchase extends Model
     function get_t_pp_dtl_temp_view($docno){
         $builder = $this->_get_query_t_pp_dtl_temp($docno);
         ////$this->_get_query_t_pp_dtl_temp($docno);
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        $length = $_POST['length'] ?? -1;
+        if($length != -1)
+            $builder->limit((int) $length, (int) ($_POST['start'] ?? 0));
         $query = $builder->get();
         return $query->getResult();
     }
@@ -1120,7 +1131,30 @@ class M_Purchase extends Model
     //WO TEMP
     /* WO DETAIL */
     var $t_po_dtl_temp_view = "sc_tmp.po_dtl";
-    var $t_po_dtl_temp_view_column = array('idurut','idbarang','nmbarang','unit','qty','description');
+    /* kolom yang ikut dicari pada kotak search grid detail PO
+       (WAJIB nama kolom yang benar-benar ada di sc_tmp.po_dtl) */
+    var $t_po_dtl_temp_view_column = array(
+        'docnopp', 'idbarang', 'nmbarang', 'batch', 'capexno',
+        'etdnotes', 'unit', 'qty', 'harga', 'nilai', 'nilaikonversi',
+        'descriptionpo', 'descriptionpp',
+    );
+    /* pemetaan index kolom DataTables -> kolom sc_tmp.po_dtl (untuk ORDER BY) */
+    var $t_po_dtl_temp_order_column = array(
+        1  => 'docnopp',
+        2  => 'idbarang',
+        3  => 'nmbarang',
+        4  => 'batch',
+        5  => 'capexno',
+        6  => 'etd',
+        7  => 'etdnotes',
+        8  => 'unit',
+        9  => 'qty',
+        10 => 'harga',
+        11 => 'nilai',
+        12 => 'nilaikonversi',
+        13 => 'descriptionpo',
+        14 => 'descriptionpp',
+    );
     var $t_po_dtl_temp_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_t_po_dtl_temp($docno)
     {
@@ -1129,55 +1163,41 @@ class M_Purchase extends Model
         $nama=trim($this->session->get('nama'));
 
         $builder = $this->db->table($this->t_po_dtl_temp_view);
-        $builder->orderBy('idurut');
-
-        $i = 0;
 
         // $builder->where("docno = '$docno'");
         $builder->where("inputby = '$nama'");
-        foreach ($this->t_po_dtl_temp_view_column as $mrp)
+
+        $keyword = trim((string) ($_POST['search']['value'] ?? ''));
+
+        if ($keyword !== '') // if datatable send POST for search
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            $builder->groupStart(); // open bracket. query Where with OR clause better than bracket-less OR.
+
+            foreach ($this->t_po_dtl_temp_view_column as $mrp)
             {
-
-                if($i===0) // first loop
-                {
-                    $builder->groupStart(); // open bracket. query Where with OR clause better with bracket. because maybe can combine with other WHERE with AND.
-                    $builder->like("upper(cast(" . strtoupper($mrp) . " as varchar))", strtoupper($_POST['search']['value']));
-                }
-                else
-                {
-                    $builder->orLike("upper(cast(" . strtoupper($mrp) . " as varchar))", strtoupper($_POST['search']['value']));
-                }
-
-                if(count($this->t_po_dtl_temp_view_column) - 1 == $i) //last loop
-                    $builder->groupEnd(); //close bracket
+                $builder->orLike("upper(cast(" . strtoupper($mrp) . " as varchar))", strtoupper($keyword));
             }
-            $i++;
+
+            $builder->groupEnd(); //close bracket
         }
 
+        // ORDER BY : hanya kolom yang benar-benar ada di tabel
         if (isset($_POST['order'][0]['column'])) {
 
-            $columnIndex = (int) $_POST['order'][0]['column'] - 1;
+            $columnIndex = (int) $_POST['order'][0]['column'];
             $direction   = strtolower($_POST['order'][0]['dir'] ?? 'asc');
 
             if (
-                $columnIndex >= 0 &&
-                isset($this->t_po_dtl_temp_view_column[$columnIndex]) &&
+                isset($this->t_po_dtl_temp_order_column[$columnIndex]) &&
                 in_array($direction, ['asc', 'desc'], true)
             ) {
-                $columnName = $this->t_po_dtl_temp_view_column[$columnIndex];
+                $builder->orderBy($this->t_po_dtl_temp_order_column[$columnIndex], $direction);
+            }
+        }
 
-                $builder->orderBy($columnName, $direction);
-            }
-        }
-        else if(isset($this->t_po_dtl_temp_view_order))
-        {
-            $order = $this->t_po_dtl_temp_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
-            }
-        }
+        // default / tie-breaker : urutan input detail
+        $builder->orderBy('idurut', 'asc');
+
         return $builder;
     }
 
@@ -1185,8 +1205,9 @@ class M_Purchase extends Model
     function get_t_po_dtl_temp_view($docno){
         $builder = $this->_get_query_t_po_dtl_temp($docno);
         ////$this->_get_query_t_po_dtl_temp($docno);
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        $length = $_POST['length'] ?? -1;
+        if($length != -1)
+            $builder->limit((int) $length, (int) ($_POST['start'] ?? 0));
         $query = $builder->get();
         return $query->getResult();
     }
@@ -1199,10 +1220,16 @@ class M_Purchase extends Model
         $query = $builder->get();
         return $query->getNumRows();
     }
+    /* total SELURUH detail milik user (tanpa filter search)
+       dipakai sebagai recordsTotal -> ditampilkan di footer grid */
     public function t_po_dtl_temp_view_count_all($docno)
     {
-        $builder = $this->_get_query_t_po_dtl_temp($docno);
-        return $builder->countAllResults();
+        $this->session = \Config\Services::session();
+        $nama = trim((string) $this->session->get('nama'));
+
+        return $this->db->table($this->t_po_dtl_temp_view)
+            ->where('inputby', $nama)
+            ->countAllResults();
     }
     public function get_t_po_dtl_temp_view_by_id($id,$docno)
     {
@@ -2422,7 +2449,31 @@ class M_Purchase extends Model
     //WO TEMP
     /* WO DETAIL */
     var $t_lpb_dtl_temp_view = "sc_tmp.lpb_dtl";
-    var $t_lpb_dtl_temp_view_column = array('idurut','docnopo','idbarang','nmbarang','unit','qty','descriptionpo','descriptionpp');
+    /* kolom yang ikut dicari pada kotak search grid detail LPB
+       (WAJIB nama kolom yang benar-benar ada di sc_tmp.lpb_dtl) */
+    var $t_lpb_dtl_temp_view_column = array(
+        'docnopo', 'idbarang', 'nmbarang', 'capexno', 'idgudang', 'batch',
+        'etdnotes', 'unit', 'qty', 'harga', 'nilai', 'nilaikonversi',
+        'descriptionpo', 'descriptionpp',
+    );
+    /* pemetaan index kolom DataTables -> kolom sc_tmp.lpb_dtl (untuk ORDER BY) */
+    var $t_lpb_dtl_temp_order_column = array(
+        1  => 'docnopo',
+        2  => 'idbarang',
+        3  => 'nmbarang',
+        4  => 'capexno',
+        5  => 'idgudang',
+        6  => 'batch',
+        7  => 'etd',
+        8  => 'etdnotes',
+        9  => 'unit',
+        10 => 'qty',
+        11 => 'harga',
+        12 => 'nilai',
+        13 => 'nilaikonversi',
+        14 => 'descriptionpo',
+        15 => 'descriptionpp',
+    );
     var $t_lpb_dtl_temp_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_t_lpb_dtl_temp($docno)
     {
@@ -2431,46 +2482,41 @@ class M_Purchase extends Model
         $nama=trim($this->session->get('nama'));
 
         $builder = $this->db->table($this->t_lpb_dtl_temp_view);
-        $builder->orderBy('idurut');
-
-        $i = 0;
 
         // $builder->where("docno = '$docno'");
         $builder->where("inputby = '$nama'");
-        foreach ($this->t_lpb_dtl_temp_view_column as $mrp)
+
+        $keyword = trim((string) ($_POST['search']['value'] ?? ''));
+
+        if ($keyword !== '') // if datatable send POST for search
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            $builder->groupStart(); // open bracket. query Where with OR clause better than bracket-less OR.
+
+            foreach ($this->t_lpb_dtl_temp_view_column as $mrp)
             {
-
-                if($i===0) // first loop
-                {
-                    $builder->groupStart(); // open bracket. query Where with OR clause better with bracket. because maybe can combine with other WHERE with AND.
-                    $builder->like("upper(cast(" . strtoupper($mrp) . " as varchar))", strtoupper($_POST['search']['value']));
-                }
-                else
-                {
-                    $builder->orLike("upper(cast(" . strtoupper($mrp) . " as varchar))", strtoupper($_POST['search']['value']));
-                }
-
-                if(count($this->t_lpb_dtl_temp_view_column) - 1 == $i) //last loop
-                    $builder->groupEnd(); //close bracket
+                $builder->orLike("upper(cast(" . strtoupper($mrp) . " as varchar))", strtoupper($keyword));
             }
-            $i++;
+
+            $builder->groupEnd(); //close bracket
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo lpbst column 0
-                $builder->orderBy($this->t_lpb_dtl_temp_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+        // ORDER BY : hanya kolom yang benar-benar ada di tabel
+        if (isset($_POST['order'][0]['column'])) {
+
+            $columnIndex = (int) $_POST['order'][0]['column'];
+            $direction   = strtolower($_POST['order'][0]['dir'] ?? 'asc');
+
+            if (
+                isset($this->t_lpb_dtl_temp_order_column[$columnIndex]) &&
+                in_array($direction, ['asc', 'desc'], true)
+            ) {
+                $builder->orderBy($this->t_lpb_dtl_temp_order_column[$columnIndex], $direction);
             }
         }
-        else if(isset($this->t_lpb_dtl_temp_view_order))
-        {
-            $order = $this->t_lpb_dtl_temp_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
-            }
-        }
+
+        // default / tie-breaker : urutan input detail
+        $builder->orderBy('idurut', 'asc');
+
         return $builder;
     }
 
@@ -2478,8 +2524,9 @@ class M_Purchase extends Model
     function get_t_lpb_dtl_temp_view($docno){
         $builder = $this->_get_query_t_lpb_dtl_temp($docno);
         ////$this->_get_query_t_lpb_dtl_temp($docno);
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        $length = $_POST['length'] ?? -1;
+        if($length != -1)
+            $builder->limit((int) $length, (int) ($_POST['start'] ?? 0));
         $query = $builder->get();
         return $query->getResult();
     }
@@ -2492,10 +2539,16 @@ class M_Purchase extends Model
         $query = $builder->get();
         return $query->getNumRows();
     }
+    /* total SELURUH detail milik user (tanpa filter search)
+       dipakai sebagai recordsTotal -> ditampilkan di footer grid */
     public function t_lpb_dtl_temp_view_count_all($docno)
     {
-        $builder = $this->_get_query_t_lpb_dtl_temp($docno);
-        return $builder->countAllResults();
+        $this->session = \Config\Services::session();
+        $nama = trim((string) $this->session->get('nama'));
+
+        return $this->db->table($this->t_lpb_dtl_temp_view)
+            ->where('inputby', $nama)
+            ->countAllResults();
     }
     public function get_t_lpb_dtl_temp_view_by_id($id,$docno)
     {

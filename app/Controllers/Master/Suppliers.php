@@ -119,6 +119,10 @@ class Suppliers extends BaseController
             $row[] = number_format((float)$lm->jthtempo, 2, '.', ',');
             $row[] = $lm->phone;
             $row[] = $lm->cp;
+            $row[] = trim((string)$lm->pkp_non_pkp) !== '' ? strtoupper(trim($lm->pkp_non_pkp)) : '-';
+            $row[] = trim((string)$lm->currency) !== '' ? strtoupper(trim($lm->currency)) : '-';
+            $row[] = trim((string)$lm->import_local) !== '' ? strtoupper(trim($lm->import_local)) : '-';
+            $row[] = trim((string)$lm->status) === 'F' ? 'AKTIF' : 'NON AKTIF';
 
             // $row[] = $lm->createdby;
             // $row[] = $lm->createddate;
@@ -450,12 +454,22 @@ class Suppliers extends BaseController
             // $interngroup           = ($dataprocess->interngroup);
             // $blacklist    = ($dataprocess->blacklist);
 
+            /* VALIDASI KODE SUPPLIER (MAKSIMAL 20 KARAKTER) */
+            if ($kdsupplier === '') {
+                echo json_encode(array('status' => false, 'messages' => 'Kode Supplier tidak boleh kosong'));
+                return;
+            }
+            if (strlen($kdsupplier) > 20) {
+                echo json_encode(array('status' => false, 'messages' => 'Kode Supplier maksimal 20 karakter'));
+                return;
+            }
+
             $createdby = $nama;
             $createddate = date('Y-m-d H:i:s');
             $builder = $this->db->table('sc_mst.mstsupplier');
             if ($type === 'INPUT') {
-                $param = " and trim(kdsupplier)='" . $kdsupplier . "'";
-                $cek = $this->m_supplier->q_mstsupplier($param)->getNumRows();
+                $param = " and trim(kdsupplier)='" . str_replace("'", "''", $kdsupplier) . "'";
+                $cek = $this->m_suppliers->q_mstsuppliers($param)->getNumRows();
                 if ($cek > 0) {
                     $getResult = array('status' => false, 'messages' => 'Kode Supplier sudah digunakan');
                     echo json_encode($getResult);

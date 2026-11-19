@@ -16,7 +16,7 @@ class M_Suppliers extends Model
     left outer join sc_mst.kotakab c on a.idkota=c.kodekotakab
     left outer join sc_mst.market f on a.idmarket=f.idmarket
     where COALESCE(status,'') = 'F') as x";
-    var $suppliers_view_column = array('kdsupplier', 'nmsupplier','alamat','namakotakab','namaprov','nmmarket','npwp','plafon','jthtempo','phone','cp');
+    var $suppliers_view_column = array('kdsupplier', 'nmsupplier','alamat','namakotakab','namaprov','nmmarket','npwp','plafon','jthtempo','phone','cp','pkp_non_pkp','currency','import_local','status');
     var $suppliers_view_order = array("createddate" => 'desc'); // default order
     private function _get_query_t_suppliers()
     {
@@ -47,8 +47,10 @@ class M_Suppliers extends Model
 
         if(isset($_POST['order'])) // here order processing
         {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->suppliers_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+            // column index 0 = No. and index 1 = Action, they are not part of suppliers_view_column
+            $order_index = (int) $_POST['order']['0']['column'] - 2;
+            if (isset($this->suppliers_view_column[$order_index])){
+                $builder->orderBy($this->suppliers_view_column[$order_index], $_POST['order']['0']['dir']);
             }
         }
         else if(isset($this->suppliers_view_order))

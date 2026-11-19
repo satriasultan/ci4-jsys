@@ -846,10 +846,10 @@ function tableLPBDetail(){
             "serverSide": true,
             "language":  languageDatatable(),
             "paging": false,
-            "lengthChange": true,
+            "lengthChange": false,
             "searching": true,
             "ordering": true,
-            "info": true,
+            "info": false,
             "autoWidth": false,
             "responsive": false,
             "bFilter":true,
@@ -882,8 +882,25 @@ function tableLPBDetail(){
                     "targets": [ -1 ],
                     "orderable": false
                 }
-            ]
+            ],
+            // setiap tabel detail selesai di-load → cek apakah header harus dikunci
+            "drawCallback": function (settings) {
+                checkLPBDetailAndLock();
+                updateLPBDetailFooter(settings);
+            }
         });
+
+        // info jumlah baris tercentang (kiri toolbar grid, tepat di atas header check-all)
+        var $toolbarRow = $('#tablpbdtl_wrapper').children('.row').first();
+        if ($toolbarRow.length && !$toolbarRow.find('#lpbDetailCheckedCount').length) {
+            $toolbarRow.prepend(
+                '<div class="lpb-detail-checkinfo is-empty" id="lpbDetailCheckedCount">' +
+                    '<i class="fa fa-check-square-o"></i>' +
+                    '<span>Terpilih: <strong>0</strong> item</span>' +
+                '</div>'
+            );
+        }
+        updateLPBDetailCheckedCount();
 
         $('#tablpbdtl tbody').on('click', 'tr', function(e) {
             // Jika yang diklik adalah checkbox itu sendiri, biarkan perilaku default
@@ -909,8 +926,6 @@ function tableLPBDetail(){
 
     return initTable();
 }
-
-
 function reload_table_lpb_dtl()
 {
     var table = $('#tablpbdtl');
@@ -918,25 +933,84 @@ function reload_table_lpb_dtl()
 }
 
 
+/* Footer grid detail LPB :
+   - total seluruh detail yang sudah terinput (tanpa filter search)
+   - info jumlah baris hasil pencarian (muncul hanya saat search diisi) */
+function updateLPBDetailFooter(settings) {
+    var json  = (settings && settings.json) ? settings.json : {};
+    var total = parseInt(json.recordsTotal, 10);
+    var shown = parseInt(json.recordsFiltered, 10);
+
+    if (isNaN(total)) { total = parseInt(settings && settings._iRecordsTotal, 10) || 0; }
+    if (isNaN(shown)) { shown = parseInt(settings && settings._iRecordsDisplay, 10) || 0; }
+
+    var term = '';
+    if (settings && settings.oPreviousSearch) {
+        term = $.trim(settings.oPreviousSearch.sSearch || '');
+    }
+
+    var $totalRow = $('#lpbDetailTotalRow');
+    if ($totalRow.length) {
+        $totalRow.text(total.toLocaleString('id-ID'));
+    }
+
+    var $filterInfo = $('#lpbDetailFilterInfo');
+    if ($filterInfo.length) {
+        if (term !== '') {
+            $filterInfo
+                .html('<i class="fa fa-filter"></i>Hasil pencarian &ldquo;' +
+                      $('<div>').text(term).html() +
+                      '&rdquo;: <strong>' + shown.toLocaleString('id-ID') + '</strong> baris')
+                .show();
+        } else {
+            $filterInfo.text('').hide();
+        }
+    }
+}
+
+
+/* Info jumlah baris detail yang dicentang (badge di atas header grid) */
+function updateLPBDetailCheckedCount() {
+    var count = $('#tablpbdtl tbody .row-check:checked').length;
+    var $info = $('#lpbDetailCheckedCount');
+
+    if (!$info.length) {
+        return;
+    }
+
+    $info.find('strong').text(count.toLocaleString('id-ID'));
+    $info.toggleClass('is-empty', count === 0);
+    $info.toggleClass('has-selection', count > 0);
+}
 
 // CHECK ALL
 $('#tablpbdtl thead').on('change', '#checkAll', function () {
     const checked = this.checked;
 
     $('#tablpbdtl tbody .row-check').prop('checked', checked);
+    $('#tablpbdtl tbody tr').toggleClass('lpb-row-checked', checked);
+    $('#checkAll').prop('indeterminate', false);
+    updateLPBDetailCheckedCount();
 });
 
 // JIKA SALAH SATU ROW UNCHECK → CHECKALL MATI
 $('#tablpbdtl tbody').on('change', '.row-check', function () {
+    $(this).closest('tr').toggleClass('lpb-row-checked', this.checked);
+
     const total = $('#tablpbdtl tbody .row-check').length;
     const checked = $('#tablpbdtl tbody .row-check:checked').length;
 
-    $('#checkAll').prop('checked', total === checked);
+    $('#checkAll')
+        .prop('checked', total > 0 && total === checked)
+        .prop('indeterminate', checked > 0 && checked < total);
+    updateLPBDetailCheckedCount();
 });
 
 $('#tablpbdtl').on('draw.dt', function () {
-    $('#checkAll').prop('checked', false);
+    $('#checkAll').prop('checked', false).prop('indeterminate', false);
+    $('#tablpbdtl tbody tr').removeClass('lpb-row-checked');
     checkLPBDetailAndLock();
+    updateLPBDetailCheckedCount();
 });
 function getSelectedLPBDetail(){
     return $('#tablpbdtl tbody .row-check:checked')
@@ -952,6 +1026,139 @@ function getCheckedDetailIds(){
     });
     return ids;
 }
+
+/* =========================================================
+   SHORTCUT KEYBOARD & TOOLTIP TOMBOL DETAIL LPB
+   Ctrl + Q = Input Data
+   Ctrl + E = Update Data
+   Ctrl + D = Hapus Data
+   Ctrl + W = dinonaktifkan (tidak boleh menutup tab)
+========================================================= */
+function initLPBDetailShortcutTooltips() {
+    var $buttons = $('.header-actions [data-bs-toggle="tooltip"], .header-actions [data-toggle="tooltip"]');
+
+    if (!$buttons.length) {
+        return;
+    }
+
+    if (window.bootstrap && window.bootstrap.Tooltip) {
+        $buttons.each(function () {
+            if (!window.bootstrap.Tooltip.getInstance(this)) {
+                new window.bootstrap.Tooltip(this, {
+                    placement: 'bottom',
+                    container: 'body'
+                });
+            }
+        });
+    } else if ($.fn.tooltip) {
+        $buttons.tooltip({
+            placement: 'bottom',
+            container: 'body'
+        });
+    }
+}
+
+function isLPBDetailShortcutBlocked(e) {
+    // jangan ganggu saat modal / dialog sedang terbuka
+    if ($('.modal.show').length || $('.swal2-container').length) {
+        return true;
+    }
+
+    // jangan trigger saat user sedang mengetik / memilih di form
+    var tagName = (e.target && e.target.tagName ? e.target.tagName : '').toLowerCase();
+
+    if (tagName === 'textarea' || tagName === 'select') {
+        return true;
+    }
+
+    if (tagName === 'input') {
+        // checkbox / radio / tombol tidak menghalangi shortcut
+        var inputType = (e.target.type || 'text').toLowerCase();
+        var nonTypingTypes = ['checkbox', 'radio', 'button', 'submit', 'reset'];
+
+        if (nonTypingTypes.indexOf(inputType) === -1) {
+            return true;
+        }
+    }
+
+    if (e.target && e.target.isContentEditable) {
+        return true;
+    }
+
+    if ($(e.target).closest('.select2-container--open').length) {
+        return true;
+    }
+
+    return false;
+}
+
+$(document).on('keydown.lpbDetailShortcut', function (e) {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) {
+        return;
+    }
+
+    var key = (e.key || '').toLowerCase();
+
+    // Ctrl + W / Ctrl + Shift + W menutup tab / window browser → dicegah
+    if (key === 'w') {
+        e.preventDefault();
+        e.stopPropagation();
+
+        return false;
+    }
+
+    if (e.shiftKey) {
+        return;
+    }
+
+    if (key !== 'q' && key !== 'e' && key !== 'd') {
+        return;
+    }
+
+    if (isLPBDetailShortcutBlocked(e)) {
+        return;
+    }
+
+    e.preventDefault();
+
+    if (key === 'q') {
+        btnInputDetail();
+    } else if (key === 'e') {
+        btnUpdateDetail();
+    } else {
+        btnDeleteDetail();
+    }
+});
+
+/* =========================================================
+   SHORTCUT SIMPAN DETAIL LPB
+   Ctrl + Alt + S = saveLPBDetail() (aktif saat modal Detail /
+   Update LPB sedang terbuka)
+========================================================= */
+$(document).on('keydown.lpbSaveDetailShortcut', function (e) {
+    if (!(e.ctrlKey || e.metaKey) || !e.altKey || e.shiftKey) {
+        return;
+    }
+
+    if ((e.key || '').toLowerCase() !== 's') {
+        return;
+    }
+
+    // hanya saat modal input / update detail LPB terbuka
+    if (!$('#modalDetailLPB').hasClass('show') && !$('#modalUpdateLPB').hasClass('show')) {
+        return;
+    }
+
+    // jangan bentrok saat dialog konfirmasi sedang tampil
+    if ($('.swal2-container').length) {
+        return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    saveLPBDetail();
+});
 
 function resetSelect2Fields() {
     // Reset idprincipal
@@ -1341,8 +1548,26 @@ $('#formLPBdetail').bootstrapValidator({
 
 function saveLPBDetail() {
 
-    let ok =  $('#docnopo').val()
-    let ok2 = $('[name="docnopo"]').val();
+    // Mode update (#modalUpdateLPB) tidak memakai select #docnopo, karena
+    // select tersebut hanya ada di #modalDetailLPB dan sudah dikosongkan oleh
+    // resetSelect2Fields(). Nilai PO pada mode update ada di #docnopomodal.
+    const isUpdateMode = $('#modalUpdateLPB').hasClass('show') || !!currentEditId;
+
+    let docnopo = $.trim(
+        isUpdateMode
+            ? ($('#docnopomodal').val() || $('#modalUpdateLPB [name="docnopo"]').val() || '')
+            : ($('#modalDetailLPB #docnopo').val() || '')
+    );
+
+    // validasi ringan: PO wajib dipilih (juga dipakai shortcut Ctrl + Alt + S)
+    if (!docnopo) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Peringatan',
+            text: 'Pilih nomor PO terlebih dahulu'
+        });
+        return;
+    }
 
     // ==========================================
     // AMBIL DATA SUPPLIER DARI SELECT2
@@ -1427,12 +1652,7 @@ function saveLPBDetail() {
     formData.set('etd', etdDb);
     formData.set('etdnotes', $.trim($('#etdnotes').val() || ''));
 
-    let docnopo = $('#docnopo').val();
-
-    if (!docnopo) {
-        docnopo = $('#docnopomodal').val();
-    }
-
+    // docnopo sudah di-resolve di atas (select #modalDetailLPB atau #docnopomodal)
     formData.set('docnopo', docnopo);
 
     $.ajax({
@@ -1503,13 +1723,25 @@ function btnInputDetail() {
 
 
     if (!cabang || cabang.trim() === '') {
-        alert('Cabang harus dipilih terlebih dahulu');
+        Swal.fire({
+            title: 'Peringatan',
+            text: 'Cabang harus dipilih terlebih dahulu.',
+            icon: 'warning',
+            confirmButtonText: 'OK'
+        });
+
         $('#cabang').focus();
         return;
     }
 
     if (!kdsupplier || kdsupplier.trim() === '') {
-        alert('Supplier harus dipilih terlebih dahulu');
+        Swal.fire({
+            title: 'Peringatan',
+            text: 'Supplier harus dipilih terlebih dahulu.',
+            icon: 'warning',
+            confirmButtonText: 'OK'
+        });
+
         $('#kdsupplier').focus();
         return;
     }
@@ -2441,6 +2673,9 @@ function checkLPBDetailAndLock() {
 $(document).ready(function() {
     tableLPBTrx();
     tableLPBDetail();
+
+    // tooltip tombol detail (judul berisi shortcut keyboard)
+    initLPBDetailShortcutTooltips();
 
     // 🔧 Inisialisasi daterangepicker untuk ETD di modal update
     $('#etd').daterangepicker({

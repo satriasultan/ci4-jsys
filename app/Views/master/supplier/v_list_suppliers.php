@@ -61,6 +61,10 @@
                             <th style="min-width:100px; text-align:center; vertical-align:middle;">Jatuh Tempo</th>
                             <th style="min-width:100px; text-align:center; vertical-align:middle;">Telepon</th>
                             <th style="min-width:150px; text-align:center; vertical-align:middle;">Contact Person</th>
+                            <th style="min-width:110px; text-align:center; vertical-align:middle;">PKP / Non PKP</th>
+                            <th style="min-width:90px; text-align:center; vertical-align:middle;">Currency</th>
+                            <th style="min-width:110px; text-align:center; vertical-align:middle;">Import / Lokal</th>
+                            <th style="min-width:100px; text-align:center; vertical-align:middle;">Status</th>
 						</tr>
 					</thead>
 					<tbody>

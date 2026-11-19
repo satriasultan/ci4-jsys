@@ -706,6 +706,130 @@
     }
 
     /* =========================================================
+       MODAL DETAIL & UPDATE LPB — FIELD COMPACT
+       ukuran field mengikuti referensi #modalUpdatePO
+       (purchase/trans/addPO): tinggi 28px, label uppercase 11px,
+       radius 3px, select2 28px.
+    ========================================================= */
+    .corp-form-container #modalDetailLPB .modal-header,
+    .corp-form-container #modalUpdateLPB .modal-header {
+        padding: 10px 16px;
+    }
+
+    .corp-form-container #modalDetailLPB .modal-header .modal-title,
+    .corp-form-container #modalUpdateLPB .modal-header .modal-title {
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+    .corp-form-container #modalDetailLPB .modal-body,
+    .corp-form-container #modalUpdateLPB .modal-body {
+        padding: 12px 16px 4px;
+    }
+
+    .corp-form-container #modalDetailLPB .form-group,
+    .corp-form-container #modalUpdateLPB .form-group {
+        margin-bottom: 8px;
+    }
+
+    .corp-form-container #modalDetailLPB .form-group > label,
+    .corp-form-container #modalUpdateLPB .form-group > label,
+    .corp-form-container #modalDetailLPB label.form-label,
+    .corp-form-container #modalUpdateLPB label.form-label {
+        display: block;
+        margin-bottom: 3px;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        line-height: 1.2;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        color: var(--corp-text-muted) !important;
+    }
+
+    /* tinggi field = tinggi 1 row datatable detail */
+    .corp-form-container #modalDetailLPB .form-control,
+    .corp-form-container #modalDetailLPB select.form-control,
+    .corp-form-container #modalDetailLPB input.form-control,
+    .corp-form-container #modalDetailLPB textarea.form-control,
+    .corp-form-container #modalUpdateLPB .form-control,
+    .corp-form-container #modalUpdateLPB select.form-control,
+    .corp-form-container #modalUpdateLPB input.form-control,
+    .corp-form-container #modalUpdateLPB textarea.form-control {
+        height: 28px !important;
+        min-height: 28px !important;
+        max-height: 28px !important;
+        padding: 3px 8px !important;
+        font-size: 12.5px !important;
+        line-height: 20px !important;
+        border-radius: 3px !important;
+    }
+
+    .corp-form-container #modalDetailLPB textarea.form-control,
+    .corp-form-container #modalUpdateLPB textarea.form-control {
+        resize: none;
+        overflow-y: auto;
+    }
+
+    /* Keterangan PO & PP dibuat lebih tinggi (4 baris) */
+    .corp-form-container #modalUpdateLPB textarea#descriptionpo,
+    .corp-form-container #modalUpdateLPB textarea#descriptionpp {
+        height: auto !important;
+        min-height: 88px !important;
+        max-height: none !important;
+        padding: 3px 8px !important;
+        resize: vertical;
+    }
+
+    /* tombol di dalam input-group mengikuti tinggi field */
+    .corp-form-container #modalDetailLPB .input-group .btn,
+    .corp-form-container #modalUpdateLPB .input-group .btn {
+        height: 28px;
+        padding: 0 9px;
+        font-size: 12.5px;
+    }
+
+    /* select2 mengikuti tinggi field */
+    .corp-form-container #modalDetailLPB .select2-container .select2-selection--single,
+    .corp-form-container #modalUpdateLPB .select2-container .select2-selection--single {
+        height: 28px !important;
+        min-height: 28px !important;
+        border-radius: 3px !important;
+    }
+
+    .corp-form-container #modalDetailLPB .select2-container .select2-selection--single .select2-selection__rendered,
+    .corp-form-container #modalUpdateLPB .select2-container .select2-selection--single .select2-selection__rendered {
+        padding: 0 24px 0 8px !important;
+        line-height: 26px !important;
+        font-size: 12.5px !important;
+        font-weight: 600 !important;
+    }
+
+    .corp-form-container #modalDetailLPB .select2-container .select2-selection--single .select2-selection__arrow,
+    .corp-form-container #modalUpdateLPB .select2-container .select2-selection--single .select2-selection__arrow {
+        height: 26px !important;
+        right: 4px !important;
+    }
+
+    .corp-form-container #modalDetailLPB .modal-footer,
+    .corp-form-container #modalUpdateLPB .modal-footer {
+        padding: 8px 16px;
+    }
+
+    /* tombol footer + tombol New Batch (#btnNew) memakai ukuran yang sama */
+    .corp-form-container #modalDetailLPB .modal-footer .btn,
+    .corp-form-container #modalUpdateLPB .modal-footer .btn,
+    .corp-form-container #modalUpdateLPB #btnNew {
+        height: 28px;
+        padding: 0 14px;
+        font-size: 12.5px;
+        line-height: 26px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 3px;
+    }
+
+    /* =========================================================
        RINGKASAN NILAI (DPP / PAJAK / TOTAL)
     ========================================================= */
     .corp-form-container .corp-summary {
@@ -1366,6 +1490,269 @@
         font-style: italic;
         color: var(--corp-text-muted);
     }
+    /* =========================================================
+       GRID DETAIL LPB - KOMPAK, NO WRAP, SCROLL DI DALAM GRID
+       - tinggi area ± 20 baris, sisanya di-scroll di dalam grid
+       - header kolom & kotak search menempel saat grid di-scroll
+       - teks panjang dipotong 1 baris + tooltip judul
+       (sama dengan referensi grid detail PO)
+    ========================================================= */
+    /* footer grid : total baris detail & info hasil search */
+    .corp-form-container .lpb-detail-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        margin-top: -1px;
+        padding: 7px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--corp-text-muted);
+        background: #f4f7fb;
+        border: 1px solid var(--corp-primary);
+        border-top: 0;
+        border-radius: 0 0 6px 6px;
+    }
+
+    .corp-form-container .lpb-detail-footer i {
+        margin-right: 5px;
+        color: var(--corp-primary);
+    }
+
+    .corp-form-container .lpb-detail-footer strong {
+        color: var(--corp-primary);
+        font-weight: 700;
+    }
+
+    .corp-form-container .lpb-detail-footer-right {
+        display: none;
+        color: var(--corp-primary);
+    }
+
+    .corp-form-container .lpb-detail-scroll {
+        max-height: 720px;
+        max-height: min(760px, 78vh);
+        overflow: auto;
+        border: 1px solid var(--corp-primary);
+        border-radius: 6px 6px 0 0;
+        background: #ffffff;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, .06);
+    }
+
+    .corp-form-container .lpb-detail-scroll::-webkit-scrollbar {
+        width: 12px;
+        height: 12px;
+    }
+
+    .corp-form-container .lpb-detail-scroll::-webkit-scrollbar-track {
+        background: #eef2f7;
+    }
+
+    .corp-form-container .lpb-detail-scroll::-webkit-scrollbar-thumb {
+        background: #19385f;
+        border: 2px solid #eef2f7;
+        border-radius: 6px;
+    }
+
+    .corp-form-container .lpb-detail-scroll::-webkit-scrollbar-thumb:hover {
+        background: #152a45;
+    }
+
+    .corp-form-container .lpb-detail-scroll #tablpbdtl {
+        margin-bottom: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        /* WAJIB visible: overflow:hidden pada tabel mematikan header sticky */
+        overflow: visible !important;
+        font-size: 13px !important;
+    }
+    /* Toolbar DataTables (kotak search) tetap terlihat di atas grid */
+    .corp-form-container .lpb-detail-scroll .dataTables_wrapper > .row:first-child {
+        position: sticky;
+        top: 0;
+        z-index: 6;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: nowrap;
+        height: 48px;
+        margin: 0 !important;
+        padding: 0 8px !important;
+        background: #ffffff !important;
+        border-bottom: 1px solid #c3ccd8;
+    }
+
+    .corp-form-container .lpb-detail-scroll .dataTables_wrapper > .row:first-child > div {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex: 0 0 auto !important;
+        width: auto !important;
+        max-width: 100%;
+        min-width: 0;
+        padding: 0 !important;
+    }
+
+    /* dropdown "Show ... data per page" tidak dipakai (paging off) */
+    .corp-form-container .lpb-detail-scroll .dataTables_length {
+        display: none !important;
+    }
+
+    .corp-form-container .lpb-detail-scroll .dataTables_filter {
+        text-align: right;
+        justify-content: flex-end;
+    }
+
+    .corp-form-container .lpb-detail-scroll .dataTables_filter label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0 !important;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .4px;
+        text-transform: uppercase;
+        color: var(--corp-primary);
+        white-space: nowrap;
+    }
+
+    .corp-form-container .lpb-detail-scroll .dataTables_filter input {
+        width: 220px !important;
+        height: 32px !important;
+        min-height: 32px !important;
+        padding: 4px 10px !important;
+        margin: 0 !important;
+        font-size: 12.5px !important;
+        font-weight: 600;
+        line-height: 1.4 !important;
+        color: var(--corp-text);
+        background: #ffffff;
+        border: 1px solid #c3ccd8 !important;
+        border-radius: 6px !important;
+        box-shadow: none;
+        -webkit-appearance: none !important;
+        appearance: none !important;
+    }
+
+    .corp-form-container .lpb-detail-scroll .dataTables_filter input:focus {
+        border-color: var(--corp-primary) !important;
+        box-shadow: 0 0 0 2px rgba(25, 56, 95, .12) !important;
+        outline: none;
+    }
+
+    /* info jumlah baris tercentang (kiri toolbar grid, tepat di atas header check-all) */
+    .corp-form-container .lpb-detail-scroll .lpb-detail-checkinfo {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: flex-start !important;
+        gap: 6px;
+        margin: 0 auto 0 0 !important;   /* dorong ke kiri, kotak search tetap di kanan */
+        padding: 4px 10px !important;
+        font-size: 11.5px;
+        font-weight: 700;
+        line-height: 1.2;
+        letter-spacing: .2px;
+        color: #1f5f8b;
+        background: #eef4fb;
+        border: 1px solid #c3ccd8;
+        border-radius: 999px;
+        white-space: nowrap;
+    }
+
+    .corp-form-container .lpb-detail-scroll .lpb-detail-checkinfo strong {
+        font-size: 12.5px;
+        font-weight: 700;
+    }
+
+    .corp-form-container .lpb-detail-scroll .lpb-detail-checkinfo.is-empty {
+        color: #7b8794;
+        background: #f3f5f8;
+        border-color: #d7dee7;
+    }
+
+    .corp-form-container .lpb-detail-scroll .lpb-detail-checkinfo.has-selection {
+        color: #0f5132;
+        background: #d1e7dd;
+        border-color: #a3cfbb;
+    }
+    .corp-form-container .lpb-detail-scroll #tablpbdtl thead th {
+        position: sticky !important;
+        top: 48px !important;              /* tepat di bawah toolbar grid */
+        z-index: 3 !important;
+        padding: 9px 9px !important;
+        font-size: 12.5px !important;
+        line-height: 1.25 !important;
+        letter-spacing: .2px;
+        white-space: nowrap !important;
+        vertical-align: middle !important;
+        border-bottom: 2px solid #102a45 !important;
+    }
+
+    .corp-form-container .lpb-detail-scroll #tablpbdtl tbody td {
+        padding: 4px 9px !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        line-height: 1.25 !important;
+        white-space: nowrap !important;
+        vertical-align: middle !important;
+        border: 1px solid #c3ccd8 !important;
+    }
+
+    .corp-form-container .lpb-detail-scroll #tablpbdtl tbody tr:nth-child(even) td {
+        background: #f6f8fb !important;
+    }
+
+    .corp-form-container .lpb-detail-scroll #tablpbdtl tbody tr:hover td {
+        background: #fff0b3 !important;
+        color: #000000 !important;
+    }
+
+    .corp-form-container .lpb-detail-scroll #tablpbdtl tbody tr.selected td {
+        background: #dcebfa !important;
+        color: #000000 !important;
+        font-weight: 700 !important;
+    }
+
+    /* baris yang checkbox-nya tercentang -> warna baris ikut berubah */
+    .corp-form-container .lpb-detail-scroll #tablpbdtl tbody tr.lpb-row-checked td {
+        background: #d6e8fb !important;
+        color: #000000 !important;
+        border-color: #9dc4e8 !important;
+    }
+
+    .corp-form-container .lpb-detail-scroll #tablpbdtl tbody tr.lpb-row-checked:hover td {
+        background: #c6def8 !important;
+    }
+
+    /* aksen kiri pada kolom checkbox */
+    .corp-form-container .lpb-detail-scroll #tablpbdtl tbody tr.lpb-row-checked td:first-child {
+        box-shadow: inset 3px 0 0 0 #19385f;
+    }
+
+    .corp-form-container .lpb-detail-scroll #tablpbdtl .lpb-cell-ellipsis {
+        display: block;
+        max-width: 240px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* variasi lebih pendek (mis. Batch / Spec) */
+    .corp-form-container .lpb-detail-scroll #tablpbdtl .lpb-cell-ellipsis-sm {
+        max-width: 150px;
+    }
+
+    /* kolom checkbox tetap sempit agar kolom data lain lega */
+    .corp-form-container .lpb-detail-scroll #tablpbdtl thead th:first-child,
+    .corp-form-container .lpb-detail-scroll #tablpbdtl tbody td:first-child {
+        width: 42px !important;
+        min-width: 42px !important;
+        max-width: 42px !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        text-align: center;
+    }
 
 </style>
 <div class="corp-form-container">
@@ -1471,6 +1858,25 @@
                                             </div>
                                         </div>
                                     </div>
+                                    <div class="form-group">
+                                        <label for="paymenttype">Payment Type</label>
+                                        <select name="paymenttype" id="paymenttype" class="form-control select2">
+                                            <option value="">-- Pilih Payment Type --</option>
+                                            <?php foreach (['LC', 'TT', 'CASH', 'GIRO'] as $pay): ?>
+                                                <option value="<?= $pay ?>" <?= (isset($dtldata['paymenttype']) && trim($dtldata['paymenttype']) === $pay) ? 'selected' : '' ?>><?= $pay ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="polokal">PO Lokal / Import</label>
+                                        <select name="polokal" id="polokal" class="form-control select2">
+                                            <option value="">-- Pilih Lokal / Import --</option>
+                                            <?php foreach (['LOKAL', 'IMPORT'] as $pol): ?>
+                                                <option value="<?= $pol ?>" <?= (isset($dtldata['polokal']) && trim($dtldata['polokal']) === $pol) ? 'selected' : '' ?>><?= $pol ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <!-- KOLOM 3 : SUPPLIER & PAJAK -->
@@ -1509,6 +1915,7 @@
                                     </div>
 
                                     <!-- field biaya/vol (disembunyikan, tetap dipakai lpb.js) -->
+
                                     <div class="d-none">
                                         <div class="form-group">
                                             <label for="biayavol">Biaya/Vol</label>
@@ -1542,25 +1949,7 @@
                                         </select>
                                     </div>
 
-                                    <div class="form-group">
-                                        <label for="paymenttype">Payment Type</label>
-                                        <select name="paymenttype" id="paymenttype" class="form-control select2">
-                                            <option value="">-- Pilih Payment Type --</option>
-                                            <?php foreach (['LC', 'TT', 'CASH', 'GIRO'] as $pay): ?>
-                                                <option value="<?= $pay ?>" <?= (isset($dtldata['paymenttype']) && trim($dtldata['paymenttype']) === $pay) ? 'selected' : '' ?>><?= $pay ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
 
-                                    <div class="form-group">
-                                        <label for="polokal">PO Lokal / Import</label>
-                                        <select name="polokal" id="polokal" class="form-control select2">
-                                            <option value="">-- Pilih Lokal / Import --</option>
-                                            <?php foreach (['LOKAL', 'IMPORT'] as $pol): ?>
-                                                <option value="<?= $pol ?>" <?= (isset($dtldata['polokal']) && trim($dtldata['polokal']) === $pol) ? 'selected' : '' ?>><?= $pol ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
 
                                     <div class="form-group">
                                         <label for="kurs">Nilai Tukar</label>
@@ -1611,24 +2000,30 @@
                         <div class="header-actions">
                             <button type="button"
                                     class="btn btn-success btn-lg action-btn"
+                                    id="btnLPBDetailInput"
                                     data-bs-toggle="tooltip"
-                                    title="Input Data"
+                                    data-bs-placement="bottom"
+                                    title="Input Data (Ctrl + Q)"
                                     onclick="btnInputDetail()">
                                 <i class="fa fa-plus"></i>
                             </button>
 
                             <button type="button"
                                     class="btn btn-warning btn-lg action-btn"
+                                    id="btnLPBDetailUpdate"
                                     data-bs-toggle="tooltip"
-                                    title="Update Data"
+                                    data-bs-placement="bottom"
+                                    title="Update Data (Ctrl + E)"
                                     onclick="btnUpdateDetail()">
                                 <i class="fa fa-edit"></i>
                             </button>
 
                             <button type="button"
                                     class="btn btn-danger btn-lg action-btn"
+                                    id="btnLPBDetailDelete"
                                     data-bs-toggle="tooltip"
-                                    title="Hapus Data"
+                                    data-bs-placement="bottom"
+                                    title="Hapus Data (Ctrl + D)"
                                     onclick="btnDeleteDetail()">
                                 <i class="fa fa-trash"></i>
                             </button>
@@ -1637,7 +2032,7 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-12">
-                                <div class="table-responsive" style="overflow-x: auto;">
+                                <div class="lpb-detail-scroll">
                                     <table id="tablpbdtl" class="table table-bordered table-striped" style="width:100%;" cellspacing="0">
                                         <thead class="bg-primary text-white">
                                         <tr>
@@ -1659,7 +2054,8 @@
                                             <!--                                        <th>Vol/Item</th>-->
                                             <!--                                        <th>Biaya 1</th>-->
                                             <!--                                        <th>Biaya 2</th>-->
-                                            <th>Nilai</th>
+                                            <th title="Nilai barang dalam mata uang PO (valas)">Nilai</th>
+                                            <th title="Nilai dalam IDR (Nilai x Kurs)">Nilai (IDR)</th>
                                             <th>Keterangan PO</th>
                                             <th>Keterangan PP</th>
                                         </tr>
@@ -1667,6 +2063,14 @@
                                         <tbody>
                                         </tbody>
                                     </table>
+                                </div>
+                                <div class="lpb-detail-footer">
+                                    <div class="lpb-detail-footer-left">
+                                        <i class="fa fa-list-ol"></i>
+                                        Total detail terinput:
+                                        <strong id="lpbDetailTotalRow">0</strong> baris
+                                    </div>
+                                    <div class="lpb-detail-footer-right" id="lpbDetailFilterInfo"></div>
                                 </div>
                             </div>
                         </div>
@@ -1799,15 +2203,16 @@
                     <!-- FOOTER -->
                     <div class="modal-footer bg-light">
                         <button type="button"
-                                class="btn btn-primary"
-                                onclick="saveLPBDetail()">
-                            <i class="fa fa-save"></i> Process
-                        </button>
-                        <button type="button"
                                 class="btn btn-secondary"
                                 data-bs-dismiss="modal"
                                 onclick="$('#modalDetailLPB').modal('hide')">
                             <i class="fa fa-times"></i> Batal
+                        </button>
+                        <button type="button"
+                                class="btn btn-primary"
+                                title="Proses (Ctrl + Alt + S)"
+                                onclick="saveLPBDetail()">
+                            <i class="fa fa-save"></i> Proses
                         </button>
                     </div>
                 </form>
@@ -2075,15 +2480,17 @@
                     <!-- FOOTER -->
                     <div class="modal-footer bg-light">
                         <button type="button"
-                                class="btn btn-primary"
-                                onclick="saveLPBDetail()">
-                            <i class="fa fa-save"></i> Simpan
-                        </button>
-                        <button type="button"
                                 class="btn btn-secondary"
                                 data-bs-dismiss="modal"
                                 onclick="$('#modalUpdateLPB').modal('hide')">
                             <i class="fa fa-times"></i> Batal
+                        </button>
+                        <button type="button"
+                                class="btn btn-primary"
+                                id="btnSimpanLPBDetail"
+                                title="Simpan (Ctrl + Alt + S)"
+                                onclick="saveLPBDetail()">
+                            <i class="fa fa-save"></i> Simpan
                         </button>
                     </div>
                 </form>

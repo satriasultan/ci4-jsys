@@ -479,12 +479,18 @@
         color: #ffffff;
     }
 
-    /* icon judul modal (dipertahankan walau judul diubah oleh JS) */
+    /* icon judul modal (dipertahankan walau judul diubah oleh JS)
+       data-mode="input"  → fa-plus-square-o (tambah item)
+       data-mode="update" → fa-pencil-square-o (edit item) */
     .corp-form-container #modalDetailPPLabel::before {
-        content: "\f044"; /* fa-pencil-square-o */
+        content: "\f0fe"; /* fa-plus-square-o */
         font-family: FontAwesome, "Font Awesome 5 Free", sans-serif;
         font-weight: normal;
         margin-right: 8px;
+    }
+
+    .corp-form-container #modalDetailPPLabel[data-mode="update"]::before {
+        content: "\f044"; /* fa-pencil-square-o */
     }
 
     .corp-form-container #modalNewSpecLabel::before {
@@ -839,6 +845,133 @@
 
 
 
+    /* =========================================================
+       MODAL DETAIL PP — FIELD COMPACT
+       ukuran field mengikuti referensi #modalUpdatePO
+       (purchase/trans/addPO): tinggi 28px, label uppercase 11px,
+       radius 3px, select2 28px.
+    ========================================================= */
+    .corp-form-container #modalDetailPP .modal-header {
+        padding: 10px 16px;
+    }
+
+    .corp-form-container #modalDetailPP .modal-header .modal-title {
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+    .corp-form-container #modalDetailPP .modal-body {
+        padding: 12px 16px 4px;
+    }
+
+    .corp-form-container #modalDetailPP .form-group {
+        margin-bottom: 8px;
+    }
+
+    /* label seragam: uppercase, kecil, tegas (referensi label modal PO) */
+    .corp-form-container #modalDetailPP .form-group > label,
+    .corp-form-container #modalDetailPP label.form-label {
+        display: block;
+        margin-bottom: 3px;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        line-height: 1.2;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        color: var(--corp-text-muted, #6b7280) !important;
+    }
+
+    .corp-form-container #modalDetailPP .form-group > label span,
+    .corp-form-container #modalDetailPP label.form-label span {
+        color: var(--corp-danger, #dc3545) !important;
+    }
+
+    /* tinggi field seragam = tinggi 1 row datatable detail */
+    .corp-form-container #modalDetailPP .form-control,
+    .corp-form-container #modalDetailPP select.form-control,
+    .corp-form-container #modalDetailPP input.form-control,
+    .corp-form-container #modalDetailPP textarea.form-control {
+        height: 28px !important;
+        min-height: 28px !important;
+        max-height: 28px !important;
+        padding: 3px 8px !important;
+        font-size: 12.5px !important;
+        font-weight: 600 !important;
+        line-height: 20px !important;
+        border-radius: 3px !important;
+    }
+
+    .corp-form-container #modalDetailPP textarea.form-control {
+        resize: none;
+        overflow-y: auto;
+    }
+
+    /* keterangan tetap multi-baris (4 baris, referensi descriptionpo) */
+    .corp-form-container #modalDetailPP textarea#description {
+        height: auto !important;
+        min-height: 88px !important;
+        max-height: none !important;
+        padding: 3px 8px !important;
+        line-height: 1.45 !important;
+        resize: vertical;
+    }
+
+    .corp-form-container #modalDetailPP .select2-container .select2-selection--single {
+        height: 28px !important;
+        min-height: 28px !important;
+        border-radius: 3px !important;
+    }
+
+    .corp-form-container #modalDetailPP .select2-container .select2-selection--single .select2-selection__rendered {
+        padding: 0 24px 0 8px !important;
+        line-height: 26px !important;
+        font-size: 12.5px !important;
+        font-weight: 600 !important;
+    }
+
+    .corp-form-container #modalDetailPP .select2-container .select2-selection--single .select2-selection__arrow {
+        height: 26px !important;
+        right: 4px !important;
+    }
+
+    /* baris Batch / Specification + tombol New sejajar rapi */
+    .corp-form-container #modalDetailPP .batch-field-row {
+        gap: 6px;
+    }
+
+    .corp-form-container #modalDetailPP .batch-field-row > .flex-grow-1 {
+        min-width: 0;
+    }
+
+    .corp-form-container #modalDetailPP #btnNew {
+        height: 28px;
+        margin-left: 0;
+        padding: 0 9px;
+        font-size: 12.5px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    /* catatan kecil di bawah field (mis. format desimal) */
+    .corp-form-container #modalDetailPP .po-field-hint {
+        display: block;
+        margin-top: 2px;
+        font-size: 10px;
+        line-height: 1.2;
+        color: var(--corp-text-muted, #6b7280);
+    }
+
+    .corp-form-container #modalDetailPP .modal-footer {
+        padding: 8px 16px;
+    }
+
+    .corp-form-container #modalDetailPP .modal-footer .btn {
+        padding: 5px 14px;
+        font-size: 12.5px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+    }
+
     /* ============================================
        J-ACCOUNTING - DATATABLE HIGH CONTRAST
        LARGE TEXT ACCESSIBILITY
@@ -932,6 +1065,261 @@
     #tableDetailPP {
         border: 1px solid #777777 !important;
         border-collapse: collapse !important;
+    }
+
+    /* =========================================================
+       GRID DETAIL PP - KOMPAK, NO WRAP, SCROLL DI DALAM GRID
+       (mengikuti tampilan grid detail Entry PO)
+       - tinggi area dibatasi, sisanya di-scroll di dalam grid
+       - header kolom & kotak search menempel saat grid di-scroll
+       - ada info total baris + info jumlah baris tercentang
+    ========================================================= */
+    /* footer grid : total baris detail & info hasil search */
+    .corp-form-container .po-detail-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        margin-top: -1px;
+        padding: 7px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--corp-text-muted);
+        background: #f4f7fb;
+        border: 1px solid var(--corp-primary);
+        border-top: 0;
+        border-radius: 0 0 6px 6px;
+    }
+
+    .corp-form-container .po-detail-footer i {
+        margin-right: 5px;
+        color: var(--corp-primary);
+    }
+
+    .corp-form-container .po-detail-footer strong {
+        color: var(--corp-primary);
+        font-weight: 700;
+    }
+
+    .corp-form-container .po-detail-footer-right {
+        display: none;
+        color: var(--corp-primary);
+    }
+
+    .corp-form-container .po-detail-scroll {
+        max-height: 640px;
+        max-height: min(680px, 72vh);
+        overflow: auto;
+        border: 1px solid var(--corp-primary);
+        border-radius: 6px 6px 0 0;
+        background: #ffffff;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, .06);
+    }
+
+    .corp-form-container .po-detail-scroll::-webkit-scrollbar {
+        width: 12px;
+        height: 12px;
+    }
+
+    .corp-form-container .po-detail-scroll::-webkit-scrollbar-track {
+        background: #eef2f7;
+    }
+
+    .corp-form-container .po-detail-scroll::-webkit-scrollbar-thumb {
+        background: #19385f;
+        border: 2px solid #eef2f7;
+        border-radius: 6px;
+    }
+
+    .corp-form-container .po-detail-scroll::-webkit-scrollbar-thumb:hover {
+        background: #152a45;
+    }
+
+    .corp-form-container .po-detail-scroll #tabppdtl {
+        margin-bottom: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        /* WAJIB visible: overflow:hidden pada tabel mematikan header sticky */
+        overflow: visible !important;
+    }
+
+    /* Toolbar DataTables (kotak search) tetap terlihat di atas grid */
+    .corp-form-container .po-detail-scroll .dataTables_wrapper > .row:first-child {
+        position: sticky;
+        top: 0;
+        z-index: 6;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: nowrap;
+        height: 48px;
+        margin: 0 !important;
+        padding: 0 8px !important;
+        background: #ffffff !important;
+        border-bottom: 1px solid #c3ccd8;
+    }
+
+    .corp-form-container .po-detail-scroll .dataTables_wrapper > .row:first-child > div {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex: 0 0 auto !important;
+        width: auto !important;
+        max-width: 100%;
+        min-width: 0;
+        padding: 0 !important;
+    }
+
+    /* dropdown "Show ... data per page" tidak dipakai (paging off) */
+    .corp-form-container .po-detail-scroll .dataTables_length {
+        display: none !important;
+    }
+
+    .corp-form-container .po-detail-scroll .dataTables_filter {
+        text-align: right;
+        justify-content: flex-end;
+    }
+
+    .corp-form-container .po-detail-scroll .dataTables_filter label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0 !important;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .4px;
+        text-transform: uppercase;
+        color: var(--corp-primary);
+        white-space: nowrap;
+    }
+
+    .corp-form-container .po-detail-scroll .dataTables_filter input {
+        width: 220px !important;
+        height: 32px !important;
+        min-height: 32px !important;
+        padding: 4px 10px !important;
+        margin: 0 !important;
+        font-size: 12.5px !important;
+        font-weight: 600;
+        line-height: 1.4 !important;
+        color: #1f2937;
+        background: #ffffff;
+        border: 1px solid #c3ccd8 !important;
+        border-radius: 6px !important;
+        box-shadow: none;
+        -webkit-appearance: none !important;
+        appearance: none !important;
+    }
+
+    /* info jumlah baris tercentang (kiri toolbar grid, tepat di atas header check-all) */
+    .corp-form-container .po-detail-scroll .po-detail-checkinfo {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: flex-start !important;
+        gap: 6px;
+        margin: 0 auto 0 0 !important;   /* dorong ke kiri, kotak search tetap di kanan */
+        padding: 4px 10px !important;
+        font-size: 11.5px;
+        font-weight: 700;
+        line-height: 1.2;
+        letter-spacing: .2px;
+        color: #1f5f8b;
+        background: #eef4fb;
+        border: 1px solid #c3ccd8;
+        border-radius: 999px;
+        white-space: nowrap;
+    }
+
+    .corp-form-container .po-detail-scroll .po-detail-checkinfo strong {
+        font-size: 12.5px;
+        font-weight: 700;
+    }
+
+    .corp-form-container .po-detail-scroll .po-detail-checkinfo.is-empty {
+        color: #7b8794;
+        background: #f3f5f8;
+        border-color: #d7dee7;
+    }
+
+    .corp-form-container .po-detail-scroll .po-detail-checkinfo.has-selection {
+        color: #0f5132;
+        background: #d1e7dd;
+        border-color: #a3cfbb;
+    }
+
+    .corp-form-container .po-detail-scroll #tabppdtl thead th {
+        position: sticky !important;
+        top: 48px !important;              /* tepat di bawah toolbar grid */
+        z-index: 3 !important;
+        padding: 9px 9px !important;
+        font-size: 12.5px !important;
+        line-height: 1.25 !important;
+        letter-spacing: .2px;
+        white-space: nowrap !important;
+        vertical-align: middle !important;
+        border-bottom: 2px solid #102a45 !important;
+    }
+
+    .corp-form-container .po-detail-scroll #tabppdtl tbody td {
+        padding: 4px 9px !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        line-height: 1.25 !important;
+        white-space: nowrap !important;
+        vertical-align: middle !important;
+        border: 1px solid #c3ccd8 !important;
+    }
+
+    .corp-form-container .po-detail-scroll #tabppdtl tbody tr:nth-child(even) td {
+        background: #f6f8fb !important;
+    }
+
+    .corp-form-container .po-detail-scroll #tabppdtl tbody tr:hover td {
+        background: #fff0b3 !important;
+        color: #000000 !important;
+    }
+
+    .corp-form-container .po-detail-scroll #tabppdtl tbody tr.selected td {
+        background: #dcebfa !important;
+        color: #000000 !important;
+        font-weight: 700 !important;
+    }
+
+    /* baris yang checkbox-nya tercentang -> warna baris ikut berubah */
+    .corp-form-container .po-detail-scroll #tabppdtl tbody tr.po-row-checked td {
+        background: #d6e8fb !important;
+        color: #000000 !important;
+        border-color: #9dc4e8 !important;
+    }
+
+    .corp-form-container .po-detail-scroll #tabppdtl tbody tr.po-row-checked:hover td {
+        background: #c6def8 !important;
+    }
+
+    /* aksen kiri pada kolom checkbox */
+    .corp-form-container .po-detail-scroll #tabppdtl tbody tr.po-row-checked td:first-child {
+        box-shadow: inset 3px 0 0 0 #19385f;
+    }
+
+    /* kolom checkbox tetap sempit agar kolom data lain lega */
+    .corp-form-container .po-detail-scroll #tabppdtl thead th:first-child,
+    .corp-form-container .po-detail-scroll #tabppdtl tbody td:first-child {
+        width: 42px !important;
+        min-width: 42px !important;
+        max-width: 42px !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        text-align: center;
+    }
+
+    /* kolom teks panjang dipotong 1 baris agar grid tidak melebar berlebihan */
+    .corp-form-container .po-detail-scroll #tabppdtl tbody td:nth-child(3),
+    .corp-form-container .po-detail-scroll #tabppdtl tbody td:nth-child(4),
+    .corp-form-container .po-detail-scroll #tabppdtl tbody td:nth-child(8) {
+        max-width: 240px;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
 </style>
@@ -1112,24 +1500,30 @@
                         <div class="header-actions">
                             <button type="button"
                                     class="btn btn-success btn-lg action-btn"
+                                    id="btnPPDetailInput"
                                     data-bs-toggle="tooltip"
-                                    title="Input Data"
+                                    data-bs-placement="bottom"
+                                    title="Input Data (Ctrl + Q)"
                                     onclick="btnInputDetail()">
                                 <i class="fa fa-plus"></i>
                             </button>
 
                             <button type="button"
                                     class="btn btn-warning btn-lg action-btn btn-update-detail"
+                                    id="btnPPDetailUpdate"
                                     data-bs-toggle="tooltip"
-                                    title="Update Data"
+                                    data-bs-placement="bottom"
+                                    title="Update Data (Ctrl + E)"
                                     onclick="btnUpdateDetail()">
                                 <i class="fa fa-edit"></i>
                             </button>
 
                             <button type="button"
                                     class="btn btn-danger btn-lg action-btn"
+                                    id="btnPPDetailDelete"
                                     data-bs-toggle="tooltip"
-                                    title="Hapus Data"
+                                    data-bs-placement="bottom"
+                                    title="Hapus Data (Ctrl + D)"
                                     onclick="btnDeleteDetail()">
                                 <i class="fa fa-trash"></i>
                             </button>
@@ -1138,28 +1532,42 @@
                         </div>
                     </div>
                     <div class="card-body">
-                        <table id="tabppdtl" class="table table-bordered table-striped">
-                            <thead class="bg-primary text-white">
-                            <tr>
-                                <th width="30">
-                                    <input type="checkbox" id="checkAll">
-                                </th>
-                                <th>ID Barang</th>
-                                <th>Nama Barang</th>
-                                <th>Spesifikasi</th>
-                                <th>No. Capex</th>
-                                <!--Status Detail Tidak Perlu Dimunculkan-->
-                                <!--<th>Status</th>-->
-                                <th>Satuan</th>
-                                <th>Quantity</th>
-                                <th>Keterangan</th>
-                            </tr>
-                            </thead>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="po-detail-scroll">
+                                    <table id="tabppdtl" class="table table-bordered table-striped" style="width:100%;" cellspacing="0">
+                                        <thead class="bg-primary text-white">
+                                        <tr>
+                                            <th width="30">
+                                                <input type="checkbox" id="checkAll">
+                                            </th>
+                                            <th>ID Barang</th>
+                                            <th>Nama Barang</th>
+                                            <th>Spesifikasi</th>
+                                            <th>No. Capex</th>
+                                            <!--Status Detail Tidak Perlu Dimunculkan-->
+                                            <!--<th>Status</th>-->
+                                            <th>Satuan</th>
+                                            <th>Quantity</th>
+                                            <th>Keterangan</th>
+                                        </tr>
+                                        </thead>
 
-                            <tbody>
+                                        <tbody>
 
-                            </tbody>
-                        </table>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="po-detail-footer">
+                                    <div class="po-detail-footer-left">
+                                        <i class="fa fa-list-ol"></i>
+                                        Total detail terinput:
+                                        <strong id="ppDetailTotalRow">0</strong> baris
+                                    </div>
+                                    <div class="po-detail-footer-right" id="ppDetailFilterInfo"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="card-footer bg-light">
                         <!-- <a href="<?= base_url('purchase/trans/pp') ?>"
@@ -1248,38 +1656,33 @@
                             </div>
                             <!-- SPEC -->
                             <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="batch" class="form-label">
+                                        Batch / Specification
+                                    </label>
 
-                                <label for="batch" class="form-label">
-                                    Batch / Specification
-                                </label>
+                                    <div class="d-flex align-items-center batch-field-row">
 
-                                <div class="d-flex align-items-center">
+                                        <div class="flex-grow-1">
+                                            <select
+                                                    name="batch"
+                                                    id="batch"
+                                                    class="form-control select2"
+                                                    style="width: 100%;">
+                                            </select>
+                                        </div>
 
-                                    <div class="flex-grow-1">
-
-                                        <select
-                                                name="batch"
-                                                id="batch"
-                                                class="form-control select2"
-                                                style="width: 100%;"
-                                        >
-                                        </select>
+                                        <button
+                                                type="button"
+                                                id="btnNew"
+                                                class="btn btn-primary"
+                                                onclick="new_spec()"
+                                                title="New Specification">
+                                            <i class="fa fa-plus"></i> New
+                                        </button>
 
                                     </div>
-
-                                    <button
-                                            type="button"
-                                            id="btnNew"
-                                            class="btn btn-primary ms-1"
-                                            onclick="new_spec()"
-                                            title="New Specification"
-                                    >
-                                        <i class="fa fa-plus"></i>
-                                        New
-                                    </button>
-
                                 </div>
-
                             </div>
                         </div>
 
@@ -1294,15 +1697,17 @@
                                            required
                                            class="form-control jtsseparator ratakanan"
                                            placeholder="0.00">
+                                    <small class="po-field-hint">Gunakan titik (.) untuk desimal</small>
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">Satuan</label>
-                                <select name="unit" id="unit"
-                                        class="form-control"
-                                        style="width:100%"></select>
+                                <div class="form-group">
+                                    <label class="form-label">Satuan</label>
+                                    <select name="unit" id="unit"
+                                            class="form-control"
+                                            style="width:100%"></select>
+                                </div>
                             </div>
-
 
                             <div class="col-md-3">
                                 <div class="form-group">
@@ -1333,8 +1738,7 @@
                             <div class="col-md-12">
                                 <div class="form-group mb-0">
                                     <label>Keterangan <span style="color: red;">*</span></label>
-                                    <textarea type="text"
-                                              name="description"
+                                    <textarea name="description"
                                               rows="3"
                                               style="text-transform: uppercase;"
                                               id="description"
@@ -1349,15 +1753,16 @@
                     <div class="modal-footer bg-light">
 
                         <button type="button"
-                                class="btn btn-primary"
-                                onclick="savePPDetail()">
-                            <i class="fa fa-save"></i> Simpan
-                        </button>
-                        <button type="button"
                                 class="btn btn-secondary"
                                 data-bs-dismiss="modal"
                                 onclick="$('#modalDetailPP').modal('hide')">
                             <i class="fa fa-times"></i> Batal
+                        </button>
+                        <button type="button"
+                                class="btn btn-primary"
+                                title="Simpan (Ctrl + Alt + S)"
+                                onclick="savePPDetail()">
+                            <i class="fa fa-save"></i> Simpan
                         </button>
                     </div>
                 </form>
@@ -1459,7 +1864,14 @@
 </div>
 <!-- /.corp-form-container -->
 
-<script type="application/javascript" src="<?= base_url('assets/pagejs/purchase/pp.js') ?>"></script>
+<?php
+    /* cache-buster : memastikan browser selalu memakai pp.js versi terbaru
+       (shortcut Ctrl+Q / Ctrl+E / Ctrl+D / Ctrl+Alt+S, guard Ctrl+W,
+       dan info grid detail). */
+    $pp_js_path = ROOTPATH . 'assets/pagejs/purchase/pp.js';
+    $pp_js_ver  = is_file($pp_js_path) ? filemtime($pp_js_path) : date('Ymd');
+?>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/purchase/pp.js') ?>?v=<?= $pp_js_ver ?>"></script>
 <script type="text/javascript">
     /* ==========================================================
      * VALIDASI INPUT AWAL CABANG / JOB (KHUSUS ADDPP)

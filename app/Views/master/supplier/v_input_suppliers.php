@@ -539,7 +539,7 @@ $disabled = $isIT ? '' : 'disabled';
                                     <label for="kdsupplier">Kode Supplier</label>
                                     <input type="hidden" id="type" name="type" value="<?= $type ?>" autocomplete="off">
                                     <input type="hidden" id="id" name="id" value="<?= $id ?>" autocomplete="off">
-                                    <input type="text" name="kdsupplier" class="form-control" id="kdsupplier" <?= $type == 'UPDATE' ? 'disabled' : '' ?> maxlength="60" placeholder="Kode Supplier" style="text-transform:uppercase;">
+                                    <input type="text" name="kdsupplier" class="form-control" id="kdsupplier" <?= $type == 'UPDATE' ? 'disabled' : '' ?> maxlength="20" placeholder="Kode Supplier" style="text-transform:uppercase;">
                                 </div>
                             </div>
 
@@ -805,7 +805,7 @@ $disabled = $isIT ? '' : 'disabled';
                 <!-- /.card-body -->
                 <div class="card-footer">
                     <a href="<?= base_url('master/data/supplier') ?>" class="btn btn-default">Kembali</a>
-                    <button id="btnSave" onclick="saveInputSupplier();" class="btn btn-primary float-right">Submit</button>
+                    <button type="button" id="btnSave" onclick="saveInputSupplier();" class="btn btn-primary float-right">Submit</button>
                 </div>
             </form>
         </div>

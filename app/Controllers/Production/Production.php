@@ -3869,7 +3869,7 @@ class Production extends BaseController
                 'idbarang_jadi' => $idbarang_jadi,
                 'buildfor' => $buildfor,
                 'minimumqty' => $minimumqty
-                ];
+            ];
 
             $builder->where('TRIM(docno)', $docno)
                 ->where('TRIM(inputby)', $nama)

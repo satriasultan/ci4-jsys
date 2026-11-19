@@ -251,7 +251,7 @@
 <body>
 <div class="wave-container">
     <svg class="waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-    viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
+         viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
         <defs>
             <path id="gentle-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" />
         </defs>
@@ -411,22 +411,22 @@
                 dataType: 'json',
                 cache: false
             })
-            .done(function (token) {
+                .done(function (token) {
 
-                const data = new URLSearchParams(formData);
+                    const data = new URLSearchParams(formData);
 
-                data.set(token.csrf_token_name, token.csrf_token);
+                    data.set(token.csrf_token_name, token.csrf_token);
 
-                postLogin(data.toString());
+                    postLogin(data.toString());
 
-            })
-            .fail(function () {
+                })
+                .fail(function () {
 
-                unlockLoginForm();
+                    unlockLoginForm();
 
-                showLoginError('Sesi halaman login sudah berakhir. Silakan coba lagi.');
+                    showLoginError('Sesi halaman login sudah berakhir. Silakan coba lagi.');
 
-            });
+                });
 
         });
 

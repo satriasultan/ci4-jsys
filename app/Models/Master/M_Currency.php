@@ -178,6 +178,66 @@ class M_Currency extends Model
     }
 
 
+    /* =========================================================
+     * PENGATURAN EXCHANGE RATE OTOMATIS (AUTO / MANUAL)
+     * Disimpan sebagai file JSON di writable/ agar tidak
+     * mengubah struktur database.
+     * ========================================================= */
+    private function _exchangeSettingFile()
+    {
+        return WRITEPATH . 'exchange_rate_setting.json';
+    }
 
+    public function getExchangeRateSetting()
+    {
+        $default = [
+            'mode'          => 'manual', // auto | manual
+            'api_url'       => 'https://api.frankfurter.dev/v2/rate/{FROM}/{TO}',
+            'base_currency' => 'IDR',
+            'code_alias'    => ['YEN' => 'JPY'],
+        ];
+
+        $file = $this->_exchangeSettingFile();
+        if (!is_file($file)) {
+            return $default;
+        }
+
+        $raw = @file_get_contents($file);
+        if ($raw === false || trim($raw) === '') {
+            return $default;
+        }
+
+        $json = json_decode($raw, true);
+        if (!is_array($json)) {
+            return $default;
+        }
+
+        $setting = array_merge($default, $json);
+        if (!isset($setting['code_alias']) || !is_array($setting['code_alias'])) {
+            $setting['code_alias'] = $default['code_alias'];
+        }
+
+        return $setting;
+    }
+
+    public function saveExchangeRateSetting(array $setting)
+    {
+        $current = $this->getExchangeRateSetting();
+
+        $save = [
+            'mode'          => (isset($setting['mode']) && strtolower($setting['mode']) === 'auto') ? 'auto' : 'manual',
+            'api_url'       => isset($setting['api_url']) ? trim($setting['api_url']) : $current['api_url'],
+            'base_currency' => isset($setting['base_currency']) ? strtoupper(trim($setting['base_currency'])) : $current['base_currency'],
+            'code_alias'    => (isset($setting['code_alias']) && is_array($setting['code_alias'])) ? $setting['code_alias'] : $current['code_alias'],
+            'updatedby'     => isset($setting['updatedby']) ? substr(trim($setting['updatedby']), 0, 20) : '',
+            'updateddate'   => date('Y-m-d H:i:s'),
+        ];
+
+        return @file_put_contents(
+            $this->_exchangeSettingFile(),
+            json_encode($save, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+            LOCK_EX
+        ) !== false;
+    }
 
 }

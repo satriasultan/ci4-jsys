@@ -59,7 +59,7 @@ class M_Gobals extends Model
     }
 
 
-       function q_branchjob($param){
+    function q_branchjob($param){
         $query = $this->db->query("select *,  trim(idbranch) as id from sc_mst.branchjob where coalesce(trim(status),'')='F' $param");
         return $query;
     }
@@ -274,21 +274,21 @@ group by docno order by docno asc");
         return $this->db->query("select *, trim(idmarket) as id from sc_mst.market where coalesce(trim(idmarket),'')!='' $param ");
     }
 
-    
+
     function q_gradecust($param){
         return $this->db->query("select *, trim(kdgradecust) as id from sc_mst.gradecust where coalesce(trim(kdgradecust),'')!='' $param ");
     }
 
-    
+
     function q_salesman($param){
         return $this->db->query("select a.*, k.namakotakab ,trim(a.kdsalesman) as id from sc_mst.salesman a left outer join sc_mst.kotakab k on k.kodekotakab=a.idkota  where coalesce(trim(kdsalesman),'')!='' $param ");
     }
-    
+
     function q_kolektor($param){
         return $this->db->query("select *, trim(kdkolektor) as id from sc_mst.kolektor where coalesce(trim(kdkolektor),'')!='' $param ");
     }
 
-    
+
     function q_coa($param){
         return $this->db->query("select *, trim(idcoa) as id from sc_mst.coa where coalesce(trim(idcoa),'')!='' $param ");
     }
@@ -320,7 +320,7 @@ group by docno order by docno asc");
         ");
     }
 
-    
+
     function q_tax($param){
         return $this->db->query("
             select 
@@ -336,7 +336,7 @@ group by docno order by docno asc");
         return $this->db->query("select *, trim(kdcustomer) as id from sc_mst.customer where coalesce(trim(chold),'NO')!='YES' AND coalesce(trim(status),'')!='D' and coalesce(trim(kdcustomer),'')!='' $param ");
     }
 
-    
+
     function q_golonganbarang($param){
         return $this->db->query("select *, trim(idgolonganbarang) as id from sc_mst.golonganbarang where coalesce(trim(chold),'NO')!='YES' AND coalesce(trim(idgolonganbarang),'')!='' $param ");
     }
@@ -597,7 +597,7 @@ group by docno order by docno asc");
         ");
     }
 
-    
+
     function q_wo($param){
         // return $this->db->query("select *, trim(docno) as id from sc_trx.salesorder where trim(status)='A' and coalesce(trim(docno),'')!='' $param ");
         return $this->db->query("
@@ -654,8 +654,8 @@ group by docno order by docno asc");
     function q_master_barang($param){
         return $this->db->query("select *, trim(idbarang) as id from sc_mst.mbarang where coalesce(trim(idbarang),'')!='' $param ");
     }
-    
-    
+
+
     function insertlogtrans($docno, $action, $modul, $menu, $uniqueid = null)
     {
         $this->session = \Config\Services::session();

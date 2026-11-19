@@ -30,7 +30,7 @@ function getMode() {
             type:       'LPB',
             previewUrl: HOST_URL + 'report/trans/previewLaporanLPB',
             bodyId:     'tblPreviewLPBBody',
-            colspan:    27
+            colspan:    35        // ✅ 35 kolom — sama dengan $headers / $rowData di downloadLaporanLPB
         };
     }
     if (jenis === 'void_po') {
@@ -336,9 +336,8 @@ function renderPreview(rows, page, perpage, mode) {
     rows.forEach(function (r, i) {
         
         if (mode.type === 'LPB') {
-        /* ---------- LPB: 27 kolom ---------- */
+        /* ---------- LPB: 35 kolom — 1:1 dengan $headers / $rowData ---------- */
         html += '<tr>' +
-            '<td>' + (startNo + i) + '</td>' +
             '<td>' + escapeHtml(r.docno) + '</td>' +
             '<td>' + escapeHtml(r.docdate) + '</td>' +
             '<td>' + escapeHtml(r.cabang) + '</td>' +
@@ -347,11 +346,15 @@ function renderPreview(rows, page, perpage, mode) {
             '<td>' + escapeHtml(r.alamatsupplier) + '</td>' +
             '<td>' + escapeHtml(r.pemohon) + '</td>' +
             '<td>' + escapeHtml(r.docnopo) + '</td>' +
+            '<td>' + escapeHtml(r.docnopp) + '</td>' +
             '<td>' + escapeHtml(r.idbarang) + '</td>' +
             '<td>' + escapeHtml(r.nmbarang) + '</td>' +
             '<td>' + escapeHtml(r.unit) + '</td>' +
             '<td class="text-right">' + fmtNum(r.qty) + '</td>' +
             '<td class="text-right">' + fmtNum(r.qtybonus) + '</td>' +
+            '<td class="text-right">' + fmtNum(r.qtypo) + '</td>' +
+            '<td class="text-right">' + fmtNum(r.qtylpb) + '</td>' +
+            '<td class="text-right">' + fmtNum(r.qtyvoid) + '</td>' +
             '<td class="text-right">' + fmtNum(r.harga) + '</td>' +
             '<td class="text-right">' + fmtNum(r.multidisc) + '</td>' +
             '<td class="text-right">' + fmtNum(r.totaldiscount) + '</td>' +
@@ -359,9 +362,14 @@ function renderPreview(rows, page, perpage, mode) {
             '<td class="text-right">' + fmtNum(r.nilaipajak) + '</td>' +
             '<td class="text-right">' + fmtNum(r.nilaikonversi) + '</td>' +
             '<td class="text-right">' + fmtNum(r.kurs) + '</td>' +
+            '<td>' + escapeHtml(r.currcode_po) + '</td>' +
             '<td>' + escapeHtml(r.descriptionpo) + '</td>' +
             '<td>' + escapeHtml(r.descriptionpp) + '</td>' +
             '<td>' + escapeHtml(r.capexno) + '</td>' +
+            '<td>' + escapeHtml(r.batch) + '</td>' +
+            '<td>' + escapeHtml(r.etd) + '</td>' +
+            '<td>' + escapeHtml(r.etdnotes) + '</td>' +
+            '<td>' + escapeHtml(r.category) + '</td>' +
             '<td>' + escapeHtml(r.nofaktur) + '</td>' +
             '<td>' + escapeHtml(r.nosj) + '</td>' +
             '<td>' + escapeHtml(r.keterangan_lpb) + '</td>' +

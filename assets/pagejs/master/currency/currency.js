@@ -702,23 +702,25 @@ function hideExchangeRateModal() {
     }
 }
 
-/* Tanggal + jam saat ini dengan format DD-MM-YYYY HH:mm:ss */
+/* Tanggal saat ini dengan format DD-MM-YYYY.
+   Exchange date selalu disimpan jam 00:00:00, jadi modal hanya meminta tanggal. */
 function currentExchangeDateValue() {
     var d = new Date();
     var p = function (n) { return (n < 10 ? '0' : '') + n; };
 
-    return p(d.getDate()) + '-' + p(d.getMonth() + 1) + '-' + d.getFullYear()
-        + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+    return p(d.getDate()) + '-' + p(d.getMonth() + 1) + '-' + d.getFullYear();
 }
 
 /* Set value input exchange date + sinkronkan daterangepicker */
 function setExchangeDateValue(value) {
     var $input = $('#md_exchangedate');
-    $input.val(value || '');
+    // buang bagian jam bila masih ada data lama (mis. "19-11-2026 17:00:24")
+    var dateOnly = $.trim(value || '').substring(0, 10);
+    $input.val(dateOnly);
 
     var drp = $input.data('daterangepicker');
     if (drp && typeof moment === 'function') {
-        var m = moment(value, 'DD-MM-YYYY HH:mm:ss', true);
+        var m = moment(dateOnly, 'DD-MM-YYYY', true);
         if (m.isValid()) {
             drp.setStartDate(m);
             drp.setEndDate(m);
@@ -769,8 +771,8 @@ function saveExchangeRate() {
         return;
     }
 
-    if (exchangedate === '' || !/^\d{2}-\d{2}-\d{4} \d{2}:\d{2}:\d{2}$/.test(exchangedate)) {
-        showError('Exchange date is required with format DD-MM-YYYY HH:mm:ss.');
+    if (exchangedate === '' || !/^\d{2}-\d{2}-\d{4}$/.test(exchangedate)) {
+        showError('Exchange date is required with format DD-MM-YYYY.');
         return;
     }
 
@@ -866,9 +868,325 @@ function saveExchangeRate() {
 
 
 
+/* =========================================================
+ * PENGATURAN & SINKRONISASI EXCHANGE RATE OTOMATIS
+ * ========================================================= */
+function escapeExchangeHtml(value) {
+    return $('<div>').text(value === undefined || value === null ? '' : value).html();
+}
+
+function parseExchangeAlias(text) {
+    var map = {};
+
+    (text || '').split(/[\n\r,;]+/).forEach(function (line) {
+        line = $.trim(line);
+        if (!line) {
+            return;
+        }
+
+        var parts = line.split('=');
+        if (parts.length < 2) {
+            return;
+        }
+
+        var key = $.trim(parts[0]).toUpperCase();
+        var val = $.trim(parts[1]).toUpperCase();
+
+        if (key && val) {
+            map[key] = val;
+        }
+    });
+
+    return map;
+}
+
+function exchangeAliasToText(map) {
+    if (!map) {
+        return '';
+    }
+
+    return Object.keys(map).map(function (key) {
+        return key + '=' + map[key];
+    }).join(', ');
+}
+
+/* Sinkronkan label + badge mode (auto / manual) */
+function updateExchangeModeLabel() {
+    var isAuto = $('#exr_mode').val() === 'auto';
+
+    $('#exr_mode_auto').prop('checked', isAuto);
+    $('#exr_mode_label').text(isAuto ? 'OTOMATIS' : 'MANUAL');
+
+    var $badge = $('#exchange_mode_badge');
+    if ($badge.length) {
+        $badge.text(isAuto ? 'OTOMATIS' : 'MANUAL')
+            .removeClass('bg-secondary bg-success')
+            .addClass(isAuto ? 'bg-success' : 'bg-secondary');
+    }
+}
+
+function applyExchangeSetting(setting) {
+    setting = setting || {};
+
+    $('#exr_mode').val(String(setting.mode || 'manual').toLowerCase() === 'auto' ? 'auto' : 'manual');
+    $('#exr_api_url').val(setting.api_url || 'https://api.frankfurter.dev/v2/rate/{FROM}/{TO}');
+    $('#exr_base_currency').val(setting.base_currency || 'IDR');
+    $('#exr_code_alias').val(exchangeAliasToText(setting.code_alias));
+
+    updateExchangeModeLabel();
+}
+
+function loadExchangeSetting() {
+    if (!$('#modal_exchange_setting').length) {
+        return;
+    }
+
+    $.ajax({
+        url: HOST_URL + 'master/data/getExchangeSetting',
+        type: 'GET',
+        dataType: 'json',
+        success: function (resp) {
+            if (resp && resp.status && resp.setting) {
+                applyExchangeSetting(resp.setting);
+            }
+        }
+    });
+}
+
+function exchangeSettingPayload() {
+    return {
+        mode: $('#exr_mode').val(),
+        api_url: $.trim($('#exr_api_url').val()),
+        base_currency: $.trim($('#exr_base_currency').val()),
+        code_alias: parseExchangeAlias($('#exr_code_alias').val())
+    };
+}
+
+function saveExchangeSetting(silent, onDone) {
+    var $btn = $('#exr_btn_save');
+
+    $btn.prop('disabled', true);
+
+    $.ajax({
+        url: HOST_URL + 'master/data/saveExchangeSetting',
+        type: 'POST',
+        dataType: 'json',
+        data: exchangeSettingPayload(),
+        success: function (resp) {
+            $btn.prop('disabled', false);
+
+            if (resp && resp.status) {
+                if (resp.setting) {
+                    applyExchangeSetting(resp.setting);
+                }
+                if (!silent) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: resp.messages || 'Pengaturan berhasil disimpan.',
+                        allowOutsideClick: false
+                    });
+                }
+                if (typeof onDone === 'function') {
+                    onDone(true);
+                }
+            } else {
+                var msg = (resp && resp.messages) ? resp.messages : 'Gagal menyimpan pengaturan.';
+                Swal.fire({ icon: 'error', title: 'Gagal', text: msg });
+
+                if (typeof onDone === 'function') {
+                    onDone(false);
+                }
+            }
+        },
+        error: function () {
+            $btn.prop('disabled', false);
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Unable to process request.' });
+            if (typeof onDone === 'function') {
+                onDone(false);
+            }
+        }
+    });
+}
+
+function testExchangeApi() {
+    var payload = exchangeSettingPayload();
+    payload.currcode = ($.trim($('#exr_test_code').val()) || 'USD').toUpperCase();
+
+    var $res = $('#exr_test_result');
+    $res.html('<span class="text-muted">Menghubungi API...</span>');
+
+    $.ajax({
+        url: HOST_URL + 'master/data/testExchangeApi',
+        type: 'POST',
+        dataType: 'json',
+        data: payload,
+        success: function (resp) {
+            if (resp && resp.status) {
+                $res.html(
+                    '<div class="alert alert-success mb-0">'
+                    + '<strong>API OK.</strong> 1 ' + escapeExchangeHtml(resp.from) + ' = '
+                    + escapeExchangeHtml(resp.nilai) + ' ' + escapeExchangeHtml(resp.to)
+                    + (resp.date ? ' <small>(tanggal API: ' + escapeExchangeHtml(resp.date) + ')</small>' : '')
+                    + '<br><small class="text-break">' + escapeExchangeHtml(resp.url) + '</small>'
+                    + '</div>'
+                );
+            } else {
+                $res.html(
+                    '<div class="alert alert-danger mb-0">'
+                    + '<strong>API gagal.</strong> ' + escapeExchangeHtml((resp && resp.messages) ? resp.messages : 'Unknown error.')
+                    + (resp && resp.url ? '<br><small class="text-break">' + escapeExchangeHtml(resp.url) + '</small>' : '')
+                    + '</div>'
+                );
+            }
+        },
+        error: function () {
+            $res.html('<div class="alert alert-danger mb-0">Unable to process request.</div>');
+        }
+    });
+}
+
+
+
+function syncAllExchangeRate() {
+    var $btn = $('#exr_btn_sync');
+    var $res = $('#exr_sync_result');
+
+    $btn.prop('disabled', true);
+    $res.html('<span class="text-muted">Sinkronisasi berjalan, mohon tunggu...</span>');
+
+    $.ajax({
+        url: HOST_URL + 'master/data/syncAllExchangeRate',
+        type: 'POST',
+        dataType: 'json',
+        data: {},
+        success: function (resp) {
+            $btn.prop('disabled', false);
+
+            if (resp && resp.status) {
+                var html = '<div class="alert alert-info mb-0"><strong>'
+                    + escapeExchangeHtml(resp.messages) + '</strong>';
+
+                if (resp.details && resp.details.length) {
+                    html += '<ul class="mb-0 mt-1">';
+                    resp.details.forEach(function (detail) {
+                        html += '<li>' + escapeExchangeHtml(detail.currcode)
+                            + ' : ' + escapeExchangeHtml(detail.status)
+                            + ' - ' + escapeExchangeHtml(detail.message)
+                            + '</li>';
+                    });
+                    html += '</ul>';
+                }
+
+                html += '</div>';
+                $res.html(html);
+            } else {
+                $res.html('<div class="alert alert-danger mb-0">'
+                    + escapeExchangeHtml((resp && resp.messages) ? resp.messages : 'Sinkronisasi gagal.')
+                    + '</div>');
+            }
+        },
+        error: function () {
+            $btn.prop('disabled', false);
+            $res.html('<div class="alert alert-danger mb-0">Unable to process request.</div>');
+        }
+    });
+}
+
+/* Ambil kurs otomatis untuk currency yang sedang diedit (mode OTOMATIS) */
+function autoFetchExchangeRate() {
+    var idcurrency = $('[name="idcurrency"]').val();
+
+    if (!idcurrency) {
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Currency is not selected.' });
+        return;
+    }
+
+    var $btn = $('#btn_auto_exchange');
+    $btn.prop('disabled', true);
+
+    $.ajax({
+        url: HOST_URL + 'master/data/fetchExchangeRate',
+        type: 'POST',
+        dataType: 'json',
+        data: { idcurrency: idcurrency },
+        success: function (resp) {
+            $btn.prop('disabled', false);
+
+            if (resp && resp.status) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: resp.messages,
+                    allowOutsideClick: false
+                });
+                reloadtableExchangeRate();
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: (resp && resp.messages) ? resp.messages : 'Gagal mengambil kurs dari API.'
+                });
+            }
+        },
+        error: function () {
+            $btn.prop('disabled', false);
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Unable to process request.' });
+        }
+    });
+}
+
 $(document).on('keyup blur change', '.jtsseparator', function () {
     _jtsseparator(this);
 });
+
+$(document).ready(function () {
+    if ($('#modal_exchange_setting').length) {
+        loadExchangeSetting();
+    }
+
+    /* Switch mode auto / manual */
+    $('#exr_mode_auto').on('change', function () {
+        $('#exr_mode').val($(this).is(':checked') ? 'auto' : 'manual');
+        updateExchangeModeLabel();
+    });
+
+    /* Isi cepat template Frankfurter */
+    $('#exr_btn_preset').on('click', function () {
+        $('#exr_api_url').val('https://api.frankfurter.dev/v2/rate/{FROM}/{TO}');
+        $('#exr_base_currency').val('IDR');
+    });
+
+    /* Simpan pengaturan */
+    $('#form_exchange_setting').on('submit', function (e) {
+        e.preventDefault();
+        saveExchangeSetting(false);
+    });
+
+    /* Test koneksi API */
+    $('#exr_btn_test').on('click', function () {
+        testExchangeApi();
+    });
+
+    /* Sinkronisasi semua currency */
+    $('#exr_btn_sync').on('click', function () {
+        if ($('#exr_mode').val() !== 'auto') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Mode masih MANUAL',
+                text: 'Aktifkan mode OTOMATIS lalu simpan sebelum melakukan sinkronisasi.'
+            });
+            return;
+        }
+
+        saveExchangeSetting(true, function (saved) {
+            if (saved) {
+                syncAllExchangeRate();
+            }
+        });
+    });
+});
+
 
 /*
  * Khusus kolom exchange rate (nilai).
