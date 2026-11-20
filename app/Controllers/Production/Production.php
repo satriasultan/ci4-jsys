@@ -7986,6 +7986,7 @@ class Production extends BaseController
         }
 
         $builderDetail = $db->table('sc_tmp.materialrelease_dtl');
+        $spec = strtoupper(trim($this->request->getPost('spec')));
 
         // =========================
         // CEK DUPLIKASI
@@ -8033,6 +8034,7 @@ class Production extends BaseController
                     'qty'            => $qty,
                     'issub'            => $issub,
                     'description'    => $description,
+                    'spec'           => $spec,
                     'updateby'       => $nama,
                     'updatedate'     => date('Y-m-d H:i:s')
                 ]);
@@ -8070,6 +8072,7 @@ class Production extends BaseController
                 // 'standartcost'   => $standartcost,
                 // 'totalcost'      => $totalcost,
                 'description'    => $description,
+                'spec'           => $spec,
                 'inputby'        => $nama,
                 'inputdate'      => date('Y-m-d H:i:s'),
                 'uniqueid'       => $uniqueid
@@ -8155,6 +8158,44 @@ class Production extends BaseController
     function list_tmp_materialrelease_dtl(){
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_production->get_tmp_materialrelease_dtl_view($docno);
+
+        // idlocation header (gudang terpilih) untuk cek stok per barang
+        $idlocation = '';
+        $hdr = $this->db->table('sc_tmp.materialrelease_mst')
+            ->select('idlocation')
+            ->where('docno', $docno)
+            ->get()
+            ->getRowArray();
+        if ($hdr) {
+            $idlocation = trim((string) $hdr['idlocation']);
+        }
+
+        // preload stok tersedia (onhand - allocated - tmpalloca) dari stkgdw
+        //   - per (idbarang + batch)
+        //   - per idbarang (total semua batch, dipakai bila spec/batch kosong)
+        $stockMap = array();
+        $stockItemMap = array();
+        if ($idlocation !== '') {
+            $rows = $this->db->query("
+                SELECT TRIM(idbarang) AS idbarang,
+                       TRIM(COALESCE(batch,'')) AS batch,
+                       COALESCE(SUM(COALESCE(onhand,0) - (COALESCE(allocated,0) + COALESCE(tmpalloca,0))), 0) AS stock
+                FROM sc_mst.stkgdw
+                WHERE TRIM(idlocation) = ?
+                GROUP BY TRIM(idbarang), TRIM(COALESCE(batch,''))
+            ", [$idlocation])->getResultArray();
+            foreach ($rows as $r) {
+                $idb = trim((string) $r['idbarang']);
+                $btc = trim((string) $r['batch']);
+                $stk = (float) $r['stock'];
+                $stockMap[$idb . '|' . $btc] = $stk;
+                if (!isset($stockItemMap[$idb])) {
+                    $stockItemMap[$idb] = 0;
+                }
+                $stockItemMap[$idb] += $stk;
+            }
+        }
+
         $data = array();
         $no = $_POST['start'];
         foreach ($list as $lm) {
@@ -8172,6 +8213,27 @@ class Production extends BaseController
             $row[] = $lm->nmbarang;
             $row[] = $lm->spec;
             $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
+
+            // KOLOM STOK (hanya baris MATERIAL yang dibandingkan dengan stok gudang)
+            $isMaterial = strtoupper(trim((string) $lm->doctype_detail)) === 'MATERIAL';
+            if ($isMaterial) {
+                $qty   = (float) $lm->qty;
+                $idb   = trim((string) $lm->idbarang);
+                $btc   = trim((string) $lm->spec);
+                if ($btc !== '') {
+                    $stock = (float) ($stockMap[$idb . '|' . $btc] ?? 0);
+                } else {
+                    $stock = (float) ($stockItemMap[$idb] ?? 0);
+                }
+                $over  = ($qty > $stock);
+                $row[] = '<div class="ratakanan" data-stock="' . $stock . '" data-qty="' . $qty . '" data-over="' . ($over ? '1' : '0') . '">'
+                    . number_format($stock, 2, '.', ',')
+                    . ($over ? ' <i class="fa fa-exclamation-triangle text-warning" title="Qty melebihi stok gudang"></i>' : '')
+                    . '</div>';
+            } else {
+                $row[] = '<div class="ratakanan" data-over="0">-</div>';
+            }
+
             $row[] = $lm->unit;
             // $row[] = '<div class="ratakanan">'. number_format($lm->standartcost, 4, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->totalcost, 4, '.', ',') . '</div>';
@@ -9766,28 +9828,17 @@ class Production extends BaseController
 
         $list = $db->query("
             SELECT
-                w.*,
-                COALESCE(sc.newcost,0) AS harga
-            FROM sc_trx.workingorder_bom_dtl w
-
-            LEFT JOIN (
-                SELECT
-                    a.idbarang,
-                    a.newcost,
-                    ROW_NUMBER() OVER(
-                        PARTITION BY a.idbarang
-                        ORDER BY a.activedate DESC
-                    ) rn
-                FROM sc_mst.standart_cost_dtl a
-                WHERE a.status='F'
-                AND a.activedate <= ?
-            ) sc
-                ON TRIM(sc.idbarang)=TRIM(w.idbarang)
-                AND sc.rn=1
-
-            WHERE TRIM(w.docref)=TRIM(?) and TRIM(w.doctype_detail) = 'MATERIAL'
+                bm.*,
+                COALESCE(NULLIF(TRIM(bm.nmbarang_jadi), ''), TRIM(mb.nmbarang)) AS nmbarang,
+                CASE
+                    WHEN COALESCE(bm.buildfor, 0) = 0 THEN 0
+                    ELSE COALESCE(bm.ttlprice, 0) / bm.buildfor
+                END AS harga
+            FROM sc_trx.workingorder_bom_mst bm
+            LEFT JOIN sc_mst.mbarang mb
+                ON TRIM(mb.idbarang) = TRIM(bm.idbarang_jadi)
+            WHERE TRIM(bm.docref)=TRIM(?)
         ", [
-            $docdate,
             $wono
         ])->getResult();
 
@@ -9802,26 +9853,26 @@ class Production extends BaseController
 
         foreach($list as $row){
 
-            // uniqueid deterministik -> aman diulang, tidak menghasilkan baris ganda
-            $rawUnique = $docno . '|' . trim($row->idbarang) . '|' . trim($row->doctype_detail) . '|' . $row->idurut;
+            // uniqueid deterministik -> aman diulang, tidak menghasilkan baris ganda.
+            // docno = nomor BOM (komponen PK), jadi aman bila 1 WO punya >1 barang jadi.
+            $rawUnique = $docno . '|' . trim($row->idbarang_jadi) . '|MATERIAL|' . trim($row->docno);
             $harga = $row->harga;
-            $qty   = $row->qty;
+            $qty   = $row->buildfor;
             $nilai = $qty * $harga;
 
             $insert = $builderDetail->insert([
 
                 'docno'=>$docno,
                 'docref'=>trim($this->request->getPost('woeno')),
-                // Propagasi doctype_detail dari baris WO BOM (pola sama seperti Material Release).
-                // PBP menarik baris MATERIAL; ditulis eksplisit agar tidak bergantung DEFAULT kolom.
-                'doctype_detail'=> $row->doctype_detail,
+                // Barang JADI tetap ditandai MATERIAL agar tetap ter-posting oleh sync PBP.
+                'doctype_detail'=> 'MATERIAL',
 
                 'cabang'=>trim($this->request->getPost('cabang')),
-                'idbarang'=>$row->idbarang,
+                'idbarang'=>trim($row->idbarang_jadi),
                 'nmbarang'=>$row->nmbarang,
-                'unit'=>$row->unit,
-                'qty'=>$row->qty,
-                'description'=>$row->description,
+                'unit'=>$row->buildunit,
+                'qty'=>$row->buildfor,
+                'description'=>$row->desc_bom,
                 'issub'=> 'F',
                 'harga' => $harga,
                 'nilai' => $nilai,

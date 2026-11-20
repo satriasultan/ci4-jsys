@@ -938,6 +938,103 @@
     }
     .corp-form-container table tbody td { vertical-align: middle; }
 </style>
+<style>
+    /* ===== Biaya Standart (Detail): tabel detail item (kontras menengah, elegan) ===== */
+    .corp-form-container #tmp_stdcost,
+    .corp-form-container #tmp_stdcost_wrapper {
+        font-family: Arial, "Segoe UI", sans-serif !important;
+        font-size: 14px !important;
+        -webkit-font-smoothing: auto !important;
+    }
+    .corp-form-container #tmp_stdcost thead th {
+        background: #1e3a5f !important;
+        color: #ffffff !important;
+        font-family: Arial, "Segoe UI", sans-serif !important;
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        padding: 11px 12px !important;
+        border: 1px solid #1e3a5f !important;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+    .corp-form-container #tmp_stdcost thead th span.dt-column-order::before,
+    .corp-form-container #tmp_stdcost thead th span.dt-column-order::after {
+        color: rgba(255,255,255,0.55) !important;
+    }
+    .corp-form-container #tmp_stdcost tbody tr td {
+        color: #1f2937 !important;
+        background: #ffffff !important;
+        font-family: Arial, "Segoe UI", sans-serif !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        line-height: 1.5 !important;
+        padding: 10px 12px !important;
+        border: 1px solid #cbd5e1 !important;
+        vertical-align: middle !important;
+    }
+    .corp-form-container #tmp_stdcost tbody tr:nth-child(even) td {
+        background: #fafbfd !important;
+    }
+    .corp-form-container #tmp_stdcost tbody tr:hover td {
+        background: #e8eef5 !important;
+        color: #1f2937 !important;
+    }
+    .corp-form-container #tmp_stdcost tbody tr.selected td {
+        background: #dbeafe !important;
+        color: #1f2937 !important;
+        font-weight: 600 !important;
+    }
+    .corp-form-container #tmp_stdcost tbody td.dataTables_empty {
+        color: #64748b !important;
+        background: #ffffff !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        padding: 16px !important;
+        text-align: center;
+    }
+    .corp-form-container #tmp_stdcost input[type="checkbox"] {
+        width: 17px !important;
+        height: 17px !important;
+        accent-color: #1e3a5f !important;
+        cursor: pointer;
+    }
+    .corp-form-container .dataTables_wrapper .dataTables_filter label,
+    .corp-form-container .dataTables_wrapper .dataTables_length label,
+    .corp-form-container .dataTables_wrapper .dataTables_info {
+        color: #475569 !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+    }
+    .corp-form-container .dataTables_wrapper .dataTables_filter input,
+    .corp-form-container .dataTables_wrapper .dataTables_length select {
+        color: #1f2937 !important;
+        background: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        font-size: 13.5px !important;
+        font-weight: 500 !important;
+        min-height: 36px !important;
+    }
+    .corp-form-container .dataTables_wrapper .pagination .page-link {
+        color: #1e3a5f !important;
+        border-color: #cbd5e1 !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+    }
+    .corp-form-container .dataTables_wrapper .pagination .page-item.active .page-link {
+        background: #1e3a5f !important;
+        border-color: #1e3a5f !important;
+        color: #ffffff !important;
+    }
+    /* Highlight baris yang disorot via keyboard (panah atas/bawah + spasi) */
+    .corp-form-container #tmp_stdcost tbody tr.row-active,
+    .corp-form-container #tmp_stdcost tbody tr.row-active td,
+    .corp-form-container #tmp_stdcost tbody tr.row-active:hover td {
+        background-color: #fff3cd !important;
+        color: #1f2937 !important;
+    }
+</style>
 <div class="corp-form-container">
 <div class="content-header">
     <div class="container-fluid">

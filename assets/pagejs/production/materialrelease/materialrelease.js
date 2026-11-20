@@ -452,6 +452,7 @@ function documentReadable() {
             setSelect2Ajax('#buildunit', item.buildunit, item.buildunit);
             setSelect2Ajax('#bagian', item.bagian, item.bagian);
             setSelect2Ajax('#idlocation', item.idlocation, item.idlocation);
+            updateWoenoState();
             $('[name="wono"]').val(item.wono).prop("disabled", true);
             $('[name="bomno"]').prop("disabled", true);
             $('[name="idbarang_jadi"]').prop("disabled", true);
@@ -507,7 +508,7 @@ function btnInputDetailMaterial() {
 
 function resetMaterialReleaseModal(){
 
-    $('#issub').prop('checked', false);
+    $('#issub').prop('checked', false).prop('disabled', false);
 
     $('#divItemBom').show();
     $('#divItemSub').hide();
@@ -518,6 +519,9 @@ function resetMaterialReleaseModal(){
     $('#nmbarang').val('');
     $('#unit').val('');
     $('#qty').val('');
+
+    $('#spec').empty().val(null).trigger('change');
+    $('#infostock').val('');
 
 }
 
@@ -567,11 +571,12 @@ function updateDetailMaterialRelease(){
                 $('#idurutMaterial').val(res.items[0].idurut);
                 $('#uniqueid').val(res.items[0].uniqueid);
                 $('#description').val(res.items[0].description);
+                $('#spec').val(res.items[0].spec || '');
                 $('#docno').val(res.items[0].docno);
                 // $('#idbarang').val(res.items[0].idbarang);
 
                 var isSub = res.items[0].issub.trim() == 'T';
-                $('#issub').prop('checked', isSub).trigger('change').prop('disabled',true);
+                $('#issub').prop('checked', isSub).prop('disabled', false).trigger('change');
                 $('#unit').val(res.items[0].unit);
                 // $('#qtymaterial').val(res.items[0].qty);
                 setJtsValue('[name="qty"]', convertToDbNumber(res.items[0].qty));
@@ -630,6 +635,7 @@ function updateDetailMaterialRelease(){
                 $('#nmbarang').val(res.items[0].nmbarang);
 
 
+                mrLoadSpecOptions((res.items[0].idbarang || '').trim(), res.items[0].spec || '');
                 $('#modalDtlMaterialReleaseTitle').text('Update Detail Material');
                 $('#modalDtlMaterialRelease').modal('show');
 
@@ -797,6 +803,9 @@ $("#idbarang").select2({
     // setJtsValue('[name="standartcost"]', convertToDbNumber(data.newcost));
     // $('[name="totalcost"]').val().prop("readonly", true);
 
+    // Batch/Spec & info stok mengikuti item substitute yang dipilih
+    mrLoadSpecOptions(mrActiveItem());
+
 });
 
 
@@ -852,6 +861,139 @@ $("#idbarang_bom").select2({
     // setJtsValue('[name="standartcost"]', convertToDbNumber(data.newcost));
     // $('[name="totalcost"]').val().prop("readonly", true);
 
+    // Batch/Spec & info stok mengikuti item BOM yang dipilih
+    mrLoadSpecOptions(mrActiveItem());
+
+});
+
+/* ============================================================
+   SPEC / BATCH (list_batch_item) + INFO STOK (gudang header)
+   ============================================================ */
+function mrActiveItem() {
+    var isSub = $('#issub').prop('checked');
+    return (isSub ? ($('#idbarang').val() || '') : ($('#idbarang_bom').val() || ''));
+}
+
+function mrPreselectSpec(item, preselect) {
+    item = (item || mrActiveItem() || '').toString().trim();
+    preselect = (preselect || '').toString().trim();
+
+    $('#spec').empty().val(null).trigger('change');
+
+    if (item === '' || preselect === '') {
+        loadMrStockInfo(item);
+        return;
+    }
+
+    $.ajax({
+        type: 'POST',
+        url: HOST_URL + 'api/globalmodule/list_batch_item',
+        dataType: 'json',
+        data: {
+            _search_: preselect, _page_: 1, _draw_: true, _start_: 1,
+            _perpage_: 30, _paramglobal_: '', _parameterx_: item, term: preselect
+        }
+    }).then(function (datax) {
+        var found = (datax && datax.items ? datax.items : []).filter(function (x) {
+            return $.trim(x.batch || '') === preselect;
+        })[0];
+        if (found) {
+            $('#spec').append(new Option(found.batch, found.batch, true, true))
+                    .val(found.batch).trigger('change');
+        }
+        loadMrStockInfo(item);
+    });
+}
+
+function mrLoadSpecOptions(item, preselect) {
+    item = (item || mrActiveItem() || '').toString().trim();
+
+    $('#spec').empty().val(null).trigger('change');
+
+    if (item === '') {
+        loadMrStockInfo('');
+        return;
+    }
+
+    if (preselect && $.trim(preselect) !== '') {
+        mrPreselectSpec(item, preselect);
+    } else {
+        loadMrStockInfo(item);
+    }
+}
+
+function loadMrStockInfo(item) {
+    item = (item || mrActiveItem() || '').toString().trim();
+    var loc  = ($('#idlocation').val() || '').toString().trim();
+    var spec = ($('#spec').val() || '').toString().trim();
+
+    $('#infostock').data('stock', null);
+
+    if (item === '' || loc === '') {
+        $('#infostock').val('');
+        return;
+    }
+
+    $.ajax({
+        type: 'POST',
+        url: HOST_URL + 'api/globalmodule/stock_stkgdw_item',
+        dataType: 'json',
+        data: {
+            idbarang: item,
+            loccode:  loc,
+            batch:    spec
+        }
+    }).done(function (res) {
+        var total = parseFloat((res && res.total != null) ? res.total : 0) || 0;
+        $('#infostock').data('stock', total);
+        // Tampilkan 4 desimal, gaya qty (jaccseparator)
+        setJtsValue('#infostock', total.toFixed(4));
+    }).fail(function () {
+        $('#infostock').data('stock', 0);
+        setJtsValue('#infostock', '0.0000');
+    });
+}
+
+$("#spec").select2({
+    placeholder: "Pilih Batch / Specification",
+    allowClear: true,
+    width: '100%',
+    minimumInputLength: 0,
+    dropdownParent: $('#spec').parent(),
+    ajax: {
+        url: HOST_URL + 'api/globalmodule/list_batch_item',
+        type: 'POST',
+        dataType: 'json',
+        delay: 250,
+        data: function (params) {
+            return {
+                _search_: params.term || '',
+                _page_: params.page || 1,
+                _draw_: true,
+                _start_: 1,
+                _perpage_: 30,
+                _paramglobal_: '',
+                _parameterx_: mrActiveItem(),
+                term: params.term
+            };
+        },
+        processResults: function (data, params) {
+            params.page = params.page || 1;
+            var results = $.map(data.items || [], function (item) {
+                return { id: item.batch, text: item.batch, batch: item.batch };
+            });
+            return {
+                results: results,
+                pagination: { more: (params.page * 30) < (data.total_count || 0) }
+            };
+        },
+        cache: false
+    },
+    escapeMarkup: function (markup) { return markup; }
+}).on("select2:select", function () {
+    loadMrStockInfo();
+}).on("select2:clear", function () {
+    loadMrStockInfo();
 });
 
 var defaultInitialWOE = '';
@@ -1238,6 +1380,13 @@ $("#idlocation").select2({
     //console.log($("#newdept").val());
 });
 
+$('#idlocation').on('change', function () {
+    updateWoenoState();
+    if ($('#modalDtlMaterialRelease').hasClass('show')) {
+        loadMrStockInfo();
+    }
+});
+
 /*Location*/
 function formatLocation(repo) {
     if (repo.loading) return repo.text;
@@ -1376,6 +1525,16 @@ function resetWO() {
 
 function enableWO() {
     $('#bomno').prop('disabled', false);
+}
+
+function updateWoenoState() {
+    const idloc = $('#idlocation').val();
+    if (idloc && String(idloc).trim() !== '') {
+        $('#woeno').prop('disabled', false);
+    } else {
+        resetWO();
+        $('#woeno').prop('disabled', true);
+    }
 }
 
 
@@ -1619,6 +1778,21 @@ function saveMaterialReleaseDetail(formId) {
     );
 
     // ===============================
+    // VALIDASI STOK (qty tidak boleh melebihi stok gudang)
+    // ===============================
+    var qtyNum   = parseFloat(convertToDbNumber($('#qty').val())) || 0;
+    var stockRaw = $('#infostock').data('stock');
+    var stockNum = (stockRaw === undefined || stockRaw === null) ? 0 : (parseFloat(stockRaw) || 0);
+    if (qtyNum > stockNum) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Stok tidak cukup',
+            text: 'Qty (' + qtyNum.toFixed(4) + ') melebihi stok gudang yang tersedia (' + stockNum.toFixed(4) + ').'
+        });
+        return;
+    }
+
+    // ===============================
     // AJAX SAVE
     // ===============================
 
@@ -1735,6 +1909,11 @@ function tabletmpMaterialRelease() {
                     }
                 },
                 {
+                    "targets": 6,
+                    "orderable": false,
+                    "searchable": false
+                },
+                {
                     "targets": [-1],
                     "orderable": false
                 }
@@ -1818,20 +1997,112 @@ function getCheckedDetailIds() {
 
 
 
-document.addEventListener('keydown', function(e) {
+let activeDetailRowIndex = -1;
 
-// CTRL + Q
-    if (e.ctrlKey && e.key.toLowerCase() === 'q') {
+function detailRows() {
+    return $('#tmp_materialreleasedtl tbody tr');
+}
 
-        e.preventDefault();
+function highlightDetailRow(index) {
+    const rows = detailRows();
+    rows.removeClass('row-active');
+    if (index >= 0 && index < rows.length) {
+        const row = rows.eq(index);
+        row.addClass('row-active');
+        row[0].scrollIntoView({ block: 'nearest' });
+    }
+}
 
-        document.getElementById('btnAddDetailMaterial').click();
+function isTypingTarget(el) {
+    if (!el) return false;
+    const tag = (el.tagName || '').toUpperCase();
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
+}
+
+document.addEventListener('keydown', function (e) {
+    if (!document.getElementById('btnAddDetailMaterial')) {
+        return;
     }
 
+    const key = e.key.toLowerCase();
+
+    // CTRL + Q : Insert (tombol + hijau)
+    if (e.ctrlKey && key === 'q') {
+        e.preventDefault();
+        document.getElementById('btnAddDetailMaterial').click();
+        return;
+    }
+
+    // CTRL + E : Edit/Update (icon kuning)
+    if (e.ctrlKey && key === 'e') {
+        e.preventDefault();
+        updateDetailMaterialRelease();
+        return;
+    }
+
+    // CTRL + D : Delete (icon merah)
+    if (e.ctrlKey && key === 'd') {
+        e.preventDefault();
+        btnDeleteDetailMaterialRelease();
+        return;
+    }
+
+    // Navigasi & centang baris hanya aktif saat fokus TIDAK berada di field formulir.
+    if (isTypingTarget(document.activeElement)) {
+        return;
+    }
+
+    // Panah Bawah / Atas : pindah sorotan baris
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        const rows = detailRows();
+        if (rows.length === 0) return;
+
+        if (activeDetailRowIndex < 0) {
+            activeDetailRowIndex = (e.key === 'ArrowDown') ? 0 : rows.length - 1;
+        } else if (e.key === 'ArrowDown') {
+            activeDetailRowIndex = Math.min(activeDetailRowIndex + 1, rows.length - 1);
+        } else {
+            activeDetailRowIndex = Math.max(activeDetailRowIndex - 1, 0);
+        }
+
+        e.preventDefault();
+        highlightDetailRow(activeDetailRowIndex);
+        return;
+    }
+
+    // Spasi : toggle centang pada baris yang sedang disorot
+    if (e.code === 'Space' && activeDetailRowIndex >= 0) {
+        const cb = detailRows().eq(activeDetailRowIndex).find('input.row-check');
+        if (cb.length) {
+            e.preventDefault();
+            cb.prop('checked', !cb.prop('checked')).trigger('change');
+        }
+        return;
+    }
 });
+
+$('#tmp_materialreleasedtl').on('draw.dt', function () {
+    activeDetailRowIndex = -1;
+    $('#tmp_materialreleasedtl tbody tr').removeClass('row-active');
+});
+
+function cekStokMaterialRelease(event) {
+    const overRows = $('#tmp_materialreleasedtl [data-over="1"]').length;
+    if (overRows > 0) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Qty melebihi stok',
+            text: 'Masih ada ' + overRows + ' baris material dengan Qty melebihi stok gudang. Silakan perbaiki terlebih dahulu.',
+            confirmButtonText: 'OK'
+        });
+        return false;
+    }
+    return true;
+}
 
 $(document).ready(function () {
 
+    updateWoenoState();
     table_materialrelease();
     documentReadable();
     tabletmpMaterialRelease();

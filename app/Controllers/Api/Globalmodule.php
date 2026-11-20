@@ -3827,5 +3827,36 @@ class Globalmodule extends BaseController
             ]);
         }
     }
+
+    /**
+     * Total stok dari sc_mst.stkgdw untuk idbarang + gudang (idlocation) + batch.
+     * Dipakai modal Material Release.
+     */
+    public function stock_stkgdw_item()
+    {
+        try {
+            $idbarang = trim($this->request->getPost('idbarang') ?? '');
+            $loccode  = trim($this->request->getPost('loccode')  ?? '');
+            $batch    = trim($this->request->getPost('batch')    ?? '');
+
+            $total = 0;
+            if ($idbarang !== '' && $loccode !== '') {
+                $param  = " and trim(idbarang) = " . $this->db->escape($idbarang);
+                $param .= " and trim(idlocation) = " . $this->db->escape($loccode);
+                if ($batch !== '') {
+                    $param .= " and trim(coalesce(batch,'')) = " . $this->db->escape($batch);
+                }
+                $rows = $this->m_balance->q_stkgdw($param)->getResultArray();
+                foreach ($rows as $r) {
+                    $total += (float) ($r['sisa'] ?? 0);
+                }
+            }
+
+            return $this->response->setJSON(['total' => $total]);
+        } catch (\Throwable $e) {
+            log_message('error', '[stock_stkgdw_item] ' . $e->getMessage());
+            return $this->response->setJSON(['total' => 0, 'error' => $e->getMessage()]);
+        }
+    }
 }
 

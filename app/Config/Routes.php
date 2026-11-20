@@ -36,6 +36,7 @@ $routes->get('/rumah', 'Home::index');
 $routes->get('/', 'Web\Login::index');
 $routes->get('/login', 'Web\Login::index');
 $routes->post('/web/login/proses', 'Web\Login::proses');
+$routes->get('/web/login/token', 'Web\Login::token');
 $routes->get('/lock', 'Web\Relogin::index');
 $routes->get('/show', 'Web\Relogin::endDate');
 $routes->add('/profile', 'Web\Profile::index');
@@ -1345,6 +1346,9 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
 
     /* LIST STOCK BY LOCATION */
     $routes->add('globalmodule/list_stock_by_location', 'Globalmodule::list_stock_by_location');
+
+    /* STOCK dari sc_mst.stkgdw per idbarang + gudang + batch */
+    $routes->add('globalmodule/stock_stkgdw_item', 'Globalmodule::stock_stkgdw_item');
 
     /*unit conversion per item*/
     $routes->add('globalmodule/list_unit_item', 'Globalmodule::list_unit_item');

@@ -1880,6 +1880,25 @@ function btnDeleteDetail() {
    ============================================================ */
 $(document).ready(function () {
 
+    // Izinkan fokus ke dropdown Select2 (dropdownParent: body) di dalam modal.
+    // Tanpa ini, _enforceFocus Bootstrap 4 menarik fokus kembali ke modal
+    // sehingga kotak search Select2 tidak bisa difokus/diketik.
+    if (window.jQuery && jQuery.fn.modal && jQuery.fn.modal.Constructor) {
+        jQuery.fn.modal.Constructor.prototype._enforceFocus = function () {
+            var self = this;
+            jQuery(document)
+                .off('focusin.bs.modal', this._enforceFocus)
+                .on('focusin.bs.modal', function (event) {
+                    if (document !== event.target &&
+                        self._element !== event.target &&
+                        jQuery(self._element).has(event.target).length === 0 &&
+                        jQuery(event.target).closest('.select2-container, .select2-dropdown').length === 0) {
+                        self._element.focus();
+                    }
+                });
+        };
+    }
+
     tableTrxTransfersLocation();
     tabletmpSPKDetail();
 

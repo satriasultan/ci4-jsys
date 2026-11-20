@@ -1315,6 +1315,27 @@
         background: #1e3a5f !important;
     }
 
+    /* Hover Select2: background lebih cerah (#267bea) agar teks terbaca */
+    .corp-form-container .select2-results__option--highlighted,
+    .corp-form-container .select2-container--default .select2-results__option--highlighted[aria-selected],
+    .corp-form-container .select2-container--default .select2-results__option--highlighted[aria-selected="true"],
+    .select2-container--open .select2-results__option--highlighted[aria-selected],
+    .select2-container--open .select2-results__option--highlighted[aria-selected="true"] {
+        background: #267bea !important;
+        background-color: #267bea !important;
+        color: #ffffff !important;
+    }
+
+    /* Paksa teks item Select2 (formatBarang) tetap putih saat hover */
+    .select2-container--open .select2-results__option--highlighted[aria-selected] .select2-result-item,
+    .select2-container--open .select2-results__option--highlighted[aria-selected] .select2-result-item div,
+    .select2-container--open .select2-results__option--highlighted[aria-selected] .select2-result-item span,
+    .select2-container--open .select2-results__option--highlighted[aria-selected="true"] .select2-result-item,
+    .select2-container--open .select2-results__option--highlighted[aria-selected="true"] .select2-result-item div,
+    .select2-container--open .select2-results__option--highlighted[aria-selected="true"] .select2-result-item span {
+        color: #ffffff !important;
+    }
+
     .select2-container--open .select2-results__option .select2-result-repository__description {
         color: inherit !important;
         font-size: 14px !important;

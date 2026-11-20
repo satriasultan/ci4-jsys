@@ -1084,16 +1084,93 @@ function getCheckedDetailIds() {
 }
 
 
-document.addEventListener('keydown', function(e) {
+let activeDetailRowIndex = -1;
 
-// CTRL + Q
-if (e.ctrlKey && e.key.toLowerCase() === 'q') {
-
-e.preventDefault();
-
-document.getElementById('btnAddDetail').click();
+function detailRows() {
+    return $('#tmp_stdcost tbody tr');
 }
 
+function highlightDetailRow(index) {
+    const rows = detailRows();
+    rows.removeClass('row-active');
+    if (index >= 0 && index < rows.length) {
+        const row = rows.eq(index);
+        row.addClass('row-active');
+        row[0].scrollIntoView({ block: 'nearest' });
+    }
+}
+
+function isTypingTarget(el) {
+    if (!el) return false;
+    const tag = (el.tagName || '').toUpperCase();
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
+}
+
+document.addEventListener('keydown', function (e) {
+    if (!document.getElementById('btnAddDetail')) {
+        return;
+    }
+
+    const key = e.key.toLowerCase();
+
+    // CTRL + Q : Insert (tombol + hijau)
+    if (e.ctrlKey && key === 'q') {
+        e.preventDefault();
+        document.getElementById('btnAddDetail').click();
+        return;
+    }
+
+    // CTRL + E : Edit/Update (icon kuning)
+    if (e.ctrlKey && key === 'e') {
+        e.preventDefault();
+        updateStandartCost();
+        return;
+    }
+
+    // CTRL + D : Delete (icon merah)
+    if (e.ctrlKey && key === 'd') {
+        e.preventDefault();
+        btnDeleteDetail();
+        return;
+    }
+
+    // Navigasi & centang baris hanya aktif saat fokus TIDAK berada di field formulir.
+    if (isTypingTarget(document.activeElement)) {
+        return;
+    }
+
+    // Panah Bawah / Atas : pindah sorotan baris
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        const rows = detailRows();
+        if (rows.length === 0) return;
+
+        if (activeDetailRowIndex < 0) {
+            activeDetailRowIndex = (e.key === 'ArrowDown') ? 0 : rows.length - 1;
+        } else if (e.key === 'ArrowDown') {
+            activeDetailRowIndex = Math.min(activeDetailRowIndex + 1, rows.length - 1);
+        } else {
+            activeDetailRowIndex = Math.max(activeDetailRowIndex - 1, 0);
+        }
+
+        e.preventDefault();
+        highlightDetailRow(activeDetailRowIndex);
+        return;
+    }
+
+    // Spasi : toggle centang pada baris yang sedang disorot
+    if (e.code === 'Space' && activeDetailRowIndex >= 0) {
+        const cb = detailRows().eq(activeDetailRowIndex).find('input.row-check');
+        if (cb.length) {
+            e.preventDefault();
+            cb.prop('checked', !cb.prop('checked')).trigger('change');
+        }
+        return;
+    }
+});
+
+$('#tmp_stdcost').on('draw.dt', function () {
+    activeDetailRowIndex = -1;
+    $('#tmp_stdcost tbody tr').removeClass('row-active');
 });
 
 $(document).ready(function () {

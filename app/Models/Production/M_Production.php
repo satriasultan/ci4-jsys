@@ -1663,7 +1663,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
         $i = 0;
 
-        $builder->where("docno = '$docno'");
+        $builder->where("docref = '$docno'");
         // $builder->where("inputby = '$nama'");
         $builder->where("doctype_detail = 'MATERIAL'");
         foreach ($this->trx_workingorder_material_dtl_view_column as $mrp)
@@ -1832,7 +1832,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
         $i = 0;
 
-        $builder->where("docno = '$docno'");
+        $builder->where("docref = '$docno'");
         // $builder->where("inputby = '$nama'");
         $builder->where("doctype_detail = 'COST'");
         foreach ($this->trx_workingorder_cost_dtl_view_column as $mrp)
@@ -2592,7 +2592,6 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
         $nama=trim($this->session->get('nama'));
 
         $builder = $this->db->table($this->tmp_materialrelease_dtl_view);
-        $builder->orderBy('idurut');
 
         $i = 0;
 
@@ -2622,16 +2621,29 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
         if(isset($_POST['order'])) // here order processing
         {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->tmp_materialrelease_dtl_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+            $colIndex = (int) $_POST['order']['0']['column'];
+            $orderMap = array(
+                1 => 'issub',
+                2 => 'idbarang',
+                3 => 'nmbarang',
+                4 => 'spec',
+                5 => 'qty',
+                6 => null,      // kolom Stok (dihitung on-the-fly, tidak ikut sorting)
+                7 => 'unit',
+                8 => 'description'
+            );
+            if ($colIndex !== 0 && isset($orderMap[$colIndex]) && $orderMap[$colIndex] !== null){
+                $builder->orderBy($orderMap[$colIndex], $_POST['order']['0']['dir']);
+                $builder->orderBy('COALESCE(updatedate, inputdate)', 'DESC', false);
+            } else {
+                // default: baris terakhir di-update/insert tampil paling atas
+                $builder->orderBy('COALESCE(updatedate, inputdate)', 'DESC', false);
             }
         }
-        else if(isset($this->tmp_materialrelease_dtl_view_order))
+        else
         {
-            $order = $this->tmp_materialrelease_dtl_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
-            }
+            // default: baris terakhir di-update/insert tampil paling atas
+            $builder->orderBy('COALESCE(updatedate, inputdate)', 'DESC', false);
         }
         return $builder;
     }
@@ -2679,7 +2691,6 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
         $nama=trim($this->session->get('nama'));
 
         $builder = $this->db->table($this->trx_materialrelease_dtl_view);
-        $builder->orderBy('idurut');
 
         $i = 0;
 
@@ -2709,16 +2720,19 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
         if(isset($_POST['order'])) // here order processing
         {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->trx_materialrelease_dtl_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+            $colIndex = (int) $_POST['order']['0']['column'];
+            if ($colIndex !== 0 && isset($this->trx_materialrelease_dtl_view_column[$colIndex-1])){
+                $builder->orderBy($this->trx_materialrelease_dtl_view_column[$colIndex-1], $_POST['order']['0']['dir']);
+                $builder->orderBy('COALESCE(updatedate, inputdate)', 'DESC', false);
+            } else {
+                // default: baris terakhir di-update/insert tampil paling atas
+                $builder->orderBy('COALESCE(updatedate, inputdate)', 'DESC', false);
             }
         }
-        else if(isset($this->trx_materialrelease_dtl_view_order))
+        else
         {
-            $order = $this->trx_materialrelease_dtl_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
-            }
+            // default: baris terakhir di-update/insert tampil paling atas
+            $builder->orderBy('COALESCE(updatedate, inputdate)', 'DESC', false);
         }
         return $builder;
     }
@@ -2984,7 +2998,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
         $i = 0;
 
         $builder->where("docno = '$docno'");
-        $builder->where("inputby = '$nama'");
+        // $builder->where("inputby = '$nama'");
         // $builder->where("doctype_detail = 'MATERIAL'");
         foreach ($this->trx_penerimaanbp_dtl_view_column as $mrp)
         {
@@ -3283,7 +3297,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
         $i = 0;
 
         $builder->where("docno = '$docno'");
-        $builder->where("inputby = '$nama'");
+        // $builder->where("inputby = '$nama'");
         // $builder->where("doctype_detail = 'MATERIAL'");
         foreach ($this->trx_bpnm_dtl_view_column as $mrp)
         {
