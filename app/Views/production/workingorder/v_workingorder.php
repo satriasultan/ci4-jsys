@@ -220,12 +220,10 @@
                         
                         <th>Remark</th>
                         <th>Job</th>
-                        <th>Status</th>
-
-                        <!-- <th>Input By</th>
+                        <th>Input By</th>
                         <th>Input Date</th>
-                        <th>Update By</th>
-                        <th>Update Date</th> -->
+                        <th>Update Date</th>
+                        <th>Status</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -292,6 +290,7 @@
 
 
 
+<script type="application/javascript" src="<?= base_url('assets/pagejs/production/workingorder/workingorder_history.js') ?>"></script>
 <script type="application/javascript" src="<?= base_url('assets/pagejs/production/workingorder/workingorder.js') ?>"></script>
 <script type="text/javascript">
     $(function() {

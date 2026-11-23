@@ -1619,6 +1619,8 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('get_workingorder_dtl(:any)', 'Production::get_workingorder_dtl$1');
     $routes->add('final_input_workingorder', 'Production::final_input_workingorder');
     $routes->add("delete_workingorder_detail", "Production::delete_workingorder_detail");
+    $routes->add('preview_workingorder_bom_change', 'Production::preview_workingorder_bom_change');
+    $routes->add('list_workingorder_bom_history', 'Production::list_workingorder_bom_history');
 
     /* BUILD OF MATERIAL */
     $routes->add('update_workingorder_(:any)', 'Production::update_workingorder_$1');

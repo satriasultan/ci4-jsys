@@ -2695,7 +2695,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
         $i = 0;
 
         $builder->where("docno = '$docno'");
-        $builder->where("inputby = '$nama'");
+        // $builder->where("inputby = '$nama'");
         // $builder->where("doctype_detail = 'MATERIAL'");
         foreach ($this->trx_materialrelease_dtl_view_column as $mrp)
         {
@@ -3434,6 +3434,208 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
                     (SELECT count(*) FROM sc_trx.bpnm_mst
                         WHERE trim(wono) = trim(?) and coalesce(status,'') <> 'C') as bpnm";
         return $this->db->query($sql, [$wono, $wono, $wono, $wono]);
+    }
+
+    /* ============================================================
+       LOG / RIWAYAT PERUBAHAN BOM WORKING ORDER
+       Method di bawah ini additive & read-only. Tidak mengubah
+       method yang sudah ada.
+       ============================================================ */
+
+    /* Dokumen turunan yang header-nya akan mengikuti BOM baru. */
+    public function q_wo_bom_impact($wono, $bomno)
+    {
+        $sql = "
+            SELECT 'WOE' AS modul,
+                   TRIM(m.docno) AS docno,
+                   TRIM(m.status) AS status,
+                   TRIM(m.bomno) AS bomno,
+                   TRIM(m.idbarang_jadi) AS idbarang_jadi,
+                   m.nmbarang_jadi AS nmbarang_jadi,
+                   m.buildfor AS buildfor,
+                   NULL::text AS buildunit,
+                   0 AS detail_count,
+                   FALSE AS posted
+              FROM sc_trx.woe m
+             WHERE TRIM(m.wono) = TRIM(?)
+               AND TRIM(COALESCE(m.bomno, '')) = TRIM(?)
+               AND COALESCE(TRIM(m.status), '') NOT IN ('C', 'E')
+
+            UNION ALL
+
+            SELECT 'MATERIAL RELEASE' AS modul,
+                   TRIM(m.docno) AS docno,
+                   TRIM(m.status) AS status,
+                   TRIM(m.bomno) AS bomno,
+                   TRIM(m.idbarang_jadi) AS idbarang_jadi,
+                   m.nmbarang_jadi AS nmbarang_jadi,
+                   m.buildfor AS buildfor,
+                   m.buildunit AS buildunit,
+                   (SELECT COUNT(*) FROM sc_trx.materialrelease_dtl d
+                     WHERE TRIM(d.docno) = TRIM(m.docno)) AS detail_count,
+                   EXISTS (SELECT 1 FROM sc_trx.transaction_dt t
+                            WHERE TRIM(t.docno) = TRIM(m.docno)) AS posted
+              FROM sc_trx.materialrelease_mst m
+             WHERE TRIM(m.wono) = TRIM(?)
+               AND TRIM(COALESCE(m.bomno, '')) = TRIM(?)
+               AND COALESCE(TRIM(m.status), '') NOT IN ('C', 'E')
+
+            UNION ALL
+
+            SELECT 'PENERIMAAN BP' AS modul,
+                   TRIM(m.docno) AS docno,
+                   TRIM(m.status) AS status,
+                   TRIM(m.bomno) AS bomno,
+                   TRIM(m.idbarang_jadi) AS idbarang_jadi,
+                   m.nmbarang_jadi AS nmbarang_jadi,
+                   m.buildfor AS buildfor,
+                   m.buildunit AS buildunit,
+                   (SELECT COUNT(*) FROM sc_trx.penerimaanbp_dtl d
+                     WHERE TRIM(d.docno) = TRIM(m.docno)) AS detail_count,
+                   EXISTS (SELECT 1 FROM sc_trx.transaction_dt t
+                            WHERE TRIM(t.docno) = TRIM(m.docno)) AS posted
+              FROM sc_trx.penerimaanbp_mst m
+             WHERE TRIM(m.wono) = TRIM(?)
+               AND TRIM(COALESCE(m.bomno, '')) = TRIM(?)
+               AND COALESCE(TRIM(m.status), '') NOT IN ('C', 'E')
+
+            UNION ALL
+
+            SELECT 'BPNM' AS modul,
+                   TRIM(m.docno) AS docno,
+                   TRIM(m.status) AS status,
+                   TRIM(m.bomno) AS bomno,
+                   TRIM(m.idbarang_jadi) AS idbarang_jadi,
+                   m.nmbarang_jadi AS nmbarang_jadi,
+                   m.buildfor AS buildfor,
+                   m.buildunit AS buildunit,
+                   (SELECT COUNT(*) FROM sc_trx.bpnm_dtl d
+                     WHERE TRIM(d.docno) = TRIM(m.docno)) AS detail_count,
+                   EXISTS (SELECT 1 FROM sc_trx.transaction_dt t
+                            WHERE TRIM(t.docno) = TRIM(m.docno)) AS posted
+              FROM sc_trx.bpnm_mst m
+             WHERE TRIM(m.wono) = TRIM(?)
+               AND TRIM(COALESCE(m.bomno, '')) = TRIM(?)
+               AND COALESCE(TRIM(m.status), '') NOT IN ('C', 'E')
+
+             ORDER BY modul, docno
+        ";
+
+        return $this->db->query($sql, [$wono, $bomno, $wono, $bomno, $wono, $bomno, $wono, $bomno]);
+    }
+
+    /* Draft transaksi turunan (status E) yang masih menggantung. */
+    public function q_wo_bom_active_draft($wono)
+    {
+        $sql = "
+            SELECT 'MATERIAL RELEASE' AS modul, TRIM(docno) AS docno, TRIM(inputby) AS inputby
+              FROM sc_tmp.materialrelease_mst
+             WHERE TRIM(wono) = TRIM(?) AND UPPER(TRIM(status)) = 'E'
+            UNION ALL
+            SELECT 'PENERIMAAN BP', TRIM(docno), TRIM(inputby)
+              FROM sc_tmp.penerimaanbp_mst
+             WHERE TRIM(wono) = TRIM(?) AND UPPER(TRIM(status)) = 'E'
+            UNION ALL
+            SELECT 'BPNM', TRIM(docno), TRIM(inputby)
+              FROM sc_tmp.bpnm_mst
+             WHERE TRIM(wono) = TRIM(?) AND UPPER(TRIM(status)) = 'E'
+            UNION ALL
+            SELECT 'WOE', TRIM(docno), TRIM(inputby)
+              FROM sc_tmp.woe
+             WHERE TRIM(wono) = TRIM(?) AND UPPER(TRIM(status)) = 'E'
+             ORDER BY modul, docno
+        ";
+
+        return $this->db->query($sql, [$wono, $wono, $wono, $wono]);
+    }
+
+    /* Riwayat perubahan BOM sebuah WO (terbaru di atas). */
+    public function q_wo_bom_history($wono)
+    {
+        $sql = "SELECT id,
+                       TRIM(docno) AS docno,
+                       TRIM(jenis) AS jenis,
+                       TRIM(bomno_lama) AS bomno_lama,
+                       TRIM(bomno_baru) AS bomno_baru,
+                       TRIM(bomno_referensi) AS bomno_referensi,
+                       idbarang_lama, idbarang_baru, nmbarang_baru,
+                       buildfor_lama, buildfor_baru, buildunit_baru, desc_bom_baru,
+                       keterangan,
+                       TRIM(status) AS status,
+                       affected_count, affected_list,
+                       inputby, inputdate, applyby, applydate
+                  FROM sc_log.workingorder_bom_change
+                 WHERE TRIM(docno) = TRIM(?)
+                 ORDER BY inputdate DESC, id DESC";
+
+        return $this->db->query($sql, [$wono]);
+    }
+
+    /* BOM yang saat ini menempel pada WO (trx). */
+    public function q_wo_current_bom($wono)
+    {
+        $sql = "SELECT TRIM(docno) AS bomno,
+                       idbarang_jadi, nmbarang_jadi,
+                       buildfor, buildunit, desc_bom
+                  FROM sc_trx.workingorder_bom_mst
+                 WHERE TRIM(docref) = TRIM(?)
+                 ORDER BY docno";
+
+        return $this->db->query($sql, [$wono]);
+    }
+
+    /* Apakah WO sudah punya riwayat perubahan BOM. */
+    public function q_wo_bom_history_exists($wono)
+    {
+        $sql = "SELECT COUNT(*) AS jml
+                  FROM sc_log.workingorder_bom_change
+                 WHERE TRIM(docno) = TRIM(?)";
+
+        return $this->db->query($sql, [$wono]);
+    }
+
+    /* Log PENDING terakhir untuk sebuah WO (opsional milik user). */
+    public function q_wo_bom_pending($wono, $inputby = null)
+    {
+        $sql = "SELECT *
+                  FROM sc_log.workingorder_bom_change
+                 WHERE TRIM(docno) = TRIM(?)
+                   AND UPPER(TRIM(status)) = 'PENDING'";
+        $bind = [$wono];
+
+        if ($inputby !== null && trim((string) $inputby) !== '') {
+            $sql .= " AND TRIM(inputby) = TRIM(?)";
+            $bind[] = $inputby;
+        }
+
+        $sql .= " ORDER BY inputdate DESC, id DESC LIMIT 1";
+
+        return $this->db->query($sql, $bind);
+    }
+
+    /* Jumlah dokumen turunan aktif (trx maupun draft tmp). */
+    public function q_wo_has_downstream($wono)
+    {
+        $sql = "SELECT
+                    (SELECT COUNT(*) FROM sc_trx.woe
+                        WHERE TRIM(wono) = TRIM(?) AND COALESCE(TRIM(status), '') <> 'C') +
+                    (SELECT COUNT(*) FROM sc_trx.materialrelease_mst
+                        WHERE TRIM(wono) = TRIM(?) AND COALESCE(TRIM(status), '') <> 'C') +
+                    (SELECT COUNT(*) FROM sc_trx.penerimaanbp_mst
+                        WHERE TRIM(wono) = TRIM(?) AND COALESCE(TRIM(status), '') <> 'C') +
+                    (SELECT COUNT(*) FROM sc_trx.bpnm_mst
+                        WHERE TRIM(wono) = TRIM(?) AND COALESCE(TRIM(status), '') <> 'C') +
+                    (SELECT COUNT(*) FROM sc_tmp.materialrelease_mst
+                        WHERE TRIM(wono) = TRIM(?) AND COALESCE(TRIM(status), '') <> 'C') +
+                    (SELECT COUNT(*) FROM sc_tmp.penerimaanbp_mst
+                        WHERE TRIM(wono) = TRIM(?) AND COALESCE(TRIM(status), '') <> 'C') +
+                    (SELECT COUNT(*) FROM sc_tmp.bpnm_mst
+                        WHERE TRIM(wono) = TRIM(?) AND COALESCE(TRIM(status), '') <> 'C') +
+                    (SELECT COUNT(*) FROM sc_tmp.woe
+                        WHERE TRIM(wono) = TRIM(?) AND COALESCE(TRIM(status), '') <> 'C')
+                    AS total";
+
+        return $this->db->query($sql, array_fill(0, 8, $wono));
     }
 
     /* Statistik detail draft Penerimaan Barang Produksi (Sprint 2) */

@@ -151,7 +151,7 @@ class Production extends BaseController
             // =====================================
             // UPDATE
             // =====================================
-            if ($canUpdate) {
+            if ($canUpdate  && trim($lm->inputby) == $nama && $status=='F') {
 
                 $updateBtn = '
                 <a class="dropdown-item bg-warning"
@@ -295,9 +295,8 @@ class Production extends BaseController
 
             $row[] = $lm->inputby;
             $row[] = $lm->inputdate1;
-
-            $row[] = $lm->updateby;
             $row[] = $lm->updatedate1;
+
             $row[] = '<div class="text-center">'
                 . '<span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">'
                 . htmlspecialchars($statusLabel)
@@ -1522,7 +1521,7 @@ class Production extends BaseController
             // =====================================
             // UPDATE
             // =====================================
-            if ($canUpdate) {
+            if ($canUpdate && trim($lm->inputby) == $nama && $status=='F') {
 
                 $updateBtn = '
                 <a class="dropdown-item bg-warning"
@@ -1663,10 +1662,9 @@ class Production extends BaseController
 
 
             $row[] = $lm->inputby;
-            $row[] = $lm->inputdate;
+            $row[] = $this->prod_fmt_inputdate($lm->inputdate);
+            $row[] = $this->prod_fmt_inputdate($lm->updatedate);
 
-            $row[] = $lm->updateby;
-            $row[] = $lm->updatedate;
             $row[] = '<div class="text-center">'
                 . '<span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">'
                 . htmlspecialchars($statusLabel)
@@ -2992,18 +2990,16 @@ class Production extends BaseController
 
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
+
+            $row[] = $lm->inputby;
+            $row[] = $this->prod_fmt_inputdate($lm->inputdate);
+            $row[] = $this->prod_fmt_inputdate($lm->updatedate);
+
             $row[] = '<div class="text-center">'
                 . '<span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">'
                 . htmlspecialchars($statusLabel)
                 . '</span>'
                 . '</div>';
-
-
-            // $row[] = $lm->inputby;
-            // $row[] = $lm->inputdate;
-
-            // $row[] = $lm->updateby;
-            // $row[] = $lm->updatedate;
 
             $data[] = $row;
         }
@@ -4443,7 +4439,6 @@ class Production extends BaseController
                 </a>';
             }
 
-
             // =====================================
             // CANCEL
             // =====================================
@@ -4571,17 +4566,16 @@ class Production extends BaseController
 
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
+
+            $row[] = $lm->inputby;
+            $row[] = $this->prod_fmt_inputdate($lm->inputdate);
+            $row[] = $this->prod_fmt_inputdate($lm->updatedate);
+
             $row[] = '<div class="text-center">'
                 . '<span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">'
                 . htmlspecialchars($statusLabel)
                 . '</span>'
                 . '</div>';
-
-            // $row[] = $lm->inputby;
-            // $row[] = $lm->inputdate;
-
-            // $row[] = $lm->updateby;
-            // $row[] = $lm->updatedate;
 
             $data[] = $row;
         }
@@ -4729,6 +4723,10 @@ class Production extends BaseController
         $data['userlogin'] = $nama;
         $param = " and trim(inputby)='$nama'";
         $data['dtldata'] = $this->m_production->q_tmp_workingorder_mst($param)->getRowArray();
+        $data['has_bom_history'] = false;
+        if (!empty($data['dtldata']['docno'])) {
+            $data['has_bom_history'] = $this->prod_wo_bom_history_exists(trim((string) $data['dtldata']['docno']));
+        }
         $logindate  = trim($this->session->get('logindate'));
         $ts    = strtotime($logindate);
 
@@ -4992,6 +4990,27 @@ class Production extends BaseController
         | 4. INSERT WORKINGORDER_BOM_MST
         |--------------------------------------------------------------------------
         */
+        // -----------------------------------------------------
+        // PENGUAT: nmbarang_jadi sering kosong karena bom_mst
+        // tidak selalu menyimpannya. Ambil dari master barang.
+        // -----------------------------------------------------
+        $nmJadi = trim((string) ($bomMst['nmbarang_jadi'] ?? ''));
+
+        if ($nmJadi === '') {
+            $rowBarang = $db->query("
+                SELECT TRIM(nmbarang) AS nmbarang
+                  FROM sc_mst.mbarang
+                 WHERE TRIM(idbarang) = TRIM(?)
+                 LIMIT 1
+            ", [trim((string) ($bomMst['idbarang_jadi'] ?? ''))])->getRowArray();
+
+            $nmJadi = trim((string) ($rowBarang['nmbarang'] ?? ''));
+        }
+
+        if ($nmJadi === '') {
+            $nmJadi = trim((string) ($bomMst['idbarang_jadi'] ?? ''));
+        }
+
         $insertBomMst = $bomMst;
 
         unset($insertBomMst['id']);
@@ -5001,6 +5020,7 @@ class Production extends BaseController
 
         $insertBomMst['docref']    = $docnoWo;
         $insertBomMst['desc_bom']    = $insertBomMst['keterangan'];
+        $insertBomMst['nmbarang_jadi'] = $nmJadi;
         $insertBomMst['inputby']   = $nama;
         $insertBomMst['inputdate'] = date('Y-m-d H:i:s');
         unset($insertBomMst['keterangan']);
@@ -5035,6 +5055,40 @@ class Production extends BaseController
                 ->insert($row);
         }
 
+        // -----------------------------------------------------
+        // CATAT BOM BARU PADA LOG (HANYA MODE EDIT WO)
+        // -----------------------------------------------------
+        if ($this->prod_bom_log_ready()) {
+            $woTmp = $db->query("
+                SELECT TRIM(docno) AS docno,
+                       TRIM(COALESCE(docnotmp, '')) AS docnotmp,
+                       TRIM(status) AS status
+                  FROM sc_tmp.workingorder_mst
+                 WHERE TRIM(docno) = TRIM(?)
+                   AND TRIM(inputby) = TRIM(?)
+                 LIMIT 1
+            ", [$docnoWo, $nama])->getRowArray();
+
+            if ($woTmp
+                && trim((string) ($woTmp['docnotmp'] ?? '')) !== ''
+                && strtoupper(trim((string) ($woTmp['status'] ?? ''))) === 'E') {
+
+                $pending = $this->prod_wo_bom_log_pending(trim((string) $woTmp['docnotmp']), $nama);
+
+                if ($pending) {
+                    $db->table('sc_log.workingorder_bom_change')
+                        ->where('id', $pending['id'])
+                        ->update([
+                            'bomno_baru'     => $docnoBom,
+                            'idbarang_baru'  => $bomMst['idbarang_jadi'] ?? null,
+                            'nmbarang_baru'  => $nmJadi,
+                            'buildfor_baru'  => $bomMst['buildfor'] ?? null,
+                            'buildunit_baru' => $bomMst['buildunit'] ?? null,
+                            'desc_bom_baru'  => $insertBomMst['desc_bom'] ?? null,
+                        ]);
+                }
+            }
+        }
 
         $db->transComplete();
 
@@ -5077,6 +5131,22 @@ class Production extends BaseController
         } else if ($status==='E') {
             $builder->where('inputby',$nama);
             if ($builder->update(array('status' => 'C'))) {
+
+                // Batalkan log perubahan BOM yang masih PENDING
+                if ($this->prod_bom_log_ready()) {
+                    try {
+                        $this->db->table('sc_log.workingorder_bom_change')
+                            ->where('status', 'PENDING')
+                            ->where('inputby', $nama)
+                            ->update([
+                                'status'    => 'CANCELLED',
+                                'applyby'   => $nama,
+                                'applydate' => date('Y-m-d H:i:s'),
+                            ]);
+                    } catch (\Throwable $e) {
+                        // jangan gagalkan proses cancel WO
+                    }
+                }
 
                 $builder->where('inputby',$nama);
                 $builder->delete();
@@ -5435,39 +5505,169 @@ class Production extends BaseController
             $alamatcustomer = strtoupper(trim($this->request->getPost('alamatcustomer')));
             $noso = strtoupper(trim($this->request->getPost('noso')));
 
-            // Update data header dulu sebelum set status F
-            $updateHeader = [
-                'noso'              => $noso,
-                'keterangan'        => $keterangan,
-                'kdcustomer'        => $kdcustomer,
-                'nmcustomer'        => $nmcustomer,
-                'alamatcustomer'    => $alamatcustomer,
-            ];
+            $db = $this->db;
+            $db->transBegin();
 
-            $builder->where('docno', $docno)
-                ->where('inputby', $nama)
-                ->where('status', 'E')
-                ->update($updateHeader);
+            try {
+                // Kunci per WO (hindari final ganda / bentrok cancel)
+                $db->query("SELECT pg_advisory_xact_lock(hashtext(?))", [$docno]);
 
-            $info = array('status' => 'F', 'updatedate' => date('Y-m-d H:i:s'), 'updateby' => $nama);
+                // Penguat nmbarang_jadi (tmp) sebelum trigger memindahkan BOM
+                $this->prod_heal_wo_bom_nmbarang($docno, $nama);
 
-            $this->db->table('sc_tmp.workingorder_mst')
-                ->where('docno', $docno)
-                ->where('inputby', $nama)
-                ->where('status', 'E')
-                ->update($info);
+                // -------------------------------------------------
+                // RESOLVE LOG PERUBAHAN BOM (SEBELUM STATUS F)
+                // -------------------------------------------------
+                $log     = null;
+                $newBom  = '';
+                $logNoop = false;
 
-            $errDb = $this->prod_errorDb();
+                if ($this->prod_bom_log_ready()) {
+                    $log = $this->prod_wo_bom_log_pending($docno, $nama);
+                }
 
-            if ($errDb !== '') {
-                return redirect()->to(base_url('/production/trans/workingorder'))->with('prod_msg', $this->prod_msg('error', 'Proses gagal : ' . $errDb));
+                if ($log) {
+                    $oldRef = trim((string) ($log['bomno_referensi'] ?? ''));
+                    if ($oldRef === '') {
+                        $oldRef = trim((string) ($log['bomno_lama'] ?? ''));
+                    }
+
+                    $newBom = trim((string) ($log['bomno_baru'] ?? ''));
+
+                    $tmpBoms = $db->query("
+                        SELECT TRIM(docno) AS docno
+                          FROM sc_tmp.workingorder_bom_mst
+                         WHERE TRIM(docref) = TRIM(?)
+                           AND TRIM(inputby) = TRIM(?)
+                    ", [$docno, $nama])->getResultArray();
+
+                    $adaLama  = false;
+                    $kandidat = [];
+
+                    foreach ($tmpBoms as $tb) {
+                        $bn = trim((string) ($tb['docno'] ?? ''));
+                        if ($bn === '') {
+                            continue;
+                        }
+
+                        if ($bn === trim((string) ($log['bomno_lama'] ?? '')) || $bn === $oldRef) {
+                            $adaLama = true;
+                        } else {
+                            $kandidat[] = $bn;
+                        }
+                    }
+
+                    if ($newBom === '') {
+                        $kandidat = array_values(array_unique($kandidat));
+
+                        if (count($kandidat) === 1) {
+                            $newBom = $kandidat[0];
+                        } elseif ($adaLama) {
+                            $newBom  = trim((string) ($log['bomno_lama'] ?? ''));
+                            $logNoop = true;
+                        } else {
+                            throw new \Exception('BOM baru belum dipilih. Tarik BOM pengganti sebelum Simpan Final.');
+                        }
+                    }
+
+                    if ($newBom === '') {
+                        throw new \Exception('BOM baru belum dipilih. Tarik BOM pengganti sebelum Simpan Final.');
+                    }
+
+                    $adaBaru = false;
+                    foreach ($tmpBoms as $tb) {
+                        if (trim((string) ($tb['docno'] ?? '')) === $newBom) {
+                            $adaBaru = true;
+                            break;
+                        }
+                    }
+
+                    if (!$logNoop && !$adaBaru) {
+                        throw new \Exception('BOM baru ' . $newBom . ' tidak ditemukan pada draft WO. Silakan tarik ulang BOM.');
+                    }
+
+                    if (trim((string) ($log['jenis'] ?? '')) === 'GANTI_BOM'
+                        && $oldRef !== ''
+                        && $newBom === trim((string) ($log['bomno_lama'] ?? ''))
+                        && $oldRef === trim((string) ($log['bomno_lama'] ?? ''))) {
+                        $logNoop = true;
+                    }
+                }
+
+                // Update data header dulu sebelum set status F
+                $updateHeader = [
+                    'noso'              => $noso,
+                    'keterangan'        => $keterangan,
+                    'kdcustomer'        => $kdcustomer,
+                    'nmcustomer'        => $nmcustomer,
+                    'alamatcustomer'    => $alamatcustomer,
+                ];
+
+                $headerUpdated = $builder->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->where('status', 'E')
+                    ->update($updateHeader);
+
+                if ($headerUpdated === false) {
+                    throw new \Exception($this->prod_errorDb());
+                }
+
+                $info = array('status' => 'F', 'updatedate' => date('Y-m-d H:i:s'), 'updateby' => $nama);
+
+                $statusUpdated = $this->db->table('sc_tmp.workingorder_mst')
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->where('status', 'E')
+                    ->update($info);
+
+                if ($statusUpdated === false) {
+                    throw new \Exception($this->prod_errorDb());
+                }
+
+                // -------------------------------------------------
+                // TERAPKAN HEADER TURUNAN (SETELAH TRIGGER GANTI BOM)
+                // -------------------------------------------------
+                if ($log) {
+                    if ($logNoop) {
+                        $this->prod_wo_bom_log_mark($log['id'], 'CANCELLED', $nama);
+                    } else {
+                        $oldRef2 = trim((string) ($log['bomno_referensi'] ?? ''));
+                        if ($oldRef2 === '') {
+                            $oldRef2 = trim((string) ($log['bomno_lama'] ?? ''));
+                        }
+
+                        if (trim((string) ($log['bomno_baru'] ?? '')) === '' && $newBom !== '') {
+                            $db->table('sc_log.workingorder_bom_change')
+                                ->where('id', $log['id'])
+                                ->update(['bomno_baru' => $newBom]);
+                        }
+
+                        $affected = ['woe' => 0, 'mr' => 0, 'pbp' => 0, 'bpnm' => 0, 'total' => 0];
+
+                        if ($oldRef2 !== '') {
+                            $affected = $this->prod_apply_wo_bom_downstream($docno, $oldRef2, $newBom, $nama);
+                        }
+
+                        $this->prod_wo_bom_log_mark($log['id'], 'APPLIED', $nama, $affected);
+                    }
+                }
+
+                if ($db->transStatus() === false) {
+                    throw new \Exception('Transaksi gagal');
+                }
+
+                $db->transCommit();
+
+                if ($this->prod_hitungStatus('sc_trx.workingorder_mst', $docno, null, 'F') > 0) {
+                    return redirect()->to(base_url('/production/trans/workingorder'))->with('prod_msg', $this->prod_msg('success', 'Working Order ' . $docno . ' berhasil di-final.'));
+                }
+
+                return redirect()->to(base_url('/production/trans/workingorder'))->with('prod_msg', $this->prod_msg('warning', 'Dokumen berubah oleh proses lain. Silakan muat ulang.'));
+
+            } catch (\Throwable $e) {
+                $db->transRollback();
+                return redirect()->to(base_url('/production/trans/workingorder'))->with('prod_msg', $this->prod_msg('error', 'Proses gagal : ' . $e->getMessage()));
             }
-
-            if ($this->prod_hitungStatus('sc_trx.workingorder_mst', $docno, null, 'F') > 0) {
-                return redirect()->to(base_url('/production/trans/workingorder'))->with('prod_msg', $this->prod_msg('success', 'Working Order ' . $docno . ' berhasil di-final.'));
-            }
-
-            return redirect()->to(base_url('/production/trans/workingorder'))->with('prod_msg', $this->prod_msg('warning', 'Dokumen berubah oleh proses lain. Silakan muat ulang.'));
         }
 
     }
@@ -5493,6 +5693,264 @@ class Production extends BaseController
         ]);
     }
 
+    /* Preview dampak ganti BOM / konfirmasi final WO (read-only). */
+    public function preview_workingorder_bom_change()
+    {
+        $nama  = trim((string) $this->session->get('nama'));
+        $ids   = $this->request->getPost('ids');
+        $docno = trim((string) $this->request->getPost('docno'));
+        $docref = trim((string) $this->request->getPost('docref'));
+
+        if (!is_array($ids)) {
+            $ids = ($ids === null || $ids === '') ? [] : [$ids];
+        }
+
+        $isEdit  = false;
+        $wono    = '';
+        $bomno   = '';
+        $bomRow  = null;
+        $woRow   = null;
+
+        if (!empty($ids)) {
+            $id = trim((string) $ids[0]);
+
+            $bomRow = $this->db->query("
+                SELECT TRIM(docno) AS docno, TRIM(docref) AS docref,
+                       idbarang_jadi, nmbarang_jadi, buildfor, buildunit, desc_bom
+                  FROM sc_tmp.workingorder_bom_mst
+                 WHERE TRIM(docno) = TRIM(?)
+                   AND TRIM(inputby) = TRIM(?)
+                   " . ($docref !== '' ? "AND TRIM(docref) = TRIM(?)" : "") . "
+                 LIMIT 1
+            ", $docref !== '' ? [$id, $nama, $docref] : [$id, $nama])->getRowArray();
+
+            if (!$bomRow) {
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Data BOM tidak ditemukan.'
+                ]);
+            }
+
+            $wono  = trim((string) $bomRow['docref']);
+            $bomno = trim((string) $bomRow['docno']);
+
+            $woRow = $this->db->query("
+                SELECT TRIM(docno) AS docno,
+                       TRIM(COALESCE(docnotmp, '')) AS docnotmp,
+                       TRIM(status) AS status
+                  FROM sc_tmp.workingorder_mst
+                 WHERE TRIM(docno) = TRIM(?)
+                   AND TRIM(inputby) = TRIM(?)
+                 LIMIT 1
+            ", [$wono, $nama])->getRowArray();
+        } elseif ($docno !== '') {
+            $woRow = $this->db->query("
+                SELECT TRIM(docno) AS docno,
+                       TRIM(COALESCE(docnotmp, '')) AS docnotmp,
+                       TRIM(status) AS status
+                  FROM sc_tmp.workingorder_mst
+                 WHERE TRIM(docno) = TRIM(?)
+                   AND TRIM(inputby) = TRIM(?)
+                 LIMIT 1
+            ", [$docno, $nama])->getRowArray();
+
+            if (!$woRow) {
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Draft WO tidak ditemukan.'
+                ]);
+            }
+
+            $wono = trim((string) $woRow['docno']);
+        } else {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Parameter tidak lengkap.'
+            ]);
+        }
+
+        $isEdit = $woRow
+            && trim((string) ($woRow['docnotmp'] ?? '')) !== ''
+            && strtoupper(trim((string) ($woRow['status'] ?? ''))) === 'E';
+
+        $pending  = $isEdit ? $this->prod_wo_bom_log_pending($wono, $nama) : null;
+        $bomnoRef = '';
+
+        if ($pending) {
+            $bomnoRef = trim((string) ($pending['bomno_referensi'] ?? ''));
+            if ($bomnoRef === '') {
+                $bomnoRef = trim((string) ($pending['bomno_lama'] ?? ''));
+            }
+        }
+
+        if ($bomnoRef === '') {
+            $bomnoRef = $bomno; // preview hapus: BOM yang akan dihapus
+        }
+
+        $drafts  = $isEdit ? $this->prod_wo_bom_active_draft_rows($wono) : [];
+        $impacts = ($isEdit && $bomnoRef !== '')
+            ? $this->prod_wo_bom_impact_rows($wono, $bomnoRef)
+            : [];
+
+        $hasPbpFinal = false;
+        $hasPrinted  = false;
+
+        foreach ($impacts as $r) {
+            $st = strtoupper(trim((string) ($r['status'] ?? '')));
+
+            if (trim((string) ($r['modul'] ?? '')) === 'PENERIMAAN BP'
+                && in_array($st, ['F', 'P', 'A'], true)) {
+                $hasPbpFinal = true;
+            }
+
+            if ($st === 'P') {
+                $hasPrinted = true;
+            }
+        }
+
+        // BOM baru mungkin belum tercatat di log (mis. BOM ditarik lebih dulu,
+        // baru BOM lama dihapus). Infer dari BOM yang ada di draft.
+        $bomnoBaru = $pending ? trim((string) ($pending['bomno_baru'] ?? '')) : '';
+
+        if ($isEdit && $pending && $bomnoBaru === '' && $bomnoRef !== '') {
+            $tmpBoms = $this->db->query("
+                SELECT TRIM(docno) AS docno
+                  FROM sc_tmp.workingorder_bom_mst
+                 WHERE TRIM(docref) = TRIM(?)
+                   AND TRIM(inputby) = TRIM(?)
+            ", [$wono, $nama])->getResultArray();
+
+            $kandidat = [];
+            foreach ($tmpBoms as $tb) {
+                $bn = trim((string) ($tb['docno'] ?? ''));
+                if ($bn === '') {
+                    continue;
+                }
+
+                if ($bn !== trim((string) ($pending['bomno_lama'] ?? '')) && $bn !== $bomnoRef) {
+                    $kandidat[] = $bn;
+                }
+            }
+
+            $kandidat = array_values(array_unique($kandidat));
+            if (count($kandidat) === 1) {
+                $bomnoBaru = $kandidat[0];
+            }
+        }
+
+        return $this->response->setJSON([
+            'status'       => true,
+            'log_ready'    => $this->prod_bom_log_ready(),
+            'is_edit'      => $isEdit,
+            'wono'         => $wono,
+            'bomno_lama'   => $bomnoRef,
+            'bomno_baru'   => $bomnoBaru,
+            'has_pending'  => (bool) $pending,
+            'drafts'       => $drafts,
+            'draft_count'  => count($drafts),
+            'impacts'      => $impacts,
+            'impact_count' => count($impacts),
+            'has_pbp_final'=> $hasPbpFinal,
+            'has_printed'  => $hasPrinted,
+        ]);
+    }
+
+    /* Riwayat BOM sebuah WO (read-only). */
+    public function list_workingorder_bom_history()
+    {
+        $role  = trim((string) $this->session->get('roleid'));
+        $docno = trim((string) $this->request->getPost('docno'));
+
+        $akses   = $this->m_role->detail_user_akses($role, 'I.R.A.4')->getRowArray();
+        $canView = isset($akses['a_view']) && trim((string) $akses['a_view']) === 't';
+
+        if (!$canView) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Anda tidak memiliki akses melihat riwayat BOM.'
+            ]);
+        }
+
+        if ($docno === '') {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Nomor WO tidak boleh kosong.'
+            ]);
+        }
+
+        if (!$this->prod_bom_log_ready()) {
+            return $this->response->setJSON([
+                'status'  => true,
+                'docno'   => $docno,
+                'items'   => [],
+                'boms'    => [],
+                'current' => [],
+                'message' => 'Fitur riwayat BOM belum aktif (tabel log belum tersedia).'
+            ]);
+        }
+
+        $items   = $this->m_production->q_wo_bom_history($docno)->getResultArray();
+        $current = $this->m_production->q_wo_current_bom($docno)->getResultArray();
+
+        $currentBoms = [];
+        foreach ($current as $c) {
+            $b = trim((string) ($c['bomno'] ?? ''));
+            if ($b !== '') {
+                $currentBoms[$b] = true;
+            }
+        }
+
+        // BOM yang pernah dipakai = hanya log APPLIED + BOM aktif.
+        $used = [];
+        foreach (array_reverse($items) as $r) {
+            if (strtoupper(trim((string) ($r['status'] ?? ''))) !== 'APPLIED') {
+                continue;
+            }
+
+            foreach ([$r['bomno_referensi'] ?? '', $r['bomno_baru'] ?? ''] as $b) {
+                $b = trim((string) $b);
+                if ($b !== '') {
+                    $used[$b] = true;
+                }
+            }
+        }
+
+        foreach (array_keys($currentBoms) as $b) {
+            $used[$b] = true;
+        }
+
+        $boms = [];
+        foreach (array_keys($used) as $b) {
+            $master = $this->db->query("
+                SELECT TRIM(bm.docno) AS bomno,
+                       bm.idbarang_jadi,
+                       COALESCE(NULLIF(TRIM(bm.nmbarang_jadi), ''), TRIM(mb.nmbarang)) AS nmbarang_jadi,
+                       bm.keterangan AS desc_bom
+                  FROM sc_trx.bom_mst bm
+                  LEFT JOIN sc_mst.mbarang mb
+                         ON TRIM(mb.idbarang) = TRIM(bm.idbarang_jadi)
+                 WHERE TRIM(bm.docno) = TRIM(?)
+                 LIMIT 1
+            ", [$b])->getRowArray();
+
+            $boms[] = [
+                'bomno'         => $b,
+                'idbarang_jadi' => $master['idbarang_jadi'] ?? null,
+                'nmbarang_jadi' => $master['nmbarang_jadi'] ?? null,
+                'desc_bom'      => $master['desc_bom'] ?? null,
+                'aktif'         => isset($currentBoms[$b]),
+            ];
+        }
+
+        return $this->response->setJSON([
+            'status'  => true,
+            'docno'   => $docno,
+            'items'   => $items,
+            'boms'    => $boms,
+            'current' => $current,
+        ]);
+    }
+
     public function save_update_workingorder_bom()
     {
         $db = \Config\Database::connect();
@@ -5501,18 +5959,26 @@ class Production extends BaseController
 
         $docno = trim($this->request->getPost('docno'));
 
+        $docref = trim((string) $this->request->getPost('docref'));
+
         $buildforBaru = str_replace(',', '', $this->request->getPost('buildfor'));
 
         $db->transBegin();
 
         try{
 
-            $mst = $db->query("
-                SELECT *
-                FROM sc_tmp.workingorder_bom_mst
-                WHERE TRIM(docno)=?
-                AND TRIM(inputby)=?
-            ",[$docno,$nama])->getRow();
+            $sqlMst  = "SELECT *
+                        FROM sc_tmp.workingorder_bom_mst
+                        WHERE TRIM(docno)=?
+                        AND TRIM(inputby)=?";
+            $bindMst = [$docno, $nama];
+
+            if ($docref !== '') {
+                $sqlMst .= " AND TRIM(docref)=TRIM(?)";
+                $bindMst[] = $docref;
+            }
+
+            $mst = $db->query($sqlMst . " LIMIT 1", $bindMst)->getRow();
 
             if(!$mst){
                 throw new \Exception('Data BOM tidak ditemukan');
@@ -5522,6 +5988,24 @@ class Production extends BaseController
 
             if($buildforLama <= 0){
                 throw new \Exception('Build For lama tidak valid');
+            }
+
+            $wono     = trim((string) ($mst->docref ?? ''));
+            $docnotmp = trim((string) ($mst->docnotmp ?? ''));
+
+            // BOM yang baru ditarik saat edit belum tentu punya docnotmp.
+            // Ambil WO dari log PENDING (jika ada) agar buildfor tetap tercatat.
+            if ($docnotmp === '' && $wono !== '' && $this->prod_bom_log_ready()) {
+                $pendingWo = $this->prod_wo_bom_log_pending($wono, $nama);
+                if ($pendingWo && trim((string) ($pendingWo['jenis'] ?? '')) === 'GANTI_BOM') {
+                    $docnotmp = $wono;
+                }
+            }
+
+            $ket      = strtoupper(trim((string) $this->request->getPost('keterangan')));
+
+            if ($ket === '') {
+                $ket = 'UBAH BUILD FOR';
             }
 
             /*
@@ -5585,6 +6069,60 @@ class Production extends BaseController
                     'ttlcost'=>$ttl->ttl
                 ]);
 
+            if ($docnotmp !== ''
+                && abs($buildforLama - (float) $buildforBaru) > 0.0001
+                && $this->prod_bom_log_ready()
+                && $this->prod_wo_has_downstream($wono) > 0) {
+                $pending = $this->prod_wo_bom_log_pending($docnotmp, $nama);
+
+                if ($pending) {
+                    $pendingNew = trim((string) ($pending['bomno_baru'] ?? ''));
+
+                    if ($pendingNew === '' || $pendingNew === $docno) {
+                        $db->table('sc_log.workingorder_bom_change')
+                            ->where('id', $pending['id'])
+                            ->update([
+                                'bomno_baru'     => $docno,
+                                'buildfor_baru'  => $buildforBaru,
+                                'buildunit_baru' => $mst->buildunit ?? null,
+                            ]);
+                    }
+                } else {
+                    // Referensi = BOM yang masih direferensikan dokumen turunan
+                    // (BOM final di trx). Jika hanya satu, pakai itu.
+                    $referensi = $docno;
+                    $trxBoms = $this->db->query("
+                        SELECT TRIM(docno) AS docno
+                          FROM sc_trx.workingorder_bom_mst
+                         WHERE TRIM(docref) = TRIM(?)
+                         ORDER BY docno
+                    ", [$wono])->getResultArray();
+
+                    if (count($trxBoms) === 1) {
+                        $referensi = trim((string) ($trxBoms[0]['docno'] ?? ''));
+                    }
+
+                    $db->table('sc_log.workingorder_bom_change')->insert([
+                        'docno'           => $docnotmp,
+                        'jenis'           => 'UBAH_BUILDFOR',
+                        'bomno_lama'      => $docno,
+                        'bomno_baru'      => $docno,
+                        'bomno_referensi' => $referensi,
+                        'idbarang_lama'   => $mst->idbarang_jadi ?? null,
+                        'idbarang_baru'   => $mst->idbarang_jadi ?? null,
+                        'nmbarang_baru'   => $mst->nmbarang_jadi ?? null,
+                        'buildfor_lama'   => $buildforLama,
+                        'buildfor_baru'   => $buildforBaru,
+                        'buildunit_baru'  => $mst->buildunit ?? null,
+                        'desc_bom_baru'   => $mst->desc_bom ?? null,
+                        'keterangan'      => $ket,
+                        'status'          => 'PENDING',
+                        'inputby'         => $nama,
+                        'inputdate'       => date('Y-m-d H:i:s'),
+                    ]);
+                }
+            }
+
             if($db->transStatus() === FALSE){
                 throw new \Exception('Gagal update');
             }
@@ -5630,45 +6168,142 @@ class Production extends BaseController
             $ids = [$ids];
         }
 
+        $keterangan = strtoupper(trim((string) $request->getPost('keterangan')));
+        if ($keterangan === '') {
+            $keterangan = 'GANTI BOM';
+        }
+
         $db->transBegin();
 
         try {
 
-            // Ambil docno dari salah satu detail yang akan dihapus
-            $firstId = $ids[0];
+            // Ambil BOM yang akan dihapus (sekaligus validasi kepemilikan)
+            $docref = trim((string) $request->getPost('docref'));
+            $ph   = implode(',', array_fill(0, count($ids), '?'));
+            $bind = array_merge(
+                [$nama],
+                array_map(function ($v) {
+                    return trim((string) $v);
+                }, $ids)
+            );
 
-            $row = $db->table('sc_tmp.workingorder_bom_mst')
-                ->select('docno')
-                ->where('docno', $firstId)
-                ->where('inputby', $nama)
-                ->get()
-                ->getRow();
+            $sqlRows = "
+                SELECT TRIM(docno) AS docno, TRIM(docref) AS docref,
+                       idbarang_jadi, nmbarang_jadi, buildfor, buildunit, desc_bom
+                  FROM sc_tmp.workingorder_bom_mst
+                 WHERE TRIM(inputby) = TRIM(?)
+                   AND TRIM(docno) IN ({$ph})";
 
-            if (!$row) {
+            if ($docref !== '') {
+                $sqlRows .= " AND TRIM(docref) = TRIM(?)";
+                $bind[] = $docref;
+            }
+
+            $rows = $db->query($sqlRows, $bind)->getResultArray();
+
+            if (empty($rows)) {
+                $db->transRollback();
                 return $this->response->setJSON([
                     'status'  => false,
                     'message' => 'Data detail tidak ditemukan'
                 ]);
             }
 
-            $docno = $row->docno;
+            $wono   = trim((string) $rows[0]['docref']);
+            $bomIds = array_map(function ($r) {
+                return trim((string) $r['docno']);
+            }, $rows);
 
-            $builder->whereIn('docno', $ids)
+            // Status WO draft (mode edit bila docnotmp terisi)
+            $wo = $db->query("
+                SELECT TRIM(docno) AS docno,
+                       TRIM(COALESCE(docnotmp, '')) AS docnotmp,
+                       TRIM(status) AS status
+                  FROM sc_tmp.workingorder_mst
+                 WHERE TRIM(docno) = TRIM(?)
+                   AND TRIM(inputby) = TRIM(?)
+                 LIMIT 1
+            ", [$wono, $nama])->getRowArray();
+
+            $isEdit = $wo
+                && trim((string) ($wo['docnotmp'] ?? '')) !== ''
+                && strtoupper(trim((string) ($wo['status'] ?? ''))) === 'E';
+
+            if ($isEdit && $this->prod_bom_log_ready()) {
+
+                // Blokir jika masih ada draft transaksi turunan
+                $drafts = $this->prod_wo_bom_active_draft_rows($wono);
+                if (!empty($drafts)) {
+                    $pesan = [];
+                    foreach ($drafts as $d) {
+                        $pesan[] = trim((string) $d['modul']) . ' ' . trim((string) $d['docno']) .
+                                   ' (' . trim((string) $d['inputby']) . ')';
+                    }
+
+                    $db->transRollback();
+                    return $this->response->setJSON([
+                        'status'  => false,
+                        'message' => 'Tidak dapat mengganti BOM. Masih ada draft transaksi turunan yang belum final: ' .
+                                     implode(', ', $pesan) .
+                                     '. Batalkan atau final-kan draft tersebut terlebih dahulu.'
+                    ]);
+                }
+
+                // Rantai log: pending sebelumnya menjadi SUPERSEDED
+                $pending      = $this->prod_wo_bom_log_pending($wono, $nama);
+                $rootBom      = '';
+                $rootIdBarang = null;
+                $rootBuildfor = null;
+
+                if ($pending) {
+                    $rootBom = trim((string) ($pending['bomno_referensi'] ?? ''));
+                    if ($rootBom === '') {
+                        $rootBom = trim((string) ($pending['bomno_lama'] ?? ''));
+                    }
+                    $rootIdBarang = $pending['idbarang_lama'] ?? null;
+                    $rootBuildfor = $pending['buildfor_lama'] ?? null;
+
+                    $db->table('sc_log.workingorder_bom_change')
+                        ->where('id', $pending['id'])
+                        ->update(['status' => 'SUPERSEDED']);
+                }
+
+                foreach ($rows as $r) {
+                    $bom = trim((string) $r['docno']);
+
+                    if ($rootBom === '') {
+                        $rootBom      = $bom;
+                        $rootIdBarang = $r['idbarang_jadi'] ?? null;
+                        $rootBuildfor = $r['buildfor'] ?? null;
+                    }
+
+                    $db->table('sc_log.workingorder_bom_change')->insert([
+                        'docno'           => $wono,
+                        'jenis'           => 'GANTI_BOM',
+                        'bomno_lama'      => $bom,
+                        'bomno_baru'      => null,
+                        'bomno_referensi' => $rootBom,
+                        'idbarang_lama'   => $rootIdBarang,
+                        'buildfor_lama'   => $rootBuildfor,
+                        'keterangan'      => $keterangan,
+                        'status'          => 'PENDING',
+                        'inputby'         => $nama,
+                        'inputdate'       => date('Y-m-d H:i:s'),
+                    ]);
+                }
+            }
+
+            // Hapus header BOM
+            $builder->whereIn('docno', $bomIds)
                 ->where('inputby', $nama)
                 ->delete();
 
-            $row = $db->table('sc_tmp.workingorder_bom_dtl')
-                ->select('docno')
-                ->where('docno', $docno)
-                ->where('inputby', $nama)
-                ->delete();
-
-            if ($db->affectedRows() === 0) {
-                $db->transRollback();
-                return $this->response->setJSON([
-                    'status'  => false,
-                    'message' => 'Data tidak ditemukan'
-                ]);
+            // Hapus detail BOM per BOM (bukan hanya ids[0])
+            foreach ($bomIds as $bom) {
+                $db->table('sc_tmp.workingorder_bom_dtl')
+                    ->where('docno', $bom)
+                    ->where('inputby', $nama)
+                    ->delete();
             }
 
 
@@ -5835,6 +6470,7 @@ class Production extends BaseController
         $data['userlogin'] = $nama;
         $data['docnoParam'] = $decoded_docno;
         $data['dtldata'] = $this->m_production->q_trx_workingorder_mst($param)->getRowArray();
+        $data['has_bom_history'] = $this->prod_wo_bom_history_exists(trim((string) $decoded_docno));
         return $this->template->render('production/workingorder/v_detail_workingorder',$data);
     }
 
@@ -6234,6 +6870,11 @@ class Production extends BaseController
             // $row[] = $lm->buildfor;
             $row[] = '<div class="ratakanan">'. number_format($lm->buildfor, 4, '.', ',') . '</div>';
             $row[] = $lm->keterangan;
+
+            $row[] = $lm->inputby;
+            $row[] = $this->prod_fmt_inputdate($lm->inputdate);
+            $row[] = $this->prod_fmt_inputdate($lm->updatedate);
+
             $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
 
 
@@ -7419,17 +8060,16 @@ class Production extends BaseController
 
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
+
+            $row[] = $lm->inputby;
+            $row[] = $this->prod_fmt_inputdate($lm->inputdate);
+            $row[] = $this->prod_fmt_inputdate($lm->updatedate);
+
             $row[] = '<div class="text-center">'
                 . '<span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">'
                 . htmlspecialchars($statusLabel)
                 . '</span>'
                 . '</div>';
-
-            // $row[] = $lm->inputby;
-            // $row[] = $lm->inputdate;
-
-            // $row[] = $lm->updateby;
-            // $row[] = $lm->updatedate;
 
             $data[] = $row;
         }
@@ -8363,6 +9003,263 @@ class Production extends BaseController
         }
 
         return '';
+    }
+
+    /* Format tanggal input untuk kolom list produksi. */
+    private function prod_fmt_inputdate($value, $format = 'd-m-Y')
+    {
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return '';
+        }
+
+        $ts = strtotime($value);
+
+        return $ts ? date($format, $ts) : $value;
+    }
+
+    /* ============================================================
+       LOG / RIWAYAT PERUBAHAN BOM WORKING ORDER
+       ============================================================ */
+
+    /* Cek ketersediaan tabel log. Jika script DDL belum dijalankan,
+       modul WO tetap berjalan seperti biasa (fitur log non-aktif). */
+    private function prod_bom_log_ready()
+    {
+        static $ready = null;
+
+        if ($ready !== null) {
+            return $ready;
+        }
+
+        try {
+            $row = $this->db->query("
+                SELECT to_regclass('sc_log.workingorder_bom_change') AS tbl
+            ")->getRowArray();
+
+            $ready = !empty($row['tbl']);
+        } catch (\Throwable $e) {
+            $ready = false;
+        }
+
+        return $ready;
+    }
+
+    /* Apakah WO sudah punya riwayat perubahan BOM. */
+    private function prod_wo_bom_history_exists($wono)
+    {
+        if (!$this->prod_bom_log_ready()) {
+            return false;
+        }
+
+        try {
+            $row = $this->m_production->q_wo_bom_history_exists($wono)->getRowArray();
+            return ((int) ($row['jml'] ?? 0)) > 0;
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /* Log PENDING terakhir untuk sebuah WO (opsional milik user). */
+    private function prod_wo_bom_log_pending($wono, $inputby = null)
+    {
+        if (!$this->prod_bom_log_ready()) {
+            return null;
+        }
+
+        try {
+            $row = $this->m_production->q_wo_bom_pending($wono, $inputby)->getRowArray();
+            return $row ?: null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /* Tandai log selesai / batal / digantikan. */
+    private function prod_wo_bom_log_mark($id, $status, $nama, $affected = null)
+    {
+        if (!$this->prod_bom_log_ready() || empty($id)) {
+            return;
+        }
+
+        $data = [
+            'status'    => strtoupper(trim((string) $status)),
+            'applyby'   => $nama,
+            'applydate' => date('Y-m-d H:i:s'),
+        ];
+
+        if (is_array($affected)) {
+            $data['affected_count'] = (int) ($affected['total'] ?? 0);
+            $data['affected_list']  = json_encode($affected);
+        }
+
+        $this->db->table('sc_log.workingorder_bom_change')
+            ->where('id', $id)
+            ->update($data);
+    }
+
+    /* Draft turunan aktif (E) — untuk blokir ganti BOM. */
+    private function prod_wo_bom_active_draft_rows($wono)
+    {
+        try {
+            return $this->m_production->q_wo_bom_active_draft($wono)->getResultArray();
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    /* Dokumen turunan yang header-nya akan mengikuti BOM baru. */
+    private function prod_wo_bom_impact_rows($wono, $bomno)
+    {
+        try {
+            return $this->m_production->q_wo_bom_impact($wono, $bomno)->getResultArray();
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    /* Jumlah dokumen turunan aktif (trx / tmp) untuk sebuah WO. */
+    private function prod_wo_has_downstream($wono)
+    {
+        try {
+            $row = $this->m_production->q_wo_has_downstream($wono)->getRowArray();
+            return (int) ($row['total'] ?? 0);
+        } catch (\Throwable $e) {
+            return 0;
+        }
+    }
+
+    /* Penguat: pastikan nmbarang_jadi di tmp WO BOM tidak kosong
+       sebelum trigger memindahkannya ke trx. */
+    private function prod_heal_wo_bom_nmbarang($wono, $nama)
+    {
+        try {
+            $this->db->query("
+                UPDATE sc_tmp.workingorder_bom_mst w
+                SET nmbarang_jadi = COALESCE(
+                        NULLIF(TRIM(w.nmbarang_jadi), ''),
+                        (SELECT NULLIF(TRIM(m.nmbarang), '')
+                           FROM sc_mst.mbarang m
+                          WHERE TRIM(m.idbarang) = TRIM(w.idbarang_jadi)
+                          LIMIT 1),
+                        TRIM(w.idbarang_jadi)
+                    )
+                WHERE TRIM(w.docref) = TRIM(?)
+                  AND TRIM(w.inputby) = TRIM(?)
+                  AND COALESCE(TRIM(w.nmbarang_jadi), '') = ''
+            ", [$wono, $nama]);
+        } catch (\Throwable $e) {
+            // Penguat bersifat opsional; jangan gagalkan final WO.
+        }
+    }
+
+    /* Update header satu tabel turunan (hanya jika status bukan C/E). */
+    private function prod_update_downstream_header($table, array $set, $wono, $bomnoLama, $withUnit = false)
+    {
+        $countRow = $this->db->query("
+            SELECT COUNT(*) AS jml
+              FROM {$table}
+             WHERE TRIM(wono) = TRIM(?)
+               AND TRIM(COALESCE(bomno, '')) = TRIM(?)
+               AND COALESCE(TRIM(status), '') NOT IN ('C', 'E')
+        ", [$wono, $bomnoLama])->getRowArray();
+
+        $count = (int) ($countRow['jml'] ?? 0);
+        if ($count <= 0) {
+            return 0;
+        }
+
+        $cols = ['bomno', 'desc_bom', 'idbarang_jadi', 'nmbarang_jadi', 'buildfor'];
+        if ($withUnit) {
+            $cols[] = 'buildunit';
+        }
+
+        $setSql = implode(', ', array_map(function ($c) {
+            return $c . ' = ?';
+        }, $cols));
+
+        $bind = [];
+        foreach ($cols as $c) {
+            $bind[] = $set[$c] ?? null;
+        }
+        $bind[] = $wono;
+        $bind[] = $bomnoLama;
+
+        $ok = $this->db->query("
+            UPDATE {$table}
+               SET {$setSql}
+             WHERE TRIM(wono) = TRIM(?)
+               AND TRIM(COALESCE(bomno, '')) = TRIM(?)
+               AND COALESCE(TRIM(status), '') NOT IN ('C', 'E')
+        ", $bind);
+
+        if ($ok === false) {
+            throw new \Exception($this->prod_errorDb());
+        }
+
+        return $count;
+    }
+
+    /* Terapkan perubahan header ke seluruh dokumen turunan. */
+    private function prod_apply_wo_bom_downstream($wono, $bomnoLama, $bomnoBaru, $nama)
+    {
+        $wono      = trim((string) $wono);
+        $bomnoLama = trim((string) $bomnoLama);
+        $bomnoBaru = trim((string) $bomnoBaru);
+
+        $result = ['woe' => 0, 'mr' => 0, 'pbp' => 0, 'bpnm' => 0, 'total' => 0];
+
+        if ($wono === '' || $bomnoLama === '' || $bomnoBaru === '') {
+            return $result;
+        }
+
+        $bom = $this->db->query("
+            SELECT TRIM(docno) AS bomno, idbarang_jadi, nmbarang_jadi,
+                   buildfor, buildunit, desc_bom
+              FROM sc_trx.workingorder_bom_mst
+             WHERE TRIM(docref) = TRIM(?)
+               AND TRIM(docno) = TRIM(?)
+             LIMIT 1
+        ", [$wono, $bomnoBaru])->getRowArray();
+
+        if (!$bom) {
+            throw new \Exception('BOM baru ' . $bomnoBaru . ' tidak ditemukan pada WO ' . $wono . '.');
+        }
+
+        $nmJadi = trim((string) ($bom['nmbarang_jadi'] ?? ''));
+
+        if ($nmJadi === '') {
+            $rowBarang = $this->db->query("
+                SELECT TRIM(nmbarang) AS nmbarang
+                  FROM sc_mst.mbarang
+                 WHERE TRIM(idbarang) = TRIM(?)
+                 LIMIT 1
+            ", [trim((string) ($bom['idbarang_jadi'] ?? ''))])->getRowArray();
+
+            $nmJadi = trim((string) ($rowBarang['nmbarang'] ?? ''));
+        }
+
+        if ($nmJadi === '') {
+            $nmJadi = trim((string) ($bom['idbarang_jadi'] ?? ''));
+        }
+
+        $set = [
+            'bomno'         => $bomnoBaru,
+            'desc_bom'      => $bom['desc_bom'] ?? null,
+            'idbarang_jadi' => $bom['idbarang_jadi'] ?? null,
+            'nmbarang_jadi' => $nmJadi,
+            'buildfor'      => $bom['buildfor'] ?? null,
+        ];
+
+        $result['woe']  = $this->prod_update_downstream_header('sc_trx.woe', $set, $wono, $bomnoLama, false);
+        $result['mr']   = $this->prod_update_downstream_header('sc_trx.materialrelease_mst', $set + ['buildunit' => $bom['buildunit'] ?? null], $wono, $bomnoLama, true);
+        $result['pbp']  = $this->prod_update_downstream_header('sc_trx.penerimaanbp_mst', $set + ['buildunit' => $bom['buildunit'] ?? null], $wono, $bomnoLama, true);
+        $result['bpnm'] = $this->prod_update_downstream_header('sc_trx.bpnm_mst', $set + ['buildunit' => $bom['buildunit'] ?? null], $wono, $bomnoLama, true);
+
+        $result['total'] = $result['woe'] + $result['mr'] + $result['pbp'] + $result['bpnm'];
+
+        return $result;
     }
 
     /* Ambil docno draft milik user (authoritative, tidak percaya input client).
@@ -9441,17 +10338,16 @@ class Production extends BaseController
 
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
+
+            $row[] = $lm->inputby;
+            $row[] = $this->prod_fmt_inputdate($lm->inputdate);
+            $row[] = $this->prod_fmt_inputdate($lm->updatedate);
+
             $row[] = '<div class="text-center">'
                 . '<span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">'
                 . htmlspecialchars($statusLabel)
                 . '</span>'
                 . '</div>';
-
-            // $row[] = $lm->inputby;
-            // $row[] = $lm->inputdate;
-
-            // $row[] = $lm->updateby;
-            // $row[] = $lm->updatedate;
 
             $data[] = $row;
         }
@@ -11360,17 +12256,16 @@ class Production extends BaseController
 
             $row[] = $lm->keterangan;
             $row[] = $lm->nmbranch;
+
+            $row[] = $lm->inputby;
+            $row[] = $this->prod_fmt_inputdate($lm->inputdate);
+            $row[] = $this->prod_fmt_inputdate($lm->updatedate);
+
             $row[] = '<div class="text-center">'
                 . '<span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">'
                 . htmlspecialchars($statusLabel)
                 . '</span>'
                 . '</div>';
-
-            // $row[] = $lm->inputby;
-            // $row[] = $lm->inputdate;
-
-            // $row[] = $lm->updateby;
-            // $row[] = $lm->updatedate;
 
             $data[] = $row;
         }

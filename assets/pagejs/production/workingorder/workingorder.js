@@ -63,6 +63,10 @@ function table_workingorder() {
             //Set column definition initialisation properties.
             "columnDefs": [
                 {
+                    "targets": [11, 12, 13], // Input By / Input Date / Update Date
+                    "orderable": false,
+                },
+                {
                     "targets": [-1], //last column
                     "orderable": false, //set not orderable
                 },
@@ -667,11 +671,24 @@ function saveUpdateBOM(docno, buildfor){
             <b>${docno}</b> ?
             <br><br>
             Qty Material, Cost dan WIP akan dihitung ulang.
+            <br><br>
+            <b>Alasan perubahan</b> <span style="color:red;">*</span>
         `,
+        input: 'textarea',
+        inputPlaceholder: 'Tulis alasan ubah Build For (wajib)...',
+        inputAttributes: { maxlength: 500, rows: 3 },
         icon: 'question',
         showCancelButton: true,
         confirmButtonText: 'Ya, Simpan',
-        cancelButtonText: 'Batal'
+        cancelButtonText: 'Batal',
+        preConfirm: (value) => {
+            const v = $.trim(value || '');
+            if (v.length < 5) {
+                Swal.showValidationMessage('Alasan wajib diisi minimal 5 karakter.');
+                return false;
+            }
+            return v;
+        }
     }).then((result)=>{
 
         if(!result.isConfirmed){
@@ -686,7 +703,9 @@ function saveUpdateBOM(docno, buildfor){
 
             data:{
                 docno:docno,
-                buildfor:buildfor
+                buildfor:buildfor,
+                keterangan:result.value,
+                docref: $.trim($('#docno').val() || '')
             },
 
             dataType:'json',
@@ -751,65 +770,162 @@ $(document).on('click', '.btn-delete', function(){
 
 
 function btnDeleteDetail(ids){
-    // const ids = getCheckedDetailIds();
-
-    if(ids === null){
-        Swal.fire({
-            icon: 'warning',
-            title: 'Peringatan',
-            text: 'Pilih BOM yang akan dihapus'
-        });
+    if(ids === null || ids === undefined || ids === ''){
+        Swal.fire({icon:'warning', title:'Peringatan', text:'Pilih BOM yang akan dihapus'});
         return;
     }
 
-    Swal.fire({
-        title: 'Konfirmasi Hapus BOM',
-        html: `
-            Yakin hapus BOM No. <b>${ids.trim()}</b>?<br><br>
-            <span style="color:red;">
-                Seluruh data Material, Cost, dan WIP yang terkait dengan BOM ini
-                akan ikut terhapus dari Work Order.
-            </span>
-        `,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Ya, Hapus',
-        cancelButtonText: 'Batal',
-        reverseButtons: true
-    }).then((result) => {
+    var wono = $.trim($('#docno').val() || '');
 
-        if(!result.isConfirmed) return;
+    $.ajax({
+        url: HOST_URL + 'production/trans/preview_workingorder_bom_change',
+        type: 'POST',
+        data: { ids: ids, docref: wono },
+        dataType: 'json'
+    }).done(function(res){
+        if(!res || !res.status){
+            Swal.fire({icon:'error', title:'Gagal', text:(res && res.message) || 'Gagal memuat dampak perubahan BOM.'});
+            return;
+        }
 
-        $.ajax({
-            url: HOST_URL + 'production/trans/delete_workingorder_detail',
-            type: 'POST',
-            data: { ids: ids },
-            dataType: 'json',
-            success: function(res){
-                if(res.status){
+        if(res.log_ready && res.draft_count > 0){
+            var list = '';
+            (res.drafts || []).forEach(function(d){
+                list += '<li>' + woBomHistoryEsc(d.modul) + ' <b>' + woBomHistoryEsc(d.docno) + '</b> (' + woBomHistoryEsc(d.inputby) + ')</li>';
+            });
 
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil',
-                        text: 'Data berhasil dihapus',
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
-                    reload_table_WOBOMMst()
-                    reload_workingorder_material_dtl();
-                    reload_workingorder_cost_dtl();
-                    reload_workingorder_wip_dtl();
+            Swal.fire({
+                icon: 'warning',
+                title: 'Tidak Dapat Mengganti BOM',
+                html: '<div class="text-start">Masih ada draft transaksi turunan yang belum final:' +
+                      '<ul>' + list + '</ul>Batalkan atau final-kan draft tersebut terlebih dahulu.</div>'
+            });
+            return;
+        }
 
-                }else{
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal',
-                        text: res.message || 'Gagal hapus data'
-                    });
+        if(!res.is_edit){
+            Swal.fire({
+                title: 'Konfirmasi Hapus BOM',
+                html: 'Yakin hapus BOM No. <b>' + woBomHistoryEsc(String(ids).trim()) + '</b>?<br><br>' +
+                      '<span style="color:red;">Seluruh data Material, Cost, dan WIP yang terkait dengan BOM ini akan ikut terhapus dari Work Order.</span>',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal',
+                reverseButtons: true
+            }).then(function(r){
+                if(r.isConfirmed){
+                    doDeleteWorkingOrderBom(ids, '', wono);
                 }
+            });
+            return;
+        }
+
+        var html = '<div class="text-start">' +
+                   '<div>Yakin hapus BOM No. <b>' + woBomHistoryEsc(String(ids).trim()) + '</b>?</div>' +
+                   '<div class="text-danger mt-2">Seluruh data Material, Cost, dan WIP yang terkait dengan BOM ini akan ikut terhapus dari Work Order.</div>' +
+                   woBomImpactHtml(res) +
+                   '<hr><div><b>Alasan ganti BOM</b> <span class="text-danger">*</span></div></div>';
+
+        Swal.fire({
+            title: 'Konfirmasi Hapus / Ganti BOM',
+            html: html,
+            input: 'textarea',
+            inputPlaceholder: 'Tulis alasan penggantian BOM (wajib)...',
+            inputAttributes: { maxlength: 500, rows: 3 },
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Hapus & Ganti',
+            cancelButtonText: 'Batal',
+            reverseButtons: true,
+            preConfirm: function(value){
+                var v = $.trim(value || '');
+                if(v.length < 5){
+                    Swal.showValidationMessage('Alasan wajib diisi minimal 5 karakter.');
+                    return false;
+                }
+                return v;
+            }
+        }).then(function(result){
+            if(result.isConfirmed){
+                doDeleteWorkingOrderBom(ids, result.value, wono);
             }
         });
+    }).fail(function(xhr){
+        console.error(xhr.responseText);
+        Swal.fire({icon:'error', title:'Server Error', text:'Gagal memuat dampak perubahan BOM.'});
+    });
+}
 
+/* HTML tabel dampak perubahan BOM (dipakai popup hapus & final) */
+function woBomImpactHtml(res){
+    var html = '';
+
+    if(res.impact_count > 0){
+        html += '<hr><div><b>Transaksi turunan yang akan mengikuti BOM baru (header saja):</b></div>';
+        html += '<div style="max-height:220px;overflow:auto;"><table class="table table-sm table-bordered text-start" style="font-size:12px;">' +
+                '<thead><tr><th>Modul</th><th>Docno</th><th>Status</th><th>BOM</th><th>Barang Jadi</th><th>Qty</th></tr></thead><tbody>';
+
+        (res.impacts || []).forEach(function(r){
+            html += '<tr><td>' + woBomHistoryEsc(r.modul) + '</td>' +
+                    '<td>' + woBomHistoryEsc(r.docno) + '</td>' +
+                    '<td>' + woBomHistoryBadge(r.status) + '</td>' +
+                    '<td>' + woBomHistoryEsc(r.bomno || '-') + '</td>' +
+                    '<td>' + woBomHistoryEsc(r.idbarang_jadi || '-') + '</td>' +
+                    '<td>' + woBomHistoryEsc(r.buildfor || '-') + '</td></tr>';
+        });
+
+        html += '</tbody></table></div>';
+
+        if(res.has_pbp_final){
+            html += '<div class="alert alert-warning mt-2 mb-0" style="font-size:12px;">Penerimaan BP sudah FINAL. Detail barang jadi, stok, dan jurnal <b>tidak</b> berubah; hanya header yang diperbarui.</div>';
+        }
+        if(res.has_printed){
+            html += '<div class="alert alert-info mt-2 mb-0" style="font-size:12px;">Ada dokumen berstatus PRINTED. Hasil cetak lama akan berbeda dengan data header terbaru.</div>';
+        }
+    } else {
+        html += '<hr><div class="text-muted">Tidak ada transaksi turunan aktif yang terpengaruh.</div>';
+    }
+
+    return html;
+}
+
+function doDeleteWorkingOrderBom(ids, keterangan, wono){
+    $.ajax({
+        url: HOST_URL + 'production/trans/delete_workingorder_detail',
+        type: 'POST',
+        data: { ids: ids, keterangan: keterangan, docref: (wono || '') },
+        dataType: 'json',
+        success: function(res){
+            if(res.status){
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil',
+                    text: res.message || 'Data berhasil dihapus',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+
+                reload_table_WOBOMMst();
+                reload_workingorder_material_dtl();
+                reload_workingorder_cost_dtl();
+                reload_workingorder_wip_dtl();
+            }else{
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: res.message || 'Gagal hapus data'
+                });
+            }
+        },
+        error: function(xhr){
+            console.error(xhr.responseText);
+            Swal.fire({
+                icon: 'error',
+                title: 'Server Error',
+                text: 'Gagal menghapus BOM.'
+            });
+        }
     });
 }
 
@@ -2496,3 +2612,110 @@ $(document).ready(function () {
     tabletmpWorkingOrderWip();
 
 });
+
+/* =========================================================
+ * KONFIRMASI SIMPAN FINAL WO
+ * Menampilkan dampak ganti BOM sebelum submit final.
+ * ========================================================= */
+function confirmFinalWorkingOrder(ev){
+    if(ev){
+        ev.preventDefault();
+    }
+
+    var docno = $.trim($('#docno').val() || '');
+
+    if(!docno){
+        Swal.fire({icon:'warning', title:'Peringatan', text:'Nomor WO tidak ditemukan.'});
+        return false;
+    }
+
+    $.ajax({
+        url: HOST_URL + 'production/trans/preview_workingorder_bom_change',
+        type: 'POST',
+        data: { docno: docno },
+        dataType: 'json'
+    }).done(function(res){
+        if(!res || !res.status){
+            Swal.fire({
+                icon:'error',
+                title:'Gagal',
+                text:(res && res.message) || 'Gagal memvalidasi perubahan BOM.'
+            });
+            return;
+        }
+
+        if(!res.has_pending){
+            if(confirm('Simpan Data?')){
+                submitWorkingOrderFinal();
+            }
+            return;
+        }
+
+        if(!res.bomno_baru){
+            Swal.fire({
+                icon:'warning',
+                title:'BOM Baru Belum Dipilih',
+                text:'Tarik BOM pengganti terlebih dahulu sebelum Simpan Final.'
+            });
+            return;
+        }
+
+        var html = '<div class="text-start">' +
+                   '<div>Akan menyimpan FINAL WO <b>' + woBomHistoryEsc(res.wono) + '</b>.</div>' +
+                   '<div class="mt-2">Perubahan BOM: <b>' + woBomHistoryEsc(res.bomno_lama || '-') +
+                   '</b> &rarr; <b>' + woBomHistoryEsc(res.bomno_baru || '-') + '</b></div>' +
+                   woBomImpactHtml(res) +
+                   '<div class="alert alert-info mt-2 mb-0" style="font-size:12px;">Detail transaksi, stok, dan jurnal tidak berubah. Hanya header yang diperbarui.</div>' +
+                   '</div>';
+
+        Swal.fire({
+            title: 'Konfirmasi Simpan Final',
+            html: html,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Simpan Final',
+            cancelButtonText: 'Batal'
+        }).then(function(result){
+            if(!result.isConfirmed){
+                return;
+            }
+
+            if(res.has_pbp_final){
+                Swal.fire({
+                    title: 'Peringatan Penerimaan BP',
+                    html: '<div class="text-start">Penerimaan BP sudah FINAL. Detail barang jadi, stok, dan jurnal <b>tidak</b> berubah. Header akan menunjuk barang jadi baru. Lanjutkan?</div>',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, Lanjutkan',
+                    cancelButtonText: 'Batal'
+                }).then(function(r2){
+                    if(r2.isConfirmed){
+                        submitWorkingOrderFinal();
+                    }
+                });
+            } else {
+                submitWorkingOrderFinal();
+            }
+        });
+    }).fail(function(xhr){
+        console.error(xhr.responseText);
+        Swal.fire({icon:'error', title:'Server Error', text:'Gagal memvalidasi perubahan BOM.'});
+    });
+
+    return false;
+}
+
+function submitWorkingOrderFinal(){
+    var form = $('#formStandarCostMst')[0];
+    if(!form){
+        return;
+    }
+
+    // Pertahankan validasi HTML5 (required) sebelum submit programatik
+    if(typeof form.reportValidity === 'function' && !form.reportValidity()){
+        return;
+    }
+
+    $('#formStandarCostMst button[type="submit"]').prop('disabled', true);
+    form.submit();
+}

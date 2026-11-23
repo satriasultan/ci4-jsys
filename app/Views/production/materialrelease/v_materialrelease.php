@@ -217,12 +217,10 @@
                         
                         <th>Description</th>
                         <th>Cost Center</th>
-                        <th>Status</th>
-
-                        <!-- <th>Input By</th>
+                        <th>Input By</th>
                         <th>Input Date</th>
-                        <th>Update By</th>
-                        <th>Update Date</th> -->
+                        <th>Update Date</th>
+                        <th>Status</th>
                     </tr>
                     </thead>
                     <tbody>

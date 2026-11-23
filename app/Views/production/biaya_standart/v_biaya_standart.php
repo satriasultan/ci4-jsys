@@ -219,9 +219,8 @@
                         
                         <th>Input By</th>
                         <th>Input Date</th>
-                        
-                        <th>Update By</th>
                         <th>Update Date</th>
+
                         <th>Status</th>
                     </tr>
                     </thead>

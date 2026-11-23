@@ -81,6 +81,9 @@
                                         <th style="min-width:150px; text-align:center; vertical-align:middle;">No. Batch Spec</th>
                                         <th style="min-width:100px; text-align:center; vertical-align:middle;">Qty</th>
                                         <th style="min-width:400px; text-align:center; vertical-align:middle;">Remark</th>
+                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Input By</th>
+                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Input Date</th>
+                                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Update Date</th>
                                         <th style="min-width:80px; text-align:center; vertical-align:middle;">Status</th>
                                     </tr>
                                 </thead>

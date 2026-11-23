@@ -750,3 +750,37 @@ AFTER UPDATE
 ON sc_trx.workingorder_mst
 FOR EACH ROW
 EXECUTE FUNCTION sc_trx.tr_mst_workingorder_mst();
+
+-- =========================================================
+-- LOG PERUBAHAN BOM PADA WORKING ORDER
+-- Dicatat saat BOM dihapus/diganti di tmp dan diterapkan
+-- saat WO FINAL (E -> F). Dipakai juga untuk riwayat BOM.
+-- Jalankan blok ini sekali (idempotent) sebelum memakai fitur.
+-- =========================================================
+CREATE TABLE IF NOT EXISTS sc_log.workingorder_bom_change
+(
+    id               bigserial PRIMARY KEY,
+    docno            character(30) NOT NULL,
+    jenis            character(20) NOT NULL DEFAULT 'GANTI_BOM',
+    bomno_lama       character(30),
+    bomno_baru       character(30),
+    bomno_referensi  character(30),
+    idbarang_lama    character(50),
+    idbarang_baru    character(50),
+    nmbarang_baru    text,
+    buildfor_lama    numeric(18,4),
+    buildfor_baru    numeric(18,4),
+    buildunit_baru   character(30),
+    desc_bom_baru    text,
+    keterangan       text,
+    status           character(12) NOT NULL DEFAULT 'PENDING',
+    affected_count   integer NOT NULL DEFAULT 0,
+    affected_list    text,
+    inputby          varchar(50),
+    inputdate        timestamp without time zone,
+    applyby          varchar(50),
+    applydate        timestamp without time zone
+);
+
+CREATE INDEX IF NOT EXISTS ix_wobomchange_docno
+    ON sc_log.workingorder_bom_change (docno, status);

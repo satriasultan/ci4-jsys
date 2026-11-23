@@ -1445,6 +1445,15 @@
                 </div>
                 <!-- TAB MATERIAL -->
                 <div class="card-body p-4">
+                    <?php if (!empty($has_bom_history) && !empty($docnoParam)): ?>
+                        <div class="d-flex justify-content-end mb-2">
+                            <button type="button"
+                                    class="btn btn-primary"
+                                    onclick="openWoBomHistory('<?= esc(trim($docnoParam), 'js') ?>')">
+                                <i class="fa fa-history"></i> Riwayat BOM
+                            </button>
+                        </div>
+                    <?php endif; ?>
                     <div class="table-responsive">
                         <table id="trx_workingorderbommst"
                                 class="table table-bordered table-striped table-hover align-middle">
@@ -1757,6 +1766,7 @@
 
 
 
+<script type="application/javascript" src="<?= base_url('assets/pagejs/production/workingorder/workingorder_history.js') ?>"></script>
 <script type="application/javascript" src="<?= base_url('assets/pagejs/production/workingorder/workingorder_trx.js') ?>"></script>
 <script type="text/javascript">
     $(function() {

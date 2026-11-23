@@ -1448,6 +1448,15 @@
                 </div>
                 <!-- TAB MATERIAL -->
                 <div class="card-body p-4">
+                    <?php if (!empty($has_bom_history) && !empty($dtldata['docno'])): ?>
+                        <div class="d-flex justify-content-end mb-2">
+                            <button type="button"
+                                    class="btn btn-primary"
+                                    onclick="openWoBomHistory('<?= esc(trim($dtldata['docno']), 'js') ?>')">
+                                <i class="fa fa-history"></i> Riwayat BOM
+                            </button>
+                        </div>
+                    <?php endif; ?>
                     <div class="table-responsive">
                         <table id="tmp_workingorderbommst"
                                 class="table table-bordered table-striped table-hover align-middle">
@@ -1685,7 +1694,7 @@
                     <?php if ($typeform != 'DETAIL' && $dtldata != null): ?>
 
                         <button type="submit"
-                                onclick="return confirm('Simpan Data?')"
+                                onclick="return confirmFinalWorkingOrder(event)"
                                 class="btn btn-success btn-lg float-right wo-global-action">
 
                             <i class="fa fa-save"></i>
@@ -1771,6 +1780,7 @@
 
 
 
+<script type="application/javascript" src="<?= base_url('assets/pagejs/production/workingorder/workingorder_history.js') ?>"></script>
 <script type="application/javascript" src="<?= base_url('assets/pagejs/production/workingorder/workingorder.js') ?>"></script>
 <script type="text/javascript">
     /* ==========================================================

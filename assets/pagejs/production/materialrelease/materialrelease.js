@@ -63,6 +63,10 @@ function table_materialrelease() {
             //Set column definition initialisation properties.
             "columnDefs": [
                 {
+                    "targets": [10, 11, 12], // Input By / Input Date / Update Date
+                    "orderable": false,
+                },
+                {
                     "targets": [-1], //last column
                     "orderable": false, //set not orderable
                 },
