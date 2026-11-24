@@ -41,6 +41,16 @@
 <?php /*<button onclick="play()">Press Here!</button> */ ?>
 
 <?php echo $message;?>
+<?php if (session()->getFlashdata('proforma_error')): ?>
+    <div class="alert alert-danger">
+        <?= esc(session()->getFlashdata('proforma_error')) ?>
+    </div>
+<?php endif; ?>
+<?php if (session()->getFlashdata('proforma_success')): ?>
+    <div class="alert alert-success">
+        <?= esc(session()->getFlashdata('proforma_success')) ?>
+    </div>
+<?php endif; ?>
 <?php echo $showUnfinish; ?>
 <div class="row">
     <div class="col-12 col-sm-12">

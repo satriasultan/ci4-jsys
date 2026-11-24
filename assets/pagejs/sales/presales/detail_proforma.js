@@ -147,6 +147,7 @@ function documentReadable(){
         },
         complete: function(){
             $("#loadMe").modal("hide");
+            formatProformaSummary();
         },
         error: function(){
             console.log("Failed To Loading Data");
@@ -155,8 +156,8 @@ function documentReadable(){
     });
 }
 
-$(document).on('keyup blur change', '.jtsseparator', function () {
-    _jtsseparator(this);
+$(document).on('keyup blur change', '.jaccseparator', function () {
+    jaccseparator(this, { maxDecimals: 4 });
 });
 
 
@@ -875,7 +876,7 @@ $(document).on('input', '.form-control', function () {
         let qty = parseFloat($('#qty_' + id).val().replace(/\./g, '').replace(',', '.')) || 0;
         let price = parseFloat($('#price_' + id).val().replace(/\./g, '').replace(',', '.')) || 0;
         let amount = qty * price;    
-        $('#amount_' + id).val(amount.toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+        $('#amount_' + id).val(jaccformat(amount, { maxDecimals: 4 }));
     }
 });
 
@@ -915,11 +916,19 @@ function calculateSummary() {
     $("#ttlprice").val(formatUI(ttl));
 }
 
-// Pakai _jtsseparator tapi dibuat versi helper
+// Pakai jaccseparator versi helper
 function formatUI(val) {
-    let obj = { value: (val || 0).toFixed(2).replace(".", ",") }; 
-    _jtsseparator(obj);
-    return obj.value;
+    return jaccformat(val, { maxDecimals: 4 });
+}
+
+function formatProformaSummary() {
+    ['#grosssales', '#downpayment', '#netsales', '#taxbasis', '#vat', '#pph22', '#ttlprice']
+        .forEach(function(selector) {
+            var el = $(selector)[0];
+            if (!el) return;
+            el.value = jaccformat(el.value, { maxDecimals: 4 });
+            jaccseparator(el, { maxDecimals: 4 });
+        });
 }
 
 // trigger saat load tabel atau ubah DP
@@ -929,6 +938,7 @@ $(document).on("input", "#downpayment", function() {
 
 // juga panggil setelah DataTable selesai redraw
 $("#t_proforma_dtl").on("draw.dt", function() {
+    formatProformaSummary();
     calculateSummary();
 });
 
@@ -950,5 +960,6 @@ $(document).ready(function() {
 
     
     tableProformaDtl();
+    if (typeof formatProformaSummary === 'function') formatProformaSummary();
 
 });

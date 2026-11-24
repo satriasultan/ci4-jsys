@@ -123,7 +123,7 @@ class PostSales extends BaseController
     function list_salesorderexternal(){
         $list = $this->m_postsales->get_t_front_salesorderexternal_view();
         $data = array();
-        $no = $_POST['start'];
+        $no = isset($_POST['start']) ? (int) $_POST['start'] : 0;
         foreach ($list as $lm) {
             $no++;
             $row = array();
@@ -232,7 +232,7 @@ class PostSales extends BaseController
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => isset($_POST['draw']) ? (int) $_POST['draw'] : 0,
             "recordsTotal" => $this->m_postsales->t_front_salesorderexternal_view_count_all(),
             "recordsFiltered" => $this->m_postsales->t_front_salesorderexternal_view_count_filtered(),
             "data" => $data,
@@ -318,6 +318,7 @@ class PostSales extends BaseController
             }
 
         }
+
 
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_postsales->q_salesorderexternal_master_temp($param)->getRowArray();
@@ -727,7 +728,7 @@ class PostSales extends BaseController
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_postsales->get_t_salesorderexternal_dtl_temp_view($docno);
         $data = array();
-        $no = $_POST['start'];
+        $no = isset($_POST['start']) ? (int) $_POST['start'] : 0;
         foreach ($list as $lm) {
             $no++;
             $row = array();
@@ -841,7 +842,7 @@ class PostSales extends BaseController
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => isset($_POST['draw']) ? (int) $_POST['draw'] : 0,
             "recordsTotal" => $this->m_postsales->t_salesorderexternal_dtl_temp_view_count_all($docno),
             "recordsFiltered" => $this->m_postsales->t_salesorderexternal_dtl_temp_view_count_filtered($docno),
             "data" => $data,
@@ -853,7 +854,7 @@ class PostSales extends BaseController
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_postsales->get_t_salesorderexternal_dtl_view($docno);
         $data = array();
-        $no = $_POST['start'];
+        $no = isset($_POST['start']) ? (int) $_POST['start'] : 0;
         foreach ($list as $lm) {
             $no++;
             $row = array();
@@ -967,7 +968,7 @@ class PostSales extends BaseController
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => isset($_POST['draw']) ? (int) $_POST['draw'] : 0,
             "recordsTotal" => $this->m_postsales->t_salesorderexternal_dtl_view_count_all($docno),
             "recordsFiltered" => $this->m_postsales->t_salesorderexternal_dtl_view_count_filtered($docno),
             "data" => $data,
@@ -1554,7 +1555,7 @@ class PostSales extends BaseController
     function list_salesorder(){
         $list = $this->m_postsales->get_t_front_salesorder_view();
         $data = array();
-        $no = $_POST['start'];
+        $no = isset($_POST['start']) ? (int) $_POST['start'] : 0;
 
 
         $kmenu = 'I.S.B.1';
@@ -1767,7 +1768,7 @@ class PostSales extends BaseController
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => isset($_POST['draw']) ? (int) $_POST['draw'] : 0,
             "recordsTotal" => $this->m_postsales->t_front_salesorder_view_count_all(),
             "recordsFiltered" => $this->m_postsales->t_front_salesorder_view_count_filtered(),
             "data" => $data,
@@ -1779,7 +1780,7 @@ class PostSales extends BaseController
     function list_salesorder_apprv(){
         $list = $this->m_postsales->get_t_front_salesorder_apprv_view();
         $data = array();
-        $no = $_POST['start'];
+        $no = isset($_POST['start']) ? (int) $_POST['start'] : 0;
 
 
         $kmenu = 'I.S.B.1';
@@ -1965,7 +1966,7 @@ class PostSales extends BaseController
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => isset($_POST['draw']) ? (int) $_POST['draw'] : 0,
             "recordsTotal" => $this->m_postsales->t_front_salesorder_apprv_view_count_all(),
             "recordsFiltered" => $this->m_postsales->t_front_salesorder_apprv_view_count_filtered(),
             "data" => $data,
@@ -2054,6 +2055,7 @@ class PostSales extends BaseController
             }
 
         }
+
 
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_postsales->q_salesorder_master_temp($param)->getRowArray();
@@ -2528,9 +2530,9 @@ class PostSales extends BaseController
 
         // Update header SalesOrder
         $builderHeader->where('docno', $docno)->where('inputby', $nama)->update([
-            'dpp' => number_format($dpp, 2, '.', ''),
-            'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
-            'total' => number_format($total, 2, '.', ''),
+            'dpp' => number_format($dpp, 4, '.', ''),
+            'jumlahpajak' => number_format($jumlahPajak, 4, '.', ''),
+            'total' => number_format($total, 4, '.', ''),
             'updateby' => $nama,
             'updatedate' => date('Y-m-d H:i:s')
         ]);
@@ -2911,9 +2913,9 @@ class PostSales extends BaseController
             $builderHeader
                 ->where('docno', $docno)
                 ->update([
-                    'dpp'         => number_format($dpp, 2, '.', ''),
-                    'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
-                    'total'       => number_format($total, 2, '.', ''),
+                    'dpp'         => number_format($dpp, 4, '.', ''),
+                    'jumlahpajak' => number_format($jumlahPajak, 4, '.', ''),
+                    'total'       => number_format($total, 4, '.', ''),
                     'updateby'    => $nama,
                     'updatedate'  => date('Y-m-d H:i:s')
                 ]);
@@ -2940,7 +2942,7 @@ class PostSales extends BaseController
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_postsales->get_t_salesorder_dtl_temp_view($docno);
         $data = array();
-        $no = $_POST['start'];
+        $no = isset($_POST['start']) ? (int) $_POST['start'] : 0;
         foreach ($list as $lm) {
             $no++;
             $row = array();
@@ -2954,21 +2956,21 @@ class PostSales extends BaseController
             $row[] = $lm->idgudang;
             $row[] = $lm->idspec;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->harga, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 0, '.', ',') . '% </div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->harga, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 4, '.', ',') . '% </div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 0, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 0, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 4, '.', ',') . '</div>';
             $row[] = $lm->bomdesc;
             // $row[] = $lm->descriptionpp;
             $data[] = $row;
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => isset($_POST['draw']) ? (int) $_POST['draw'] : 0,
             "recordsTotal" => $this->m_postsales->t_salesorder_dtl_temp_view_count_all($docno),
             "recordsFiltered" => $this->m_postsales->t_salesorder_dtl_temp_view_count_filtered($docno),
             "data" => $data,
@@ -2980,7 +2982,7 @@ class PostSales extends BaseController
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_postsales->get_t_salesorder_dtl_view($docno);
         $data = array();
-        $no = $_POST['start'];
+        $no = isset($_POST['start']) ? (int) $_POST['start'] : 0;
         foreach ($list as $lm) {
             $no++;
             $row = array();
@@ -2994,14 +2996,14 @@ class PostSales extends BaseController
             $row[] = $lm->idgudang;
             $row[] = $lm->idspec;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->harga, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->harga, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 4, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 0, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 0, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 4, '.', ',') . '</div>';
             $row[] = $lm->bomdesc;
             // $row[] = $lm->descriptionpp;
             $data[] = $row;
@@ -3009,7 +3011,7 @@ class PostSales extends BaseController
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => isset($_POST['draw']) ? (int) $_POST['draw'] : 0,
             "recordsTotal" => $this->m_postsales->t_salesorder_dtl_view_count_all($docno),
             "recordsFiltered" => $this->m_postsales->t_salesorder_dtl_view_count_filtered($docno),
             "data" => $data,
@@ -3472,7 +3474,7 @@ class PostSales extends BaseController
     function list_deliveryorder(){
         $list = $this->m_postsales->get_t_front_deliveryorder_view();
         $data = array();
-        $no = $_POST['start'];
+        $no = isset($_POST['start']) ? (int) $_POST['start'] : 0;
 
 
         $kmenu = 'I.S.B.2';
@@ -3643,7 +3645,7 @@ class PostSales extends BaseController
                     break;
             }
 
-            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
+            
 
             $row[] = $lm->kdcust;
             $row[] = $lm->nmcust;
@@ -3680,12 +3682,14 @@ class PostSales extends BaseController
 
             $row[] = $lm->nmbranch;
 
+            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
+
 
             $data[] = $row;
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => isset($_POST['draw']) ? (int) $_POST['draw'] : 0,
             "recordsTotal" => $this->m_postsales->t_front_deliveryorder_view_count_all(),
             "recordsFiltered" => $this->m_postsales->t_front_deliveryorder_view_count_filtered(),
             "data" => $data,
@@ -3697,7 +3701,7 @@ class PostSales extends BaseController
     function list_deliveryorder_apprv(){
         $list = $this->m_postsales->get_t_front_deliveryorder_apprv_view();
         $data = array();
-        $no = $_POST['start'];
+        $no = isset($_POST['start']) ? (int) $_POST['start'] : 0;
 
 
         $kmenu = 'I.S.B.2';
@@ -3845,7 +3849,7 @@ class PostSales extends BaseController
                     break;
             }
 
-            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
+            
 
             $row[] = $lm->kdcust;
             $row[] = $lm->nmcust;
@@ -3882,12 +3886,14 @@ class PostSales extends BaseController
 
             $row[] = $lm->nmbranch;
 
+            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
+
 
             $data[] = $row;
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => isset($_POST['draw']) ? (int) $_POST['draw'] : 0,
             "recordsTotal" => $this->m_postsales->t_front_deliveryorder_apprv_view_count_all(),
             "recordsFiltered" => $this->m_postsales->t_front_deliveryorder_apprv_view_count_filtered(),
             "data" => $data,
@@ -3976,6 +3982,7 @@ class PostSales extends BaseController
             }
 
         }
+
 
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_postsales->q_deliveryorder_master_temp($param)->getRowArray();
@@ -4596,7 +4603,7 @@ class PostSales extends BaseController
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_postsales->get_t_deliveryorder_dtl_temp_view($docno);
         $data = array();
-        $no = $_POST['start'];
+        $no = isset($_POST['start']) ? (int) $_POST['start'] : 0;
         foreach ($list as $lm) {
             $no++;
             $row = array();
@@ -4611,21 +4618,21 @@ class PostSales extends BaseController
             $row[] = $lm->idgudang;
             // $row[] = $lm->idspec;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 0, '.', ',') . '</div>';
-            // $row[] = '<div class="ratakanan">'. number_format($lm->harga, 0, '.', ',') . '</div>';
-            // $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 0, '.', ',') . '% </div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->harga, 4, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 4, '.', ',') . '% </div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 0, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 0, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 0, '.', ',') . '</div>';
-            // $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 4, '.', ',') . '</div>';
             // $row[] = $lm->description;
             // $row[] = $lm->descriptionpp;
             $data[] = $row;
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => isset($_POST['draw']) ? (int) $_POST['draw'] : 0,
             "recordsTotal" => $this->m_postsales->t_deliveryorder_dtl_temp_view_count_all($docno),
             "recordsFiltered" => $this->m_postsales->t_deliveryorder_dtl_temp_view_count_filtered($docno),
             "data" => $data,
@@ -4637,7 +4644,7 @@ class PostSales extends BaseController
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_postsales->get_t_deliveryorder_dtl_view($docno);
         $data = array();
-        $no = $_POST['start'];
+        $no = isset($_POST['start']) ? (int) $_POST['start'] : 0;
         foreach ($list as $lm) {
             $no++;
             $row = array();
@@ -4652,14 +4659,14 @@ class PostSales extends BaseController
             $row[] = $lm->idgudang;
             // $row[] = $lm->idspec;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 0, '.', ',') . '</div>';
-            // $row[] = '<div class="ratakanan">'. number_format($lm->harga, 0, '.', ',') . '</div>';
-            // $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->harga, 4, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 4, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 0, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 0, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 0, '.', ',') . '</div>';
-            // $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 4, '.', ',') . '</div>';
             // $row[] = $lm->description;
             // $row[] = $lm->descriptionpp;
             $data[] = $row;
@@ -4667,7 +4674,7 @@ class PostSales extends BaseController
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => isset($_POST['draw']) ? (int) $_POST['draw'] : 0,
             "recordsTotal" => $this->m_postsales->t_deliveryorder_dtl_view_count_all($docno),
             "recordsFiltered" => $this->m_postsales->t_deliveryorder_dtl_view_count_filtered($docno),
             "data" => $data,
@@ -5466,7 +5473,7 @@ class PostSales extends BaseController
     function list_suratjalan(){
         $list = $this->m_postsales->get_t_front_suratjalan_view();
         $data = array();
-        $no = $_POST['start'];
+        $no = isset($_POST['start']) ? (int) $_POST['start'] : 0;
 
 
         $kmenu = 'I.S.B.3';
@@ -5628,7 +5635,7 @@ class PostSales extends BaseController
                     break;
             }
 
-            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
+            
 
             $row[] = $lm->kdcust;
             $row[] = $lm->nmcust;
@@ -5665,12 +5672,14 @@ class PostSales extends BaseController
 
             $row[] = $lm->nmbranch;
 
+            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
+
 
             $data[] = $row;
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => isset($_POST['draw']) ? (int) $_POST['draw'] : 0,
             "recordsTotal" => $this->m_postsales->t_front_suratjalan_view_count_all(),
             "recordsFiltered" => $this->m_postsales->t_front_suratjalan_view_count_filtered(),
             "data" => $data,
@@ -5682,7 +5691,7 @@ class PostSales extends BaseController
     function list_suratjalan_apprv(){
         $list = $this->m_postsales->get_t_front_suratjalan_apprv_view();
         $data = array();
-        $no = $_POST['start'];
+        $no = isset($_POST['start']) ? (int) $_POST['start'] : 0;
 
 
         $kmenu = 'I.S.B.3';
@@ -5830,7 +5839,7 @@ class PostSales extends BaseController
                     break;
             }
 
-            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
+            
 
             $row[] = $lm->kdcust;
             $row[] = $lm->nmcust;
@@ -5867,12 +5876,14 @@ class PostSales extends BaseController
 
             $row[] = $lm->nmbranch;
 
+            $row[] = '<div class="text-center"><span style="font-size:12px" class="badge ' . $badgeClass . ' w-100">' . htmlspecialchars($status) . '</span></div>';
+
 
             $data[] = $row;
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => isset($_POST['draw']) ? (int) $_POST['draw'] : 0,
             "recordsTotal" => $this->m_postsales->t_front_suratjalan_apprv_view_count_all(),
             "recordsFiltered" => $this->m_postsales->t_front_suratjalan_apprv_view_count_filtered(),
             "data" => $data,
@@ -5961,6 +5972,7 @@ class PostSales extends BaseController
             }
 
         }
+
 
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_postsales->q_suratjalan_master_temp($param)->getRowArray();
@@ -6581,7 +6593,7 @@ class PostSales extends BaseController
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_postsales->get_t_suratjalan_dtl_temp_view($docno);
         $data = array();
-        $no = $_POST['start'];
+        $no = isset($_POST['start']) ? (int) $_POST['start'] : 0;
         foreach ($list as $lm) {
             $no++;
             $row = array();
@@ -6596,21 +6608,21 @@ class PostSales extends BaseController
             $row[] = $lm->idgudang;
             // $row[] = $lm->idspec;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 0, '.', ',') . '</div>';
-            // $row[] = '<div class="ratakanan">'. number_format($lm->harga, 0, '.', ',') . '</div>';
-            // $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 0, '.', ',') . '% </div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->harga, 4, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 4, '.', ',') . '% </div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 0, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 0, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 0, '.', ',') . '</div>';
-            // $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 4, '.', ',') . '</div>';
             // $row[] = $lm->description;
             // $row[] = $lm->descriptionpp;
             $data[] = $row;
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => isset($_POST['draw']) ? (int) $_POST['draw'] : 0,
             "recordsTotal" => $this->m_postsales->t_suratjalan_dtl_temp_view_count_all($docno),
             "recordsFiltered" => $this->m_postsales->t_suratjalan_dtl_temp_view_count_filtered($docno),
             "data" => $data,
@@ -6622,7 +6634,7 @@ class PostSales extends BaseController
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_postsales->get_t_suratjalan_dtl_view($docno);
         $data = array();
-        $no = $_POST['start'];
+        $no = isset($_POST['start']) ? (int) $_POST['start'] : 0;
         foreach ($list as $lm) {
             $no++;
             $row = array();
@@ -6637,14 +6649,14 @@ class PostSales extends BaseController
             $row[] = $lm->idgudang;
             // $row[] = $lm->idspec;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 0, '.', ',') . '</div>';
-            // $row[] = '<div class="ratakanan">'. number_format($lm->harga, 0, '.', ',') . '</div>';
-            // $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->harga, 4, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 4, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 0, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 0, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 0, '.', ',') . '</div>';
-            // $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 0, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 4, '.', ',') . '</div>';
             // $row[] = $lm->description;
             // $row[] = $lm->descriptionpp;
             $data[] = $row;
@@ -6652,7 +6664,7 @@ class PostSales extends BaseController
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => isset($_POST['draw']) ? (int) $_POST['draw'] : 0,
             "recordsTotal" => $this->m_postsales->t_suratjalan_dtl_view_count_all($docno),
             "recordsFiltered" => $this->m_postsales->t_suratjalan_dtl_view_count_filtered($docno),
             "data" => $data,
@@ -7130,7 +7142,7 @@ class PostSales extends BaseController
     function list_penjualan(){
         $list = $this->m_postsales->get_t_front_penjualan_view();
         $data = array();
-        $no = $_POST['start'];
+        $no = isset($_POST['start']) ? (int) $_POST['start'] : 0;
 
 
         $kmenu = 'I.S.B.4';
@@ -7321,7 +7333,7 @@ class PostSales extends BaseController
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => isset($_POST['draw']) ? (int) $_POST['draw'] : 0,
             "recordsTotal" => $this->m_postsales->t_front_penjualan_view_count_all(),
             "recordsFiltered" => $this->m_postsales->t_front_penjualan_view_count_filtered(),
             "data" => $data,
@@ -7333,7 +7345,7 @@ class PostSales extends BaseController
     function list_penjualan_apprv(){
         $list = $this->m_postsales->get_t_front_penjualan_apprv_view();
         $data = array();
-        $no = $_POST['start'];
+        $no = isset($_POST['start']) ? (int) $_POST['start'] : 0;
 
 
         $kmenu = 'I.S.B.4';
@@ -7523,7 +7535,7 @@ class PostSales extends BaseController
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => isset($_POST['draw']) ? (int) $_POST['draw'] : 0,
             "recordsTotal" => $this->m_postsales->t_front_penjualan_apprv_view_count_all(),
             "recordsFiltered" => $this->m_postsales->t_front_penjualan_apprv_view_count_filtered(),
             "data" => $data,
@@ -7613,6 +7625,12 @@ class PostSales extends BaseController
 
         }
 
+
+        $flashError = session()->getFlashdata('penjualan_error');
+        if (!empty($flashError)) {
+            $data['message'] = "<div class='alert alert-danger'>" . esc($flashError) . "</div>" . ($data['message'] ?? '');
+        }
+
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_postsales->q_penjualan_master_temp($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
@@ -7698,6 +7716,70 @@ class PostSales extends BaseController
             'konfigurasi_umum' => $konfigurasiUmum,
             'currcode'      => $currcode,
             'idtax'         => $idtax,
+        ]);
+    }
+
+    /**
+     * Daftar SO untuk menu PENJUALAN.
+     *
+     * Berbeda dari api/globalmodule/list_so yang memfilter dari potongan suffix
+     * docno (2 huruf setelah slash terakhir), method ini memfilter berdasarkan
+     * kolom sc_trx.salesorder.cabang (idbranch). Dengan begitu SO yang suffix-nya
+     * diubah menjadi angka (mis. SOF/2611/000001) tetap bisa ditarik selama
+     * cabangnya sama dengan cabang header Penjualan.
+     */
+    public function list_so_penjualan()
+    {
+        $search   = strtoupper(trim((string) $this->request->getPost('_search_')));
+        $branchId = trim((string) $this->request->getPost('_branchid_'));
+        $cust     = trim((string) $this->request->getPost('_paramglobalcust_'));
+        $kodeSO   = trim((string) $this->request->getPost('_paramglobal_'));
+
+        // Escape kutip tunggal (pola query q_so() memakai string parameter).
+        $searchEsc = str_replace("'", "''", $search);
+        $branchEsc = str_replace("'", "''", $branchId);
+        $custEsc   = str_replace("'", "''", $cust);
+        $kodeEsc   = str_replace("'", "''", $kodeSO);
+
+        $param = " and (so.docno ilike '%{$searchEsc}%'"
+               . " or upper(coalesce(so.keterangan,'')) like '%{$searchEsc}%')";
+
+        if ($branchEsc !== '') {
+            // Filter utama: cabang SO harus sama dengan cabang header Penjualan.
+            $param .= " and trim(so.cabang) = '{$branchEsc}'";
+        } elseif ($kodeEsc !== '') {
+            // Fallback kompatibilitas bila cabang belum terpilih.
+            $param .= " and substring(trim(so.docno) from '.*/([A-Z]{2})') = '{$kodeEsc}'";
+        }
+
+        if ($custEsc !== '') {
+            $param .= " and trim(so.kdcustomer) = '{$custEsc}'";
+        }
+
+        $param .= " order by so.docno asc";
+
+        $items = $this->m_global->q_so($param)->getResult();
+        $count = count($items);
+
+        return $this->response->setJSON([
+            'total_count'            => $count,
+            'items'                  => $items,
+            'incomplete_getResults'  => false,
+        ]);
+    }
+
+    /**
+     * Lookup stok (read-only) untuk detail item Penjualan.
+     * Sumber sama dengan validasi final: sc_trx.stkblc.
+     */
+    public function stock_penjualan_item()
+    {
+        $idbarang = trim((string) $this->request->getPost('idbarang'));
+        $idgudang = trim((string) $this->request->getPost('idgudang'));
+        $idspec   = trim((string) $this->request->getPost('idspec'));
+
+        return $this->response->setJSON([
+            'total' => $this->sales_stock_saldo($idbarang, $idgudang, $idspec),
         ]);
     }
 
@@ -8109,9 +8191,9 @@ class PostSales extends BaseController
 
     //     // Update header LPB
     //     $builderHeader->where('docno', $docno)->update([
-    //         'dpp' => number_format($dpp, 2, '.', ''),
-    //         'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
-    //         'total' => number_format($total, 2, '.', ''),
+    //         'dpp' => number_format($dpp, 4, '.', ''),
+    //         'jumlahpajak' => number_format($jumlahPajak, 4, '.', ''),
+    //         'total' => number_format($total, 4, '.', ''),
     //         'updateby' => $nama,
     //         'updatedate' => date('Y-m-d H:i:s')
     //     ]);
@@ -8295,6 +8377,61 @@ class PostSales extends BaseController
                 $nilaipajak = $nilai * $totalPersen / 100;
             }
 
+            // ===== VALIDASI STOK (mode edit) =====
+            $rowCek = $db->table('sc_tmp.penjualan_dtl')
+                ->select('idbarang, nmbarang')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->where('uniqueid', $uniqueid)
+                ->get()
+                ->getRowArray();
+
+            $idbarangCek = trim((string) ($rowCek['idbarang'] ?? ''));
+            $nmbarangCek = trim((string) ($rowCek['nmbarang'] ?? ''));
+
+            if ($idbarangCek === '') {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Barang pada detail tidak ditemukan. Silakan muat ulang data.'
+                ]);
+            }
+
+            $qtyOtherRow = $db->query("
+                SELECT COALESCE(SUM(qty),0) AS qty
+                FROM sc_tmp.penjualan_dtl
+                WHERE docno = ?
+                AND inputby = ?
+                AND TRIM(idbarang) = ?
+                AND TRIM(idgudang) = ?
+                AND COALESCE(NULLIF(TRIM(idspec), ''), '') = ?
+                AND TRIM(uniqueid) <> ?
+            ", [$docno, $nama, $idbarangCek, $idgudang, $idspec, (string) $uniqueid])->getRowArray();
+
+            $stokSaldo = $this->sales_stock_saldo($idbarangCek, $idgudang, $idspec);
+            $qtyTotal  = (float) ($qtyOtherRow['qty'] ?? 0) + (float) $qty;
+
+            if ($idgudang === '') {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gudang untuk barang ' . $idbarangCek . ' belum dipilih.'
+                ]);
+            }
+
+            if ($qtyTotal > $stokSaldo) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Stok tidak mencukupi untuk ' . $idbarangCek
+                        . ($nmbarangCek !== '' ? ' (' . $nmbarangCek . ')' : '')
+                        . ' di gudang ' . $idgudang
+                        . ($idspec !== '' ? ', batch ' . $idspec : '')
+                        . '. Tersedia: ' . number_format($stokSaldo, 4, '.', ',')
+                        . ', dibutuhkan: ' . number_format($qtyTotal, 4, '.', ',') . '.'
+                ]);
+            }
+            // ===== END VALIDASI STOK =====
             $builderDetail
                 ->where('docno', $docno)
                 ->where('inputby', $nama)
@@ -8531,9 +8668,9 @@ class PostSales extends BaseController
 
         $builderHeader->where('inputby', $nama)
             ->where('docno', $docno)->update([
-                'dpp'         => number_format($dpp, 2, '.', ''),
-                'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
-                'total'       => number_format($total, 2, '.', ''),
+                'dpp'         => number_format($dpp, 4, '.', ''),
+                'jumlahpajak' => number_format($jumlahPajak, 4, '.', ''),
+                'total'       => number_format($total, 4, '.', ''),
                 'updateby'    => $nama,
                 'updatedate'  => date('Y-m-d H:i:s')
             ]);
@@ -8833,9 +8970,9 @@ class PostSales extends BaseController
             $builderHeader
                 ->where('docno', $docno)
                 ->update([
-                    'dpp'         => number_format($dpp, 2, '.', ''),
-                    'jumlahpajak' => number_format($jumlahPajak, 2, '.', ''),
-                    'total'       => number_format($total, 2, '.', ''),
+                    'dpp'         => number_format($dpp, 4, '.', ''),
+                    'jumlahpajak' => number_format($jumlahPajak, 4, '.', ''),
+                    'total'       => number_format($total, 4, '.', ''),
                     'updateby'    => $nama,
                     'updatedate'  => date('Y-m-d H:i:s')
                 ]);
@@ -8862,7 +8999,8 @@ class PostSales extends BaseController
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_postsales->get_t_penjualan_dtl_temp_view($docno);
         $data = array();
-        $no = $_POST['start'];
+        $stockCache = [];
+        $no = isset($_POST['start']) ? (int) $_POST['start'] : 0;
         foreach ($list as $lm) {
             $no++;
             $row = array();
@@ -8877,21 +9015,45 @@ class PostSales extends BaseController
             $row[] = $lm->idgudang;
             $row[] = $lm->idspec;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->harga, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 0, '.', ',') . '% </div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->harga, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 4, '.', ',') . '% </div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 0, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 0, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 4, '.', ',') . '</div>';
             $row[] = $lm->description;
+            $idbarangRow = trim((string) $lm->idbarang);
+            $idgudangRow = trim((string) $lm->idgudang);
+            $idspecRow   = trim((string) ($lm->idspec ?? ''));
+            if ($idspecRow === '' || strtoupper($idspecRow) === 'NULL') {
+                $idspecRow = '';
+            }
+
+            $stockKey = $idbarangRow . '|' . $idgudangRow . '|' . $idspecRow;
+            if (!isset($stockCache[$stockKey])) {
+                $stockCache[$stockKey] = $this->sales_stock_saldo($idbarangRow, $idgudangRow, $idspecRow);
+            }
+
+            $stokRow     = (float) $stockCache[$stockKey];
+            $qtyRow      = (float) $lm->qty;
+            $stokRowText = number_format($stokRow, 4, '.', ',');
+
+            if ($idgudangRow === '') {
+                $row[] = '<div class="ratakanan text-danger" title="Gudang belum dipilih">- <i class="fa fa-exclamation-triangle"></i></div>';
+            } elseif ($qtyRow > $stokRow) {
+                $row[] = '<div class="ratakanan text-danger" title="Qty melebihi stok gudang (tersedia ' . $stokRowText . ')">'
+                       . $stokRowText . ' <i class="fa fa-exclamation-triangle"></i></div>';
+            } else {
+                $row[] = '<div class="ratakanan">' . $stokRowText . '</div>';
+            }
             // $row[] = $lm->descriptionpp;
             $data[] = $row;
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => isset($_POST['draw']) ? (int) $_POST['draw'] : 0,
             "recordsTotal" => $this->m_postsales->t_penjualan_dtl_temp_view_count_all($docno),
             "recordsFiltered" => $this->m_postsales->t_penjualan_dtl_temp_view_count_filtered($docno),
             "data" => $data,
@@ -8903,7 +9065,7 @@ class PostSales extends BaseController
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_postsales->get_t_penjualan_dtl_view($docno);
         $data = array();
-        $no = $_POST['start'];
+        $no = isset($_POST['start']) ? (int) $_POST['start'] : 0;
         foreach ($list as $lm) {
             $no++;
             $row = array();
@@ -8918,14 +9080,14 @@ class PostSales extends BaseController
             $row[] = $lm->idgudang;
             $row[] = $lm->idspec;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->harga, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->harga, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 4, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 0, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 0, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 0, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 4, '.', ',') . '</div>';
             $row[] = $lm->description;
             // $row[] = $lm->descriptionpp;
             $data[] = $row;
@@ -8933,7 +9095,7 @@ class PostSales extends BaseController
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => isset($_POST['draw']) ? (int) $_POST['draw'] : 0,
             "recordsTotal" => $this->m_postsales->t_penjualan_dtl_view_count_all($docno),
             "recordsFiltered" => $this->m_postsales->t_penjualan_dtl_view_count_filtered($docno),
             "data" => $data,
@@ -9003,6 +9165,7 @@ class PostSales extends BaseController
             // ======================================
             $pesanStok = $this->sales_cek_stok_penjualan($docno, $nama);
             if ($pesanStok !== '') {
+                session()->setFlashdata('penjualan_error', $pesanStok);
                 $infotrxerror = array(
                     'userid' => $nama,
                     'errorcode' => 3,
@@ -9488,7 +9651,7 @@ class PostSales extends BaseController
     function list_soi(){
         $list = $this->m_postsales->get_t_front_soi_view();
         $data = array();
-        $no = $_POST['start'];
+        $no = isset($_POST['start']) ? (int) $_POST['start'] : 0;
         foreach ($list as $lm) {
             $no++;
             $row = array();
@@ -9598,7 +9761,7 @@ class PostSales extends BaseController
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => isset($_POST['draw']) ? (int) $_POST['draw'] : 0,
             "recordsTotal" => $this->m_postsales->t_front_soi_view_count_all(),
             "recordsFiltered" => $this->m_postsales->t_front_soi_view_count_filtered(),
             "data" => $data,
@@ -9826,6 +9989,7 @@ class PostSales extends BaseController
             }
 
         }
+
 
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_postsales->q_soi_master_temp($param)->getRowArray();
@@ -10214,7 +10378,7 @@ class PostSales extends BaseController
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_postsales->get_t_soi_dtl_temp_view($docno);
         $data = array();
-        $no = $_POST['start'];
+        $no = isset($_POST['start']) ? (int) $_POST['start'] : 0;
         foreach ($list as $lm) {
             $no++;
             $row = array();
@@ -10256,7 +10420,7 @@ class PostSales extends BaseController
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => isset($_POST['draw']) ? (int) $_POST['draw'] : 0,
             "recordsTotal" => $this->m_postsales->t_soi_dtl_temp_view_count_all($docno),
             "recordsFiltered" => $this->m_postsales->t_soi_dtl_temp_view_count_filtered($docno),
             "data" => $data,
@@ -10268,7 +10432,7 @@ class PostSales extends BaseController
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_postsales->get_t_soi_dtl_view($docno);
         $data = array();
-        $no = $_POST['start'];
+        $no = isset($_POST['start']) ? (int) $_POST['start'] : 0;
         foreach ($list as $lm) {
             $no++;
             $row = array();
@@ -10334,7 +10498,7 @@ class PostSales extends BaseController
         }
 
         $output = array(
-            "draw" => $_POST['draw'],
+            "draw" => isset($_POST['draw']) ? (int) $_POST['draw'] : 0,
             "recordsTotal" => $this->m_postsales->t_soi_dtl_view_count_all($docno),
             "recordsFiltered" => $this->m_postsales->t_soi_dtl_view_count_filtered($docno),
             "data" => $data,
@@ -10770,6 +10934,33 @@ class PostSales extends BaseController
         }
 
         return $pesan;
+    }
+
+    /* Saldo stok gudang (read-only) untuk item + gudang + batch.
+       Sumber: sc_trx.stkblc (sama dengan posting/validasi final). */
+    private function sales_stock_saldo($idbarang, $idgudang, $idspec = '')
+    {
+        $idbarang = trim((string) $idbarang);
+        $idgudang = trim((string) $idgudang);
+        $idspec   = trim((string) $idspec);
+
+        if ($idspec === '' || strtoupper($idspec) === 'NULL') {
+            $idspec = '';
+        }
+
+        if ($idbarang === '' || $idgudang === '') {
+            return 0.0;
+        }
+
+        $row = $this->db->query("
+            SELECT (COALESCE(SUM(qty_in),0) - COALESCE(SUM(qty_out),0)) AS saldo
+            FROM sc_trx.stkblc
+            WHERE TRIM(idbarang) = ?
+            AND TRIM(warehouse) = ?
+            AND COALESCE(NULLIF(TRIM(batch), ''), '') = ?
+        ", [$idbarang, $idgudang, $idspec])->getRowArray();
+
+        return (float) ($row['saldo'] ?? 0);
     }
 
     /* Cek kecukupan stok untuk draft penjualan (cegah kurang stok).

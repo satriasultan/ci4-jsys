@@ -61,6 +61,11 @@ function tablePenjualanTrx(){
             //Set column definition initialisation properties.
             "columnDefs": [
                 {
+                    "targets": [0, 1],
+                    "orderable": false,
+                    "searchable": false
+                },
+                {
                     "targets": [ -1 ], //last column
                     "orderable": false, //set not orderable
                 },
@@ -142,6 +147,11 @@ function tablePenjualanApprvTrx(){
 
             //Set column definition initialisation properties.
             "columnDefs": [
+                {
+                    "targets": [0, 1],
+                    "orderable": false,
+                    "searchable": false
+                },
                 {
                     "targets": [ -1 ], //last column
                     "orderable": false, //set not orderable
@@ -699,7 +709,7 @@ $("#docnoso").select2({
     allowClear: true,
     width:'resolve',
     ajax: {
-        url: HOST_URL + 'api/globalmodule/list_so',
+        url: HOST_URL + 'sales/postsales/list_so_penjualan',
         type: 'POST',
         dataType: 'json',
         delay: 250,
@@ -710,6 +720,7 @@ $("#docnoso").select2({
                 _draw_: true,
                 _start_: 1,
                 _perpage_: 2,
+                _branchid_: ($('#cabang').val() || '').toString().trim(),
                 _paramglobal_: defaultInitialSO,
                 _paramglobalcust_: defaultInitialCustSO,
                 _parameterx_: defaultInitialSO,
@@ -972,16 +983,53 @@ $("#idtax").select2({
 
 
 
-function setJtsValue(selector, value) {
-    $(selector).val(value);
-    _jtsseparator($(selector)[0]);
+/* =========================================================
+ * FORMAT ANGKA PENJUALAN (NUMERIC 18,4)
+ * Tampilan angka selalu 4 digit desimal.
+ * PENGECUALIAN: Jatuh Tempo (jthtempo) = jumlah hari (bulat).
+ * ========================================================= */
+const SALES_DECIMAL_DIGITS = 4;
+const SALES_INTEGER_FIELDS = ['jthtempo'];
+
+function salesMaxDecimals(el) {
+    if (!el) return SALES_DECIMAL_DIGITS;
+    var key = String(el.id || $(el).attr('name') || '').trim().toLowerCase();
+    return SALES_INTEGER_FIELDS.indexOf(key) !== -1 ? 0 : SALES_DECIMAL_DIGITS;
 }
 
+function salesSeparator(el) {
+    if (!el) return;
+    (typeof jaccseparator === 'function' ? jaccseparator : _jtsseparator)(el, {
+        maxDecimals: salesMaxDecimals(el)
+    });
+}
 
+function salesFormatNumber(value, maxDec) {
+    var num = convertToDbNumber(value);
+    if (!isFinite(num)) return '';
+    if (maxDec <= 0) {
+        return Math.round(num).toLocaleString('en-US');
+    }
+    return num.toLocaleString('en-US', {
+        minimumFractionDigits: maxDec,
+        maximumFractionDigits: maxDec
+    });
+}
 
+function setJtsValue(selector, value) {
+    var el = $(selector)[0];
+    if (!el) return;
+    el.value = salesFormatNumber(value, salesMaxDecimals(el));
+}
 
-$(document).on('input', '.jtsseparator', function () {
-    _jtsseparator(this);
+$(document).on('input', '.jaccseparator', function () {
+    salesSeparator(this);
+});
+
+$(document).on('blur change', '.jaccseparator', function () {
+    var raw = $.trim(this.value || '');
+    if (raw === '' || !/[0-9]/.test(raw)) return;
+    this.value = salesFormatNumber(raw, salesMaxDecimals(this));
 });
 
 
@@ -1037,7 +1085,8 @@ function tablePenjualanDetail(){
                 },
                 {
                     "targets": [ -1 ],
-                    "orderable": false
+                    "orderable": false,
+                    "searchable": false
                 }
             ]
         });
@@ -1171,6 +1220,7 @@ function btnUpdateDetail(){
 
 
                 currentEditId = res.data.idurut;
+                $('#infostock').val('').data('stock', null);
                 // $('#qty').val(res.data.qty);
                 // $('#qtybonus').val(res.data.qtybonus);
                 // $('#harga').val(res.data.harga);
@@ -1324,8 +1374,8 @@ $(document).on('input', '.form-control', function () {
         
         // Format ke en-US: separator ribuan = koma, desimal = titik
         $('#nilai').val(nilaiAkhir.toLocaleString('en-US', {
-            minimumFractionDigits: 2, 
-            maximumFractionDigits: 2
+            minimumFractionDigits: 4, 
+            maximumFractionDigits: 4
         }));
     }
 });
@@ -1532,6 +1582,32 @@ $('#formPenjualandetail').bootstrapValidator({
     });
 
 
+function loadStokPenjualan() {
+    var idbarang = ($('#idbarang').val() || '').toString().trim();
+    var idgudang = ($('#idgudang').val() || '').toString().trim();
+    var idspec   = ($('#idspec').val() || '').toString().trim();
+
+    $('#infostock').data('stock', null);
+
+    if (idbarang === '' || idgudang === '') {
+        $('#infostock').val('');
+        return;
+    }
+
+    $.ajax({
+        url: HOST_URL + 'sales/postsales/stock_penjualan_item',
+        type: 'POST',
+        dataType: 'json',
+        data: { idbarang: idbarang, idgudang: idgudang, idspec: idspec }
+    }).done(function (res) {
+        var total = parseFloat((res && res.total != null) ? res.total : 0) || 0;
+        $('#infostock').data('stock', total);
+        setJtsValue('#infostock', total.toFixed(4));
+    }).fail(function () {
+        $('#infostock').data('stock', 0);
+        setJtsValue('#infostock', '0.0000');
+    });
+}
 function savePenjualanDetail() {
 
     Swal.fire({
@@ -1545,6 +1621,21 @@ function savePenjualanDetail() {
     }).then((result) => {
 
         if (!result.isConfirmed) return;
+
+        // Validasi stok hanya saat edit item (modal update)
+        if ($('#modalUpdatePenjualan').hasClass('show')) {
+            var stockRaw = $('#infostock').data('stock');
+            var qtyNum   = parseFloat(convertToDbNumber($('#qty').val())) || 0;
+
+            if (stockRaw !== null && stockRaw !== undefined && qtyNum > (parseFloat(stockRaw) || 0)) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Stok tidak cukup',
+                    text: 'Qty ' + qtyNum.toFixed(4) + ' melebihi stok gudang (' + (parseFloat(stockRaw) || 0).toFixed(4) + ').'
+                });
+                return;
+            }
+        }
 
         let customerData = $('#kdcustomer').select2('data');
 
@@ -2336,4 +2427,13 @@ $(document).ready(function() {
 
 
 
+});
+
+/* ===== Info stok modal detail item ===== */
+$(function () {
+    $('#idgudang').on('change', loadStokPenjualan);
+    $('#idspec').on('change', loadStokPenjualan);
+    $('#modalUpdatePenjualan').on('shown.bs.modal', function () {
+        setTimeout(loadStokPenjualan, 300);
+    });
 });

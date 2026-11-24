@@ -900,6 +900,11 @@ $routes->group('/sales/postsales', ["namespace" => "App\Controllers\Sales"], fun
     $routes->add('penjualan', 'PostSales::penjualan');
     $routes->add('list_penjualan', 'PostSales::list_penjualan');
     $routes->add('list_penjualan_apprv', 'PostSales::list_penjualan_apprv');
+    // Pencarian SO khusus Penjualan: filter berdasarkan cabang (bukan suffix docno),
+    // agar SO dengan suffix angka (mis. 000001) tetap bisa ditarik.
+    $routes->add('list_so_penjualan', 'PostSales::list_so_penjualan');
+    // Lookup stok (read-only) untuk modal detail item Penjualan.
+    $routes->add('stock_penjualan_item', 'PostSales::stock_penjualan_item');
 
     $routes->add('addPenjualan', 'PostSales::addPenjualan');
     $routes->add('detailPenjualan', 'PostSales::detailPenjualan');
@@ -1060,6 +1065,8 @@ $routes->group('/sales/presales', ["namespace" => "App\Controllers\Sales"], func
     $routes->add('list_t_proforma_dtltrx', 'Presales::list_t_proforma_dtltrx');
     $routes->add('showing_proformatrx', 'Presales::showing_proformatrx');
     $routes->add('getRolePOProforma(:any)', 'Presales::getRolePOProforma$1');
+    $routes->post('list_penjualan_proforma', 'Presales::list_penjualan_proforma');
+    $routes->post('pull_penjualan_proforma', 'Presales::pull_penjualan_proforma');
 
 });
 

@@ -1,253 +1,28 @@
-<style>
-    
-    .section-block {
-        background-color: #e8e8e8;
-        border-left: 4px solid #007bff;
-        /* border-bottom: 4px solid #007bff;  */
-        padding: 20px;
-        border-radius: 6px;
-        margin-bottom: 30px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-                    box-shadow 0.4s ease, 
-                    border-color 0.4s ease;
-        
-        transform: scale(1);
-        will-change: transform;
-    }
+<?= $this->include('sales/postsales/_corp_theme') ?>
+<div class="corp-form-container">
 
-    .section-header {
-        font-weight: bold;
-        color: #007bff;
-        margin-bottom: 20px;
-        font-size: 1.1rem;
-        display: flex;
-        align-items: center;
-    }
-
-    .section-header i {
-        margin-right: 8px;
-    }
-
-    .section-block:hover {
-        /* transform: scale(1.02); */
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-        border-left-color: #0056b3;
-        border-bottom-color: #0056b3;
-    }
-
-    .is-invalid {
-        border-color: #dc3545;
-    }
-    .invalid-feedback {
-        display: block;
-        color: #dc3545;
-        font-size: 0.875em;
-    }
-
-    .form-control:disabled, .form-control[readonly] {
-        background-color: #dfdfdf;
-        opacity: 1;
-    }
-
-    .section-divider {
-        height: 1px;
-        background: linear-gradient(
-            to right,
-            #007bff 0%,
-            #cfe2ff 30%,
-            #e8e8e8 100%
-        );
-        margin: 24px 0;
-        border: none;
-    }
-
-
-/* ACCOUNTING TOOLBAR */
-    .accounting-toolbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-
-        width: 100%;
-        padding: 8px 15px;
-
-        background: #f1f3f5;
-        border-bottom: 1px solid #cfd4da;
-
-        box-sizing: border-box;
-    }
-
-    .accounting-btn {
-        min-width: 230px;
-        height: 45px;
-
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-
-        border: none;
-        border-radius: 6px;
-
-        color: #ffffff;
-        font-size: 14px;
-        font-weight: bold;
-
-        cursor: pointer;
-
-        box-shadow: 0 2px 5px rgba(0,0,0,.20);
-
-        transition: all .2s ease;
-    }
-
-    /* ================================
-       LAPORAN JURNAL - BIRU
-    ================================ */
-    .btn-jurnal {
-        background: linear-gradient(135deg, #1976d2, #0d47a1);
-    }
-
-    .btn-jurnal:hover {
-        background: linear-gradient(135deg, #2196f3, #1565c0);
-        transform: translateY(-2px);
-    }
-
-    /* ================================
-       PEMBAYARAN - HIJAU
-    ================================ */
-    .btn-pembayaran {
-        background: linear-gradient(135deg, #28a745, #146c2e);
-    }
-
-    .btn-pembayaran:hover {
-        background: linear-gradient(135deg, #34c759, #198754);
-        transform: translateY(-2px);
-    }
-
-    .accounting-btn:active {
-        transform: translateY(1px);
-        box-shadow: 0 1px 2px rgba(0,0,0,.20);
-    }
-
-    .accounting-btn i {
-        font-size: 19px;
-    }
-
-
-    /*jurnal posting*/
-    /* =========================================
-   LAPORAN JURNAL - CORPORATE TABLE
-========================================= */
-
-    #modalLaporanJurnal .modal-content {
-        border-radius: 4px;
-        border: 1px solid #d6dce3;
-    }
-
-    #modalLaporanJurnal .modal-header {
-        padding: 12px 20px;
-    }
-
-    #modalLaporanJurnal .modal-title {
-        font-size: 16px;
-        color: #343a40;
-    }
-
-    /* =========================================
-       DATATABLE
-    ========================================= */
-
-    #tableLaporanJurnal {
-        border-collapse: collapse !important;
-        white-space: nowrap !important;
-    }
-
-    #tableLaporanJurnal thead th {
-        background: #46533a;
-        color: #ffffff;
-        font-size: 12px;
-        font-weight: 600;
-        vertical-align: middle;
-        white-space: nowrap !important;
-        border-color: #59664c;
-        padding: 9px 10px;
-    }
-
-    #tableLaporanJurnal tbody td {
-        font-size: 12px;
-        vertical-align: middle;
-        white-space: nowrap !important;
-        padding: 8px 10px;
-    }
-
-    /* Hover corporate */
-    #tableLaporanJurnal tbody tr:hover {
-        background-color: #f1f4f6 !important;
-    }
-
-    /* Nominal */
-    #tableLaporanJurnal td.text-right {
-        font-family: Consolas, "Courier New", monospace;
-        font-weight: 500;
-    }
-
-    /* TOTAL ROW */
-    #tableLaporanJurnal tbody tr.row-total td {
-        background-color: #eef1e9 !important;
-        font-weight: bold;
-        border-top: 2px solid #46533a !important;
-    }
-
-    /* =========================================
-       DATATABLE CONTROL
-    ========================================= */
-
-    #modalLaporanJurnal .dataTables_wrapper {
-        font-size: 12px;
-    }
-
-    #modalLaporanJurnal .dataTables_filter input {
-        border: 1px solid #ced4da;
-        border-radius: 3px;
-        height: 30px;
-        padding: 5px 10px;
-    }
-
-    #modalLaporanJurnal .dataTables_length select {
-        border: 1px solid #ced4da;
-        border-radius: 3px;
-        height: 30px;
-    }
-
-    /* Horizontal scroll */
-    #modalLaporanJurnal .dataTables_scrollBody {
-        border-bottom: 1px solid #dee2e6 !important;
-    }
-</style>
 <div class="content-header">
     <div class="container-fluid">
-        <div class="row mb-2">
+        <div class="row mb-2 align-items-center">
             <div class="col-sm-6">
                 <h1 class="m-0"><?php echo ucwords(strtolower(trim($title)));?></h1>
-            </div><!-- /.col -->
-            <div class="col-sm-6">
-                <ol class="breadcrumb float-sm-right">
-                    <div class="float-right" style="margin-right: 10px;vertical-align:middle;padding-top: 0.7%;"><i style="color:transparent;"><?php echo $t; ?></i> Menu ID <?php echo $version; ?></div>
-                    <input type="hidden" id="classmenu" value="<?= str_replace('.','_',$kodemenu) ?>" required>
+            </div>
+            <div class="col-sm-6 d-flex justify-content-end align-items-center">
+                <div style="margin-right: 10px; font-size: 13px;">Menu ID <?php echo $version; ?></div>
+                <ol class="breadcrumb mb-0">
+                    <input type="hidden" id="classmenu" value="<?= str_replace('.','_',$kodemenu) ?>">
                     <?php foreach ($y as $y1) { ?>
                         <?php if( trim($y1->kodemenu)!=trim($kodemenu)) { ?>
-                            <li class="breadcrumb-item"><a href="<?php echo base_url( trim($y1->linkmenu)) ; ?>"><i class="fa <?php echo trim($y1->iconmenu); ?>"></i> <?php echo  trim($y1->namamenu); ?></a></li>
+                            <li class="breadcrumb-item"><a href="<?php echo base_url( trim($y1->linkmenu)) ; ?>"><i class="fa <?php echo trim($y1->iconmenu); ?>"></i> <?php echo trim($y1->namamenu); ?></a></li>
                         <?php } else { ?>
                             <li class="breadcrumb-item active"><i class="fa <?php echo trim($y1->iconmenu); ?>"></i> <?php echo trim($y1->namamenu); ?></li>
                         <?php } ?>
                     <?php } ?>
                 </ol>
-            </div><!-- /.col -->
-        </div><!-- /.row -->
-    </div><!-- /.container-fluid -->
+            </div>
+        </div>
+    </div>
 </div>
-
 <?php echo $message;?>
 <?php
     $isIT = isset($userinfo['rolename']) && trim($userinfo['rolename']) === 'IT';
@@ -267,7 +42,7 @@
                 <div class="card-body">
                         <div class="section-block">
                             <div class="section-header">
-                                <i class="fa fa-address-card"></i> Penjualan
+                                <i class="fa fa-address-card"></i> Master
                             </div>
                             <div class="row">
 
@@ -346,7 +121,7 @@
                                                     <input type="text"
                                                         name="jthtempo"
                                                         id="jthtempo"
-                                                        class="form-control ratakanan jtsseparator"
+                                                        class="form-control ratakanan jaccseparator"
                                                         placeholder="0.00">
                                                     <div class="input-group-append">
                                                         <span class="input-group-text">hari</span>
@@ -433,7 +208,7 @@
                                                     <input type="text"
                                                         name="kurs"
                                                         id="kurs"
-                                                        class="form-control ratakanan jtsseparator"
+                                                        class="form-control ratakanan jaccseparator"
                                                         placeholder="Nilai tukar akan muncul disini"
                                                         >
                                                 </div>
@@ -513,7 +288,7 @@
                     <div class="row">
                         <div class="col-md-12">
                             <div class="table-responsive" style="overflow-x: auto;">
-                                <table id="tabpenjualandtl" class="table table-bordered table-striped" style="width:100%;" cellspacing="0">
+                                <table id="tabpenjualandtl" class="table table-bordered table-striped sales-dtl-table" style="width:100%;" cellspacing="0">
                                     <thead class="bg-primary text-white">
                                         <tr>
                                             <th width="30">
@@ -588,7 +363,7 @@
                                                     <input type="text"
                                                         name="dpp"
                                                         id="dpp"
-                                                        class="form-control jtsseparator ratakanan"
+                                                        class="form-control jaccseparator ratakanan"
                                                         readonly>
                                                 </div>
                                             </div>
@@ -607,7 +382,7 @@
                                                     <input type="text"
                                                         name="jumlahpajak"
                                                         id="jumlahpajak"
-                                                        class="form-control jtsseparator ratakanan"
+                                                        class="form-control jaccseparator ratakanan"
                                                         readonly>
                                                 </div>
                                             </div>
@@ -627,7 +402,7 @@
                                                         name="total"
                                                         id="total"
                                                         style="font-weight: bold;"
-                                                        class="form-control jtsseparator ratakanan"
+                                                        class="form-control jaccseparator ratakanan"
                                                         readonly>
                                                 </div>
                                             </div>
@@ -852,7 +627,7 @@
                                 <input type="text"
                                         name="qty"
                                         id="qty"
-                                        class="form-control jtsseparator ratakanan"
+                                        class="form-control jaccseparator ratakanan"
                                         placeholder="0.00">
                             </div>
                         </div>
@@ -865,7 +640,7 @@
                                 <input type="text"
                                         name="harga"
                                         id="harga"
-                                        class="form-control jtsseparator ratakanan"
+                                        class="form-control jaccseparator ratakanan"
                                         placeholder="0.00">
                             </div>
                         </div>
@@ -875,7 +650,7 @@
                                 <input type="text"
                                         name="multidisc"
                                         id="multidisc"
-                                        class="form-control jtsseparator ratakanan"
+                                        class="form-control jaccseparator ratakanan"
                                         placeholder="0.00">
                             </div>
                         </div>
@@ -885,7 +660,7 @@
                                 <input type="text"
                                         name="nilai"
                                         id="nilai"
-                                        class="form-control jtsseparator ratakanan"
+                                        class="form-control jaccseparator ratakanan"
                                         readonly
                                         placeholder="0.00">
                             </div>
@@ -1069,6 +844,8 @@
 
         </div>
     </div>
+</div>
+
 </div>
 
 <script type="application/javascript" src="<?= base_url('assets/pagejs/sales/postsales/penjualan/penjualan_detail.js') ?>"></script>

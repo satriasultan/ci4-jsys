@@ -18,6 +18,8 @@
 4. ketikan nomor sudah terbentuk,
 */
 ?>
+<div class="corp-form-container">
+
 <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css" rel="stylesheet"> -->
 
@@ -173,6 +175,8 @@
     right: 6px;
     } */
 </style>
+<?= $this->include('sales/postsales/_corp_theme') ?>
+
 <div class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
@@ -269,6 +273,38 @@
                 <label for="up">PIC</label>
                 <input type="text" class="form-control" id="up"  name="up"  placeholder="Kontak PIC" style="text-transform: uppercase;"  required readonly>
             </div>
+            <div class="form-group col-md-12">
+                <div class="section-block" style="width:100%;">
+                    <div class="section-header"><i class="fa fa-link"></i> Sumber PJO / Penjualan</div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="docnopjo">No. PJO / Penjualan</label>
+                                <select id="docnopjo" name="docnopjo" class="form-control"></select>
+                                <small style="color:#64748b;font-size:11.5px;display:block;margin-top:5px;">
+                                    Hanya PJO FINAL yang sudah memiliki jurnal SALESX POSTED.
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="jurnalno">No. Jurnal PJO</label>
+                                <input type="text" id="jurnalno" name="jurnalno" class="form-control"
+                                       placeholder="Otomatis dari PJO" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>&nbsp;</label>
+                                <button type="button" id="btnTarikPJO" class="btn btn-primary w-100"
+                                        onclick="pullPenjualanProforma()" disabled>
+                                    <i class="fa fa-download"></i> Tarik PJO
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="form-group col-md-5"></div>
             <div class="form-group  col-md-4">
                 <label for="facrisk">For Account & Risk Messers</label>
@@ -362,7 +398,7 @@
             <div class="col-sm-12">
                 <form id="frm-example" action="#" method="POST">
                     <div class="table-wrapper" style="overflow-x: auto;">
-                        <table id="t_proforma_dtl" class="table table-bordered table-striped"  style="text-wrap:nowrap"  cellspacing="0" >
+                        <table id="t_proforma_dtl" class="table table-bordered table-striped sales-dtl-table"  style="text-wrap:nowrap"  cellspacing="0" >
                             <thead>
                                 <tr>
                                     <th rowspan="2" style="width: 20px;font-weight: bold; background-color: darkgrey;text-align: center; vertical-align: middle">Act</th>
@@ -394,7 +430,7 @@
                                         <div style="display:flex; align-items:center;">
                                         <span style="font-weight: bold; margin-right:5px;">Rp</span>
                                         <input type="text" id="grosssales" name="grosssales"
-                                                class="form-control ratakanan jtsseparator"
+                                                class="form-control ratakanan jaccseparator"
                                                 value="0" disabled>
                                         </div>
                                     </td>
@@ -405,7 +441,7 @@
                                         <div style="display:flex; align-items:center;">
                                         <span style="font-weight: bold; margin-right:5px;">Rp</span>
                                         <input type="text" id="downpayment" name="downpayment"
-                                                class="form-control ratakanan jtsseparator"
+                                                class="form-control ratakanan jaccseparator"
                                                 value="0">
                                         </div>
                                     </td>
@@ -416,7 +452,7 @@
                                         <div style="display:flex; align-items:center;">
                                         <span style="font-weight: bold; margin-right:5px;">Rp</span>
                                         <input type="text" id="netsales" name="netsales"
-                                                class="form-control ratakanan jtsseparator"
+                                                class="form-control ratakanan jaccseparator"
                                                 value="0" disabled>
                                         </div>
                                     </td>
@@ -427,7 +463,7 @@
                                         <div style="display:flex; align-items:center;">
                                         <span style="font-weight: bold; margin-right:5px;">Rp</span>
                                         <input type="text" id="taxbasis" name="taxbasis"
-                                                class="form-control ratakanan jtsseparator"
+                                                class="form-control ratakanan jaccseparator"
                                                 value="0" disabled>
                                         </div>
                                     </td>
@@ -438,7 +474,7 @@
                                         <div style="display:flex; align-items:center;">
                                         <span style="font-weight: bold; margin-right:5px;">Rp</span>
                                         <input type="text" id="vat" name="vat"
-                                                class="form-control ratakanan jtsseparator"
+                                                class="form-control ratakanan jaccseparator"
                                                 value="0" disabled>
                                         </div>
                                     </td>
@@ -453,7 +489,7 @@
                                         <div style="display:flex; align-items:center;">
                                         <span style="font-weight: bold; margin-right:5px;">Rp</span>
                                         <input type="text" id="pph22" name="pph22"
-                                                class="form-control ratakanan jtsseparator"
+                                                class="form-control ratakanan jaccseparator"
                                                 value="0" disabled>
                                         </div>
                                     </td>
@@ -464,7 +500,7 @@
                                         <div style="display:flex; align-items:center;">
                                         <span style="font-weight: bold; margin-right:5px;">Rp</span>
                                         <input type="text" id="ttlprice" name="ttlprice"
-                                                class="form-control ratakanan jtsseparator"
+                                                class="form-control ratakanan jaccseparator"
                                                 value="0" disabled
                                                 style="font-weight:bold;">
                                         </div>
@@ -777,7 +813,7 @@
         <div class="modal-content">
             <form id="form-filter">
                 <div class="modal-header">
-                    <h4 class="modal-title">Insert Detail SIKBSP</h4>
+                    <h4 class="modal-title">Insert Detail Proforma</h4>
                     <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -803,6 +839,10 @@
                         </select> -->
                     </div>
                     <div class="form-group col-md-12">
+                        <label for="priceinsert">Price</label>
+                        <input min="0" class="form-control jaccseparator ratakanan" id="priceinsert" type="text" name="priceinsert" placeholder="Price" required>
+                    </div>
+                    <div class="form-group col-md-12">
                         <label for="descriptiondetail">Description</label>
                         <textarea name="descriptiondetail" id="descriptiondetail" style="text-transform: uppercase;" class="form-control" rows="2" placeholder="Write description" ></textarea>
                         <!-- <select name="idbarang_filter_spec" id="idbarang_filter_spec" class="form-control" required >
@@ -811,7 +851,7 @@
 
                 </div>
                 <div class="modal-footer ">
-                    <button onclick="insert_detail_sikbsp()" class="btn btn-success float-right" style="margin-left:5px"><i class="fa fa-plus-circle"></i> Insert Detail SIKBSP </button>
+                    <button onclick="insert_detail_sikbsp()" class="btn btn-success float-right" style="margin-left:5px"><i class="fa fa-plus-circle"></i> Insert Detail Proforma </button>
 
                 </div>
             </form>
@@ -1010,6 +1050,7 @@
 
         let fullDocno = prefix + "/" + infix + "/" + sufix;
         $("#docno").val(fullDocno);
+        if (typeof toggleTarikPjo === 'function') toggleTarikPjo();
     }
 
     // Jalankan ketika salah satu field berubah
@@ -1022,6 +1063,8 @@
 
 
 
+
+</div>
 
 
 

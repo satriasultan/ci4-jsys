@@ -1,92 +1,28 @@
-<style>
-    
-    .section-block {
-        background-color: #e8e8e8;
-        border-left: 4px solid #007bff;
-        /* border-bottom: 4px solid #007bff;  */
-        padding: 20px;
-        border-radius: 6px;
-        margin-bottom: 30px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-                    box-shadow 0.4s ease, 
-                    border-color 0.4s ease;
-        
-        transform: scale(1);
-        will-change: transform;
-    }
+<?= $this->include('sales/postsales/_corp_theme') ?>
+<div class="corp-form-container">
 
-    .section-header {
-        font-weight: bold;
-        color: #007bff;
-        margin-bottom: 20px;
-        font-size: 1.1rem;
-        display: flex;
-        align-items: center;
-    }
-
-    .section-header i {
-        margin-right: 8px;
-    }
-
-    .section-block:hover {
-        /* transform: scale(1.02); */
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-        border-left-color: #0056b3;
-        border-bottom-color: #0056b3;
-    }
-
-    .is-invalid {
-        border-color: #dc3545;
-    }
-    .invalid-feedback {
-        display: block;
-        color: #dc3545;
-        font-size: 0.875em;
-    }
-
-    .form-control:disabled, .form-control[readonly] {
-        background-color: #dfdfdf;
-        opacity: 1;
-    }
-
-    .section-divider {
-        height: 1px;
-        background: linear-gradient(
-            to right,
-            #007bff 0%,
-            #cfe2ff 30%,
-            #e8e8e8 100%
-        );
-        margin: 24px 0;
-        border: none;
-    }
-
-
-</style>
 <div class="content-header">
     <div class="container-fluid">
-        <div class="row mb-2">
+        <div class="row mb-2 align-items-center">
             <div class="col-sm-6">
                 <h1 class="m-0"><?php echo ucwords(strtolower(trim($title)));?></h1>
-            </div><!-- /.col -->
-            <div class="col-sm-6">
-                <ol class="breadcrumb float-sm-right">
-                    <div class="float-right" style="margin-right: 10px;vertical-align:middle;padding-top: 0.7%;"><i style="color:transparent;"><?php echo $t; ?></i> Menu ID <?php echo $version; ?></div>
-                    <input type="hidden" id="classmenu" value="<?= str_replace('.','_',$kodemenu) ?>" required>
+            </div>
+            <div class="col-sm-6 d-flex justify-content-end align-items-center">
+                <div style="margin-right: 10px; font-size: 13px;">Menu ID <?php echo $version; ?></div>
+                <ol class="breadcrumb mb-0">
+                    <input type="hidden" id="classmenu" value="<?= str_replace('.','_',$kodemenu) ?>">
                     <?php foreach ($y as $y1) { ?>
                         <?php if( trim($y1->kodemenu)!=trim($kodemenu)) { ?>
-                            <li class="breadcrumb-item"><a href="<?php echo base_url( trim($y1->linkmenu)) ; ?>"><i class="fa <?php echo trim($y1->iconmenu); ?>"></i> <?php echo  trim($y1->namamenu); ?></a></li>
+                            <li class="breadcrumb-item"><a href="<?php echo base_url( trim($y1->linkmenu)) ; ?>"><i class="fa <?php echo trim($y1->iconmenu); ?>"></i> <?php echo trim($y1->namamenu); ?></a></li>
                         <?php } else { ?>
                             <li class="breadcrumb-item active"><i class="fa <?php echo trim($y1->iconmenu); ?>"></i> <?php echo trim($y1->namamenu); ?></li>
                         <?php } ?>
                     <?php } ?>
                 </ol>
-            </div><!-- /.col -->
-        </div><!-- /.row -->
-    </div><!-- /.container-fluid -->
+            </div>
+        </div>
+    </div>
 </div>
-
 <?php echo $message;?>
 <?php
     $isIT = isset($userinfo['rolename']) && trim($userinfo['rolename']) === 'IT';
@@ -106,7 +42,7 @@
                 <div class="card-body">
                         <div class="section-block">
                             <div class="section-header">
-                                <i class="fa fa-address-card"></i> Delivery Order
+                                <i class="fa fa-address-card"></i> Master
                             </div>
                             <div class="row">
 
@@ -258,7 +194,7 @@
                     <div class="row">
                         <div class="col-md-12">
                             <div class="table-responsive" style="overflow-x: auto;">
-                                <table id="tabdeliveryorderdtl" class="table table-bordered table-striped" style="width:100%;" cellspacing="0">
+                                <table id="tabdeliveryorderdtl" class="table table-bordered table-striped sales-dtl-table" style="width:100%;" cellspacing="0">
                                     <thead class="bg-primary text-white">
                                         <tr>
                                             <th width="30">
@@ -517,7 +453,7 @@
                                 <input type="text"
                                         name="qty"
                                         id="qty"
-                                        class="form-control jtsseparator ratakanan"
+                                        class="form-control jaccseparator ratakanan"
                                         placeholder="0.00">
                             </div>
                         </div>
@@ -530,7 +466,7 @@
                                 <input type="text"
                                         name="harga"
                                         id="harga"
-                                        class="form-control jtsseparator ratakanan"
+                                        class="form-control jaccseparator ratakanan"
                                         placeholder="0.00">
                             </div>
                         </div>
@@ -540,7 +476,7 @@
                                 <input type="text"
                                         name="multidisc"
                                         id="multidisc"
-                                        class="form-control jtsseparator ratakanan"
+                                        class="form-control jaccseparator ratakanan"
                                         placeholder="0.00">
                             </div>
                         </div>
@@ -550,7 +486,7 @@
                                 <input type="text"
                                         name="nilai"
                                         id="nilai"
-                                        class="form-control jtsseparator ratakanan"
+                                        class="form-control jaccseparator ratakanan"
                                         readonly
                                         placeholder="0.00">
                             </div>
@@ -591,6 +527,8 @@
 
 
 
+
+</div>
 
 <script type="application/javascript" src="<?= base_url('assets/pagejs/sales/postsales/deliveryorder/deliveryorder_detail.js') ?>"></script>
 <script type="text/javascript">

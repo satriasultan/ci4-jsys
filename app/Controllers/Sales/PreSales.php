@@ -1697,12 +1697,18 @@ class PreSales extends BaseController
     }
 
     function list_proforma(){
+        $nama = trim((string) $this->session->get('nama'));
+        $role = trim((string) $this->session->get('roleid'));
+        $akses = $this->m_role->detail_user_akses($role, 'I.S.A.3')->getRowArray();
+        $canUpdate = trim((string) ($akses['a_update'] ?? '')) === 't';
+
         $list = $this->m_presales->get_t_front_proforma_view();
         $data = array();
         $no = $_POST['start'];
         foreach ($list as $lm) {
             $no++;
             $row = array();
+            $canModify = $canUpdate && trim((string) $lm->inputby) === $nama;
             // $row[] = '<div class="dropdown">
             //                 <button class="btn btn-primary btn-sm dropdown-toggle " style="margin:0px; color:#FFFFFF;" id="menu1" type="button" data-bs-toggle="dropdown" autocomplete="off" aria-expanded="false"><i class="fa fa-bars"></i>
             //                     <span class="caret"></span></button>
@@ -1744,18 +1750,24 @@ class PreSales extends BaseController
                                 </button>
                                 <div class="dropdown-menu" role="menu">';
 
-            if (strtoupper($lm->status_desc) !== 'CETAK/PRINT' && strtoupper($lm->status_desc) !== 'CANCEL') {
-                // Jika status CETAK/PRINT atau CANCEL, tampilkan semua tombol
+            $statusDesc = strtoupper(trim((string) ($lm->status_desc ?? $lm->status ?? '')));
+
+            if (!in_array($statusDesc, ['CETAK/PRINT', 'CANCEL', 'CANCELED'], true)) {
+                $actionButtons = $detailBtn . $printBtn;
+                if ($canModify) {
+                    $actionButtons = $updateBtn . $printBtn . $deleteBtn . $detailBtn;
+                }
+
                 $dropdownMenu = '<div class="dropdown">
                                     <button class="btn btn-primary btn-sm dropdown-toggle" style="margin:0px; color:#FFFFFF;" 
                                         id="menu1" type="button" data-bs-toggle="dropdown" autocomplete="off" aria-expanded="false">
                                         <i class="fa fa-bars"></i><span class="caret"></span>
                                     </button>
                                     <div class="dropdown-menu" role="menu">' .
-                    $updateBtn . $printBtn . $deleteBtn . $detailBtn . '</div>
+                    $actionButtons . '</div>
                                 </div>';
             } else {
-                // Jika bukan CETAK/PRINT atau CANCEL, hanya tampilkan tombol Detail
+                // Status CETAK/PRINT atau CANCEL: hanya Detail.
                 $dropdownMenu = '<div class="dropdown">
                                     <button class="btn btn-primary btn-sm dropdown-toggle" style="margin:0px; color:#FFFFFF;" 
                                         id="menu1" type="button" data-bs-toggle="dropdown" autocomplete="off" aria-expanded="false">
@@ -1928,26 +1940,31 @@ class PreSales extends BaseController
     function updateProforma()
     {
         $nama = trim($this->session->get('nama'));
-        $docno = hex2bin($this->request->getGet('id'));
-        $param = " and coalesce(docno,'')='$docno'";
-        $dtl = $this->m_presales->q_proforma_master($param)->getRowArray();
-        $status = trim($dtl['status']);
+        $docno = @hex2bin((string) $this->request->getGet('id'));
+
+        if ($docno === false || $docno === '') {
+            return redirect()->to(base_url('sales/presales/performainvoice'))
+                ->with('proforma_error', 'Nomor dokumen tidak valid.');
+        }
+
+        [$aksesOk, $aksesMsg, $dtl] = $this->proforma_akses_update($docno);
+        if (!$aksesOk) {
+            return redirect()->to(base_url('sales/presales/performainvoice'))
+                ->with('proforma_error', $aksesMsg);
+        }
+
+        $status = trim((string) ($dtl['status'] ?? ''));
 
         if ($status === 'F' || $status === 'P') {
-            // Update hanya status di tabel sc_trx.standart_usage_mst
-            $info = array(
-                'status' => 'E',
-            );
             $builder = $this->db->table('sc_trx.proforma');
             $builder->where('trim(docno)', $docno);
-            $builder->update($info);
+            $builder->update(['status' => 'E']);
 
-            // Redirect ke halaman addStdUsage
             return redirect()->to(base_url('sales/presales/addProforma'));
-        } else {
-            // Jika status bukan 'F', redirect ke halaman mrpgroup
-            return redirect()->to(base_url('sales/presales/performainvoice'));
         }
+
+        return redirect()->to(base_url('sales/presales/performainvoice'))
+            ->with('proforma_error', 'Status dokumen tidak dapat diedit.');
     }
 
     function saveProforma(){
@@ -1998,6 +2015,7 @@ class PreSales extends BaseController
 
 
         if (empty($countx)) {
+            $custRow = $this->m_presales->q_customer_proforma($cust);
             $info = array (
                 'docno' => $docno,
                 // 'penerima' => $penerima,
@@ -2006,6 +2024,7 @@ class PreSales extends BaseController
                 'docdate' => $docdate,
                 // 'dateout' => $dateout,
                 'cust' => $cust,
+                'nmcustomer' => trim((string) ($custRow['nmcustomer'] ?? '')),
 
                 'pono' => $pono,
                 'podate' => $podate,
@@ -2018,7 +2037,7 @@ class PreSales extends BaseController
                 // 'paymentmethod' => $paymentmethod,
                 // 'bank' => $bank,
 
-                // 'phone' => $phone,
+                'phone' => ($phone !== '' ? $phone : trim((string) ($custRow['phone'] ?? ''))),
                 'fax'=>$fax,
                 // 'up'=>$up,
                 'address'=>$address,
@@ -2080,67 +2099,79 @@ class PreSales extends BaseController
 
     public function insert_detail_proforma()
     {
-        // Ambil data dari session
+        if (!$this->proforma_can_update()) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Anda tidak memiliki hak update untuk menu ini.'
+            ]);
+        }
+
         $nama = trim($this->session->get('nama'));
-        $loccode = trim($this->session->get('loccode'));
         $inputby = $nama;
         $inputdate = date('Y-m-d H:i:s');
 
-        // Ambil body request dalam bentuk JSON
         $request_body = file_get_contents('php://input');
         $data = json_decode($request_body);
 
-        // Validasi apakah request memiliki key yang benar
         if (!isset($data->key) || $data->key !== '1203jD0j120dkjjKODNOoimdi)D(J)Jmjid0sjd0ijme09wjei0kjisdjfDSojiodksOjO') {
             return $this->response->setJSON([
-                'status' => false,
+                'status'  => false,
                 'message' => 'Invalid Request Key!'
             ]);
         }
 
-        // Ambil data dari body JSON
-        $dataprocess = $data->body;
-        $idunit = isset($dataprocess->idunit) ? trim($dataprocess->idunit) : null;
-        $namabarang = isset($dataprocess->namabarang) ? trim($dataprocess->namabarang) : null;
-        $qty = isset($dataprocess->qty) ? trim($dataprocess->qty) : null;
-        $description = isset($dataprocess->description) ? trim($dataprocess->description) : null;
+        $dataprocess = $data->body ?? null;
+        $docno       = trim((string) ($dataprocess->docno ?? ''));
+        $idunit      = trim((string) ($dataprocess->idunit ?? ''));
+        $namabarang  = trim((string) ($dataprocess->namabarang ?? ''));
+        $qty         = trim((string) ($dataprocess->qty ?? ''));
+        $price       = trim((string) ($dataprocess->price ?? ''));
+        $description = trim((string) ($dataprocess->description ?? ''));
 
-        // Validasi data tidak boleh kosong
-        if (empty($idunit) || empty($namabarang) || empty($qty) || empty($description)) {
+        $qtyVal   = (float) str_replace(',', '', $qty);
+        $priceVal = (float) str_replace(',', '', $price);
+        $amountVal = round($qtyVal * $priceVal, 4);
+
+        if ($docno === '' || $idunit === '' || $namabarang === '' || $qty === '') {
             return $this->response->setJSON([
-                'status' => false,
-                'message' => 'Please fill all required fields (Unit, Item Name, Qty, Description).'
+                'status'  => false,
+                'message' => 'Lengkapi No. Jurnal/Dokumen, Unit, Nama Barang, dan Qty.'
             ]);
         }
 
-        // Data untuk disimpan ke database
-        $data_insert = [
-            'docno' => $inputby,
-            'unit' => $idunit,
-            'namabarang' => $namabarang,
-            'qty' => $qty,
+        $header = $this->db->table('sc_tmp.proforma')
+            ->where('docno', $docno)
+            ->where('inputby', $inputby)
+            ->get()
+            ->getRowArray();
+
+        if (!$header || trim((string) ($header['status'] ?? '')) !== 'E') {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Header proforma belum ada atau tidak dalam status edit.'
+            ]);
+        }
+
+        $insert = $this->db->table('sc_tmp.proformadtl')->insert([
+            'docno'       => $docno,
+            'idbarang'    => null,
+            'nmbarang'    => $namabarang,
+            'unit'        => $idunit,
+            'qty'         => $qtyVal,
+            'price'       => $priceVal,
+            'usdmt'       => 0,
+            'exchange'    => 1,
+            'amount'      => $amountVal,
             'description' => $description,
-            'inputby' => $inputby,
-            'inputdate' => $inputdate,
-            'status' => 'I'
-        ];
+            'status'      => 'E',
+            'inputby'     => $inputby,
+            'inputdate'   => $inputdate,
+        ]);
 
-        // Insert ke database
-        $builder = $this->db->table('sc_tmp.proformadtl'); // Sesuaikan dengan tabel Anda
-        $insert = $builder->insert($data_insert);
-
-        // Cek apakah berhasil insert
-        if ($insert) {
-            return $this->response->setJSON([
-                'status' => true,
-                'message' => 'Detail successfully inserted!'
-            ]);
-        } else {
-            return $this->response->setJSON([
-                'status' => false,
-                'message' => 'Failed to insert data. Please try again.'
-            ]);
-        }
+        return $this->response->setJSON([
+            'status'  => (bool) $insert,
+            'message' => $insert ? 'Detail berhasil disimpan.' : 'Detail gagal disimpan.'
+        ]);
     }
 
     public function insertNewProforma()
@@ -2203,6 +2234,13 @@ class PreSales extends BaseController
 
     public function update_detail_proforma()
     {
+        if (!$this->proforma_can_update()) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Anda tidak memiliki hak update untuk menu ini.'
+            ]);
+        }
+
         $nama = trim($this->session->get('nama')); // Mengambil docno dari session
         $request_body = file_get_contents('php://input');
         $data = $this->request->getJSON(); // Mengambil data JSON langsung
@@ -2322,7 +2360,7 @@ class PreSales extends BaseController
             </select>';
 
 
-            $row[] = '<input class="form-control ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;" type="text" id="qty_'.$lm->idurut.'" name="qty_'.$lm->idurut.'" value="'.number_format($lm->qty, 2, '.', ',').'" disabled  min="0">';
+            $row[] = '<input class="form-control ratakanan jaccseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;" type="text" id="qty_'.$lm->idurut.'" name="qty_'.$lm->idurut.'" value="'.number_format($lm->qty, 4, '.', ',').'" disabled  min="0">';
             $row[] = '<select disabled class="unit-dropdown" style="width: 100%; height: 20px!important; font-size: 12px; " data-id="' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '">
             <option value="" disabled>-- Choose --</option>
             <option value="' . htmlspecialchars($lm->unit, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($lm->unit, ENT_QUOTES, 'UTF-8') . '</option>
@@ -2334,12 +2372,12 @@ class PreSales extends BaseController
             $row[] = '
             <div style="display:flex; align-items:center;">
                 <span style="margin-right:4px; font-size:12px;font-weight:bold">Rp</span>
-                <input class="form-control ratakanan jtsseparator" 
+                <input class="form-control ratakanan jaccseparator" 
                     style="margin:0px; background-color:#d6d5d5; width:100%;" 
                     type="text"  
                     id="price_'.$lm->idurut.'" 
                     name="price_'.$lm->idurut.'" 
-                    value="'.number_format($lm->price, 2, '.', ',').'" 
+                    value="'.number_format($lm->price, 4, '.', ',').'" 
                     disabled min="0">
             </div>';
 
@@ -2347,11 +2385,11 @@ class PreSales extends BaseController
             $row[] = '
             <div style="display:flex; align-items:center;">
                 <span style="margin-right:4px; font-size:12px;font-weight:bold">Rp</span>
-                    <input class="form-control ratakanan jtsseparator amount" style="margin:0px; background-color:#d6d5d5;width: 100%;" 
+                    <input class="form-control ratakanan jaccseparator amount" style="margin:0px; background-color:#d6d5d5;width: 100%;" 
                     type="text"  
                     id="amount_'.$lm->idurut.'" 
                     name="amount_'.$lm->idurut.'" 
-                    value="'.number_format($lm->amount, 2, '.', ',').'" 
+                    value="'.number_format($lm->amount, 4, '.', ',').'" 
                     disabled  min="0">
             </div>';
             //usdmt
@@ -2359,7 +2397,7 @@ class PreSales extends BaseController
             // $row[] = '
             // <div style="display:flex; align-items:center;">
             //     <span style="margin-right:4px; font-size:12px;font-weight:bold">$</span>
-            //     <input class="form-control ratakanan jtsseparator" 
+            //     <input class="form-control ratakanan jaccseparator" 
             //         style="margin:0px; background-color:#d6d5d5; width:100%;" 
             //         type="text"  
             //         id="usdmt_'.$lm->idurut.'" 
@@ -2405,7 +2443,7 @@ class PreSales extends BaseController
             </select>';
 
 
-            $row[] = '<input class="form-control ratakanan jtsseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;" type="text" id="qty_'.$lm->idurut.'" name="qty_'.$lm->idurut.'" value="'.number_format($lm->qty, 2, '.', ',').'" disabled  min="0">';
+            $row[] = '<input class="form-control ratakanan jaccseparator" style="margin:0px; background-color:#d6d5d5;width: 100%;" type="text" id="qty_'.$lm->idurut.'" name="qty_'.$lm->idurut.'" value="'.number_format($lm->qty, 4, '.', ',').'" disabled  min="0">';
             $row[] = '<select disabled class="unit-dropdown" style="width: 100%; height: 20px!important; font-size: 12px; " data-id="' . htmlspecialchars($lm->idurut, ENT_QUOTES, 'UTF-8') . '">
             <option value="" disabled>-- Choose --</option>
             <option value="' . htmlspecialchars($lm->unit, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($lm->unit, ENT_QUOTES, 'UTF-8') . '</option>
@@ -2417,12 +2455,12 @@ class PreSales extends BaseController
             $row[] = '
             <div style="display:flex; align-items:center;">
                 <span style="margin-right:4px; font-size:12px;font-weight:bold">Rp</span>
-                <input class="form-control ratakanan jtsseparator" 
+                <input class="form-control ratakanan jaccseparator" 
                     style="margin:0px; background-color:#d6d5d5; width:100%;" 
                     type="text"  
                     id="price_'.$lm->idurut.'" 
                     name="price_'.$lm->idurut.'" 
-                    value="'.number_format($lm->price, 2, '.', ',').'" 
+                    value="'.number_format($lm->price, 4, '.', ',').'" 
                     disabled min="0">
             </div>';
 
@@ -2430,11 +2468,11 @@ class PreSales extends BaseController
             $row[] = '
             <div style="display:flex; align-items:center;">
                 <span style="margin-right:4px; font-size:12px;font-weight:bold">Rp</span>
-                    <input class="form-control ratakanan jtsseparator amount" style="margin:0px; background-color:#d6d5d5;width: 100%;" 
+                    <input class="form-control ratakanan jaccseparator amount" style="margin:0px; background-color:#d6d5d5;width: 100%;" 
                     type="text"  
                     id="amount_'.$lm->idurut.'" 
                     name="amount_'.$lm->idurut.'" 
-                    value="'.number_format($lm->amount, 2, '.', ',').'" 
+                    value="'.number_format($lm->amount, 4, '.', ',').'" 
                     disabled  min="0">
             </div>';
             //usdmt
@@ -2442,7 +2480,7 @@ class PreSales extends BaseController
             // $row[] = '
             // <div style="display:flex; align-items:center;">
             //     <span style="margin-right:4px; font-size:12px;font-weight:bold">$</span>
-            //     <input class="form-control ratakanan jtsseparator" 
+            //     <input class="form-control ratakanan jaccseparator" 
             //         style="margin:0px; background-color:#d6d5d5; width:100%;" 
             //         type="text"  
             //         id="usdmt_'.$lm->idurut.'" 
@@ -2469,6 +2507,14 @@ class PreSales extends BaseController
 
 
     function finalEntryProforma(){
+        if (!$this->proforma_can_update()) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Anda tidak memiliki hak update untuk menu ini.',
+                'redirect' => base_url('/sales/presales/performainvoice'),
+            ]);
+        }
+
         $nama = trim($this->session->get('nama'));
         // $loccode = trim($this->session->get('loccode'));
         $param = " and coalesce(inputby,'')='$nama'";
@@ -2476,9 +2522,53 @@ class PreSales extends BaseController
         $paramdtl2 = " and coalesce(inputby,'')='$nama'";
 
         $header = $this->m_presales->q_proforma_master_temp($param);
-        $status = trim($header->getRowArray()['status']);
+        $headerRow = $header->getRowArray();
+        $status = trim((string) ($headerRow['status'] ?? ''));
+        $proformaDocno = trim((string) ($headerRow['docno'] ?? ''));
+        $jnsinvoice = strtoupper(trim((string) ($headerRow['jnsinvoice'] ?? '')));
+        $docnopjo = trim((string) ($headerRow['docnopjo'] ?? ''));
+
         $cek = $this->m_presales->q_proforma_dtl_temp($paramdtl);
         $cek2 = $this->m_presales->q_proforma_dtl_temp($paramdtl2);
+
+        if ($status !== 'E' || $proformaDocno === '') {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Header proforma tidak ditemukan atau tidak dalam status edit (E).',
+                'redirect' => base_url('/sales/presales/addProforma'),
+            ]);
+        }
+
+        if ($jnsinvoice === 'INVOICE') {
+            if ($docnopjo === '') {
+                return $this->response->setJSON([
+                    'status'  => 'error',
+                    'message' => 'INVOICE wajib menarik PJO yang sudah memiliki jurnal POSTED.',
+                    'redirect' => base_url('/sales/presales/addProforma'),
+                ]);
+            }
+
+            $pjoCheck = $this->m_presales->q_penjualan_proforma_header($docnopjo);
+            if (!$pjoCheck) {
+                return $this->response->setJSON([
+                    'status'  => 'error',
+                    'message' => 'PJO ' . $docnopjo . ' tidak valid atau jurnal SALESX belum POSTED.',
+                    'redirect' => base_url('/sales/presales/addProforma'),
+                ]);
+            }
+        }
+
+        $detailRows = $this->db->table('sc_tmp.proformadtl')
+            ->where('docno', $proformaDocno)
+            ->where('inputby', $nama)
+            ->get()
+            ->getResultArray();
+
+        $totals = $this->proforma_hitung_totals(
+            $headerRow,
+            $detailRows,
+            $docnopjo !== ''
+        );
 
 
         $builder = $this->db->table('sc_tmp.proforma');
@@ -2516,13 +2606,17 @@ class PreSales extends BaseController
             // $expdateph   = trim($this->request->getPost('expdateph')); // format dd-mm-yyyy
             // $ketentuan   = strtoupper(trim($this->request->getPost('ketentuan')));
 
-            $grosssales         = strtoupper(trim($this->request->getPost('grosssales')));
-            $downpayment         = strtoupper(trim($this->request->getPost('downpayment')));
-            $netsales         = strtoupper(trim($this->request->getPost('netsales')));
-            $taxbasis         = strtoupper(trim($this->request->getPost('taxbasis')));
-            $vat         = strtoupper(trim($this->request->getPost('vat')));
-            $pph22         = strtoupper(trim($this->request->getPost('pph22')));
-            $ttlprice         = strtoupper(trim($this->request->getPost('ttlprice')));
+            $downpayment = str_replace(',', '', strtoupper(trim($this->request->getPost('downpayment'))));
+            $pph22       = str_replace(',', '', strtoupper(trim($this->request->getPost('pph22'))));
+
+            $totals = $this->proforma_hitung_totals(
+                array_merge($headerRow, [
+                    'downpayment' => (float) $downpayment,
+                    'pph22'       => (float) $pph22,
+                ]),
+                $detailRows,
+                $docnopjo !== ''
+            );
 
 
             $bank         = strtoupper(trim($this->request->getPost('bank')));
@@ -2550,13 +2644,14 @@ class PreSales extends BaseController
                 // 'expdate'    => $expdate,
                 // 'ketentuan'  => $ketentuan,
 
-                'grosssales'         => $grosssales,
-                'downpayment'         => $downpayment,
-                'netsales'         => $netsales,
-                'taxbasis'         => $taxbasis,
-                'vat'         =>    $vat,
-                'pph22'         => $pph22,
-                'ttlprice'         => $ttlprice,
+                'grosssales'  => $totals['grosssales'],
+                'downpayment' => (float) $downpayment,
+                'netsales'    => $totals['netsales'],
+                'taxbasis'    => $totals['taxbasis'],
+                'vat'         => $totals['vat'],
+                'pph22'       => $totals['pph22'],
+                'ttlprice'    => $totals['ttlprice'],
+                'docnotmp'    => $proformaDocno,
 
                 'description'       => $desc,
 
@@ -2572,12 +2667,14 @@ class PreSales extends BaseController
 
             ];
 
+            $builder->where('docno', $proformaDocno);
             $builder->where('inputby', $nama);
             $builder->update($updateHeader);
 
             $info = array(
                 'status' => 'F'
             );
+            $builder->where('docno', $proformaDocno);
             $builder->where('inputby',$nama);
             if ($builder->update($info)) {
                 $paramerror=" and userid='$nama' and modul='I.S.A.3'";
@@ -2588,8 +2685,11 @@ class PreSales extends BaseController
 
                 // return redirect()->to(base_url('/sales/presales/performainvoice'));
                 return $this->response->setJSON([
-                    'status' => 'success',
-                    'redirect' => base_url('/sales/presales/performainvoice')
+                    'status'      => 'success',
+                    'message'     => 'Proforma/Invoice berhasil difinalkan.',
+                    'docno'       => $proformaDocno,
+                    'preview_url' => $this->proforma_preview_url($proformaDocno),
+                    'redirect'    => base_url('/sales/presales/performainvoice')
                 ]);
             } else {
                 $infotrxerror = array(
@@ -2614,30 +2714,25 @@ class PreSales extends BaseController
     }
 
     function deleteProforma(){
-        $nama = trim($this->session->get('nama'));
-        $docno = hex2bin($this->request->getGet('id'));
-        $builder = $this->db->table('sc_trx.proforma');
+        $docno = @hex2bin((string) $this->request->getGet('id'));
 
-        // Update status menjadi 'C'
-        $iupdate = array('status' => 'C');
-        $builder->where('docno', $docno);
-        if ($builder->update($iupdate)) {
-            // // Hapus data dari tabel proforma dan proformadtl sesuai docno dan status 'C'
-            // $builder->where('docno', $docno); 
-            // $builder->where('status', 'C');
-            // $builder->delete();
-
-            // // Menghapus data dari proformadtl
-            // $this->db->table('sc_trx.proformadtl')
-            //         ->where('docno', $docno)
-            //         ->where('inputby', $nama)
-            //         ->delete();
-
-            return redirect()->to(base_url('sales/presales/performainvoice') . '?status=success&message=Successfully data Canceled');
-        } else {
-            return redirect()->to(base_url('sales/presales/performainvoice') . '?status=error&message=No updates provided or operation failed');
+        if ($docno === false || $docno === '') {
+            return redirect()->to(base_url('sales/presales/performainvoice'))
+                ->with('proforma_error', 'Nomor dokumen tidak valid.');
         }
 
+        [$aksesOk, $aksesMsg] = $this->proforma_akses_update($docno);
+        if (!$aksesOk) {
+            return redirect()->to(base_url('sales/presales/performainvoice'))
+                ->with('proforma_error', $aksesMsg);
+        }
+
+        $builder = $this->db->table('sc_trx.proforma');
+        $builder->where('docno', $docno);
+        $builder->update(['status' => 'C']);
+
+        return redirect()->to(base_url('sales/presales/performainvoice'))
+            ->with('proforma_success', 'Dokumen proforma berhasil dibatalkan.');
     }
 
 
@@ -2648,6 +2743,22 @@ class PreSales extends BaseController
 
         if (empty($id) || empty($docno)) {
             echo json_encode(['status' => false, 'messages' => 'Missing Parameters']);
+            return;
+        }
+
+        if (!$this->proforma_can_update()) {
+            echo json_encode(['status' => false, 'messages' => 'Anda tidak memiliki hak update.']);
+            return;
+        }
+
+        $header = $this->db->table('sc_tmp.proforma')
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->get()
+            ->getRowArray();
+
+        if (!$header || trim((string) ($header['status'] ?? '')) !== 'E') {
+            echo json_encode(['status' => false, 'messages' => 'Dokumen bukan milik Anda atau tidak dalam status edit.']);
             return;
         }
 
@@ -2678,18 +2789,346 @@ class PreSales extends BaseController
 
     }
 
+    /**
+     * Daftar PJO/Penjualan untuk dropdown Proforma/Invoice.
+     * Hanya PJO status F + jurnal SALESX POSTED.
+     */
+    public function list_penjualan_proforma()
+    {
+        $branch = trim((string) $this->session->get('idbranchjob'));
+        if ($branch === '') {
+            $branch = trim((string) $this->session->get('loccode'));
+        }
+
+        $customer = trim((string) ($this->request->getPost('_customer_')
+            ?? $this->request->getPost('cust')
+            ?? ''));
+        $search   = trim((string) $this->request->getPost('_search_'));
+
+        $items = $this->m_presales->q_list_penjualan_proforma($branch, $customer, $search);
+
+        return $this->response->setJSON([
+            'total_count'           => count($items),
+            'items'                 => $items,
+            'incomplete_getResults' => false,
+        ]);
+    }
+
+    /**
+     * Tarik header + detail PJO ke header/detail proforma temporary.
+     */
+    public function pull_penjualan_proforma()
+    {
+        if (!$this->proforma_can_update()) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Anda tidak memiliki hak update untuk menu ini.',
+            ]);
+        }
+
+        $nama     = trim((string) $this->session->get('nama'));
+        $docno    = strtoupper(trim((string) $this->request->getPost('docno')));
+        $docnopjo = strtoupper(trim((string) $this->request->getPost('docnopjo')));
+
+        if ($docno === '') {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'No. Jurnal/Dokumen proforma belum terisi.',
+            ]);
+        }
+
+        if ($docnopjo === '') {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Pilih No. PJO/Penjualan terlebih dahulu.',
+            ]);
+        }
+
+        $header = $this->db->table('sc_tmp.proforma')
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->get()
+            ->getRowArray();
+
+        if (!$header) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Header proforma belum tersimpan. Klik Proses terlebih dahulu.',
+            ]);
+        }
+
+        if (trim((string) $header['status']) !== 'E') {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Proforma tidak dalam status edit (E).',
+            ]);
+        }
+
+        $pjo = $this->m_presales->q_penjualan_proforma_header($docnopjo);
+
+        if (!$pjo) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'PJO tidak ditemukan, belum FINAL, atau jurnal SALESX belum POSTED.',
+            ]);
+        }
+
+        $jnsinvoice = strtoupper(trim((string) ($header['jnsinvoice'] ?? 'PROFORMA')));
+        $custHeader = strtoupper(trim((string) ($header['cust'] ?? '')));
+        $custPjo    = strtoupper(trim((string) ($pjo['kdcustomer'] ?? '')));
+
+        if ($custHeader !== '' && $custPjo !== '' && $custHeader !== $custPjo) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Customer proforma tidak sama dengan customer PJO.',
+            ]);
+        }
+
+        if ($jnsinvoice === 'INVOICE') {
+            $used = $this->m_presales->q_proforma_by_pjo($docnopjo, 'INVOICE');
+            if ($used && strtoupper(trim((string) $used['docno'])) !== $docno) {
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'PJO ' . $docnopjo . ' sudah dipakai INVOICE aktif: ' . trim((string) $used['docno']),
+                ]);
+            }
+        }
+
+        $rows = $this->m_presales->q_penjualan_proforma_dtl($docnopjo);
+        if (empty($rows)) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'PJO tidak memiliki detail item.',
+            ]);
+        }
+
+        $details = [];
+        foreach ($rows as $row) {
+            $details[] = [
+                'idurutpjo'     => (int) $row->idurut,
+                'idbarang'      => trim((string) $row->idbarang),
+                'nmbarang'      => trim((string) $row->nmbarang),
+                'unit'          => trim((string) $row->unit),
+                'qty'           => (float) $row->qty,
+                'price'         => (float) $row->harga,
+                'amount'        => (float) $row->nilai,
+                'discount'      => (float) $row->multidisc,
+                'nilaikonversi' => (float) $row->nilaikonversi,
+                'nilaipajak'    => (float) $row->nilaipajak,
+                'idtax'         => trim((string) $row->idtax),
+                'idgudang'      => trim((string) $row->idgudang),
+                'idspec'        => (strtoupper(trim((string) $row->idspec)) === 'NULL'
+                    ? ''
+                    : trim((string) $row->idspec)),
+                'description'   => (string) ($row->description ?? ''),
+            ];
+        }
+
+        $headerForCalc = array_merge($header, [
+            'dpp'         => (float) $pjo['dpp'],
+            'jumlahpajak' => (float) $pjo['jumlahpajak'],
+            'downpayment' => (float) ($header['downpayment'] ?? 0),
+            'pph22'       => (float) ($header['pph22'] ?? 0),
+        ]);
+        $totals = $this->proforma_hitung_totals($headerForCalc, $details, true);
+
+        $db = $this->db;
+        $db->transStart();
+
+        $db->table('sc_tmp.proforma')
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->update([
+                'docnopjo'    => $docnopjo,
+                'jurnalno'    => trim((string) $pjo['jurnalno']),
+                'cust'        => $custPjo,
+                'nmcustomer'  => trim((string) $pjo['nmcustomer']),
+                'address'     => (string) ($pjo['address'] ?? ''),
+                'phone'       => (string) ($pjo['phone'] ?? ''),
+                'fax'         => (string) ($pjo['fax'] ?? ''),
+                'pono'        => $docnopjo,
+                'podate'      => (string) ($pjo['docdate'] ?? ''),
+                'idtax'       => trim((string) ($pjo['idtax'] ?? '')),
+                'isinclusive' => trim((string) ($pjo['isinclusive'] ?? '')),
+                'currcode'    => trim((string) ($pjo['currcode'] ?? '')),
+                'kurs'        => (float) ($pjo['kurs'] ?? 1),
+                'dpp'         => (float) $pjo['dpp'],
+                'jumlahpajak' => (float) $pjo['jumlahpajak'],
+                'total'       => (float) $pjo['total'],
+                'grosssales'  => $totals['grosssales'],
+                'netsales'    => $totals['netsales'],
+                'taxbasis'    => $totals['taxbasis'],
+                'vat'         => $totals['vat'],
+                'pph22'       => $totals['pph22'],
+                'ttlprice'    => $totals['ttlprice'],
+                'updateby'    => $nama,
+                'updatedate'  => date('Y-m-d H:i:s'),
+            ]);
+
+        $db->table('sc_tmp.proformadtl')
+            ->where('docno', $docno)
+            ->delete();
+
+        foreach ($details as $detail) {
+            $db->table('sc_tmp.proformadtl')->insert([
+                'docno'         => $docno,
+                'idbarang'      => $detail['idbarang'],
+                'nmbarang'      => $detail['nmbarang'],
+                'unit'          => $detail['unit'],
+                'qty'           => $detail['qty'],
+                'price'         => $detail['price'],
+                'usdmt'         => 0,
+                'exchange'      => 1,
+                'amount'        => $detail['amount'],
+                'description'   => $detail['description'],
+                'status'        => 'E',
+                'inputby'       => $nama,
+                'inputdate'     => date('Y-m-d H:i:s'),
+                'docnopjo'      => $docnopjo,
+                'idurutpjo'     => $detail['idurutpjo'],
+                'idtax'         => $detail['idtax'],
+                'idgudang'      => $detail['idgudang'],
+                'idspec'        => $detail['idspec'],
+                'nilaikonversi' => $detail['nilaikonversi'],
+                'nilaipajak'    => $detail['nilaipajak'],
+                'discount'      => $detail['discount'],
+            ]);
+        }
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Gagal menarik PJO. Periksa data lalu coba lagi.',
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'status'  => true,
+            'message' => 'PJO ' . $docnopjo . ' berhasil ditarik.',
+            'header'  => [
+                'docno'      => $docno,
+                'docnopjo'   => $docnopjo,
+                'jurnalno'   => trim((string) $pjo['jurnalno']),
+                'cust'       => $custPjo,
+                'nmcustomer' => trim((string) $pjo['nmcustomer']),
+                'address'    => (string) ($pjo['address'] ?? ''),
+                'phone'      => (string) ($pjo['phone'] ?? ''),
+                'fax'        => (string) ($pjo['fax'] ?? ''),
+                'pono'       => $docnopjo,
+                'podate'     => (string) ($pjo['docdate'] ?? ''),
+            ],
+            'totals'  => $totals,
+            'details' => $details,
+        ]);
+    }
+
+    private function proforma_hitung_totals(array $header, array $details, bool $fromPjo): array
+    {
+        $gross = 0.0;
+        foreach ($details as $detail) {
+            $row = is_array($detail) ? $detail : (array) $detail;
+            $gross += (float) ($row['amount'] ?? 0);
+        }
+
+        $downpayment = (float) ($header['downpayment'] ?? 0);
+        $pph22       = (float) ($header['pph22'] ?? 0);
+
+        if ($fromPjo) {
+            $dpp  = (float) ($header['dpp'] ?? 0);
+            $ppn  = (float) ($header['jumlahpajak'] ?? 0);
+            $gross = $dpp > 0 ? $dpp : $gross;
+            $net   = $gross - $downpayment;
+            $tax   = $dpp;
+            $vat   = $ppn;
+            $total = $net + $vat + $pph22;
+        } else {
+            $net   = $gross - $downpayment;
+            $tax   = (11 / 12) * $net;
+            $vat   = $tax * 0.12;
+            $pph22 = $net * 0.003;
+            $total = $net + $vat + $pph22;
+        }
+
+        return [
+            'grosssales' => round($gross, 4),
+            'netsales'   => round($net, 4),
+            'taxbasis'   => round($tax, 4),
+            'vat'        => round($vat, 4),
+            'pph22'      => round($pph22, 4),
+            'ttlprice'   => round($total, 4),
+        ];
+    }
+
+    private function proforma_preview_url(string $docno): string
+    {
+        return base_url('sales/presales/show_proforma/?docno=' . bin2hex($docno));
+    }
+
+    private function proforma_can_update(): bool
+    {
+        $role = trim((string) $this->session->get('roleid'));
+        $akses = $this->m_role->detail_user_akses($role, 'I.S.A.3')->getRowArray();
+        return trim((string) ($akses['a_update'] ?? '')) === 't';
+    }
+
+    private function proforma_akses_update(string $docno): array
+    {
+        $nama = trim((string) $this->session->get('nama'));
+        $role = trim((string) $this->session->get('roleid'));
+
+        $header = $this->db->table('sc_trx.proforma')
+            ->where('docno', $docno)
+            ->get()
+            ->getRowArray();
+
+        if (!$header) {
+            return [false, 'Dokumen proforma tidak ditemukan.', null];
+        }
+
+        $akses = $this->m_role->detail_user_akses($role, 'I.S.A.3')->getRowArray();
+        $canUpdate = trim((string) ($akses['a_update'] ?? '')) === 't';
+
+        if (!$canUpdate) {
+            return [false, 'Anda tidak memiliki hak update untuk menu ini.', $header];
+        }
+
+        if (trim((string) ($header['inputby'] ?? '')) !== $nama) {
+            return [false, 'Dokumen ini bukan milik Anda.', $header];
+        }
+
+        return [true, '', $header];
+    }
+
     function show_proforma(){
-        $module = 'Invoice';
-        $table = 'sc_trx.proforma';
-        $nama = trim($this->session->get('nama'));
-        $docno = $this->request->getGet('docno');  // Mengambil 'docno' dari URL
-        //$docdate = $this->request->getPost('docdate');
-        // $idlocation = $this->request->getPost('idlocation');
-        // $idgroup = $this->request->getPost('idgroup');
-        // $formheader = $this->request->getPost('formheader');
-        $nama = trim($this->session->get('nama'));
-        // $docno = hex2bin($this->request->getGet('docno'));
-        $docno = hex2bin($docno);
+
+        $module = 'I.S';
+        $menu   = 'I.S.A.3';
+        $table  = 'sc_trx.proforma';
+        $nama   = trim($this->session->get('nama'));
+        $docno  = $this->request->getGet('docno');
+
+        if (empty($docno)) {
+            return redirect()->to(base_url('sales/presales/performainvoice'));
+        }
+
+        $docno = @hex2bin($docno);
+        if ($docno === false || $docno === '') {
+            return redirect()->to(base_url('sales/presales/performainvoice'));
+        }
+
+        $headerProforma = $this->db->table('sc_trx.proforma')
+            ->select('jnsinvoice')
+            ->where('docno', $docno)
+            ->get()
+            ->getRowArray();
+
+        if (!$headerProforma) {
+            return redirect()->to(base_url('sales/presales/performainvoice'));
+        }
+
+        $jnsinvoice = strtoupper(trim((string) ($headerProforma['jnsinvoice'] ?? '')));
         $builder = $this->db->table('sc_trx.proforma');
 
         //    $builder = $builder
@@ -2708,7 +3147,7 @@ class PreSales extends BaseController
         // $enc_idgroup = $this->fiky_encryption->sealed($idgroup);
         // $enc_formheader = $this->fiky_encryption->sealed($formheader);
 
-        $title = " Report Proforma Invoice";
+        $title = $jnsinvoice === 'INVOICE' ? " Report Invoice" : " Report Proforma Invoice";
 
         //$datajson =  base_url("manufactur/production/api_proforma/?enc_idbarang=$enc_idbarang&enc_docdate=$enc_docdate&enc_idlocation=$enc_idlocation&enc_idgroup=$enc_idgroup") ;
         $datajson =  base_url("sales/presales/api_proforma/?enc_docno=$enc_docno") ;
@@ -2719,7 +3158,7 @@ class PreSales extends BaseController
         //     $datamrt =  base_url("assets/mrt/report_proforma_non_header.mrt") ;
         // }
 
-        return $this->fiky_report->render($datajson,$datamrt,$title,$nama,$module,$table,$docno);
+        return $this->fiky_report->render($datajson,$datamrt,$title,$nama,$module,$table,$docno,$menu);
     }
 
     function api_proforma(){
@@ -2748,20 +3187,27 @@ class PreSales extends BaseController
         //     $param_group=" and idgroup='$idgroup'";
         // } else {  $param_group=""; }
 
-        $this->db->query("select sc_trx.pr_generate_pov_proforma_dtl('$docno','$nama');");
+        $this->db->query("select sc_trx.pr_generate_pov_proforma_dtl(?, ?)", [$docno, $nama]);
         $databranch = $this->m_global->q_master_branch();
         $param=" and docno='$docno'";
         $datamst = $this->m_presales->q_proforma_master($param);
         $datadtl = $this->m_presales->q_view_print_proforma_dtl($param,$nama);
         // $datadtl = $this->m_presales->q_proforma_dtl($param);
-        $tampungdtl = $datamst->getResult();
-        $detail = $tampungdtl[0] ?? null;
+        $masterRows = $datamst->getResult();
+        $detail = $masterRows[0] ?? null;
         if ($detail) {
 
             $tujuan = isset($detail->tujuan) ? trim($detail->tujuan) : '';
             $detail->docno = trim($detail->docno);
 
             $detail->jnsinvoice = trim($detail->jnsinvoice) == 'PROFORMA' ? 'PROFORMA INVOICE' : 'INVOICE';
+
+            $custRow = $this->m_presales->q_customer_proforma(trim((string) $detail->cust));
+            $nmcust  = trim((string) ($custRow['nmcustomer'] ?? ''));
+            foreach ($masterRows as $m) {
+                $m->nmcustomer = $nmcust;
+                $m->jnsinvoice = $detail->jnsinvoice;
+            }
         }
 
         header("Content-Type: text/json");
@@ -2780,7 +3226,7 @@ class PreSales extends BaseController
                 ]
                 ),
                 'branch' => $databranch->getResult(),
-                'master' => $datamst->getResult(),
+                'master' => $masterRows,
                 'detail' => $datadtl->getResult(),
             ), JSON_PRETTY_PRINT);
     }

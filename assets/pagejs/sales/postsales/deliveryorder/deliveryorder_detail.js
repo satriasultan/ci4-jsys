@@ -61,6 +61,11 @@ function tableDeliveryOrderTrx(){
             //Set column definition initialisation properties.
             "columnDefs": [
                 {
+                    "targets": [0, 1],
+                    "orderable": false,
+                    "searchable": false
+                },
+                {
                     "targets": [ -1 ], //last column
                     "orderable": false, //set not orderable
                 },
@@ -770,16 +775,53 @@ $("#idtax").select2({
 
 
 
-function setJtsValue(selector, value) {
-    $(selector).val(value);
-    _jtsseparator($(selector)[0]);
+/* =========================================================
+ * FORMAT ANGKA PENJUALAN (NUMERIC 18,4)
+ * Tampilan angka selalu 4 digit desimal.
+ * PENGECUALIAN: Jatuh Tempo (jthtempo) = jumlah hari (bulat).
+ * ========================================================= */
+const SALES_DECIMAL_DIGITS = 4;
+const SALES_INTEGER_FIELDS = ['jthtempo'];
+
+function salesMaxDecimals(el) {
+    if (!el) return SALES_DECIMAL_DIGITS;
+    var key = String(el.id || $(el).attr('name') || '').trim().toLowerCase();
+    return SALES_INTEGER_FIELDS.indexOf(key) !== -1 ? 0 : SALES_DECIMAL_DIGITS;
 }
 
+function salesSeparator(el) {
+    if (!el) return;
+    (typeof jaccseparator === 'function' ? jaccseparator : _jtsseparator)(el, {
+        maxDecimals: salesMaxDecimals(el)
+    });
+}
 
+function salesFormatNumber(value, maxDec) {
+    var num = convertToDbNumber(value);
+    if (!isFinite(num)) return '';
+    if (maxDec <= 0) {
+        return Math.round(num).toLocaleString('en-US');
+    }
+    return num.toLocaleString('en-US', {
+        minimumFractionDigits: maxDec,
+        maximumFractionDigits: maxDec
+    });
+}
 
+function setJtsValue(selector, value) {
+    var el = $(selector)[0];
+    if (!el) return;
+    el.value = salesFormatNumber(value, salesMaxDecimals(el));
+}
 
-$(document).on('input', '.jtsseparator', function () {
-    _jtsseparator(this);
+$(document).on('input', '.jaccseparator', function () {
+    salesSeparator(this);
+});
+
+$(document).on('blur change', '.jaccseparator', function () {
+    var raw = $.trim(this.value || '');
+    if (raw === '' || !/[0-9]/.test(raw)) return;
+    this.value = salesFormatNumber(raw, salesMaxDecimals(this));
 });
 
 
@@ -996,8 +1038,8 @@ $('#modalUpdateDeliveryOrder').on('hidden.bs.modal', function () {
         
 //         // Format ke en-US: separator ribuan = koma, desimal = titik
 //         $('#nilai').val(nilaiAkhir.toLocaleString('en-US', {
-//             minimumFractionDigits: 2, 
-//             maximumFractionDigits: 2
+//             minimumFractionDigits: 4, 
+//             maximumFractionDigits: 4
 //         }));
 //     }
 // });

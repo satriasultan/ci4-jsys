@@ -29,7 +29,7 @@ class M_Postsales extends Model
         $builder->where("docno = '$nama'");
         foreach ($this->t_salesorder_view_column as $mrp)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -48,17 +48,16 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo salesorderst column 0
-                $builder->orderBy($this->t_salesorder_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_salesorder_view_order))
-        {
-            $order = $this->t_salesorder_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_salesorder_view_colmap[$orderColumn])) ? $this->t_salesorder_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_salesorder_view_order)) { foreach ($this->t_salesorder_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -68,8 +67,9 @@ class M_Postsales extends Model
     function get_t_salesorder_view(){
         $builder = $this->_get_query_t_salesorder();
         ////$this->_get_query_t_salesorder();
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -79,8 +79,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_t_salesorder();
         ////$this->_get_query_t_salesorder();
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_salesorder_view_count_all()
     {
@@ -97,7 +96,8 @@ class M_Postsales extends Model
 
     /* TRX MRP DETAIL */
     var $t_salesorder_dtl_view = "sc_trx.salesorder_dtl";
-    var $t_salesorder_dtl_view_column = array('idurut','docnopo','idbarang','nmbarang','unit','qty','descriptionpo','descriptionpp');
+    var $t_salesorder_dtl_view_column = array('idurut','idbarang','nmbarang','idprincipal','idgudang','idspec','unit','qty','harga','multidisc','nilai','bomdesc');
+    var $t_salesorder_dtl_view_colmap = [null,'idbarang','nmbarang','idprincipal','idgudang','idspec','unit','qty','harga','multidisc','nilai','bomdesc'];
     var $t_salesorder_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_t_salesorder_dtl($docnoParam)
     {
@@ -108,10 +108,10 @@ class M_Postsales extends Model
         $builder = $this->db->table($this->t_salesorder_dtl_view);
         $i = 0;
 
-        $builder->where("docno = '$docnoParam'");
+        $builder->where('docno', $docnoParam);
         foreach ($this->t_salesorder_dtl_view_column as $mrp)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -130,17 +130,16 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo salesorderst column 0
-                $builder->orderBy($this->t_salesorder_dtl_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_salesorder_dtl_view_order))
-        {
-            $order = $this->t_salesorder_dtl_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_salesorder_dtl_view_colmap[$orderColumn])) ? $this->t_salesorder_dtl_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_salesorder_dtl_view_order)) { foreach ($this->t_salesorder_dtl_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -150,8 +149,9 @@ class M_Postsales extends Model
     function get_t_salesorder_dtl_view($docnoParam){
         $builder = $this->_get_query_t_salesorder_dtl($docnoParam);
         ////$this->_get_query_t_salesorder_dtl();
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -163,8 +163,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_t_salesorder_dtl($docnoParam);
         ////$this->_get_query_t_salesorder_dtl();
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_salesorder_dtl_view_count_all($docnoParam)
     {
@@ -204,7 +203,8 @@ class M_Postsales extends Model
     //WO TEMP
     /* WO DETAIL */
     var $t_salesorder_dtl_temp_view = "sc_tmp.salesorder_dtl";
-    var $t_salesorder_dtl_temp_view_column = array('idurut','docnopo','idbarang','nmbarang','unit','qty','descriptionpo','descriptionpp');
+    var $t_salesorder_dtl_temp_view_column = array('idurut','idbarang','nmbarang','idprincipal','idgudang','idspec','unit','qty','harga','multidisc','nilai','bomdesc');
+    var $t_salesorder_dtl_temp_view_colmap = [null,'idbarang','nmbarang','idprincipal','idgudang','idspec','unit','qty','harga','multidisc','nilai','bomdesc'];
     var $t_salesorder_dtl_temp_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_t_salesorder_dtl_temp($docno)
     {
@@ -213,15 +213,13 @@ class M_Postsales extends Model
         $nama=trim($this->session->get('nama'));
 
         $builder = $this->db->table($this->t_salesorder_dtl_temp_view);
-        $builder->orderBy('idurut');
-
         $i = 0;
 
-        // $builder->where("docno = '$docno'");
-        $builder->where("inputby = '$nama'");
+        // $builder->where('docno', $docno);
+        $builder->where('inputby', $nama);
         foreach ($this->t_salesorder_dtl_temp_view_column as $mrp)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -240,17 +238,16 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo salesorderst column 0
-                $builder->orderBy($this->t_salesorder_dtl_temp_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_salesorder_dtl_temp_view_order))
-        {
-            $order = $this->t_salesorder_dtl_temp_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_salesorder_dtl_temp_view_colmap[$orderColumn])) ? $this->t_salesorder_dtl_temp_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_salesorder_dtl_temp_view_order)) { foreach ($this->t_salesorder_dtl_temp_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -260,8 +257,9 @@ class M_Postsales extends Model
     function get_t_salesorder_dtl_temp_view($docno){
         $builder = $this->_get_query_t_salesorder_dtl_temp($docno);
         ////$this->_get_query_t_salesorder_dtl_temp($docno);
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -271,8 +269,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_t_salesorder_dtl_temp($docno);
         ////$this->_get_query_t_salesorder_dtl_temp($docno);
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_salesorder_dtl_temp_view_count_all($docno)
     {
@@ -304,7 +301,8 @@ class M_Postsales extends Model
     left outer join sc_mst.salesman s on a.kdsalesman=s.kdsalesman
     left outer join sc_mst.kotakab d on c.kota_kantor=d.kodekotakab
     left outer join sc_mst.trxtype z on a.status=z.kdtrx and z.jenistrx='I.S.B.1') as x";
-    var $t_front_salesorder_view_column = array('docno','docdate','status_desc','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','keterangan','nmbranch');
+    var $t_front_salesorder_view_column = array('docno','docdate','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','nmsalesman','pocust','keterangan','nmbranch','status_desc');
+    var $t_front_salesorder_view_colmap = [null,null,'docno','docdate','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','nmsalesman','pocust','keterangan','nmbranch','status_desc'];
     var $t_front_salesorder_view_order = array('inputdate' => 'desc'); // default order
     private function _get_query_front_salesorder()
     {
@@ -348,7 +346,7 @@ class M_Postsales extends Model
         //$builder->where("docno = '$nama'");
         foreach ($this->t_front_salesorder_view_column as $mrpgroup)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -367,17 +365,17 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo salesorderst column 0
-                $builder->orderBy($this->t_front_salesorder_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_front_salesorder_view_order))
-        {
-            $order = $this->t_front_salesorder_view_order;
-            foreach ($order as $key => $mrpgroup){
-                $builder->orderBy($key, $mrpgroup);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_front_salesorder_view_colmap[$orderColumn])) ? $this->t_front_salesorder_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_front_salesorder_view_order)) {
+                foreach ($this->t_front_salesorder_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -387,8 +385,9 @@ class M_Postsales extends Model
     function get_t_front_salesorder_view(){
         $builder = $this->_get_query_front_salesorder();
         ////$this->_get_query_t_mstd_usage();
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -398,8 +397,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_front_salesorder();
         ////$this->_get_query_t_salesorder();
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_front_salesorder_view_count_all()
     {
@@ -436,7 +434,8 @@ class M_Postsales extends Model
     left outer join sc_mst.kotakab d on c.kota_kantor=d.kodekotakab
     left outer join sc_mst.trxtype z on a.status=z.kdtrx and z.jenistrx='I.S.B.1'
     where z.uraian != 'APPROVED' AND z.uraian != 'CANCEL' AND z.uraian != 'CETAK/PRINT') as x";
-    var $t_front_salesorder_apprv_view_column = array('docno','docdate','status_desc','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','keterangan','nmbranch');
+    var $t_front_salesorder_apprv_view_column = array('docno','docdate','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','nmsalesman','pocust','keterangan','nmbranch','status_desc');
+    var $t_front_salesorder_apprv_view_colmap = [null,null,'docno','docdate','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','nmsalesman','pocust','keterangan','nmbranch','status_desc'];
     var $t_front_salesorder_apprv_view_order = array('inputdate' => 'desc'); // default order
     private function _get_query_front_salesorder_apprv()
     {
@@ -461,7 +460,7 @@ class M_Postsales extends Model
         //$builder->where("docno = '$nama'");
         foreach ($this->t_front_salesorder_apprv_view_column as $mrpgroup)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -480,17 +479,17 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo salesorder_apprvst column 0
-                $builder->orderBy($this->t_front_salesorder_apprv_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_front_salesorder_apprv_view_order))
-        {
-            $order = $this->t_front_salesorder_apprv_view_order;
-            foreach ($order as $key => $mrpgroup){
-                $builder->orderBy($key, $mrpgroup);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_front_salesorder_apprv_view_colmap[$orderColumn])) ? $this->t_front_salesorder_apprv_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_front_salesorder_apprv_view_order)) {
+                foreach ($this->t_front_salesorder_apprv_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -500,8 +499,9 @@ class M_Postsales extends Model
     function get_t_front_salesorder_apprv_view(){
         $builder = $this->_get_query_front_salesorder_apprv();
         ////$this->_get_query_t_mstd_usage();
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -511,8 +511,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_front_salesorder_apprv();
         ////$this->_get_query_t_salesorder_apprv();
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_front_salesorder_apprv_view_count_all()
     {
@@ -548,7 +547,7 @@ class M_Postsales extends Model
         $builder->where("docno = '$nama'");
         foreach ($this->t_deliveryorder_view_column as $mrp)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -567,17 +566,16 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo deliveryorderst column 0
-                $builder->orderBy($this->t_deliveryorder_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_deliveryorder_view_order))
-        {
-            $order = $this->t_deliveryorder_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_deliveryorder_view_colmap[$orderColumn])) ? $this->t_deliveryorder_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_deliveryorder_view_order)) { foreach ($this->t_deliveryorder_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -587,8 +585,9 @@ class M_Postsales extends Model
     function get_t_deliveryorder_view(){
         $builder = $this->_get_query_t_deliveryorder();
         ////$this->_get_query_t_deliveryorder();
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -598,8 +597,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_t_deliveryorder();
         ////$this->_get_query_t_deliveryorder();
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_deliveryorder_view_count_all()
     {
@@ -616,7 +614,8 @@ class M_Postsales extends Model
 
     /* TRX MRP DETAIL */
     var $t_deliveryorder_dtl_view = "sc_trx.deliveryorder_dtl";
-    var $t_deliveryorder_dtl_view_column = array('idurut','docnoso','idbarang','nmbarang','unit','qty','descriptionpo','descriptionpp');
+    var $t_deliveryorder_dtl_view_column = array('idurut','docnoso','idbarang','nmbarang','idgudang','unit','qty');
+    var $t_deliveryorder_dtl_view_colmap = [null,'docnoso','idbarang','nmbarang','idgudang','unit','qty'];
     var $t_deliveryorder_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_t_deliveryorder_dtl($docnoParam)
     {
@@ -627,10 +626,10 @@ class M_Postsales extends Model
         $builder = $this->db->table($this->t_deliveryorder_dtl_view);
         $i = 0;
 
-        $builder->where("docno = '$docnoParam'");
+        $builder->where('docno', $docnoParam);
         foreach ($this->t_deliveryorder_dtl_view_column as $mrp)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -649,17 +648,16 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo deliveryorderst column 0
-                $builder->orderBy($this->t_deliveryorder_dtl_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_deliveryorder_dtl_view_order))
-        {
-            $order = $this->t_deliveryorder_dtl_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_deliveryorder_dtl_view_colmap[$orderColumn])) ? $this->t_deliveryorder_dtl_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_deliveryorder_dtl_view_order)) { foreach ($this->t_deliveryorder_dtl_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -669,8 +667,9 @@ class M_Postsales extends Model
     function get_t_deliveryorder_dtl_view($docnoParam){
         $builder = $this->_get_query_t_deliveryorder_dtl($docnoParam);
         ////$this->_get_query_t_deliveryorder_dtl();
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -682,8 +681,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_t_deliveryorder_dtl($docnoParam);
         ////$this->_get_query_t_deliveryorder_dtl();
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_deliveryorder_dtl_view_count_all($docnoParam)
     {
@@ -723,7 +721,8 @@ class M_Postsales extends Model
     //WO TEMP
     /* WO DETAIL */
     var $t_deliveryorder_dtl_temp_view = "sc_tmp.deliveryorder_dtl";
-    var $t_deliveryorder_dtl_temp_view_column = array('idurut','docnoso','idbarang','nmbarang','unit','qty','descriptionpo','descriptionpp');
+    var $t_deliveryorder_dtl_temp_view_column = array('idurut','docnoso','idbarang','nmbarang','idgudang','unit','qty');
+    var $t_deliveryorder_dtl_temp_view_colmap = [null,'docnoso','idbarang','nmbarang','idgudang','unit','qty'];
     var $t_deliveryorder_dtl_temp_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_t_deliveryorder_dtl_temp($docno)
     {
@@ -732,15 +731,13 @@ class M_Postsales extends Model
         $nama=trim($this->session->get('nama'));
 
         $builder = $this->db->table($this->t_deliveryorder_dtl_temp_view);
-        $builder->orderBy('idurut');
-
         $i = 0;
 
-        // $builder->where("docno = '$docno'");
-        $builder->where("inputby = '$nama'");
+        // $builder->where('docno', $docno);
+        $builder->where('inputby', $nama);
         foreach ($this->t_deliveryorder_dtl_temp_view_column as $mrp)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -759,17 +756,16 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo deliveryorderst column 0
-                $builder->orderBy($this->t_deliveryorder_dtl_temp_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_deliveryorder_dtl_temp_view_order))
-        {
-            $order = $this->t_deliveryorder_dtl_temp_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_deliveryorder_dtl_temp_view_colmap[$orderColumn])) ? $this->t_deliveryorder_dtl_temp_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_deliveryorder_dtl_temp_view_order)) { foreach ($this->t_deliveryorder_dtl_temp_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -779,8 +775,9 @@ class M_Postsales extends Model
     function get_t_deliveryorder_dtl_temp_view($docno){
         $builder = $this->_get_query_t_deliveryorder_dtl_temp($docno);
         ////$this->_get_query_t_deliveryorder_dtl_temp($docno);
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -790,8 +787,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_t_deliveryorder_dtl_temp($docno);
         ////$this->_get_query_t_deliveryorder_dtl_temp($docno);
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_deliveryorder_dtl_temp_view_count_all($docno)
     {
@@ -829,7 +825,8 @@ class M_Postsales extends Model
     left outer join sc_mst.kotakab d on c.kota_kantor=d.kodekotakab
     left outer join sc_mst.kotakab k on l.kota_kantor=k.kodekotakab
     left outer join sc_mst.trxtype z on a.status=z.kdtrx and z.jenistrx='I.S.B.2') as x";
-    var $t_front_deliveryorder_view_column = array('docno','docdate','status_desc','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','keterangan','nmbranch');
+    var $t_front_deliveryorder_view_column = array('docno','docdate','kdcust','nmcust','alamatcust','nmkota','nmcustdeliv','alamatcustdeliv','nmkotadeliv','nmsalesman','keterangan','nmbranch','status_desc');
+    var $t_front_deliveryorder_view_colmap = [null,null,'docno','docdate','kdcust','nmcust','alamatcust','nmkota','nmcustdeliv','alamatcustdeliv','nmkotadeliv','nmsalesman','keterangan','nmbranch','status_desc'];
     var $t_front_deliveryorder_view_order = array('inputdate' => 'desc'); // default order
     private function _get_query_front_deliveryorder()
     {
@@ -854,7 +851,7 @@ class M_Postsales extends Model
         //$builder->where("docno = '$nama'");
         foreach ($this->t_front_deliveryorder_view_column as $mrpgroup)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -873,17 +870,17 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo deliveryorderst column 0
-                $builder->orderBy($this->t_front_deliveryorder_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_front_deliveryorder_view_order))
-        {
-            $order = $this->t_front_deliveryorder_view_order;
-            foreach ($order as $key => $mrpgroup){
-                $builder->orderBy($key, $mrpgroup);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_front_deliveryorder_view_colmap[$orderColumn])) ? $this->t_front_deliveryorder_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_front_deliveryorder_view_order)) {
+                foreach ($this->t_front_deliveryorder_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -893,8 +890,9 @@ class M_Postsales extends Model
     function get_t_front_deliveryorder_view(){
         $builder = $this->_get_query_front_deliveryorder();
         ////$this->_get_query_t_mstd_usage();
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -904,8 +902,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_front_deliveryorder();
         ////$this->_get_query_t_deliveryorder();
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_front_deliveryorder_view_count_all()
     {
@@ -942,7 +939,8 @@ class M_Postsales extends Model
     left outer join sc_mst.kotakab d on c.kota_kantor=d.kodekotakab
     left outer join sc_mst.trxtype z on a.status=z.kdtrx and z.jenistrx='I.S.B.2'
     where z.uraian != 'APPROVED' AND z.uraian != 'CANCEL') as x";
-    var $t_front_deliveryorder_apprv_view_column = array('docno','docdate','status_desc','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','keterangan','nmbranch');
+    var $t_front_deliveryorder_apprv_view_column = array('docno','docdate','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','nmsalesman','keterangan','nmbranch','status_desc');
+    var $t_front_deliveryorder_apprv_view_colmap = [null,null,'docno','docdate','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','nmsalesman','keterangan','nmbranch','status_desc'];
     var $t_front_deliveryorder_apprv_view_order = array('inputdate' => 'desc'); // default order
     private function _get_query_front_deliveryorder_apprv()
     {
@@ -967,7 +965,7 @@ class M_Postsales extends Model
         //$builder->where("docno = '$nama'");
         foreach ($this->t_front_deliveryorder_apprv_view_column as $mrpgroup)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -986,17 +984,17 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo deliveryorder_apprvst column 0
-                $builder->orderBy($this->t_front_deliveryorder_apprv_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_front_deliveryorder_apprv_view_order))
-        {
-            $order = $this->t_front_deliveryorder_apprv_view_order;
-            foreach ($order as $key => $mrpgroup){
-                $builder->orderBy($key, $mrpgroup);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_front_deliveryorder_apprv_view_colmap[$orderColumn])) ? $this->t_front_deliveryorder_apprv_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_front_deliveryorder_apprv_view_order)) {
+                foreach ($this->t_front_deliveryorder_apprv_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -1006,8 +1004,9 @@ class M_Postsales extends Model
     function get_t_front_deliveryorder_apprv_view(){
         $builder = $this->_get_query_front_deliveryorder_apprv();
         ////$this->_get_query_t_mstd_usage();
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -1017,8 +1016,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_front_deliveryorder_apprv();
         ////$this->_get_query_t_deliveryorder_apprv();
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_front_deliveryorder_apprv_view_count_all()
     {
@@ -1076,7 +1074,7 @@ class M_Postsales extends Model
         $builder->where("docno = '$nama'");
         foreach ($this->t_suratjalan_view_column as $mrp)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -1095,17 +1093,16 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo suratjalanst column 0
-                $builder->orderBy($this->t_suratjalan_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_suratjalan_view_order))
-        {
-            $order = $this->t_suratjalan_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_suratjalan_view_colmap[$orderColumn])) ? $this->t_suratjalan_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_suratjalan_view_order)) { foreach ($this->t_suratjalan_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -1115,8 +1112,9 @@ class M_Postsales extends Model
     function get_t_suratjalan_view(){
         $builder = $this->_get_query_t_suratjalan();
         ////$this->_get_query_t_suratjalan();
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -1126,8 +1124,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_t_suratjalan();
         ////$this->_get_query_t_suratjalan();
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_suratjalan_view_count_all()
     {
@@ -1144,7 +1141,8 @@ class M_Postsales extends Model
 
     /* TRX MRP DETAIL */
     var $t_suratjalan_dtl_view = "sc_trx.suratjalan_dtl";
-    var $t_suratjalan_dtl_view_column = array('idurut','docnoso','idbarang','nmbarang','unit','qty','descriptionpo','descriptionpp');
+    var $t_suratjalan_dtl_view_column = array('idurut','docnodo','idbarang','nmbarang','idgudang','unit','qty');
+    var $t_suratjalan_dtl_view_colmap = [null,'docnodo','idbarang','nmbarang','idgudang','unit','qty'];
     var $t_suratjalan_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_t_suratjalan_dtl($docnoParam)
     {
@@ -1155,10 +1153,10 @@ class M_Postsales extends Model
         $builder = $this->db->table($this->t_suratjalan_dtl_view);
         $i = 0;
 
-        $builder->where("docno = '$docnoParam'");
+        $builder->where('docno', $docnoParam);
         foreach ($this->t_suratjalan_dtl_view_column as $mrp)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -1177,17 +1175,16 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo suratjalanst column 0
-                $builder->orderBy($this->t_suratjalan_dtl_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_suratjalan_dtl_view_order))
-        {
-            $order = $this->t_suratjalan_dtl_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_suratjalan_dtl_view_colmap[$orderColumn])) ? $this->t_suratjalan_dtl_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_suratjalan_dtl_view_order)) { foreach ($this->t_suratjalan_dtl_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -1197,8 +1194,9 @@ class M_Postsales extends Model
     function get_t_suratjalan_dtl_view($docnoParam){
         $builder = $this->_get_query_t_suratjalan_dtl($docnoParam);
         ////$this->_get_query_t_suratjalan_dtl();
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -1210,8 +1208,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_t_suratjalan_dtl($docnoParam);
         ////$this->_get_query_t_suratjalan_dtl();
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_suratjalan_dtl_view_count_all($docnoParam)
     {
@@ -1251,7 +1248,8 @@ class M_Postsales extends Model
     //WO TEMP
     /* WO DETAIL */
     var $t_suratjalan_dtl_temp_view = "sc_tmp.suratjalan_dtl";
-    var $t_suratjalan_dtl_temp_view_column = array('idurut','docnoso','idbarang','nmbarang','unit','qty','descriptionpo','descriptionpp');
+    var $t_suratjalan_dtl_temp_view_column = array('idurut','docnodo','idbarang','nmbarang','idgudang','unit','qty');
+    var $t_suratjalan_dtl_temp_view_colmap = [null,'docnodo','idbarang','nmbarang','idgudang','unit','qty'];
     var $t_suratjalan_dtl_temp_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_t_suratjalan_dtl_temp($docno)
     {
@@ -1260,15 +1258,13 @@ class M_Postsales extends Model
         $nama=trim($this->session->get('nama'));
 
         $builder = $this->db->table($this->t_suratjalan_dtl_temp_view);
-        $builder->orderBy('idurut');
-
         $i = 0;
 
-        // $builder->where("docno = '$docno'");
-        $builder->where("inputby = '$nama'");
+        // $builder->where('docno', $docno);
+        $builder->where('inputby', $nama);
         foreach ($this->t_suratjalan_dtl_temp_view_column as $mrp)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -1287,17 +1283,16 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo suratjalanst column 0
-                $builder->orderBy($this->t_suratjalan_dtl_temp_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_suratjalan_dtl_temp_view_order))
-        {
-            $order = $this->t_suratjalan_dtl_temp_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_suratjalan_dtl_temp_view_colmap[$orderColumn])) ? $this->t_suratjalan_dtl_temp_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_suratjalan_dtl_temp_view_order)) { foreach ($this->t_suratjalan_dtl_temp_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -1307,8 +1302,9 @@ class M_Postsales extends Model
     function get_t_suratjalan_dtl_temp_view($docno){
         $builder = $this->_get_query_t_suratjalan_dtl_temp($docno);
         ////$this->_get_query_t_suratjalan_dtl_temp($docno);
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -1318,8 +1314,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_t_suratjalan_dtl_temp($docno);
         ////$this->_get_query_t_suratjalan_dtl_temp($docno);
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_suratjalan_dtl_temp_view_count_all($docno)
     {
@@ -1357,7 +1352,8 @@ class M_Postsales extends Model
     left outer join sc_mst.kotakab d on c.kota_kantor=d.kodekotakab
     left outer join sc_mst.kotakab k on l.kota_kantor=k.kodekotakab
     left outer join sc_mst.trxtype z on a.status=z.kdtrx and z.jenistrx='I.S.B.3') as x";
-    var $t_front_suratjalan_view_column = array('docno','docdate','status_desc','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','keterangan','nmbranch');
+    var $t_front_suratjalan_view_column = array('docno','docdate','kdcust','nmcust','alamatcust','nmkota','nmcustdeliv','alamatcustdeliv','nmkotadeliv','nmsalesman','keterangan','nmbranch','status_desc');
+    var $t_front_suratjalan_view_colmap = [null,null,'docno','docdate','kdcust','nmcust','alamatcust','nmkota','nmcustdeliv','alamatcustdeliv','nmkotadeliv','nmsalesman','keterangan','nmbranch','status_desc'];
     var $t_front_suratjalan_view_order = array('inputdate' => 'desc'); // default order
     private function _get_query_front_suratjalan()
     {
@@ -1382,7 +1378,7 @@ class M_Postsales extends Model
         //$builder->where("docno = '$nama'");
         foreach ($this->t_front_suratjalan_view_column as $mrpgroup)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -1401,17 +1397,17 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo suratjalanst column 0
-                $builder->orderBy($this->t_front_suratjalan_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_front_suratjalan_view_order))
-        {
-            $order = $this->t_front_suratjalan_view_order;
-            foreach ($order as $key => $mrpgroup){
-                $builder->orderBy($key, $mrpgroup);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_front_suratjalan_view_colmap[$orderColumn])) ? $this->t_front_suratjalan_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_front_suratjalan_view_order)) {
+                foreach ($this->t_front_suratjalan_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -1421,8 +1417,9 @@ class M_Postsales extends Model
     function get_t_front_suratjalan_view(){
         $builder = $this->_get_query_front_suratjalan();
         ////$this->_get_query_t_mstd_usage();
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -1432,8 +1429,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_front_suratjalan();
         ////$this->_get_query_t_suratjalan();
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_front_suratjalan_view_count_all()
     {
@@ -1470,7 +1466,8 @@ class M_Postsales extends Model
     left outer join sc_mst.kotakab d on c.kota_kantor=d.kodekotakab
     left outer join sc_mst.trxtype z on a.status=z.kdtrx and z.jenistrx='I.S.B.3'
     where z.uraian != 'APPROVED' AND z.uraian != 'CANCEL') as x";
-    var $t_front_suratjalan_apprv_view_column = array('docno','docdate','status_desc','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','keterangan','nmbranch');
+    var $t_front_suratjalan_apprv_view_column = array('docno','docdate','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','nmsalesman','keterangan','nmbranch','status_desc');
+    var $t_front_suratjalan_apprv_view_colmap = [null,null,'docno','docdate','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','nmsalesman','keterangan','nmbranch','status_desc'];
     var $t_front_suratjalan_apprv_view_order = array('inputdate' => 'desc'); // default order
     private function _get_query_front_suratjalan_apprv()
     {
@@ -1495,7 +1492,7 @@ class M_Postsales extends Model
         //$builder->where("docno = '$nama'");
         foreach ($this->t_front_suratjalan_apprv_view_column as $mrpgroup)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -1514,17 +1511,17 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo suratjalan_apprvst column 0
-                $builder->orderBy($this->t_front_suratjalan_apprv_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_front_suratjalan_apprv_view_order))
-        {
-            $order = $this->t_front_suratjalan_apprv_view_order;
-            foreach ($order as $key => $mrpgroup){
-                $builder->orderBy($key, $mrpgroup);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_front_suratjalan_apprv_view_colmap[$orderColumn])) ? $this->t_front_suratjalan_apprv_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_front_suratjalan_apprv_view_order)) {
+                foreach ($this->t_front_suratjalan_apprv_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -1534,8 +1531,9 @@ class M_Postsales extends Model
     function get_t_front_suratjalan_apprv_view(){
         $builder = $this->_get_query_front_suratjalan_apprv();
         ////$this->_get_query_t_mstd_usage();
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -1545,8 +1543,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_front_suratjalan_apprv();
         ////$this->_get_query_t_suratjalan_apprv();
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_front_suratjalan_apprv_view_count_all()
     {
@@ -1588,7 +1585,7 @@ class M_Postsales extends Model
         $builder->where("docno = '$nama'");
         foreach ($this->t_penjualan_view_column as $mrp)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -1607,17 +1604,16 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo penjualanst column 0
-                $builder->orderBy($this->t_penjualan_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_penjualan_view_order))
-        {
-            $order = $this->t_penjualan_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_penjualan_view_colmap[$orderColumn])) ? $this->t_penjualan_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_penjualan_view_order)) { foreach ($this->t_penjualan_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -1627,8 +1623,9 @@ class M_Postsales extends Model
     function get_t_penjualan_view(){
         $builder = $this->_get_query_t_penjualan();
         ////$this->_get_query_t_penjualan();
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -1638,8 +1635,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_t_penjualan();
         ////$this->_get_query_t_penjualan();
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_penjualan_view_count_all()
     {
@@ -1656,7 +1652,8 @@ class M_Postsales extends Model
 
     /* TRX MRP DETAIL */
     var $t_penjualan_dtl_view = "sc_trx.penjualan_dtl";
-    var $t_penjualan_dtl_view_column = array('idurut','docnopo','idbarang','nmbarang','unit','qty','descriptionpo','descriptionpp');
+    var $t_penjualan_dtl_view_column = array('idurut','docnosj','docnoso','idbarang','nmbarang','idprincipal','idgudang','idspec','unit','qty','harga','multidisc','nilai','description');
+    var $t_penjualan_dtl_view_colmap = [null,'docnosj','docnoso','idbarang','nmbarang','idprincipal','idgudang','idspec','unit','qty','harga','multidisc','nilai','description'];
     var $t_penjualan_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_t_penjualan_dtl($docnoParam)
     {
@@ -1667,10 +1664,10 @@ class M_Postsales extends Model
         $builder = $this->db->table($this->t_penjualan_dtl_view);
         $i = 0;
 
-        $builder->where("docno = '$docnoParam'");
+        $builder->where('docno', $docnoParam);
         foreach ($this->t_penjualan_dtl_view_column as $mrp)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -1689,17 +1686,16 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo penjualanst column 0
-                $builder->orderBy($this->t_penjualan_dtl_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_penjualan_dtl_view_order))
-        {
-            $order = $this->t_penjualan_dtl_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_penjualan_dtl_view_colmap[$orderColumn])) ? $this->t_penjualan_dtl_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_penjualan_dtl_view_order)) { foreach ($this->t_penjualan_dtl_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -1709,8 +1705,9 @@ class M_Postsales extends Model
     function get_t_penjualan_dtl_view($docnoParam){
         $builder = $this->_get_query_t_penjualan_dtl($docnoParam);
         ////$this->_get_query_t_penjualan_dtl();
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -1722,8 +1719,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_t_penjualan_dtl($docnoParam);
         ////$this->_get_query_t_penjualan_dtl();
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_penjualan_dtl_view_count_all($docnoParam)
     {
@@ -1763,7 +1759,8 @@ class M_Postsales extends Model
     //WO TEMP
     /* WO DETAIL */
     var $t_penjualan_dtl_temp_view = "sc_tmp.penjualan_dtl";
-    var $t_penjualan_dtl_temp_view_column = array('idurut','docnopo','idbarang','nmbarang','unit','qty','descriptionpo','descriptionpp');
+    var $t_penjualan_dtl_temp_view_column = array('idurut','docnosj','docnoso','idbarang','nmbarang','idprincipal','idgudang','idspec','unit','qty','harga','multidisc','nilai','description');
+    var $t_penjualan_dtl_temp_view_colmap = [null,'docnosj','docnoso','idbarang','nmbarang','idprincipal','idgudang','idspec','unit','qty','harga','multidisc','nilai','description',null];
     var $t_penjualan_dtl_temp_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_t_penjualan_dtl_temp($docno)
     {
@@ -1772,15 +1769,13 @@ class M_Postsales extends Model
         $nama=trim($this->session->get('nama'));
 
         $builder = $this->db->table($this->t_penjualan_dtl_temp_view);
-        $builder->orderBy('idurut');
-
         $i = 0;
 
-        // $builder->where("docno = '$docno'");
-        $builder->where("inputby = '$nama'");
+        // $builder->where('docno', $docno);
+        $builder->where('inputby', $nama);
         foreach ($this->t_penjualan_dtl_temp_view_column as $mrp)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -1799,17 +1794,16 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo penjualanst column 0
-                $builder->orderBy($this->t_penjualan_dtl_temp_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_penjualan_dtl_temp_view_order))
-        {
-            $order = $this->t_penjualan_dtl_temp_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_penjualan_dtl_temp_view_colmap[$orderColumn])) ? $this->t_penjualan_dtl_temp_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_penjualan_dtl_temp_view_order)) { foreach ($this->t_penjualan_dtl_temp_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -1819,8 +1813,9 @@ class M_Postsales extends Model
     function get_t_penjualan_dtl_temp_view($docno){
         $builder = $this->_get_query_t_penjualan_dtl_temp($docno);
         ////$this->_get_query_t_penjualan_dtl_temp($docno);
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -1830,8 +1825,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_t_penjualan_dtl_temp($docno);
         ////$this->_get_query_t_penjualan_dtl_temp($docno);
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_penjualan_dtl_temp_view_count_all($docno)
     {
@@ -1869,7 +1863,8 @@ class M_Postsales extends Model
     left outer join sc_mst.kotakab d on c.kota_kantor=d.kodekotakab
     left outer join sc_mst.kotakab k on l.kota_kantor=k.kodekotakab
     left outer join sc_mst.trxtype z on a.status=z.kdtrx and z.jenistrx='I.S.B.1') as x";
-    var $t_front_penjualan_view_column = array('docno','docdate','status_desc','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','keterangan','nmbranch');
+    var $t_front_penjualan_view_column = array('docno','docdate','kdcust','nmcust','alamatcust','nmkota','nmcustdeliv','alamatcustdeliv','nmkotadeliv','currcode','jthtempo','nmsalesman','keterangan','nmbranch','status_desc');
+    var $t_front_penjualan_view_colmap = [null,null,'docno','docdate','kdcust','nmcust','alamatcust','nmkota','nmcustdeliv','alamatcustdeliv','nmkotadeliv','currcode','jthtempo','nmsalesman','keterangan','nmbranch','status_desc'];
     var $t_front_penjualan_view_order = array('inputdate' => 'desc'); // default order
     private function _get_query_front_penjualan()
     {
@@ -1894,7 +1889,7 @@ class M_Postsales extends Model
         //$builder->where("docno = '$nama'");
         foreach ($this->t_front_penjualan_view_column as $mrpgroup)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -1913,17 +1908,17 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo penjualanst column 0
-                $builder->orderBy($this->t_front_penjualan_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_front_penjualan_view_order))
-        {
-            $order = $this->t_front_penjualan_view_order;
-            foreach ($order as $key => $mrpgroup){
-                $builder->orderBy($key, $mrpgroup);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_front_penjualan_view_colmap[$orderColumn])) ? $this->t_front_penjualan_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_front_penjualan_view_order)) {
+                foreach ($this->t_front_penjualan_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -1933,8 +1928,9 @@ class M_Postsales extends Model
     function get_t_front_penjualan_view(){
         $builder = $this->_get_query_front_penjualan();
         ////$this->_get_query_t_mstd_usage();
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -1944,8 +1940,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_front_penjualan();
         ////$this->_get_query_t_penjualan();
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_front_penjualan_view_count_all()
     {
@@ -1982,7 +1977,8 @@ class M_Postsales extends Model
     left outer join sc_mst.kotakab d on c.kota_kantor=d.kodekotakab
     left outer join sc_mst.trxtype z on a.status=z.kdtrx and z.jenistrx='I.S.B.1'
     where z.uraian != 'APPROVED' AND z.uraian != 'CANCEL') as x";
-    var $t_front_penjualan_apprv_view_column = array('docno','docdate','status_desc','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','keterangan','nmbranch');
+    var $t_front_penjualan_apprv_view_column = array('docno','docdate','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','nmsalesman','keterangan','nmbranch','status_desc');
+    var $t_front_penjualan_apprv_view_colmap = [null,null,'docno','docdate','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','nmsalesman','keterangan','nmbranch','status_desc'];
     var $t_front_penjualan_apprv_view_order = array('inputdate' => 'desc'); // default order
     private function _get_query_front_penjualan_apprv()
     {
@@ -2007,7 +2003,7 @@ class M_Postsales extends Model
         //$builder->where("docno = '$nama'");
         foreach ($this->t_front_penjualan_apprv_view_column as $mrpgroup)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -2026,17 +2022,17 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo penjualan_apprvst column 0
-                $builder->orderBy($this->t_front_penjualan_apprv_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_front_penjualan_apprv_view_order))
-        {
-            $order = $this->t_front_penjualan_apprv_view_order;
-            foreach ($order as $key => $mrpgroup){
-                $builder->orderBy($key, $mrpgroup);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_front_penjualan_apprv_view_colmap[$orderColumn])) ? $this->t_front_penjualan_apprv_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_front_penjualan_apprv_view_order)) {
+                foreach ($this->t_front_penjualan_apprv_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -2046,8 +2042,9 @@ class M_Postsales extends Model
     function get_t_front_penjualan_apprv_view(){
         $builder = $this->_get_query_front_penjualan_apprv();
         ////$this->_get_query_t_mstd_usage();
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -2057,8 +2054,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_front_penjualan_apprv();
         ////$this->_get_query_t_penjualan_apprv();
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_front_penjualan_apprv_view_count_all()
     {
@@ -2219,7 +2215,7 @@ class M_Postsales extends Model
         $builder->where("docno = '$nama'");
         foreach ($this->t_salesorderexternal_view_column as $mrp)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -2238,17 +2234,16 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->t_salesorderexternal_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_salesorderexternal_view_order))
-        {
-            $order = $this->t_salesorderexternal_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_salesorderexternal_view_colmap[$orderColumn])) ? $this->t_salesorderexternal_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_salesorderexternal_view_order)) { foreach ($this->t_salesorderexternal_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -2258,8 +2253,9 @@ class M_Postsales extends Model
     function get_t_salesorderexternal_view(){
         $builder = $this->_get_query_t_salesorderexternal();
         ////$this->_get_query_t_salesorderexternal();
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -2269,8 +2265,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_t_salesorderexternal();
         ////$this->_get_query_t_salesorderexternal();
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_salesorderexternal_view_count_all()
     {
@@ -2298,10 +2293,10 @@ class M_Postsales extends Model
         $builder = $this->db->table($this->t_salesorderexternal_dtl_view);
         $i = 0;
 
-        $builder->where("docno = '$docnoParam'");
+        $builder->where('docno', $docnoParam);
         foreach ($this->t_salesorderexternal_dtl_view_column as $mrp)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -2320,17 +2315,16 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->t_salesorderexternal_dtl_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_salesorderexternal_dtl_view_order))
-        {
-            $order = $this->t_salesorderexternal_dtl_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_salesorderexternal_dtl_view_colmap[$orderColumn])) ? $this->t_salesorderexternal_dtl_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_salesorderexternal_dtl_view_order)) { foreach ($this->t_salesorderexternal_dtl_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -2340,8 +2334,9 @@ class M_Postsales extends Model
     function get_t_salesorderexternal_dtl_view($docnoParam){
         $builder = $this->_get_query_t_salesorderexternal_dtl($docnoParam);
         ////$this->_get_query_t_salesorderexternal_dtl();
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -2353,8 +2348,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_t_salesorderexternal_dtl($docnoParam);
         ////$this->_get_query_t_salesorderexternal_dtl();
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_salesorderexternal_dtl_view_count_all($docnoParam)
     {
@@ -2411,15 +2405,13 @@ class M_Postsales extends Model
         $nama=trim($this->session->get('nama'));
 
         $builder = $this->db->table($this->t_salesorderexternal_dtl_temp_view);
-        $builder->orderBy('idurut');
-
         $i = 0;
 
-        $builder->where("docno = '$docno'");
-        $builder->where("inputby = '$nama'");
+        $builder->where('docno', $docno);
+        $builder->where('inputby', $nama);
         foreach ($this->t_salesorderexternal_dtl_temp_view_column as $mrp)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -2438,17 +2430,16 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->t_salesorderexternal_dtl_temp_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_salesorderexternal_dtl_temp_view_order))
-        {
-            $order = $this->t_salesorderexternal_dtl_temp_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_salesorderexternal_dtl_temp_view_colmap[$orderColumn])) ? $this->t_salesorderexternal_dtl_temp_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_salesorderexternal_dtl_temp_view_order)) { foreach ($this->t_salesorderexternal_dtl_temp_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -2458,8 +2449,9 @@ class M_Postsales extends Model
     function get_t_salesorderexternal_dtl_temp_view($docno){
         $builder = $this->_get_query_t_salesorderexternal_dtl_temp($docno);
         ////$this->_get_query_t_salesorderexternal_dtl_temp($docno);
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -2469,8 +2461,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_t_salesorderexternal_dtl_temp($docno);
         ////$this->_get_query_t_salesorderexternal_dtl_temp($docno);
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_salesorderexternal_dtl_temp_view_count_all($docno)
     {
@@ -2532,7 +2523,7 @@ class M_Postsales extends Model
         //$builder->where("docno = '$nama'");
         foreach ($this->t_front_salesorderexternal_view_column as $mrpgroup)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -2551,17 +2542,17 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->t_front_salesorderexternal_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_front_salesorderexternal_view_order))
-        {
-            $order = $this->t_front_salesorderexternal_view_order;
-            foreach ($order as $key => $mrpgroup){
-                $builder->orderBy($key, $mrpgroup);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_front_salesorderexternal_view_colmap[$orderColumn])) ? $this->t_front_salesorderexternal_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_front_salesorderexternal_view_order)) {
+                foreach ($this->t_front_salesorderexternal_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -2571,8 +2562,9 @@ class M_Postsales extends Model
     function get_t_front_salesorderexternal_view(){
         $builder = $this->_get_query_front_salesorderexternal();
         ////$this->_get_query_t_mstd_usage();
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -2582,8 +2574,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_front_salesorderexternal();
         ////$this->_get_query_t_salesorderexternal();
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_front_salesorderexternal_view_count_all()
     {
@@ -2664,7 +2655,7 @@ class M_Postsales extends Model
         $builder->where("docno = '$nama'");
         foreach ($this->t_soi_view_column as $mrp)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -2683,17 +2674,16 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->t_soi_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_soi_view_order))
-        {
-            $order = $this->t_soi_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_soi_view_colmap[$orderColumn])) ? $this->t_soi_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_soi_view_order)) { foreach ($this->t_soi_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -2703,8 +2693,9 @@ class M_Postsales extends Model
     function get_t_soi_view(){
         $builder = $this->_get_query_t_soi();
         ////$this->_get_query_t_soi();
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -2714,8 +2705,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_t_soi();
         ////$this->_get_query_t_soi();
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_soi_view_count_all()
     {
@@ -2743,10 +2733,10 @@ class M_Postsales extends Model
         $builder = $this->db->table($this->t_soi_dtl_view);
         $i = 0;
 
-        $builder->where("docno = '$docnoParam'");
+        $builder->where('docno', $docnoParam);
         foreach ($this->t_soi_dtl_view_column as $mrp)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -2765,17 +2755,16 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->t_soi_dtl_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_soi_dtl_view_order))
-        {
-            $order = $this->t_soi_dtl_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_soi_dtl_view_colmap[$orderColumn])) ? $this->t_soi_dtl_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_soi_dtl_view_order)) { foreach ($this->t_soi_dtl_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -2785,8 +2774,9 @@ class M_Postsales extends Model
     function get_t_soi_dtl_view($docnoParam){
         $builder = $this->_get_query_t_soi_dtl($docnoParam);
         ////$this->_get_query_t_soi_dtl();
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -2798,8 +2788,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_t_soi_dtl($docnoParam);
         ////$this->_get_query_t_soi_dtl();
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_soi_dtl_view_count_all($docnoParam)
     {
@@ -2849,15 +2838,13 @@ class M_Postsales extends Model
         $nama=trim($this->session->get('nama'));
 
         $builder = $this->db->table($this->t_soi_dtl_temp_view);
-        $builder->orderBy('idurut');
-
         $i = 0;
 
-        $builder->where("docno = '$docno'");
-        $builder->where("inputby = '$nama'");
+        $builder->where('docno', $docno);
+        $builder->where('inputby', $nama);
         foreach ($this->t_soi_dtl_temp_view_column as $mrp)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -2876,17 +2863,16 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->t_soi_dtl_temp_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_soi_dtl_temp_view_order))
-        {
-            $order = $this->t_soi_dtl_temp_view_order;
-            foreach ($order as $key => $mrp){
-                $builder->orderBy($key, $mrp);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_soi_dtl_temp_view_colmap[$orderColumn])) ? $this->t_soi_dtl_temp_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_soi_dtl_temp_view_order)) { foreach ($this->t_soi_dtl_temp_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -2896,8 +2882,9 @@ class M_Postsales extends Model
     function get_t_soi_dtl_temp_view($docno){
         $builder = $this->_get_query_t_soi_dtl_temp($docno);
         ////$this->_get_query_t_soi_dtl_temp($docno);
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -2907,8 +2894,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_t_soi_dtl_temp($docno);
         ////$this->_get_query_t_soi_dtl_temp($docno);
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_soi_dtl_temp_view_count_all($docno)
     {
@@ -2970,7 +2956,7 @@ class M_Postsales extends Model
         //$builder->where("docno = '$nama'");
         foreach ($this->t_front_soi_view_column as $mrpgroup)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if(!empty($_POST['search']['value'])) // if datatable send POST for search
             {
 
                 if($i===0) // first loop
@@ -2989,17 +2975,17 @@ class M_Postsales extends Model
             $i++;
         }
 
-        if(isset($_POST['order'])) // here order processing
-        {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->t_front_soi_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
-            }
-        }
-        else if(isset($this->t_front_soi_view_order))
-        {
-            $order = $this->t_front_soi_view_order;
-            foreach ($order as $key => $mrpgroup){
-                $builder->orderBy($key, $mrpgroup);
+        if (isset($_POST['order'])) {
+            $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
+            $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+            $orderField  = ($orderColumn >= 0 && isset($this->t_front_soi_view_colmap[$orderColumn])) ? $this->t_front_soi_view_colmap[$orderColumn] : null;
+
+            if ($orderField !== null && $orderField !== '') {
+                $builder->orderBy($orderField, $orderDir);
+            } else if (isset($this->t_front_soi_view_order)) {
+                foreach ($this->t_front_soi_view_order as $key => $dir) {
+                    $builder->orderBy($key, $dir);
+                }
             }
         }
         return $builder;
@@ -3009,8 +2995,9 @@ class M_Postsales extends Model
     function get_t_front_soi_view(){
         $builder = $this->_get_query_front_soi();
         ////$this->_get_query_t_mstd_usage();
-        if($_POST['length'] != -1)
-            $builder->limit($_POST['length'],$_POST['start']);
+        if (isset($_POST['length']) && (int) $_POST['length'] !== -1) {
+            $builder->limit((int) $_POST['length'], isset($_POST['start']) ? (int) $_POST['start'] : 0);
+        }
         $query = $builder->get();
         return $query->getResult();
     }
@@ -3020,8 +3007,7 @@ class M_Postsales extends Model
     {
         $builder = $this->_get_query_front_soi();
         ////$this->_get_query_t_soi();
-        $query = $builder->get();
-        return $query->getNumRows();
+        return $builder->countAllResults(false);
     }
     public function t_front_soi_view_count_all()
     {

@@ -1,96 +1,43 @@
-<style>
-    
-    .section-block {
-        background-color: #e8e8e8;
-        border-left: 4px solid #007bff;
-        /* border-bottom: 4px solid #007bff;  */
-        padding: 20px;
-        border-radius: 6px;
-        margin-bottom: 30px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-                    box-shadow 0.4s ease, 
-                    border-color 0.4s ease;
-        
-        transform: scale(1);
-        will-change: transform;
-    }
+<?= $this->include('sales/postsales/_corp_theme') ?>
+<div class="corp-form-container">
 
-    .section-header {
-        font-weight: bold;
-        color: #007bff;
-        margin-bottom: 20px;
-        font-size: 1.1rem;
-        display: flex;
-        align-items: center;
-    }
-
-    .section-header i {
-        margin-right: 8px;
-    }
-
-    .section-block:hover {
-        /* transform: scale(1.02); */
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-        border-left-color: #0056b3;
-        border-bottom-color: #0056b3;
-    }
-
-    .is-invalid {
-        border-color: #dc3545;
-    }
-    .invalid-feedback {
-        display: block;
-        color: #dc3545;
-        font-size: 0.875em;
-    }
-
-    .form-control:disabled, .form-control[readonly] {
-        background-color: #dfdfdf;
-        opacity: 1;
-    }
-
-    .section-divider {
-        height: 1px;
-        background: linear-gradient(
-            to right,
-            #007bff 0%,
-            #cfe2ff 30%,
-            #e8e8e8 100%
-        );
-        margin: 24px 0;
-        border: none;
-    }
-
-
-</style>
 <div class="content-header">
     <div class="container-fluid">
-        <div class="row mb-2">
+        <div class="row mb-2 align-items-center">
             <div class="col-sm-6">
                 <h1 class="m-0"><?php echo ucwords(strtolower(trim($title)));?></h1>
-            </div><!-- /.col -->
-            <div class="col-sm-6">
-                <ol class="breadcrumb float-sm-right">
-                    <div class="float-right" style="margin-right: 10px;vertical-align:middle;padding-top: 0.7%;"><i style="color:transparent;"><?php echo $t; ?></i> Menu ID <?php echo $version; ?></div>
-                    <input type="hidden" id="classmenu" value="<?= str_replace('.','_',$kodemenu) ?>" required>
+            </div>
+            <div class="col-sm-6 d-flex justify-content-end align-items-center">
+                <div style="margin-right: 10px; font-size: 13px;">Menu ID <?php echo $version; ?></div>
+                <ol class="breadcrumb mb-0">
+                    <input type="hidden" id="classmenu" value="<?= str_replace('.','_',$kodemenu) ?>">
                     <?php foreach ($y as $y1) { ?>
                         <?php if( trim($y1->kodemenu)!=trim($kodemenu)) { ?>
-                            <li class="breadcrumb-item"><a href="<?php echo base_url( trim($y1->linkmenu)) ; ?>"><i class="fa <?php echo trim($y1->iconmenu); ?>"></i> <?php echo  trim($y1->namamenu); ?></a></li>
+                            <li class="breadcrumb-item"><a href="<?php echo base_url( trim($y1->linkmenu)) ; ?>"><i class="fa <?php echo trim($y1->iconmenu); ?>"></i> <?php echo trim($y1->namamenu); ?></a></li>
                         <?php } else { ?>
                             <li class="breadcrumb-item active"><i class="fa <?php echo trim($y1->iconmenu); ?>"></i> <?php echo trim($y1->namamenu); ?></li>
                         <?php } ?>
                     <?php } ?>
                 </ol>
-            </div><!-- /.col -->
-        </div><!-- /.row -->
-    </div><!-- /.container-fluid -->
+            </div>
+        </div>
+    </div>
 </div>
-
 <?php echo $message;?>
 <?php
     $isIT = isset($userinfo['rolename']) && trim($userinfo['rolename']) === 'IT';
-    $disabled = $isIT ? '' : 'disabled';
+        $disabled = $isIT ? '' : 'disabled';
+
+    /* =====================================================
+     * AUTOFILL INPUT AWAL CABANG / JOB
+     * Cabang mengikuti session user login.
+     * Hanya PT JATIM TAMAN STEEL yang boleh memilih bebas.
+     * ===================================================== */
+    $sessionBranchId   = trim((string) session()->get('idbranchjob'));
+    $sessionBranchName = strtoupper(trim((string) session()->get('nmbranchjob')));
+    $sessionBranchKey  = preg_replace('/[^A-Z0-9]/', '', $sessionBranchName);
+    $canChooseBranch   = $sessionBranchKey !== ''
+            && strpos($sessionBranchKey, 'PTJATIMTAMANSTEEL') === 0;
 ?>
 <div class="row">
     <!-- left column -->
@@ -106,7 +53,7 @@
                 <div class="card-body">
                         <div class="section-block">
                             <div class="section-header">
-                                <i class="fa fa-address-card"></i> Penjualan
+                                <i class="fa fa-address-card"></i> Master
                             </div>
                             <div class="row">
 
@@ -117,7 +64,10 @@
                                         <div class="col-md-8">
                                             <div class="form-group">
                                                 <label for="cabang">Cabang / Job</label>
-                                                <select name="cabang" id="cabang" class="form-control" required></select>
+                                                <select name="cabang" id="cabang" class="form-control" required
+                                                    data-session-branch-id="<?= esc($sessionBranchId) ?>"
+                                                    data-session-branch-name="<?= esc($sessionBranchName) ?>"
+                                                    data-can-choose-branch="<?= $canChooseBranch ? '1' : '0' ?>"></select>
                                             </div>
                                         </div>
 
@@ -174,7 +124,7 @@
                                                     <input type="text"
                                                         name="jthtempo"
                                                         id="jthtempo"
-                                                        class="form-control ratakanan jtsseparator"
+                                                        class="form-control ratakanan jaccseparator"
                                                         placeholder="0.00">
                                                     <div class="input-group-append">
                                                         <span class="input-group-text">hari</span>
@@ -261,7 +211,7 @@
                                                     <input type="text"
                                                         name="kurs"
                                                         id="kurs"
-                                                        class="form-control ratakanan jtsseparator"
+                                                        class="form-control ratakanan jaccseparator"
                                                         placeholder="Nilai tukar akan muncul disini"
                                                         >
                                                 </div>
@@ -337,12 +287,12 @@
                         Detail Barang
                     </h3>
 
-                    <div class="float-right d-flex align-items-center gap-2">
+                    <div class="header-actions">
                         <button type="button"
                                 class="btn btn-success btn-lg action-btn"
                                 data-bs-toggle="tooltip"
                                 title="Input Data"
-                                onclick="btnInputDetail()">
+                                id="btnAddDetail" onclick="btnInputDetail()">
                             <i class="fa fa-plus"></i>
                         </button>
 
@@ -350,7 +300,7 @@
                                 class="btn btn-warning btn-lg action-btn"
                                 data-bs-toggle="tooltip"
                                 title="Update Data"
-                                onclick="btnUpdateDetail()">
+                                id="btnUpdateDetail" onclick="btnUpdateDetail()">
                             <i class="fa fa-edit"></i>
                         </button>
 
@@ -358,7 +308,7 @@
                                 class="btn btn-danger btn-lg action-btn"
                                 data-bs-toggle="tooltip"
                                 title="Hapus Data"
-                                onclick="btnDeleteDetail()">
+                                id="btnDeleteDetail" onclick="btnDeleteDetail()">
                             <i class="fa fa-trash"></i>
                         </button>
 
@@ -369,7 +319,7 @@
                     <div class="row">
                         <div class="col-md-12">
                             <div class="table-responsive" style="overflow-x: auto;">
-                                <table id="tabpenjualandtl" class="table table-bordered table-striped" style="width:100%;" cellspacing="0">
+                                <table id="tabpenjualandtl" class="table table-bordered table-striped sales-dtl-table" style="width:100%;" cellspacing="0">
                                     <thead class="bg-primary text-white">
                                         <tr>
                                             <th width="30">
@@ -392,6 +342,7 @@
                                             <th>Biaya 2</th> -->
                                             <th>Nilai</th>
                                             <th>Keterangan</th>
+                                            <th>Stok</th>
                                             <!-- <th>Keterangan PP</th> -->
                                         </tr>
                                     </thead>
@@ -444,7 +395,7 @@
                                                     <input type="text"
                                                         name="dpp"
                                                         id="dpp"
-                                                        class="form-control jtsseparator ratakanan"
+                                                        class="form-control jaccseparator ratakanan"
                                                         readonly>
                                                 </div>
                                             </div>
@@ -463,7 +414,7 @@
                                                     <input type="text"
                                                         name="jumlahpajak"
                                                         id="jumlahpajak"
-                                                        class="form-control jtsseparator ratakanan"
+                                                        class="form-control jaccseparator ratakanan"
                                                         readonly>
                                                 </div>
                                             </div>
@@ -483,7 +434,7 @@
                                                         name="total"
                                                         id="total"
                                                         style="font-weight: bold;"
-                                                        class="form-control jtsseparator ratakanan"
+                                                        class="form-control jaccseparator ratakanan"
                                                         readonly>
                                                 </div>
                                             </div>
@@ -729,8 +680,16 @@
                                 <input type="text"
                                         name="qty"
                                         id="qty"
-                                        class="form-control jtsseparator ratakanan"
+                                        class="form-control jaccseparator ratakanan"
                                         placeholder="0.00">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-1">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Stok Gudang</label>
+                                <input type="text" id="infostock" class="form-control ratakanan jaccseparator" readonly>
                             </div>
                         </div>
                     </div>
@@ -742,7 +701,7 @@
                                 <input type="text"
                                         name="harga"
                                         id="harga"
-                                        class="form-control jtsseparator ratakanan"
+                                        class="form-control jaccseparator ratakanan"
                                         placeholder="0.00">
                             </div>
                         </div>
@@ -752,7 +711,7 @@
                                 <input type="text"
                                         name="multidisc"
                                         id="multidisc"
-                                        class="form-control jtsseparator ratakanan"
+                                        class="form-control jaccseparator ratakanan"
                                         placeholder="0.00">
                             </div>
                         </div>
@@ -762,7 +721,7 @@
                                 <input type="text"
                                         name="nilai"
                                         id="nilai"
-                                        class="form-control jtsseparator ratakanan"
+                                        class="form-control jaccseparator ratakanan"
                                         readonly
                                         placeholder="0.00">
                             </div>
@@ -835,7 +794,11 @@
 </div>
 
 
+</div>
+
 <script type="application/javascript" src="<?= base_url('assets/pagejs/sales/postsales/penjualan/penjualan.js') ?>"></script>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/sales/postsales/sales_shortcut.js') ?>"></script>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/sales/postsales/sales_branch_autofill.js') ?>"></script>
 <script type="text/javascript">
     $(function() {
         $("#example1").dataTable();

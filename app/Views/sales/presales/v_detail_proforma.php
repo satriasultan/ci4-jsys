@@ -18,6 +18,8 @@
 4. ketikan nomor sudah terbentuk,
 */
 ?>
+<div class="corp-form-container">
+
 <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css" rel="stylesheet"> -->
 
@@ -148,6 +150,8 @@
     right: 6px;
     } */
 </style>
+<?= $this->include('sales/postsales/_corp_theme') ?>
+
 <div class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
@@ -241,7 +245,28 @@
                 <label for="up">PIC</label>
                 <input type="text" class="form-control" id="up"  name="up"  placeholder="Kontak PIC" style="text-transform: uppercase;"  required readonly>
             </div>
-            <div class="form-group col-md-5"></div>
+            <div class="form-group col-md-12">
+                <div class="section-block" style="width:100%;">
+                    <div class="section-header"><i class="fa fa-link"></i> Sumber PJO / Penjualan</div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label>No. PJO / Penjualan</label>
+                            <input type="text" class="form-control" readonly
+                                   value="<?= esc(trim((string)($dtldata['docnopjo'] ?? ''))) ?>">
+                        </div>
+                        <div class="col-md-4">
+                            <label>No. Jurnal PJO</label>
+                            <input type="text" class="form-control" readonly
+                                   value="<?= esc(trim((string)($dtldata['jurnalno'] ?? ''))) ?>">
+                        </div>
+                        <div class="col-md-4">
+                            <label>Nama Customer</label>
+                            <input type="text" class="form-control" readonly
+                                   value="<?= esc(trim((string)($dtldata['nmcustomer'] ?? ''))) ?>">
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="form-group  col-md-4">
                 <label for="facrisk">For Account & Risk Messers</label>
                     <textarea name="facrisk" id="facrisk" class="form-control" rows="2" placeholder="Write For Account & Risk Messers" style="text-transform: uppercase;" ></textarea>
@@ -331,7 +356,7 @@
             <div class="col-sm-12">
                 <form id="frm-example" action="#" method="POST">
                     <div class="table-wrapper" style="overflow-x: auto;">
-                        <table id="t_proforma_dtl" class="table table-bordered table-striped"  style="text-wrap:nowrap"  cellspacing="0" >
+                        <table id="t_proforma_dtl" class="table table-bordered table-striped sales-dtl-table"  style="text-wrap:nowrap"  cellspacing="0" >
                             <thead>
                             <tr>
                                 <td rowspan="2" style="width: 20px;font-weight: bolder; background-color: darkgrey;text-align: center; vertical-align: middle">Act</td>
@@ -363,7 +388,7 @@
                                         <div style="display:flex; align-items:center;">
                                         <span style="font-weight: bold; margin-right:5px;">Rp</span>
                                         <input type="text" id="grosssales" name="grosssales"
-                                                class="form-control ratakanan jtsseparator"
+                                                class="form-control ratakanan jaccseparator"
                                                 value="0" disabled>
                                         </div>
                                     </td>
@@ -374,7 +399,7 @@
                                         <div style="display:flex; align-items:center;">
                                         <span style="font-weight: bold; margin-right:5px;">Rp</span>
                                         <input type="text" id="downpayment" name="downpayment"
-                                                class="form-control ratakanan jtsseparator"
+                                                class="form-control ratakanan jaccseparator"
                                                 value="0">
                                         </div>
                                     </td>
@@ -385,7 +410,7 @@
                                         <div style="display:flex; align-items:center;">
                                         <span style="font-weight: bold; margin-right:5px;">Rp</span>
                                         <input type="text" id="netsales" name="netsales"
-                                                class="form-control ratakanan jtsseparator"
+                                                class="form-control ratakanan jaccseparator"
                                                 value="0" disabled>
                                         </div>
                                     </td>
@@ -396,7 +421,7 @@
                                         <div style="display:flex; align-items:center;">
                                         <span style="font-weight: bold; margin-right:5px;">Rp</span>
                                         <input type="text" id="taxbasis" name="taxbasis"
-                                                class="form-control ratakanan jtsseparator"
+                                                class="form-control ratakanan jaccseparator"
                                                 value="0" disabled>
                                         </div>
                                     </td>
@@ -407,7 +432,7 @@
                                         <div style="display:flex; align-items:center;">
                                         <span style="font-weight: bold; margin-right:5px;">Rp</span>
                                         <input type="text" id="vat" name="vat"
-                                                class="form-control ratakanan jtsseparator"
+                                                class="form-control ratakanan jaccseparator"
                                                 value="0" disabled>
                                         </div>
                                     </td>
@@ -422,7 +447,7 @@
                                         <div style="display:flex; align-items:center;">
                                         <span style="font-weight: bold; margin-right:5px;">Rp</span>
                                         <input type="text" id="pph22" name="pph22"
-                                                class="form-control ratakanan jtsseparator"
+                                                class="form-control ratakanan jaccseparator"
                                                 value="0" disabled>
                                         </div>
                                     </td>
@@ -433,7 +458,7 @@
                                         <div style="display:flex; align-items:center;">
                                         <span style="font-weight: bold; margin-right:5px;">Rp</span>
                                         <input type="text" id="ttlprice" name="ttlprice"
-                                                class="form-control ratakanan jtsseparator"
+                                                class="form-control ratakanan jaccseparator"
                                                 value="0" disabled
                                                 style="font-weight:bold;">
                                         </div>
@@ -674,4 +699,6 @@
 
 
 
+
+</div>
 

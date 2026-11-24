@@ -154,6 +154,7 @@ function documentReadable(){
         },
         complete: function(){
             $("#loadMe").modal("hide");
+            if (typeof formatProformaSummary === 'function') formatProformaSummary();
         },
         error: function(){
             console.log("Failed To Loading Data");
@@ -165,15 +166,15 @@ function documentReadable(){
 
 function setJtsValue(selector, value) {
     $(selector).val(value);
-    _jtsseparator($(selector)[0]);
+    jaccseparator($(selector)[0], { maxDecimals: 4 });
 }
 
 function safeTrim(val) {
     return (val && typeof val === "string") ? val.trim() : (val || "0");
 }
 
-$(document).on('keyup blur change', '.jtsseparator', function () {
-    _jtsseparator(this);
+$(document).on('keyup blur change', '.jaccseparator', function () {
+    jaccseparator(this, { maxDecimals: 4 });
 });
 
 function openAddNewItemModal() {
@@ -617,6 +618,7 @@ function generateDocNo() {
                         }
                         // Jika tetap ingin punya 1 full docno juga:
                         $('#docno').val(res.prefix + '/'+ res.infix +'/' + res.suffix); 
+                        if (typeof toggleTarikPjo === 'function') toggleTarikPjo();
                         let anu = $('#docno').val();
                         console.info(anu)
                     } else {
@@ -1349,6 +1351,16 @@ function finalEntryProforma() {
         return false; // stop submit
     }
 
+    if (String($('#jnsinvoice').val() || '').toUpperCase() === 'INVOICE'
+        && proformaTrim($('#docnopjo').val()) === '') {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Perhatian',
+            text: 'INVOICE wajib menarik PJO yang sudah memiliki jurnal POSTED.'
+        });
+        return false;
+    }
+
     // Bisa tambahkan field lain sesuai kebutuhan
     let data = {
         grosssales: grossSales,
@@ -1389,11 +1401,16 @@ function finalEntryProforma() {
                             icon: 'success',
                             title: 'Berhasil',
                             text: res.message || 'Final entry berhasil disimpan!',
-                            timer: 2000,
-                            showConfirmButton: false
-                        }).then(() => {
-                            // Kalau backend redirect, bisa langsung window.location.reload()
-                            window.location.href = res.redirect;
+                            showCancelButton: !!res.preview_url,
+                            confirmButtonText: res.preview_url ? 'Preview Invoice' : 'OK',
+                            cancelButtonText: 'Kembali ke List',
+                            allowOutsideClick: false
+                        }).then((r) => {
+                            if (res.preview_url && r.isConfirmed) {
+                                window.location.href = res.preview_url;
+                            } else {
+                                window.location.href = res.redirect || HOST_URL + 'sales/presales/performainvoice';
+                            }
                         });
                     } else {
                         Swal.fire({
@@ -1401,7 +1418,7 @@ function finalEntryProforma() {
                             title: 'Gagal',
                             text: res.message || 'Final entry gagal disimpan.'
                         }).then(() => {
-                            window.location.href = res.redirect;
+                            window.location.href = res.redirect || HOST_URL + 'sales/presales/addProforma';
                         });
                     }
                 },
@@ -1411,8 +1428,8 @@ function finalEntryProforma() {
                         title: 'Oops...',
                         text: 'Terjadi kesalahan sistem: ' + xhr.status
                     }).then(() => {
-                            window.location.href = res.redirect;
-                        });
+                        window.location.href = HOST_URL + 'sales/presales/addProforma';
+                    });
                 }
             });
         }
@@ -1423,43 +1440,12 @@ function finalEntryProforma() {
 
 
 function insertNewProforma() {
-    var fillData = {
-        'key': '1203jD0j120dkjjKODNOoimdi)D(J)Jmjid0sjd0ijme09wjei0kjisdjfDSojiodksOjO',
-        'body': {
-            docno : $('[name="docno"]').val()
-            // namabarang: $('#namabaranginsert').val(),
-            // qty: $('#qtyinsert').val(),
-            // description: $('#descriptiondetail').val(),
-        }
-    };
-
-    $.ajax({
-        type: "POST",
-        url: HOST_URL + 'sales/presales/insertNewProforma',
-        dataType: 'json',
-        contentType: "application/json",
-        data: JSON.stringify(fillData),
-        success: function (datax) {
-            Swal.fire({
-                icon: datax.status ? 'success' : 'error',
-                title: datax.status ? 'Success!' : 'Failed...',
-                text: datax.message,
-                allowOutsideClick: false
-            });
-            if (datax.status) {
-                reloadtableProformaDtl();
-                $('#insertsikbsp').modal('hide');
-            }
-        },
-        error: function () {
-            Swal.fire({
-                icon: 'error',
-                title: 'Oops...',
-                text: 'Unable to process request.',
-                allowOutsideClick: false
-            });
-        }
-    });
+    var docno = proformaTrim($('[name="docno"]').val());
+    if (docno === '') {
+        Swal.fire('Perhatian', 'Simpan header proforma terlebih dahulu.', 'warning');
+        return;
+    }
+    $('#insertsikbsp').modal('show');
 }
 
 
@@ -1515,16 +1501,18 @@ function insert_detail_sikbsp(){
         'key': '1203jD0j120dkjjKODNOoimdi)D(J)Jmjid0sjd0ijme09wjei0kjisdjfDSojiodksOjO',
         'message': '',
         'body': {
+            docno: proformaTrim($('[name="docno"]').val()),
             idunit: $('#idunitinsert').val(),
             namabarang: $('#namabaranginsert').val(),
             qty: $('#qtyinsert').val(),
+            price: $('#priceinsert').val(),
             description: $('#descriptiondetail').val(),
         },
     };
 
     $.ajax({
         type: "POST",
-        url: HOST_URL + 'finance/sikbsp/insert_detail_sikbsp',
+        url: HOST_URL + 'sales/presales/insert_detail_proforma',
         dataType: 'json',
         contentType: "application/json",
         data: JSON.stringify(fillData),
@@ -1534,6 +1522,7 @@ function insert_detail_sikbsp(){
                 $('#qtyinsert').val('');
                 $('#idunitinsert').val('');
                 $('#namabaranginsert').val('');
+                $('#priceinsert').val('');
                 $('#descriptiondetail').val('');
 
                 Swal.fire({
@@ -1556,7 +1545,7 @@ function insert_detail_sikbsp(){
                 })
                 reloadtableProformaDtl();
                 $('#insertsikbsp').modal('hide');
-                btn.prop('disabled', false);
+                // btn reference removed
             }
         },
         error: function (jqXHR, textStatus, errorThrown) {
@@ -1569,7 +1558,7 @@ function insert_detail_sikbsp(){
             })
             reloadtableProformaDtl();
             $('#insertsikbsp').modal('hide');
-            btn.prop('disabled', false);
+            // btn reference removed
         }
     });
 }
@@ -1580,10 +1569,7 @@ $(document).on('input', '.form-control', function () {
         let qty = parseFloat($('#qty_' + id).val().replace(/,/g, '')) || 0;
         let price = parseFloat($('#price_' + id).val().replace(/,/g, '')) || 0;
         let amount = qty * price;    
-        $('#amount_' + id).val(amount.toLocaleString('en-US', {
-            minimumFractionDigits: 2, 
-            maximumFractionDigits: 2
-        }));
+        $('#amount_' + id).val(jaccformat(amount, { maxDecimals: 4 }));
     }
 });
 
@@ -1625,11 +1611,19 @@ function calculateSummary() {
     $("#ttlprice").val(formatUI(ttl));
 }
 
-// Pakai _jtsseparator tapi dibuat versi helper
+// Pakai jaccseparator versi helper
 function formatUI(val) {
-    let obj = { value: (val || 0).toFixed(2).replace(",", ".") }; 
-    _jtsseparator(obj);
-    return obj.value;
+    return jaccformat(val, { maxDecimals: 4 });
+}
+
+function formatProformaSummary() {
+    ['#grosssales', '#downpayment', '#netsales', '#taxbasis', '#vat', '#pph22', '#ttlprice']
+        .forEach(function(selector) {
+            var el = $(selector)[0];
+            if (!el) return;
+            el.value = jaccformat(el.value, { maxDecimals: 4 });
+            jaccseparator(el, { maxDecimals: 4 });
+        });
 }
 
 // trigger saat load tabel atau ubah DP
@@ -1671,5 +1665,250 @@ $(document).ready(function() {
 
     
     tableProformaDtl();
+    if (typeof formatProformaSummary === 'function') formatProformaSummary();
 
 });
+
+/* =========================================================
+   PROFORMA: TARIK PJO / INVOICE
+   ========================================================= */
+window.proformaPjo = null;
+
+function proformaTrim(value) {
+    return (value === null || value === undefined) ? '' : String(value).trim();
+}
+
+function proformaNum(value) {
+    if (value === null || value === undefined || value === '') return 0;
+    var n = parseFloat(String(value).replace(/,/g, ''));
+    return isNaN(n) ? 0 : n;
+}
+
+function proformaFormat(value) {
+    return jaccformat(value, { maxDecimals: 4 });
+}
+
+function setProformaValue(selector, value) {
+    var el = $(selector)[0];
+    if (!el) return;
+    el.value = proformaFormat(value);
+    jaccseparator(el, { maxDecimals: 4 });
+}
+
+function toggleTarikPjo() {
+    var ready = proformaTrim($('#docno').val()) !== ''
+        && proformaTrim($('#docnopjo').val()) !== ''
+        && proformaTrim($('#cust').val()) !== '';
+    $('#btnTarikPJO').prop('disabled', !ready);
+}
+
+function loadPenjualanProforma() {
+    $('#docnopjo').select2({
+        placeholder: 'Cari No. PJO / Penjualan',
+        allowClear: true,
+        width: '100%',
+        minimumInputLength: 0,
+        ajax: {
+            url: HOST_URL + 'sales/presales/list_penjualan_proforma',
+            type: 'POST',
+            dataType: 'json',
+            delay: 250,
+            data: function(params) {
+                return {
+                    _search_: params.term || '',
+                    _customer_: $('#cust').val() || ''
+                };
+            },
+            processResults: function(data) {
+                var items = (data.items || []).map(function(item) {
+                    return {
+                        id: proformaTrim(item.docno),
+                        text: proformaTrim(item.docno) + ' - ' + proformaTrim(item.nmcustomer),
+                        docno: proformaTrim(item.docno),
+                        docdate: proformaTrim(item.docdate),
+                        kdcustomer: proformaTrim(item.kdcustomer),
+                        nmcustomer: proformaTrim(item.nmcustomer),
+                        dpp: proformaNum(item.dpp),
+                        jumlahpajak: proformaNum(item.jumlahpajak),
+                        total: proformaNum(item.total),
+                        jurnalno: proformaTrim(item.jurnalno)
+                    };
+                });
+                return { results: items, pagination: { more: false } };
+            }
+        },
+        templateResult: function(repo) {
+            if (repo.loading) return repo.text;
+            return repo.text;
+        }
+    }).on('select2:select', function(e) {
+        var data = e.params.data || {};
+        $('#jurnalno').val(proformaTrim(data.jurnalno));
+        window.proformaPjo = {
+            dpp: proformaNum(data.dpp),
+            ppn: proformaNum(data.jumlahpajak),
+            jurnalno: proformaTrim(data.jurnalno)
+        };
+        toggleTarikPjo();
+    }).on('select2:clear', function() {
+        $('#jurnalno').val('');
+        window.proformaPjo = null;
+        toggleTarikPjo();
+    });
+
+    toggleTarikPjo();
+}
+
+function applyPjoHeader(header, totals) {
+    header = header || {};
+    totals = totals || {};
+
+    var cust = proformaTrim(header.cust || $('#cust').val());
+    if (cust !== '' && $('#cust').val() !== cust) {
+        window.proformaSettingCustomer = true;
+        var option = new Option(header.nmcustomer || cust, cust, true, true);
+        $('#cust').append(option).trigger('change');
+        window.proformaSettingCustomer = false;
+    }
+
+    if (header.address !== undefined) $('#address').val(header.address);
+    if (header.phone !== undefined) $('#phone').val(header.phone);
+    if (header.fax !== undefined) $('#fax').val(header.fax);
+    if (header.jurnalno !== undefined) $('#jurnalno').val(proformaTrim(header.jurnalno));
+
+    setProformaValue('#grosssales', totals.grosssales);
+    setProformaValue('#netsales', totals.netsales);
+    setProformaValue('#taxbasis', totals.taxbasis);
+    setProformaValue('#vat', totals.vat);
+    setProformaValue('#pph22', totals.pph22);
+    setProformaValue('#ttlprice', totals.ttlprice);
+}
+
+
+function pullPenjualanProforma() {
+    var docno = proformaTrim($('#docno').val());
+    var docnopjo = proformaTrim($('#docnopjo').val());
+
+    if (docno === '') {
+        Swal.fire('Perhatian', 'No. Jurnal/Dokumen proforma belum terisi.', 'warning');
+        return;
+    }
+    if (docnopjo === '') {
+        Swal.fire('Perhatian', 'Pilih No. PJO/Penjualan terlebih dahulu.', 'warning');
+        return;
+    }
+
+    Swal.fire({
+        title: 'Tarik PJO?',
+        text: 'Header dan detail PJO ' + docnopjo + ' akan menggantikan detail proforma saat ini.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Tarik',
+        cancelButtonText: 'Batal'
+    }).then(function(result) {
+        if (!result.isConfirmed) return;
+
+        $('#btnTarikPJO').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Menarik...');
+
+        $.ajax({
+            url: HOST_URL + 'sales/presales/pull_penjualan_proforma',
+            type: 'POST',
+            dataType: 'json',
+            data: { docno: docno, docnopjo: docnopjo }
+        }).done(function(res) {
+            if (!res || !res.status) {
+                Swal.fire('Gagal', (res && res.message) || 'Gagal menarik PJO.', 'error');
+                return;
+            }
+
+            window.proformaPjo = {
+                dpp: proformaNum(res.totals ? res.totals.taxbasis : 0),
+                ppn: proformaNum(res.totals ? res.totals.vat : 0),
+                jurnalno: proformaTrim(res.header ? res.header.jurnalno : '')
+            };
+            applyPjoHeader(res.header || {}, res.totals || {});
+            reloadtableProformaDtl();
+            Swal.fire('Berhasil', res.message || 'PJO berhasil ditarik.', 'success');
+        }).fail(function(xhr) {
+            Swal.fire('Error', 'Gagal menghubungi server (' + xhr.status + ').', 'error');
+        }).always(function() {
+            $('#btnTarikPJO').html('<i class="fa fa-download"></i> Tarik PJO');
+            toggleTarikPjo();
+        });
+    });
+}
+
+function calculateSummary() {
+    var pjo = window.proformaPjo;
+    var gross = 0;
+
+    if (pjo && proformaNum(pjo.dpp) > 0) {
+        gross = proformaNum(pjo.dpp);
+    } else {
+        $('#t_proforma_dtl tbody tr').each(function() {
+            gross += proformaNum($(this).find('input.amount').val());
+        });
+    }
+
+    var dp = proformaNum($('#downpayment').val());
+    var net = gross - dp;
+    var taxbasis, vat, pph22, total;
+
+    if (pjo && proformaNum(pjo.dpp) > 0) {
+        taxbasis = proformaNum(pjo.dpp);
+        vat = proformaNum(pjo.ppn);
+        pph22 = proformaNum($('#pph22').val());
+        total = net + vat + pph22;
+    } else {
+        taxbasis = (11 / 12) * net;
+        vat = taxbasis * 0.12;
+        pph22 = net * 0.003;
+        total = net + vat + pph22;
+    }
+
+    setProformaValue('#grosssales', gross);
+    setProformaValue('#netsales', net);
+    setProformaValue('#taxbasis', taxbasis);
+    setProformaValue('#vat', vat);
+    if (!(pjo && proformaNum(pjo.dpp) > 0)) {
+        setProformaValue('#pph22', pph22);
+    }
+    setProformaValue('#ttlprice', total);
+}
+
+$(function() {
+    loadPenjualanProforma();
+
+    $('#cust').on('select2:select', function() {
+        if (window.proformaSettingCustomer) return;
+        $('#docnopjo').val(null).trigger('change');
+        $('#jurnalno').val('');
+        window.proformaPjo = null;
+        toggleTarikPjo();
+    });
+
+    $('#docno, #cust').on('change input', toggleTarikPjo);
+
+    // Muat referensi PJO jika halaman dibuka dari draft yang sudah ditarik.
+    var docnoDraft = proformaTrim($('#docno').val());
+    if (docnoDraft !== '') {
+        $.get(HOST_URL + 'sales/presales/showing_proformatemp', { docno: docnoDraft }, function(json) {
+            var item = (json && json.dataTables && json.dataTables.items && json.dataTables.items[0]) || null;
+            if (!item || !proformaTrim(item.docnopjo)) return;
+
+            var option = new Option(
+                proformaTrim(item.docnopjo) + ' - ' + proformaTrim(item.nmcustomer),
+                proformaTrim(item.docnopjo), true, true
+            );
+            $('#docnopjo').append(option).trigger('change');
+            $('#jurnalno').val(proformaTrim(item.jurnalno));
+            window.proformaPjo = {
+                dpp: proformaNum(item.dpp),
+                ppn: proformaNum(item.jumlahpajak),
+                jurnalno: proformaTrim(item.jurnalno)
+            };
+            toggleTarikPjo();
+        }, 'json');
+    }
+});
+

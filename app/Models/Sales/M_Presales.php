@@ -590,7 +590,7 @@ private function _get_query_t_Task($nama = null, $role = null, $bagian = null)
 
     /* TRX MRP DETAIL */
     var $t_proforma_dtl_view = "sc_trx.proformadtl";
-    var $t_proforma_dtl_view_column = array('docno','docref','description');
+    var $t_proforma_dtl_view_column = array('docno','idbarang','nmbarang','description');
     var $t_proforma_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_t_proforma_dtl($docnoParam)
     {
@@ -705,7 +705,7 @@ private function _get_query_t_Task($nama = null, $role = null, $bagian = null)
     //WO TEMP
     /* WO DETAIL */
     var $t_proforma_dtl_temp_view = "sc_tmp.proformadtl";
-    var $t_proforma_dtl_temp_view_column = array('docno','docref','description');
+    var $t_proforma_dtl_temp_view_column = array('docno','idbarang','nmbarang','description');
     var $t_proforma_dtl_temp_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_t_proforma_dtl_temp($docno)
     {
@@ -935,6 +935,164 @@ private function _get_query_t_Task($nama = null, $role = null, $bagian = null)
         return $this->db->query("select * from sc_trx.view_print_proforma_dtl where docno is not null and printby='$nama' $param order by inputdate asc,idurut asc");
     }
 
+    /**
+     * Daftar PJO/Penjualan yang boleh ditarik ke Proforma/Invoice.
+     * Syarat: status F + memiliki jurnal SALESX POSTED.
+     */
+    public function q_list_penjualan_proforma($branch = '', $customer = '', $search = '')
+    {
+        $sql = "
+            SELECT
+                BTRIM(p.docno)       AS docno,
+                p.docdate,
+                BTRIM(p.cabang)      AS cabang,
+                BTRIM(p.kdcustomer)  AS kdcustomer,
+                COALESCE(NULLIF(BTRIM(c.nmcustomer), ''), BTRIM(p.nmcustomer), '') AS nmcustomer,
+                p.dpp,
+                p.jumlahpajak,
+                p.total,
+                j.jurnalno
+            FROM sc_trx.penjualan p
+            LEFT JOIN sc_mst.customer c
+                   ON BTRIM(c.kdcustomer) = BTRIM(p.kdcustomer)
+            JOIN LATERAL (
+                SELECT BTRIM(jh.uniqueid) AS jurnalno
+                FROM sc_trx.transaction_dt td
+                JOIN sc_trx.jurnal_hd jh
+                  ON BTRIM(jh.source_uniqueid) = BTRIM(td.uniqueid)
+                WHERE BTRIM(td.docno) = BTRIM(p.docno)
+                  AND BTRIM(td.journal_type) = 'SALESX'
+                  AND BTRIM(jh.status) = 'POSTED'
+                ORDER BY jh.id DESC
+                LIMIT 1
+            ) j ON TRUE
+            WHERE BTRIM(p.status) = 'F'
+        ";
 
+        $params = [];
+
+        if ($branch !== '') {
+            $sql .= " AND BTRIM(p.cabang) = ?";
+            $params[] = $branch;
+        }
+
+        if ($customer !== '') {
+            $sql .= " AND BTRIM(p.kdcustomer) = ?";
+            $params[] = $customer;
+        }
+
+        if ($search !== '') {
+            $sql .= " AND (UPPER(p.docno) LIKE ? OR UPPER(COALESCE(p.keterangan, '')) LIKE ?)";
+            $params[] = '%' . strtoupper($search) . '%';
+            $params[] = '%' . strtoupper($search) . '%';
+        }
+
+        $sql .= " ORDER BY p.docno ASC";
+
+        return $this->db->query($sql, $params)->getResult();
+    }
+
+    public function q_penjualan_proforma_header($docno)
+    {
+        $sql = "
+            SELECT
+                BTRIM(p.docno)       AS docno,
+                p.docdate,
+                BTRIM(p.cabang)      AS cabang,
+                BTRIM(p.kdcustomer)  AS kdcustomer,
+                COALESCE(NULLIF(BTRIM(c.nmcustomer), ''), BTRIM(p.nmcustomer), '') AS nmcustomer,
+                COALESCE(NULLIF(BTRIM(p.alamatcustomer), ''), BTRIM(c.alamat_kantor), '') AS address,
+                COALESCE(NULLIF(BTRIM(c.phone), ''), '') AS phone,
+                COALESCE(NULLIF(BTRIM(c.fax), ''), '') AS fax,
+                COALESCE(NULLIF(BTRIM(c.cp), ''), '') AS up,
+                BTRIM(p.idtax)       AS idtax,
+                BTRIM(p.isinclusive) AS isinclusive,
+                BTRIM(p.currcode)    AS currcode,
+                p.kurs,
+                p.dpp,
+                p.jumlahpajak,
+                p.total,
+                j.jurnalno
+            FROM sc_trx.penjualan p
+            LEFT JOIN sc_mst.customer c
+                   ON BTRIM(c.kdcustomer) = BTRIM(p.kdcustomer)
+            JOIN LATERAL (
+                SELECT BTRIM(jh.uniqueid) AS jurnalno
+                FROM sc_trx.transaction_dt td
+                JOIN sc_trx.jurnal_hd jh
+                  ON BTRIM(jh.source_uniqueid) = BTRIM(td.uniqueid)
+                WHERE BTRIM(td.docno) = BTRIM(p.docno)
+                  AND BTRIM(td.journal_type) = 'SALESX'
+                  AND BTRIM(jh.status) = 'POSTED'
+                ORDER BY jh.id DESC
+                LIMIT 1
+            ) j ON TRUE
+            WHERE BTRIM(p.docno) = ?
+              AND BTRIM(p.status) = 'F'
+            LIMIT 1
+        ";
+
+        return $this->db->query($sql, [$docno])->getRowArray();
+    }
+
+    public function q_penjualan_proforma_dtl($docno)
+    {
+        return $this->db->query("
+            SELECT
+                d.idurut,
+                BTRIM(d.idbarang) AS idbarang,
+                BTRIM(d.nmbarang) AS nmbarang,
+                BTRIM(d.unit) AS unit,
+                d.qty,
+                d.harga,
+                d.multidisc,
+                d.nilai,
+                d.nilaikonversi,
+                d.nilaipajak,
+                BTRIM(d.idtax) AS idtax,
+                BTRIM(d.idgudang) AS idgudang,
+                BTRIM(d.idspec) AS idspec,
+                d.description
+            FROM sc_trx.penjualan_dtl d
+            WHERE BTRIM(d.docno) = ?
+            ORDER BY d.idurut
+        ", [$docno])->getResult();
+    }
+
+    public function q_proforma_by_pjo($docnopjo, $jnsinvoice = 'INVOICE')
+    {
+        $sql = "
+            SELECT docno, status, jnsinvoice, docnopjo
+            FROM sc_tmp.proforma
+            WHERE BTRIM(docnopjo) = ?
+              AND UPPER(BTRIM(jnsinvoice)) = UPPER(?)
+              AND BTRIM(status) IN ('E','F','P')
+            UNION ALL
+            SELECT docno, status, jnsinvoice, docnopjo
+            FROM sc_trx.proforma
+            WHERE BTRIM(docnopjo) = ?
+              AND UPPER(BTRIM(jnsinvoice)) = UPPER(?)
+              AND BTRIM(status) IN ('E','F','P')
+            LIMIT 1
+        ";
+
+        return $this->db->query($sql, [$docnopjo, $jnsinvoice, $docnopjo, $jnsinvoice])->getRowArray();
+    }
+
+    public function q_customer_proforma($kdcustomer)
+    {
+        return $this->db->query("
+            SELECT
+                BTRIM(kdcustomer) AS kdcustomer,
+                nmcustomer,
+                COALESCE(alamat_kantor, '') AS alamat_kantor,
+                COALESCE(phone, '') AS phone,
+                COALESCE(fax, '') AS fax,
+                COALESCE(cp, '') AS cp
+            FROM sc_mst.customer
+            WHERE BTRIM(kdcustomer) = ?
+            LIMIT 1
+        ", [$kdcustomer])->getRowArray();
+    }
 
 }
