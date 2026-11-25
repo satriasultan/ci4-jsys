@@ -1887,6 +1887,8 @@ function tabletmpMaterialRelease() {
                 "url": HOST_URL + 'production/trans/list_tmp_materialrelease_dtl',
                 "type": "POST",
                 "data": function (data) {
+                    // docno draft dikirim agar controller bisa menentukan idlocation header
+                    data.docno = ($('#docno').val() || '').toString().trim();
                     //data.searchfilter = $('#searchitem').val()+'';
                     //data.idbarang = $('#idbarang').val()+'';
                     //data.idposition = $('#idposition').val()+'';

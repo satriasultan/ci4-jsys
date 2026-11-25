@@ -3829,8 +3829,9 @@ class Globalmodule extends BaseController
     }
 
     /**
-     * Total stok dari sc_mst.stkgdw untuk idbarang + gudang (idlocation) + batch.
-     * Dipakai modal Material Release.
+     * Total stok (saldo) dari sc_trx.stkblc untuk idbarang + gudang (idlocation) + batch.
+     * Dipakai modal Material Release. Sumber stkblc dipakai agar presisi 4 desimal
+     * (sc_mst.stkgdw.onhand bertipe numeric(18,2) sehingga qty < 0,005 terbaca 0,00).
      */
     public function stock_stkgdw_item()
     {
@@ -3839,17 +3840,25 @@ class Globalmodule extends BaseController
             $loccode  = trim($this->request->getPost('loccode')  ?? '');
             $batch    = trim($this->request->getPost('batch')    ?? '');
 
+            if (strtoupper($batch) === 'NULL') {
+                $batch = '';
+            }
+
             $total = 0;
             if ($idbarang !== '' && $loccode !== '') {
-                $param  = " and trim(idbarang) = " . $this->db->escape($idbarang);
-                $param .= " and trim(idlocation) = " . $this->db->escape($loccode);
-                if ($batch !== '') {
-                    $param .= " and trim(coalesce(batch,'')) = " . $this->db->escape($batch);
-                }
-                $rows = $this->m_balance->q_stkgdw($param)->getResultArray();
-                foreach ($rows as $r) {
-                    $total += (float) ($r['sisa'] ?? 0);
-                }
+                // Sumber saldo: sc_trx.stkblc (presisi 4 desimal).
+                // sc_mst.stkgdw.onhand bertipe numeric(18,2) sehingga qty < 0,005
+                // terbaca 0,00 dan membuat validasi stok Material Release salah.
+                $row = $this->db->query("
+                    SELECT (COALESCE(SUM(qty_in), 0) - COALESCE(SUM(qty_out), 0)) AS saldo
+                    FROM sc_trx.stkblc
+                    WHERE TRIM(idbarang)   = ?
+                      AND TRIM(idlocation) = ?
+                      AND COALESCE(NULLIF(TRIM(batch), ''), '') = ?
+                      AND COALESCE(grouptype, 'STOCK') = 'STOCK'
+                ", [$idbarang, $loccode, $batch])->getRowArray();
+
+                $total = (float) ($row['saldo'] ?? 0);
             }
 
             return $this->response->setJSON(['total' => $total]);

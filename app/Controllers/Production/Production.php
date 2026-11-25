@@ -8563,6 +8563,7 @@ class Production extends BaseController
                 'nmlocation'    => trim($this->request->getPost('nmlocation')),
                 'bagian'    => trim($this->request->getPost('bagian')),
                 'pemohon'       => trim($this->request->getPost('pemohon')),
+                'tabno'      => trim($this->request->getPost('tabno')),
                 'status'     => 'E',
                 'keterangan' => strtoupper(trim($this->request->getPost('keterangan'))),
                 'inputby'    => $nama,
@@ -8580,6 +8581,35 @@ class Production extends BaseController
             }
 
             $reload = true;
+        } else {
+
+            // =========================
+            // UPDATE HEADER (draft) SAAT SIMPAN DETAIL
+            // Kolom mengikuti yang di-update di final_input_materialrelease
+            // supaya keterangan/batchno/bagian/tabno tidak hilang
+            // =========================
+            $updateHeader = $db->table('sc_tmp.materialrelease_mst')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->where('status', 'E')
+                ->update([
+                    'keterangan' => strtoupper(trim((string) $this->request->getPost('keterangan'))),
+                    'batchno'    => trim((string) $this->request->getPost('batchno')),
+                    'bagian'     => trim((string) $this->request->getPost('bagian')),
+                    'tabno'      => trim((string) $this->request->getPost('tabno')),
+                    'updateby'   => $nama,
+                    'updatedate' => date('Y-m-d H:i:s')
+                ]);
+
+            if (!$updateHeader) {
+                $error = $db->error();
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => $error['message']
+                ]);
+            }
         }
 
         // =========================
@@ -8801,16 +8831,48 @@ class Production extends BaseController
 
         // idlocation header (gudang terpilih) untuk cek stok per barang
         $idlocation = '';
-        $hdr = $this->db->table('sc_tmp.materialrelease_mst')
-            ->select('idlocation')
-            ->where('docno', $docno)
-            ->get()
-            ->getRowArray();
+
+        $hdr = null;
+        if ($docno !== '') {
+            $hdr = $this->db->table('sc_tmp.materialrelease_mst')
+                ->select('idlocation')
+                ->where('docno', $docno)
+                ->get()
+                ->getRowArray();
+        }
+
+        // Datatable detail tidak mengirim docno -> ambil header draft milik user
+        // (mengikuti filter model: inputby = session nama)
+        if (!$hdr) {
+            $nama = trim((string) $this->session->get('nama'));
+
+            $hdr = $this->db->table('sc_tmp.materialrelease_mst')
+                ->select('idlocation')
+                ->where('inputby', $nama)
+                ->where('status', 'E')
+                ->orderBy('idurut', 'DESC')
+                ->limit(1)
+                ->get()
+                ->getRowArray();
+
+            if (!$hdr) {
+                $hdr = $this->db->table('sc_tmp.materialrelease_mst')
+                    ->select('idlocation')
+                    ->where('inputby', $nama)
+                    ->orderBy('idurut', 'DESC')
+                    ->limit(1)
+                    ->get()
+                    ->getRowArray();
+            }
+        }
+
         if ($hdr) {
             $idlocation = trim((string) $hdr['idlocation']);
         }
 
-        // preload stok tersedia (onhand - allocated - tmpalloca) dari stkgdw
+        // preload saldo stok dari sc_trx.stkblc (presisi 4 desimal).
+        // Catatan: sc_mst.stkgdw.onhand bertipe numeric(18,2) sehingga qty
+        // di bawah 0,005 terbaca 0,00 dan membuat kolom Stok / validasi MR salah.
         //   - per (idbarang + batch)
         //   - per idbarang (total semua batch, dipakai bila spec/batch kosong)
         $stockMap = array();
@@ -8819,9 +8881,10 @@ class Production extends BaseController
             $rows = $this->db->query("
                 SELECT TRIM(idbarang) AS idbarang,
                        TRIM(COALESCE(batch,'')) AS batch,
-                       COALESCE(SUM(COALESCE(onhand,0) - (COALESCE(allocated,0) + COALESCE(tmpalloca,0))), 0) AS stock
-                FROM sc_mst.stkgdw
+                       COALESCE(SUM(COALESCE(qty_in,0) - COALESCE(qty_out,0)), 0) AS stock
+                FROM sc_trx.stkblc
                 WHERE TRIM(idlocation) = ?
+                  AND COALESCE(grouptype, 'STOCK') = 'STOCK'
                 GROUP BY TRIM(idbarang), TRIM(COALESCE(batch,''))
             ", [$idlocation])->getResultArray();
             foreach ($rows as $r) {
@@ -8861,13 +8924,15 @@ class Production extends BaseController
                 $idb   = trim((string) $lm->idbarang);
                 $btc   = trim((string) $lm->spec);
                 if ($btc !== '') {
-                    $stock = (float) ($stockMap[$idb . '|' . $btc] ?? 0);
+                    // spec tidak selalu berupa batch: bila tidak ada batch yang sama,
+                    // pakai total stok item agar tidak salah terbaca 0
+                    $stock = (float) ($stockMap[$idb . '|' . $btc] ?? $stockItemMap[$idb] ?? 0);
                 } else {
                     $stock = (float) ($stockItemMap[$idb] ?? 0);
                 }
                 $over  = ($qty > $stock);
                 $row[] = '<div class="ratakanan" data-stock="' . $stock . '" data-qty="' . $qty . '" data-over="' . ($over ? '1' : '0') . '">'
-                    . number_format($stock, 2, '.', ',')
+                    . number_format($stock, 4, '.', ',')
                     . ($over ? ' <i class="fa fa-exclamation-triangle text-warning" title="Qty melebihi stok gudang"></i>' : '')
                     . '</div>';
             } else {
@@ -10881,6 +10946,7 @@ class Production extends BaseController
                 'nmlocation'    => trim($this->request->getPost('nmlocation')),
                 'bagian'    => trim($this->request->getPost('bagian')),
                 'pemohon'       => trim($this->request->getPost('pemohon')),
+                'tabno'      => trim($this->request->getPost('tabno')),
                 'status'     => 'E',
                 'keterangan' => strtoupper(trim($this->request->getPost('keterangan'))),
                 'inputby'    => $nama,
@@ -10898,6 +10964,44 @@ class Production extends BaseController
             }
 
             $reload = true;
+        } else {
+
+            // =========================
+            // UPDATE HEADER (draft) SAAT SIMPAN DETAIL
+            // Kolom mengikuti yang di-update di final_input_penerimaanbp
+            // supaya keterangan/batchno/bagian/tabno tidak hilang
+            // =========================
+            $headerUpdate = [
+                'keterangan' => strtoupper(trim((string) $this->request->getPost('keterangan'))),
+                'batchno'    => trim((string) $this->request->getPost('batchno')),
+                'bagian'     => trim((string) $this->request->getPost('bagian')),
+                'tabno'      => trim((string) $this->request->getPost('tabno')),
+                'updateby'   => $nama,
+                'updatedate' => date('Y-m-d H:i:s')
+            ];
+
+            // idlocation/nmlocation hanya diikutkan bila dikirim
+            $postLoc = trim((string) $this->request->getPost('idlocation'));
+            if ($postLoc !== '') {
+                $headerUpdate['idlocation'] = $postLoc;
+                $headerUpdate['nmlocation'] = trim((string) $this->request->getPost('nmlocation'));
+            }
+
+            $updateHeader = $db->table('sc_tmp.penerimaanbp_mst')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->where('status', 'E')
+                ->update($headerUpdate);
+
+            if (!$updateHeader) {
+                $error = $db->error();
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => $error['message']
+                ]);
+            }
         }
 
         // =========================
@@ -12809,6 +12913,7 @@ class Production extends BaseController
                 // 'nmlocation'    => trim($this->request->getPost('nmlocation')),
                 'bagian'    => trim($this->request->getPost('bagian')),
                 'pemohon'       => trim($this->request->getPost('pemohon')),
+                'tabno'      => trim($this->request->getPost('tabno')),
                 'status'     => 'E',
                 'keterangan' => strtoupper(trim($this->request->getPost('keterangan'))),
                 'inputby'    => $nama,
@@ -12826,6 +12931,35 @@ class Production extends BaseController
             }
 
             $reload = true;
+        } else {
+
+            // =========================
+            // UPDATE HEADER (draft) SAAT SIMPAN DETAIL
+            // Kolom mengikuti yang di-update di final_input_bpnm
+            // supaya keterangan/batchno/bagian/tabno tidak hilang
+            // =========================
+            $updateHeader = $db->table('sc_tmp.bpnm_mst')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->where('status', 'E')
+                ->update([
+                    'keterangan' => strtoupper(trim((string) $this->request->getPost('keterangan'))),
+                    'batchno'    => trim((string) $this->request->getPost('batchno')),
+                    'bagian'     => trim((string) $this->request->getPost('bagian')),
+                    'tabno'      => trim((string) $this->request->getPost('tabno')),
+                    'updateby'   => $nama,
+                    'updatedate' => date('Y-m-d H:i:s')
+                ]);
+
+            if (!$updateHeader) {
+                $error = $db->error();
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => $error['message']
+                ]);
+            }
         }
 
         // =========================
