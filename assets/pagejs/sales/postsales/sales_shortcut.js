@@ -121,6 +121,40 @@ $(document).on('keydown', function (e) {
     }
 });
 
+/* =========================================================
+ * KLIK TOMBOL DETAIL (selain shortcut keyboard)
+ * Catatan: id tombol (btnUpdateDetail / btnDeleteDetail) sama
+ * dengan nama fungsinya. Pada inline onclick, nama tersebut
+ * di-resolve ke elemen (named access document) sehingga muncul
+ * error "btnUpdateDetail is not a function". Karena itu klik
+ * di-bind dari sini agar dieksekusi pada scope JS normal.
+ * ========================================================= */
+$(document).on('click', '#btnAddDetail, #btnUpdateDetail, #btnDeleteDetail', function (e) {
+    e.preventDefault();
+
+    if ($(this).prop('disabled')) {
+        return;
+    }
+
+    switch (this.id) {
+        case 'btnAddDetail':
+            if (typeof btnInputDetail === 'function') {
+                btnInputDetail();
+            }
+            break;
+        case 'btnUpdateDetail':
+            if (typeof btnUpdateDetail === 'function') {
+                btnUpdateDetail();
+            }
+            break;
+        case 'btnDeleteDetail':
+            if (typeof btnDeleteDetail === 'function') {
+                btnDeleteDetail();
+            }
+            break;
+    }
+});
+
 $(document).on('draw.dt', function () {
     salesActiveRowIndex = -1;
     salesDetailTable().find('tbody tr').removeClass('row-active');

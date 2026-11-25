@@ -291,24 +291,24 @@
                         <button type="button"
                                 class="btn btn-success btn-lg action-btn"
                                 data-bs-toggle="tooltip"
-                                title="Input Data"
-                                id="btnAddDetail" onclick="btnInputDetail()">
+                                title="Input Data (Ctrl + Q)"
+                                id="btnAddDetail">
                             <i class="fa fa-plus"></i>
                         </button>
 
                         <button type="button"
                                 class="btn btn-warning btn-lg action-btn"
                                 data-bs-toggle="tooltip"
-                                title="Update Data"
-                                id="btnUpdateDetail" onclick="btnUpdateDetail()">
+                                title="Update Data (Ctrl + E)"
+                                id="btnUpdateDetail">
                             <i class="fa fa-edit"></i>
                         </button>
 
                         <button type="button"
                                 class="btn btn-danger btn-lg action-btn"
                                 data-bs-toggle="tooltip"
-                                title="Hapus Data"
-                                id="btnDeleteDetail" onclick="btnDeleteDetail()">
+                                title="Hapus Data (Ctrl + D)"
+                                id="btnDeleteDetail">
                             <i class="fa fa-trash"></i>
                         </button>
 
