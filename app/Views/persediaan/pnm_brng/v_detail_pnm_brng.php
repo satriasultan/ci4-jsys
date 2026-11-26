@@ -1,27 +1,67 @@
+<?php
+/* =====================================================================
+ * DETAIL PENERIMAAN BARANG (I.Q.A.6) - READ ONLY
+ * Sumber : sc_trx.pnm_brng_mst (header) + sc_trx.pnm_brng_dtl (detail)
+ * Layout & jurnal mengikuti modul LPB (purchase/trans/detailLPB)
+ * ===================================================================== */
+
+$hdr  = (isset($dtldata) && is_array($dtldata)) ? $dtldata : [];
+$rows = (isset($dtldetail) && is_array($dtldetail)) ? $dtldetail : [];
+
+$val = function ($key, $default = '') use ($hdr) {
+    return isset($hdr[$key]) ? trim((string) $hdr[$key]) : $default;
+};
+
+$num = function ($v, $dec = 2) {
+    return number_format((float) $v, $dec, '.', ',');
+};
+
+$grandTotal = 0.0;
+$totalQty   = 0.0;
+
+foreach ($rows as $r) {
+    $grandTotal += (float) ($r['valsum'] ?? 0);
+    $totalQty   += (float) ($r['qty'] ?? 0);
+}
+
+$statusMap = [
+    'F' => 'badge-info',       // FINAL USER
+    'O' => 'badge-primary',    // FINAL TRANSACTION
+    'P' => 'badge-success',    // CETAK/PRINT
+    'A' => 'badge-primary',    // APPROVED
+    'D' => 'badge-danger',     // DISAPPROVED
+    'E' => 'badge-warning',    // REVISION/EDITING
+    'I' => 'badge-secondary',  // DRAFT
+];
+
+$statusCode  = strtoupper($val('status'));
+$statusClass = $statusMap[$statusCode] ?? 'badge-secondary';
+$statusText  = $val('nmstatus') !== '' ? $val('nmstatus') : $statusCode;
+
+$docno        = $val('docno');
+$cabangText   = $val('nmbranch') !== '' ? $val('nmbranch') : $val('cabang');
+$bagianText   = $val('nmcostcenter') !== '' ? $val('nmcostcenter') : $val('idcostcenter');
+$pemohonText  = $val('nmpemohon') !== '' ? $val('nmpemohon') : $val('pemohon');
+?>
 <link rel="stylesheet" href="<?= base_url('assets/css/corp-form.css') ?>" />
 <style>
-
+    /* =========================================================
+       LAYOUT - mengikuti detail LPB
+    ========================================================= */
     .section-block {
-        background-color: #e8e8e8;
+        background-color: #f7f9fb;
         border-left: 4px solid #007bff;
-        /* border-bottom: 4px solid #007bff;  */
-        padding: 20px;
+        padding: 18px 20px;
         border-radius: 6px;
-        margin-bottom: 30px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-        box-shadow 0.4s ease,
-        border-color 0.4s ease;
-
-        transform: scale(1);
-        will-change: transform;
+        margin-bottom: 18px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
     }
 
     .section-header {
         font-weight: bold;
         color: #007bff;
-        margin-bottom: 20px;
-        font-size: 1.1rem;
+        margin-bottom: 16px;
+        font-size: 1.05rem;
         display: flex;
         align-items: center;
     }
@@ -30,615 +70,455 @@
         margin-right: 8px;
     }
 
-    .section-block:hover {
-        /* transform: scale(1.02); */
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-        border-left-color: #024086;
-        border-bottom-color: #034081;
+    #pnmDetailForm label {
+        font-weight: 600;
+        font-size: 12.5px;
+        color: #495057;
+        margin-bottom: 4px;
     }
 
-    .is-invalid {
-        border-color: #dc3545;
-    }
-    .invalid-feedback {
-        display: block;
-        color: #dc3545;
-        font-size: 0.875em;
-    }
-
-    .form-control:disabled, .form-control[readonly] {
-        background-color: #dfdfdf;
+    #pnmDetailForm .form-control:disabled,
+    #pnmDetailForm .form-control[readonly] {
+        background-color: #eef1f4;
         opacity: 1;
+        color: #212529;
+        font-weight: 600;
     }
 
-    .section-divider {
-        height: 1px;
-        background: linear-gradient(
-                to right,
-                #007bff 0%,
-                #cfe2ff 30%,
-                #e8e8e8 100%
-        );
-        margin: 24px 0;
-        border: none;
-    }
-    /* ===== Custom Table Style ===== */
-
-    .custom-table {
-        border-collapse: separate;
-        border-spacing: 0;
-        font-size: 14px;
+    /* =========================================================
+       TABEL DETAIL
+    ========================================================= */
+    #tabpnmdtl {
+        width: 100% !important;
+        margin-bottom: 0;
+        font-size: 13px;
     }
 
-    .custom-table thead {
-        background: linear-gradient(135deg, #1e3a8a, #2563eb);
-        color: #fff;
+    #tabpnmdtl thead th {
+        font-size: 12px;
+        font-weight: 600;
+        text-align: center;
+        vertical-align: middle;
+        white-space: nowrap;
     }
 
-    .custom-table thead th {
-        border: none;
-        padding: 12px 10px;
+    #tabpnmdtl tbody td {
+        vertical-align: middle;
+        padding: 7px 8px;
+    }
+
+    #tabpnmdtl tbody td.amount {
+        text-align: right;
+        font-family: Consolas, "Courier New", monospace;
+        white-space: nowrap;
+    }
+
+    #tabpnmdtl tfoot td {
+        font-weight: bold;
+        background-color: #eef1e9 !important;
+        border-top: 2px solid #46533a !important;
+    }
+
+    #tabpnmdtl tfoot td.amount {
+        text-align: right;
+        font-family: Consolas, "Courier New", monospace;
+    }
+
+    /* =========================================================
+       LAPORAN JURNAL - CORPORATE TABLE  (SAMA DENGAN LPB)
+    ========================================================= */
+    #modalLaporanJurnal .modal-content {
+        border-radius: 4px;
+        border: 1px solid #d6dce3;
+    }
+
+    #modalLaporanJurnal .modal-header {
+        padding: 12px 20px;
+    }
+
+    #modalLaporanJurnal .modal-title {
+        font-size: 16px;
+        color: #343a40;
+    }
+
+    #tableLaporanJurnal {
+        border-collapse: collapse !important;
+        white-space: nowrap !important;
+    }
+
+    #tableLaporanJurnal thead th {
+        background: #46533a;
+        color: #ffffff;
+        font-size: 12px;
+        font-weight: 600;
+        vertical-align: middle;
+        white-space: nowrap !important;
+        border-color: #59664c;
+        padding: 9px 10px;
+    }
+
+    #tableLaporanJurnal tbody td {
+        font-size: 12px;
+        vertical-align: middle;
+        white-space: nowrap !important;
+        padding: 8px 10px;
+    }
+
+    #tableLaporanJurnal tbody tr:hover {
+        background-color: #f1f4f6 !important;
+    }
+
+    #tableLaporanJurnal td.text-right,
+    #tableLaporanJurnal td.text-end {
+        font-family: Consolas, "Courier New", monospace;
         font-weight: 500;
     }
 
-    .custom-table tbody tr {
-        background-color: #ffffff;
-        transition: all 0.2s ease-in-out;
+    #tableLaporanJurnal tbody tr.row-total td {
+        background-color: #eef1e9 !important;
+        font-weight: bold;
+        border-top: 2px solid #46533a !important;
     }
 
-    .custom-table tbody tr:hover {
-        background-color: #f1f5f9;
+    #modalLaporanJurnal .dataTables_wrapper {
+        font-size: 12px;
     }
 
-    .custom-table tbody td {
-        padding: 10px;
-        vertical-align: middle;
-        border-top: 1px solid #e5e7eb;
+    #modalLaporanJurnal .dataTables_filter input {
+        border: 1px solid #ced4da;
+        border-radius: 3px;
+        height: 30px;
+        padding: 5px 10px;
     }
 
-    .custom-table input[type="checkbox"] {
-        transform: scale(1.1);
-        cursor: pointer;
+    #modalLaporanJurnal .dataTables_length select {
+        border: 1px solid #ced4da;
+        border-radius: 3px;
+        height: 30px;
     }
 
-
-
-    /* ===============================
-   TABLE HEADER STYLE - CORPORATE
-================================ */
-
-    #tabspktransfersdtl {
-        border-collapse: separate;
-        border-spacing: 0;
-        font-size: 13px;
-        width: 100%;
+    #modalLaporanJurnal .dataTables_scrollBody {
+        border-bottom: 1px solid #dee2e6 !important;
     }
-
-    /* HEADER */
-    #tabspktransfersdtl thead th {
-        background: linear-gradient(135deg, #1f2937, #374151);
-        color: #ffffff;
-        font-weight: 600;
-        text-align: center;
-        padding: 10px 8px;
-        border: 1px solid #dee2e6;
-        vertical-align: middle;
-        white-space: nowrap;
-        position: sticky;
-        top: 0;
-        z-index: 2;
-    }
-
-    /* Rounded corner atas */
-    #tabspktransfersdtl thead th:first-child {
-        border-top-left-radius: 8px;
-    }
-
-    #tabspktransfersdtl thead th:last-child {
-        border-top-right-radius: 8px;
-    }
-
-    /* BODY CELL */
-    #tabspktransfersdtl tbody td {
-        padding: 8px;
-        border: 1px solid #dee2e6;
-        vertical-align: middle;
-    }
-
-    /* Zebra row */
-    #tabspktransfersdtl tbody tr:nth-child(even) {
-        background-color: #f8f9fa;
-    }
-
-    /* Hover row */
-    #tabspktransfersdtl tbody tr:hover {
-        background-color: #e9f2ff;
-        transition: all 0.2s ease-in-out;
-    }
-
-    /* Alignment sesuai 6 kolom */
-    #tabspktransfersdtl tbody td:nth-child(1), /* checkbox */
-    #tabspktransfersdtl tbody td:nth-child(4), /* satuan */
-    #tabspktransfersdtl tbody td:nth-child(5)  /* quantity */
-    {
-        text-align: center;
-    }
-
-
 </style>
+
 <div class="corp-form-container">
 
-<div class="content-header">
-    <div class="container-fluid">
-        <div class="row mb-2">
-            <div class="col-sm-6">
-                <h1 class="m-0"><?php echo ucwords(strtolower(trim($title)));?></h1>
-            </div><!-- /.col -->
-            <div class="col-sm-6">
-                <ol class="breadcrumb float-sm-right">
-                    <div class="float-right" style="margin-right: 10px;vertical-align:middle;padding-top: 0.7%;"><i style="color:transparent;"><?php echo $t; ?></i> Menu ID <?php echo $version; ?></div>
-                    <input type="hidden" id="classmenu" value="<?= str_replace('.','_',$kodemenu) ?>" required>
-                    <?php foreach ($y as $y1) { ?>
-                        <?php if( trim($y1->kodemenu)!=trim($kodemenu)) { ?>
-                            <li class="breadcrumb-item"><a href="<?php echo base_url( trim($y1->linkmenu)) ; ?>"><i class="fa <?php echo trim($y1->iconmenu); ?>"></i> <?php echo  trim($y1->namamenu); ?></a></li>
-                        <?php } else { ?>
-                            <li class="breadcrumb-item active"><i class="fa <?php echo trim($y1->iconmenu); ?>"></i> <?php echo trim($y1->namamenu); ?></li>
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0"><?php echo ucwords(strtolower(trim($title))); ?></h1>
+                </div><!-- /.col -->
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <div class="float-right" style="margin-right: 10px;vertical-align:middle;padding-top: 0.7%;"><i style="color:transparent;"><?php echo $t; ?></i> Menu ID <?php echo $version; ?></div>
+                        <input type="hidden" id="classmenu" value="<?= str_replace('.', '_', $kodemenu) ?>" required>
+                        <?php foreach ($y as $y1) { ?>
+                            <?php if (trim($y1->kodemenu) != trim($kodemenu)) { ?>
+                                <li class="breadcrumb-item"><a href="<?php echo base_url(trim($y1->linkmenu)); ?>"><i class="fa <?php echo trim($y1->iconmenu); ?>"></i> <?php echo trim($y1->namamenu); ?></a></li>
+                            <?php } else { ?>
+                                <li class="breadcrumb-item active"><i class="fa <?php echo trim($y1->iconmenu); ?>"></i> <?php echo trim($y1->namamenu); ?></li>
+                            <?php } ?>
                         <?php } ?>
-                    <?php } ?>
-                </ol>
-            </div><!-- /.col -->
-        </div><!-- /.row -->
-    </div><!-- /.container-fluid -->
-</div>
+                    </ol>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
 
-<?php echo $message;?>
-<?php
-$isIT = isset($userinfo['rolename']) && trim($userinfo['rolename']) === 'IT';
-$disabled = $isIT ? '' : 'disabled';
-?>
-<div class="row">
-    <!-- left column -->
-    <form action="<?= base_url('persediaan/trans/final_pmk_barang') ?>" method="post" id="formPemakaianBarang">
+    <?php echo $message; ?>
+
+    <div class="row">
         <div class="col-md-12">
-            <!-- jquery validation -->
             <div class="card card-primary">
                 <div class="card-header">
-                    <h3 class="card-title"><i class="fa fa-file-text-o"></i> <?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> Pemakaian Barang</h3>
+                    <h3 class="card-title"><i class="fa fa-file-text-o"></i> Detail Penerimaan Barang</h3>
                 </div>
                 <!-- /.card-header -->
-                <!-- form start -->
-                <div class="card-body">
+
+                <div class="card-body" id="pnmDetailForm">
+
+                    <!-- ============ HEADER DOKUMEN ============ -->
                     <div class="section-block">
                         <div class="section-header">
-                            <i class="fa fa-address-card"></i> Master
+                            <i class="fa fa-address-card"></i> Penerimaan Barang
                         </div>
+
                         <div class="row">
-
-                            <!-- LEFT COLUMN -->
-                            <div class="col-md-6" >
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="cabang">Cabang / Job</label>
-                                            <select name="cabang" id="cabang" class="form-control" required></select>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="pemohon">Pemohon</label>
-                                            <input type="text" name="pemohon" id="pemohon" class="form-control" maxlength="50" placeholder="Pemohon" readonly value="<?= esc(strtoupper($userlogin)) ?>">
-                                        </div>
-                                    </div>
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label for="docno">No. Transaksi</label>
+                                    <input type="text" name="docno" id="docno" class="form-control"
+                                           value="<?= esc($docno) ?>" readonly>
                                 </div>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label>No. Jurnal</label>
-                                            <div class="d-flex">
-                                                <input type="text"
-                                                       name="prefix"
-                                                       id="prefix"
-                                                       class="form-control me-1"
-                                                       maxlength="3"
-                                                       style="text-transform: uppercase;"
-                                                       pattern="[A-Z0-9]+">
+                            </div>
 
-                                                <span class="px-2 align-self-center">/</span>
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label for="docdate">Tanggal</label>
+                                    <input type="text" name="docdate" id="docdate" class="form-control"
+                                           value="<?= esc($val('docdate')) ?>" readonly>
+                                </div>
+                            </div>
 
-                                                <input type="text"
-                                                       name="infix"
-                                                       id="infix"
-                                                       class="form-control mx-1"
-                                                       readonly>
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label for="cabang">Cabang / Job</label>
+                                    <input type="text" name="cabang" id="cabang" class="form-control"
+                                           value="<?= esc($cabangText) ?>" readonly>
+                                </div>
+                            </div>
 
-                                                <span class="px-2 align-self-center">/</span>
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label for="idcostcenter">Bagian / Cost Center</label>
+                                    <input type="text" name="idcostcenter" id="idcostcenter" class="form-control"
+                                           value="<?= esc($bagianText) ?>" readonly>
+                                </div>
+                            </div>
+                        </div>
 
-                                                <input type="text"
-                                                       name="sufix"
-                                                       id="sufix"
-                                                       class="form-control ms-1"
-                                                       readonly>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <input type="hidden" name="docno" class="form-control col-sm-12" id="docno" maxlength="20"     value="<?= isset($dtldata['docno']) ? esc(trim($dtldata['docno'])) : '' ?>" style="text-transform: uppercase;" readonly>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="docdate">Tanggal</label>
-                                            <input type="text"
-                                                   name="docdate"
-                                                   id="docdate"
-                                                   class="form-control"
-                                                   placeholder="Tanggal">
-                                        </div>
-                                    </div>
-                                    <!--                                            <div class="col-md-6">-->
-                                    <!--                                                <label for="idlocation_from">Dari Gudang</label>-->
-                                    <!--                                                <select name="idlocation_from" id="idlocation_from" class="form-control" required></select>-->
-                                    <!--                                            </div>-->
-                                    <div class="col-md-6">
-                                        <label for="idcostcenter">Bagian Costcenter</label>
-                                        <select name="idcostcenter" id="idcostcenter" class="form-control" required></select>
+
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label for="docref">Referensi</label>
+                                    <input type="text" name="docref" id="docref" class="form-control"
+                                           value="<?= esc($val('docref')) ?>" readonly>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label for="pemohon">Pemohon</label>
+                                    <input type="text" name="pemohon" id="pemohon" class="form-control"
+                                           value="<?= esc($pemohonText) ?>" readonly>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label>Status</label>
+                                    <div class="form-control" style="background-color:#eef1f4;">
+                                        <span class="badge <?= $statusClass ?>" style="font-size:12px; padding:5px 8px;">
+                                            <?= esc($statusText) ?>
+                                        </span>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-6  border border-dark" >
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <div class="form-group">
-                                            <label for="keterangan">Keterangan</label>
-                                            <textarea name="keterangan" id="keterangan" class="form-control" rows="5" placeholder="Catatan / Informasi..." style="text-transform:uppercase;"></textarea>
-                                        </div>
-                                    </div>
+
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label for="totalHeader">Total</label>
+                                    <input type="text" name="totalHeader" id="totalHeader"
+                                           class="form-control text-end"
+                                           value="<?= $num($grandTotal) ?>" readonly>
                                 </div>
+                            </div>
+                        </div>
 
-                            </div> <!-- END ROW 2-->
-
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group mb-0">
+                                    <label for="description">Keterangan</label>
+                                    <textarea name="description" id="description" class="form-control"
+                                              rows="2" readonly><?= esc($val('description')) ?></textarea>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                    <!-- ============ END HEADER DOKUMEN ============ -->
+
+
+                    <!-- ============ DETAIL BARANG ============ -->
+                    <div class="card card-primary mt-3 mb-0">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fa fa-cubes"></i> Detail Barang
+                            </h3>
+                            <div class="float-right">
+                                <span class="badge badge-light" style="font-size:12px;">
+                                    <?= count($rows) ?> baris
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="table-responsive" style="overflow-x:auto;">
+                                <table id="tabpnmdtl" class="table table-bordered table-striped"
+                                       style="width:100%;" cellspacing="0">
+                                    <thead class="bg-primary text-white">
+                                    <tr>
+                                        <th style="min-width:40px;">No</th>
+                                        <th style="min-width:180px;">Gudang</th>
+                                        <th style="min-width:140px;">ID Barang</th>
+                                        <th style="min-width:260px;">Nama Barang</th>
+                                        <th style="min-width:140px;">Batch / Spec</th>
+                                        <th style="min-width:80px;">Satuan</th>
+                                        <th class="text-end" style="min-width:110px;">Qty</th>
+                                        <th class="text-end" style="min-width:120px;">Harga</th>
+                                        <th class="text-end" style="min-width:150px;">Nilai</th>
+                                        <th style="min-width:200px;">Keterangan</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <?php if (count($rows) === 0): ?>
+                                        <tr>
+                                            <td colspan="10" class="text-center text-muted">
+                                                Tidak ada data detail untuk transaksi ini.
+                                            </td>
+                                        </tr>
+                                    <?php else: ?>
+                                        <?php $no = 0; ?>
+                                        <?php foreach ($rows as $r): ?>
+                                            <?php
+                                            $no++;
+                                            $gudang = trim((string) ($r['nmlocation'] ?? '')) !== ''
+                                                ? trim((string) $r['nmlocation'])
+                                                : trim((string) ($r['idlocation'] ?? ''));
+                                            ?>
+                                            <tr>
+                                                <td class="text-center"><?= $no ?></td>
+                                                <td><?= esc($gudang) ?></td>
+                                                <td><?= esc(trim((string) ($r['idbarang'] ?? ''))) ?></td>
+                                                <td><?= esc(trim((string) ($r['nmbarang'] ?? ''))) ?></td>
+                                                <td><?= esc(trim((string) ($r['batch'] ?? ''))) ?></td>
+                                                <td class="text-center"><?= esc(trim((string) ($r['unit'] ?? ''))) ?></td>
+                                                <td class="amount"><?= $num($r['qty'] ?? 0) ?></td>
+                                                <td class="amount"><?= $num($r['val'] ?? 0) ?></td>
+                                                <td class="amount"><?= $num($r['valsum'] ?? 0) ?></td>
+                                                <td><?= esc(trim((string) ($r['description'] ?? ''))) ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                    </tbody>
+                                    <tfoot>
+                                    <tr>
+                                        <td colspan="6" class="text-end">GRAND TOTAL</td>
+                                        <td class="amount"><?= $num($totalQty) ?></td>
+                                        <td></td>
+                                        <td class="amount"><?= $num($grandTotal) ?></td>
+                                        <td></td>
+                                    </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- ============ END DETAIL BARANG ============ -->
+
                 </div>
+                <!-- /.card-body -->
 
-                <div class="card mt-3 card-primary">
-                    <div class="card-header clearfix">
-                        <h3 class="card-title">
-                            Detail Barang
-                        </h3>
+                <div class="card-footer bg-light">
+                    <a href="<?= base_url('persediaan/trans/pnm_barang') ?>"
+                       class="btn btn-default btn-lg">
+                        <i class="fa fa-arrow-left mr-2"></i>
+                        Kembali
+                    </a>
 
-                        <div class="float-right d-flex align-items-center gap-2">
-                            <button type="button"
-                                    class="btn btn-success btn-lg action-btn"
-                                    data-toggle="tooltip"
-                                    title="Input Data"
-                                    id = "btnAddDetail">
-                                <i class="fa fa-plus"></i>
-                            </button>
-
-                            <button type="button"
-                                    id="btnUpdateDetail"
-                                    class="btn btn-warning btn-lg action-btn"
-                                    title="Update Data"
-                                    onclick="updatePmkBrgDtl()">
-                                <i class="fa fa-edit"></i>
-                            </button>
-
-                            <button type="button"
-                                    class="btn btn-danger btn-lg action-btn"
-                                    data-toggle="tooltip"
-                                    title="Hapus Data"
-                                    onclick="btnDeleteDetail()">
-                                <i class="fa fa-trash"></i>
-                            </button>
-
-
-                        </div>
-                    </div>
-                    <div class="card-body p-3">
-                        <div class="table-responsive">
-                            <table id="tmptabpmksdtl"
-                                   class="table table-hover align-middle custom-table">
-                                <thead>
-                                <tr>
-                                    <th class="text-center" width="40">
-                                        <input type="checkbox" id="checkAll">
-                                    </th>
-                                    <th>ID Barang</th>
-                                    <th>Nama Barang</th>
-                                    <th>Gudang</th>
-                                    <th>Spec</th>
-                                    <th>Satuan</th>
-                                    <th class="text-end">Qty</th>
-                                    <th>Keterangan</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="card-footer bg-light">
-                        <a href="<?= base_url('persediaan/trans/pmk_brng') ?>"
-                           class="btn btn-default float-left">
-                            <i class="fa fa-arrow-left mr-2"></i>
-                            Kembali
-                        </a>
-                        <?php if ($typeform != 'DETAIL' && $dtldata != null): ?>
-                            <button type="submit"
-                                    onclick="return confirm('Simpan Data?')"
-                                    class="btn btn-success btn-lg float-right">
-                                <i class="fa fa-save"></i> Simpan Final Data
-                            </button>
-                        <?php endif; ?>
-                    </div>
-
+                    <button type="button"
+                            id="btnLaporanJurnal"
+                            class="btn btn-primary btn-lg ms-2">
+                        <i class="fa fa-book"></i> Laporan Jurnal Transaksi
+                    </button>
                 </div>
+                <!-- /.card-footer -->
+
             </div>
-    </form>
-    <!-- /.card -->
-    <!--/.col (left) -->
-    <!-- right column -->
-    <div class="col-md-6">
-
+            <!-- /.card -->
+        </div>
+        <!-- /.col -->
     </div>
-    <!--/.col (right) -->
+    <!-- /.row -->
 </div>
-</div><!-- /.corp-form-container -->
+<!-- /.corp-form-container -->
 
 
 
+<!-- =========================================================
+     MODAL LAPORAN JURNAL TRANSAKSI (STRUKTUR & STYLE SAMA LPB)
+========================================================== -->
+<div class="modal fade"
+     id="modalLaporanJurnal"
+     tabindex="-1"
+     aria-labelledby="modalLaporanJurnalLabel"
+     aria-hidden="true">
 
-<!-- ================= MODAL TAX DETAIL ================= -->
-<div class="modal fade" id="modalDetailPMK" tabindex="-1" role="dialog" aria-labelledby="modalDetailPemakaianBarang" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+
         <div class="modal-content">
 
             <!-- HEADER -->
-            <div class="modal-header bg-primary">
-                <h5 class="modal-title" id="modalDetailPemakaianBarang">
-                    Input Item Detail
+            <div class="modal-header">
+
+                <h5 class="modal-title" id="modalLaporanJurnalLabel">
+                    <i class="fa fa-book"></i>
+                    Laporan Jurnal Transaksi Penerimaan Barang
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close">
+                </button>
+
             </div>
 
-            <!-- FORM -->
-            <form id="formPemakaianStockDtl">
+            <!-- BODY -->
+            <div class="modal-body">
 
-                <div class="modal-body">
+                <div class="table-responsive">
 
-                    <input type="hidden" name="idurut" id="idurut">
+                    <table id="tableLaporanJurnal"
+                           class="table table-bordered table-striped table-hover w-100">
 
-                    <!-- ROW 1 -->
-                    <div class="row g-3">
+                        <thead>
 
-                        <div class="col-md-4">
-                            <label class="form-label">Pilih Gudang</label>
-                            <select name="idlocation_dtl" id="idlocation_dtl" class="form-select" required></select>
-                        </div>
+                        <tr>
+                            <th>No</th>
+                            <th>Tanggal</th>
+                            <th>Doc No</th>
+                            <th>Cost Center</th>
+                            <th>COA</th>
+                            <th>Nama Perkiraan</th>
+                            <th class="text-end">Debet</th>
+                            <th class="text-end">Kredit</th>
+                        </tr>
 
-                        <div class="col-md-4">
-                            <label class="form-label">ID Barang</label>
-                            <select name="idbarang" id="idbarang"
-                                    class="form-select select2 getLastStock"
-                                    style="width:100%"></select>
-                        </div>
+                        </thead>
 
-                        <div class="col-md-4">
-                            <label class="form-label">Batch / Spesifikasi</label>
+                        <tbody></tbody>
 
-                            <div class="input-group">
-                                <select name="batch" id="batch" class="form-select getLastStock"></select>
-
-                                <button type="button"
-                                        id="btnNew"
-                                        onclick="new_spec()"
-                                        class="btn btn-primary">
-                                    New Spec
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label">Nama Barang</label>
-                            <input type="text"
-                                   name="nmbarang"
-                                   id="nmbarang"
-                                   class="form-control"
-                                   placeholder="Nama Barang"
-                                   style="text-transform:uppercase"
-                                   readonly>
-                        </div>
-
-                        <div class="col-md-2" >
-                            <label class="form-label">QTY Stock</label>
-                            <input type="text"
-                                   name="qtystock"
-                                   id="qtystock"
-                                   class="form-control"
-                                   placeholder="Qty Stock"
-                                   readonly>
-                        </div>
-
-                        <div class="col-md-2">
-                            <label class="form-label">Qty</label>
-                            <input type="text"
-                                   name="qty"
-                                   id="qty"
-                                   class="form-control jtsseparator text-end"
-                                   placeholder="0.00" required>
-                        </div>
-
-                        <div class="col-md-2">
-                            <label class="form-label">Satuan</label>
-                            <input name="unit"
-                                   id="unit"
-                                   class="form-control"
-                                   readonly>
-                        </div>
-
-                    </div>
-
-
-                    <!-- ROW 2 -->
-                    <div class="row g-3 mt-1">
-                        <?php /*
-                        <div class="col-md-2">
-                            <label class="form-label">Debit / Kredit</label>
-                            <select name="dk" id="dk" class="form-select select2" required>
-                                <option value="">-- Pilih --</option>
-                                <option value="D">D</option>
-                                <option value="K">K</option>
-                            </select>
-                        </div>
-
-
-                        <div class="col-md-2">
-                            <label class="form-label">Mata Uang</label>
-                            <input name="currency"
-                                   id="currency"
-                                   class="form-control"
-                                   readonly>
-                        </div>
-
-                        <div class="col-md-2">
-                            <label class="form-label">Harga</label>
-                            <input type="text"
-                                   name="valqty"
-                                   id="valqty"
-                                   class="form-control jtsseparator text-end"
-                                   placeholder="0.00" required>
-                        </div>
- */ ?>
-                        <div class="col-md-6">
-                            <label class="form-label">Keterangan Detail</label>
-                            <textarea name="description"
-                                      id="description"
-                                      rows="3"
-                                      class="form-control"
-                                      style="text-transform:uppercase"></textarea>
-                        </div>
-
-                    </div>
+                    </table>
 
                 </div>
 
+            </div>
 
-                <!-- FOOTER -->
-                <div class="modal-footer">
+            <!-- FOOTER -->
+            <div class="modal-footer">
 
-                    <button type="button"
-                            class="btn btn-primary savePmkBrng"
-                            onclick="savePemakaianBrng()">
-                        <i class="fa fa-save"></i> Simpan
-                    </button>
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
 
-                    <button type="button"
-                            class="btn btn-secondary"
-                            data-bs-dismiss="modal">
-                        <i class="fa fa-times"></i> Batal
-                    </button>
+                    Close
 
-                </div>
+                </button>
 
-            </form>
+            </div>
+
         </div>
+
     </div>
+
 </div>
 
-
-
-<script type="application/javascript" src="<?= base_url('assets/pagejs/persediaan/pmk_brng/pmk_brng_detail_trx.js') ?>"></script>
-<script type="text/javascript">
-    $(function() {
-        $("#example1").dataTable();
-        $("#example2").dataTable();
-        $("#example4").dataTable();
-        //datemask
-        //$("#datemaskinput").inputmask("dd/mm/yyyy", {"placeholder": "dd/mm/yyyy"});
-        //$("#datemaskinput").daterangepicker();
-        //Date picker
-        var dtldata = <?= json_encode($dtldata ?? null) ?>;
-
-        if (dtldata && dtldata.docno && dtldata.docno.trim() !== '') {
-            $('#docno').val(dtldata.docno.trim()).prop('readonly', true);
-        }
-
-
-        $('#docdate').daterangepicker({
-            autoUpdateInput: false,
-            singleDatePicker: true,
-            showDropdowns: true,
-            locale: { format: 'DD-MM-YYYY' },
-            cancelLabel: 'Clear'
-        });
-
-        // handler apply/cancel
-        $('#docdate').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('DD-MM-YYYY'));
-            // jika butuh validasi bootstrapValidator:
-            // $('#formInputTransfers').bootstrapValidator('updateStatus', 'docdate', 'NOT_VALIDATED').bootstrapValidator('validateField', 'docdate');
-        });
-        $('#docdate').on('cancel.daterangepicker', function(ev, picker) {
-            $(this).val('');
-        });
-
-
-
-        $('#estpakai').daterangepicker({
-            autoUpdateInput: false,
-            singleDatePicker: true,
-            showDropdowns: true,
-            locale: { format: 'DD-MM-YYYY' },
-            cancelLabel: 'Clear'
-        });
-
-        // handler apply/cancel
-        $('#estpakai').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('DD-MM-YYYY'));
-            // jika butuh validasi bootstrapValidator:
-            // $('#formInputTransfers').bootstrapValidator('updateStatus', 'estpakai', 'NOT_VALIDATED').bootstrapValidator('validateField', 'estpakai');
-        });
-        $('#estpakai').on('cancel.daterangepicker', function(ev, picker) {
-            $(this).val('');
-        });
-
-
-
-        $('#periodemulai').daterangepicker({
-            autoUpdateInput: false,
-            singleDatePicker: true,
-            showDropdowns: true,
-            locale: {
-                format: 'DD-MM-YYYY'
-            },
-            cancelLabel: 'Clear',
-        });
-        $('#periodemulai').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('DD-MM-YYYY'));
-        });
-
-        $('#periodemulai').on('cancel.daterangepicker', function(ev, picker) {
-            $(this).val('');
-        });
-
-
-        $('#periodeakhir').daterangepicker({
-            autoUpdateInput: false,
-            singleDatePicker: true,
-            showDropdowns: true,
-            locale: {
-                format: 'DD-MM-YYYY'
-            },
-            cancelLabel: 'Clear',
-        });
-        $('#periodeakhir').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('DD-MM-YYYY'));
-        });
-
-        $('#periodeakhir').on('cancel.daterangepicker', function(ev, picker) {
-            $(this).val('');
-        });
-
-
-
-    });
-
-</script>
+<?php
+/* cache-busting JS detail (modal laporan jurnal) */
+$pnmDetailJsRel = 'assets/pagejs/persediaan/pnm_brng/pnm_brng_detail.js';
+$pnmDetailJsAbs = (defined('FCPATH') ? FCPATH : '') . $pnmDetailJsRel;
+$pnmDetailJsVer = is_file($pnmDetailJsAbs) ? filemtime($pnmDetailJsAbs) : date('YmdHis');
+?>
+<script type="application/javascript" src="<?= base_url($pnmDetailJsRel) ?>?v=<?= $pnmDetailJsVer ?>"></script>

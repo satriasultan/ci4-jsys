@@ -1419,6 +1419,398 @@
         line-height: 1.4 !important;
     }
 
+    /* =========================================================
+       PMK - GRID INPUT DETAIL (FAST ENTRY)
+       Pengganti modal #modalDetailPMK: seluruh field diinput
+       langsung pada grid, struktur sama dengan PNM.
+    ========================================================= */
+
+    /* =========================================================
+       pmk - GRID INPUT DETAIL (FAST ENTRY)
+       Pengganti modal #modalDetailpmk: seluruh field diinput
+       langsung pada grid, referensi tampilan purchase/po/v_add_po
+    ========================================================= */
+
+    .corp-form-container .pmk-entry-hint {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 12px;
+        padding: 9px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: .2px;
+        color: var(--corp-primary);
+        background: var(--corp-primary-light);
+        border: 1px solid #bfd2e6;
+        border-left: 4px solid var(--corp-primary);
+        border-radius: 4px;
+    }
+
+    .corp-form-container .pmk-entry-hint .pmk-key {
+        display: inline-block;
+        padding: 1px 7px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #ffffff;
+        background: var(--corp-primary);
+        border-radius: 3px;
+        box-shadow: 0 1px 0 #0f2038;
+    }
+
+    .corp-form-container .pmk-detail-scroll {
+        max-height: 560px;
+        max-height: min(620px, 68vh);
+        overflow: auto;
+        border: 1px solid var(--corp-primary);
+        border-radius: 6px;
+        background: #ffffff;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, .06);
+    }
+
+    .corp-form-container .pmk-detail-scroll::-webkit-scrollbar {
+        width: 12px;
+        height: 12px;
+    }
+
+    .corp-form-container .pmk-detail-scroll::-webkit-scrollbar-track {
+        background: #eef2f7;
+    }
+
+    .corp-form-container .pmk-detail-scroll::-webkit-scrollbar-thumb {
+        background: #19385f;
+        border: 2px solid #eef2f7;
+        border-radius: 6px;
+    }
+
+    .corp-form-container .pmk-detail-scroll::-webkit-scrollbar-thumb:hover {
+        background: #152a45;
+    }
+
+    .corp-form-container #pmkGrid {
+        width: 100%;
+        min-width: 1400px;
+        margin-bottom: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        /* wajib visible: overflow hidden mematikan sticky header */
+        overflow: visible !important;
+    }
+
+    .corp-form-container #pmkGrid thead th {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 3 !important;
+        padding: 9px 9px !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        line-height: 1.25 !important;
+        letter-spacing: .3px;
+        text-transform: uppercase;
+        white-space: nowrap !important;
+        vertical-align: middle !important;
+        color: #ffffff !important;
+        background: var(--corp-primary) !important;
+        border-bottom: 2px solid #102a45 !important;
+    }
+
+    .corp-form-container #pmkGrid tbody td,
+    .corp-form-container #pmkGrid tfoot td {
+        padding: 4px 7px !important;
+        font-size: 12.5px !important;
+        font-weight: 600 !important;
+        line-height: 1.25 !important;
+        vertical-align: middle !important;
+        border: 1px solid #c3ccd8 !important;
+    }
+
+    .corp-form-container #pmkGrid tbody td {
+        white-space: nowrap;
+    }
+
+    .corp-form-container #pmkGrid tbody tr:nth-child(even) td {
+        background: #f6f8fb;
+    }
+
+    .corp-form-container #pmkGrid tbody tr:hover td {
+        background: #fff0b3;
+        color: #000000;
+    }
+
+    /* baris input baru (draft) */
+    .corp-form-container #pmkGrid tbody tr.pmk-row-draft td {
+        background: #fffbea !important;
+        border-top: 2px solid var(--corp-primary) !important;
+        box-shadow: inset 0 0 0 1px #f2d98a;
+    }
+
+    /* baris sedang diedit */
+    .corp-form-container #pmkGrid tbody tr.pmk-row-edit td {
+        background: #e8f1fb !important;
+    }
+
+    .corp-form-container #pmkGrid td.pmk-cell-ellipsis {
+        max-width: 210px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .corp-form-container #pmkGrid .pmk-col-no,
+    .corp-form-container #pmkGrid .pmk-col-aksi {
+        width: 46px !important;
+        min-width: 46px !important;
+        text-align: center;
+        padding-left: 2px !important;
+        padding-right: 2px !important;
+    }
+
+    .corp-form-container #pmkGrid .pmk-col-aksi {
+        width: 78px !important;
+        min-width: 78px !important;
+    }
+
+    .corp-form-container #pmkGrid .pmk-cell-input,
+    .corp-form-container #pmkGrid .pmk-cell-select {
+        width: 100% !important;
+        height: 30px !important;
+        min-height: 30px !important;
+        padding: 3px 7px !important;
+        font-size: 12.5px !important;
+        font-weight: 600 !important;
+        line-height: 1.3 !important;
+        color: var(--corp-text) !important;
+        background: #ffffff !important;
+        border: 1px solid #9fb3c8 !important;
+        border-radius: 4px !important;
+        box-shadow: none !important;
+        box-sizing: border-box !important;
+        transition: border-color .12s ease, box-shadow .12s ease;
+    }
+
+    .corp-form-container #pmkGrid .pmk-cell-input:focus,
+    .corp-form-container #pmkGrid .pmk-cell-select:focus {
+        border-color: var(--corp-primary) !important;
+        box-shadow: 0 0 0 2px rgba(30, 58, 95, .18) !important;
+        outline: none !important;
+    }
+
+    .corp-form-container #pmkGrid .pmk-cell-input[readonly] {
+        background: var(--corp-bg-disabled) !important;
+        color: #24384f !important;
+        font-weight: 700 !important;
+        cursor: default;
+    }
+
+    .corp-form-container #pmkGrid .pmk-cell-input.text-end {
+        text-align: right !important;
+    }
+
+    .corp-form-container #pmkGrid .pmk-cell-input.pmk-invalid {
+        border-color: var(--corp-danger) !important;
+        background: #fef2f2 !important;
+    }
+
+    /* Tombol aksi kecil dalam grid */
+    .corp-form-container #pmkGrid .pmk-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        margin: 0 1px;
+        padding: 0;
+        font-size: 12px;
+        color: #ffffff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background .12s ease, transform .12s ease;
+    }
+
+    .corp-form-container #pmkGrid .pmk-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 5px rgba(15, 23, 42, .22);
+    }
+
+    .corp-form-container #pmkGrid .pmk-btn-save {
+        background: var(--corp-success);
+    }
+
+    .corp-form-container #pmkGrid .pmk-btn-edit {
+        background: #d97706;
+    }
+
+    .corp-form-container #pmkGrid .pmk-btn-delete {
+        background: var(--corp-danger);
+    }
+
+    .corp-form-container #pmkGrid .pmk-btn-cancel {
+        background: #64748b;
+    }
+
+    /* Select2 di dalam sel grid (pemilihan ID Barang) */
+    .corp-form-container #pmkGrid .pmk-cell .select2-container {
+        width: 100% !important;
+        min-width: 190px;
+        margin: 0 !important;
+    }
+
+    .corp-form-container #pmkGrid .pmk-cell .select2-container .select2-selection--single {
+        height: 30px !important;
+        min-height: 30px !important;
+        display: flex !important;
+        align-items: center !important;
+        border: 1px solid #9fb3c8 !important;
+        border-radius: 4px !important;
+        background: #ffffff !important;
+    }
+
+    .corp-form-container #pmkGrid .pmk-cell .select2-container .select2-selection--single .select2-selection__rendered {
+        flex: 1 1 auto;
+        padding-left: 7px !important;
+        padding-right: 20px !important;
+        margin: 0 !important;
+        font-size: 12.5px !important;
+        font-weight: 600 !important;
+        line-height: 28px !important;
+        color: var(--corp-text) !important;
+    }
+
+    .corp-form-container #pmkGrid .pmk-cell .select2-container .select2-selection--single .select2-selection__arrow {
+        top: 2px !important;
+        height: 26px !important;
+        right: 2px !important;
+    }
+
+    .corp-form-container #pmkGrid .pmk-cell .select2-container--focus .select2-selection--single,
+    .corp-form-container #pmkGrid .pmk-cell .select2-container--open .select2-selection--single {
+        border-color: var(--corp-primary) !important;
+        box-shadow: 0 0 0 2px rgba(30, 58, 95, .18) !important;
+    }
+
+    /* Grand total grid */
+    .corp-form-container #pmkGrid tfoot td {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        color: var(--corp-primary) !important;
+        background: var(--corp-primary-light) !important;
+        border-top: 2px solid var(--corp-primary) !important;
+        white-space: nowrap;
+    }
+
+    .corp-form-container #pmkGrid tfoot td#totalQty,
+    .corp-form-container #pmkGrid tfoot td#totalNilai {
+        font-size: 14px !important;
+        letter-spacing: .2px;
+    }
+
+    .corp-form-container #pmkGrid tbody tr.pmk-empty-row td {
+        padding: 16px 10px !important;
+        font-size: 12.5px;
+        font-weight: 600;
+        text-align: center;
+        color: var(--corp-text-muted);
+        background: #ffffff !important;
+        cursor: pointer;
+    }
+
+    .corp-form-container #pmkGrid tbody tr.pmk-empty-row:hover td {
+        background: #eef6ff !important;
+        color: var(--corp-primary);
+    }
+
+    .corp-form-container #pmkGrid tbody tr.pmk-empty-row td i {
+        margin-right: 6px;
+        font-size: 15px;
+        color: var(--corp-primary);
+    }
+
+    .corp-form-container #pmkGrid tbody tr.pmk-empty-row td:focus {
+        outline: 2px solid var(--corp-primary);
+        outline-offset: -3px;
+    }
+
+    /* tampilan read-only baris tersimpan */
+    .corp-form-container #pmkGrid .pmk-readonly-text {
+        display: block;
+        max-width: 210px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .corp-form-container #pmkGrid .pmk-readonly-number {
+        display: block;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* Kolom Batch / Spec (Select2 per baris) */
+    .corp-form-container #pmkGrid .pmk-cell-batch .select2-container {
+        min-width: 150px;
+    }
+
+    .corp-form-container #pmkGrid .pmk-cell-batch .select2-container--disabled .select2-selection--single {
+        background: var(--corp-bg-disabled) !important;
+        border-color: var(--corp-border) !important;
+    }
+
+    .corp-form-container #pmkGrid .pmk-cell-batch .select2-container--disabled .select2-selection__rendered {
+        color: var(--corp-text-muted) !important;
+        font-style: italic;
+    }
+
+    /* Baris yang checkbox-nya dicentang */
+    .corp-form-container #pmkGrid tbody tr.pmk-row-checked td {
+        background: #d6e8fb !important;
+        color: #000000;
+    }
+
+    .corp-form-container #pmkGrid tbody tr.pmk-row-checked:hover td {
+        background: #c6def8 !important;
+    }
+
+    .corp-form-container #pmkGrid tbody tr.pmk-row-checked td:first-child {
+        box-shadow: inset 3px 0 0 0 var(--corp-primary);
+    }
+
+    /* Info jumlah baris terpilih pada header card */
+    .corp-form-container .card-header .pmk-selected-info {
+        padding: 4px 10px;
+        font-size: 11.5px;
+        font-weight: 600;
+        letter-spacing: .2px;
+        color: #ffffff;
+        background: rgba(255, 255, 255, .16);
+        border: 1px solid rgba(255, 255, 255, .32);
+        border-radius: 20px;
+        white-space: nowrap;
+    }
+
+    /* Tombol aksi header grid */
+    .corp-form-container .card-header .action-btn:disabled {
+        opacity: .45;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+
+    .corp-form-container .card-header .action-btn:disabled:hover {
+        background-color: inherit;
+        box-shadow: none;
+        transform: none;
+    }
+
+    /* Baris yang sedang disimpan */
+    .corp-form-container #pmkGrid tbody tr.pmk-row-busy td {
+        opacity: .6;
+        pointer-events: none;
+    }
+
 </style>
 <div class="corp-form-container">
 
@@ -1445,7 +1837,15 @@
         </div><!-- /.container-fluid -->
     </div>
 
-    <?php echo $message;?>
+    <?php if (session()->getFlashdata('error')): ?>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fa fa-exclamation-triangle"></i>
+        <?= esc(session()->getFlashdata('error')) ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+<?php endif; ?>
+
+<?php echo $message;?>
     <?php
     $isIT = isset($userinfo['rolename']) && trim($userinfo['rolename']) === 'IT';
     $disabled = $isIT ? '' : 'disabled';
@@ -1571,6 +1971,8 @@
                         </h3>
 
                         <div class="header-actions">
+                            <span class="pmk-selected-info" id="pmkSelectedInfo">0 dari 0 baris dipilih</span>
+
                             <button type="button"
                                     class="btn btn-success btn-lg action-btn"
                                     data-bs-toggle="tooltip"
@@ -1583,16 +1985,15 @@
                                     id="btnUpdateDetail"
                                     class="btn btn-warning btn-lg action-btn"
                                     data-bs-toggle="tooltip"
-                                    title="Update Data"
-                                    onclick="updatePmkBrgDtl()">
+                                    title="Update Data">
                                 <i class="fa fa-edit"></i>
                             </button>
 
                             <button type="button"
+                                    id="btnDeleteDetail"
                                     class="btn btn-danger btn-lg action-btn"
                                     data-bs-toggle="tooltip"
-                                    title="Hapus Data"
-                                    onclick="btnDeleteDetail()">
+                                    title="Hapus Data">
                                 <i class="fa fa-trash"></i>
                             </button>
                         </div>
@@ -1600,24 +2001,37 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-12">
-                                <div class="table-responsive" style="overflow-x: auto;">
-                                    <table id="tmptabpmksdtl" class="table table-bordered table-striped" style="width:100%;" cellspacing="0">
-                                        <thead class="bg-primary text-white">
+                                <div class="pmk-detail-scroll">
+                                    <table id="pmkGrid" class="table table-bordered table-striped">
+                                        <thead>
                                         <tr>
-                                            <th width="30">
+                                            <th class="pmk-col-no">
                                                 <input type="checkbox" id="checkAll">
                                             </th>
-                                            <th>ID Barang</th>
-                                            <th>Nama Barang</th>
-                                            <th>Gudang</th>
-                                            <th>Spec</th>
-                                            <th class="text-center">Satuan</th>
-                                            <th class="text-end">Qty</th>
-                                            <th>Keterangan</th>
+                                            <th style="min-width:170px;">Gudang</th>
+                                            <th style="min-width:230px;">ID Barang</th>
+                                            <th style="min-width:180px;">Nama Barang</th>
+                                            <th style="min-width:150px;">Batch / Spec</th>
+                                            <th style="min-width:90px;">Satuan</th>
+                                            <th class="text-end" style="min-width:100px;">Qty</th>
+                                            <th class="text-end" style="min-width:120px;">Harga</th>
+                                            <th class="text-end" style="min-width:140px;">Nilai</th>
+                                            <th class="text-end" style="min-width:120px;">Stok Tersedia</th>
+                                            <th style="min-width:170px;">Keterangan</th>
+                                            <th class="pmk-col-aksi">Aksi</th>
                                         </tr>
                                         </thead>
-                                        <tbody>
+                                        <tbody id="pmkGridBody">
                                         </tbody>
+                                        <tfoot>
+                                        <tr>
+                                            <td colspan="6" class="text-right">GRAND TOTAL :</td>
+                                            <td class="text-end" id="totalQty">0</td>
+                                            <td></td>
+                                            <td class="text-end" id="totalNilai">0</td>
+                                            <td colspan="3"></td>
+                                        </tr>
+                                        </tfoot>
                                     </table>
                                 </div>
                             </div>
@@ -1628,9 +2042,15 @@
                            class="btn btn-default float-left">
                             <i class="fa fa-arrow-left"></i> Back
                         </a>
-                        <?php if ($typeform != 'DETAIL' && $dtldata != null): ?>
-                            <button type="submit"
-                                    onclick="return confirm('Simpan Data?')"
+
+                        <!-- Baris terpilih (checkbox) - hanya untuk hapus massal -->
+                        <input type="hidden" name="pmkSelectedRows" id="pmkSelectedRows" value="">
+                        <!-- Payload baris valid, dipakai untuk validasi stok di server -->
+                        <input type="hidden" name="pmkFinalRows" id="pmkFinalRows" value="">
+
+                        <?php if ($typeform != 'DETAIL'): ?>
+                            <button type="button"
+                                    id="btnFinalSimpanPmk"
                                     class="btn btn-success btn-lg float-right">
                                 <i class="fa fa-save"></i> Simpan Final Data
                             </button>
@@ -1648,180 +2068,20 @@
         </div>
         <!--/.col (right) -->
     </div>
-
-
-
-    <!-- ================= MODAL PEMAKAIAN STOCK DETAIL ================= -->
-    <div class="modal fade" id="modalDetailPMK" tabindex="-1" role="dialog"
-         aria-labelledby="modalDetailPemakaianBarang" aria-hidden="true">
-        <div class="modal-dialog modal-xl" role="document">
-            <div class="modal-content">
-
-                <!-- HEADER -->
-                <div class="modal-header bg-primary">
-                    <h5 class="modal-title" id="modalDetailPemakaianBarang">
-                        Input Item Detail
-                    </h5>
-                    <button type="button" class="close text-white" data-bs-dismiss="modal">
-                        <span>&times;</span>
-                    </button>
-                </div>
-
-                <!-- FORM -->
-                <form id="formPemakaianStockDtl">
-
-                    <div class="modal-body">
-
-                        <!-- ===================== HIDDEN ===================== -->
-                        <input type="hidden" name="idurut"           id="idurut">
-                        <input type="hidden" name="iduniq"           id="iduniq">
-                        <input type="hidden" name="unit_default"     id="unit_default">
-                        <input type="hidden" name="qty_base"         id="qty_base">
-                        <input type="hidden" name="qtystock_raw"     id="qtystock_raw" value="0">
-
-                        <!-- ===================== ROW 1 ===================== -->
-                        <div class="row">
-
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="idlocation_dtl">Pilih Gudang</label>
-                                    <select name="idlocation_dtl" id="idlocation_dtl"
-                                            class="form-control" required></select>
-                                </div>
-                            </div>
-
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="idbarang">ID Barang</label>
-                                    <select name="idbarang" id="idbarang"
-                                            class="form-control select2"
-                                            style="width:100%"></select>
-                                </div>
-                            </div>
-
-                            <div class="col-md-3">
-                                <div class="form-group">
-                                    <label for="spec">Spec</label>
-                                    <input type="text"
-                                           name="spec"
-                                           id="spec"
-                                           class="form-control"
-                                           placeholder="Spesification"
-                                           style="text-transform:uppercase"
-                                           readonly>
-                                </div>
-                            </div>
-
-                            <div class="col-md-1">
-                                <div class="form-group">
-                                    <label for="qtystock">QTY Stock</label>
-                                    <input type="text"
-                                           name="qtystock"
-                                           id="qtystock"
-                                           class="form-control"
-                                           placeholder="Qty Stock"
-                                           readonly>
-                                </div>
-                            </div>
-
-                        </div>
-
-
-                        <!-- ===================== ROW 2 ===================== -->
-                        <div class="row">
-
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="nmbarang">Nama Barang</label>
-                                    <input type="text"
-                                           name="nmbarang"
-                                           id="nmbarang"
-                                           class="form-control"
-                                           placeholder="Nama Barang"
-                                           style="text-transform:uppercase"
-                                           readonly>
-                                </div>
-                            </div>
-
-                            <div class="col-md-3">
-                                <div class="form-group">
-                                    <label for="unit">Satuan</label>
-                                    <select name="unit" id="unit"
-                                            class="form-control"
-                                            style="width:100%"></select>
-                                </div>
-                            </div>
-
-                            <div class="col-md-2">
-                                <div class="form-group">
-                                    <label for="conversion_factor">Konversi</label>
-                                    <input type="text"
-                                           name="conversion_factor"
-                                           id="conversion_factor"
-                                           class="form-control"
-                                           readonly>
-                                </div>
-                            </div>
-
-                            <div class="col-md-3">
-                                <div class="form-group">
-                                    <label for="qty">Qty</label>
-                                    <input type="text"
-                                           name="qty"
-                                           id="qty"
-                                           class="form-control jtsseparator ratakanan"
-                                           placeholder="0.00"
-                                           required>
-                                </div>
-                            </div>
-
-                        </div>
-
-                        <!-- ===================== ROW 3 ===================== -->
-                        <div class="row">
-
-                            <div class="col-md-12">
-                                <div class="form-group mb-0">
-                                    <label for="description">Keterangan Detail</label>
-                                    <textarea name="description"
-                                              id="description"
-                                              rows="3"
-                                              class="form-control"
-                                              style="text-transform:uppercase"></textarea>
-                                </div>
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                    <!-- ===================== FOOTER ===================== -->
-                    <div class="modal-footer bg-light">
-
-                        <button type="button"
-                                class="btn btn-primary savePmkBrng"
-                                onclick="savePemakaianBrng()">
-                            <i class="fa fa-save"></i> Simpan
-                        </button>
-
-                        <button type="button"
-                                class="btn btn-secondary"
-                                data-bs-dismiss="modal">
-                            <i class="fa fa-times"></i> Batal
-                        </button>
-
-                    </div>
-
-                </form>
-            </div>
-        </div>
-    </div>
-
 </div>
 
+<?php
+/* Cache-busting JS grid inline (khusus halaman input PMK) */
+$pmkBaseJsRel = 'assets/pagejs/persediaan/pmk_brng/pmk_brng.js';
+$pmkBaseJsAbs = (defined('FCPATH') ? FCPATH : '') . $pmkBaseJsRel;
+$pmkBaseJsVer = is_file($pmkBaseJsAbs) ? filemtime($pmkBaseJsAbs) : date('YmdHis');
 
-
-<script type="application/javascript" src="<?= base_url('assets/pagejs/persediaan/pmk_brng/pmk_brng.js') ?>"></script>
+$pmkAddJsRel = 'assets/pagejs/persediaan/pmk_brng/pmk_brng_add.js';
+$pmkAddJsAbs = (defined('FCPATH') ? FCPATH : '') . $pmkAddJsRel;
+$pmkAddJsVer = is_file($pmkAddJsAbs) ? filemtime($pmkAddJsAbs) : date('YmdHis');
+?>
+<script type="application/javascript" src="<?= base_url($pmkBaseJsRel) ?>?v=<?= $pmkBaseJsVer ?>"></script>
+<script type="application/javascript" src="<?= base_url($pmkAddJsRel) ?>?v=<?= $pmkAddJsVer ?>"></script>
 <script type="text/javascript">
     /* ==========================================================
      * AUTOFILL INPUT AWAL CABANG / JOB (SESSION USER LOGIN)

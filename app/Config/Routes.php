@@ -254,6 +254,9 @@ $routes->group('/ka/accounting', ["namespace" => "App\Controllers\Finance"], fun
     $routes->add('saveJUPDetail', 'Finance::saveJUPDetail');
     $routes->add("get_jup_detail(:any)", "Finance::get_jup_detail");
     $routes->add("delete_jup_detail", "Finance::delete_jup_detail");
+    // Grid inline detail JUP (menggantikan modal detail)
+    $routes->post('getJUPDraftRows', 'Finance::getJUPDraftRows');
+    $routes->post('saveJUPDetailsBulk', 'Finance::saveJUPDetailsBulk');
 
 });
 
@@ -1020,53 +1023,53 @@ $routes->group('/sales/presales', ["namespace" => "App\Controllers\Sales"], func
 
 
     //PENAWARAN HARGA
-    $routes->add('priceproposal', 'Presales::offering');
-    $routes->add('list_offering', 'Presales::list_offering');
-    $routes->add('addOffering', 'Presales::addOffering');
-    $routes->add('detailOffering', 'Presales::detailOffering');
-    $routes->add('list_t_offering_dtl', 'Presales::list_t_offering_dtl');
-    // $routes->add('showing_sikbsp_mst', 'Presales::showing_sikbsp_mst');
-    $routes->add('saveOffering', 'Presales::saveOffering');
-    $routes->add('clearEntryOffering', 'Presales::clearEntryOffering');
-    $routes->add('finalEntryOffering', 'Presales::finalEntryOffering');
-    $routes->add('showing_offeringtemp', 'Presales::showing_offeringtemp');
+    $routes->add('priceproposal', 'PreSales::offering');
+    $routes->add('list_offering', 'PreSales::list_offering');
+    $routes->add('addOffering', 'PreSales::addOffering');
+    $routes->add('detailOffering', 'PreSales::detailOffering');
+    $routes->add('list_t_offering_dtl', 'PreSales::list_t_offering_dtl');
+    // $routes->add('showing_sikbsp_mst', 'PreSales::showing_sikbsp_mst');
+    $routes->add('saveOffering', 'PreSales::saveOffering');
+    $routes->add('clearEntryOffering', 'PreSales::clearEntryOffering');
+    $routes->add('finalEntryOffering', 'PreSales::finalEntryOffering');
+    $routes->add('showing_offeringtemp', 'PreSales::showing_offeringtemp');
 
-    $routes->get('updateOffering(:any)', 'Presales::updateOffering$1');
-    $routes->get('deleteOffering(:any)', 'Presales::deleteOffering$1');
-    $routes->add('insert_detail_offering', 'Presales::insert_detail_offering');
-    $routes->add('insertNewOffering', 'Presales::insertNewOffering');
-    $routes->post("update_detail_offering", "Presales::update_detail_offering");
-    $routes->add('deleteOfferingDtl', 'Presales::deleteOfferingDtl');
-    $routes->add('show_offering', 'Presales::show_offering');
-    $routes->add('api_offering(:any)', 'Presales::api_offering$1');
-    $routes->add('list_t_offering_dtltrx', 'Presales::list_t_offering_dtltrx');
-    $routes->add('showing_offeringtrx', 'Presales::showing_offeringtrx');
+    $routes->get('updateOffering(:any)', 'PreSales::updateOffering$1');
+    $routes->get('deleteOffering(:any)', 'PreSales::deleteOffering$1');
+    $routes->add('insert_detail_offering', 'PreSales::insert_detail_offering');
+    $routes->add('insertNewOffering', 'PreSales::insertNewOffering');
+    $routes->post("update_detail_offering", "PreSales::update_detail_offering");
+    $routes->add('deleteOfferingDtl', 'PreSales::deleteOfferingDtl');
+    $routes->add('show_offering', 'PreSales::show_offering');
+    $routes->add('api_offering(:any)', 'PreSales::api_offering$1');
+    $routes->add('list_t_offering_dtltrx', 'PreSales::list_t_offering_dtltrx');
+    $routes->add('showing_offeringtrx', 'PreSales::showing_offeringtrx');
 
 
     //PROFORMA INVOICE
-    $routes->add('performainvoice', 'Presales::proforma');
-    $routes->add('list_proforma', 'Presales::list_proforma');
-    $routes->add('addProforma', 'Presales::addProforma');
-    $routes->add('detailProforma', 'Presales::detailProforma');
-    $routes->add('list_t_proforma_dtl', 'Presales::list_t_proforma_dtl');
-    // $routes->add('showing_sikbsp_mst', 'Presales::showing_sikbsp_mst');
-    $routes->add('showing_proformatemp', 'Presales::showing_proformatemp');
-    $routes->add('saveProforma', 'Presales::saveProforma');
-    $routes->add('clearEntryProforma', 'Presales::clearEntryProforma');
-    $routes->add('finalEntryProforma', 'Presales::finalEntryProforma');
-    $routes->get('updateProforma(:any)', 'Presales::updateProforma$1');
-    $routes->get('deleteProforma(:any)', 'Presales::deleteProforma$1');
-    $routes->add('insert_detail_proforma', 'Presales::insert_detail_proforma');
-    $routes->add('insertNewProforma', 'Presales::insertNewProforma');
-    $routes->post("update_detail_proforma", "Presales::update_detail_proforma");
-    $routes->add('deleteProformaDtl', 'Presales::deleteProformaDtl');
-    $routes->add('show_proforma', 'Presales::show_proforma');
-    $routes->add('api_proforma(:any)', 'Presales::api_proforma$1');
-    $routes->add('list_t_proforma_dtltrx', 'Presales::list_t_proforma_dtltrx');
-    $routes->add('showing_proformatrx', 'Presales::showing_proformatrx');
-    $routes->add('getRolePOProforma(:any)', 'Presales::getRolePOProforma$1');
-    $routes->post('list_penjualan_proforma', 'Presales::list_penjualan_proforma');
-    $routes->post('pull_penjualan_proforma', 'Presales::pull_penjualan_proforma');
+    $routes->add('performainvoice', 'PreSales::proforma');
+    $routes->add('list_proforma', 'PreSales::list_proforma');
+    $routes->add('addProforma', 'PreSales::addProforma');
+    $routes->add('detailProforma', 'PreSales::detailProforma');
+    $routes->add('list_t_proforma_dtl', 'PreSales::list_t_proforma_dtl');
+    // $routes->add('showing_sikbsp_mst', 'PreSales::showing_sikbsp_mst');
+    $routes->add('showing_proformatemp', 'PreSales::showing_proformatemp');
+    $routes->add('saveProforma', 'PreSales::saveProforma');
+    $routes->add('clearEntryProforma', 'PreSales::clearEntryProforma');
+    $routes->add('finalEntryProforma', 'PreSales::finalEntryProforma');
+    $routes->get('updateProforma(:any)', 'PreSales::updateProforma$1');
+    $routes->get('deleteProforma(:any)', 'PreSales::deleteProforma$1');
+    $routes->add('insert_detail_proforma', 'PreSales::insert_detail_proforma');
+    $routes->add('insertNewProforma', 'PreSales::insertNewProforma');
+    $routes->post("update_detail_proforma", "PreSales::update_detail_proforma");
+    $routes->add('deleteProformaDtl', 'PreSales::deleteProformaDtl');
+    $routes->add('show_proforma', 'PreSales::show_proforma');
+    $routes->add('api_proforma(:any)', 'PreSales::api_proforma$1');
+    $routes->add('list_t_proforma_dtltrx', 'PreSales::list_t_proforma_dtltrx');
+    $routes->add('showing_proformatrx', 'PreSales::showing_proformatrx');
+    $routes->add('getRolePOProforma(:any)', 'PreSales::getRolePOProforma$1');
+    $routes->post('list_penjualan_proforma', 'PreSales::list_penjualan_proforma');
+    $routes->post('pull_penjualan_proforma', 'PreSales::pull_penjualan_proforma');
 
 });
 
@@ -1481,6 +1484,14 @@ $routes->group('/persediaan/trans', ["namespace" => "App\Controllers\Persediaan"
     $routes->add('list_trx_pmk_brng_dtl', 'Persediaan::list_trx_pmk_brng_dtl');
     $routes->post('laporan_jurnal_transaksi_pmk', 'Persediaan::laporan_jurnal_transaksi_pmk');
 
+    /* Pemakaian Barang - GRID INLINE (setara modul Penerimaan Barang) */
+    $routes->add('list_pmk_brng_dtl_grid', 'Persediaan::list_pmk_brng_dtl_grid');
+    $routes->add('list_location_pmk_brng', 'Persediaan::list_location_pmk_brng');
+    $routes->add('search_item_pmk_brng', 'Persediaan::search_item_pmk_brng');
+    $routes->add('get_item_pmk_brng', 'Persediaan::get_item_pmk_brng');
+    $routes->add('list_batch_pmk_brng', 'Persediaan::list_batch_pmk_brng');
+    $routes->add('get_stock_pmk_brng', 'Persediaan::get_stock_pmk_brng');
+
 
 
 
@@ -1497,6 +1508,12 @@ $routes->group('/persediaan/trans', ["namespace" => "App\Controllers\Persediaan"
     $routes->add('final_pnm_barang', 'Persediaan::final_pnm_barang');
     $routes->add('check_coa_pnm_brng', 'Persediaan::check_coa_pnm_brng');
     $routes->add('get_summary_pnm', 'Persediaan::get_summary_pnm');
+    /* Endpoint grid inline halaman Input Penerimaan Barang (read-only select) */
+    $routes->add('list_pnm_brng_dtl_grid', 'Persediaan::list_pnm_brng_dtl_grid');
+    $routes->add('list_location_pnm_brng', 'Persediaan::list_location_pnm_brng');
+    $routes->add('list_batch_pnm_brng', 'Persediaan::list_batch_pnm_brng');
+    $routes->add('search_item_pnm_brng', 'Persediaan::search_item_pnm_brng');
+    $routes->add('get_item_pnm_brng', 'Persediaan::get_item_pnm_brng');
 
     $routes->add('updatepnmBrg', 'Persediaan::updatepnmBrg');
     $routes->add('detail_pnm_brng_mst(:any)', 'Persediaan::detail_pnm_brng_mst$1');

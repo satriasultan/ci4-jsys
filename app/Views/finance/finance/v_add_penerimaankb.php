@@ -1,3 +1,12 @@
+<?php
+    /* =====================================================
+     * AUTOFILL INPUT AWAL CABANG / JOB (SESSION USER LOGIN)
+     * Cabang default mengikuti session user yang sedang login
+     * (PT JATIM TAMAN STEEL / PLANT), tetap bisa dipilih lain.
+     * ===================================================== */
+    $sessionBranchId   = trim((string) session()->get('idbranchjob'));
+    $sessionBranchName = strtoupper(trim((string) session()->get('nmbranchjob')));
+?>
 <!-- =========================================================
      v_add_penerimaankb.php - Corporate Style
      Referensi tampilan : persediaan/pnm_brng/v_add_pnm_brg.php
@@ -97,7 +106,9 @@
                                         <div class="col-md-12">
                                             <div class="form-group">
                                                 <label for="cabang">Cabang / Job</label>
-                                                <select name="cabang" id="cabang" class="form-control" required></select>
+                                                <select name="cabang" id="cabang" class="form-control" required
+                                                    data-session-branch-id="<?= esc($sessionBranchId) ?>"
+                                                    data-session-branch-name="<?= esc($sessionBranchName) ?>"></select>
                                             </div>
                                         </div>
 
@@ -701,3 +712,6 @@
     });
 
 </script>
+
+<!-- Autofill cabang default sesuai session user login (dijalankan setelah script utama) -->
+<script type="application/javascript" src="<?= base_url('assets/pagejs/finance/penerimaankb_branch_autofill.js') ?>"></script>

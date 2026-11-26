@@ -1109,6 +1109,12 @@ function savePemakaianBrng() {
    ============================================================ */
 $('#btnAddDetail').on('click', function (e) {
 
+    /* Halaman input PMK sekarang memakai grid inline (#pmkGrid,
+       pmk_brng_add.js). Handler modal lama dilewati. */
+    if ($('#pmkGrid').length > 0) {
+        return;
+    }
+
     var cabang       = $.trim($('[name="cabang"]').val());
     var docdate      = $.trim($('[name="docdate"]').val());
     var prefix       = $.trim($('[name="prefix"]').val());
@@ -1330,11 +1336,19 @@ $('#cabang').on('change', function () {
 
     if (skipRoleChange) return;
 
-    let idbranch = $(this).val();
+    /* Select2 bisa mengembalikan value kosong bila opsi dibentuk dari data
+       mentah (idbranch/nmbranch). Ambil cadangan dari data select2. */
+    let idbranch = $.trim($(this).val() || '');
+    let selData  = $(this).select2('data');
+
+    if (!idbranch && selData && selData.length) {
+        idbranch = $.trim(selData[0].idbranch || selData[0].id || '');
+    }
+
     if (!idbranch) return;
 
     $.ajax({
-        url: HOST_URL + '/persediaan/trans/getBranch_pmk_brng',
+        url: HOST_URL + 'persediaan/trans/getBranch_pmk_brng',
         method: 'GET',
         data: { idbranch: idbranch },
         dataType: 'json',
@@ -1402,9 +1416,8 @@ $('#cabang').on('change', function () {
                 $el.val(selectedDate.format('DD-MM-YYYY'));
             }
 
-            $('#docno').val(
-                prefix + '/' + res.infix + '/' + currentKodeSuffix + '0001'
-            );
+            /* Nomor dokumen diisi oleh loadNextSuffixPMK() (penomoran modul PMK:
+               getNextSuffix_pmk_brng) agar tidak memakai format modul lain. */
         }
     });
 });
@@ -1417,7 +1430,7 @@ function loadNextSuffixPMK() {
     if (!prefix || !infix || !currentKodeSuffix) return;
 
     $.ajax({
-        url: HOST_URL + '/persediaan/trans/getNextSuffix_ajustment_stock',
+        url: HOST_URL + 'persediaan/trans/getNextSuffix_pmk_brng',
         method: 'GET',
         data: {
             prefix: prefix,
@@ -1436,7 +1449,10 @@ function loadNextSuffixPMK() {
 
             $('#suffix').val(suffix).trigger('change');
 
-            $('#docno').val(prefix + '/' + infix + '/' + res.suffix);
+            $('#docno').val(res.docno || (prefix + '/' + infix + '/' + res.suffix));
+        },
+        error: function (xhr, status, err) {
+            console.warn('Gagal mengambil nomor PMK berikutnya:', status, err, xhr.status);
         }
     });
 }
@@ -1623,10 +1639,16 @@ $(document).ready(function () {
     }
 
     table_trx_pmk_brng_mst();
-    tabletmpSPKDetail();
 
-    initSelect2Barang();
-    initSelect2LocationDtl();
+    /* Detail lama (modal + DataTable #tmptabpmksdtl) hanya diinisialisasi
+       bila tabel lama masih ada. Halaman input PMK sekarang memakai grid
+       inline #pmkGrid (pmk_brng_add.js), sehingga bagian ini dilewati. */
+    if ($('#tmptabpmksdtl').length > 0) {
+        tabletmpSPKDetail();
+
+        initSelect2Barang();
+        initSelect2LocationDtl();
+    }
 
     var docno = $('[name="docno"]').val();
     if (docno && docno.trim() !== '') {

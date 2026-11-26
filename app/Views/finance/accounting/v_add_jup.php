@@ -5,11 +5,17 @@
                kerapian layout. Nama field, id, dan fungsi
                JavaScript tidak diubah.
      ========================================================= -->
+<?php
+/* Cabang default mengikuti session user yang login (lihat jup_branch_autofill.js).
+   User tetap boleh memilih cabang / job lain pada halaman addJUP. */
+$sessionBranchId   = trim((string) session()->get('idbranchjob'));
+$sessionBranchName = strtoupper(trim((string) session()->get('nmbranchjob')));
+?>
 <link rel="stylesheet" href="<?= base_url('assets/css/corp-form.css') ?>">
 <style>
     /* Suplemen khusus Jurnal Umum Perkiraan (JUP): tabel detail & separator angka
        mengikuti tema corporate yang sama (referensi v_add_penerimaankb.php). */
-    .corp-form-container #tabjupdtl thead th {
+    .corp-form-container #jupGrid thead th {
         background: var(--corp-primary) !important;
         color: #ffffff !important;
         font-size: 12.5px;
@@ -17,19 +23,186 @@
         letter-spacing: 0.3px;
         text-transform: uppercase;
         border-color: var(--corp-border) !important;
-        padding: 10px 12px !important;
+        padding: 9px 10px !important;
         vertical-align: middle;
     }
 
-    .corp-form-container #tabjupdtl tbody td {
-        padding: 9px 12px !important;
+    .corp-form-container #jupGrid tbody td {
+        padding: 4px 6px !important;
         border-color: var(--corp-border) !important;
         vertical-align: middle;
         color: var(--corp-text);
     }
 
-    .corp-form-container #tabjupdtl tbody tr:hover {
+    .corp-form-container #jupGrid tbody tr.jup-row:hover {
         background-color: var(--corp-primary-light) !important;
+    }
+
+    /* ---- Grid inline detail JUP ---- */
+    .corp-form-container #jupGrid .jup-cell-input,
+    .corp-form-container #jupGrid .jup-cell-select {
+        font-size: 13px;
+        height: 32px;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .corp-form-container #jupGrid .jup-col-no,
+    .corp-form-container #jupGrid .jup-col-aksi {
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .corp-form-container #jupGrid .jup-cell-ellipsis input {
+        text-overflow: ellipsis;
+    }
+
+    .corp-form-container #jupGrid .jup-cell-nilai input {
+        text-align: right;
+    }
+
+    .corp-form-container #jupGrid tbody tr.jup-row-selected {
+        background-color: var(--corp-primary-light) !important;
+        box-shadow: inset 3px 0 0 var(--corp-primary);
+    }
+
+    .corp-form-container #jupGrid tbody tr.jup-row-invalid td {
+        background-color: #fdecec !important;
+    }
+
+    .corp-form-container #jupGrid .jup-invalid {
+        border-color: var(--corp-danger) !important;
+    }
+
+    .corp-form-container #jupGrid tr.jup-empty-row td {
+        text-align: center;
+        color: #6b7280;
+        padding: 18px 12px !important;
+        cursor: pointer;
+        background-color: #fbfcfe;
+    }
+
+    .corp-form-container #jupGrid .jup-btn {
+        border: 0;
+        background: transparent;
+        color: #6b7280;
+        padding: 2px 6px;
+        border-radius: 4px;
+        line-height: 1;
+    }
+
+    .corp-form-container #jupGrid .jup-btn:hover {
+        background-color: #e5e7eb;
+        color: #111827;
+    }
+
+    .corp-form-container #jupGrid .jup-btn-row-remove:hover {
+        color: var(--corp-danger);
+    }
+
+    .corp-form-container #jupGrid.jup-busy {
+        opacity: 0.55;
+        pointer-events: none;
+    }
+
+    .corp-form-container .jup-saving-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(255, 255, 255, 0.72);
+        border-radius: 6px;
+    }
+
+    .corp-form-container .jup-saving-overlay.d-none {
+        display: none !important;
+    }
+
+    .corp-form-container .jup-saving-box {
+        background-color: #ffffff;
+        border: 1px solid var(--corp-border);
+        border-radius: 8px;
+        padding: 10px 18px;
+        font-weight: 600;
+        color: #374151;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    }
+
+    .corp-form-container .jup-grid-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px dashed var(--corp-border);
+    }
+
+    .corp-form-container .jup-totals {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 18px;
+    }
+
+    .corp-form-container .jup-total-item {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        min-width: 130px;
+    }
+
+    .corp-form-container .jup-total-item span {
+        font-size: 11.5px;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+        color: #6b7280;
+    }
+
+    .corp-form-container .jup-total-item strong {
+        font-size: 14.5px;
+        color: #111827;
+    }
+
+    .corp-form-container .jup-balance-state {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.4px;
+        padding: 5px 12px;
+        border-radius: 20px;
+        text-transform: uppercase;
+    }
+
+    .corp-form-container .jup-badge-ok {
+        background-color: #dcfce7;
+        color: #15803d;
+    }
+
+    .corp-form-container .jup-badge-notok {
+        background-color: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .corp-form-container .jup-ok {
+        color: #15803d !important;
+    }
+
+    .corp-form-container .jup-not-ok {
+        color: var(--corp-danger) !important;
+    }
+
+    .corp-form-container .jup-selection-info {
+        font-size: 12px;
+        color: #6b7280;
+    }
+
+    .corp-form-container .jup-grid-hint {
+        display: block;
+        margin-top: 10px;
+        font-size: 11.5px;
+        color: #6b7280;
     }
 
     .corp-form-container .form-control.jtsseparator,
@@ -105,7 +278,9 @@
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="cabang">Cabang / Job</label>
-                                        <select name="cabang" id="cabang" class="form-control" required></select>
+                                        <select name="cabang" id="cabang" class="form-control" required
+                                            data-session-branch-id="<?= esc($sessionBranchId) ?>"
+                                            data-session-branch-name="<?= esc($sessionBranchName) ?>"></select>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
@@ -143,71 +318,90 @@
                     </div>
                 </div>
 
-                <!-- DETAIL PERKIRAAN -->
+                <!-- DETAIL PERKIRAAN (grid inline) -->
                 <div class="card mt-3 card-primary">
                     <div class="card-header d-flex align-items-center flex-wrap gap-2">
                         <h3 class="card-title mb-0 me-3">
                             <i class="fa fa-book"></i> Detail Perkiraan
                         </h3>
 
-                        <div class="ms-auto d-flex align-items-center gap-2">
-                            <button type="button"
-                                    class="btn btn-success btn-sm"
-                                    data-bs-toggle="tooltip"
-                                    title="Input Data"
-                                    onclick="btnInputDetail()">
-                                <i class="fa fa-plus"></i>
-                            </button>
+                        <div class="ms-auto d-flex align-items-center flex-wrap gap-2">
+                            <span class="jup-selection-info" id="jupSelectedInfo">0 dari 0 baris dipilih</span>
 
                             <button type="button"
-                                    class="btn btn-warning btn-sm"
-                                    data-bs-toggle="tooltip"
-                                    title="Update Data"
-                                    onclick="btnUpdateDetail()">
-                                <i class="fa fa-edit"></i>
+                                    class="btn btn-success btn-sm"
+                                    id="btnAddJUPDetail"
+                                    title="Tambah baris (Alt+N)">
+                                <i class="fa fa-plus me-1"></i> Tambah Baris
                             </button>
 
                             <button type="button"
                                     class="btn btn-danger btn-sm"
-                                    data-bs-toggle="tooltip"
-                                    title="Hapus Data"
-                                    onclick="btnDeleteDetail()">
-                                <i class="fa fa-trash"></i>
+                                    id="btnDeleteJUPDetail"
+                                    title="Hapus baris terpilih (Ctrl+Delete)"
+                                    disabled>
+                                <i class="fa fa-trash me-1"></i> Hapus Terpilih
                             </button>
                         </div>
                     </div>
-                    <div class="card-body">
+
+                    <div class="card-body position-relative">
+                        <div id="jupSavingOverlay" class="jup-saving-overlay d-none">
+                            <div class="jup-saving-box">
+                                <i class="fa fa-spinner fa-spin me-2"></i> Menyimpan detail JUP...
+                            </div>
+                        </div>
+
                         <div class="table-responsive" style="overflow-x: auto;">
-                            <table id="tabjupdtl" class="table table-bordered table-hover table-sm mb-0" width="100%">
-                                <thead class="table-light">
+                            <table id="jupGrid" class="table table-bordered table-sm jup-grid mb-0" width="100%">
+                                <thead>
                                     <tr>
-                                        <th width="30">
-                                            <input type="checkbox" id="checkAll">
+                                        <th width="34" class="text-center">
+                                            <input type="checkbox" id="jupCheckAll" title="Pilih semua baris">
                                         </th>
-                                        <th>Kode Perk.</th>
+                                        <th width="18%">Kode Perk.</th>
                                         <th>Nama Perkiraan</th>
+                                        <th width="70">DK</th>
+                                        <th width="20%">Cost/Profit Center</th>
                                         <th>Keterangan</th>
-                                        <th>DK</th>
-                                        <th>Cost/Profit Center</th>
-                                        <th>Nilai</th>
+                                        <th width="150" class="text-end">Nilai</th>
+                                        <th width="76" class="text-center">Aksi</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                </tbody>
+                                <tbody id="jupGridBody"></tbody>
                             </table>
                         </div>
 
-                        <hr>
-                        <div class="d-flex justify-content-end align-items-center">
-                            <label for="balance" class="me-2 fw-semibold mb-0">Balance</label>
-                            <input type="text"
-                                   name="balance"
-                                   id="balance"
-                                   class="form-control jtsseparator ratakanan"
-                                   style="max-width: 220px;"
-                                   readonly>
+                        <div class="jup-grid-footer">
+                            <div class="jup-balance-state jup-badge-notok" id="jupBalanceState">
+                                <i class="fa fa-exclamation-triangle"></i> SELISIH 0.00
+                            </div>
+
+                            <div class="jup-totals">
+                                <div class="jup-total-item">
+                                    <span>Total Debit</span>
+                                    <strong id="jupTotalDebit">0.00</strong>
+                                </div>
+                                <div class="jup-total-item">
+                                    <span>Total Kredit</span>
+                                    <strong id="jupTotalKredit">0.00</strong>
+                                </div>
+                                <div class="jup-total-item">
+                                    <span>Balance</span>
+                                    <strong id="jupBalance" class="jup-ok">0.00</strong>
+                                </div>
+                            </div>
                         </div>
-                        <hr>
+
+                        <!-- tetap dipertahankan: dibaca validasi form pada jup.js -->
+                        <input type="hidden" name="balance" id="balance" value="0.00">
+
+                        <small class="jup-grid-hint">
+                            <i class="fa fa-keyboard me-1"></i>
+                            Enter = simpan baris &amp; pindah kolom, panah atas/bawah = pindah baris,
+                            Alt+N = tambah baris, Esc = batalkan perubahan baris,
+                            Ctrl+Delete = hapus baris terpilih.
+                        </small>
                     </div>
 
                     <div class="card-footer bg-light">
@@ -235,120 +429,10 @@
 </div><!-- /.corp-form-container -->
 
 
-<!-- ================= MODAL INPUT DETAIL JUP ================= -->
-<div class="modal fade" id="modalDetailJUP" tabindex="-1" role="dialog" aria-labelledby="modalDetailJUPLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document">
-        <div class="modal-content">
-
-            <!-- HEADER -->
-            <div class="modal-header bg-primary">
-                <h5 class="modal-title" id="modalDetailJUPLabel">
-                    Input Perkiraan Detail
-                </h5>
-                <button type="button" class="close text-white" data-bs-dismiss="modal">
-                    <span>&times;</span>
-                </button>
-            </div>
-
-            <!-- FORM -->
-            <form id="formJUPDetail">
-                <div class="modal-body">
-
-                    <!-- hidden -->
-                    <input type="hidden" name="idurut" id="idurut">
-                    <input type="hidden" name="docno" id="docno">
-                    <!-- <input type="hidden" name="status" id="status" value="P">
-                    <input type="hidden" name="chold" id="chold" value="NO"> -->
-
-                    <!-- ROW 1 -->
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>ID Perkiraan</label>
-                                <select name="idcoa" id="idcoa"
-                                        class="form-control select2"
-                                        style="width:100%"></select>
-                            </div>
-                        </div>
-
-                        <div class="col-md-8">
-                            <div class="form-group">
-                                <label>Nama Perkiraan</label>
-                                <input type="text"
-                                       name="nmcoa"
-                                       id="nmcoa"
-                                       class="form-control"
-                                       placeholder="Nama Perkiraan"
-                                       style="text-transform:uppercase" readonly>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ROW 2 -->
-                    <div class="row">
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label for="dk">Debit/Kredit</label>
-                                <select name="dk" id="dk" class="form-control" required>
-                                    <option value="">-- Pilih --</option>
-                                    <option value="D">D</option>
-                                    <option value="K">K</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Cost Center</label>
-                                <select name="cabangdtl" id="cabangdtl"
-                                        class="form-control select2"
-                                        style="width:100%"></select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Keterangan</label>
-                                <textarea type="text"
-                                          name="remarks"
-                                          rows="4"
-                                          style="text-transform: uppercase;"
-                                          id="remarks"
-                                          class="form-control"></textarea>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label>Nilai</label>
-                                <input type="text"
-                                       name="nilai"
-                                       id="nilai"
-                                       class="form-control jtsseparator ratakanan"
-                                       placeholder="0.00">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- FOOTER -->
-                <div class="modal-footer bg-light">
-                    <button type="button"
-                            class="btn btn-primary"
-                            onclick="saveJUPDetail()">
-                        <i class="fa fa-save"></i> Simpan
-                    </button>
-                    <button type="button"
-                            class="btn btn-secondary"
-                            data-bs-dismiss="modal"
-                            onclick="$('#modalDetailJUP').modal('hide')">
-                        <i class="fa fa-times"></i> Batal
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 
 <script type="application/javascript" src="<?= base_url('assets/pagejs/finance/jup.js') ?>"></script>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/finance/jup_add.js') ?>"></script>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/finance/jup_branch_autofill.js') ?>"></script>
 <script type="text/javascript">
     $(function() {
         $("#example1").dataTable();
@@ -438,27 +522,6 @@
 
         $('#periodeakhir').on('cancel.daterangepicker', function(ev, picker) {
             $(this).val('');
-        });
-
-        document.addEventListener('DOMContentLoaded', function() {
-
-            document.addEventListener('keydown', function(e) {
-
-                const activeTag = document.activeElement.tagName;
-
-                if (
-                    e.ctrlKey &&
-                    e.shiftKey &&
-                    e.code === 'KeyE' &&
-                    !['INPUT','TEXTAREA','SELECT'].includes(activeTag)
-                ) {
-                    e.preventDefault();
-                    console.log('Shortcut triggered');
-                    btnUpdateDetail();
-                }
-
-            });
-
         });
 
     });

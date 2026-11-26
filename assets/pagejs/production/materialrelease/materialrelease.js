@@ -903,7 +903,7 @@ function mrPreselectSpec(item, preselect) {
         })[0];
         if (found) {
             $('#spec').append(new Option(found.batch, found.batch, true, true))
-                    .val(found.batch).trigger('change');
+                .val(found.batch).trigger('change');
         }
         loadMrStockInfo(item);
     });

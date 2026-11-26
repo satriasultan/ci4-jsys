@@ -1137,9 +1137,15 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.Q.A.3' and 
     }
 
 
-    var $trx_pnm_brng_mst_view = "(select A.*,z.uraian as nmstatus,kdtrx,z.jenistrx,z.uraian as nmstatus from sc_trx.pnm_brng_mst a 
-left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.Q.A.1' and trim(a.status)=trim(z.kdtrx)) as x";
-    var $trx_pnm_brng_mst_view_column = array('docno','idlocation_from','idlocation_to');
+    var $trx_pnm_brng_mst_view = "(select A.*,z.uraian as nmstatus,kdtrx,z.jenistrx,
+    trim(coalesce(b.nmbranch,'')) as nmbranch,
+    trim(coalesce(c.nmcostcenter,'')) as nmcostcenter,
+    coalesce((select sum(d.valsum) from sc_trx.pnm_brng_dtl d where trim(d.docno)=trim(a.docno)),0) as total
+from sc_trx.pnm_brng_mst a
+left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.Q.A.1' and trim(a.status)=trim(z.kdtrx)
+left outer join sc_mst.branchjob b on trim(b.idbranch)=trim(a.cabang)
+left outer join sc_mst.costcenter c on trim(c.idcostcenter)=trim(a.idcostcenter)) as x";
+    var $trx_pnm_brng_mst_view_column = array('docno','docdate','cabang','idcostcenter','docref','total','nmstatus','nmbranch','nmcostcenter');
     var $trx_pnm_brng_mst_view_order = array('inputdate' => 'desc'); // default order
     private function _get_trx_pnm_brng_mst()
     {
@@ -1176,8 +1182,22 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.Q.A.1' and 
 
         if(isset($_POST['order'])) // here order processing
         {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->trx_pnm_brng_mst_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+            /* urutan kolom DataTables -> kolom view.
+               Kolom No (0), Action (1) & Status (8) tidak diurutkan
+               (sama seperti LPB; kolom status pada view tidak unik). */
+            $orderMap = array(
+                2 => 'docno',
+                3 => 'docdate',
+                4 => 'cabang',
+                5 => 'idcostcenter',
+                6 => 'docref',
+                7 => 'total',
+            );
+
+            $orderCol = (int) $_POST['order']['0']['column'];
+
+            if (isset($orderMap[$orderCol])) {
+                $builder->orderBy($orderMap[$orderCol], $_POST['order']['0']['dir']);
             }
         }
         else if(isset($this->trx_pnm_brng_mst_view_order))
@@ -1246,6 +1266,51 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.Q.A.1' and 
     public function q_trx_pnm_brng_dtl($param)
     {
         return $this->db->query("select * from sc_trx.pnm_brng_dtl where docno is not null $param order by idurut desc");
+    }
+
+    /**
+     * Header halaman DETAIL Penerimaan Barang (read only).
+     * Melengkapi nama cabang, cost center, pemohon, status, dan total nilai.
+     */
+    public function q_detail_pnm_brng_mst($docno)
+    {
+        $sql = "
+            SELECT h.*,
+                   TRIM(COALESCE(b.nmbranch, ''))    AS nmbranch,
+                   TRIM(COALESCE(c.nmcostcenter, '')) AS nmcostcenter,
+                   COALESCE(NULLIF(TRIM(u.nmlengkap), ''), TRIM(COALESCE(h.pemohon, ''))) AS nmpemohon,
+                   TRIM(COALESCE(z.uraian, ''))      AS nmstatus,
+                   COALESCE((SELECT SUM(x.valsum)
+                               FROM sc_trx.pnm_brng_dtl x
+                              WHERE TRIM(x.docno) = TRIM(h.docno)), 0) AS total
+              FROM sc_trx.pnm_brng_mst h
+              LEFT JOIN sc_mst.branchjob b  ON TRIM(b.idbranch)      = TRIM(h.cabang)
+              LEFT JOIN sc_mst.costcenter c ON TRIM(c.idcostcenter)  = TRIM(h.idcostcenter)
+              LEFT JOIN sc_mst.user u       ON TRIM(u.username)      = TRIM(h.pemohon)
+              LEFT JOIN sc_mst.trxtype z    ON TRIM(COALESCE(z.jenistrx, '')) = 'I.Q.A.1'
+                                           AND TRIM(h.status) = TRIM(z.kdtrx)
+             WHERE TRIM(h.docno) = TRIM(?)
+             LIMIT 1
+        ";
+
+        return $this->db->query($sql, [$docno]);
+    }
+
+    /**
+     * Detail barang halaman DETAIL Penerimaan Barang (read only) + nama gudang.
+     */
+    public function q_detail_pnm_brng_dtl($docno)
+    {
+        $sql = "
+            SELECT d.*,
+                   TRIM(COALESCE(l.nmlocation, '')) AS nmlocation
+              FROM sc_trx.pnm_brng_dtl d
+              LEFT JOIN sc_mst.mlocation l ON TRIM(l.idlocation) = TRIM(d.idlocation)
+             WHERE TRIM(d.docno) = TRIM(?)
+             ORDER BY d.idurut
+        ";
+
+        return $this->db->query($sql, [$docno]);
     }
 
     /**
@@ -1404,9 +1469,25 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.Q.A.1' and 
     }
 
 
-    var $trx_pmk_brng_mst_view = "(select A.*,z.uraian as nmstatus,kdtrx,z.jenistrx,z.uraian as nmstatus from sc_trx.pmk_brng_mst a 
-left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.Q.A.1' and trim(a.status)=trim(z.kdtrx)) as x";
-    var $trx_pmk_brng_mst_view_column = array('docno','idlocation_from','idlocation_to');
+    /* Kolom A.* ditulis eksplisit: sebelumnya `A.*` + alias nmcostcenter dari
+       join sc_mst.costcenter menghasilkan dua kolom bernama nmcostcenter pada
+       subquery, sehingga ORDER BY / pencarian DataTables error
+       ("kolom referensi nmcostcenter ambigu"). Nilai cost center header
+       dipakai lebih dulu, join hanya sebagai fallback. */
+    var $trx_pmk_brng_mst_view = "(select a.idurut, a.docno, a.doctype, a.docdate, a.docref,
+    a.cabang, a.cabang_sent, a.pemohon, a.estpakai,
+    a.idlocation_from, a.idlocation_to, a.idlocation_transit,
+    a.status, a.description, a.inputby, a.inputdate, a.updateby, a.updatedate,
+    a.printby, a.printdate, a.docnotmp, a.idcostcenter,
+    z.uraian as nmstatus,kdtrx,z.jenistrx,
+    trim(coalesce(b.nmbranch,'')) as nmbranch,
+    trim(coalesce(nullif(trim(a.nmcostcenter),''), c.nmcostcenter, '')) as nmcostcenter,
+    coalesce((select sum(d.valsum) from sc_trx.pmk_brng_dtl d where trim(d.docno)=trim(a.docno)),0) as total
+ from sc_trx.pmk_brng_mst a
+ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.Q.A.1' and trim(a.status)=trim(z.kdtrx)
+ left outer join sc_mst.branchjob b on trim(b.idbranch)=trim(a.cabang)
+ left outer join sc_mst.costcenter c on trim(c.idcostcenter)=trim(a.idcostcenter)) as x";
+    var $trx_pmk_brng_mst_view_column = array('docno','docdate','cabang','idcostcenter','docref','total','nmstatus','nmbranch','nmcostcenter');
     var $trx_pmk_brng_mst_view_order = array('inputdate' => 'desc'); // default order
     private function _get_trx_pmk_brng_mst()
     {
@@ -1418,21 +1499,22 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.Q.A.1' and 
 
 
         $i = 0;
+        $searchValue = isset($_POST['search']['value']) ? (string) $_POST['search']['value'] : '';
 
         //$builder->where("docno = '$nama'");
         foreach ($this->trx_pmk_brng_mst_view_column as $mrpgroup)
         {
-            if($_POST['search']['value']) // if datatable send POST for search
+            if($searchValue !== '') // if datatable send POST for search
             {
 
                 if($i===0) // first loop
                 {
                     $builder->groupStart(); // open bracket. query Where with OR clause better with bracket. because maybe can combine with other WHERE with AND.
-                    $builder->like("upper(cast(" . strtoupper($mrpgroup) . " as varchar))", strtoupper($_POST['search']['value']));
+                    $builder->like("upper(cast(" . strtoupper($mrpgroup) . " as varchar))", strtoupper($searchValue));
                 }
                 else
                 {
-                    $builder->orLike("upper(cast(" . strtoupper($mrpgroup) . " as varchar))", strtoupper($_POST['search']['value']));
+                    $builder->orLike("upper(cast(" . strtoupper($mrpgroup) . " as varchar))", strtoupper($searchValue));
                 }
 
                 if(count($this->trx_pmk_brng_mst_view_column) - 1 == $i) //last loop
@@ -1443,8 +1525,22 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.Q.A.1' and 
 
         if(isset($_POST['order'])) // here order processing
         {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->trx_pmk_brng_mst_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+            /* urutan kolom DataTables -> kolom view.
+               Kolom No (0), Action (1) & Status (8) tidak diurutkan
+               (sama seperti LPB / PNM; kolom status pada view tidak unik). */
+            $orderMap = array(
+                2 => 'docno',
+                3 => 'docdate',
+                4 => 'cabang',
+                5 => 'idcostcenter',
+                6 => 'docref',
+                7 => 'total',
+            );
+
+            $orderCol = (int) $_POST['order']['0']['column'];
+
+            if (isset($orderMap[$orderCol])) {
+                $builder->orderBy($orderMap[$orderCol], $_POST['order']['0']['dir']);
             }
         }
         else if(isset($this->trx_pmk_brng_mst_view_order))
@@ -1509,6 +1605,130 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.Q.A.1' and 
     public function q_trx_pmk_brng_dtl($param)
     {
         return $this->db->query("select * from sc_trx.pmk_brng_dtl where docno is not null $param order by idurut desc");
+    }
+
+    /* ============================================================
+       STOK TERSEDIA PMK (READ ONLY)
+       Sumber: sc_trx.stkblc (stock ledger) -> SUM(qty_in) - SUM(qty_out)
+       Harga rata-rata: sc_trx.stkblc_avgcost
+       ============================================================ */
+
+    /**
+     * Stok on-hand untuk kombinasi barang + gudang (+ batch).
+     * Bila $batch kosong, stok dijumlahkan untuk seluruh batch gudang tsb.
+     */
+    public function q_stock_onhand_pmk($idlocation, $idbarang, $batch = '')
+    {
+        $sql = "SELECT COALESCE(SUM(COALESCE(sb.qty_in, 0)) - SUM(COALESCE(sb.qty_out, 0)), 0) AS stok
+                  FROM sc_trx.stkblc sb
+                 WHERE TRIM(sb.idbarang) = TRIM(?)
+                   AND TRIM(COALESCE(sb.idlocation, '')) = TRIM(?)";
+
+        $binds = array($idbarang, $idlocation);
+
+        if (trim((string) $batch) !== '') {
+            $sql .= " AND TRIM(COALESCE(sb.batch, '')) = TRIM(?)";
+            $binds[] = $batch;
+        }
+
+        $row = $this->db->query($sql, $binds)->getRowArray();
+
+        return (float) ($row['stok'] ?? 0);
+    }
+
+    /**
+     * Qty yang sudah "dibooking" pada draft (sc_tmp.pmk_brng_dtl) milik
+     * user yang sedang login, untuk barang + gudang (+ batch) tertentu.
+     *
+     * Dipakai menghitung STOK TERSEDIA di grid input:
+     *   stok tersedia = stok fisik (sc_trx.stkblc) - qty draft (tabel ini)
+     *
+     * @param string $inputby        user pemilik draft (session nama)
+     * @param string $idlocation     gudang
+     * @param string $idbarang       barang
+     * @param string $batch          batch ('' = semua batch)
+     * @param string $excludeIdurut  idurut baris yang sedang diedit (dikecualikan)
+     *
+     * @return float
+     */
+    public function q_stock_booked_pmk($inputby, $idlocation, $idbarang, $batch = '', $excludeIdurut = '')
+    {
+        $sql = "SELECT COALESCE(SUM(COALESCE(d.qty, 0)), 0) AS qty
+                  FROM sc_tmp.pmk_brng_dtl d
+                 WHERE TRIM(COALESCE(d.inputby, '')) = TRIM(?)
+                   AND TRIM(d.idbarang) = TRIM(?)
+                   AND TRIM(COALESCE(d.idlocation, '')) = TRIM(?)";
+
+        $binds = array($inputby, $idbarang, $idlocation);
+
+        if (trim((string) $batch) !== '') {
+            $sql .= " AND TRIM(COALESCE(d.batch, '')) = TRIM(?)";
+            $binds[] = $batch;
+        }
+
+        if (trim((string) $excludeIdurut) !== '') {
+            $sql .= " AND COALESCE(d.idurut, 0) <> ?";
+            $binds[] = (int) $excludeIdurut;
+        }
+
+        $row = $this->db->query($sql, $binds)->getRowArray();
+
+        return (float) ($row['qty'] ?? 0);
+    }
+
+    /**
+     * Stok tersedia (buffered) = stok fisik - qty draft user.
+     * Hasil tidak pernah negatif.
+     */
+    public function q_stock_tersedia_pmk($inputby, $idlocation, $idbarang, $batch = '', $excludeIdurut = '')
+    {
+        $fisik  = $this->q_stock_onhand_pmk($idlocation, $idbarang, $batch);
+        $booked = $this->q_stock_booked_pmk($inputby, $idlocation, $idbarang, $batch, $excludeIdurut);
+
+        $tersedia = $fisik - $booked;
+
+        return $tersedia > 0 ? $tersedia : 0;
+    }
+
+    /**
+     * Harga rata-rata (average cost) barang + gudang (+ batch).
+     * Bila batch kosong -> rata-rata berbobot dari seluruh batch.
+     * Fallback: lastprice master barang.
+     */
+    public function q_avgcost_pmk($idlocation, $idbarang, $batch = '')
+    {
+        $sql = "SELECT
+                    CASE WHEN SUM(COALESCE(ac.qty, 0)) > 0
+                         THEN SUM(COALESCE(ac.total_value, 0)) / SUM(COALESCE(ac.qty, 0))
+                         ELSE 0
+                    END AS avgcost
+                  FROM sc_trx.stkblc_avgcost ac
+                 WHERE TRIM(ac.idbarang) = TRIM(?)
+                   AND TRIM(COALESCE(ac.idlocation, '')) = TRIM(?)";
+
+        $binds = array($idbarang, $idlocation);
+
+        if (trim((string) $batch) !== '') {
+            $sql .= " AND TRIM(COALESCE(ac.batch, '')) = TRIM(?)";
+            $binds[] = $batch;
+        }
+
+        $row = $this->db->query($sql, $binds)->getRowArray();
+        $avg = (float) ($row['avgcost'] ?? 0);
+
+        if ($avg <= 0) {
+            $brg = $this->db->query(
+                "SELECT COALESCE(lastprice, 0) AS lastprice
+                   FROM sc_mst.mbarang
+                  WHERE TRIM(idbarang) = TRIM(?)
+                  LIMIT 1",
+                array($idbarang)
+            )->getRowArray();
+
+            $avg = (float) ($brg['lastprice'] ?? 0);
+        }
+
+        return $avg;
     }
 
     /* ============================================================
@@ -1827,6 +2047,96 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.Q.A.1' and 
                     ORDER BY idurut DESC
                     LIMIT 1";
         return $this->db->query($sql, [$periode]);
+    }
+
+    /**
+     * Periode closing terakhir yang benar-benar TUTUP (sc_trx.closeperiod).
+     * Dipakai modul Penerimaan Barang (I.Q.A.6) untuk memvalidasi tombol Update
+     * berdasarkan tanggal transaksi (docdate).
+     *
+     * @return \CodeIgniter\Database\BaseResult
+     */
+    public function q_periode_closing_last()
+    {
+        $sql = "
+            SELECT idurut,
+                   BTRIM(periode::TEXT)                AS periode,
+                   tanggal_mulai,
+                   tanggal_akhir,
+                   TRIM(COALESCE(status_closing, ''))  AS status_closing,
+                   TRIM(COALESCE(flagproses, ''))      AS flagproses,
+                   TRIM(COALESCE(keterangan, ''))      AS keterangan
+              FROM sc_trx.closeperiod
+             WHERE UPPER(TRIM(COALESCE(flagproses, ''))) = 'TUTUP'
+             ORDER BY tanggal_akhir DESC NULLS LAST, periode DESC
+             LIMIT 1
+        ";
+
+        return $this->db->query($sql);
+    }
+
+    /**
+     * Apakah tanggal dokumen ($docdate) sudah masuk periode yang DITUTUP?
+     * TRUE  = docdate <= akhir periode closing terakhir yang TUTUP.
+     *
+     * @param string     $docdate  tanggal dokumen (dd-mm-yyyy / yyyy-mm-dd)
+     * @param array|null $closing  baris hasil q_periode_closing_last()
+     */
+    public function isPeriodeClosed($docdate, $closing = null)
+    {
+        if ($closing === null) {
+            $closing = $this->q_periode_closing_last()->getRowArray();
+        }
+
+        if (empty($closing)) {
+            return false;
+        }
+
+        $doc = $this->_pnmParseDate($docdate);
+
+        if ($doc === null) {
+            return false;
+        }
+
+        $end = $this->_pnmParseDate($closing['tanggal_akhir'] ?? '');
+
+        /* fallback: tanggal_akhir kosong -> pakai akhir bulan dari periode (yymm) */
+        if ($end === null
+            && preg_match('/^(\d{2})(\d{2})$/', trim((string) ($closing['periode'] ?? '')), $m)
+        ) {
+            $end = new \DateTime(sprintf('20%s-%s-01', $m[1], $m[2]));
+            $end->modify('last day of this month');
+        }
+
+        if ($end === null) {
+            return false;
+        }
+
+        return $doc->format('Y-m-d') <= $end->format('Y-m-d');
+    }
+
+    /**
+     * Parser tanggal sederhana (aman untuk 'dd-mm-yyyy' & 'yyyy-mm-dd').
+     */
+    private function _pnmParseDate($value)
+    {
+        $value = substr(trim((string) $value), 0, 10);
+
+        if ($value === '') {
+            return null;
+        }
+
+        foreach (['d-m-Y', 'Y-m-d', 'd/m/Y'] as $format) {
+            $dt = \DateTime::createFromFormat('!' . $format, $value);
+
+            if ($dt !== false && $dt->format($format) === $value) {
+                return $dt;
+            }
+        }
+
+        $ts = strtotime($value);
+
+        return $ts !== false ? (new \DateTime())->setTimestamp($ts) : null;
     }
 
 

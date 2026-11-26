@@ -1,0 +1,428 @@
+#prompt fixing ke 1
+Halo Cline, tolong bantu saya melakukan refactoring pada halaman Input Penerimaan Barang di URL ini: http://localhost:85/ci4-85/persediaan/trans/add_pnm_brng_mst
+
+PENTING: FOKUS HANYA PADA MODUL INI. Dilarang keras mengubah, memodifikasi, atau merefactor file/fungsi di modul lain (seperti modul Purchase/PO, Master Barang, atau Master Gudang). Jika membutuhkan data referensi, cukup baca (read-only), jangan ubah. Semua perubahan kode (View, JS, CSS) harus terisolasi di file milik halaman add_pnm_brng_mst ini saja.
+
+Saat ini form menggunakan modal untuk detail barang. Saya ingin mengubah mekanismenya menjadi penginputan langsung (inline editing) di dalam DataTable agar proses administrasi lebih cepat.
+
+Tolong implementasikan instruksi berikut secara menyeluruh:
+
+1. REFERENSI UI/UX & CSS (READ-ONLY):
+   - Silakan pelajari dan tiru struktur CSS serta UX dari halaman ini: http://localhost:85/ci4-85/purchase/trans/addPO
+   - CUKUP TIRU GAYANYA (CSS/UX). Jangan ubah file View/Controller/JS milik modul addPO tersebut.
+   - Terapkan styling yang rapi dan modern HANYA pada file View milik add_pnm_brng_mst.
+
+2. MEKANISME INPUT DATATABLE (PENGGANTI MODAL #modalDetailpnm):
+   - Hapus penggunaan modal untuk detail barang pada halaman ini.
+   - Gunakan DataTable (atau alternatif grid yang lebih baik untuk inline editing). Jika DataTable kurang cocok untuk inline editing yang kompleks, silakan gunakan opsi lain yang lebih optimal (misal: Handsontable, AG Grid, atau custom HTML table dengan jQuery) — pastikan library yang dipakai di-load HANYA di halaman ini.
+   - Secara default, sediakan 1 baris kosong di paling atas/bawah tabel yang siap diisi.
+   - Kolom yang harus ada di tabel: Checkbox (Pilih), Gudang (Dropdown), ID Barang (Dropdown/Autocomplete), Nama Barang (Auto-fill, readonly), Batch/Spec, Satuan, Qty, Harga, Nilai, Keterangan, Aksi.
+
+3. FITUR CHECKBOX (CHECKED):
+   - Tambahkan kolom Checkbox di paling kiri tabel.
+   - Sediakan Checkbox "Select All" di header tabel untuk mencentang semua baris sekaligus.
+   - Logika Checkbox: 
+     * Jika baris dicentang, baris tersebut dianggap "aktif" atau "terpilih".
+     * Tombol #btnUpdateDetail dan btnDeleteDetail() hanya akan memproses baris yang dicentang.
+     * Saat proses simpan final (submit), pastikan hanya baris yang dicentang yang dikirim ke Controller (atau berikan konfirmasi ke user jika ada baris tidak tercentang).
+
+4. ALUR KERJA KEYBOARD (TAB & ENTER):
+   - User bisa langsung mengetik di baris tabel.
+   - Saat menekan tombol TAB, kursor berpindah ke kolom sebelah kanan.
+   - Saat menekan tombol ENTER di kolom paling kanan (atau di kolom Keterangan), sistem harus otomatis menyimpan baris tersebut ke dalam list dan OTOMATIS menambahkan 1 baris baru (baris kosong) di bawahnya, lalu fokus kursor pindah ke kolom pertama (selain checkbox) baris baru tersebut. 
+   - Jika user menekan TAB di baris terakhir, tambahkan baris baru secara otomatis.
+
+5. DROPDOWN & AUTO-FILL:
+   - Kolom "Gudang": Gunakan dropdown (select2) yang berisi list gudang.
+   - Kolom "ID Barang": Gunakan dropdown/autocomplete (select2) dengan fitur pencarian.
+   - Saat "ID Barang" dipilih, kolom "Nama Barang", "Satuan", dan "Harga" harus otomatis terisi (menggunakan AJAX request ke controller).
+   - PENTING: Jika untuk mengambil data Gudang/Barang harus membuat endpoint baru di Controller, buatkan HANYA di Controller milik modul add_pnm_brng_mst ini. Jangan modifikasi Controller modul lain.
+
+6. MANAJEMEN TOMBOL (CRUD):
+   - Sediakan 3 tombol aksi: #btnAddDetail (Tambah baris manual), #btnUpdateDetail (Simpan perubahan baris aktif/terpilih), dan btnDeleteDetail() (Hapus baris yang dicentang).
+   - Tombol #btnAddDetail berfungsi menambah baris baru kosong secara manual.
+   - Tombol btnDeleteDetail() harus bisa menghapus satu atau beberapa baris yang dicentang sekaligus (bulk delete).
+   - Pastikan state tombol (enable/disable) berubah sesuai konteks baris yang sedang diedit atau dicentang.
+
+7. LOGIKA SIMPAN (BACKEND):
+   - Pastikan data yang diinput di tabel grid bisa ditangkap dengan benar saat form di-submit.
+   - Buat struktur array/JSON yang rapi untuk dikirim ke Controller CodeIgniter 4 milik modul ini.
+   - Pastikan data yang dikirim hanya data yang valid (tidak kosong) dan/atau sesuai dengan status checkbox.
+
+Batas Ruang Lingkup (Scope):
+- ✅ Boleh diubah: File View, JS, CSS, dan Controller khusus untuk halaman add_pnm_brng_mst.
+- ❌ Dilarang diubah: File milik modul addPO, modul Master Barang, modul Master Gudang, atau route global yang dipakai bersama.
+- Jika butuh library JS/CSS baru, tambahkan pemanggilannya HANYA di View add_pnm_brng_mst.
+
+Silakan buatkan kode untuk View (HTML/PHP), JavaScript (termasuk inisialisasi tabel, event listener TAB/ENTER, dan logika checkbox), serta sebutkan jika ada perubahan yang dibutuhkan di sisi Controller/Model (khusus modul ini).
+
+
+
+
+
+
+
+
+#prompt fixing ke 2
+Cline, saya menemukan 2 kendala UX pada tabel inline editing (detail penerimaan barang) yang baru saja kita buat. Tolong perbaiki dengan instruksi berikut. Ingat, FOKUS HANYA PADA MODUL add_pnm_brng_mst, jangan ubah modul lain.
+
+1. TOMBOL BATAL (CANCEL) / X PADA BARIS DETAIL:
+   - Saat ini jika saya sedang mengisi baris baru di tabel, dan ternyata saya tidak jadi mengisinya, saya tidak punya cara untuk membatalkan/menutup baris tersebut.
+   - Tolong tambahkan tombol "X" (Batal/Cancel) di kolom "Aksi" pada setiap baris yang sedang dalam mode input/edit.
+   - Fungsi tombol "X" ini: 
+     * Jika baris tersebut adalah baris BARU (belum tersimpan) dan diklik "X", maka hapus baris baru tersebut (kembalikan fokus/kursor ke baris sebelumnya atau baris yang valid).
+     * Jika baris tersebut adalah baris EDIT (data lama), klik "X" akan mengembalikan data ke nilai semula (revert) dan keluar dari mode edit.
+   - Pastikan tombol "X" ini muncul berdampingan dengan tombol Simpan/Update.
+
+2. NAVIGASI TAB KE SEARCHING SELECT2:
+   - Saat ini dropdown menggunakan Select2. Ketika saya menekan TAB dari input sebelumnya, fokus masuk ke elemen Select2 tapi tidak langsung membuka kolom pencarian (searching).
+   - Tolong perbaiki perilaku keyboard saat menggunakan Select2:
+     * Ketika user menekan TAB dan fokus masuk ke komponen Select2, kolom pencarian (search input) di dalam Select2 harus OTOMATIS TERBUKA dan siap diketik.
+     * User bisa langsung mengetik untuk mencari item tanpa harus klik dropdown atau tekan tombol panah bawah terlebih dahulu.
+     * Setelah user memilih item dengan ENTER, fokus kursor harus otomatis lanjut ke kolom TAB berikutnya (kolom sebelah kanan) sesuai alur sebelumnya.
+   - Pastikan konfigurasi Select2 di halaman ini di-set agar search input-nya otomatis fokus saat menerima event TAB. (Contoh: menggunakan opsi `dropdownParent` atau event listener `select2:open` / `focus` untuk memicu pencarian).
+
+Tolong perbaiki 2 hal ini pada file View/JS milik modul add_pnm_brng_mst saja. Berikan kode perbaikannya.
+
+#prompt fixing ke 3
+
+Cline, implementasi sebelumnya masih ada 2 bug UX yang harus diperbaiki. Tolong perbaiki HANYA di modul add_pnm_brng_mst ini. Jangan sentuh modul lain.
+
+BUG 1: TOMBOL CANCEL (X) TIDAK BERFUNGSI
+- Tombol ini sudah ada di DOM: <button type="button" class="pnm-btn pnm-btn-cancel" data-act="cancel" title="Batal / tutup baris (X / Esc)"><i class="fa fa-times"></i></button>
+- Tapi saat diklik, baris tidak bisa dibatalkan/ditutup. 
+- Tolong perbaiki event listener-nya (kemungkinan belum ter-bind, atau selector-nya salah, atau logika hapusnya salah).
+- Perilaku yang diharapkan:
+  * Jika baris tersebut adalah BARIS BARU (belum tersimpan): Klik X harus MENGHAPUS elemen <tr> tersebut dari DOM. Jika itu satu-satunya baris kosong, sediakan 1 baris baru lagi agar tabel tidak kosong.
+  * Jika baris tersebut adalah BARIS EDIT (data lama): Klik X harus me-revert nilai input ke nilai awal (sebelum diedit) dan keluar dari mode edit.
+  * Pastikan event delegation bekerja, contoh: $(document).on('click', '[data-act="cancel"]', function() { ... }); karena baris ditambahkan secara dinamis.
+  * Tambahkan juga dukungan tombol ESC di keyboard untuk memicu fungsi cancel yang sama saat fokus ada di dalam baris tersebut.
+
+BUG 2: SELECT2 TIDAK BISA LANGSUNG DIKETIK SAAT TAB
+- Saat ini ketika user menekan TAB dari dropdown Gudang ke dropdown ID Barang (Select2), dropdown terbuka tapi user HARUS mengarahkan mouse ke kolom search Select2 baru bisa mengetik.
+- Tolong perbaiki agar saat fokus berpindah ke Select2 via TAB, kolom search di dalam Select2 LANGSUNG TERFOKUS dan siap diketik tanpa perlu mouse.
+- Solusi yang diharapkan: 
+  * Gunakan event listener pada Select2, misalnya event 'select2:open', lalu secara programatik fokus ke elemen input search di dalamnya.
+  * Contoh implementasi: 
+    $(document).on('select2:open', () => {
+        document.querySelector('.select2-container--open .select2-search__field').focus();
+    });
+  * Pastikan juga saat user menekan TAB dari Select2 yang sedang terbuka, fokus bisa lanjut ke kolom berikutnya (jangan terjebak di dalam Select2).
+  * Jika user menekan ENTER setelah memilih item, fokus harus otomatis pindah ke kolom sebelah kanan (Batch/Spec).
+
+Validasi:
+- Test skenario: TAB dari Gudang -> langsung ketik di ID Barang -> Pilih -> ENTER -> fokus ke Batch/Spec.
+- Test skenario: Isi baris baru -> klik X -> baris hilang dan muncul baris kosong baru.
+- Test skenario: Tekan ESC di baris -> baris batal.
+
+Tolong berikan kode perbaikannya (JS event listener yang diperbaiki) dan pastikan tidak ada konflik dengan kode sebelumnya.
+
+
+
+#prompt fixing ke 4
+Cline, tombol Cancel (X) dan tombol ESC masih belum berfungsi dengan benar. Tolong perbaiki HANYA di modul add_pnm_brng_mst ini. Jangan sentuh modul lain.
+
+MASALAH:
+Tombol ini sudah ada di DOM:
+<button type="button" class="pnm-btn pnm-btn-cancel" data-act="cancel" title="Batal / tutup baris (X / Esc)"><i class="fa fa-times"></i></button>
+
+Tapi saat diklik atau saat user menekan ESC, baris "add detail" (baris baru yang sedang diinput) TIDAK HILANG / TIDAK TERTUTUP. Baris baru tersebut tetap muncul di tabel.
+
+PERILAKU YANG DIHARAPKAN:
+1. Saat user sedang mengisi baris BARU (baris add detail), lalu klik tombol X ATAU menekan ESC:
+   - Baris baru tersebut harus LANGSUNG DIHAPUS dari DOM (tidak muncul lagi di tabel).
+   - Jika setelah dihapus tabel menjadi kosong (tidak ada baris tersisa), maka otomatis sediakan 1 baris kosong baru yang siap diisi.
+   - Fokus kursor harus dikembalikan ke baris sebelumnya yang valid (jika ada), atau ke baris kosong baru tersebut.
+2. Saat user sedang mengedit baris LAMA (data yang sudah ada), lalu klik X ATAU ESC:
+   - Nilai input harus di-revert (dikembalikan) ke nilai sebelum diedit.
+   - Baris keluar dari mode edit (kembali readonly).
+   - Baris TIDAK dihapus.
+
+INSTRUKSI TEKNIS:
+- Pastikan event listener untuk tombol cancel dan tombol ESC menggunakan event delegation yang benar, contoh: $(document).on('click', '[data-act="cancel"]', function(e) { ... });
+- Pastikan fungsi cancel benar-benar memanggil .remove() pada elemen <tr> jika itu baris baru, atau me-revert value jika itu baris edit.
+- Cek apakah ada konflik antar event listener (misal ada dua binding untuk data-act="cancel" yang saling menimpa). Bersihkan dan buat satu handler yang bersih.
+- Tambahkan console.log di dalam handler untuk memastikan fungsi cancel terpanggil saat tombol diklik atau ESC ditekan, lalu hapus console.log setelah selesai debugging.
+
+Validasi:
+- Klik tombol "+" untuk menambah baris baru -> isi sebagian -> klik X -> baris harus hilang.
+- Klik tombol "+" untuk menambah baris baru -> isi sebagian -> tekan ESC -> baris harus hilang.
+- Edit baris lama -> klik X -> nilai kembali seperti semula, baris tetap ada.
+- Hapus semua baris -> harus muncul minimal 1 baris kosong baru secara otomatis.
+
+Tolong berikan perbaikan kode JS-nya dan pastikan tidak ada konflik dengan kode sebelumnya.
+
+
+#prompt fixing ke 5
+Cline, saat ini di tabel detail penerimaan barang (modul add_pnm_brng_mst) kolom Batch/Spec belum berfungsi sebagai dropdown Select2 yang bisa dipilih. Tolong implementasikan perbaikan berikut. Tetap FOKUS HANYA PADA MODUL INI, jangan ubah modul lain.
+
+PERBAIKAN KOLOM BATCH/SPEC:
+1. Inisialisasi Select2 pada elemen input/select dengan id atau class "batch" (sesuaikan dengan elemen yang ada di tabel detail).
+   Contoh: $("#batch").select2({ ... });
+2. Data Batch/Spec harus bergantung pada "ID Barang" yang dipilih di baris yang sama.
+   - Saat ID Barang dipilih, lakukan AJAX request ke endpoint di Controller modul add_pnm_brng_mst (buat endpoint baru jika belum ada di modul ini) untuk mengambil list Batch/Spec berdasarkan ID Barang tersebut.
+   - Kosongkan/reset nilai Batch/Spec saat ID Barang diganti.
+   - Jika ID Barang belum dipilih, dropdown Batch/Spec dalam keadaan disabled dengan placeholder "Pilih Barang Terlebih Dahulu".
+3. Pastikan navigasi keyboard berjalan:
+   - User TAB dari ID Barang -> fokus masuk ke Batch/Spec -> Select2 otomatis terbuka -> kolom search otomatis fokus dan bisa langsung diketik.
+   - Setelah memilih Batch/Spec dengan ENTER, fokus otomatis pindah ke kolom Satuan (atau kolom berikutnya sesuai urutan tabel).
+   - Tekan ESC di dalam Select2 yang terbuka harus menutup dropdown dan mengembalikan fokus ke elemen sebelumnya.
+4. Tampilkan indikator loading (misal teks "Loading..." pada dropdown) saat AJAX request Batch/Spec sedang berjalan.
+5. Jika Batch/Spec tidak ditemukan untuk ID Barang tersebut, tampilkan pesan kosong yang informatif di dropdown.
+
+CATATAN PENTING:
+- Jika elemen Batch/Spec dibuat secara dinamis per baris tabel, pastikan inisialisasi Select2 dilakukan setiap kali baris baru ditambahkan (di dalam fungsi addRow), bukan hanya sekali di document ready.
+- Pastikan selector Select2 untuk baris dinamis menggunakan class, bukan id (karena id harus unik). Contoh: $('.batch-select').select2({ ... });
+- Jangan lupa destroy Select2 terlebih dahulu jika baris di-render ulang untuk menghindari duplikasi inisialisasi.
+
+Validasi:
+- Pilih ID Barang -> Dropdown Batch/Spec aktif dan terisi -> bisa dicari via keyboard -> pilih -> fokus lanjut ke kolom Satuan.
+- Ganti ID Barang -> Batch/Spec reset dan memuat data baru.
+- Tambah baris baru -> Select2 Batch/Spec di baris baru berfungsi normal.
+
+Tolong berikan perbaikan kode JS (termasuk inisialisasi Select2 per baris, event listener AJAX, dan handling keyboard) serta tambahan endpoint di Controller modul ini jika diperlukan.
+
+#prompt fixing 6
+
+Cline, saat ini tombol "Simpan Final" (#btnFinalSimpanPnm) mewajibkan admin untuk mencentang checkbox terlebih dahulu sebelum data bisa disimpan. Ini memperlambat proses input transaksi. Tolong perbaiki HANYA di modul add_pnm_brng_mst ini. Jangan ubah modul lain.
+
+PERBAIKAN ALUR SIMPAN FINAL (#btnFinalSimpanPnm):
+1. Tombol "Simpan Final" harus LANGSUNG memproses SEMUA baris data yang valid di tabel, TANPA harus mencentang checkbox terlebih dahulu.
+   - Baris dianggap valid jika: ID Barang terisi, Qty > 0, dan field wajib lainnya terisi.
+   - Baris yang kosong (belum diisi sama sekali) otomatis diabaikan.
+2. Checkbox "Pilih" HANYA digunakan untuk fitur hapus massal (btnDeleteDetail), BUKAN untuk syarat menyimpan.
+3. Hapus validasi yang memblokir proses simpan jika tidak ada baris yang dicentang. Ganti dengan validasi: "Pastikan ada minimal 1 baris data yang valid (terisi ID Barang dan Qty) sebelum menyimpan."
+4. Saat tombol #btnFinalSimpanPnm diklik:
+   - Lakukan pengecekan cepat: jika tidak ada baris valid, tampilkan alert "Tidak ada data untuk disimpan."
+   - Jika ada baris valid, langsung kumpulkan data dari semua baris valid (abaikan baris kosong) dalam bentuk array/JSON.
+   - Tampilkan konfirmasi singkat: "Simpan X baris data penerimaan?" (opsional, bisa langsung simpan jika dirasa konfirmasi memperlambat).
+   - Kirim data ke Controller modul ini untuk diproses.
+5. Pastikan baris yang sedang dalam mode edit (belum di-commit dengan ENTER) juga ikut tersimpan saat tombol Simpan Final diklik. Jadi tidak perlu memaksa user menekan ENTER dulu.
+
+PRINSIP UTAMA:
+- Minimalkan gerakan/klik yang tidak perlu. Admin harus bisa mengetik data dengan cepat, lalu langsung klik "Simpan Final" tanpa langkah tambahan.
+- Checkbox hanya sebagai alat bantu hapus massal, bukan syarat simpan.
+
+Validasi:
+- Isi 3 baris data tanpa mencentang apa pun -> klik Simpan Final -> 3 baris tersimpan.
+- Isi 2 baris data, 1 baris kosong -> klik Simpan Final -> hanya 2 baris valid yang dikirim.
+- Tidak ada baris valid -> klik Simpan Final -> muncul alert "Tidak ada data untuk disimpan."
+
+Tolong berikan perbaikan kode JS-nya (handler untuk #btnFinalSimpanPnm) dan sebutkan jika ada perubahan di sisi Controller/Model modul ini.
+
+
+# prompt fixing 7
+Cline, ada perbaikan perilaku (behavior) pada tabel detail penerimaan barang (modul add_pnm_brng_mst) terkait baris "add detail" saat halaman di-refresh. Tolong perbaiki HANYA di modul ini, jangan ubah modul lain.
+
+PERBAIKAN PERILAKU SAAT REFRESH (F5):
+1. Saat halaman pertama kali dimuat (termasuk setelah refresh F5), tabel detail barang harus dalam keadaan BERSIH / KOSONG.
+   - JANGAN otomatis membuat baris input baru (baris "add detail") saat halaman di-load.
+   - Tampilkan empty state yang informatif, misalnya teks: "Belum ada data detail. Klik tombol + untuk menambah barang." atau sejenisnya di dalam tabel.
+2. Baris input baru (baris "add detail") HANYA boleh muncul ketika:
+   - Admin mengklik tombol "+" (#btnAddDetail), ATAU
+   - Admin mulai mengetik/memicu event input di tabel (jika memang ada mekanisme tersebut), ATAU
+   - Admin menekan tombol keyboard tertentu yang sudah disepakati (misal: menekan tombol "+" di keyboard atau shortcut lain).
+3. Pastikan logika inisialisasi tabel di JavaScript tidak memanggil fungsi addRow() secara otomatis di document.ready atau window.onload.
+4. Jika sebelumnya ada kode yang memaksa baris baru muncul saat load, hapus atau ubah logika tersebut.
+
+PRINSIP UTAMA:
+- Halaman dalam keadaan bersih saat dibuka/refresh.
+- Admin yang memegang kendali penuh kapan ingin mulai menambah data (dengan klik tombol + atau mengetik).
+- Jangan memunculkan baris input yang tidak diminta oleh admin.
+
+Validasi:
+- Buka halaman / refresh F5 -> tabel kosong, ada teks empty state, TIDAK ada baris input otomatis.
+- Klik tombol "+" -> baris input baru muncul dan siap diisi.
+- Setelah simpan atau batal -> kembali ke keadaan sesuai aturan (jika semua baris dihapus, tampilkan empty state lagi, bukan baris kosong otomatis, kecuali memang sedang dalam sesi penambahan).
+
+Tolong berikan perbaikan kode JS-nya (bagian inisialisasi tabel dan fungsi addRow) agar perilaku ini berjalan sesuai harapan.
+
+
+# prompt fixing 8
+
+Cline, ada 2 tugas perbaikan yang harus dikerjakan. Tolong kerjakan dengan hati-hati dan FOKUS HANYA PADA MODUL YANG DIMAKSUD. Jangan ubah modul lain.
+
+=========================================
+TUGAS 1: PERBAIKI BUG TOMBOL HAPUS BARIS (#btnDeleteDetail)
+=========================================
+Modul: add_pnm_brng_mst
+URL: http://localhost:85/ci4-85/persediaan/trans/add_pnm_brng_mst
+
+Masalah:
+Tombol hapus baris sudah ada di DOM:
+<button type="button" id="btnDeleteDetail" class="btn btn-danger btn-lg action-btn" title="Hapus baris yang dicentang" onclick="btnDeleteDetail()" autocomplete="off">
+    <i class="fa fa-trash"></i>
+</button>
+
+Tapi setelah checkbox dicentang, tombol ini TIDAK bisa menghapus baris detail dari tabel. Tidak terjadi apa-apa saat diklik.
+
+Yang harus diperbaiki:
+1. Pastikan fungsi btnDeleteDetail() benar-benar terdefinisi dan bisa diakses secara global (window.btnDeleteDetail = function() { ... }).
+2. Fungsi harus:
+   - Mengambil semua baris yang checkbox-nya dicentang.
+   - Menghapus elemen <tr> baris-baris tersebut dari DOM.
+   - Jika setelah dihapus tabel menjadi kosong, tampilkan empty state "Belum ada data detail. Klik tombol + untuk menambah barang." (JANGAN otomatis membuat baris baru).
+   - Reset checkbox "Select All" di header jika ada.
+   - Hitung ulang Grand Total setelah penghapusan.
+3. Pastikan event listener menggunakan event delegation jika baris dibuat secara dinamis.
+4. Cek apakah ada error di console browser saat tombol diklik (misal: fungsi tidak ditemukan, selector salah, atau ada konflik dengan kode lain). Perbaiki akar masalahnya.
+5. Tambahkan konfirmasi sebelum menghapus: "Hapus X baris yang dipilih?" agar admin tidak sengaja menghapus.
+
+Validasi:
+- Centang 2 baris -> klik tombol hapus -> muncul konfirmasi -> baris terhapus -> Grand Total terupdate.
+- Hapus semua baris -> tabel menampilkan empty state.
+- Klik hapus tanpa mencentang -> muncul alert "Pilih minimal 1 baris untuk dihapus."
+
+=========================================
+TUGAS 2: PERBAIKI GRID & TAMBAH TOMBOL LAPORAN JURNAL DI HALAMAN LIST
+=========================================
+Modul: pnm_barang (halaman list setelah final transaksi)
+URL: http://localhost:85/ci4-85/persediaan/trans/pnm_barang
+
+Yang harus dikerjakan:
+1. Perbaiki tampilan grid/list transaksi penerimaan barang agar lebih rapi dan modern (mengikuti style yang konsisten dengan modul ini).
+   - Pastikan kolom-kolom penting tampil jelas: No. Transaksi, Tanggal, Cabang, Bagian/Costcenter, Referensi, Total, Status, Aksi.
+   - Gunakan DataTables (jika belum) atau rapikan CSS grid yang ada.
+   - Tambahkan fitur pencarian (search) dan pagination yang berfungsi.
+2. Tambahkan tombol aksi di setiap baris di kolom "Aksi":
+   - Tombol "Detail" (lihat detail transaksi).
+   - Tombol "Laporan Jurnal Transaksi" (icon buku/jurnal, misal fa-book atau fa-file-text).
+3. Tombol "Laporan Jurnal Transaksi" saat diklik harus memunculkan halaman/modal yang menampilkan JURNAL TRANSAKSI PENERIMAAN BARANG.
+   - Referensi: lihat bagaimana modul "detail lpb" menampilkan jurnal transaksi penerimaan barang. Tiru struktur dan logikanya, TAPI terapkan di modul pnm_barang ini.
+   - Jurnal harus menampilkan: No. Jurnal, Tanggal, Keterangan/Akun Debit, Akun Kredit, Nominal, dan referensi transaksi.
+   - Jika perlu endpoint baru di Controller pnm_barang untuk mengambil data jurnal, buatkan HANYA di Controller modul ini. Jangan ubah Controller modul lain.
+4. Pastikan tombol dan link tidak mengganggu fungsi lain yang sudah ada.
+
+BATAS RUANG LINGKUP:
+- ✅ Boleh diubah: View, JS, CSS, Controller milik add_pnm_brng_mst dan pnm_barang.
+- ❌ Dilarang diubah: Modul lain (purchase, master barang, master gudang, detail lpb, dll). Cukup BACA (read-only) detail lpb untuk referensi jurnal, jangan modifikasi filenya.
+
+Tolong kerjakan Tugas 1 terlebih dahulu, lalu Tugas 2. Berikan kode perbaikannya secara terpisah agar mudah saya review.
+
+
+#prompt fixing 9 tampilan layout trx
+
+Cline, tolong sesuaikan tata letak (layout) halaman list transaksi penerimaan barang pada modul pnm_barang. FOKUS HANYA PADA MODUL INI, jangan ubah modul lain.
+
+URL yang diperbaiki: http://localhost:85/ci4-85/persediaan/trans/pnm_barang
+URL referensi layout: http://localhost:85/ci4-85/purchase/trans/lpb
+
+TUGAS:
+1. Sesuaikan tata letak halaman pnm_barang agar konsisten dengan halaman lpb (purchase/trans/lpb).
+   - Tiru struktur layout-nya: posisi search bar, filter, tombol aksi di atas tabel, kolom-kolom tabel, pagination, dan styling CSS.
+   - CUKUP TIRU GAYA DAN TATA LETAKNYA. Jangan ubah file View/JS milik modul lpb (read-only).
+   - Terapkan penyesuaian HANYA pada file View/JS/CSS milik modul pnm_barang.
+
+2. KHUSUS posisi tombol "Detail" di kolom Aksi:
+   - Sesuaikan posisi dan styling tombol Detail agar konsisten dengan posisi tombol detail di halaman lpb.
+   - Pastikan urutan tombol di kolom Aksi rapi (misal: Detail, Laporan Jurnal, dst).
+   - Gunakan ukuran, warna, dan icon yang konsisten dengan style lpb.
+
+3. Pastikan tabel di pnm_barang memiliki:
+   - Header kolom yang sejajar dan rapi.
+   - Fitur search dan pagination yang berfungsi.
+   - Tombol aksi yang sejajar secara vertikal/horizontal dengan rapi di setiap baris.
+
+4. Jangan mengubah fungsionalitas yang sudah ada (misal: tombol Laporan Jurnal yang sudah kita buat sebelumnya harus tetap berfungsi).
+
+BATAS RUANG LINGKUP:
+- ✅ Boleh diubah: File View, JS, CSS milik modul pnm_barang.
+- ❌ Dilarang diubah: File milik modul lpb (purchase) atau modul lain. Cukup BACA (read-only) untuk referensi layout.
+
+Validasi:
+- Buka halaman pnm_barang -> tata letak konsisten dengan lpb -> tombol Detail berada di posisi yang sama dengan di lpb -> semua tombol aksi berfungsi.
+
+Tolong berikan kode perbaikannya.
+
+
+#prompt fixing 10 
+# PROMPT FIXING 10 (REVISI FINAL): PERBAIKAN DETAIL PENERIMAAN BARANG & LAPORAN JURNAL TRANSAKSI
+
+Cline, tolong perbaiki halaman detail penerimaan barang dan tampilan laporan jurnal transaksinya. FOKUS HANYA PADA MODUL detail_pnm_brng_mst. Jangan ubah modul lain.
+
+## KONTEKS
+- URL halaman: http://localhost:85/ci4-85/persediaan/trans/detail_pnm_brng_mst?id=5442522f323631312f505430303031&docno=5442522f323631312f505430303031
+- Framework: CodeIgniter 4
+- Tabel Header: `sc_trx.pnm_brng_mst`
+- Tabel Detail: `sc_trx.pnm_brng_dtl`
+- Tabel Jurnal Referensi: lihat modul detail_lpb (read-only)
+- Path file fisik (verifikasi sesuai struktur folder):
+  * View: app/Views/persediaan/trans/detail_pnm_brng_mst.php
+  * Controller: app/Controllers/Persediaan/... (sesuaikan)
+  * Model: app/Models/... (sesuaikan)
+
+## LANGKAH AWAL (WAJIB)
+1. BACA file View detail_pnm_brng_mst saat ini.
+2. BACA file View detail_lpb (referensi untuk jurnal transaksi). Cari path-nya di app/Views/purchase/trans/detail_lpb.php atau sejenisnya.
+3. BACA Model/Controller yang menangani halaman ini.
+4. Cek struktur tabel `sc_trx.pnm_brng_mst` dan `sc_trx.pnm_brng_dtl` (kolom apa saja).
+5. Identifikasi masalah: apakah data header kosong, data detail kosong, Grand Total salah, jurnal tidak muncul, atau layout berantakan.
+
+## TUGAS PERBAIKAN
+
+### 1. Perbaikan Query Data Header (pnm_brng_mst)
+- Query: `SELECT * FROM sc_trx.pnm_brng_mst WHERE ...` (sesuaikan dengan parameter id/docno dari URL).
+- Jika parameter `id` dan `docno` berupa base64, lakukan decode terlebih dahulu jika diperlukan.
+- Pastikan semua field header tampil di View: No. Transaksi, Tanggal, Cabang/Job, Bagian/Costcenter, Referensi, Pemohon, Keterangan, Total.
+- Jika ada field kosong padahal di DB ada isinya, cek nama kolom yang benar di tabel.
+
+### 2. Perbaikan Query Data Detail (pnm_brng_dtl)
+- Query: `SELECT * FROM sc_trx.pnm_brng_dtl WHERE ...` (JOIN dengan header via kolom yang sesuai, misal `docno`).
+- Field detail yang harus tampil: Gudang, ID Barang, Nama Barang, Batch/Spec, Satuan, Qty, Harga, Nilai, Keterangan.
+- Pastikan Grand Total dihitung dari SUM(Nilai) atau SUM(Qty * Harga) dari tabel detail.
+
+### 3. Perbaikan Tampilan View Detail
+- Rapikan layout header dan tabel detail (tiru style dari detail_lpb, read-only).
+- Format angka (Qty, Harga, Nilai, Grand Total) dengan pemisah ribuan dan desimal.
+- Pastikan tabel detail rapi (header sejajar, padding konsisten).
+
+### 4. PERBAIKAN LAPORAN JURNAL TRANSAKSI (FOKUS UTAMA)
+- Saat ini tampilan jurnal transaksi di detail_pnm_brng_mst belum sesuai standar.
+- BACA (read-only) file View detail_lpb untuk melihat bagaimana jurnal transaksi ditampilkan di sana:
+  * Struktur tabel jurnal (kolom: No. Jurnal, Tanggal, Keterangan, Akun Debit, Akun Kredit, Nominal, dll).
+  * Styling CSS yang dipakai.
+  * Format angka dan layout.
+- Terapkan struktur dan styling yang SAMA PERSIS di halaman detail_pnm_brng_mst.
+- Pastikan data jurnal diambil dari query yang benar:
+  * Cek tabel jurnal yang berelasi dengan `sc_trx.pnm_brng_mst` (kemungkinan `sc_trx.jurnal_mst` / `sc_trx.jurnal_dtl` atau sejenisnya).
+  * Jika belum ada query untuk jurnal, buatkan di Model/Controller modul ini (jangan ubah Model/Controller modul lain).
+- Jika tombol "Laporan Jurnal" belum ada di halaman detail, tambahkan tombol tersebut dan hubungkan ke fungsi yang menampilkan jurnal (bisa modal, halaman baru, atau section di bawah detail).
+
+## BATAS RUANG LINGKUP
+- ✅ Boleh diubah: View, JS, CSS, Controller, Model milik modul detail_pnm_brng_mst.
+- ❌ Dilarang diubah: File milik modul lain (detail_lpb, purchase, master, dll). Cukup BACA (read-only) sebagai referensi.
+
+## VALIDASI
+- Buka URL detail -> data header dari `pnm_brng_mst` tampil lengkap -> tabel detail dari `pnm_brng_dtl` tampil -> Grand Total benar -> tombol Laporan Jurnal berfungsi -> tampilan jurnal SAMA dengan detail_lpb -> tidak ada error di console/log.
+
+## OUTPUT YANG DIHARAPKAN
+- Berikan kode perbaikan untuk Model (query), Controller, dan View.
+- Tunjukkan perbandingan tampilan jurnal sebelum dan sesudah perbaikan (jika memungkinkan).
+- Sebutkan file apa saja yang Anda ubah.
+
+Silakan mulai dengan inspeksi struktur tabel `pnm_brng_mst` dan `pnm_brng_dtl`, serta file View detail_lpb sebagai referensi jurnal. Lalu berikan perbaikannya.
+
+#prompt fixing 11
+Cline, tambahkan tindakan preventive (pencegahan) pada tombol "Simpan Final" (#btnFinalSimpanPnm) di modul add_pnm_brng_mst agar tidak terjadi double submit (dua kali klik) yang bisa menyebabkan error atau data ganda. FOKUS HANYA PADA MODUL INI, jangan ubah modul lain.
+
+## MASALAH
+Saat ini, jika user mengklik tombol #btnFinalSimpanPnm dua kali dengan cepat (double click), atau menekan ENTER berulang kali saat fokus di tombol tersebut, proses simpan bisa terpanggil dua kali. Ini berisiko:
+- Data transaksi tersimpan ganda (duplikat).
+- Error karena request AJAX/Form berjalan bersamaan.
+- Loading spinner/overlay tidak konsisten.
+
+## YANG HARUS DIPERBAIKI
+
+### 1. Disable Tombol Saat Proses Simpan Berjalan
+- Saat tombol #btnFinalSimpanPnm diklik pertama kali, LANGSUNG nonaktifkan tombol tersebut:
+  * Tambahkan atribut `disabled` pada tombol.
+  * Ubah teks tombol menjadi "Menyimpan..." atau tambahkan ikon loading (misal `<i class="fa fa-spinner fa-spin"></i> Menyimpan...`).
+  * Simpan state teks/atribut asli agar bisa dikembalikan jika proses gagal.
+- Tombol TIDAK BOLEH bisa diklik lagi sampai proses simpan selesai (sukses atau gagal).
+
+### 2. Flag/Guard di JavaScript
+- Tambahkan variabel flag global, misal `let isSaving = false;`.
+- Di awal handler klik #btnFinalSimpanPnm:
+  ```javascript
+  if (isSaving) return; // cegah double submit
+  isSaving = true;

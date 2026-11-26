@@ -22,6 +22,28 @@
     </div><!-- /.container-fluid -->
 </div>
 
+<?php if (session()->getFlashdata('success')): ?>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <?= esc(session()->getFlashdata('success')) ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+<?php endif; ?>
+
+<?php if (session()->getFlashdata('error')): ?>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <?= esc(session()->getFlashdata('error')) ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+<?php endif; ?>
+
+<?php if (session()->getFlashdata('periode_error')): ?>
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <i class="fa fa-lock"></i>
+        <?= esc(session()->getFlashdata('periode_error')) ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+<?php endif; ?>
+
 <?php echo $message;?>
 <?php echo $showUnfinish; ?>
 <style>
@@ -283,19 +305,18 @@
                 </div>
             </div><!-- /.card-header -->
             <div class="card-body table-responsive" style='overflow-x:scroll;'>
-                <table id="tPmkBrg" class="table table-bordered table-striped" >
-                    <thead>
+                <table id="tPmkBrg" class="table table-bordered table-striped" style="width:100%;" cellspacing="0">
+                    <thead class="text-center">
                     <tr>
-                        <th width="1%">No.</th>
-                        <th width="2%">Action</th>
-                        <th>Document</th>
-                        <th>Cabang</th>
-                        <th>Bagian</th>
-                        <th>Docdate</th>
-                        <th>Description</th>
-                        <th>User</th>
-                        <th>Status</th>
-
+                        <th style="min-width:10px; text-align:center; vertical-align:middle;">No.</th>
+                        <th style="min-width:10px; text-align:center; vertical-align:middle;">Action</th>
+                        <th style="min-width:130px; text-align:center; vertical-align:middle;">Docno</th>
+                        <th style="min-width:100px; text-align:center; vertical-align:middle;">Tanggal</th>
+                        <th style="min-width:150px; text-align:center; vertical-align:middle;">Cabang</th>
+                        <th style="min-width:170px; text-align:center; vertical-align:middle;">Bagian / Cost Center</th>
+                        <th style="min-width:120px; text-align:center; vertical-align:middle;">Referensi</th>
+                        <th style="min-width:140px; text-align:center; vertical-align:middle;">Total</th>
+                        <th style="min-width:90px; text-align:center; vertical-align:middle;">Status</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -362,7 +383,72 @@
 
 
 
+<!-- =========================================================
+     MODAL LAPORAN JURNAL TRANSAKSI PEMAKAIAN BARANG
+========================================================= -->
+<div class="modal fade" id="modalLaporanJurnalpmk" tabindex="-1"
+     aria-labelledby="modalLaporanJurnalpmkLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalLaporanJurnalpmkLabel">
+                    <i class="fa fa-book"></i> Laporan Jurnal Transaksi Pemakaian Barang
+                </h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="pmk-journal-info">
+                    No. Transaksi : <span class="pmk-journal-docno">-</span>
+                </div>
+
+                <div class="table-responsive">
+                    <table id="tableLaporanJurnalpmk" class="table table-bordered table-striped">
+                        <thead>
+                        <tr>
+                            <th width="40">No</th>
+                            <th width="95">Tanggal</th>
+                            <th width="160">No. Jurnal</th>
+                            <th>Keterangan / Akun</th>
+                            <th class="text-end" width="130">Debet</th>
+                            <th class="text-end" width="130">Kredit</th>
+                            <th width="180">Referensi</th>
+                        </tr>
+                        </thead>
+                        <tbody></tbody>
+                        <tfoot>
+                        <tr>
+                            <td colspan="4" class="text-end"><b>TOTAL</b></td>
+                            <td class="text-end" id="jurnalTotalDebet">0.00</td>
+                            <td class="text-end" id="jurnalTotalKredit">0.00</td>
+                            <td></td>
+                        </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fa fa-times"></i> Close
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<?php
+/* cache-busting JS khusus halaman list PMK */
+$pmkListJsRel = 'assets/pagejs/persediaan/pmk_brng/pmk_brng_list.js';
+$pmkListJsAbs = (defined('FCPATH') ? FCPATH : '') . $pmkListJsRel;
+$pmkListJsVer = is_file($pmkListJsAbs) ? filemtime($pmkListJsAbs) : date('YmdHis');
+?>
 <script type="application/javascript" src="<?= base_url('assets/pagejs/persediaan/pmk_brng/pmk_brng.js') ?>"></script>
+<script type="application/javascript" src="<?= base_url($pmkListJsRel) ?>?v=<?= $pmkListJsVer ?>"></script>
 <script type="text/javascript">
     $(function() {
         $("#example1").dataTable();

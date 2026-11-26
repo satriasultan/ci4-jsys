@@ -743,6 +743,313 @@ class Finance extends BaseController
             'message' => $message
         ]);
     }
+    /**
+     * Ambil seluruh baris detail draft JUP (sc_tmp.jup_dtl) untuk grid inline addJUP.
+     *
+     * Dipakai oleh assets/pagejs/finance/jup_add.js (jupLoadDraft).
+     */
+    public function getJUPDraftRows()
+    {
+        $docno = strtoupper(trim((string) $this->request->getPost('docno')));
+        $nama  = trim((string) $this->session->get('nama'));
+
+        if ($docno === '' || $nama === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Nomor jurnal belum terbentuk.',
+                'rows'    => [],
+            ]);
+        }
+
+        $rows = $this->db->table('sc_tmp.jup_dtl')
+            ->select('idurut, idcoa, nmcoa, dk, cabang, remarks, nilai')
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->orderBy('idurut', 'ASC')
+            ->get()
+            ->getResultArray();
+
+        $balance = $this->getJUPTempBalance($docno);
+
+        return $this->response->setJSON([
+            'success'      => true,
+            'docno'        => $docno,
+            'rows'         => $rows,
+            'total_debit'  => $balance['total_debit'],
+            'total_kredit' => $balance['total_kredit'],
+            'balance'      => $balance['balance'],
+        ]);
+    }
+
+    /**
+     * Simpan seluruh baris grid JUP sekaligus (replace detail draft).
+     *
+     * Header sc_tmp.jup dipakai ulang / dibuat bila belum ada, lalu seluruh
+     * baris grid ditulis ulang ke sc_tmp.jup_dtl. Hal ini menjaga agar draft
+     * yang difinalisasi oleh finalEntryJUP() hanya berisi satu header + satu
+     * set detail milik user yang sedang login.
+     */
+    public function saveJUPDetailsBulk()
+    {
+        $nama       = trim((string) $this->session->get('nama'));
+        $docno      = strtoupper(trim((string) $this->request->getPost('docno')));
+        $docdate    = trim((string) $this->request->getPost('docdate'));
+        $cabang     = strtoupper(trim((string) $this->request->getPost('cabang')));
+        $keterangan = strtoupper(trim((string) $this->request->getPost('keterangan')));
+
+        if ($nama === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Session berakhir, silakan login ulang.',
+            ]);
+        }
+
+        if ($docno === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Nomor jurnal belum terbentuk.',
+            ]);
+        }
+
+        if ($cabang === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Cabang / Job header belum dipilih.',
+            ]);
+        }
+
+        $rows = json_decode((string) $this->request->getPost('rows'), true);
+
+        if (!is_array($rows) || count($rows) === 0) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Detail perkiraan masih kosong.',
+            ]);
+        }
+
+        // Normalisasi tanggal header (input memakai format YYYY-MM-DD).
+        $docdateDb = null;
+
+        if ($docdate !== '') {
+            foreach (['Y-m-d', 'd-m-Y', 'd/m/Y', 'Y/m/d'] as $format) {
+                $parsed = \DateTime::createFromFormat($format, $docdate);
+
+                if ($parsed !== false) {
+                    $docdateDb = $parsed->format('Y-m-d');
+                    break;
+                }
+            }
+
+            if ($docdateDb === null) {
+                $time      = strtotime($docdate);
+                $docdateDb = $time !== false ? date('Y-m-d', $time) : null;
+            }
+        }
+
+        // -----------------------------------------------------
+        // VALIDASI BARIS GRID
+        // -----------------------------------------------------
+        $clean = [];
+
+        foreach ($rows as $i => $row) {
+            $line = $i + 1;
+
+            $idcoa     = strtoupper(trim((string) ($row['idcoa'] ?? '')));
+            $nmcoa     = strtoupper(trim((string) ($row['nmcoa'] ?? '')));
+            $dk        = strtoupper(trim((string) ($row['dk'] ?? '')));
+            $cabangDtl = strtoupper(trim((string) ($row['cabang'] ?? '')));
+            $remarks   = strtoupper(trim((string) ($row['remarks'] ?? '')));
+            $nilai     = (float) str_replace(',', '', (string) ($row['nilai'] ?? '0'));
+
+            if ($idcoa === '' || $nmcoa === '') {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Baris ' . $line . ': kode / nama perkiraan belum lengkap.',
+                ]);
+            }
+
+            if ($dk !== 'D' && $dk !== 'K') {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Baris ' . $line . ': kolom Debit / Kredit belum dipilih.',
+                ]);
+            }
+
+            if ($cabangDtl === '') {
+                $cabangDtl = $cabang;
+            }
+
+            if ($remarks === '') {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Baris ' . $line . ': keterangan baris masih kosong.',
+                ]);
+            }
+
+            if (!($nilai > 0)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Baris ' . $line . ': nilai harus lebih besar dari 0.',
+                ]);
+            }
+
+            $clean[] = [
+                'idcoa'   => $idcoa,
+                'nmcoa'   => $nmcoa,
+                'dk'      => $dk,
+                'cabang'  => $cabangDtl,
+                'remarks' => $remarks,
+                'nilai'   => $nilai,
+            ];
+        }
+
+        $db = $this->db;
+        $db->transBegin();
+
+        try {
+            $now = date('Y-m-d H:i:s');
+
+            $header = $db->table('sc_tmp.jup')
+                ->select('idurut, docno, docnotmp')
+                ->where('docno', $docno)
+                ->get()
+                ->getRowArray();
+
+            // -------------------------------------------------
+            // Aplikasi hanya mendukung satu draft JUP per user.
+            // Draft baru milik user (bukan salinan dokumen yang sedang
+            // direvisi) dibersihkan agar finalEntryJUP() tidak salah
+            // mengambil header.
+            // -------------------------------------------------
+            $otherDrafts = $db->table('sc_tmp.jup')
+                ->select('docno, docnotmp')
+                ->where('inputby', $nama)
+                ->where('docno <>', $docno)
+                ->get()
+                ->getResultArray();
+
+            foreach ($otherDrafts as $draft) {
+                $draftDocno = trim((string) ($draft['docno'] ?? ''));
+                $draftRef   = trim((string) ($draft['docnotmp'] ?? ''));
+
+                if ($draftDocno === '' || $draftRef !== '') {
+                    continue; // salinan revisi dokumen final, jangan dihapus
+                }
+
+                $db->table('sc_tmp.jup_dtl')->where('docno', $draftDocno)->delete();
+                $db->table('sc_tmp.jup')
+                    ->where('docno', $draftDocno)
+                    ->where('inputby', $nama)
+                    ->delete();
+            }
+
+            // -------------------------------------------------
+            // HEADER
+            // -------------------------------------------------
+            if (!$header) {
+                $db->table('sc_tmp.jup')->insert([
+                    'docno'      => $docno,
+                    'docdate'    => $docdateDb,
+                    'cabang'     => $cabang,
+                    'keterangan' => $keterangan,
+                    'status'     => 'E',
+                    'inputby'    => $nama,
+                    'inputdate'  => $now,
+                ]);
+            } else {
+                $updateHeader = [
+                    'cabang'     => $cabang,
+                    'keterangan' => $keterangan,
+                    'updateby'   => $nama,
+                    'updatedate' => $now,
+                ];
+
+                if ($docdateDb !== null) {
+                    $updateHeader['docdate'] = $docdateDb;
+                }
+
+                $db->table('sc_tmp.jup')
+                    ->where('docno', $docno)
+                    ->update($updateHeader);
+            }
+
+            // -------------------------------------------------
+            // DETAIL (replace)
+            // -------------------------------------------------
+            $db->table('sc_tmp.jup_dtl')->where('docno', $docno)->delete();
+
+            $seq = 0;
+
+            foreach ($clean as $row) {
+                $seq++;
+
+                // uniqueid tetap unik walau COA sama pada satu dokumen.
+                $uniqueid = hash('sha256', $row['nmcoa'] . '|' . $docno . '|' . $nama . '|' . $now . '|' . $seq);
+
+                $db->table('sc_tmp.jup_dtl')->insert([
+                    'docno'     => $docno,
+                    'idcoa'     => $row['idcoa'],
+                    'nmcoa'     => $row['nmcoa'],
+                    'dk'        => $row['dk'],
+                    'cabang'    => $row['cabang'],
+                    'remarks'   => $row['remarks'],
+                    'nilai'     => $row['nilai'],
+                    'status'    => 'F',
+                    'inputby'   => $nama,
+                    'inputdate' => $now,
+                    'uniqueid'  => $uniqueid,
+                ]);
+            }
+
+            // -------------------------------------------------
+            // BALANCE HEADER
+            // -------------------------------------------------
+            $balance = $this->getJUPTempBalance($docno);
+
+            $db->table('sc_tmp.jup')
+                ->where('docno', $docno)
+                ->update([
+                    'balance'    => $balance['balance'],
+                    'updateby'   => $nama,
+                    'updatedate' => $now,
+                ]);
+
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal menyimpan detail JUP.',
+                ]);
+            }
+
+            $db->transCommit();
+
+            return $this->response->setJSON([
+                'success'      => true,
+                'docno'        => $docno,
+                'message'      => 'Detail JUP berhasil disimpan.',
+                'total_debit'  => $balance['total_debit'],
+                'total_kredit' => $balance['total_kredit'],
+                'balance'      => $balance['balance'],
+            ]);
+
+        } catch (\Throwable $e) {
+            $db->transRollback();
+
+            log_message('error', 'saveJUPDetailsBulk gagal menyimpan detail {docno}: {pesan}', [
+                'docno' => $docno,
+                'pesan' => $e->getMessage(),
+            ]);
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Gagal menyimpan detail JUP: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+
 
 
     public function updateStatusPO()

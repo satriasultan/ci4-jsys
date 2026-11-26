@@ -3334,6 +3334,18 @@ class Persediaan extends BaseController
         $canView   = isset($datadtl['dtl_akses']['a_view'])   && trim($datadtl['dtl_akses']['a_view']) === 't';
         $canInput  = isset($datadtl['dtl_akses']['a_input'])  && trim($datadtl['dtl_akses']['a_input']) === 't';
 
+            /* ====== PERIODE CLOSING TERAKHIR (untuk disable tombol Update) ====== */
+            $closingPeriode = $this->m_persediaan->q_periode_closing_last()->getRowArray();
+            $closingLabel   = '' ;
+
+            if (!empty($closingPeriode)) {
+                $closingLabel = trim((string) ($closingPeriode['periode'] ?? ''));
+
+                if ($closingLabel === '') {
+                    $closingLabel = trim((string) ($closingPeriode['tanggal_akhir'] ?? ''));
+                }
+            }
+
         foreach ($list as $lm) {
             $no++;
             $row = array();
@@ -3345,62 +3357,119 @@ class Persediaan extends BaseController
             $updateBtn = '';
             $detailBtn = '';
             $printBtn  = '';
+            $jurnalBtn = '';
+            $clearBtn  = '';
+
+            /* docdate transaksi masuk periode yang sudah ditutup? */
+            $isClosed = $this->m_persediaan->isPeriodeClosed(trim((string) $lm->docdate), $closingPeriode);
 
             // =========================
             // Build button by access
             // =========================
 
-            if ($canUpdate && trim($lm->pemohon) == $nama && empty($lm->printby) &&
+            /* TUGAS 3: tombol Update HANYA untuk transaksi FINAL ('F' / 'P').
+               Status 'E' (Entry/Draft) tidak boleh di-update (hidden).
+               Dokumen lama tanpa pemohon (kosong) tetap boleh di-update
+               selama user punya hak a_update. */
+            $pemohon       = trim((string) $lm->pemohon);
+            $isRowOwner    = ($pemohon === '' || $pemohon === $nama);
+
+            if ($canUpdate && in_array($status, array('F', 'P'), true) && $isRowOwner && empty($lm->printby) &&
                 empty($lm->printdate) &&
                 trim($status) !== 'DITARIK '
             ) {
 
-                $updateBtn = '
-                    <a class="dropdown-item bg-warning" 
-                    href="' . base_url('persediaan/trans/updatePmkBrg') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return guardPeriodeTutup(event) && confirm(\'Update Pemakaian Barang : ' . $docno . '\')">
-                        <i class="fa fa-edit"></i> Update 
-                    </a>';
+                if ($isClosed) {
+
+                    /* docdate sudah masuk periode closing -> Update tidak dapat diklik */
+                    $closedTitle = 'Tidak dapat diupdate, periode sudah ditutup.';
+
+                    if ($closingLabel !== '') {
+                        $closedTitle = 'Tidak dapat diupdate, periode ' . $closingLabel . ' sudah ditutup.';
+                    }
+
+                    $closedTitleEsc = htmlspecialchars($closedTitle, ENT_QUOTES, 'UTF-8');
+
+                    $updateBtn = '
+                        <span class="dropdown-item bg-warning disabled pmk-item-closed"
+                              role="button"
+                              aria-disabled="true"
+                              title="' . $closedTitleEsc . '"
+                              style="cursor:not-allowed;pointer-events:auto;opacity:.65;">
+                            <i class="fa fa-edit"></i> Update
+                            <small style="font-weight:700;">(Periode Tutup)</small>
+                        </span>';
+                } else {
+
+                    $updateBtn = '
+                        <a class="dropdown-item bg-warning"
+                        href="' . base_url('persediaan/trans/updatePmkBrg') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
+                        onclick="return guardPeriodeTutup(event) && confirm(\'Update Pemakaian Barang : ' . $docno . '\')">
+                            <i class="fa fa-edit"></i> Update
+                        </a>';
+                }
             }
 
             if ($canView) {
                 $detailBtn = '
-                    <a class="dropdown-item" 
-                    style="background-color:#3badf6;" 
-                    href="' . base_url('persediaan/trans/detail_pmk_brng_mst') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'View Detail Pemakai Barang : ' . $docno . '\')">
-                        <i class="fa fa-eye"></i> Detail 
+                    <a class="dropdown-item pmk-act-detail"
+                       style="background-color:#3badf6;"
+                       href="' . base_url('persediaan/trans/detail_pmk_brng_mst') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '">
+                        <i class="fa fa-eye"></i> Detail Pemakaian Barang
+                    </a>';
+
+                /* tombol jurnal: dibuka oleh modal #modalLaporanJurnalPmk
+                   (handler .pmk-act-jurnal pada pmk_brng_list.js) */
+                $jurnalBtn = '
+                    <a class="dropdown-item pmk-act-jurnal"
+                       style="background-color:#e7f0ff;"
+                       href="#" data-docno="' . htmlspecialchars($docno, ENT_QUOTES, 'UTF-8') . '">
+                        <i class="fa fa-book"></i> Laporan Jurnal Transaksi
                     </a>';
             }
 
             if ($canPrint) {
                 $printBtn = '
-                    <a class="dropdown-item" 
-                    style="background-color:#00ff8e;" 
-                    href="' . base_url('persediaan/trans/showPrintPmkBrg') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    <a class="dropdown-item"
+                    style="background-color:#00ff8e;"
+                    href="' . base_url('persediaan/trans/showPrintPmkBrg') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
                     onclick="return guardPeriodeTutup(event) && confirm(\'Print Pemakaian Barang : ' . $docno . '\')">
-                        <i class="fa fa-print"></i> Print 
+                        <i class="fa fa-print"></i> Print
+                    </a>';
+            }
+
+            /* TUGAS 4: tombol Clear (finalisasi E -> F) hanya untuk status 'E'.
+               Konfirmasi ditampilkan sebelum proses clear dijalankan.
+               URL tanpa trailing slash agar tidak terkena redirect 301. */
+            if ($canUpdate && $status === 'E') {
+                $clearBtn = '
+                    <a class="dropdown-item pmk-act-clear"
+                       style="background-color:#28a745;color:#ffffff;"
+                       href="' . base_url('persediaan/trans/clear_pmk_brng') . '?docno=' . $docnoHex . '&id=' . $docnoHex . '"
+                       onclick="return confirm(\'Yakin ingin mem-finalisasi transaksi ini? Data tidak dapat diubah setelahnya.\')">
+                        <i class="fa fa-check-circle"></i> Clear / Finalisasi
                     </a>';
             }
 
             // =========================
-            // RULE STATUS
+            // RULE STATUS (urutan: Detail -> Jurnal -> Clear -> Update -> Print)
             // =========================
             $menuContent = '';
 
             if ($status === 'CETAK/PRINT') {
 
-                // hanya detail jika ada akses
                 if ($canView) {
                     $menuContent .= $detailBtn;
+                    $menuContent .= $jurnalBtn;
                 }
 
             } else {
 
-                // selain status tersebut → tampilkan sesuai hak akses
+                if ($canView)   $menuContent .= $detailBtn;
+                if ($canView)   $menuContent .= $jurnalBtn;
+                if ($canUpdate) $menuContent .= $clearBtn;
                 if ($canUpdate) $menuContent .= $updateBtn;
                 if ($canPrint)  $menuContent .= $printBtn;
-                if ($canView)   $menuContent .= $detailBtn;
             }
 
             // =========================
@@ -3427,44 +3496,42 @@ class Persediaan extends BaseController
                 $dropdownMenu = '';
             }
 
-            $row[] = $no;
-            $row[] = $dropdownMenu;
-
-            $row[] = $lm->docno;
-            $row[] = $lm->cabang;
-            $row[] = $lm->idcostcenter;
-            $row[] = date(
-                'd-m-Y',
-                strtotime(trim($lm->docdate))
-            );
-
-            $row[] = $lm->description;
-            $row[] = $lm->inputby;
-
             // =========================
             // STATUS BADGE
             // =========================
             $nmstatus   = trim((string) ($lm->nmstatus ?? ''));
             $statusText = $nmstatus !== '' ? $nmstatus : $status;
-            $statusUp   = strtoupper($statusText);
 
-            if (in_array($status, array('C', 'X'), true) || strpos($statusUp, 'CANCEL') !== false
-                || strpos($statusUp, 'BATAL') !== false || strpos($statusUp, 'DITARIK') !== false) {
-                $badgeClass = 'bg-danger';
-            } elseif ($status === 'P' || strpos($statusUp, 'CETAK') !== false || strpos($statusUp, 'PRINT') !== false) {
-                $badgeClass = 'bg-success';
-            } elseif ($status === 'F' || strpos($statusUp, 'FINAL') !== false || strpos($statusUp, 'APPROV') !== false) {
-                $badgeClass = 'bg-info';
-            } elseif ($status === 'E' || strpos($statusUp, 'REVIS') !== false || strpos($statusUp, 'EDIT') !== false) {
-                $badgeClass = 'bg-warning text-dark';
-            } else {
-                // 'I' / INPUT / OPEN / DRAFT / lainnya
-                $badgeClass = 'bg-secondary';
-            }
+            $badgeMap = array(
+                'F' => 'badge-info',       // FINAL USER
+                'O' => 'badge-primary',    // FINAL TRANSACTION
+                'P' => 'badge-success',    // CETAK/PRINT
+                'A' => 'badge-primary',    // APPROVED
+                'D' => 'badge-danger',     // DISAPPROVED
+                'E' => 'badge-warning',    // REVISION/EDITING
+                'I' => 'badge-secondary',  // DRAFT
+            );
+            $badgeClass = isset($badgeMap[$status]) ? $badgeMap[$status] : 'badge-secondary';
+            $statusBadge = '<div class="text-center"><span style="font-size:12px" class="badge '
+                . $badgeClass . ' w-100">'
+                . htmlspecialchars($statusText, ENT_QUOTES, 'UTF-8') . '</span></div>';
 
-            $row[] = '<div class="text-center"><span class="badge badge-status ' . $badgeClass . '">'
-                . htmlspecialchars($statusText) . '</span></div>';
+            $cabangText = trim((string) $lm->nmbranch) !== '' ? trim((string) $lm->nmbranch) : trim((string) $lm->cabang);
+            $bagianText = trim((string) $lm->nmcostcenter) !== '' ? trim((string) $lm->nmcostcenter) : trim((string) $lm->idcostcenter);
 
+            // =========================
+            // ROW DATA (urutan harus sama dengan <th> view)
+            // No | Action | Docno | Tanggal | Cabang | Bagian/CC | Referensi | Total | Status
+            // =========================
+            $row[] = $no;
+            $row[] = $dropdownMenu;
+            $row[] = htmlspecialchars($docno, ENT_QUOTES, 'UTF-8');
+            $row[] = date('d-m-Y', strtotime(trim((string) $lm->docdate)));
+            $row[] = htmlspecialchars($cabangText, ENT_QUOTES, 'UTF-8');
+            $row[] = htmlspecialchars($bagianText, ENT_QUOTES, 'UTF-8');
+            $row[] = htmlspecialchars(trim((string) $lm->docref), ENT_QUOTES, 'UTF-8');
+            $row[] = number_format((float) $lm->total, 2, '.', ',');
+            $row[] = $statusBadge;
 
             $data[] = $row;
         }
@@ -3591,7 +3658,9 @@ class Persediaan extends BaseController
 //                'idlocation_to'      => strtoupper(trim($this->request->getPost('idlocation_to'))),
 //                'idlocation_transit' => strtoupper(trim($this->request->getPost('idlocation_transit'))),
                 'status'     => 'E',
-                'description' => strtoupper(trim($this->request->getPost('description'))),
+                'description' => strtoupper(trim((string) (
+                    $this->request->getPost('header_description') ?? $this->request->getPost('description')
+                ))),
                 'inputby'    => $nama,
                 'inputdate'  => date('Y-m-d H:i:s')
             ]);
@@ -3612,15 +3681,23 @@ class Persediaan extends BaseController
         // =========================
         // AMBIL DATA DETAIL
         // =========================
-        $uniqueid = $this->request->getPost('iduniq');
-        $idbarang    = trim($this->request->getPost('idbarang'));
-        $nmbarang    = strtoupper(trim($this->request->getPost('nmbarang')));
-        $unit        = strtoupper(trim($this->request->getPost('unit')));
-        $idlocation    = trim($this->request->getPost('idlocation_dtl'));
-        $qtystock    = trim($this->request->getPost('qtystock'));
-        $batch    = trim($this->request->getPost('batch'));
+        $uniqueid    = trim((string) $this->request->getPost('iduniq'));
+        $idbarang    = trim((string) $this->request->getPost('idbarang'));
+        $nmbarang    = strtoupper(trim((string) $this->request->getPost('nmbarang')));
+        $unit        = strtoupper(trim((string) $this->request->getPost('unit')));
+        $idlocation  = trim((string) $this->request->getPost('idlocation'));
+        if ($idlocation === '') {
+            $idlocation = trim((string) $this->request->getPost('idlocation_dtl'));
+        }
+        $idcostcenter = strtoupper(trim((string) $this->request->getPost('idcostcenter')));
+        $batch       = trim((string) $this->request->getPost('batch'));
         $qty         = (float) $this->request->getPost('qty');
-        $description = strtoupper(trim($this->request->getPost('description')));
+        $val         = (float) $this->request->getPost('val');
+        $valsum      = (float) $this->request->getPost('valsum');
+        $qtystock    = (float) $this->request->getPost('qtystock');
+        $qtybase     = (float) $this->request->getPost('qty_base');
+        $docref      = strtoupper(trim((string) $this->request->getPost('docref')));
+        $description = strtoupper(trim((string) $this->request->getPost('description')));
 
         if (!$idbarang) {
             $db->transRollback();
@@ -3631,23 +3708,74 @@ class Persediaan extends BaseController
             ]);
         }
 
+        if ($idlocation === '') {
+            $db->transRollback();
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Gudang belum dipilih'
+            ]);
+        }
+
+        if (!($qty > 0)) {
+            $db->transRollback();
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Qty harus lebih besar dari 0'
+            ]);
+        }
+
+        if ($valsum <= 0) {
+            $valsum = round($qty * $val, 2);
+        }
+
+        // =========================
+        // VALIDASI STOK (READ ONLY) - BUFFERED
+        // Tidak mengurangi stok: pengurangan dilakukan trigger saat Simpan Final.
+        // Qty tidak boleh melebihi stok tersedia, yaitu stok fisik dikurangi
+        // qty baris draft LAIN pada kombinasi gudang + barang + batch yang sama.
+        // =========================
+        $stokOnhand = (float) $this->m_persediaan->q_stock_onhand_pmk($idlocation, $idbarang, $batch);
+        $stokLain   = (float) $this->m_persediaan->q_stock_booked_pmk($nama, $idlocation, $idbarang, $batch, $idurut);
+        $stokSedia  = $stokOnhand - $stokLain;
+
+        if ($stokSedia < 0) {
+            $stokSedia = 0;
+        }
+
+        if ($qty > $stokSedia) {
+            $db->transRollback();
+
+            return $this->response->setJSON([
+                'success'   => false,
+                'code'      => 'STOK',
+                'message'   => 'Qty melebihi stok tersedia. Stok tersedia: '
+                    . number_format($stokSedia, 2, '.', ',')
+                    . ' (stok fisik ' . number_format($stokOnhand, 2, '.', ',')
+                    . ' - draft lain ' . number_format($stokLain, 2, '.', ',') . ').',
+                'stok'          => $stokOnhand,
+                'stok_tersedia' => $stokSedia
+            ]);
+        }
+
         $builderDetail = $db->table('sc_tmp.pmk_brng_dtl');
 
         // =========================
-        // CEK DUPLIKASI
+        // CEK DUPLIKASI (barang + gudang + satuan + qty)
         // =========================
-        $builderDuplicate = $builderDetail
+        // BUGFIX: builder tidak boleh dipakai ulang setelah countAllResults()
+        //        karena state where-nya menempel ke query berikutnya.
+        $builderDuplicate = $db->table('sc_tmp.pmk_brng_dtl')
             ->where('docno', $docno)
-            ->where('idbarang', $idbarang)
-            ->where('nmbarang', $nmbarang)
-            ->where('unit', $unit)
-            ->where('qtystock', $qty)
-            ->where('qty', $qty)
             ->where('inputby', $nama)
-            ->where('description', $description);
+            ->where('idbarang', $idbarang)
+            ->where('idlocation', $idlocation)
+            ->where('unit', $unit)
+            ->where('qty', $qty);
 
         if ($idurut) {
-            $builderDuplicate->where('idurut !=', $uniqueid);
+            $builderDuplicate->where('idurut !=', (int) $idurut);
         }
 
         $duplicate = $builderDuplicate->countAllResults();
@@ -3657,7 +3785,7 @@ class Persediaan extends BaseController
 
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Tidak boleh menginputkan item yang sama dengan keterangan yang sama'
+                'message' => 'Baris dengan barang, gudang, satuan dan qty yang sama sudah ada pada dokumen ini.'
             ]);
         }
 
@@ -3672,14 +3800,18 @@ class Persediaan extends BaseController
                 ->where('iduniq', $uniqueid)
                 ->update([
                     'doctype'    => 'PMKBRG',
+                    'docref'     => $docref,
                     'idbarang'    => $idbarang,
                     'nmbarang'    => $nmbarang,
                     'idlocation'    => $idlocation,
-                    'idcostcenter'    => strtoupper(trim($this->request->getPost('idcostcenter'))),
+                    'idcostcenter'    => $idcostcenter,
                     'unit'        => $unit,
                     'batch'         => $batch,
                     'qtystock'         => $qtystock,
                     'qty'         => $qty,
+                    'qty_base'    => $qtybase > 0 ? $qtybase : $qty,
+                    'val'         => $val,
+                    'valsum'      => $valsum,
                     'description' => $description,
                     'updateby'    => $nama,
                     'updatedate'  => date('Y-m-d H:i:s')
@@ -3705,14 +3837,18 @@ class Persediaan extends BaseController
             $insertDetail = $builderDetail->insert([
                 'doctype'    => 'PMKBRG',
                 'docno'       => $docno,
+                'docref'     => $docref,
                 'idlocation'    => $idlocation,
-                'idcostcenter'    => strtoupper(trim($this->request->getPost('idcostcenter'))),
+                'idcostcenter'    => $idcostcenter,
                 'idbarang'    => $idbarang,
                 'nmbarang'    => $nmbarang,
                 'batch'         => $batch,
                 'unit'        => $unit,
                 'qtystock'         => $qtystock,
                 'qty'         => $qty,
+                'qty_base'    => $qtybase > 0 ? $qtybase : $qty,
+                'val'         => $val,
+                'valsum'      => $valsum,
                 'description' => $description,
                 'inputby'     => $nama,
                 'inputdate'   => $inputdate,
@@ -3740,11 +3876,470 @@ class Persediaan extends BaseController
         }
 
         return $this->response->setJSON([
-            'success' => true,
-            'reload'  => $reload
+            'success'       => true,
+            'reload'        => $reload,
+            'docno'         => $docno,
+            'stok'          => $stokOnhand,
+            'stok_tersedia' => $stokSedia
         ]);
     }
 
+
+    /**
+     * Data detail Pemakaian Barang (draft) untuk grid input cepat.
+     * Read-only: hanya SELECT pada sc_tmp.pmk_brng_dtl.
+     * Kolom 'stok' = stok tersedia saat ini (sc_trx.stkblc), dipakai grid
+     * untuk menampilkan & memvalidasi Qty sebelum Simpan Final.
+     */
+    public function list_pmk_brng_dtl_grid()
+    {
+        $nama = trim($this->session->get('nama'));
+
+        $param = " and coalesce(inputby,'') = " . $this->db->escape($nama);
+        $rows  = $this->m_persediaan->q_tmp_pmk_brng_dtl($param)->getResultArray();
+
+        /* q_tmp_pmk_brng_dtl memakai order by idurut desc; grid dibaca
+           dari baris terlama ke terbaru (baris baru di bawah). */
+        $rows = array_reverse($rows);
+
+        $items      = array();
+        $totalQty   = 0;
+        $totalNilai = 0;
+
+        /* Ambil stok sekali untuk semua barang pada draft (hindari N+1 query).
+           Kunci: idbarang|idlocation|batch  -> qty on-hand. */
+        $idbarangs = array();
+
+        foreach ($rows as $r) {
+            $idb = trim((string) ($r['idbarang'] ?? ''));
+
+            if ($idb !== '') {
+                $idbarangs[$idb] = $idb;
+            }
+        }
+
+        $stokMap   = array();   // idbarang|idlocation|batch => qty
+        $stokTotal = array();   // idbarang|idlocation        => qty (semua batch)
+
+        if (count($idbarangs) > 0) {
+            $params   = array_values($idbarangs);
+            $inMarks  = implode(',', array_fill(0, count($params), '?'));
+
+            $stokRows = $this->db->query(
+                "SELECT TRIM(idbarang) AS idbarang,
+                        TRIM(COALESCE(idlocation,'')) AS idlocation,
+                        TRIM(COALESCE(batch,'')) AS batch,
+                        SUM(COALESCE(qty_in,0)) - SUM(COALESCE(qty_out,0)) AS stok
+                   FROM sc_trx.stkblc
+                  WHERE TRIM(idbarang) IN ($inMarks)
+                  GROUP BY TRIM(idbarang), TRIM(COALESCE(idlocation,'')), TRIM(COALESCE(batch,''))",
+                $params
+            )->getResultArray();
+
+            foreach ($stokRows as $sr) {
+                $keyItem = $sr['idbarang'] . '|' . $sr['idlocation'];
+                $stok     = (float) $sr['stok'];
+
+                $stokMap[$keyItem . '|' . $sr['batch']] = $stok;
+                $stokTotal[$keyItem] = (isset($stokTotal[$keyItem]) ? $stokTotal[$keyItem] : 0) + $stok;
+            }
+        }
+
+        /* TUGAS 1: qty yang sudah dibooking baris draft lain (per grup),
+           agar tampilan "Stok Tersedia" tetap konsisten setelah reload grid. */
+        $bookedMap   = array();   // idbarang|idlocation|batch => qty
+        $bookedTotal = array();   // idbarang|idlocation        => qty
+
+        foreach ($rows as $rb) {
+            $idb = trim((string) ($rb['idbarang'] ?? ''));
+            $idl = trim((string) ($rb['idlocation'] ?? ''));
+            $bch = trim((string) ($rb['batch'] ?? ''));
+
+            if ($idb === '' || $idl === '') {
+                continue;
+            }
+
+            $keyItem = $idb . '|' . $idl;
+            $qtyRow  = (float) ($rb['qty'] ?? 0);
+
+            $bookedMap[$keyItem . '|' . $bch] = (isset($bookedMap[$keyItem . '|' . $bch])
+                ? $bookedMap[$keyItem . '|' . $bch] : 0) + $qtyRow;
+
+            $bookedTotal[$keyItem] = (isset($bookedTotal[$keyItem])
+                ? $bookedTotal[$keyItem] : 0) + $qtyRow;
+        }
+
+        foreach ($rows as $r) {
+            $qty    = (float) ($r['qty'] ?? 0);
+            $val    = (float) ($r['val'] ?? 0);
+            $valsum = (float) ($r['valsum'] ?? 0);
+
+            $idlocation = trim((string) ($r['idlocation'] ?? ''));
+            $idbarang   = trim((string) ($r['idbarang'] ?? ''));
+            $batch      = trim((string) ($r['batch'] ?? ''));
+
+            $stokFisik = 0;
+            $stok      = 0;
+            $stokMax   = 0;
+
+            if ($idlocation !== '' && $idbarang !== '') {
+                $keyItem = $idbarang . '|' . $idlocation;
+
+                if ($batch !== '') {
+                    $stokFisik = isset($stokMap[$keyItem . '|' . $batch]) ? $stokMap[$keyItem . '|' . $batch] : 0;
+                    $booked    = isset($bookedMap[$keyItem . '|' . $batch]) ? $bookedMap[$keyItem . '|' . $batch] : 0;
+                } else {
+                    $stokFisik = isset($stokTotal[$keyItem]) ? $stokTotal[$keyItem] : 0;
+                    $booked    = isset($bookedTotal[$keyItem]) ? $bookedTotal[$keyItem] : 0;
+                }
+
+                /* stok tampil = stok fisik - SELURUH qty draft grup
+                   (buffering, sesuai rumus pada spesifikasi) */
+                $stok = $stokFisik - $booked;
+
+                if ($stok < 0) {
+                    $stok = 0;
+                }
+
+                /* batas Qty baris ini = fisik - qty draft baris LAIN */
+                $bookedLain = $booked - $qty;
+
+                if ($bookedLain < 0) {
+                    $bookedLain = 0;
+                }
+
+                $stokMax = $stokFisik - $bookedLain;
+
+                if ($stokMax < 0) {
+                    $stokMax = 0;
+                }
+            }
+
+            $items[] = array(
+                'idurut'      => trim((string) ($r['idurut'] ?? '')),
+                'iduniq'      => trim((string) ($r['iduniq'] ?? '')),
+                'idbarang'    => $idbarang,
+                'nmbarang'    => trim((string) ($r['nmbarang'] ?? '')),
+                'idlocation'  => $idlocation,
+                'batch'       => $batch,
+                'unit'        => trim((string) ($r['unit'] ?? '')),
+                'qty'         => $qty,
+                'val'         => $val,
+                'valsum'      => $valsum,
+                'stok'        => $stok,
+                'stok_fisik'  => $stokFisik,
+                'stok_max'    => $stokMax,
+                'description' => trim((string) ($r['description'] ?? '')),
+            );
+
+            $totalQty   += $qty;
+            $totalNilai += $valsum;
+        }
+
+        return $this->response->setJSON(array(
+            'success'     => true,
+            'items'       => $items,
+            'total_qty'   => $totalQty,
+            'total_nilai' => $totalNilai,
+        ));
+    }
+
+    /**
+     * Master gudang untuk dropdown grid detail (read-only).
+     * Sumber: sc_mst.mlocation.
+     */
+    public function list_location_pmk_brng()
+    {
+        $rows = $this->db->query(
+            "SELECT TRIM(idlocation) AS idlocation,
+                    TRIM(nmlocation) AS nmlocation,
+                    TRIM(COALESCE(idbranchjob,'')) AS idbranchjob
+               FROM sc_mst.mlocation
+              ORDER BY nmlocation ASC"
+        )->getResultArray();
+
+        $branch = trim((string) $this->request->getPost('branch'));
+        $items  = $rows;
+
+        /* Prioritaskan gudang milik cabang; bila tidak ada, tampilkan semua */
+        if ($branch !== '') {
+            $filtered = array_values(array_filter($rows, function ($row) use ($branch) {
+                return trim((string) $row['idbranchjob']) === $branch;
+            }));
+
+            if (count($filtered) > 0) {
+                $items = $filtered;
+            }
+        }
+
+        return $this->response->setJSON(array(
+            'success' => true,
+            'items'   => $items,
+        ));
+    }
+
+    /**
+     * Pencarian barang untuk dropdown ID Barang pada grid detail (read-only).
+     */
+    public function search_item_pmk_brng()
+    {
+        $term = strtoupper(trim((string) $this->request->getPost('term')));
+        $page = (int) $this->request->getPost('page');
+
+        if ($page < 1) {
+            $page = 1;
+        }
+
+        $limit  = 30;
+        $offset = ($page - 1) * $limit;
+
+        $sql = "SELECT TRIM(idbarang) AS idbarang,
+                       TRIM(nmbarang) AS nmbarang,
+                       TRIM(COALESCE(unit,'')) AS unit,
+                       COALESCE(lastprice,0) AS lastprice
+                  FROM sc_mst.mbarang
+                 WHERE COALESCE(chold,'NO') <> 'YES'";
+
+        if ($term !== '') {
+            $esc = $this->db->escapeLikeString($term);
+            $sql .= " AND (UPPER(TRIM(idbarang)) LIKE '%$esc%' OR UPPER(TRIM(nmbarang)) LIKE '%$esc%')";
+        }
+
+        $sql .= " ORDER BY nmbarang ASC LIMIT " . ($limit + 1) . " OFFSET " . $offset;
+
+        $rows = $this->db->query($sql)->getResultArray();
+        $more = count($rows) > $limit;
+
+        if ($more) {
+            $rows = array_slice($rows, 0, $limit);
+        }
+
+        return $this->response->setJSON(array(
+            'success' => true,
+            'items'   => $rows,
+            'more'    => $more,
+        ));
+    }
+
+    /**
+     * Auto-fill Nama Barang, Satuan, dan Harga pada grid detail (read-only).
+     */
+    public function get_item_pmk_brng()
+    {
+        $idbarang = trim((string) $this->request->getPost('idbarang'));
+
+        if ($idbarang === '') {
+            return $this->response->setJSON(array(
+                'success' => false,
+                'message' => 'ID barang tidak boleh kosong',
+            ));
+        }
+
+        $item = $this->db->query(
+            "SELECT TRIM(idbarang) AS idbarang,
+                    TRIM(nmbarang) AS nmbarang,
+                    TRIM(COALESCE(unit,'')) AS unit,
+                    COALESCE(lastprice,0) AS lastprice
+               FROM sc_mst.mbarang
+              WHERE TRIM(idbarang) = ?
+              LIMIT 1",
+            array($idbarang)
+        )->getRowArray();
+
+        if (!$item) {
+            return $this->response->setJSON(array(
+                'success' => false,
+                'message' => 'Barang tidak ditemukan pada master.',
+            ));
+        }
+
+        $units = $this->db->query(
+            "SELECT TRIM(idunit) AS idunit,
+                    TRIM(COALESCE(cdefault,'')) AS cdefault,
+                    COALESCE(conv_value,1) AS conv_value
+               FROM sc_mst.mbarang_unit
+              WHERE TRIM(idbarang) = ?
+              ORDER BY TRIM(COALESCE(cdefault,'')) DESC, TRIM(idunit) ASC",
+            array($idbarang)
+        )->getResultArray();
+
+        return $this->response->setJSON(array(
+            'success' => true,
+            'data'    => $item,
+            'units'   => $units,
+        ));
+    }
+
+    /**
+     * Daftar Batch / Spec berdasarkan ID Barang (read-only).
+     * Sumber: sc_mst.batch.
+     */
+    public function list_batch_pmk_brng()
+    {
+        $idbarang = trim((string) $this->request->getPost('idbarang'));
+        $term     = strtoupper(trim((string) $this->request->getPost('term')));
+        $page     = (int) $this->request->getPost('page');
+
+        if ($page < 1) {
+            $page = 1;
+        }
+
+        if ($idbarang === '') {
+            return $this->response->setJSON(array(
+                'success' => true,
+                'items'   => array(),
+                'more'    => false,
+                'message' => 'Pilih barang terlebih dahulu',
+            ));
+        }
+
+        $limit  = 30;
+        $offset = ($page - 1) * $limit;
+
+        /* Batch diambil dari stok ledger (sc_trx.stkblc) pada gudang terpilih
+           agar hanya batch yang benar-benar memiliki stok yang muncul.
+           Bila stok ledger belum berisi batch, fallback ke master sc_mst.batch. */
+        $idlocation = trim((string) $this->request->getPost('idlocation'));
+
+        $sql = "SELECT TRIM(batch) AS batch
+                  FROM sc_trx.stkblc
+                 WHERE TRIM(idbarang) = ?
+                   AND COALESCE(TRIM(batch), '') <> ''";
+
+        $binds = array($idbarang);
+
+        if ($idlocation !== '') {
+            $sql .= " AND TRIM(COALESCE(idlocation, '')) = ?";
+            $binds[] = $idlocation;
+        }
+
+        if ($term !== '') {
+            $sql .= " AND UPPER(TRIM(batch)) LIKE ?";
+            $binds[] = '%' . $this->db->escapeLikeString($term) . '%';
+        }
+
+        $sql .= " GROUP BY TRIM(batch)
+                 HAVING SUM(COALESCE(qty_in,0)) - SUM(COALESCE(qty_out,0)) > 0
+                  ORDER BY TRIM(batch) ASC
+                  LIMIT " . ($limit + 1) . " OFFSET " . $offset;
+
+        $rows = $this->db->query($sql, $binds)->getResultArray();
+
+        if (count($rows) === 0) {
+            $sqlMaster = "SELECT TRIM(batch) AS batch
+                            FROM sc_mst.batch
+                           WHERE TRIM(idbarang) = ?
+                             AND COALESCE(TRIM(batch), '') <> ''";
+
+            $bindsMaster = array($idbarang);
+
+            if ($term !== '') {
+                $sqlMaster .= " AND UPPER(TRIM(batch)) LIKE ?";
+                $bindsMaster[] = '%' . $this->db->escapeLikeString($term) . '%';
+            }
+
+            $sqlMaster .= " GROUP BY TRIM(batch)
+                            ORDER BY TRIM(batch) ASC
+                            LIMIT " . ($limit + 1);
+
+            $rows = $this->db->query($sqlMaster, $bindsMaster)->getResultArray();
+        }
+
+
+        $more = count($rows) > $limit;
+
+        if ($more) {
+            $rows = array_slice($rows, 0, $limit);
+        }
+
+        $items = array();
+
+        foreach ($rows as $row) {
+            $batch = trim((string) ($row['batch'] ?? ''));
+
+            if ($batch === '') {
+                continue;
+            }
+
+            $items[] = array(
+                'id'    => $batch,
+                'text'  => $batch,
+                'batch' => $batch,
+            );
+        }
+
+        return $this->response->setJSON(array(
+            'success' => true,
+            'items'   => $items,
+            'more'    => $more,
+        ));
+    }
+
+    /**
+     * STOK TERSEDIA untuk PMK (read-only).
+     * Sumber on-hand: sc_trx.stkblc, harga rata-rata: sc_trx.stkblc_avgcost.
+     */
+    public function get_stock_pmk_brng()
+    {
+        $idbarang   = trim((string) $this->request->getPost('idbarang'));
+        $idlocation = trim((string) $this->request->getPost('idlocation'));
+        $batch      = trim((string) $this->request->getPost('batch'));
+        $idurut     = trim((string) $this->request->getPost('idurut'));
+        $nama       = trim((string) $this->session->get('nama'));
+
+        if ($idbarang === '' || $idlocation === '') {
+            return $this->response->setJSON(array(
+                'success'       => false,
+                'message'       => 'Barang dan gudang wajib dipilih',
+                'stok'          => 0,
+                'stok_fisik'    => 0,
+                'stok_tmp'      => 0,
+                'stok_tersedia' => 0,
+                'avgcost'       => 0,
+            ));
+        }
+
+        /* ============================================================
+           BUFFERING STOK (TUGAS 1)
+           stok tersedia = stok fisik gudang (sc_trx.stkblc)
+                         - total qty yang sudah dibooking di draft
+                           sc_tmp.pmk_brng_dtl (user + gudang + barang + batch)
+           'stok_max' = batas Qty baris ini (idurut) = fisik - draft baris LAIN.
+           ============================================================ */
+        $stokFisik = (float) $this->m_persediaan->q_stock_onhand_pmk($idlocation, $idbarang, $batch);
+        $stokTmp   = (float) $this->m_persediaan->q_stock_booked_pmk($nama, $idlocation, $idbarang, $batch);
+        $tersedia  = $stokFisik - $stokTmp;
+
+        if ($tersedia < 0) {
+            $tersedia = 0;
+        }
+
+        $stokMax = null;
+
+        if ($idurut !== '') {
+            $stokLain = (float) $this->m_persediaan->q_stock_booked_pmk($nama, $idlocation, $idbarang, $batch, $idurut);
+            $stokMax  = $stokFisik - $stokLain;
+
+            if ($stokMax < 0) {
+                $stokMax = 0;
+            }
+        }
+
+        $avgcost = (float) $this->m_persediaan->q_avgcost_pmk($idlocation, $idbarang, $batch);
+
+        return $this->response->setJSON(array(
+            'success'       => true,
+            'idbarang'      => $idbarang,
+            'idlocation'    => $idlocation,
+            'batch'         => $batch,
+            'stok'          => $stokFisik,      // kompatibilitas pemanggil lama
+            'stok_fisik'    => $stokFisik,
+            'stok_tmp'      => $stokTmp,
+            'stok_tersedia' => $tersedia,
+            'stok_max'      => $stokMax,
+            'avgcost'       => $avgcost,
+        ));
+    }
 
     function showing_pmk_brng_mst_tmp(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
@@ -3840,6 +4435,43 @@ class Persediaan extends BaseController
 
             if (trim($header['status']) !== 'E') {
                 throw new \Exception('Status bukan E (tidak bisa FINAL)');
+            }
+
+            // =========================
+            // 🔥 VALIDASI STOK (SERVER SIDE, ANTI BYPASS)
+            // PMK mengurangi stok -> qty total per barang/gudang/batch
+            // tidak boleh melebihi stok tersedia (sc_trx.stkblc).
+            // =========================
+            $details = $db->query("
+                SELECT TRIM(idbarang)    AS idbarang,
+                       TRIM(idlocation)  AS idlocation,
+                       TRIM(COALESCE(batch,'')) AS batch,
+                       SUM(COALESCE(qty,0)) AS qty
+                  FROM sc_tmp.pmk_brng_dtl
+                 WHERE TRIM(docno) = ?
+                   AND TRIM(inputby) = ?
+                 GROUP BY TRIM(idbarang), TRIM(idlocation), TRIM(COALESCE(batch,''))
+            ", [$docno, $nama])->getResultArray();
+
+            if (count($details) === 0) {
+                throw new \Exception('Detail barang belum ada, tidak dapat disimpan final');
+            }
+
+            foreach ($details as $d) {
+                $stok = (float) $this->m_persediaan->q_stock_onhand_pmk(
+                    trim((string) $d['idlocation']),
+                    trim((string) $d['idbarang']),
+                    trim((string) $d['batch'])
+                );
+
+                if ((float) $d['qty'] > $stok) {
+                    throw new \Exception(
+                        'Stok tidak mencukupi untuk barang ' . trim((string) $d['idbarang'])
+                        . ' (gudang ' . trim((string) $d['idlocation']) . '). Qty '
+                        . number_format((float) $d['qty'], 2, '.', ',')
+                        . ' > stok ' . number_format($stok, 2, '.', ',') . '.'
+                    );
+                }
             }
 
             // =========================
@@ -3965,7 +4597,14 @@ class Persediaan extends BaseController
         $docno = hex2bin($this->request->getGet('id'));
         $param = " and coalesce(docno,'')='$docno'";
         $dtl = $this->m_persediaan->q_trx_pmk_brng_mst($param)->getRowArray();
-        $status = trim($dtl['status']);
+
+        if (empty($dtl)) {
+            session()->setFlashdata('error', 'Transaksi tidak ditemukan.');
+
+            return redirect()->to(base_url('persediaan/trans/pmk_brng'));
+        }
+
+        $status = strtoupper(trim((string) $dtl['status']));
 
         $logindate = trim($this->session->get('logindate'));
 
@@ -3981,21 +4620,53 @@ class Persediaan extends BaseController
             return redirect()->to(base_url('persediaan/trans/pmk_brng'));
         }
 
+        /* ====== GUARD PERIODE CLOSING BERDASARKAN DOCDATE (ANTI BYPASS) ====== */
+        $closingPeriode = $this->m_persediaan->q_periode_closing_last()->getRowArray();
+
+        if (!empty($dtl) && $this->m_persediaan->isPeriodeClosed(trim((string) $dtl['docdate']), $closingPeriode)) {
+            $closingLabel = trim((string) ($closingPeriode['periode'] ?? ''));
+
+            if ($closingLabel === '') {
+                $closingLabel = trim((string) ($closingPeriode['tanggal_akhir'] ?? ''));
+            }
+
+            session()->setFlashdata('periode_error',
+                'Tanggal transaksi sudah masuk periode TUTUP'
+                . ($closingLabel !== '' ? ' (' . $closingLabel . ')' : '')
+                . '. Dokumen tidak dapat diupdate.'
+            );
+
+            return redirect()->to(base_url('persediaan/trans/pmk_brng'));
+        }
+
+        /* TUGAS 3: transaksi status 'E' (Entry/Draft) tidak boleh diedit. */
+        if ($status === 'E') {
+            session()->setFlashdata('error', 'Transaksi berstatus Draft, tidak dapat diedit.');
+
+            return redirect()->to(base_url('persediaan/trans/pmk_brng'));
+        }
+
         if ($status === 'F' || $status === 'P') {
 
-            $info = array(
-                'status' => 'E',
-                'updatedate' => date('Y-m-d H:i:s'),
-                'updateby' => $nama,
+            /* F/P -> E : trigger sc_trx.tr_trx_pmk_brng_mst akan menyalin
+               dokumen ke sc_tmp sebagai draft revisi.
+               Catatan: sc_trx.pmk_brng_mst tidak punya kolom tgl_posting /
+               user_posting, jadi dipakai updatedate / updateby. */
+            $this->db->query(
+                "UPDATE sc_trx.pmk_brng_mst
+                    SET status = 'E',
+                        updateby = ?,
+                        updatedate = ?
+                  WHERE TRIM(docno) = ?",
+                [$nama, date('Y-m-d H:i:s'), $docno]
             );
-            $builder = $this->db->table('sc_trx.pmk_brng_mst');
-            $builder->where('trim(docno)', $docno);
-            $builder->update($info);
 
-            // Redirect ke halaman addStdUsage
+            // Redirect ke halaman input Pemakaian Barang
             return redirect()->to(base_url('persediaan/trans/add_pmk_brng_mst'));
         } else {
             // Jika status bukan 'F', redirect ke halaman mrpgroup
+            session()->setFlashdata('error', 'Status transaksi tidak dapat diupdate.');
+
             return redirect()->to(base_url('persediaan/trans/pmk_brng'));
         }
     }
@@ -4239,8 +4910,9 @@ class Persediaan extends BaseController
         $currcode = $konfigurasiUmum[0]['currcode'] ?? '';
         $idtax = $konfigurasiUmum[0]['idtax'] ?? '';
 
-        $logindate = $this->session->get('logindate'); // dd-mm-yyyy
-        $infix = date('ym', strtotime($logindate));
+        $logindate = trim((string) $this->session->get('logindate')); // dd-mm-yyyy
+        $timeLogin = $logindate !== '' ? strtotime($logindate) : time();
+        $infix     = date('ym', $timeLogin ?: time());
 
         return $this->response->setJSON([
             'success'      => true,
@@ -4254,33 +4926,99 @@ class Persediaan extends BaseController
         ]);
     }
 
+    /**
+     * Penomoran otomatis KHUSUS modul PMK (Pemakaian Barang).
+     * Format : {prefix}/{infix}/{kode_suffix}{urut:4}
+     * Contoh : PBL/2611/PT0001
+     *
+     * Urut berikutnya dihitung dari MAX nomor yang sudah ada pada
+     * sc_trx.pmk_brng_mst DAN sc_tmp.pmk_brng_mst (draft), agar nomor
+     * tidak bentrok ketika draft belum di-final.
+     *
+     * Read-only (SELECT saja).
+     */
     public function getNextSuffix_pmk_brng()
     {
-        $prefix      = trim($this->request->getGet('prefix'));
-        $infix       = trim($this->request->getGet('infix'));
-        $kodeSuffix  = trim($this->request->getGet('kode_suffix'));
+        $prefix     = strtoupper(trim((string) $this->request->getGet('prefix')));
+        $infix      = trim((string) $this->request->getGet('infix'));
+        $kodeSuffix = strtoupper(trim((string) $this->request->getGet('kode_suffix')));
 
-        $like = $prefix . '/' . $infix . '/' . $kodeSuffix;
-
-        $row = $this->db->table('sc_trx.pmk_brng_mst')
-            ->select('docno')
-            ->like('docno', $like, 'after')
-            ->orderBy('docno', 'DESC')
-            ->limit(1)
-            ->get()
-            ->getRowArray();
-
-        if ($row) {
-            $parts = explode('/', $row['docno']);
-            $last  = substr($parts[2], 2); // ambil angka setelah PT/PA/PB
-            $next  = str_pad(((int)$last) + 1, 4, '0', STR_PAD_LEFT);
-        } else {
-            $next = '0001';
+        /* infix = periode (yy mm) dari tanggal login. Fallback: tanggal hari ini,
+           supaya nomor tidak pernah terbentuk dari periode kosong. */
+        if ($infix === '') {
+            $logindate = trim((string) $this->session->get('logindate'));
+            $time      = $logindate !== '' ? strtotime($logindate) : time();
+            $infix     = date('ym', $time ?: time());
         }
+
+        if ($prefix === '' || $kodeSuffix === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Parameter penomoran belum lengkap',
+                'suffix'  => ''
+            ]);
+        }
+
+        $like    = $prefix . '/' . $infix . '/' . $kodeSuffix;
+        $maxUrut = 0;
+        $found   = 0;
+
+        foreach (['sc_trx.pmk_brng_mst', 'sc_tmp.pmk_brng_mst'] as $tabel) {
+
+            /* Ambil beberapa nomor terakhir (bukan hanya 1) lalu hitung
+               nilai urut terbesar secara numerik, agar penomoran tetap
+               benar walau ada docno dengan panjang digit berbeda. */
+            $rows = $this->db->query(
+                "SELECT TRIM(docno) AS docno
+                   FROM {$tabel}
+                  WHERE TRIM(docno) LIKE ?
+                  ORDER BY TRIM(docno) DESC
+                  LIMIT 100",
+                array($like . '%')
+            )->getResultArray();
+
+            foreach ($rows as $row) {
+
+                $docno = trim((string) ($row['docno'] ?? ''));
+
+                if ($docno === '') {
+                    continue;
+                }
+
+                $parts = explode('/', $docno);
+
+                if (count($parts) < 3) {
+                    continue;
+                }
+
+                $last = trim($parts[2]);
+
+                /* buang kode suffix di depan (PT/PA/PB/...) */
+                if (strlen($last) > strlen($kodeSuffix)
+                    && stripos($last, $kodeSuffix) === 0) {
+                    $last = substr($last, strlen($kodeSuffix));
+                }
+
+                $urut = (int) preg_replace('/[^0-9]/', '', $last);
+
+                if ($urut > $maxUrut) {
+                    $maxUrut = $urut;
+                }
+
+                $found++;
+            }
+        }
+
+        $next = str_pad((string) ($maxUrut + 1), 4, '0', STR_PAD_LEFT);
 
         return $this->response->setJSON([
             'success' => true,
-            'suffix'  => $kodeSuffix . $next
+            'prefix'  => $prefix,
+            'infix'   => $infix,
+            'suffix'  => $kodeSuffix . $next,
+            'docno'   => $prefix . '/' . $infix . '/' . $kodeSuffix . $next,
+            'last'    => $maxUrut,
+            'rows'    => $found
         ]);
     }
 
@@ -4330,44 +5068,536 @@ class Persediaan extends BaseController
             ]);
         }
     }
+    /**
+     * CLEAR / FINALISASI transaksi Pemakaian Barang.
+     *
+     * Dipanggil dari dua tempat:
+     *  a. Tombol "Clear" pada modal "Entry not finished" (M_Trxerror::unfinish)
+     *     -> TANPA parameter docno. Semua draft TMP milik user dibuang dan
+     *        dokumen yang sedang diedit (status 'E') dikembalikan ke 'F'.
+     *  b. Tombol "Clear / Finalisasi" pada halaman list
+     *     (?docno=<hex> atau ?docno=<docno asli>).
+     *
+     * Alur bisnis PMK (mengikuti pola clearTransferLokasi):
+     *  1. Dokumen sudah ada di sc_trx.pmk_brng_mst dengan status 'E'
+     *     (sedang diedit / draft revisi)  -> status dikembalikan ke 'F'
+     *     dan draft revisi di sc_tmp dibuang.
+     *  2. Dokumen masih berupa draft entry baru di sc_tmp.pmk_brng_mst
+     *     (belum pernah ke sc_trx)       -> status draft di-set 'F'
+     *     sehingga trigger sc_tmp.tr_tmp_pmk_brng_mst menyalin dokumen ke
+     *     sc_trx.pmk_brng_mst / sc_trx.pmk_brng_dtl.
+     *
+     * Catatan stok & jurnal (PENTING):
+     *  - Posting stok (sc_trx.stkblc) dan jurnal (sc_trx.jurnal_hd/dt)
+     *    TIDAK dilakukan manual di controller. Semua baris detail yang
+     *    masuk ke sc_trx.pmk_brng_dtl otomatis diproses oleh trigger
+     *    sc_trx.fn_pmk_dtl_to_transaction -> sc_trx.transaction_dt ->
+     *    trg_transaction_stock / trg_zz_transaction_accounting.
+     *  - Jadi controller tidak boleh insert stok/jurnal sendiri (dokumen
+     *    akan ter-posting dua kali).
+     *
+     * Catatan struktur: sc_trx.pmk_brng_mst tidak memiliki kolom
+     * tgl_posting / user_posting, field yang diupdate adalah
+     * updateby / updatedate.
+     */
     function clear_pmk_brng()
     {
-        $nama=trim($this->session->get('nama'));
-        $param = " and coalesce(inputby,'')='$nama'";
-        $dtl = $this->m_persediaan->q_tmp_pmk_brng_mst($param);
-        // if(isEmpty($dtl->getRowArray()['status'])){
-        //     return redirect()->to(base_url('persediaan/trans/pp'));
-        // }
-        $status = trim($dtl->getRowArray()['status']);
-        $builder = $this->db->table('sc_tmp.pmk_brng_mst');
-        $builder_dtl = $this->db->table('sc_tmp.transfer_location_dtl_mst');
+        $db     = \Config\Database::connect();
+        $nama   = trim((string) $this->session->get('nama'));
+        $isAjax = $this->request->isAJAX();
 
-        if ($status==='I') {
-            // $builder= $this->db->table('sc_tmp.standart_usage_mst');
-            $builder->where('inputby',$nama);
-            $builder->delete();
-            // $builderDtl= $this->db->table('sc_tmp.pp');
-            // $builderDtl->where('inputby',$nama);
-            // $builderDtl->delete();
-            return redirect()->to(base_url('persediaan/trans/pmk_brng'));
-        } else if ($status==='E') {
-            $builder->where('inputby',$nama);
-            if ($builder->update(array('status' => 'C'))) {
-                $result = array('status' => true, 'messages' => 'Sukses Di Proses');
-                echo json_encode($result);
-                return redirect()->to(base_url('persediaan/trans/pmk_brng'));
+        if ($nama === '') {
+
+            $pesan = 'Clear gagal: session user tidak ditemukan, silakan login ulang.';
+
+            if ($isAjax) {
+                return $this->response->setJSON(array(
+                    'status'   => false,
+                    'success'  => false,
+                    'messages' => $pesan,
+                    'message'  => $pesan,
+                ));
             }
-            else {
-                $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                echo json_encode($result);
-            }
-        } else {
-            // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-            // echo json_encode($result);
-            return redirect()->to(base_url('persediaan/trans/pmk_brng'));
+
+            return redirect()->to(base_url('persediaan/trans/pmk_brng'))
+                ->with('error', $pesan);
         }
 
+        /* docno dari list dikirim dalam bentuk hex (mengikuti tautan lain) */
+        $raw = trim((string) ($this->request->getGet('docno') ?? ''));
+
+        if ($raw === '') {
+            $raw = trim((string) $this->request->getPost('docno'));
+        }
+
+        if ($raw === '') {
+            $raw = trim((string) ($this->request->getGet('id') ?? ''));
+        }
+
+        if ($raw === '') {
+            $raw = trim((string) $this->request->getPost('id'));
+        }
+
+        $raw   = trim(urldecode($raw), " \t\n\r\0\x0B\"'");
+        $docno = $raw;
+
+        if ($raw !== '' && strpos($raw, '/') === false && ctype_xdigit($raw) && (strlen($raw) % 2 === 0)) {
+            $decoded = @hex2bin($raw);
+
+            if ($decoded !== false && trim($decoded) !== '') {
+                $docno = trim($decoded);
+            }
+        }
+
+        /* =========================================================
+         * A. TANPA DOCNO — dipanggil dari modal "Entry not finished"
+         *    (tombol Clear). Draft TMP milik user dibuang dan status
+         *    dokumen yang sedang diedit dikembalikan ke 'F'.
+         * ========================================================= */
+        if ($docno === '') {
+
+            try {
+
+                $db->transBegin();
+
+                /* A1. Header TMP milik user:
+                 *     - entry baru   : inputby = user
+                 *     - draft revisi : docnotmp = dokumen berstatus 'E'
+                 *                      yang terakhir di-update user
+                 *       (inputby draft revisi adalah pembuat dokumen
+                 *        asli, bukan user yang melakukan edit)
+                 */
+                $rows = $db->query(
+                    "SELECT TRIM(docno) AS docno,
+                            TRIM(COALESCE(docnotmp, '')) AS docnotmp
+                       FROM sc_tmp.pmk_brng_mst
+                      WHERE BTRIM(COALESCE(inputby, '')) = ?
+                         OR BTRIM(COALESCE(docnotmp, '')) IN (
+                                SELECT BTRIM(docno)
+                                  FROM sc_trx.pmk_brng_mst
+                                 WHERE UPPER(BTRIM(status)) = 'E'
+                                   AND BTRIM(COALESCE(updateby, '')) = ?
+                            )
+                      FOR UPDATE",
+                    array($nama, $nama)
+                )->getResultArray();
+
+                $docnos      = array();   // docno header TMP
+                $resetDocnos = array();   // docno dokumen yang dibatalkan editnya
+
+                foreach ($rows as $row) {
+                    $rowDocno = trim((string) ($row['docno'] ?? ''));
+                    $baseDoc  = trim((string) ($row['docnotmp'] ?? ''));
+
+                    if ($rowDocno !== '') {
+                        $docnos[$rowDocno] = $rowDocno;
+                    }
+
+                    if ($baseDoc !== '') {
+                        $resetDocnos[$baseDoc] = $baseDoc;
+                    }
+                }
+
+                $now        = date('Y-m-d H:i:s');
+                $totalReset = 0;
+
+                /* A2. Batalkan mode edit (E -> F) pada dokumen final.
+                 *     Trigger sc_trx.tr_trx_pmk_brng_mst hanya bekerja
+                 *     untuk F -> E, jadi detail transaksi tidak berubah.
+                 */
+                if (count($resetDocnos) > 0) {
+                    $placeholders = implode(',', array_fill(0, count($resetDocnos), '?'));
+
+                    $db->query(
+                        "UPDATE sc_trx.pmk_brng_mst
+                            SET status = 'F',
+                                updateby = ?,
+                                updatedate = ?
+                          WHERE UPPER(BTRIM(status)) = 'E'
+                            AND BTRIM(docno) IN ($placeholders)",
+                        array_merge(array($nama, $now), array_values($resetDocnos))
+                    );
+
+                    $totalReset += $db->affectedRows();
+                }
+
+                /* A2b. Sisa dokumen mode edit milik user yang draft TMP-nya
+                 *      sudah tidak ada (mis. terhapus manual).
+                 */
+                $db->query(
+                    "UPDATE sc_trx.pmk_brng_mst
+                        SET status = 'F',
+                            updateby = ?,
+                            updatedate = ?
+                      WHERE UPPER(BTRIM(status)) = 'E'
+                        AND BTRIM(COALESCE(updateby, '')) = ?",
+                    array($nama, $now, $nama)
+                );
+
+                $totalReset += $db->affectedRows();
+
+                /* A3. Hapus draft TMP milik user (detail dulu, lalu header) */
+                $db->query(
+                    "DELETE FROM sc_tmp.pmk_brng_dtl
+                      WHERE BTRIM(COALESCE(inputby, '')) = ?",
+                    array($nama)
+                );
+
+                if (count($docnos) > 0) {
+                    $placeholders = implode(',', array_fill(0, count($docnos), '?'));
+                    $bind         = array_merge(array_values($docnos), array_values($docnos));
+
+                    $db->query(
+                        "DELETE FROM sc_tmp.pmk_brng_dtl
+                          WHERE BTRIM(docno) IN ($placeholders)
+                             OR BTRIM(COALESCE(docnotmp, '')) IN ($placeholders)",
+                        $bind
+                    );
+                }
+
+                $db->query(
+                    "DELETE FROM sc_tmp.pmk_brng_mst
+                      WHERE BTRIM(COALESCE(inputby, '')) = ?",
+                    array($nama)
+                );
+
+                if (count($docnos) > 0) {
+                    $placeholders = implode(',', array_fill(0, count($docnos), '?'));
+
+                    $db->query(
+                        "DELETE FROM sc_tmp.pmk_brng_mst
+                          WHERE BTRIM(docno) IN ($placeholders)
+                             OR BTRIM(COALESCE(docnotmp, '')) IN ($placeholders)",
+                        array_merge(array_values($docnos), array_values($docnos))
+                    );
+                }
+
+                if ($db->transStatus() === false) {
+                    throw new \Exception('Gagal memproses clear Pemakaian Barang.');
+                }
+
+                $db->transCommit();
+
+                $countTmp = count($docnos);
+                $msg      = array();
+
+                if ($countTmp > 0) {
+                    $msg[] = $countTmp . ' draft dihapus';
+                }
+
+                if ($totalReset > 0) {
+                    $msg[] = $totalReset . ' dokumen dikembalikan ke status F';
+                }
+
+                $pesan = count($msg) > 0
+                    ? 'Clear berhasil. ' . implode(', ', $msg) . '.'
+                    : 'Tidak ada entry menggantung untuk di-clear.';
+
+                log_message('info', '[clear_pmk_brng] user=' . $nama
+                    . ' mode=CLEAR_UNFINISHED'
+                    . ' draft=' . $countTmp
+                    . ' reset=' . $totalReset);
+
+                if ($isAjax) {
+                    return $this->response->setJSON(array(
+                        'status'   => true,
+                        'success'  => true,
+                        'mode'     => 'CLEAR_UNFINISHED',
+                        'draft'    => $countTmp,
+                        'reset'    => $totalReset,
+                        'messages' => $pesan,
+                        'message'  => $pesan,
+                    ));
+                }
+
+                return redirect()->to(base_url('persediaan/trans/pmk_brng'))
+                    ->with('success', $pesan);
+
+            } catch (\Throwable $e) {
+
+                $db->transRollback();
+
+                log_message('error', '[clear_pmk_brng] user=' . $nama
+                    . ' mode=CLEAR_UNFINISHED'
+                    . ' error=' . $e->getMessage());
+
+                $pesan = 'Clear gagal: ' . $e->getMessage();
+
+                if ($isAjax) {
+                    return $this->response->setJSON(array(
+                        'status'   => false,
+                        'success'  => false,
+                        'messages' => $pesan,
+                        'message'  => $pesan,
+                    ));
+                }
+
+                return redirect()->to(base_url('persediaan/trans/pmk_brng'))
+                    ->with('error', $pesan);
+            }
+        }
+
+        /* =========================================================
+         * B. DENGAN DOCNO — finalisasi / clear satu dokumen
+         * ========================================================= */
+        try {
+
+            $db->transBegin();
+
+            /* =========================================================
+             * 1. HEADER sc_trx — dokumen yang sudah pernah Final.
+             *    Lock baris agar tidak dobel proses oleh user lain.
+             * ========================================================= */
+            $trx = $db->query(
+                "SELECT TRIM(docno) AS docno, TRIM(status) AS status
+                   FROM sc_trx.pmk_brng_mst
+                  WHERE BTRIM(docno) = ?
+                  FOR UPDATE",
+                array($docno)
+            )->getRowArray();
+
+            /* =========================================================
+             * 2. HEADER sc_tmp — draft entry baru / draft revisi.
+             *    Revisi ditandai docnotmp = docno asli.
+             * ========================================================= */
+            $tmp = $db->query(
+                "SELECT TRIM(docno) AS docno,
+                        idurut,
+                        TRIM(COALESCE(docnotmp, '')) AS docnotmp,
+                        TRIM(status) AS status
+                   FROM sc_tmp.pmk_brng_mst
+                  WHERE BTRIM(docno) = ?
+                     OR BTRIM(COALESCE(docnotmp, '')) = ?
+                  ORDER BY CASE WHEN BTRIM(COALESCE(docnotmp, '')) = '' THEN 1 ELSE 0 END
+                  LIMIT 1
+                  FOR UPDATE",
+                array($docno, $docno)
+            )->getRowArray();
+
+            $now      = date('Y-m-d H:i:s');
+            $finalDoc = $docno;
+            $mode     = '';
+
+            if ($trx) {
+
+                $status = strtoupper(trim((string) $trx['status']));
+
+                if ($status === 'E') {
+
+                    /* ---------------------------------------------
+                     * E -> F : batalkan mode edit (Clear/Finalisasi).
+                     * Detail trx tidak dihapus sehingga stok & jurnal
+                     * tetap seperti saat dokumen di-finalisasi dulu.
+                     * --------------------------------------------- */
+                    $db->query(
+                        "UPDATE sc_trx.pmk_brng_mst
+                            SET status = 'F',
+                                updateby = ?,
+                                updatedate = ?
+                          WHERE BTRIM(docno) = ?
+                            AND UPPER(BTRIM(status)) = 'E'",
+                        array($nama, $now, $docno)
+                    );
+
+                    /* buang draft revisi / draft entry milik dokumen ini */
+                    $db->query(
+                        "DELETE FROM sc_tmp.pmk_brng_dtl
+                          WHERE BTRIM(docno) = ?
+                             OR BTRIM(COALESCE(docnotmp, '')) = ?",
+                        array($docno, $docno)
+                    );
+                    $db->query(
+                        "DELETE FROM sc_tmp.pmk_brng_mst
+                          WHERE BTRIM(docno) = ?
+                             OR BTRIM(COALESCE(docnotmp, '')) = ?",
+                        array($docno, $docno)
+                    );
+
+                    $mode = 'RESTORE_F';
+
+                } elseif ($status === 'F' || $status === 'P') {
+
+                    /* sudah Final: cukup bersihkan sisa draft revisi */
+                    $db->query(
+                        "DELETE FROM sc_tmp.pmk_brng_dtl
+                          WHERE BTRIM(docno) = ?
+                             OR BTRIM(COALESCE(docnotmp, '')) = ?",
+                        array($docno, $docno)
+                    );
+                    $db->query(
+                        "DELETE FROM sc_tmp.pmk_brng_mst
+                          WHERE BTRIM(docno) = ?
+                             OR BTRIM(COALESCE(docnotmp, '')) = ?",
+                        array($docno, $docno)
+                    );
+
+                    $mode = 'ALREADY_F';
+
+                } else {
+                    throw new \Exception('Transaksi berstatus ' . $status . ', tidak dapat di-finalisasi.');
+                }
+
+            } elseif ($tmp) {
+
+                /* ---------------------------------------------
+                 * Dokumen masih draft di sc_tmp (belum pernah masuk
+                 * sc_trx). Finalisasi = set status 'F' pada header TMP;
+                 * trigger sc_tmp.tr_tmp_pmk_brng_mst menyalin header +
+                 * detail ke sc_trx sehingga stok & jurnal ter-posting
+                 * otomatis oleh trigger transaksi.
+                 * --------------------------------------------- */
+                $tmpDocno = trim((string) $tmp['docno']);
+
+                if ($tmpDocno === '') {
+                    throw new \Exception('Draft transaksi tidak valid (docno kosong).');
+                }
+
+                $tmpStatus = strtoupper(trim((string) $tmp['status']));
+
+                if ($tmpStatus !== 'E') {
+                    throw new \Exception(
+                        'Draft transaksi ' . $tmpDocno . ' berstatus ' . $tmpStatus
+                        . ', tidak dapat di-finalisasi.'
+                    );
+                }
+
+                $db->query(
+                    "UPDATE sc_tmp.pmk_brng_mst
+                        SET status = 'F',
+                            updateby = ?,
+                            updatedate = ?
+                      WHERE BTRIM(docno) = ?
+                        AND UPPER(BTRIM(status)) = 'E'",
+                    array($nama, $now, $tmpDocno)
+                );
+
+                /* Trigger hanya menghapus sc_tmp.pmk_brng_mst pada kondisi
+                   "sudah ada di sc_trx". Bersihkan sisa detail TMP yang
+                   mungkin tertinggal (PK sc_tmp.pmk_brng_mst = docno). */
+                $db->query(
+                    "DELETE FROM sc_tmp.pmk_brng_dtl
+                      WHERE BTRIM(docno) = ?",
+                    array($tmpDocno)
+                );
+
+                $db->query(
+                    "DELETE FROM sc_tmp.pmk_brng_mst
+                      WHERE BTRIM(docno) = ?",
+                    array($tmpDocno)
+                );
+
+                $finalDoc = trim((string) $tmp['docnotmp']) !== ''
+                    ? trim((string) $tmp['docnotmp'])
+                    : $tmpDocno;
+
+                $mode = 'FINALIZE_DRAFT';
+
+            } else {
+                throw new \Exception('Transaksi ' . $docno . ' tidak ditemukan.');
+            }
+
+            /* =========================================================
+             * 3. VERIFIKASI HASIL
+             *    Tidak memakai affectedRows() saja, karena status juga
+             *    bisa diubah oleh trigger database.
+             * ========================================================= */
+            $verify = null;
+
+            /* Trigger sc_tmp.tr_tmp_pmk_brng_mst dapat menomori ulang
+               docno draft bila docno tersebut sudah dipakai di sc_trx.
+               idurut ikut di-copy ke sc_trx (draft baru maupun revisi),
+               jadi cari lewat idurut lebih dulu. */
+            if ($mode === 'FINALIZE_DRAFT' && !empty($tmp['idurut'])) {
+                $verify = $db->query(
+                    "SELECT TRIM(docno) AS docno, TRIM(status) AS status
+                       FROM sc_trx.pmk_brng_mst
+                      WHERE idurut = ?",
+                    array((int) $tmp['idurut'])
+                )->getRowArray();
+
+                if ($verify) {
+                    $finalDoc = trim((string) $verify['docno']);
+                }
+            }
+
+            if (!$verify) {
+                $verify = $db->query(
+                    "SELECT TRIM(docno) AS docno, TRIM(status) AS status
+                       FROM sc_trx.pmk_brng_mst
+                      WHERE BTRIM(docno) = ?",
+                    array($finalDoc)
+                )->getRowArray();
+            }
+
+            if (!$verify) {
+                throw new \Exception('Dokumen ' . $finalDoc . ' tidak ada di tabel transaksi.');
+            }
+
+            $statusAfter = strtoupper(trim((string) $verify['status']));
+
+            /* ALREADY_F: dokumen memang sudah final (F) atau sudah
+               diposting (P) - hanya sisa draft yang dibersihkan. */
+            $statusValid = ($mode === 'ALREADY_F')
+                ? in_array($statusAfter, array('F', 'P'), true)
+                : ($statusAfter === 'F');
+
+            if (!$statusValid) {
+                throw new \Exception('Status dokumen ' . $finalDoc . ' masih ' . $statusAfter . ', finalisasi gagal.');
+            }
+
+            if ($db->transStatus() === false) {
+                throw new \Exception('Gagal memproses finalisasi Pemakaian Barang.');
+            }
+
+            $db->transCommit();
+
+            $pesan = ($mode === 'ALREADY_F')
+                ? 'Transaksi ' . $finalDoc . ' sudah berstatus Final.'
+                : 'Transaksi berhasil di-finalisasi';
+
+            log_message('info', '[clear_pmk_brng] user=' . $nama
+                . ' docno=' . $docno
+                . ' mode=' . $mode
+                . ' final=' . $finalDoc);
+
+            if ($isAjax) {
+                return $this->response->setJSON(array(
+                    'status'   => true,
+                    'success'  => true,
+                    'docno'    => $finalDoc,
+                    'mode'     => $mode,
+                    'messages' => $pesan,
+                    'message'  => $pesan,
+                ));
+            }
+
+            return redirect()->to(base_url('persediaan/trans/pmk_brng'))
+                ->with('success', $pesan);
+
+        } catch (\Throwable $e) {
+
+            $db->transRollback();
+
+            log_message('error', '[clear_pmk_brng] user=' . $nama
+                . ' docno=' . $docno
+                . ' error=' . $e->getMessage());
+
+            $pesan = 'Finalisasi gagal: ' . $e->getMessage();
+
+            if ($isAjax) {
+                return $this->response->setJSON(array(
+                    'status'   => false,
+                    'success'  => false,
+                    'messages' => $pesan,
+                    'message'  => $pesan,
+                ));
+            }
+
+            return redirect()->to(base_url('persediaan/trans/pmk_brng'))
+                ->with('error', $pesan);
+        }
     }
+
 
     /* ************************************************************ PENERIMAAN BARANG  ************************************************************************/
     function pnm_barang()
@@ -4461,6 +5691,18 @@ class Persediaan extends BaseController
         $canView   = isset($datadtl['dtl_akses']['a_view'])   && trim($datadtl['dtl_akses']['a_view']) === 't';
         $canInput  = isset($datadtl['dtl_akses']['a_input'])  && trim($datadtl['dtl_akses']['a_input']) === 't';
 
+        /* ====== PERIODE CLOSING TERAKHIR (untuk disable tombol Update) ====== */
+        $closingPeriode = $this->m_persediaan->q_periode_closing_last()->getRowArray();
+        $closingLabel   = '';
+
+        if (!empty($closingPeriode)) {
+            $closingLabel = trim((string) ($closingPeriode['periode'] ?? ''));
+
+            if ($closingLabel === '') {
+                $closingLabel = trim((string) ($closingPeriode['tanggal_akhir'] ?? ''));
+            }
+        }
+
         foreach ($list as $lm) {
             $no++;
             $row = array();
@@ -4469,9 +5711,12 @@ class Persediaan extends BaseController
             $docno     = trim($lm->docno);
             $docnoHex  = bin2hex($docno);
 
+            /* docdate transaksi masuk periode yang sudah ditutup? */
+            $isClosed = $this->m_persediaan->isPeriodeClosed(trim((string) $lm->docdate), $closingPeriode);
+
             $updateBtn = '';
             $detailBtn = '';
-            $printBtn  = '';
+            $jurnalBtn = '';
 
             // =========================
             // Build button by access
@@ -4482,33 +5727,57 @@ class Persediaan extends BaseController
                 trim($status) !== 'DITARIK '
             ) {
 
-                $updateBtn = '
-                    <a class="dropdown-item bg-warning" 
-                    href="' . base_url('persediaan/trans/updatepnmBrg') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return guardPeriodeTutup(event) && confirm(\'Update Pemakaian Barang : ' . $docno . '\')">
-                        <i class="fa fa-edit"></i> Update 
-                    </a>';
+                if ($isClosed) {
+
+                    /* docdate sudah masuk periode closing -> Update tidak dapat diklik */
+                    $closedTitle = 'Tidak dapat diupdate, periode sudah ditutup.';
+
+                    if ($closingLabel !== '') {
+                        $closedTitle = 'Tidak dapat diupdate, periode ' . $closingLabel . ' sudah ditutup.';
+                    }
+
+                    $closedTitleEsc = htmlspecialchars($closedTitle, ENT_QUOTES, 'UTF-8');
+
+                    $updateBtn = '
+                        <span class="dropdown-item bg-warning disabled pnm-item-closed"
+                              role="button"
+                              aria-disabled="true"
+                              title="' . $closedTitleEsc . '"
+                              style="cursor:not-allowed;pointer-events:auto;opacity:.65;">
+                            <i class="fa fa-edit"></i> Update
+                            <small style="font-weight:700;">(Periode Tutup)</small>
+                        </span>';
+                } else {
+
+                    $updateBtn = '
+                        <a class="dropdown-item bg-warning"
+                        href="' . base_url('persediaan/trans/updatepnmBrg') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '"
+                        onclick="return guardPeriodeTutup(event) && confirm(\'Update Penerimaan Barang : ' . $docno . '\')">
+                            <i class="fa fa-edit"></i> Update
+                        </a>';
+                }
             }
 
             if ($canView) {
                 $detailBtn = '
-                    <a class="dropdown-item" 
-                    style="background-color:#3badf6;" 
-                    href="' . base_url('persediaan/trans/detail_pnm_brng_mst') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return confirm(\'View Detail Pemakai Barang : ' . $docno . '\')">
-                        <i class="fa fa-eye"></i> Detail 
+                    <a class="dropdown-item pnm-act-detail"
+                       style="background-color:#3badf6;"
+                       href="' . base_url('persediaan/trans/detail_pnm_brng_mst') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '">
+                        <i class="fa fa-eye"></i> Detail Penerimaan Barang
                     </a>';
             }
 
-            if ($canPrint) {
-                $printBtn = '
-                    <a class="dropdown-item" 
-                    style="background-color:#00ff8e;" 
-                    href="' . base_url('persediaan/trans/showPrintpnmBrg') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
-                    onclick="return guardPeriodeTutup(event) && confirm(\'Print Pemakaian Barang : ' . $docno . '\')">
-                        <i class="fa fa-print"></i> Print 
+            if ($canView) {
+                /* tombol jurnal: dibuka oleh modal #modalLaporanJurnalPnm
+                   (handler .pnm-act-jurnal pada pnm_brng_list.js) */
+                $jurnalBtn = '
+                    <a class="dropdown-item pnm-act-jurnal"
+                       style="background-color:#e7f0ff;"
+                       href="#" data-docno="' . htmlspecialchars($docno, ENT_QUOTES, 'UTF-8') . '">
+                        <i class="fa fa-book"></i> Laporan Jurnal Transaksi
                     </a>';
             }
+
 
             // =========================
             // RULE STATUS
@@ -4517,17 +5786,16 @@ class Persediaan extends BaseController
 
             if ($status === 'CETAK/PRINT') {
 
-                // hanya detail jika ada akses
-                if ($canView) {
-                    $menuContent .= $detailBtn;
-                }
+                /* LPB-style: Detail + Jurnal */
+                if ($canView)  $menuContent .= $detailBtn;
+                $menuContent .= $jurnalBtn;
 
             } else {
 
-                // selain status tersebut → tampilkan sesuai hak akses
-                if ($canUpdate) $menuContent .= $updateBtn;
-                if ($canPrint)  $menuContent .= $printBtn;
+                /* urutan: Detail -> Laporan Jurnal -> Update */
                 if ($canView)   $menuContent .= $detailBtn;
+                $menuContent .= $jurnalBtn;
+                if ($canUpdate) $menuContent .= $updateBtn;
             }
 
             // =========================
@@ -4554,20 +5822,40 @@ class Persediaan extends BaseController
                 $dropdownMenu = '';
             }
 
-            $row[] = $no;
-            $row[] = $dropdownMenu;
-
-            $row[] = $lm->docno;
-            $row[] = $lm->cabang;
-            $row[] = $lm->idcostcenter;
-            $row[] = date(
-                'd-m-Y',
-                strtotime(trim($lm->docdate))
+            // =========================
+            // STATUS BADGE
+            // =========================
+            /* badge Bootstrap, konsisten dengan halaman LPB */
+            $badgeMap = array(
+                'F' => 'badge-info',       // FINAL USER
+                'O' => 'badge-primary',    // FINAL TRANSACTION
+                'P' => 'badge-success',    // CETAK/PRINT
+                'A' => 'badge-primary',    // APPROVED
+                'D' => 'badge-danger',     // DISAPPROVED
+                'E' => 'badge-warning',    // REVISION/EDITING
+                'I' => 'badge-secondary',  // DRAFT
             );
+            $badgeClass = isset($badgeMap[$status]) ? $badgeMap[$status] : 'badge-secondary';
+            $statusText = trim((string) $lm->nmstatus) !== '' ? trim($lm->nmstatus) : $status;
+            $statusBadge = '<div class="text-center"><span style="font-size:12px" class="badge '
+                . $badgeClass . ' w-100">'
+                . htmlspecialchars($statusText, ENT_QUOTES, 'UTF-8') . '</span></div>';
 
-            $row[] = $lm->description;
-            $row[] = $lm->inputby;
-            $row[] = $lm->nmstatus;
+            $cabangText = trim((string) $lm->nmbranch) !== '' ? trim($lm->nmbranch) : trim((string) $lm->cabang);
+            $bagianText = trim((string) $lm->nmcostcenter) !== '' ? trim($lm->nmcostcenter) : trim((string) $lm->idcostcenter);
+
+            // =========================
+            // ROW DATA (urutan harus sama dengan <th> view)
+            // =========================
+            $row[] = $no;
+            $row[] = $dropdownMenu;   // Action (kolom ke-2, seperti LPB)
+            $row[] = htmlspecialchars($docno, ENT_QUOTES, 'UTF-8');
+            $row[] = date('d-m-Y', strtotime(trim($lm->docdate)));
+            $row[] = htmlspecialchars($cabangText, ENT_QUOTES, 'UTF-8');
+            $row[] = htmlspecialchars($bagianText, ENT_QUOTES, 'UTF-8');
+            $row[] = htmlspecialchars(trim((string) $lm->docref), ENT_QUOTES, 'UTF-8');
+            $row[] = number_format((float) $lm->total, 2, '.', ',');
+            $row[] = $statusBadge;
 
 
             $data[] = $row;
@@ -4731,7 +6019,10 @@ class Persediaan extends BaseController
 //                'idlocation_to'      => strtoupper(trim($this->request->getPost('idlocation_to'))),
 //                'idlocation_transit' => strtoupper(trim($this->request->getPost('idlocation_transit'))),
                 'status'     => 'E',
-                'description' => strtoupper(trim($this->request->getPost('description'))),
+                // Grid input cepat mengirim header_description terpisah dari
+                // description detail. Bila tidak dikirim (form modal lama),
+                // perilaku tetap sama seperti sebelumnya.
+                'description' => strtoupper(trim((string) ($this->request->getPost('header_description') ?? $this->request->getPost('description')))),
                 'inputby'    => $nama,
                 'inputdate'  => date('Y-m-d H:i:s')
             ]);
@@ -4827,7 +6118,10 @@ class Persediaan extends BaseController
             ->where('description', $description);
 
         if ($idurut) {
-            $builderDuplicate->where('idurut !=', $uniqueid);
+            // idurut = primary key detail (bigint), iduniq = hash SHA-256.
+            // Perbandingan bigint <> text ditolak PostgreSQL pada proses update,
+            // sehingga pengecualian baris yang sedang diedit memakai idurut.
+            $builderDuplicate->where('idurut !=', (int) $idurut);
         }
 
         $duplicate = $builderDuplicate->countAllResults();
@@ -4958,6 +6252,256 @@ class Persediaan extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
+    /**
+     * Data detail Penerimaan Barang (draft) untuk grid input cepat.
+     * Mengembalikan seluruh kolom yang dibutuhkan grid, termasuk iduniq
+     * (dipakai endpoint update save_pnm_brng_detail), plus grand total.
+     * Read-only: tidak mengubah struktur maupun isi tabel.
+     */
+    public function list_pnm_brng_dtl_grid()
+    {
+        $nama = trim($this->session->get('nama'));
+
+        $param = " and coalesce(inputby,'') = " . $this->db->escape($nama);
+        $rows  = $this->m_persediaan->q_tmp_pnm_brng_dtl($param)->getResultArray();
+        // q_tmp_pnm_brng_dtl memakai order by idurut desc; grid input lebih
+        // mudah dibaca urut dari baris terlama ke terbaru (baris baru di bawah).
+        $rows  = array_reverse($rows);
+
+        $items      = array();
+        $totalQty   = 0;
+        $totalNilai = 0;
+
+        foreach ($rows as $r) {
+            $qty    = (float) ($r['qty'] ?? 0);
+            $val    = (float) ($r['val'] ?? 0);
+            $valsum = (float) ($r['valsum'] ?? 0);
+
+            $items[] = array(
+                'idurut'      => trim((string) ($r['idurut'] ?? '')),
+                'iduniq'      => trim((string) ($r['iduniq'] ?? '')),
+                'idbarang'    => trim((string) ($r['idbarang'] ?? '')),
+                'nmbarang'    => trim((string) ($r['nmbarang'] ?? '')),
+                'idlocation'  => trim((string) ($r['idlocation'] ?? '')),
+                'batch'       => trim((string) ($r['batch'] ?? '')),
+                'unit'        => trim((string) ($r['unit'] ?? '')),
+                'qty'         => $qty,
+                'val'         => $val,
+                'valsum'      => $valsum,
+                'description' => trim((string) ($r['description'] ?? '')),
+            );
+
+            $totalQty   += $qty;
+            $totalNilai += $valsum;
+        }
+
+        return $this->response->setJSON(array(
+            'success'     => true,
+            'items'       => $items,
+            'total_qty'   => $totalQty,
+            'total_nilai' => $totalNilai,
+        ));
+    }
+
+    /**
+     * Master gudang untuk dropdown grid detail (read-only).
+     * Hanya memakai SELECT pada sc_mst.mlocation, tidak mengubah data.
+     */
+    public function list_location_pnm_brng()
+    {
+        $rows = $this->db->query(
+            "SELECT TRIM(idlocation) AS idlocation,
+                    TRIM(nmlocation) AS nmlocation,
+                    TRIM(COALESCE(idbranchjob,'')) AS idbranchjob
+               FROM sc_mst.mlocation
+              ORDER BY nmlocation ASC"
+        )->getResultArray();
+
+        $branch = trim((string) $this->request->getPost('branch'));
+        $items  = $rows;
+
+        // Prioritaskan gudang milik cabang; bila tidak ada, tampilkan semua
+        if ($branch !== '') {
+            $filtered = array_values(array_filter($rows, function ($row) use ($branch) {
+                return trim((string) $row['idbranchjob']) === $branch;
+            }));
+
+            if (count($filtered) > 0) {
+                $items = $filtered;
+            }
+        }
+
+        return $this->response->setJSON(array(
+            'success' => true,
+            'items'   => $items,
+        ));
+    }
+
+    /**
+     * Pencarian barang untuk dropdown ID Barang pada grid detail (read-only).
+     * Mengembalikan idbarang, nmbarang, unit default, dan harga terakhir.
+     */
+    public function search_item_pnm_brng()
+    {
+        $term = strtoupper(trim((string) $this->request->getPost('term')));
+        $page = (int) $this->request->getPost('page');
+
+        if ($page < 1) {
+            $page = 1;
+        }
+
+        $limit  = 30;
+        $offset = ($page - 1) * $limit;
+
+        $sql = "SELECT TRIM(idbarang) AS idbarang,
+                       TRIM(nmbarang) AS nmbarang,
+                       TRIM(COALESCE(unit,'')) AS unit,
+                       COALESCE(lastprice,0) AS lastprice
+                  FROM sc_mst.mbarang
+                 WHERE COALESCE(chold,'NO') <> 'YES'";
+
+        if ($term !== '') {
+            $esc = $this->db->escapeLikeString($term);
+            $sql .= " AND (UPPER(TRIM(idbarang)) LIKE '%$esc%' OR UPPER(TRIM(nmbarang)) LIKE '%$esc%')";
+        }
+
+        $sql .= " ORDER BY nmbarang ASC LIMIT " . ($limit + 1) . " OFFSET " . $offset;
+
+        $rows = $this->db->query($sql)->getResultArray();
+        $more = count($rows) > $limit;
+
+        if ($more) {
+            $rows = array_slice($rows, 0, $limit);
+        }
+
+        return $this->response->setJSON(array(
+            'success' => true,
+            'items'   => $rows,
+            'more'    => $more,
+        ));
+    }
+
+    /**
+     * Auto-fill Nama Barang, Satuan, dan Harga pada grid detail (read-only).
+     */
+    public function get_item_pnm_brng()
+    {
+        $idbarang = trim((string) $this->request->getPost('idbarang'));
+
+        if ($idbarang === '') {
+            return $this->response->setJSON(array(
+                'success' => false,
+                'message' => 'ID barang tidak boleh kosong',
+            ));
+        }
+
+        $item = $this->db->query(
+            "SELECT TRIM(idbarang) AS idbarang,
+                    TRIM(nmbarang) AS nmbarang,
+                    TRIM(COALESCE(unit,'')) AS unit,
+                    COALESCE(lastprice,0) AS lastprice
+               FROM sc_mst.mbarang
+              WHERE TRIM(idbarang) = ?
+              LIMIT 1",
+            array($idbarang)
+        )->getRowArray();
+
+        if (!$item) {
+            return $this->response->setJSON(array(
+                'success' => false,
+                'message' => 'Barang tidak ditemukan pada master.',
+            ));
+        }
+
+        $units = $this->db->query(
+            "SELECT TRIM(idunit) AS idunit,
+                    TRIM(COALESCE(cdefault,'')) AS cdefault,
+                    COALESCE(conv_value,1) AS conv_value
+               FROM sc_mst.mbarang_unit
+              WHERE TRIM(idbarang) = ?
+              ORDER BY TRIM(COALESCE(cdefault,'')) DESC, TRIM(idunit) ASC",
+            array($idbarang)
+        )->getResultArray();
+
+        return $this->response->setJSON(array(
+            'success' => true,
+            'data'    => $item,
+            'units'   => $units,
+        ));
+    }
+
+    /**
+     * Daftar Batch / Spec berdasarkan ID Barang (read-only).
+     * Sumber: sc_mst.batch. Dipakai Select2 kolom Batch/Spec pada grid detail.
+     */
+    public function list_batch_pnm_brng()
+    {
+        $idbarang = trim((string) $this->request->getPost('idbarang'));
+        $term     = strtoupper(trim((string) $this->request->getPost('term')));
+        $page     = (int) $this->request->getPost('page');
+
+        if ($page < 1) {
+            $page = 1;
+        }
+
+        if ($idbarang === '') {
+            return $this->response->setJSON(array(
+                'success' => true,
+                'items'   => array(),
+                'more'    => false,
+                'message' => 'Pilih barang terlebih dahulu',
+            ));
+        }
+
+        $limit  = 30;
+        $offset = ($page - 1) * $limit;
+
+        $sql = "SELECT TRIM(batch) AS batch
+                  FROM sc_mst.batch
+                 WHERE TRIM(idbarang) = ?
+                   AND COALESCE(TRIM(batch), '') <> ''";
+
+        $binds = array($idbarang);
+
+        if ($term !== '') {
+            $sql .= " AND UPPER(TRIM(batch)) LIKE ?";
+            $binds[] = '%' . $this->db->escapeLikeString($term) . '%';
+        }
+
+        $sql .= " GROUP BY TRIM(batch)
+                  ORDER BY TRIM(batch) ASC
+                  LIMIT " . ($limit + 1) . " OFFSET " . $offset;
+
+        $rows = $this->db->query($sql, $binds)->getResultArray();
+        $more = count($rows) > $limit;
+
+        if ($more) {
+            $rows = array_slice($rows, 0, $limit);
+        }
+
+        $items = array();
+
+        foreach ($rows as $row) {
+            $batch = trim((string) ($row['batch'] ?? ''));
+
+            if ($batch === '') {
+                continue;
+            }
+
+            $items[] = array(
+                'id'    => $batch,
+                'text'  => $batch,
+                'batch' => $batch,
+            );
+        }
+
+        return $this->response->setJSON(array(
+            'success' => true,
+            'items'   => $items,
+            'more'    => $more,
+        ));
+    }
+
     // UNTUK TRX
     function showing_pnm_brng_mst(){
         $docno = trim($this->request->getGet('docno')); // ambil dari GET
@@ -5003,6 +6547,19 @@ class Persediaan extends BaseController
 
     function final_pnm_barang(){
         $nama = trim($this->session->get('nama'));
+
+        /* ====== GUARD PERIODE TUTUP (defensif: periode bisa ditutup saat input berjalan) ====== */
+        $logindate = trim($this->session->get('logindate'));
+        $periode   = date('ym', strtotime($logindate));
+        $dtlPeriode = $this->m_persediaan->q_cek_periode($periode)->getRowArray();
+
+        if ($dtlPeriode && strtoupper(trim($dtlPeriode['flagproses'])) === 'TUTUP') {
+            session()->setFlashdata('periode_error',
+                'Periode ' . $periode . ' sudah TUTUP. Tidak dapat menyimpan final transaksi.'
+            );
+            return redirect()->to(base_url('persediaan/trans/pnm_barang'));
+        }
+        // ========================================================================================
         // $loccode = trim($this->session->get('loccode'));
         $param = " and coalesce(inputby,'')='$nama'";
         $paramdtl = " AND COALESCE(inputby, '') = '$nama'";
@@ -5230,6 +6787,22 @@ class Persediaan extends BaseController
             return redirect()->to(base_url('persediaan/trans/pnm_barang'));
         }
 
+        /* ====== GUARD PERIODE CLOSING BERDASARKAN DOCDATE TRANSAKSI ====== */
+        $closingPeriode = $this->m_persediaan->q_periode_closing_last()->getRowArray();
+        $docdateTrans   = trim((string) ($dtl['docdate'] ?? ''));
+
+        if ($this->m_persediaan->isPeriodeClosed($docdateTrans, $closingPeriode)) {
+            $closedLabel = trim((string) ($closingPeriode['periode'] ?? ''));
+
+            session()->setFlashdata('periode_error',
+                'Tanggal transaksi ' . $docdateTrans
+                . ($closedLabel !== '' ? ' berada pada periode ' . $closedLabel : '')
+                . ' yang sudah TUTUP. Tidak dapat melakukan update.'
+            );
+
+            return redirect()->to(base_url('persediaan/trans/pnm_barang'));
+        }
+
         if ($status === 'F' || $status === 'P') {
 
             $info = array(
@@ -5244,63 +6817,86 @@ class Persediaan extends BaseController
             // Redirect ke halaman addStdUsage
             return redirect()->to(base_url('persediaan/trans/add_pnm_brng_mst'));
         } else {
-            // Jika status bukan 'F', redirect ke halaman mrpgroup
-            return redirect()->to(base_url('persediaan/trans/pnm_brng'));
+            // Jika status bukan 'F', redirect ke halaman list
+            return redirect()->to(base_url('persediaan/trans/pnm_barang'));
         }
     }
     function detail_pnm_brng_mst()
     {
         /* Penambahan Squence */
-        $data['title']="Detail Pemakaian Barang ";
-        $dtlbranch=$this->m_global->q_branch()->getRowArray();
-        $branch=$dtlbranch['branch'];
+        $data['title'] = "Detail Penerimaan Barang";
+        $dtlbranch = $this->m_global->q_branch()->getRowArray();
+        $branch = $dtlbranch['branch'];
         /* CODE UNTUK VERSI*/
-        $nama=trim($this->session->get('nama'));
+        $nama = trim($this->session->get('nama'));
 
-        $docno = $this->request->getGet('docno');
-        if (empty($docno)) {
-            return redirect()->to(base_url('persediaan/trans/perintah_transfer'));
+        $docno = trim((string) $this->request->getGet('docno'));
+
+        if ($docno === '') {
+            return redirect()->to(base_url('persediaan/trans/pnm_barang'));
         }
-        $kodemenu='I.Q.A.6'; $versirelease='I.Q.A.6/01'; $releasedate=date('2025-04-12 00:00:00');
-        $versidb=$this->fiky_version->version($kodemenu,$versirelease,$releasedate,$nama);
-        $x=$this->fiky_menu->menus($kodemenu,$versirelease,$releasedate);
-        $data['x'] = $x['rows']; $data['y'] = $x['res']; $data['t'] = $x['xn'];
-        $data['kodemenu']=$kodemenu; $data['version']=$versidb;
-        $data['nama']=$nama; $data['version']=$versidb;
+
+        $kodemenu = 'I.Q.A.6';
+        $versirelease = 'I.Q.A.6/01';
+        $releasedate = date('2025-04-12 00:00:00');
+        $versidb = $this->fiky_version->version($kodemenu, $versirelease, $releasedate, $nama);
+        $x = $this->fiky_menu->menus($kodemenu, $versirelease, $releasedate);
+        $data['x'] = $x['rows'];
+        $data['y'] = $x['res'];
+        $data['t'] = $x['xn'];
+        $data['kodemenu'] = $kodemenu;
+        $data['version'] = $versidb;
+        $data['nama'] = $nama;
         /* END CODE UNTUK VERSI */
 
-        $paramerror=" and userid='$nama' and modul='I.Q.A.6'";
-        $dtlerror=$this->m_trxerror->q_trxerror($paramerror)->getRowArray();
-        $count_err=$this->m_trxerror->q_trxerror($paramerror)->getNumRows();
-        if(isset($dtlerror['description'])) { $errordesc=trim($dtlerror['description']); } else { $errordesc='';  }
-        if(isset($dtlerror['nomorakhir1'])) { $nomorakhir1=trim($dtlerror['nomorakhir1']); } else { $nomorakhir1='';  }
-        if(isset($dtlerror['errorcode'])) { $errorcode=trim($dtlerror['errorcode']); } else { $errorcode='';  }
+        $paramerror = " and userid='$nama' and modul='I.Q.A.6'";
+        $dtlerror = $this->m_trxerror->q_trxerror($paramerror)->getRowArray();
+        $count_err = $this->m_trxerror->q_trxerror($paramerror)->getNumRows();
 
-        if($count_err>0 and $errordesc){
-            if ($dtlerror['errorcode']==0){
-                $data['message']="<div class='alert alert-info'>DATA SUKSES DIPROSES $nomorakhir1 </div>";
+        if (isset($dtlerror['description'])) { $errordesc = trim($dtlerror['description']); } else { $errordesc = ''; }
+        if (isset($dtlerror['nomorakhir1'])) { $nomorakhir1 = trim($dtlerror['nomorakhir1']); } else { $nomorakhir1 = ''; }
+        if (isset($dtlerror['errorcode'])) { $errorcode = trim($dtlerror['errorcode']); } else { $errorcode = ''; }
+
+        if ($count_err > 0 and $errordesc) {
+            if ($dtlerror['errorcode'] == 0) {
+                $data['message'] = "<div class='alert alert-info'>DATA SUKSES DIPROSES $nomorakhir1 </div>";
             } else {
-                $data['message']="<div class='alert alert-info'>$errordesc</div>";
+                $data['message'] = "<div class='alert alert-info'>$errordesc</div>";
             }
-
-        }else {
-            if ($errorcode=='0'){
-                $data['message']="<div class='alert alert-info'>DATA SUKSES DIPROSES $nomorakhir1 </div>";
+        } else {
+            if ($errorcode == '0') {
+                $data['message'] = "<div class='alert alert-info'>DATA SUKSES DIPROSES $nomorakhir1 </div>";
             } else {
-                $data['message']="";
+                $data['message'] = "";
             }
-
         }
 
-        $decoded_docno = hex2bin($docno); // Decode docno yang dikirim dalam bentuk hex
-        $param = " and coalesce(docno,'') = '$decoded_docno'";
+        /* docno dikirim dalam bentuk hex dari halaman list */
+        $decoded_docno = (ctype_xdigit($docno) && strlen($docno) % 2 === 0)
+            ? (string) hex2bin($docno)
+            : $docno;
+
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
+
+        /* HEADER: sc_trx.pnm_brng_mst (+ nama cabang / cost center / pemohon / status / total) */
+        $header = $this->m_persediaan->q_detail_pnm_brng_mst($decoded_docno)->getRowArray();
+
+        if (!$header) {
+            return redirect()->to(base_url('persediaan/trans/pnm_barang'))
+                ->with('error', 'Transaksi Penerimaan Barang tidak ditemukan.');
+        }
+
+        /* DETAIL: sc_trx.pnm_brng_dtl (+ nama gudang) */
+        $detail = $this->m_persediaan->q_detail_pnm_brng_dtl($decoded_docno)->getResultArray();
+
         $data['typeform'] = 'DETAIL';
         $data['userlogin'] = $nama;
         $data['docnoParam'] = $decoded_docno;
-        $data['dtldata'] = $this->m_persediaan->q_trx_pnm_brng_mst($param)->getRowArray();
-        return $this->template->render('persediaan/pnm_brng/v_detail_pnm_brng',$data);
+        $data['dtldata'] = $header;
+        $data['dtldetail'] = $detail;
+
+        return $this->template->render('persediaan/pnm_brng/v_detail_pnm_brng', $data);
     }
 
     public function getBranch_pnm_brng()

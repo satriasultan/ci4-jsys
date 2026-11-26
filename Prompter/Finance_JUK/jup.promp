@@ -1,0 +1,102 @@
+# PROMPT FIXING: REFACTORING INPUT JURNAL UMUM (addJUP) DENGAN METODE INLINE GRID
+
+Cline, tolong refactor halaman Input Jurnal Umum (addJUP) agar menggunakan metode input detail secara inline/grid (seperti di add_pnm_brng_mst). FOKUS HANYA PADA MODUL addJUP. Jangan ubah modul lain.
+
+## KONTEKS
+- URL yang diperbaiki: http://localhost:85/ci4-85/ka/accounting/addJUP
+- URL referensi metode input: http://localhost:85/ci4-85/persediaan/trans/add_pnm_brng_mst
+- Framework: CodeIgniter 4
+- Modul: Accounting (ka/accounting)
+- Path file fisik (verifikasi sesuai struktur folder):
+  * View: app/Views/ka/accounting/addJUP.php
+  * Controller: app/Controllers/Ka/Accounting/... (sesuaikan)
+  * Model: app/Models/... (sesuaikan)
+
+## LANGKAH AWAL (WAJIB)
+1. BACA file View addJUP saat ini untuk memahami kondisi existing (apakah masih pakai modal untuk detail entrian jurnal).
+2. BACA file View add_pnm_brng_mst (READ-ONLY) untuk memahami metode inline grid, event keyboard (TAB/ENTER/ESC), Select2 dependent, dan logika checkbox yang sudah diterapkan.
+3. BACA Controller/Model addJUP untuk memahami struktur data jurnal (header & detail) yang disimpan.
+4. Identifikasi field-field yang dibutuhkan untuk entrian jurnal umum (akun, debit, kredit, keterangan, dll). Field di JUP BERBEDA dengan PNM (yang pakai barang/gudang/qty), jadi sesuaikan.
+
+## STRUKTUR DATA JURNAL UMUM (sesuaikan dengan DB existing)
+- Header Jurnal: No. Jurnal, Tanggal, Referensi, Keterangan, Total Debit, Total Kredit.
+- Detail Entrian: No. Akun (Select2 search), Nama Akun (auto-fill readonly), Keterangan, Debit, Kredit, Costcenter/Cabang (jika ada), Aksi.
+- Tabel DB: sesuaikan dengan nama tabel jurnal yang ada di modul ka/accounting (misal: jurnal_mst, jurnal_dtl). Konfirmasi ke saya jika tidak yakin.
+
+## TUGAS REFACTORING
+
+### 1. Ganti Modal Detail Menjadi Inline Grid
+- Hapus penggunaan modal untuk entrian detail jurnal.
+- Gunakan DataTable / custom HTML table dengan inline editing (tiru metode dari add_pnm_brng_mst).
+- Sediakan tombol #btnAddDetail (+) untuk menambah baris baru secara manual.
+- Saat halaman di-refresh (F5): tabel BERSIH, tidak ada baris input otomatis. Tampilkan empty state "Belum ada entrian jurnal. Klik tombol + untuk menambah."
+
+### 2. Kolom Grid Entrian Jurnal
+- Checkbox (Pilih) | No. Akun (Select2 search) | Nama Akun (auto-fill readonly) | Keterangan | Debit | Kredit | Aksi (Simpan/X).
+- Total Debit dan Total Kredit harus terhitung otomatis (SUM dari kolom masing-masing) dan ditampilkan di footer tabel.
+- Validasi keseimbangan: Total Debit HARUS SAMA dengan Total Kredit sebelum bisa disimpan. Tampilkan indikator "Balance" / "Tidak Balance" di footer.
+
+### 3. Navigasi Keyboard (TAB/ENTER/ESC)
+- User bisa langsung mengetik di baris tabel.
+- TAB pindah kolom, ENTER pindah kolom berikutnya.
+- TAB/ENTER di kolom terakhir (Kredit/Aksi) = simpan baris + tambah baris baru + fokus ke kolom pertama baris baru.
+- TAB pada No. Akun (Select2) = dropdown otomatis terbuka, search field langsung fokus, bisa langsung diketik.
+- Setelah pilih Akun dengan ENTER → Nama Akun auto-fill, fokus pindah ke Keterangan.
+- ESC atau tombol X (data-act="cancel") = batalkan baris baru (hapus <tr>), atau revert baris edit ke nilai awal.
+- Jika semua baris dihapus, tampilkan empty state (JANGAN auto-add baris).
+
+### 4. Select2 Akun (Dependent/Auto-fill)
+- Kolom No. Akun: Select2 dengan fitur pencarian (berdasarkan kode akun atau nama akun).
+- Saat akun dipilih → Nama Akun otomatis terisi (readonly), via AJAX ke endpoint di Controller modul ini.
+- Endpoint baru HANYA dibuat di Controller modul ka/accounting ini. Jangan ubah Controller modul lain.
+
+### 5. Manajemen Tombol CRUD
+- #btnAddDetail: tambah baris baru kosong.
+- #btnUpdateDetail: simpan perubahan baris yang sedang diedit/dicentang.
+- #btnDeleteDetail: hapus baris yang dicentang (dengan konfirmasi "Hapus X baris yang dipilih?"). Reset checkbox Select All. Update Total Debit/Kredit.
+- Pastikan event listener menggunakan event delegation (karena baris dinamis).
+- Tambahkan fitur "Select All" checkbox di header tabel.
+
+### 6. Simpan Final (#btnFinalSimpanJUP)
+- Tombol Simpan Final memproses SEMUA baris valid (No. Akun terisi, Debit atau Kredit > 0) TANPA perlu centang.
+- Checkbox HANYA untuk hapus massal, bukan syarat simpan.
+- Validasi sebelum simpan:
+  * Minimal 1 baris valid.
+  * Total Debit = Total Kredit (balance). Jika tidak balance, tampilkan alert: "Total Debit dan Kredit tidak balance. Periksa kembali."
+  * Tidak ada baris dengan Debit dan Kredit terisi keduanya (dalam satu baris, hanya boleh salah satu).
+- Tambahkan tindakan preventive double submit:
+  * Flag `isSaving = false` di JS.
+  * Disable tombol #btnFinalSimpanJUP saat proses simpan berjalan, ubah teks "Menyimpan...".
+  * Loading overlay (Swal.showLoading()).
+  * Reset flag di blok complete AJAX.
+- Validasi anti-duplikasi di Controller (cek docno sudah ada atau belum sebelum insert).
+
+### 7. Struktur Data ke Controller
+- Kumpulkan data header + detail (array/JSON) dengan rapi.
+- Pastikan baris yang sedang diedit (belum ENTER) ikut tersimpan saat Simpan Final diklik.
+
+## BATAS RUANG LINGKUP
+- ✅ Boleh diubah: View, JS, CSS, Controller, Model milik modul addJUP (ka/accounting).
+- ❌ Dilarang diubah: Modul add_pnm_brng_mst, purchase, master, atau modul lain. Cukup BACA (read-only) sebagai referensi metode inline grid.
+- Library JS/CSS baru hanya di-load di View addJUP.
+
+## VALIDASI
+- Buka addJUP → tabel kosong (F5 tidak auto-add baris) → klik + → baris baru muncul.
+- Ketik No. Akun via TAB (Select2 langsung fokus) → pilih → Nama Akun auto-fill → isi Debit/Kredit → ENTER → baris tersimpan + baris baru muncul.
+- Total Debit & Kredit terhitung otomatis di footer.
+- Simpan Final tanpa balance → ditolak dengan alert.
+- Simpan Final dengan balance → data tersimpan, tombol disabled saat proses, tidak ada double submit.
+- Hapus baris yang dicentang → konfirmasi → baris hilang → total terupdate.
+- ESC atau X → baris baru hilang / baris edit revert.
+
+## OUTPUT YANG DIHARAPKAN
+- Kode perbaikan untuk View (HTML/PHP), JS (inisialisasi tabel, event TAB/ENTER/ESC, Select2, checkbox, kalkulasi total, prevent double submit), Controller (endpoint AJAX akun, simpan final, validasi balance & anti-duplikasi), dan Model (query).
+- Sebutkan file apa saja yang diubah dan alasannya.
+- Konfirmasi nama tabel DB jurnal yang digunakan (header & detail).
+
+Silakan mulai dengan inspeksi file View addJUP dan add_pnm_brng_mst, lalu berikan implementasinya.
+
+
+#fix promt 2 
+
+cabang auto select 01 JATIM TAMAN STEEL 

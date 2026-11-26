@@ -1,0 +1,317 @@
+# PROMPT REFACTORING TOTAL: MODUL PMK (PEMAKAIAN BARANG) MENYAMAI METODE PNM (PENERIMAAN BARANG)
+
+Cline, lakukan refactoring menyeluruh pada modul PMK (Pemakaian Barang) agar metode input detail dan tampilan transaksinya SAMA PERSIS dengan modul PNM (Penerimaan Barang), dengan penyesuaian khusus: PMK harus MEMBACA STOK BARANG dari gudang.
+
+FOKUS HANYA PADA MODUL PMK (add_pmk_brng_mst dan pmk_barang). Jangan ubah modul lain.
+
+## KONTEKS
+- URL halaman input PMK: http://localhost:85/ci4-85/persediaan/trans/add_pmk_brng_mst
+- URL referensi metode input: http://localhost:85/ci4-85/persediaan/trans/add_pnm_brng_mst
+- URL referensi tampilan list: http://localhost:85/ci4-85/persediaan/trans/pnm_brng
+- Framework: CodeIgniter 4
+- Tabel DB (sesuaikan dengan existing): header PMK = sc_trx.pmk_brng_mst, detail PMK = sc_trx.pmk_brng_dtl (konfirmasi jika berbeda)
+- Tabel stok: sesuaikan dengan tabel stok yang ada (misal sc_trx.stok_gudang / persediaan). Konfirmasi nama tabelnya.
+
+## LANGKAH AWAL (WAJIB)
+1. BACA (READ-ONLY) file View, JS, Controller, Model milik add_pnm_brng_mst dan pmn_barang untuk memahami metode inline grid, event keyboard, Select2 dependent, prevent double submit, dan layout list yang sudah diterapkan.
+2. BACA file View, JS, Controller, Model milik add_pmk_brng_mst dan pmk_barang saat ini.
+3. BACA struktur tabel DB: pmk_brng_mst, pmk_brng_dtl, dan tabel stok/gudang yang digunakan.
+4. Identifikasi field yang berbeda antara PNM dan PMK (PNM = penerimaan, PMK = pengeluaran/pemakaian). Pastikan field PMK sesuai dengan kebutuhan pemakaian barang.
+5. Identifikasi logika pembacaan stok: dari tabel mana, field apa, dan bagaimana validasi stok tersedia.
+
+## TUGAS A: REFACTORING HALAMAN INPUT (add_pmk_brng_mst)
+
+### A1. Ganti Modal Detail Menjadi Inline Grid (SAMA seperti add_pnm_brng_mst)
+- Hapus penggunaan modal untuk detail barang.
+- Gunakan inline editing grid (DataTable/custom table dengan jQuery) seperti di add_pnm_brng_mst.
+- Saat halaman di-refresh (F5): tabel BERSIH, tidak ada baris input otomatis. Tampilkan empty state "Belum ada data detail. Klik tombol + untuk menambah barang."
+- Tombol #btnAddDetail (+) untuk menambah baris baru.
+
+### A2. Kolom Grid Detail PMK
+- Checkbox (Pilih) | Gudang (Select2) | ID Barang (Select2 search) | Nama Barang (auto-fill readonly) | Batch/Spec (Select2 dependent) | Satuan (readonly) | Qty | Harga (readonly/auto-fill) | Nilai (auto-kalkulasi Qty*Harga) | Stok Tersedia (READONLY, info) | Keterangan | Aksi (Simpan/X).
+- KOLOM BARU: "Stok Tersedia" yang menampilkan sisa stok barang di gudang terpilih (readonly, hanya informasi).
+
+### A3. LOGIKA UTAMA PMK: BACA & VALIDASI STOK
+- Saat user memilih Gudang + ID Barang + Batch/Spec → lakukan AJAX request ke endpoint di Controller modul ini (buat endpoint baru jika belum ada) untuk mengambil STOK TERSEDIA dari tabel stok/gudang.
+- Tampilkan stok tersedia di kolom "Stok Tersedia".
+- VALIDASI INPUT QTY:
+  * Saat user mengisi Qty, bandingkan dengan Stok Tersedia.
+  * Jika Qty > Stok Tersedia → tampilkan error/alert: "Qty melebihi stok tersedia. Stok saat ini: X." dan cegah baris disimpan (fokus kembali ke input Qty).
+  * Qty tidak boleh <= 0.
+- Saat simpan final, lakukan validasi ulang stok di sisi server (Controller) sebelum insert. Jika stok tidak mencukupi, tolak transaksi dengan pesan error.
+- PMK akan MENGURANGI stok (bukan menambah seperti PNM). Pastikan logika update stok (pengurangan) sesuai dengan tabel stok existing.
+
+### A4. Navigasi Keyboard (TAB/ENTER/ESC) — SAMA seperti PNM
+- TAB pindah kolom, ENTER pindah kolom berikutnya.
+- TAB/ENTER di kolom terakhir (Keterangan) = simpan baris + tambah baris baru + fokus ke kolom pertama baris baru.
+- TAB pada Gudang / ID Barang / Batch (Select2) = dropdown otomatis terbuka, search field langsung fokus, bisa langsung diketik tanpa mouse.
+- Setelah pilih dengan ENTER → fokus pindah ke kolom berikutnya.
+- ESC atau tombol X (data-act="cancel") = batalkan baris baru (hapus <tr>), atau revert baris edit ke nilai awal.
+- Jika semua baris dihapus → tampilkan empty state (JANGAN auto-add baris).
+
+### A5. Select2 Dependent (SAMA seperti PNM)
+- Gudang: Select2 list gudang.
+- ID Barang: Select2 search (berdasarkan kode/nama barang).
+- Batch/Spec: Select2 dependent dari ID Barang + Gudang (AJAX). Reset saat ID Barang/Gudang diganti.
+- Saat ID Barang dipilih → Nama Barang, Satuan, Harga auto-fill. Stok Tersedia juga auto-load.
+- Endpoint AJAX baru HANYA dibuat di Controller modul PMK ini. Jangan ubah Controller modul lain.
+
+### A6. Manajemen Tombol CRUD (SAMA seperti PNM)
+- #btnAddDetail (+), #btnUpdateDetail, #btnDeleteDetail (hapus baris yang dicentang, dengan konfirmasi, reset Select All, update Grand Total).
+- Event delegation untuk baris dinamis.
+- Checkbox Select All di header tabel.
+
+### A7. Simpan Final (#btnFinalSimpanPmk) — SAMA seperti PNM
+- Simpan SEMUA baris valid (ID Barang + Qty > 0) TANPA perlu centang. Checkbox HANYA untuk hapus massal.
+- Validasi sebelum simpan:
+  * Minimal 1 baris valid.
+  * Semua Qty <= Stok Tersedia (validasi ulang saat simpan).
+  * Tidak ada baris kosong yang ikut terkirim.
+- Prevent double submit:
+  * Flag `isSaving = false` di JS.
+  * Disable tombol + ubah teks "Menyimpan..." saat proses.
+  * Loading overlay (Swal.showLoading()).
+  * Reset flag di blok complete AJAX.
+  * Validasi anti-duplikasi di Controller (cek docno sebelum insert).
+
+## TUGAS B: REFACTORING HALAMAN LIST (pmk_barang)
+
+### B1. Samakan Layout dengan pnm_barang
+- Sesuaikan layout grid list PMK agar konsisten dengan pnm_barang (yang sudah mengikuti referensi purchase/trans/lpb).
+- Kolom: No. Transaksi, Tanggal, Cabang, Bagian/Costcenter, Referensi, Total, Status, Aksi.
+- Fitur search, pagination, dan sorting berfungsi.
+- Tombol aksi: Detail + Laporan Jurnal Transaksi (urutan & styling konsisten).
+
+### B2. Tombol Laporan Jurnal Transaksi
+- Tampilkan jurnal transaksi PMK (struktur tiru dari detail lpb / pnm_barang, read-only).
+- Endpoint baru HANYA di Controller modul PMK ini.
+
+### B3. Tombol Update di List
+- Tombol Update: disabled/tidak bisa diklik jika docdate transaksi <= periode closing (logika baca dari tools/tutupbulan, read-only).
+- Validasi juga di sisi Controller (anti-bypass).
+
+## TUGAS C: HALAMAN DETAIL (detail_pmk_brng_mst, jika ada)
+- Samakan layout dengan detail_pnm_brng_mst.
+- Query header dari pmk_brng_mst, detail dari pmk_brng_dtl.
+- Tampilkan Grand Total, tombol Back, Print, Hapus Transaksi (dengan validasi closing periode), dan Laporan Jurnal.
+- Tombol Hapus Transaksi: hapus header + detail + jurnal terkait dalam DATABASE TRANSACTION.
+
+## BATAS RUANG LINGKUP (WAJIB)
+- ✅ Boleh diubah: View, JS, CSS, Controller, Model milik add_pmk_brng_mst, pmk_barang, dan detail_pmk_brng_mst.
+- ❌ Dilarang diubah: File milik add_pnm_brng_mst, pnm_barang, detail_pnm_brng_mst, purchase, master, tools/tutupbulan, atau modul lain. Cukup BACA (read-only) sebagai referensi.
+- Library JS/CSS baru hanya di-load di View modul PMK.
+- Endpoint AJAX baru hanya di Controller modul PMK.
+
+## VALIDASI AKHIR
+- Halaman input PMK: tabel kosong saat F5, klik + → baris baru, TAB/ENTER berfungsi, Select2 langsung fokus saat TAB, ESC/X membatalkan baris.
+- Pilih Gudang + Barang + Batch → Stok Tersedia tampil → isi Qty > Stok → ditolak dengan alert.
+- Isi Qty valid → Simpan Final (tanpa centang) → data tersimpan, stok berkurang, tidak ada double submit.
+- Halaman list PMK: layout konsisten dengan pnm_barang, tombol Detail + Laporan Jurnal berfungsi, tombol Update disabled saat closing.
+- Halaman detail PMK: layout konsisten dengan detail_pnm_brng_mst, jurnal tampil, hapus transaksi berfungsi dengan validasi closing.
+- Tidak ada error di console browser.
+
+## OUTPUT YANG DIHARAPKAN
+- Kode perbaikan untuk semua file View, JS, CSS, Controller, dan Model milik modul PMK.
+- Sebutkan file apa saja yang diubah dan alasannya.
+- Konfirmasi nama tabel DB (pmk_brng_mst, pmk_brng_dtl, tabel stok) yang digunakan.
+- Jelaskan logika pembacaan stok dan validasi Qty vs Stok.
+
+Silakan mulai dengan inspeksi file referensi (add_pnm_brng_mst, pnm_barang) dan file existing PMK, lalu berikan implementasinya secara lengkap.
+
+
+#fixing 2
+Cline, ada perbaikan logika krusial pada perhitungan "Stok Tersedia" di halaman input PMK (add_pmk_brng_mst). FOKUS HANYA PADA MODUL PMK. Jangan ubah modul lain.
+
+## MASALAH
+Saat ini, jika user menginput barang di grid (dan data sudah masuk ke tabel temporary `sc_tmp.pmk_brng_dtl`), kolom "Stok Tersedia" masih menampilkan stok asli dari gudang (stok master). 
+Ini membingungkan karena jika user menambahkan barang yang sama di baris kedua, sistem seolah-olah masih mengizinkan Qty penuh, padahal stok harusnya sudah berkurang karena ada barang yang sedang di-booking di baris pertama.
+
+## PERILAKU YANG DIHARAPKAN
+Kolom "Stok Tersedia" pada grid HARUS menampilkan **Stok Real-Time yang sudah terpotong** oleh Qty yang sedang diinput (buffering) di tabel temporary (`sc_tmp.pmk_brng_dtl`).
+
+Rumus Logika:
+`Stok Tersedia (di grid) = Stok Fisik Gudang (Master) - Total Qty di sc_tmp.pmk_brng_dtl (untuk idlocation, idbarang, dan batch yang sama)`
+
+## TUGAS PERBAIKAN
+
+### 1. Update Endpoint AJAX Pengecekan Stok (Controller)
+- Cari endpoint di Controller modul PMK yang saat ini digunakan untuk mengambil data stok (saat user memilih Gudang + ID Barang + Batch).
+- Modifikasi query-nya:
+  * Ambil stok fisik asli dari tabel master stok.
+  * Lakukan query (SUM) ke tabel temporary `sc_tmp.pmk_brng_dtl` untuk mencari total Qty yang sudah diinput oleh user (berdasarkan sesi/user saat ini, idlocation, idbarang, dan batch yang sama).
+  * Kurangi stok fisik dengan total Qty di tabel temporary tersebut.
+  * Return nilai hasil pengurangan sebagai `stok_tersedia` ke JSON response.
+
+### 2. Update Tampilan Grid (JS/View)
+- Saat baris baru ditambahkan, dan user memilih barang, AJAX akan memanggil endpoint di atas.
+- Tampilkan nilai `stok_tersedia` yang sudah terpotong tersebut di kolom "Stok Tersedia".
+- Pastikan validasi Qty (Qty tidak boleh melebihi Stok Tersedia) menggunakan nilai `stok_tersedia` yang baru ini.
+
+### 3. Sinkronisasi Saat Ada Perubahan (Tambah/Hapus/Edit Baris)
+- Saat user menambah baris baru dengan barang yang sama, atau menghapus baris, atau mengubah Qty di baris lain, maka informasi "Stok Tersedia" di seluruh baris yang memiliki idbarang, batch, dan idlocation yang sama HARUS TERUPDATE secara otomatis (re-kalkulasi).
+- Lakukan pemanggilan ulang AJAX (refresh) untuk baris-baris terkait setiap kali ada event `add row`, `delete row`, atau `change` pada input Qty.
+
+### 4. Validasi Qty di Sisi Server (Simpan Final)
+- Saat tombol Simpan Final (`#btnFinalSimpanPmk`) diklik, lakukan validasi ulang di Controller sebelum menyimpan data permanen.
+- Pastikan total Qty yang diinput (dari tabel temporary) tidak melebihi stok fisik asli yang ada di database (untuk mencegah race condition / bypass JS).
+
+## BATAS RUANG LINGKUP
+- ✅ Boleh diubah: View, JS, Controller, Model milik modul add_pmk_brng_mst.
+- ❌ Dilarang diubah: File milik modul lain.
+
+## VALIDASI
+- Stok fisik barang X di Gudang A = 10.
+- Input baris 1: Barang X, Qty = 3 -> Stok Tersedia di baris 1 harus menampilkan 7.
+- Tambah baris 2: Barang X, Qty = 2 -> Stok Tersedia di baris 1 dan baris 2 harus menampilkan 5.
+- Hapus baris 2 -> Stok Tersedia di baris 1 harus kembali menampilkan 7.
+
+Tolong perbaiki query di Controller dan logika AJAX di JS agar sinkronisasi stok berjalan sesuai rumus di atas.
+
+
+#prompt fixing 3
+# PROMPT FIXING TOTAL: LOGIKA BISNIS & STATUS TRANSAKSI MODUL PMK (PEMAKAIAN BARANG)
+
+Cline, tolong kerjakan 4 perbaikan sekaligus pada modul PMK (Pemakaian Barang). FOKUS HANYA PADA MODUL PMK. Jangan ubah modul lain.
+
+## KONTEKS
+- Halaman Input: http://localhost:85/ci4-85/persediaan/trans/add_pmk_brng_mst
+- Halaman List: http://localhost:85/ci4-85/persediaan/trans/list_trx_pmk_brng_mst (atau pmk_barang)
+- URL Clear: http://localhost:85/ci4-85/persediaan/trans/clear_pmk_brng
+- Tabel Header: `sc_trx.pmk_brng_mst`
+- Tabel Detail: `sc_trx.pmk_brng_dtl`
+- Tabel Temporary: `sc_tmp.pmk_brng_dtl`
+- Status Transaksi: 'E' (Entry/Draft) dan 'F' (Final/Posted)
+
+====================================
+TUGAS 1: PERHITUNGAN "STOK TERSEDIA" (BUFFERING)
+====================================
+Masalah:
+Saat user menginput barang di grid (data masuk ke `sc_tmp.pmk_brng_dtl`), kolom "Stok Tersedia" masih menampilkan stok master. Jika user menambah barang yang sama di baris kedua, stok seolah masih penuh padahal sudah dibooking di baris pertama.
+
+Rumus:
+`Stok Tersedia (di grid) = Stok Fisik Gudang (Master) - Total Qty di sc_tmp.pmk_brng_dtl (untuk idlocation, idbarang, dan batch yang sama)`
+
+Langkah Perbaikan:
+1. Update Endpoint AJAX (Controller modul PMK):
+   - Query ambil stok fisik asli.
+   - Query SUM Qty ke `sc_tmp.pmk_brng_dtl` (filter: sesi/user saat ini, idlocation, idbarang, batch).
+   - Kurangi stok fisik dengan SUM Qty temporary.
+   - Return nilai `stok_tersedia` ke JSON.
+2. Update Tampilan Grid (JS/View):
+   - Tampilkan `stok_tersedia` yang sudah terpotong.
+   - Validasi Qty (Qty tidak boleh > Stok Tersedia).
+3. Sinkronisasi Real-Time:
+   - Setiap event `add row`, `delete row`, atau `change` pada input Qty, refresh/re-kalkulasi AJAX untuk baris dengan idbarang, batch, dan idlocation yang sama agar angka stok sinkron di semua baris.
+4. Validasi Server (Simpan Final):
+   - Saat #btnFinalSimpanPmk diklik, validasi ulang di Controller agar total Qty tidak melebihi stok fisik asli.
+
+====================================
+TUGAS 2: GENERATE NOMOR TRANSAKSI (#cabang)
+====================================
+Masalah:
+Saat user mengubah `#cabang` atau inisialisasi awal, sistem memanggil fungsi penomoran modul lain (`getNextSuffix_ajustment_stock`). Ini SALAH.
+
+Perbaikan:
+1. Cari kode JS/View pada add_pmk_brng_mst yang menangani event `change` pada `#cabang` atau `document.ready`.
+2. Ganti pemanggilan AJAX ke endpoint `getNextSuffix_pmk_brng`.
+3. Jika endpoint `getNextSuffix_pmk_brng` belum ada di Controller modul PMK, buatkan endpoint baru tersebut agar mengembalikan format nomor urut khusus PMK.
+4. Pastikan hanya halaman PMK yang memakai endpoint ini.
+
+====================================
+TUGAS 3: HIDDEN TOMBOL UPDATE DI LIST TRANSAKSI
+====================================
+Masalah:
+Saat transaksi berstatus 'E' (Entry/Draft), tombol "Update" di halaman list masih muncul dan bisa diklik.
+
+Perbaikan:
+1. Di View halaman list (list_trx_pmk_brng_mst / pmk_barang):
+   - Jika STATUS == 'F' (Final): Tampilkan tombol Update.
+   - Jika STATUS == 'E' (Entry): SEMBUNYIKAN tombol Update (hidden/display:none).
+2. Pastikan data status dikirim dari Controller ke View dengan benar.
+3. Validasi di Controller halaman edit: Jika user memaksa akses URL edit untuk transaksi status 'E', tolak dan redirect dengan pesan error "Transaksi berstatus Draft, tidak dapat diedit."
+
+====================================
+TUGAS 4: PERBAIKAN PROSES CLEAR (STATUS 'E' -> 'F')
+====================================
+Masalah:
+URL `clear_pmk_brng` tidak berfungsi untuk mengubah status dari 'E' menjadi 'F'.
+
+Perbaikan:
+1. Periksa Controller dan Model yang menangani URL `clear_pmk_brng`.
+2. Pastikan proses update pada `sc_trx.pmk_brng_mst`:
+   - Field `status` diubah dari 'E' menjadi 'F'.
+   - Update field pendukung (misal `tgl_posting`, `user_posting`).
+   - Lakukan berdasarkan parameter ID / docno dari list.
+3. Gunakan Database Transaction (beginTransaction / commit / rollBack).
+4. Setelah clear sukses, redirect ke list dengan pesan sukses ("Transaksi berhasil di-finalisasi").
+5. Tambahkan konfirmasi di View sebelum clear ("Yakin ingin mem-finalisasi transaksi ini? Data tidak dapat diubah setelahnya.").
+6. (Opsional) Jika ada tabel jurnal terkait, pastikan proses clear juga memicu pembuatan/update jurnal jika sistem menggunakan mekanisme tersebut. Bandingkan (read-only) dengan modul lain yang proses clear-nya sudah berjalan sukses sebagai referensi.
+
+====================================
+BATAS RUANG LINGKUP (WAJIB)
+====================================
+- ✅ Boleh diubah: View, JS, Controller, Model milik modul PMK (add_pmk_brng_mst, list_trx_pmk_brng_mst/pmk_barang, clear_pmk_brng).
+- ❌ Dilarang diubah: File milik modul lain. Cukup BACA (read-only) modul lain sebagai referensi.
+
+====================================
+VALIDASI AKHIR
+====================================
+1. Uji Stok: Stok barang X = 10. Input baris 1 (Qty=3) -> Stok Tersedia = 7. Tambah baris 2 (Qty=2) -> Stok di baris 1 & 2 = 5. Hapus baris 2 -> Stok baris 1 = 7.
+2. Uji Penomoran: Ganti Cabang -> Nomor transaksi format PMK. Cek F12 Network -> request ke `getNextSuffix_pmk_brng`.
+3. Uji List: Transaksi 'E' -> Tombol Update HILANG. Transaksi 'F' -> Tombol Update MUNCUL.
+4. Uji Clear: Klik Clear pada transaksi 'E' -> Konfirmasi -> Status berubah jadi 'F' di DB -> Tombol Update muncul di list -> Tidak ada error.
+
+Tolong kerjakan keempat tugas ini sekaligus dan berikan kode perbaikannya (View, JS, Controller, Model).
+
+
+#prompt fixing 4
+
+# PROMPT FIXING: PERBAIKAN CLEAR PMK & GET NEXT SUFFIX PMK
+
+Cline, ada 2 perbaikan yang harus diselesaikan pada modul PMK (add_pmk_brng_mst). FOKUS HANYA PADA MODUL PMK. Jangan ubah modul lain.
+
+====================================
+TUGAS 1: PERBAIKAN FUNGSI CLEAR PMK (URL: http://localhost:85/ci4-85/persediaan/trans/clear_pmk_brng)
+====================================
+Masalah:
+Proses clear pada URL `clear_pmk_brng` masih belum berfungsi. Status di tabel `sc_trx.pmk_brng_mst` tidak berubah dari 'E' (Entry/Draft) menjadi 'F' (Final).
+
+Instruksi Perbaikan:
+1. Cari file Controller/Model yang menangani endpoint `clear_pmk_brng`.
+2. Lihat referensi fungsi `clearTransferLokasi` (baca/read-only, jangan diubah). Fungsi ini adalah contoh proses clear yang sudah berjalan sukses di modul lain.
+3. Tiru logika dari `clearTransferLokasi` tersebut, dan terapkan pada endpoint `clear_pmk_brng`:
+   - Pastikan parameter yang dikirim (ID/Docno) diterima dengan benar.
+   - Lakukan update pada tabel `sc_trx.pmk_brng_mst`: set `status` = 'F', update `tgl_posting` / `user_posting` jika ada.
+   - Gunakan Database Transaction (beginTransaction / commit / rollBack) agar aman.
+   - (PENTING) Jika fungsi `clearTransferLokasi` juga melakukan proses update stok, insert jurnal, atau update tabel lain, PASTIKAN fungsi `clear_pmk_brng` juga melakukan hal yang sama sesuai dengan alur bisnis PMK (mengurangi stok / membuat jurnal pengeluaran).
+4. Setelah sukses, redirect kembali ke halaman list PMK dengan pesan sukses ("Transaksi berhasil di-finalisasi").
+5. Pastikan response AJAX (jika menggunakan AJAX) mengembalikan status success agar UI bisa menampilkan notifikasi yang benar.
+
+====================================
+TUGAS 2: PERBAIKAN FUNGSI GET NEXT SUFFIX PMK
+====================================
+Masalah:
+Pemanggilan endpoint `getNextSuffix_pmk_brng` sepertinya belum berfungsi atau belum ada di Controller modul PMK, sehingga nomor transaksi tidak ter-generate dengan benar saat memilih Cabang.
+
+Instruksi Perbaikan:
+1. Cari fungsi referensi `getNextSuffix_pmk_brng` (atau fungsi serupa seperti `getNextSuffix_pnm_brng` / `getNextSuffix_ajustment_stock`). Baca (read-only) untuk memahami cara kerjanya.
+2. Buat (atau perbaiki) endpoint `getNextSuffix_pmk_brng` di Controller modul PMK:
+   - Fungsi harus menerima parameter Cabang (dan parameter lain jika diperlukan).
+   - Lakukan query ke tabel `sc_trx.pmk_brng_mst` untuk mencari nomor urut terakhir berdasarkan format penomoran PMK.
+   - Kembalikan response JSON dengan format nomor urut berikutnya yang siap dipakai.
+3. Di file JS/View `add_pmk_brng_mst`, pastikan pemanggilan AJAX saat event `#cabang` berubah mengarah ke endpoint `getNextSuffix_pmk_brng` yang baru ini.
+4. Pastikan format nomor yang dihasilkan sesuai dengan standar penomoran PMK yang berlaku di sistem Anda (misal: `PMK/YYYYMM/XXXX`).
+
+====================================
+BATAS RUANG LINGKUP (WAJIB)
+====================================
+- ✅ Boleh diubah: View, JS, Controller, Model milik modul PMK (clear_pmk_brng, getNextSuffix_pmk_brng, add_pmk_brng_mst).
+- ❌ Dilarang diubah: File milik modul lain (clearTransferLokasi, dll). Cukup BACA (read-only) sebagai referensi.
+
+====================================
+VALIDASI
+====================================
+1. Uji Clear: Buka list PMK -> klik tombol Clear pada transaksi 'E' -> Konfirmasi -> Cek database (status berubah 'F') -> Cek stok (berkurang jika ada logika stok) -> Redirect ke list dengan pesan sukses -> Tombol Update muncul.
+2. Uji Suffix: Buka add_pmk_brng_mst -> Ganti Cabang -> Cek F12 Network -> pastikan request ke `getNextSuffix_pmk_brng` mengembalikan nomor yang benar -> Nomor transaksi terisi di form.
+
+Tolong perbaiki kedua fungsi ini. Berikan kode Controller, Model, dan JS/View yang diperbarui.

@@ -1,3 +1,12 @@
+<?php
+    /* =====================================================
+     * AUTOFILL INPUT AWAL CABANG / JOB (SESSION USER LOGIN)
+     * Cabang default mengikuti session user yang sedang login
+     * (PT JATIM TAMAN STEEL / PLANT), tetap bisa dipilih lain.
+     * ===================================================== */
+    $sessionBranchId   = trim((string) session()->get('idbranchjob'));
+    $sessionBranchName = strtoupper(trim((string) session()->get('nmbranchjob')));
+?>
 <link rel="stylesheet" href="<?= base_url('assets/css/corp-form.css') ?>">
 <style>
     /* =========================================================
@@ -87,7 +96,9 @@
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="cabang">Cabang / Job</label>
-                                        <select name="cabang" id="cabang" class="form-control" required></select>
+                                        <select name="cabang" id="cabang" class="form-control" required
+                                            data-session-branch-id="<?= esc($sessionBranchId) ?>"
+                                            data-session-branch-name="<?= esc($sessionBranchName) ?>"></select>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
@@ -250,6 +261,7 @@
 
 
 <script type="application/javascript" src="<?= base_url('assets/pagejs/arap/ndk.js') ?>"></script>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/arap/arap_branch_autofill.js') ?>"></script>
 <script type="text/javascript">
     $(function() {
         $("#example1").dataTable();

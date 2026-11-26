@@ -344,6 +344,11 @@ $(document).on('input', '.jtsseparator', function () {
 
 /* TABLE PO DETAIL */
 function tableJUPDetail(){
+    /* Halaman addJUP kini memakai grid inline (#jupGrid / jup_add.js). */
+    if (!document.getElementById('tabjupdtl')) {
+        return;
+    }
+
         /* Tabel PO Detail */
     var initTable = function () {
         var table = $('#tabjupdtl');
@@ -405,7 +410,16 @@ function tableJUPDetail(){
 function reload_table_jup_dtl()
 {
     var table = $('#tabjupdtl');
-    table.DataTable().ajax.reload(); //reload datatable ajax
+
+    if (table.length && $.fn.DataTable && $.fn.DataTable.isDataTable('#tabjupdtl')) {
+        table.DataTable().ajax.reload(); //reload datatable ajax
+        return;
+    }
+
+    /* Halaman addJUP memakai grid inline (#jupGrid) */
+    if (window.JUPGrid && typeof window.JUPGrid.reload === 'function') {
+        window.JUPGrid.reload();
+    }
 }
 
 
@@ -481,6 +495,15 @@ function formatJUPBalance(value) {
 
 /* Hitung ulang field balance dari SELURUH baris detail yang tampil */
 function hitungBalanceJUP() {
+    /* halaman addJUP: sumber balance adalah grid inline (#jupGrid) */
+    if (document.getElementById('jupGrid') && window.JUPGrid && typeof window.JUPGrid.getTotals === 'function') {
+        var totals = window.JUPGrid.getTotals();
+
+        $('#balance').val(formatJUPBalance(totals.balance));
+
+        return totals.balance;
+    }
+
     if (!$.fn.dataTable.isDataTable('#tabjupdtl')) {
         return 0;
     }
@@ -572,6 +595,11 @@ function submitFinalJUP() {
 
     if (!form) return false;
     if (jupFinalSubmitting) return false;
+
+    /* Halaman addJUP memakai grid inline (#jupGrid) -> validasi & simpan di jup_add.js */
+    if (document.getElementById('jupGrid') && typeof jupAddFinalSubmit === 'function') {
+        return jupAddFinalSubmit();
+    }
 
     /* 1) wajib ada minimal satu baris detail perkiraan */
     var rowCount = ($.fn.dataTable && $.fn.dataTable.isDataTable('#tabjupdtl'))

@@ -61,11 +61,31 @@ function table_trx_pnm_brng_mst() {
             },
 
             //Set column definition initialisation properties.
+            //Urutan kolom: No | Action | Docno | Tanggal | Cabang | Bagian | Referensi | Total | Status
             "columnDefs": [
                 {
-                    "targets": [-1], //last column
-                    "orderable": false, //set not orderable
+                    "targets": [0],          // No.
+                    "orderable": false,
+                    "className": "text-center"
                 },
+                {
+                    "targets": [1],          // Action
+                    "orderable": false,
+                    "className": "text-center"
+                },
+                {
+                    "targets": [3],          // Tanggal
+                    "className": "text-center"
+                },
+                {
+                    "targets": [7],          // Total
+                    "className": "text-end"
+                },
+                {
+                    "targets": [8],          // Status
+                    "orderable": false,
+                    "className": "text-center"
+                }
             ],
             // Di dalam konfigurasi DataTable Anda:
             "drawCallback": function(settings) {
@@ -94,10 +114,33 @@ function reloadpnmBrg() {
     updateGrandTotal();
 }
 
+    /* Bootstrap 5 tidak punya jQuery plugin .modal() -> pakai API native */
+    function pnmHideModal(selector) {
+        var node = document.querySelector(selector);
+
+        if (!node) {
+            return;
+        }
+
+        if (window.bootstrap && window.bootstrap.Modal) {
+            var inst = window.bootstrap.Modal.getInstance(node);
+
+            if (inst) {
+                inst.hide();
+            }
+
+            return;
+        }
+
+        if ($.fn.modal) {
+            $(selector).modal('hide');
+        }
+    }
+
 $('#btn-filter-tx').click(function () { //button filter event click
     var table = $('#tpnmBrg');
     table.DataTable().ajax.reload(); //reload datatable ajax
-    $('#filter').modal('hide');
+    pnmHideModal('#filter');
     // Panggil fungsi manual tadi
     updateGrandTotal();
 });
@@ -105,13 +148,18 @@ $('#btn-reset-tx').click(function () { //button reset event click
     $('#form-filter')[0].reset();
     var table = $('#tpnmBrg');
     table.DataTable().ajax.reload(); //reload datatable ajax
-    $('#filter').modal('hide');
+    pnmHideModal('#filter');
     // Panggil fungsi manual tadi
     updateGrandTotal();
 });
 
 function updateGrandTotal() {
     var docno = $('#docno').val(); // pastikan ada input/hidden field id docno
+
+    /* halaman list tidak memiliki #docno -> tidak perlu request summary */
+    if (!docno) {
+        return;
+    }
 
     $.ajax({
         url: HOST_URL + 'persediaan/trans/get_summary_pnm',
