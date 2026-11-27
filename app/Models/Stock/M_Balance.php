@@ -523,6 +523,70 @@ group by idunit);");
         return $this->db->query($query);
     }
 
+    /**
+     * Lookup item BOM untuk Penerimaan Barang Produksi (BP):
+     * memakai BARANG JADI dari sc_trx.workingorder_bom_mst
+     * (bukan komponen dari sc_trx.workingorder_bom_dtl).
+     */
+    public function q_item_barangjadi_param($param,$docdate,$wono)
+    {
+        // =========================
+        // NORMALISASI FORMAT TANGGAL
+        // =========================
+        if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $docdate)) {
+            $dt = \DateTime::createFromFormat('d-m-Y', $docdate);
+            if ($dt === false) {
+                throw new \Exception('Format docdate tidak valid: ' . $docdate);
+            }
+            $docdate = $dt->format('Y-m-d');
+        }
+
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $docdate)) {
+            throw new \Exception('Format docdate tidak valid: ' . $docdate);
+        }
+
+        $query="
+        SELECT
+            trim(a.idbarang) as id,
+            a.idbarang,
+            a.nmbarang,
+            a.unit,
+            a.idgroup,
+            a.idsubgroup,
+            a.idtype,
+            a.grade,
+            a.lsize,
+            a.description,
+            COALESCE(s.newcost,0) as newcost,
+            b.buildfor as qty
+        FROM sc_trx.workingorder_bom_mst b
+        INNER JOIN sc_mst.mbarang a
+        ON trim(a.idbarang)=trim(b.idbarang_jadi)
+        LEFT JOIN (
+
+            SELECT
+                x.*,
+                ROW_NUMBER() OVER(
+                    PARTITION BY x.idbarang
+                    ORDER BY x.activedate DESC
+                ) rn
+            FROM sc_mst.standart_cost_dtl x
+            WHERE x.status='F'
+            AND x.activedate<=TO_DATE('$docdate','YYYY-MM-DD')
+
+        )s
+        ON a.idbarang=s.idbarang
+        AND s.rn=1
+        WHERE
+        trim(b.docref)=trim('$wono')
+        AND a.status='F'
+        $param
+        ORDER BY a.nmbarang
+
+        ";
+        return $this->db->query($query);
+    }
+
     var $t_balance_moving_view = "(select a.*,round(coalesce(a.onhand,0)-(coalesce(a.allocated,0)+coalesce(a.tmpalloca,0)),2) as sisa,b.nmbarang,
 c.nmlocation,d.nmarea,e.nmgroup,trim(a.idbarang)||trim(a.batch) as idspec from sc_mst.stkgdw a
 left outer join sc_mst.mbarang b on a.idbarang=b.idbarang

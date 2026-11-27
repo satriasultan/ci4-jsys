@@ -476,6 +476,12 @@ $('#btnAddDetailMaterial').on('click', function (e) {
 });
 function btnInputDetailMaterial() {
 
+    // Grid inline aktif (gaya pmk_brng) → buka baris editor, bukan modal
+    if (typeof bnmGridExists === 'function' && bnmGridExists()) {
+        bnmGridNewDraft();
+        return;
+    }
+
     // reset form
     $('#formBPNMMaterialDtl')[0].reset();
 
@@ -534,6 +540,11 @@ function setSelect2Ajax(selector, value, text) {
 
 
 function updateDetailBPNM(){
+    // Grid inline aktif → edit baris terpilih langsung di grid
+    if (typeof bnmGridExists === 'function' && bnmGridExists()) {
+        bnmGridEditSelected();
+        return;
+    }
     const ids = getCheckedDetailIds();
     console.log('IDS:', ids);
 
@@ -678,6 +689,12 @@ $('#issub').on('change', function () {
 
 
 function btnDeleteDetailBPNM(){
+    // Grid inline aktif → hapus massal baris tercentang
+    if (typeof bnmGridExists === 'function' && bnmGridExists()) {
+        bnmGridDeleteSelected();
+        return;
+    }
+
     const ids = getCheckedDetailIds();
 
     if(ids.length === 0){
@@ -1697,6 +1714,10 @@ function saveBPNMDetail(formId) {
 
 /* TABLE PP DETAIL */
 function tabletmpBPNM() {
+    // Grid inline aktif (gaya pmk_brng) → DataTables tidak diinisialisasi
+    if (typeof bnmGridExists === 'function' && bnmGridExists()) {
+        return;
+    }
     /* Tabel PP Detail */
     var initTable = function () {
         var table = $('#tmp_bpnmdtl');
@@ -1804,6 +1825,12 @@ $(document).on('copy', function (e) {
 
 
 function reload_bpnm_dtl() {
+    // Grid inline aktif → reload dari endpoint grid (JSON)
+    if (typeof bnmGridExists === 'function' && bnmGridExists()) {
+        bnmGridReload();
+        return;
+    }
+
     var table = $('#tmp_bpnmdtl');
     table.DataTable().ajax.reload(); //reload datatable ajax
 }

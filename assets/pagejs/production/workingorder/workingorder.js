@@ -188,7 +188,7 @@ let currentKodeSuffix = '';
 
 function generateDocNumber(prefix, infix, suffix) {
     if (!prefix || !infix || !suffix) return;
-    $('#docno').val(prefix + '/' + infix + '/' + suffix);
+    $('#docno').val((prefix + '/' + infix + '/' + suffix).toUpperCase());
 }
 
 $('#cabang').on('change', function () {
@@ -270,7 +270,7 @@ $('#cabang').on('change', function () {
             }
 
             $('#docno').val(
-                prefix + '/' + res.infix + '/' + currentKodeSuffix + '0001'
+                (prefix + '/' + res.infix + '/' + currentKodeSuffix + '0001').toUpperCase()
             );
 
         }
@@ -312,7 +312,7 @@ function loadNextSuffixWO() {
                 .trigger('change');
 
             $('#docno').val(
-                prefix + '/' + infix + '/' + res.suffix
+                (prefix + '/' + infix + '/' + res.suffix).toUpperCase()
             );
 
         }
@@ -664,31 +664,32 @@ $(document).on('click','.btn-save-update',function(){
 
 function saveUpdateBOM(docno, buildfor){
 
+    /* pengaman: Build For (qty) wajib > 0 (dulu tidak perlu validasi ini karena
+       textarea alasan sudah menahan dialog) */
+    var bfNum = parseFloat(String(buildfor == null ? '' : buildfor).replace(/,/g, '').trim());
+
+    if (!isFinite(bfNum) || bfNum <= 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Peringatan',
+            text: 'Build For (qty) harus lebih besar dari 0.'
+        });
+        return;
+    }
+
     Swal.fire({
-        title: 'Update Build For',
+        title: 'Update Build For (Qty)',
         html: `
             Yakin update Build For BOM
             <b>${docno}</b> ?
             <br><br>
             Qty Material, Cost dan WIP akan dihitung ulang.
-            <br><br>
-            <b>Alasan perubahan</b> <span style="color:red;">*</span>
         `,
-        input: 'textarea',
-        inputPlaceholder: 'Tulis alasan ubah Build For (wajib)...',
-        inputAttributes: { maxlength: 500, rows: 3 },
         icon: 'question',
         showCancelButton: true,
         confirmButtonText: 'Ya, Simpan',
         cancelButtonText: 'Batal',
-        preConfirm: (value) => {
-            const v = $.trim(value || '');
-            if (v.length < 5) {
-                Swal.showValidationMessage('Alasan wajib diisi minimal 5 karakter.');
-                return false;
-            }
-            return v;
-        }
+        reverseButtons: true
     }).then((result)=>{
 
         if(!result.isConfirmed){
@@ -704,7 +705,9 @@ function saveUpdateBOM(docno, buildfor){
             data:{
                 docno:docno,
                 buildfor:buildfor,
-                keterangan:result.value,
+                // edit qty (Build For) tidak wajib alasan;
+                // backend mengisi default 'UBAH BUILD FOR' bila kosong
+                keterangan:'',
                 docref: $.trim($('#docno').val() || '')
             },
 

@@ -1578,7 +1578,10 @@ class Globalmodule extends BaseController
         if ($page < 1) { $page = 1; }
         $limit = $perpage * $page;
 
-        $param=" and (idbarang like '%$search%' $paramglobal1 $paramglobal2 $parameterx ) or (nmbarang like '%$search%' $paramglobal1 $paramglobal2 $parameterx ) order by nmbarang asc";
+        // Sanitasi search agar karakter ' / % / _ tidak memicu SQL error
+        $search = str_replace(["'", "\\", "%", "_"], ["", "", "\\%", "\\_"], $search);
+
+        $param=" and ( (idbarang like '%$search%' $paramglobal1 $paramglobal2 $parameterx ) or (nmbarang like '%$search%' $paramglobal1 $paramglobal2 $parameterx ) ) order by nmbarang asc";
 
         header('Content-Type: application/json');
 
@@ -1654,9 +1657,12 @@ class Globalmodule extends BaseController
         $page = intval($page);
         $limit = $perpage * $page;
 
+        // Sanitasi search agar karakter ' / % / _ tidak memicu SQL error
+        $search = str_replace(["'", "\\", "%", "_"], ["", "", "\\%", "\\_"], $search);
+
         // Build parameter untuk query dengan alias a.
-        $param = " and (a.idbarang like '%$search%' $paramglobal1 $paramglobal2 $parameterx $paramglobal3) 
-                or (a.nmbarang like '%$search%' $paramglobal1 $paramglobal2 $parameterx $paramglobal3) 
+        $param = " and ( (a.idbarang like '%$search%' $paramglobal1 $paramglobal2 $parameterx $paramglobal3)
+                or (a.nmbarang like '%$search%' $paramglobal1 $paramglobal2 $parameterx $paramglobal3) )
                 order by a.nmbarang asc";
 
         // Panggil model dengan parameter docdate
@@ -1701,6 +1707,9 @@ class Globalmodule extends BaseController
             $docdate = date('Y-m-d');
         }
 
+        // Sanitasi search agar karakter ' / % / _ tidak memicu SQL error
+        $search = str_replace(["'", "\\", "%", "_"], ["", "", "\\%", "\\_"], $search);
+
         // Build WHERE clause
         $param = "";
         if (!empty($search)) {
@@ -1723,6 +1732,63 @@ class Globalmodule extends BaseController
             'param'       => $param,     // Optional: untuk debug
             'docdate'     => $docdate,   // Optional: untuk debug
             'wono'        => $wono       // Optional: untuk debug
+        ]);
+    }
+
+    /**
+     * Lookup BOM Item khusus Penerimaan Barang Produksi (BP):
+     * mengambil BARANG JADI dari sc_trx.workingorder_bom_mst.
+     * Endpoint list_item_bom() tetap memakai komponen (workingorder_bom_dtl).
+     */
+    public function list_item_barangjadi()
+    {
+        // Baca parameter POST (untuk Select2)
+        $search  = strtoupper(trim($this->request->getPost('_search_')));
+        $docdate = trim($this->request->getVar('docdate'));
+        $wono    = trim($this->request->getVar('wono'));
+
+        // Baca parameter GET (untuk else)
+        $varGet  = trim($this->request->getGet('var'));
+        $varPost = trim($this->request->getPost('var'));
+
+        // Siapkan parameter tambahan untuk ID spesifik
+        $paramId = "";
+        if (!empty($varGet) && $varGet !== '') {
+            $paramId = " AND a.idbarang = '{$varGet}'";
+        } elseif (!empty($varPost) && $varPost !== '') {
+            $paramId = " AND a.idbarang = '{$varPost}'";
+        }
+
+        // Default docdate
+        if (empty($docdate)) {
+            $docdate = date('Y-m-d');
+        }
+
+        // Sanitasi search agar karakter ' / % / _ tidak memicu SQL error
+        $search = str_replace(["'", "\\", "%", "_"], ["", "", "\\%", "\\_"], $search);
+
+        // Build WHERE clause
+        $param = "";
+        if (!empty($search)) {
+            $param = " AND (a.idbarang ILIKE '%{$search}%' OR a.nmbarang ILIKE '%{$search}%')";
+        }
+
+        // Tambahkan filter ID jika ada (dari GET atau POST)
+        $param .= $paramId;
+
+        // Eksekusi query (barang jadi dari workingorder_bom_mst)
+        $result = $this->m_balance
+            ->q_item_barangjadi_param($param, $docdate, $wono)
+            ->getResult();
+
+        $count = count($result);
+
+        return $this->response->setJSON([
+            'total_count' => $count,
+            'items'       => $result,
+            'param'       => $param,
+            'docdate'     => $docdate,
+            'wono'        => $wono
         ]);
     }
 

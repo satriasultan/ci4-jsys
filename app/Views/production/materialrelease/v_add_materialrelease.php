@@ -1043,7 +1043,367 @@
         color: #1f2937 !important;
     }
 </style>
-<div class="corp-form-container">
+
+<style id="mrl-grid-theme">
+    /* =========================================================================
+       Standart Cost — grid detail bergaya pmk_brng (inline input, sticky header)
+       Blok diletakkan paling akhir agar menimpa tema tabel sebelumnya.
+       ========================================================================= */
+
+    .corp-form-container .mrl-detail-scroll {
+        max-height: 560px;
+        max-height: min(620px, 68vh);
+        overflow: auto;
+        border: 1px solid var(--corp-primary);
+        border-radius: 6px;
+        background: #ffffff;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, .06);
+    }
+
+    .corp-form-container .mrl-detail-scroll::-webkit-scrollbar {
+        width: 12px;
+        height: 12px;
+    }
+
+    .corp-form-container .mrl-detail-scroll::-webkit-scrollbar-track {
+        background: #eef2f7;
+    }
+
+    .corp-form-container .mrl-detail-scroll::-webkit-scrollbar-thumb {
+        background: #19385f;
+        border: 2px solid #eef2f7;
+        border-radius: 6px;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl {
+        width: 100%;
+        min-width: 1100px;
+        margin-bottom: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        /* wajib visible: overflow hidden mematikan sticky header */
+        overflow: visible !important;
+        font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif !important;
+        font-size: 12.5px !important;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl thead th {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 3 !important;
+        padding: 9px 9px !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        line-height: 1.25 !important;
+        letter-spacing: .3px;
+        text-transform: uppercase;
+        white-space: nowrap !important;
+        vertical-align: middle !important;
+        color: #ffffff !important;
+        background: var(--corp-primary) !important;
+        border: 1px solid var(--corp-primary) !important;
+        border-bottom: 2px solid #102a45 !important;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl tbody tr td {
+        padding: 4px 7px !important;
+        font-size: 12.5px !important;
+        font-weight: 600 !important;
+        line-height: 1.25 !important;
+        vertical-align: middle !important;
+        border: 1px solid #c3ccd8 !important;
+        white-space: nowrap;
+        background: #ffffff !important;
+        color: #1a202c !important;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl tbody tr:nth-child(even):not(.mrl-row-draft):not(.mrl-row-checked) td {
+        background: #f6f8fb !important;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl tbody tr:hover:not(.mrl-row-draft) td {
+        background: #fff0b3 !important;
+        color: #000000 !important;
+    }
+
+    /* baris yang checkbox-nya dicentang */
+    .corp-form-container #tmp_materialreleasedtl tbody tr.mrl-row-checked td {
+        background: #d6e8fb !important;
+        color: #000000 !important;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl tbody tr.mrl-row-checked:hover td {
+        background: #c6def8 !important;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl tbody tr.mrl-row-checked td:first-child {
+        box-shadow: inset 3px 0 0 0 var(--corp-primary);
+    }
+
+    /* empty state */
+    .corp-form-container #tmp_materialreleasedtl tbody tr.mrl-empty-row td {
+        padding: 16px 10px !important;
+        font-size: 12.5px !important;
+        font-weight: 600 !important;
+        text-align: center;
+        color: var(--corp-text-muted) !important;
+        background: #ffffff !important;
+        cursor: pointer;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl tbody tr.mrl-empty-row:hover td {
+        background: #eef6ff !important;
+        color: var(--corp-primary) !important;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl tbody tr.mrl-empty-row td:focus {
+        outline: 2px solid var(--corp-primary);
+        outline-offset: -3px;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl tbody tr.mrl-empty-row td i {
+        margin-right: 6px;
+        font-size: 15px;
+        color: var(--corp-primary);
+    }
+
+    /* baris editor (draft / edit) */
+    .corp-form-container #tmp_materialreleasedtl tbody tr.mrl-row-draft td {
+        background: #fffbea !important;
+        border-top: 2px solid var(--corp-primary) !important;
+        box-shadow: inset 0 0 0 1px #f2d98a;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl tbody tr.mrl-row-editing td {
+        background: #e8f1fb !important;
+    }
+
+    /* kolom no & aksi */
+    .corp-form-container #tmp_materialreleasedtl .mrl-col-no {
+        width: 46px !important;
+        min-width: 46px !important;
+        text-align: center;
+        padding-left: 2px !important;
+        padding-right: 2px !important;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl .mrl-col-aksi {
+        width: 78px !important;
+        min-width: 78px !important;
+        text-align: center;
+        padding-left: 2px !important;
+        padding-right: 2px !important;
+        white-space: nowrap;
+    }
+
+    /* input & select di dalam sel */
+    .corp-form-container #tmp_materialreleasedtl tbody td .form-control,
+    .corp-form-container #tmp_materialreleasedtl tbody td .form-select {
+        width: 100% !important;
+        height: 30px !important;
+        min-height: 30px !important;
+        padding: 3px 7px !important;
+        font-size: 12.5px !important;
+        font-weight: 600 !important;
+        line-height: 1.3 !important;
+        color: var(--corp-text) !important;
+        background: #ffffff !important;
+        border: 1px solid #9fb3c8 !important;
+        border-radius: 4px !important;
+        box-shadow: none !important;
+        box-sizing: border-box !important;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl tbody td .form-control:focus,
+    .corp-form-container #tmp_materialreleasedtl tbody td .form-select:focus {
+        border-color: var(--corp-primary) !important;
+        box-shadow: 0 0 0 2px rgba(30, 58, 95, .18) !important;
+        outline: none !important;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl tbody td .form-control[readonly] {
+        background: var(--corp-bg-disabled) !important;
+        color: #24384f !important;
+        font-weight: 700 !important;
+        cursor: default;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl tbody td .form-control.text-end {
+        text-align: right !important;
+    }
+
+    /* select2 di dalam sel */
+    .corp-form-container #tmp_materialreleasedtl tbody td .select2-container {
+        width: 100% !important;
+        min-width: 200px;
+        margin: 0 !important;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl tbody td .select2-container .select2-selection--single {
+        height: 30px !important;
+        min-height: 30px !important;
+        display: flex !important;
+        align-items: center !important;
+        border: 1px solid #9fb3c8 !important;
+        border-radius: 4px !important;
+        background: #ffffff !important;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl tbody td .select2-container .select2-selection--single .select2-selection__rendered {
+        flex: 1 1 auto;
+        padding-left: 7px !important;
+        padding-right: 20px !important;
+        margin: 0 !important;
+        font-size: 12.5px !important;
+        font-weight: 600 !important;
+        line-height: 28px !important;
+        color: var(--corp-text) !important;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl tbody td .select2-container .select2-selection--single .select2-selection__arrow {
+        top: 2px !important;
+        height: 26px !important;
+        right: 2px !important;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl tbody td .select2-container--focus .select2-selection--single,
+    .corp-form-container #tmp_materialreleasedtl tbody td .select2-container--open .select2-selection--single {
+        border-color: var(--corp-primary) !important;
+        box-shadow: 0 0 0 2px rgba(30, 58, 95, .18) !important;
+    }
+
+    /* tombol aksi 26px */
+    .corp-form-container #tmp_materialreleasedtl tbody td .mrl-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        margin: 0 1px;
+        padding: 0;
+        font-size: 12px;
+        color: #ffffff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background .12s ease, transform .12s ease;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl tbody td .mrl-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 5px rgba(15, 23, 42, .22);
+    }
+
+    .corp-form-container #tmp_materialreleasedtl tbody td .mrl-btn-save {
+        background: var(--corp-success);
+    }
+
+    .corp-form-container #tmp_materialreleasedtl tbody td .mrl-btn-edit {
+        background: #d97706;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl tbody td .mrl-btn-delete {
+        background: var(--corp-danger);
+    }
+
+    .corp-form-container #tmp_materialreleasedtl tbody td .mrl-btn-cancel {
+        background: #64748b;
+    }
+
+    /* Saat ada baris yang sedang diedit/diinput: sembunyikan tombol edit baris lain
+       supaya tidak ada dua baris dalam mode edit sekaligus (pola pmk_brng). */
+    .corp-form-container #tmp_materialreleasedtl.mrl-editing tbody tr.mrl-row-saved .mrl-btn-edit {
+        display: none !important;
+    }
+
+    /* teks read-only baris tersimpan */
+    .corp-form-container #tmp_materialreleasedtl .mrl-readonly-text {
+        display: block;
+        max-width: 210px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl .mrl-readonly-number {
+        display: block;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* checkbox */
+    .corp-form-container #tmp_materialreleasedtl input[type="checkbox"] {
+        width: 16px !important;
+        height: 16px !important;
+        accent-color: var(--corp-primary) !important;
+        cursor: pointer;
+        vertical-align: middle;
+    }
+
+    /* ===== header sortable (pengganti ordering DataTables) ===== */
+    .corp-form-container #tmp_materialreleasedtl thead th.mrl-sortable {
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl thead th.mrl-sortable::after {
+        content: " \25B2\25BC";
+        font-size: 9px;
+        opacity: .45;
+        margin-left: 3px;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl thead th.mrl-sort-asc::after {
+        content: " \25B2";
+        opacity: 1;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl thead th.mrl-sort-desc::after {
+        content: " \25BC";
+        opacity: 1;
+    }
+
+    /* ===== field wajib belum terisi (pengganti Swal) ===== */
+    .corp-form-container #tmp_materialreleasedtl tbody td .mrl-invalid {
+        border-color: var(--corp-danger) !important;
+        background: #fef2f2 !important;
+        box-shadow: 0 0 0 2px rgba(220, 38, 38, .15) !important;
+    }
+
+    .corp-form-container #tmp_materialreleasedtl tbody td .select2-container .select2-selection--single.mrl-invalid {
+        border-color: var(--corp-danger) !important;
+        background: #fef2f2 !important;
+        box-shadow: 0 0 0 2px rgba(220, 38, 38, .15) !important;
+    }
+
+    /* chip "X dari Y baris dipilih" (ala pmk_brng) */
+    .corp-form-container .mrl-selected-info {
+        padding: 4px 10px;
+        font-size: 11.5px;
+        font-weight: 600;
+        letter-spacing: .2px;
+        color: #ffffff;
+        background: rgba(255, 255, 255, .16);
+        border: 1px solid rgba(255, 255, 255, .32);
+        border-radius: 20px;
+        white-space: nowrap;
+    }
+
+    /* toolbar search di atas grid (gaya DataTables) */
+    .corp-form-container .mrl-grid-toolbar {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .corp-form-container .mrl-grid-toolbar label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #475569;
+    }
+</style>
+
+            <div class="corp-form-container">
 <div class="content-header">
     <div class="container-fluid">
         <div class="row mb-2 align-items-center">
@@ -1284,10 +1644,11 @@
                     </h3>
 
                     <div class="float-right d-flex align-items-center gap-2">
+                        <span class="mrl-selected-info" id="mrlSelectedInfo">0 dari 0 baris dipilih</span>
 
                         <button type="button"
                                 class="btn btn-success btn-lg action-btn"
-                                title="Input Data (Ctrl + Q)"
+                                title="Tambah baris (Ctrl+Q / Alt+N)"
                                 id="btnAddDetailMaterial">
 
                             <i class="fa fa-plus"></i>
@@ -1295,19 +1656,9 @@
                         </button>
 
                         <button type="button"
-                                id="btnUpdateDetail"
-                                class="btn btn-warning btn-lg action-btn"
-                                title="Update Data"
-                                onclick="updateDetailMaterialRelease()">
-
-                            <i class="fa fa-edit"></i>
-
-                        </button>
-
-                        <button type="button"
+                                id="mrlDeleteSelected"
                                 class="btn btn-danger btn-lg action-btn"
-                                title="Hapus Data"
-                                onclick="btnDeleteDetailMaterialRelease()">
+                                title="Hapus baris terpilih (Ctrl+D)">
 
                             <i class="fa fa-trash"></i>
 
@@ -1319,31 +1670,38 @@
 
                 <div class="card-body p-3">
 
-                    <div class="table-responsive">
+                    <div class="mrl-grid-toolbar">
+                        <label class="mr-2 mb-0">Search:</label>
+                        <input type="text"
+                               id="mrlGridSearch"
+                               class="form-control form-control-sm"
+                               style="width:240px;"
+                               placeholder="Cari ID / Nama / Spec / Keterangan..."
+                               autocomplete="off">
+                    </div>
 
-                        <table id="tmp_materialreleasedtl"
-                                class="table table-bordered table-striped table-hover align-middle">
+                    <div class="mrl-detail-scroll">
 
-                            <thead class="bg-primary text-white">
+                        <table id="tmp_materialreleasedtl" class="table table-bordered table-striped">
+
+                            <thead>
                             <tr>
-                                <th class="text-center" width="40">
-                                    <input type="checkbox" id="checkAll">
+                                <th class="mrl-col-no" style="width:46px;min-width:46px;">
+                                    <input type="checkbox" id="checkAll" title="Pilih semua baris (hapus massal: Ctrl+D)">
                                 </th>
-                                
-                                <th width="40">Sub</th>
-                                <th>ID Barang</th>
-                                <th>Nama Barang</th>
-                                <th>Spec</th>
-                                <th>Qty</th>
-                                <th>Stok</th>
-                                <th>Satuan</th>
-                                <!-- <th class="text-end">Standart Cost</th>
-                                <th class="text-end">Total Cost</th> -->
-                                <th>Keterangan</th>
+                                <th style="width:52px;min-width:52px;" class="text-center">Sub</th>
+                                <th class="mrl-sortable" data-key="idbarang" style="min-width:220px;">ID Barang</th>
+                                <th class="mrl-sortable" data-key="nmbarang" style="min-width:200px;">Nama Barang</th>
+                                <th class="mrl-sortable" data-key="spec" style="min-width:130px;">Spec</th>
+                                <th class="mrl-sortable text-end" data-key="qty" style="min-width:110px;">Qty</th>
+                                <th class="mrl-sortable text-end" data-key="stock" style="min-width:110px;">Stok</th>
+                                <th class="mrl-sortable text-center" data-key="unit" style="min-width:85px;">Satuan</th>
+                                <th class="mrl-sortable" data-key="description" style="min-width:200px;">Keterangan</th>
+                                <th class="mrl-col-aksi">Aksi</th>
                             </tr>
                             </thead>
 
-                            <tbody>
+                            <tbody id="mrlGridBody">
                             </tbody>
 
                         </table>
@@ -1542,6 +1900,7 @@
 
 
 <script type="application/javascript" src="<?= base_url('assets/pagejs/production/materialrelease/materialrelease.js') ?>"></script>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/production/materialrelease/materialrelease_grid.js') ?>"></script>
 <script type="text/javascript">
     /* ==========================================================
      * AUTOFILL INPUT AWAL CABANG / JOB (SESSION USER LOGIN)

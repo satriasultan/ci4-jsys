@@ -4913,9 +4913,9 @@ class Purchase extends BaseController
             $row[] = $lm->capexno;
             $row[] = $lm->unit;
             $row[] = '<div class="ratakanan">'. number_format($lm->qty, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 2, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 2, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan">'. number_format($lm->harga, 2, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 2, '.', ',') . '</div>';
+            // $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 2, '.', ',') . '</div>';
             $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 2, '.', ',') . '</div>';
             $row[] = $lm->descriptionpo;
             $row[] = $lm->descriptionpp;
@@ -5425,6 +5425,19 @@ class Purchase extends BaseController
     }
 
 
+    /**
+     * Deteksi PO Impor dari prefix docno.
+     * PO Impor = prefix TEPAT 3 huruf dan berakhiran "I"
+     * (contoh: JTI, PTI, JDI, PDI, TCI, JFI, PRI, JCI, PCI, JRI).
+     * Prefix 2 huruf seperti "JI " (padding spasi pada kolom char(3)) BUKAN impor.
+     */
+    private function isPoImpor($docno)
+    {
+        $prefix = strtoupper(trim(substr(trim((string) $docno), 0, 3)));
+
+        return preg_match('/^[A-Z]{2}I$/', $prefix) === 1;
+    }
+
     function show_po(){
         $module = 'I.P';
         $menu = 'I.P.A.3';
@@ -5474,7 +5487,12 @@ class Purchase extends BaseController
         $datajson =  base_url("purchase/trans/api_po/?enc_docno=$enc_docno") ;
 
         // if($formheader==="HEADER"){
-        $datamrt =  base_url("assets/mrt/report_po.mrt") ;
+        // PO Impor memakai template tersendiri (prefix 3 huruf berakhiran "I")
+        if ($this->isPoImpor($docno) && is_file(FCPATH . 'assets/mrt/report_po_impor.mrt')) {
+            $datamrt =  base_url("assets/mrt/report_po_impor.mrt") ;
+        } else {
+            $datamrt =  base_url("assets/mrt/report_po.mrt") ;
+        }
         // } else {
         //     $datamrt =  base_url("assets/mrt/report_pp_non_header.mrt") ;
         // }
@@ -5533,8 +5551,12 @@ class Purchase extends BaseController
             $nilai = $detail->total; // dari database
 
             $data['total'] = $nilai;
-            $data['total_terbilang'] = strtoupper($this->terbilang($nilai));
-            $detail->terbilang = $data['total_terbilang'];
+
+            // Terbilang: PO impor memakai Bahasa Inggris, selain itu Bahasa Indonesia
+            $terbilangNilai = $this->isPoImpor($docno) ? $this->terbilang_en($nilai) : $this->terbilang($nilai);
+
+            $data['total_terbilang'] = strtoupper($terbilangNilai);
+            $detail->terbilang      = $data['total_terbilang'];
 
 
             $currcode = trim($detail->currcode);
@@ -5623,6 +5645,101 @@ class Purchase extends BaseController
             $angka = ["0"=>"nol","1"=>"satu","2"=>"dua","3"=>"tiga","4"=>"empat","5"=>"lima","6"=>"enam","7"=>"tujuh","8"=>"delapan","9"=>"sembilan"];
 
             $hasil .= " koma";
+
+            for ($i = 0; $i < strlen($decimalStr); $i++) {
+                $hasil .= " " . $angka[$decimalStr[$i]];
+            }
+        }
+
+        return strtoupper($hasil);
+    }
+
+    /**
+     * Penyebut angka Bahasa Inggris untuk bilangan bulat (dipakai terbilang_en).
+     */
+    function penyebut_en($nilai) {
+        $nilai = (int) abs($nilai);
+
+        $satuan = array(
+            0 => '', 1 => 'one', 2 => 'two', 3 => 'three', 4 => 'four', 5 => 'five',
+            6 => 'six', 7 => 'seven', 8 => 'eight', 9 => 'nine', 10 => 'ten',
+            11 => 'eleven', 12 => 'twelve', 13 => 'thirteen', 14 => 'fourteen',
+            15 => 'fifteen', 16 => 'sixteen', 17 => 'seventeen', 18 => 'eighteen',
+            19 => 'nineteen'
+        );
+        $puluhan = array(
+            2 => 'twenty', 3 => 'thirty', 4 => 'forty', 5 => 'fifty',
+            6 => 'sixty', 7 => 'seventy', 8 => 'eighty', 9 => 'ninety'
+        );
+        $skala = array('', ' thousand', ' million', ' billion', ' trillion');
+
+        if ($nilai < 20) {
+            return $satuan[$nilai];
+        }
+
+        if ($nilai < 100) {
+            $temp = $puluhan[(int) ($nilai / 10)];
+            if ($nilai % 10 > 0) {
+                $temp .= '-' . $satuan[$nilai % 10];
+            }
+
+            return $temp;
+        }
+
+        if ($nilai < 1000) {
+            $temp = $satuan[(int) ($nilai / 100)] . ' hundred';
+            if ($nilai % 100 > 0) {
+                $temp .= ' and ' . $this->penyebut_en($nilai % 100);
+            }
+
+            return $temp;
+        }
+
+        // pecah per kelompok 3 digit
+        $grup = array();
+        $sisa = $nilai;
+        $i    = 0;
+
+        while ($sisa > 0) {
+            $grup[$i] = $sisa % 1000;
+            $sisa     = (int) ($sisa / 1000);
+            $i++;
+        }
+
+        $bagian = array();
+
+        for ($i = count($grup) - 1; $i >= 0; $i--) {
+            if ($grup[$i] == 0) {
+                continue;
+            }
+
+            $bagian[] = trim($this->penyebut_en($grup[$i]) . $skala[$i]);
+        }
+
+        return implode(' ', $bagian);
+    }
+
+    /**
+     * Terbilang Bahasa Inggris (untuk PO impor).
+     * Contoh: 1234.56 => ONE THOUSAND TWO HUNDRED AND THIRTY-FOUR POINT FIVE SIX
+     */
+    function terbilang_en($nilai) {
+        $nilai = floatval($nilai);
+
+        $integer = floor($nilai);
+        $decimal = $nilai - $integer;
+
+        $hasil = ($integer == 0) ? 'zero' : trim($this->penyebut_en($integer));
+
+        // Handle decimal (point)
+        if ($decimal > 0) {
+            $decimalStr = substr(strstr(number_format($nilai, 2, '.', ''), '.'), 1);
+            $angka = array(
+                '0' => 'zero', '1' => 'one', '2' => 'two', '3' => 'three', '4' => 'four',
+                '5' => 'five', '6' => 'six', '7' => 'seven', '8' => 'eight', '9' => 'nine'
+            );
+
+            $hasil .= " point";
 
             for ($i = 0; $i < strlen($decimalStr); $i++) {
                 $hasil .= " " . $angka[$decimalStr[$i]];
@@ -5828,7 +5945,7 @@ class Purchase extends BaseController
                 $printBtn = '
                 <a class="dropdown-item" 
                     style="background-color:#00ff8e;" 
-                    href="' . base_url('purchase/trans/show_po') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    href="' . base_url('purchase/trans/show_voidpo') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
                     onclick="return guardPeriodeTutup(event) && confirm(\'Print Void PO : ' . $docno . '\')">
                     <i class="fa fa-print"></i> Print Void PO 
                 </a>';
@@ -7312,6 +7429,18 @@ class Purchase extends BaseController
         if ($detail) {
 
             $detail->namauser = $nama;
+            $kdsupplier = trim($detail->kdsupplier);
+
+            $supplier = $this->db->query("
+                SELECT nmsupplier 
+                FROM sc_mst.mstsupplier 
+                WHERE TRIM(kdsupplier) = ?
+                LIMIT 1
+            ", [$kdsupplier])->getRow();
+
+            // 🔹 Set ke object detail
+            $detail->nmsupplierdata = $supplier->nmsupplier ?? '';
+
         }
 
         header("Content-Type: text/json");

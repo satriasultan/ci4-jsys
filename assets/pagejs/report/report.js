@@ -231,6 +231,7 @@ function tarikData(page) {
     var idbarang   = $('#lapIdbarang').val();
     var kdsupp     = $('#lapKdsupplier').val();
     var cabang     = $('#lapCabang').val();
+    var pemohon    = $('#lapPemohon').val();
     var idlocation = $('#lapIdlocation').val();
     var kdcust     = $('#lapKdcustomer').val();
     var wono       = $('#lapWono').val();
@@ -255,7 +256,7 @@ function tarikData(page) {
         return;
     }
 
-    if (!modeBolehKosong && !tgl && !docno && !filterKhusus && !cabang) {
+    if (!modeBolehKosong && !tgl && !docno && !filterKhusus && !cabang && !pemohon) {
         Swal.fire({ icon: 'warning', title: 'Filter Kosong', text: 'Minimal isi salah satu filter.' });
         return;
     }
@@ -281,6 +282,7 @@ function tarikData(page) {
             kdprk:     $('#lapKdprk').val(),
             interval:  $('#lapInterval').val() || 30,
             cabang:       cabang,
+            pemohon:      pemohon,
             kdcustomer:   kdcust,
             idlocation:   idlocation,
             page:         page,

@@ -859,6 +859,42 @@ class Production extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
+    /* =========================================================
+     * Grid detail Standart Cost (JSON, tanpa protokol DataTables)
+     * Dipakai oleh inline grid ala pmk_brng (assets/pagejs/production/
+     * standart_cost/standart_cost_grid.js).
+     * Urutan: idurut ASC (baris lama di atas, baris baru di bawah).
+     * ========================================================= */
+    public function list_standart_cost_dtl_grid()
+    {
+        $nama  = trim((string) $this->session->get('nama'));
+        $param = " and coalesce(inputby,'') = " . $this->db->escape($nama)
+               . " order by idurut asc";
+
+        $rows  = $this->m_production->q_tmp_standart_cost_dtl($param)->getResultArray();
+        $items = array();
+
+        foreach ($rows as $r) {
+            $items[] = array(
+                'uniqueid'    => trim((string) ($r['uniqueid'] ?? '')),
+                'idurut'      => trim((string) ($r['idurut'] ?? '')),
+                'idbarang'    => trim((string) ($r['idbarang'] ?? '')),
+                'nmbarang'    => trim((string) ($r['nmbarang'] ?? '')),
+                'unit'        => trim((string) ($r['unit'] ?? '')),
+                'actualcost'  => (float) ($r['actualcost'] ?? 0),
+                'lastcost'    => (float) ($r['lastcost'] ?? 0),
+                'newcost'     => (float) ($r['newcost'] ?? 0),
+                'description' => trim((string) ($r['description'] ?? '')),
+            );
+        }
+
+        return $this->response->setJSON(array(
+            'status' => true,
+            'total'  => count($items),
+            'items'  => $items,
+        ));
+    }
+
     function list_mst_standart_cost_dtl(){
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_production->get_mst_standart_cost_dtl_view($docno);
@@ -2157,6 +2193,42 @@ class Production extends BaseController
             "data" => $data,
         );
         echo $this->fiky_encryption->jDatatable($output);
+    }
+
+    /* =========================================================
+     * Grid detail Biaya Standart (JSON, tanpa protokol DataTables)
+     * Dipakai oleh inline grid ala pmk_brng
+     * (assets/pagejs/production/biaya_standart/biaya_standart_grid.js).
+     * Urutan: idurut ASC (baris lama di atas, baris baru di bawah).
+     * ========================================================= */
+    public function list_biaya_standart_dtl_grid()
+    {
+        $nama  = trim((string) $this->session->get('nama'));
+        $param = " and coalesce(inputby,'') = " . $this->db->escape($nama)
+               . " order by idurut asc";
+
+        $rows  = $this->m_production->q_tmp_biaya_standart_dtl($param)->getResultArray();
+        $items = array();
+
+        foreach ($rows as $r) {
+            $items[] = array(
+                'uniqueid'    => trim((string) ($r['uniqueid'] ?? '')),
+                'idurut'      => trim((string) ($r['idurut'] ?? '')),
+                'idbarang'    => trim((string) ($r['idbarang'] ?? '')),
+                'nmbarang'    => trim((string) ($r['nmbarang'] ?? '')),
+                'unit'        => trim((string) ($r['unit'] ?? '')),
+                'actualcost'  => (float) ($r['actualcost'] ?? 0),
+                'lastcost'    => (float) ($r['lastcost'] ?? 0),
+                'newcost'     => (float) ($r['newcost'] ?? 0),
+                'description' => trim((string) ($r['description'] ?? '')),
+            );
+        }
+
+        return $this->response->setJSON(array(
+            'status' => true,
+            'total'  => count($items),
+            'items'  => $items,
+        ));
     }
 
     function list_mst_biaya_standart_dtl(){
@@ -3895,6 +3967,58 @@ class Production extends BaseController
 
     }
 
+    /* =========================================================
+     * Grid detail BOM (JSON) — dipakai 3 tab: MATERIAL / COST / WIP
+     * Dipakai oleh inline grid ala pmk_brng
+     * (assets/pagejs/production/bom/bom_grid.js).
+     * Satu tabel sc_tmp.bom_dtl, dibedakan oleh doctype_detail.
+     * ========================================================= */
+    public function list_bom_dtl_grid()
+    {
+        $nama    = trim((string) $this->session->get('nama'));
+        $doctype = strtoupper(trim((string) $this->request->getGet('doctype')));
+
+        if (!in_array($doctype, ['MATERIAL', 'COST', 'WIP'], true)) {
+            return $this->response->setJSON(array(
+                'status'  => false,
+                'message' => 'Tipe detail tidak valid',
+                'total'   => 0,
+                'items'   => array(),
+            ));
+        }
+
+        $param = " and coalesce(inputby,'') = " . $this->db->escape($nama)
+               . " and upper(trim(coalesce(doctype_detail,''))) = " . $this->db->escape($doctype)
+               . " order by idurut asc";
+
+        $list  = $this->m_production->q_tmp_bom_dtl($param)->getResultArray();
+        $items = array();
+
+        foreach ($list as $lm) {
+            $qty  = (float) ($lm['qty'] ?? 0);
+            $cost = (float) ($lm['standartcost'] ?? 0);
+
+            $items[] = array(
+                'uniqueid'    => trim((string) ($lm['uniqueid'] ?? '')),
+                'idurut'      => trim((string) ($lm['idurut'] ?? '')),
+                'doctype'     => $doctype,
+                'idbarang'    => trim((string) ($lm['idbarang'] ?? '')),
+                'nmbarang'    => trim((string) ($lm['nmbarang'] ?? '')),
+                'qty'         => $qty,
+                'unit'        => trim((string) ($lm['unit'] ?? '')),
+                'standartcost' => $cost,
+                'totalcost'   => (float) ($lm['totalcost'] ?? ($qty * $cost)),
+                'description' => trim((string) ($lm['description'] ?? '')),
+            );
+        }
+
+        return $this->response->setJSON(array(
+            'status' => true,
+            'total'  => count($items),
+            'items'  => $items,
+        ));
+    }
+
     public function get_bom_dtl()
     {
         $id = $this->request->getGet('id');
@@ -4780,14 +4904,23 @@ class Production extends BaseController
             ]);
         }
 
-        // mapping nmbranch → kode suffix
+        // mapping nmbranch → kode suffix (normalisasi: spasi/titik/angka/romawi)
+        $branchKey = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string) $row['nmbranch']));
+
         $map = [
-            'PT JATIM TAMAN STEEL MFG' => 'PT',
-            'PLANT I'                 => 'PA',
-            'PLANT II'                => 'PB',
+            'PTJATIMTAMANSTEELMFG' => 'PT',
+            'PTJATIMTAMANSTEEL'    => 'PT',
+            'JATIMTAMANSTEELMFG'   => 'PT',
+            'JATIMTAMANSTEEL'      => 'PT',
+            'PLANTI'               => 'PA',
+            'PLANT1'               => 'PA',
+            'PLAN1'                => 'PA',
+            'PLANTII'              => 'PB',
+            'PLANT2'               => 'PB',
+            'PLAN2'                => 'PB',
         ];
 
-        $kodeSuffix = $map[trim($row['nmbranch'])] ?? '';
+        $kodeSuffix = strtoupper(trim($map[$branchKey] ?? ''));
 
         if ($kodeSuffix === '') {
             return $this->response->setJSON([
@@ -4832,7 +4965,7 @@ class Production extends BaseController
 
         $row = $this->db->table('sc_trx.workingorder_mst')
             ->select('docno')
-            ->like('docno', $like, 'after')
+            ->where("UPPER(docno) LIKE " . $this->db->escape(strtoupper($like) . '%'))
             ->orderBy('docno', 'DESC')
             ->limit(1)
             ->get()
@@ -4856,8 +4989,13 @@ class Production extends BaseController
     public function save_workingorder_mst()
     {
         $nama = trim($this->session->get('nama'));
-        $docnoWo  = trim($this->request->getPost('docno'));
-        $docnoBom = trim($this->request->getPost('docnobom'));
+        $docnoWo  = strtoupper(trim((string) $this->request->getPost('docno')));
+        $docnoBom = strtoupper(trim((string) $this->request->getPost('docnobom')));
+
+        // Resolve cabang: terima idbranch (01.02) atau nama (PLANT II / PLANT 2)
+        // lalu simpan sebagai idbranch. Tidak ada fallback ke PT.
+        $cabangPost     = trim((string) $this->request->getPost('cabang'));
+        $cabangResolved = $this->prod_resolve_branch_id($cabangPost);
         // $idurut = $this->request->getPost('idurut');
         // $doctype_detail = strtoupper(trim($this->request->getPost('doctype_detail')));
 
@@ -4900,7 +5038,7 @@ class Production extends BaseController
             $insertHeader = $builderHeader->insert([
                 'docno'      => $docnoWo,
                 'doctype'    => 'workingorder',
-                'cabang'     => trim($this->request->getPost('cabang')),
+                'cabang'     => $cabangResolved,
                 'docref'     => trim($this->request->getPost('docref')),
                 'docdate'    => trim($this->request->getPost('docdate')),
                 'docdatefinish' => !empty(trim($this->request->getPost('docdatefinish') ?? ''))
@@ -8731,7 +8869,7 @@ class Production extends BaseController
                 'docno'          => $docno,
                 // 'doctype_detail' => $doctype_detail,
                 'cabang'=>trim($this->request->getPost('cabang')),
-                'idbarang'       => $idbarang,
+                'idbarang'       => ($idbarang !== null && $idbarang !== '') ? $idbarang : $idbarangBom,
                 'nmbarang'       => $nmbarang,
                 'idbarang_bom'       => $idbarangBom,
                 // 'nmbarang_bom'       => $nmbarangBom,
@@ -8955,6 +9093,133 @@ class Production extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
+    /* =========================================================
+     * Grid detail Material Release (JSON, tanpa protokol DataTables)
+     * Dipakai oleh inline grid ala pmk_brng
+     * (assets/pagejs/production/materialrelease/materialrelease_grid.js).
+     * Mengembalikan juga kolom Stok (sc_trx.stkblc, presisi 4 desimal).
+     * ========================================================= */
+    public function list_materialrelease_dtl_grid()
+    {
+        $nama  = trim((string) $this->session->get('nama'));
+        $docno = trim((string) $this->request->getGet('docno'));
+
+        /* idlocation header (gudang terpilih) → dasar hitung stok */
+        $hdr = null;
+
+        if ($docno !== '') {
+            $hdr = $this->db->table('sc_tmp.materialrelease_mst')
+                ->select('idlocation')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->get()
+                ->getRowArray();
+        }
+
+        if (!$hdr) {
+            $hdr = $this->db->table('sc_tmp.materialrelease_mst')
+                ->select('idlocation')
+                ->where('inputby', $nama)
+                ->where('status', 'E')
+                ->orderBy('idurut', 'DESC')
+                ->limit(1)
+                ->get()
+                ->getRowArray();
+        }
+
+        if (!$hdr) {
+            $hdr = $this->db->table('sc_tmp.materialrelease_mst')
+                ->select('idlocation')
+                ->where('inputby', $nama)
+                ->orderBy('idurut', 'DESC')
+                ->limit(1)
+                ->get()
+                ->getRowArray();
+        }
+
+        $idlocation = $hdr ? trim((string) $hdr['idlocation']) : '';
+
+        /* preload saldo stok dari sc_trx.stkblc (presisi 4 desimal) */
+        $stockMap     = array();
+        $stockItemMap = array();
+
+        if ($idlocation !== '') {
+            $rows = $this->db->query("
+                SELECT TRIM(idbarang) AS idbarang,
+                       TRIM(COALESCE(batch,'')) AS batch,
+                       COALESCE(SUM(COALESCE(qty_in,0) - COALESCE(qty_out,0)), 0) AS stock
+                FROM sc_trx.stkblc
+                WHERE TRIM(idlocation) = ?
+                  AND COALESCE(grouptype, 'STOCK') = 'STOCK'
+                GROUP BY TRIM(idbarang), TRIM(COALESCE(batch,''))
+            ", [$idlocation])->getResultArray();
+
+            foreach ($rows as $r) {
+                $idb = trim((string) $r['idbarang']);
+                $btc = trim((string) $r['batch']);
+                $stk = (float) $r['stock'];
+
+                $stockMap[$idb . '|' . $btc] = $stk;
+
+                if (!isset($stockItemMap[$idb])) {
+                    $stockItemMap[$idb] = 0;
+                }
+
+                $stockItemMap[$idb] += $stk;
+            }
+        }
+
+        $param = " and coalesce(inputby,'') = " . $this->db->escape($nama)
+               . " order by idurut asc";
+
+        $list  = $this->m_production->q_tmp_materialrelease_dtl($param)->getResultArray();
+        $items = array();
+
+        foreach ($list as $lm) {
+            $issub = (trim((string) ($lm['issub'] ?? '')) === 'T') ? 'T' : 'F';
+
+            $idb = trim((string) ($lm['idbarang'] ?? ''));
+            $idbBom = trim((string) ($lm['idbarang_bom'] ?? ''));
+
+            /* baris BOM lama bisa punya idbarang NULL (insert versi lama hanya
+               mengisi idbarang_bom) → pakai idbarang_bom agar tetap tampil */
+            if ($idb === '') {
+                $idb = $idbBom;
+            }
+
+            $btc = trim((string) ($lm['spec'] ?? ''));
+            $qty = (float) ($lm['qty'] ?? 0);
+
+            if ($btc !== '') {
+                $stock = (float) ($stockMap[$idb . '|' . $btc] ?? $stockItemMap[$idb] ?? 0);
+            } else {
+                $stock = (float) ($stockItemMap[$idb] ?? 0);
+            }
+
+            $items[] = array(
+                'uniqueid'       => trim((string) ($lm['uniqueid'] ?? '')),
+                'idurut'         => trim((string) ($lm['idurut'] ?? '')),
+                'issub'          => $issub,
+                'idbarang'       => $idb,
+                'idbarang_bom'   => $idbBom,
+                'nmbarang'       => trim((string) ($lm['nmbarang'] ?? '')),
+                'spec'           => $btc,
+                'qty'            => $qty,
+                'unit'           => trim((string) ($lm['unit'] ?? '')),
+                'description'    => trim((string) ($lm['description'] ?? '')),
+                'doctype_detail' => trim((string) ($lm['doctype_detail'] ?? '')),
+                'stock'          => $stock,
+                'idlocation'     => $idlocation,
+            );
+        }
+
+        return $this->response->setJSON(array(
+            'status' => true,
+            'total'  => count($items),
+            'items'  => $items,
+        ));
+    }
+
     function list_trx_materialrelease_dtl(){
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_production->get_trx_materialrelease_dtl_view($docno);
@@ -9048,6 +9313,61 @@ class Production extends BaseController
         }
 
         return '';
+    }
+
+    /* Resolve cabang dari idbranch ATAU nama cabang (PLANT I/II, PT ...).
+       Return idbranch bila ketemu; selain itu kembalikan nilai asli (trim). */
+    private function prod_resolve_branch_id($value)
+    {
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return '';
+        }
+
+        // 1) sudah berupa idbranch
+        $row = $this->db->table('sc_mst.branchjob')
+            ->select('idbranch')
+            ->where('idbranch', $value)
+            ->get()
+            ->getRowArray();
+
+        if ($row) {
+            return trim((string) $row['idbranch']);
+        }
+
+        // 2) berupa nama cabang → normalisasi
+        $aliases = [
+            'PTJATIMTAMANSTEELMFG' => 'PTJATIMTAMANSTEELMFG',
+            'PTJATIMTAMANSTEEL'    => 'PTJATIMTAMANSTEELMFG',
+            'JATIMTAMANSTEELMFG'   => 'PTJATIMTAMANSTEELMFG',
+            'JATIMTAMANSTEEL'      => 'PTJATIMTAMANSTEELMFG',
+            'PLANTI'               => 'PLANTI',
+            'PLANT1'               => 'PLANTI',
+            'PLAN1'                => 'PLANTI',
+            'PLANTII'              => 'PLANTII',
+            'PLANT2'               => 'PLANTII',
+            'PLAN2'                => 'PLANTII',
+        ];
+
+        $want = strtoupper(preg_replace('/[^A-Z0-9]/', '', $value));
+        $want = $aliases[$want] ?? $want;
+
+        $rows = $this->db->table('sc_mst.branchjob')
+            ->select('idbranch, nmbranch')
+            ->get()
+            ->getResultArray();
+
+        foreach ($rows as $r) {
+            $key = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string) $r['nmbranch']));
+            $key = $aliases[$key] ?? $key;
+
+            if ($key !== '' && $key === $want) {
+                return trim((string) $r['idbranch']);
+            }
+        }
+
+        return $value;
     }
 
     /* Cek kunci WO untuk dokumen turunan.
@@ -11272,6 +11592,47 @@ class Production extends BaseController
         echo $this->fiky_encryption->jDatatable($output);
     }
 
+    /* =========================================================
+     * Grid detail Penerimaan Barang Jadi (BP) — JSON
+     * Dipakai oleh inline grid ala pmk_brng
+     * (assets/pagejs/production/penerimaanbp/penerimaanbp_grid.js).
+     * ========================================================= */
+    public function list_penerimaanbp_dtl_grid()
+    {
+        $nama  = trim((string) $this->session->get('nama'));
+        $param = " and coalesce(inputby,'') = " . $this->db->escape($nama)
+               . " order by idurut asc";
+
+        $list  = $this->m_production->q_tmp_penerimaanbp_dtl($param)->getResultArray();
+        $items = array();
+
+        foreach ($list as $lm) {
+            $qty   = (float) ($lm['qty'] ?? 0);
+            $harga = (float) ($lm['harga'] ?? 0);
+            $nilai = (float) ($lm['nilai'] ?? ($qty * $harga));
+
+            $items[] = array(
+                'uniqueid'    => trim((string) ($lm['uniqueid'] ?? '')),
+                'idurut'      => trim((string) ($lm['idurut'] ?? '')),
+                'issub'       => (trim((string) ($lm['issub'] ?? '')) === 'T') ? 'T' : 'F',
+                'idbarang'    => trim((string) ($lm['idbarang'] ?? '')),
+                'nmbarang'    => trim((string) ($lm['nmbarang'] ?? '')),
+                'spec'        => trim((string) ($lm['spec'] ?? '')),
+                'qty'         => $qty,
+                'unit'        => trim((string) ($lm['unit'] ?? '')),
+                'harga'       => $harga,
+                'nilai'       => $nilai,
+                'description' => trim((string) ($lm['description'] ?? '')),
+            );
+        }
+
+        return $this->response->setJSON(array(
+            'status' => true,
+            'total'  => count($items),
+            'items'  => $items,
+        ));
+    }
+
     function list_trx_penerimaanbp_dtl(){
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_production->get_trx_penerimaanbp_dtl_view($docno);
@@ -13232,6 +13593,47 @@ class Production extends BaseController
             "data" => $data,
         );
         echo $this->fiky_encryption->jDatatable($output);
+    }
+
+    /* =========================================================
+     * Grid detail BPNM (JSON, tanpa protokol DataTables)
+     * Dipakai oleh inline grid ala pmk_brng
+     * (assets/pagejs/production/bpnm/bpnm_grid.js).
+     * ========================================================= */
+    public function list_bpnm_dtl_grid()
+    {
+        $nama  = trim((string) $this->session->get('nama'));
+        $param = " and coalesce(inputby,'') = " . $this->db->escape($nama)
+               . " order by idurut asc";
+
+        $list  = $this->m_production->q_tmp_bpnm_dtl($param)->getResultArray();
+        $items = array();
+
+        foreach ($list as $lm) {
+            $qty   = (float) ($lm['qty'] ?? 0);
+            $harga = (float) ($lm['harga'] ?? 0);
+            $nilai = (float) ($lm['nilai'] ?? ($qty * $harga));
+
+            $items[] = array(
+                'uniqueid'    => trim((string) ($lm['uniqueid'] ?? '')),
+                'idurut'      => trim((string) ($lm['idurut'] ?? '')),
+                'issub'       => (trim((string) ($lm['issub'] ?? '')) === 'T') ? 'T' : 'F',
+                'idbarang'    => trim((string) ($lm['idbarang'] ?? '')),
+                'nmbarang'    => trim((string) ($lm['nmbarang'] ?? '')),
+                'spec'        => trim((string) ($lm['spec'] ?? '')),
+                'qty'         => $qty,
+                'unit'        => trim((string) ($lm['unit'] ?? '')),
+                'harga'       => $harga,
+                'nilai'       => $nilai,
+                'description' => trim((string) ($lm['description'] ?? '')),
+            );
+        }
+
+        return $this->response->setJSON(array(
+            'status' => true,
+            'total'  => count($items),
+            'items'  => $items,
+        ));
     }
 
     function list_trx_bpnm_dtl(){

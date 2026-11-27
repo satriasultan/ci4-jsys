@@ -480,6 +480,12 @@ $('#btnAddDetailMaterial').on('click', function (e) {
 });
 function btnInputDetailMaterial() {
 
+    // Grid inline aktif (gaya pmk_brng) → buka baris editor, bukan modal
+    if (typeof pnpGridExists === 'function' && pnpGridExists()) {
+        pnpGridNewDraft();
+        return;
+    }
+
     // reset form
     $('#formPBPMaterialDtl')[0].reset();
 
@@ -502,7 +508,7 @@ function btnInputDetailMaterial() {
         if ($('#idbarang').hasClass("select2-hidden-accessible")) {
             $('#idbarang').select2('destroy');
         }*/
-    $('#issub').prop('checked', true).trigger('change').prop('disabled',true);
+    $('#issub').prop('checked', false).prop('disabled', false);
 
 
 
@@ -512,7 +518,7 @@ function btnInputDetailMaterial() {
 
 function resetPBPModal(){
 
-    $('#issub').prop('checked', false);
+    $('#issub').prop('checked', false).prop('disabled', false);
 
     $('#divItemBom').show();
     $('#divItemSub').hide();
@@ -538,6 +544,11 @@ function setSelect2Ajax(selector, value, text) {
 
 
 function updateDetailPBP(){
+    // Grid inline aktif → edit baris terpilih langsung di grid
+    if (typeof pnpGridExists === 'function' && pnpGridExists()) {
+        pnpGridEditSelected();
+        return;
+    }
     const ids = getCheckedDetailIds();
     console.log('IDS:', ids);
 
@@ -576,7 +587,7 @@ function updateDetailPBP(){
                 // $('#idbarang').val(res.items[0].idbarang);
                 // $('#nmbarang').val(res.items[0].nmbarang);
                 var isSub = res.items[0].issub.trim() == 'T';
-                $('#issub').prop('checked', isSub).trigger('change').prop('disabled',true);
+                $('#issub').prop('checked', isSub).prop('disabled', false).trigger('change');
                 $('#unit').val(res.items[0].unit);
                 // $('#qtymaterial').val(res.items[0].qty);
                 setJtsValue('[name="qty"]', convertToDbNumber(res.items[0].qty));
@@ -601,9 +612,15 @@ function updateDetailPBP(){
                         $('[name="idbarang"]').trigger({
                             type: 'select2:select',
                             params: {
-                                data: datax
+                                data: datax.items[0]
                             }
                         });
+
+                        // Harga: pakai harga tersimpan bila ada, selain itu newcost item
+                        setJtsValue('[name="harga"]', convertToDbNumber(
+                            (res.items[0].harga || 0) > 0 ? res.items[0].harga : (datax.items[0].newcost || 0)
+                        ));
+                        hitungTotalCost();
                     });
                 } else {
                     var idbarang = res.items[0].idbarang.trim();
@@ -611,7 +628,7 @@ function updateDetailPBP(){
                     var docdate = $('#docdate').val() || '';
                     $.ajax({
                         type: 'GET',
-                        url: HOST_URL + 'api/globalmodule/list_item_bom',
+                        url: HOST_URL + 'api/globalmodule/list_item_barangjadi',
                         dataType: 'json',
                         delay: 250,
                         data: {
@@ -628,9 +645,15 @@ function updateDetailPBP(){
                         $('[name="idbarang_bom"]').trigger({
                             type: 'select2:select',
                             params: {
-                                data: datax
+                                data: datax.items[0]
                             }
                         });
+
+                        // Harga: pakai harga tersimpan bila ada, selain itu newcost item
+                        setJtsValue('[name="harga"]', convertToDbNumber(
+                            (res.items[0].harga || 0) > 0 ? res.items[0].harga : (datax.items[0].newcost || 0)
+                        ));
+                        hitungTotalCost();
                     });
                 }
                 $('#nmbarang').val(res.items[0].nmbarang);
@@ -680,6 +703,12 @@ $('#issub').on('change', function () {
 
 
 function btnDeleteDetailPBP(){
+    // Grid inline aktif → hapus massal baris tercentang
+    if (typeof pnpGridExists === 'function' && pnpGridExists()) {
+        pnpGridDeleteSelected();
+        return;
+    }
+
     const ids = getCheckedDetailIds();
 
     if(ids.length === 0){
@@ -802,6 +831,7 @@ $("#idbarang").select2({
     // $('[name="nilai"]').val(data.newcost.trim()).prop("readonly", true);
     // $('[name="unit"]').val(data.unit.trim()).prop("readonly", true);
     setJtsValue('[name="harga"]', convertToDbNumber(data.newcost));
+    hitungTotalCost();
     // $('[name="totalcost"]').val().prop("readonly", true);
 
 });
@@ -816,7 +846,7 @@ $("#idbarang_bom").select2({
     minimumInputLength: 0,
     dropdownParent: $('#modalDtlPBP'),
     ajax: {
-        url: HOST_URL + 'api/globalmodule/list_item_bom',
+        url: HOST_URL + 'api/globalmodule/list_item_barangjadi',
         type: 'POST',
         dataType: 'json',
         delay: 250,
@@ -856,7 +886,9 @@ $("#idbarang_bom").select2({
     $('[name="unit"]').val(data.unit.trim()).prop("readonly", true);
     // $('[name="qty"]').val(data.qty.trim())
     setJtsValue('[name="qty"]', convertToDbNumber(data.qty));
-    // setJtsValue('[name="standartcost"]', convertToDbNumber(data.newcost));
+    // Harga diambil dari standard cost (newcost) item barang jadi
+    setJtsValue('[name="harga"]', convertToDbNumber(data.newcost || 0));
+    hitungTotalCost();
     // $('[name="totalcost"]').val().prop("readonly", true);
 
 });
@@ -1701,6 +1733,10 @@ function savePBPDetail(formId) {
 
 /* TABLE PP DETAIL */
 function tabletmpPBP() {
+    // Grid inline aktif (gaya pmk_brng) → DataTables tidak diinisialisasi
+    if (typeof pnpGridExists === 'function' && pnpGridExists()) {
+        return;
+    }
     /* Tabel PP Detail */
     var initTable = function () {
         var table = $('#tmp_penerimaanbpdtl');
@@ -1809,6 +1845,12 @@ $(document).on('copy', function (e) {
 
 
 function reload_penerimaanbp_dtl() {
+    // Grid inline aktif → reload dari endpoint grid (JSON)
+    if (typeof pnpGridExists === 'function' && pnpGridExists()) {
+        pnpGridReload();
+        return;
+    }
+
     var table = $('#tmp_penerimaanbpdtl');
     table.DataTable().ajax.reload(); //reload datatable ajax
 }

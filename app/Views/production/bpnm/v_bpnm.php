@@ -4,7 +4,7 @@
 
             <!-- LEFT -->
             <div class="col-sm-6">
-                <h1 class="m-0">Penerimaan Barang Produksi</h1>
+                <h1 class="m-0">Biaya Produksi Non Material</h1>
             </div>
 
             <!-- RIGHT -->

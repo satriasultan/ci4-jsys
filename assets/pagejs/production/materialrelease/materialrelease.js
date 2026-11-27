@@ -482,6 +482,12 @@ $('#btnAddDetailMaterial').on('click', function (e) {
 });
 function btnInputDetailMaterial() {
 
+    // Grid inline aktif (gaya pmk_brng) → buka baris editor, bukan modal
+    if (typeof mrlGridExists === 'function' && mrlGridExists()) {
+        mrlGridNewDraft();
+        return;
+    }
+
     // reset form
     $('#formMaterialReleaseMaterialDtl')[0].reset();
 
@@ -541,6 +547,12 @@ function setSelect2Ajax(selector, value, text) {
 
 
 function updateDetailMaterialRelease(){
+    // Grid inline aktif → edit baris terpilih langsung di grid
+    if (typeof mrlGridExists === 'function' && mrlGridExists()) {
+        mrlGridEditSelected();
+        return;
+    }
+
     const ids = getCheckedDetailIds();
     console.log('IDS:', ids);
 
@@ -685,6 +697,12 @@ $('#issub').on('change', function () {
 
 
 function btnDeleteDetailMaterialRelease(){
+    // Grid inline aktif → hapus massal baris tercentang
+    if (typeof mrlGridExists === 'function' && mrlGridExists()) {
+        mrlGridDeleteSelected();
+        return;
+    }
+
     const ids = getCheckedDetailIds();
 
     if(ids.length === 0){
@@ -1867,6 +1885,11 @@ function saveMaterialReleaseDetail(formId) {
 
 /* TABLE PP DETAIL */
 function tabletmpMaterialRelease() {
+    // Grid inline aktif (gaya pmk_brng) → DataTables tidak diinisialisasi
+    if (typeof mrlGridExists === 'function' && mrlGridExists()) {
+        return;
+    }
+
     /* Tabel PP Detail */
     var initTable = function () {
         var table = $('#tmp_materialreleasedtl');
@@ -1954,6 +1977,12 @@ function tabletmpMaterialRelease() {
 
 
 function reload_materialrelease_dtl() {
+    // Grid inline aktif → reload dari endpoint grid (JSON)
+    if (typeof mrlGridExists === 'function' && mrlGridExists()) {
+        mrlGridReload();
+        return;
+    }
+
     var table = $('#tmp_materialreleasedtl');
     table.DataTable().ajax.reload(); //reload datatable ajax
 }

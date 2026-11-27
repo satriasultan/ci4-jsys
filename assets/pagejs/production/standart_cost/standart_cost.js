@@ -419,6 +419,12 @@ $('#btnAddDetail').on('click', function (e) {
 });
 function btnInputDetail() {
 
+    // Grid inline aktif (gaya pmk_brng) → buka baris editor, bukan modal
+    if (typeof stdGridExists === 'function' && stdGridExists()) {
+        stdGridNewDraft();
+        return;
+    }
+
     console.log("INI KENAPA DI SISI");
 
     // reset flag update agar handler select2:select kembali aktif saat input baru
@@ -684,6 +690,12 @@ function save_standart_cost() {
 
 
 function btnDeleteDetail(){
+    // Grid inline aktif → hapus massal dari baris grid
+    if (typeof stdGridExists === 'function' && stdGridExists()) {
+        stdGridDeleteSelected();
+        return;
+    }
+
     const ids = getCheckedDetailIds();
 
     if(ids.length === 0){
@@ -748,6 +760,11 @@ function btnDeleteDetail(){
 
 /* TABLE PP DETAIL */
 function tabletmpStandartCost() {
+    // Grid inline aktif (gaya pmk_brng) → DataTables tidak diinisialisasi
+    if (typeof stdGridExists === 'function' && stdGridExists()) {
+        return;
+    }
+
     /* Tabel PP Detail */
     var initTable = function () {
         var table = $('#tmp_stdcost');
@@ -828,6 +845,12 @@ function tabletmpStandartCost() {
 
 
 function reload_standart_cost_dtl() {
+    // Grid inline aktif → reload dari endpoint grid (JSON)
+    if (typeof stdGridExists === 'function' && stdGridExists()) {
+        stdGridReload();
+        return;
+    }
+
     var table = $('#tmp_stdcost');
     table.DataTable().ajax.reload(); //reload datatable ajax
 }
@@ -856,6 +879,12 @@ $('#tmp_stdcost').on('draw.dt', function () {
 
 
 function updateStandartCost() {
+    // Grid inline aktif → muat baris terpilih ke editor grid
+    if (typeof stdGridExists === 'function' && stdGridExists()) {
+        stdGridEditSelected();
+        return;
+    }
+
     isLoadingUpdate = true;
     const ids = getCheckedDetailIds();
 

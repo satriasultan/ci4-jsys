@@ -340,9 +340,15 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
     /* BIAYA STANDART */
 
-    var $mst_biaya_standart_mst_view = "(select A.*,z.uraian as nmstatus,kdtrx,z.jenistrx,z.uraian as nmstatus from sc_mst.biaya_standart_mst a 
+    var $mst_biaya_standart_mst_view = "(select A.*,z.uraian as nmstatus,kdtrx,z.jenistrx from sc_mst.biaya_standart_mst a 
 left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and trim(a.status)=trim(z.kdtrx)) as x";
-    var $mst_biaya_standart_mst_view_column = array('docno','docdate','activatedate');
+    var $mst_biaya_standart_mst_view_column = array('docno','cabang','pemohon','docdate','activedate','docref','description','inputby','inputdate','updatedate','nmstatus');
+    // index kolom grid => kolom database asli (sorting yang benar)
+    var $mst_biaya_standart_mst_view_sortable = array(
+        2 => 'docno', 3 => 'cabang', 4 => 'pemohon', 5 => 'docdate',
+        6 => 'activedate', 7 => 'docref', 8 => 'description',
+        9 => 'inputby', 10 => 'inputdate', 11 => 'updatedate', 12 => 'nmstatus'
+    );
     var $mst_biaya_standart_mst_view_order = array('docno' => 'desc'); // default order
     private function _get_mst_biaya_standart_mst()
     {
@@ -379,8 +385,11 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
         if(isset($_POST['order'])) // here order processing
         {
-            if ($_POST['order']['0']['column']!= 0){ //diset klo post column 0
-                $builder->orderBy($this->mst_biaya_standart_mst_view_column[$_POST['order']['0']['column']-1], $_POST['order']['0']['dir']);
+            $__col = (int) $_POST['order']['0']['column'];
+            $__dir = $_POST['order']['0']['dir'] ?? 'asc';
+
+            if (isset($this->mst_biaya_standart_mst_view_sortable[$__col])) {
+                $builder->orderBy($this->mst_biaya_standart_mst_view_sortable[$__col], $__dir);
             }
         }
         else if(isset($this->mst_biaya_standart_mst_view_order))
@@ -625,15 +634,20 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
     z.uraian as nmstatus,kdtrx,
     z.jenistrx,
     b.nmbranch,
-    n.nmbarang,
-    z.uraian as nmstatus 
+    n.nmbarang
     from sc_trx.bom_mst a 
     left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.3' and 
     trim(a.status)=trim(z.kdtrx)
     left outer join sc_mst.branchjob b on a.cabang=b.idbranch
     left outer join sc_mst.mbarang n on a.idbarang_jadi=n.idbarang
     ) as x";
-    var $trx_bom_mst_view_column = array('docno','docdate','activatedate');
+    var $trx_bom_mst_view_column = array('docno','docdate','idbarang_jadi','nmbarang','buildfor','buildunit','keterangan','nmbranch','inputby','inputdate','updatedate','nmstatus');
+    // index kolom grid => kolom database asli (sorting yang benar)
+    var $trx_bom_mst_view_sortable = array(
+        2 => 'docno', 3 => 'docdate', 4 => 'idbarang_jadi', 5 => 'nmbarang',
+        6 => 'buildfor', 7 => 'buildunit', 8 => 'keterangan', 9 => 'nmbranch',
+        10 => 'inputby', 11 => 'inputdate', 12 => 'updatedate', 13 => 'nmstatus'
+    );
     var $trx_bom_mst_view_order = array('docno' => 'desc'); // default order
     private function _get_trx_bom_mst()
     {
@@ -674,8 +688,8 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
             if ($__col === 2) {
                 $this->_order_natural_docno($builder, $__dir);
-            } elseif ($__col != 0 && isset($this->trx_bom_mst_view_column[$__col - 1])) {
-                $builder->orderBy($this->trx_bom_mst_view_column[$__col - 1], $__dir);
+            } elseif (isset($this->trx_bom_mst_view_sortable[$__col])) {
+                $builder->orderBy($this->trx_bom_mst_view_sortable[$__col], $__dir);
             }
         } else {
             $this->_order_natural_docno($builder, 'asc');
@@ -1280,8 +1294,7 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
     b.nmbranch,
     c.nmcustomer,
     c.alamat_kantor as alamatcust,
-    d.namakotakab AS nmkota,
-    z.uraian as nmstatus 
+    d.namakotakab AS nmkota
     from sc_trx.workingorder_mst a 
     left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.4' and 
     trim(a.status)=trim(z.kdtrx)
@@ -2468,15 +2481,20 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
     z.uraian as nmstatus,kdtrx,
     z.jenistrx,
     b.nmbranch,
-    n.nmbarang,
-    z.uraian as nmstatus 
+    n.nmbarang
     from sc_trx.materialrelease_mst a 
     left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.8' and 
     trim(a.status)=trim(z.kdtrx)
     left outer join sc_mst.branchjob b on a.cabang=b.idbranch
     left outer join sc_mst.mbarang n on a.idbarang_jadi=n.idbarang
     ) as x";
-    var $trx_materialrelease_mst_view_column = array('docno','docdate','activatedate');
+    var $trx_materialrelease_mst_view_column = array('docno','docdate','idbarang_jadi','nmbarang','buildfor','buildunit','keterangan','nmbranch','inputby','inputdate','updatedate','nmstatus');
+    // index kolom grid => kolom database asli (sorting yang benar)
+    var $trx_materialrelease_mst_view_sortable = array(
+        2 => 'docno', 3 => 'docdate', 4 => 'idbarang_jadi', 5 => 'nmbarang',
+        6 => 'buildfor', 7 => 'buildunit', 8 => 'keterangan', 9 => 'nmbranch',
+        10 => 'inputby', 11 => 'inputdate', 12 => 'updatedate', 13 => 'nmstatus'
+    );
     var $trx_materialrelease_mst_view_order = array('docno' => 'desc'); // default order
     private function _get_trx_materialrelease_mst()
     {
@@ -2517,8 +2535,8 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
             if ($__col === 2) {
                 $this->_order_natural_docno($builder, $__dir);
-            } elseif ($__col != 0 && isset($this->trx_materialrelease_mst_view_column[$__col - 1])) {
-                $builder->orderBy($this->trx_materialrelease_mst_view_column[$__col - 1], $__dir);
+            } elseif (isset($this->trx_materialrelease_mst_view_sortable[$__col])) {
+                $builder->orderBy($this->trx_materialrelease_mst_view_sortable[$__col], $__dir);
             }
         } else {
             $this->_order_natural_docno($builder, 'asc');
@@ -2782,15 +2800,20 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
     z.uraian as nmstatus,kdtrx,
     z.jenistrx,
     b.nmbranch,
-    n.nmbarang,
-    z.uraian as nmstatus 
+    n.nmbarang
     from sc_trx.penerimaanbp_mst a 
     left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.8' and 
     trim(a.status)=trim(z.kdtrx)
     left outer join sc_mst.branchjob b on a.cabang=b.idbranch
     left outer join sc_mst.mbarang n on a.idbarang_jadi=n.idbarang
     ) as x";
-    var $trx_penerimaanbp_mst_view_column = array('docno','docdate','activatedate');
+    var $trx_penerimaanbp_mst_view_column = array('docno','docdate','idbarang_jadi','nmbarang','buildfor','buildunit','keterangan','nmbranch','inputby','inputdate','updatedate','nmstatus');
+    // index kolom grid => kolom database asli (sorting yang benar)
+    var $trx_penerimaanbp_mst_view_sortable = array(
+        2 => 'docno', 3 => 'docdate', 4 => 'idbarang_jadi', 5 => 'nmbarang',
+        6 => 'buildfor', 7 => 'buildunit', 8 => 'keterangan', 9 => 'nmbranch',
+        10 => 'inputby', 11 => 'inputdate', 12 => 'updatedate', 13 => 'nmstatus'
+    );
     var $trx_penerimaanbp_mst_view_order = array('docno' => 'desc'); // default order
     private function _get_trx_penerimaanbp_mst()
     {
@@ -2831,8 +2854,8 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
             if ($__col === 2) {
                 $this->_order_natural_docno($builder, $__dir);
-            } elseif ($__col != 0 && isset($this->trx_penerimaanbp_mst_view_column[$__col - 1])) {
-                $builder->orderBy($this->trx_penerimaanbp_mst_view_column[$__col - 1], $__dir);
+            } elseif (isset($this->trx_penerimaanbp_mst_view_sortable[$__col])) {
+                $builder->orderBy($this->trx_penerimaanbp_mst_view_sortable[$__col], $__dir);
             }
         } else {
             $this->_order_natural_docno($builder, 'asc');
@@ -3081,15 +3104,20 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
     z.uraian as nmstatus,kdtrx,
     z.jenistrx,
     b.nmbranch,
-    n.nmbarang,
-    z.uraian as nmstatus 
+    n.nmbarang
     from sc_trx.bpnm_mst a 
     left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.8' and 
     trim(a.status)=trim(z.kdtrx)
     left outer join sc_mst.branchjob b on a.cabang=b.idbranch
     left outer join sc_mst.mbarang n on a.idbarang_jadi=n.idbarang
     ) as x";
-    var $trx_bpnm_mst_view_column = array('docno','docdate','activatedate');
+    var $trx_bpnm_mst_view_column = array('docno','docdate','idbarang_jadi','nmbarang','buildfor','buildunit','keterangan','nmbranch','inputby','inputdate','updatedate','nmstatus');
+    // index kolom grid => kolom database asli (sorting yang benar)
+    var $trx_bpnm_mst_view_sortable = array(
+        2 => 'docno', 3 => 'docdate', 4 => 'idbarang_jadi', 5 => 'nmbarang',
+        6 => 'buildfor', 7 => 'buildunit', 8 => 'keterangan', 9 => 'nmbranch',
+        10 => 'inputby', 11 => 'inputdate', 12 => 'updatedate', 13 => 'nmstatus'
+    );
     var $trx_bpnm_mst_view_order = array('docno' => 'desc'); // default order
     private function _get_trx_bpnm_mst()
     {
@@ -3130,8 +3158,8 @@ left outer join sc_mst.trxtype z on trim(coalesce(z.jenistrx,''))='I.R.A.1' and 
 
             if ($__col === 2) {
                 $this->_order_natural_docno($builder, $__dir);
-            } elseif ($__col != 0 && isset($this->trx_bpnm_mst_view_column[$__col - 1])) {
-                $builder->orderBy($this->trx_bpnm_mst_view_column[$__col - 1], $__dir);
+            } elseif (isset($this->trx_bpnm_mst_view_sortable[$__col])) {
+                $builder->orderBy($this->trx_bpnm_mst_view_sortable[$__col], $__dir);
             }
         } else {
             $this->_order_natural_docno($builder, 'asc');

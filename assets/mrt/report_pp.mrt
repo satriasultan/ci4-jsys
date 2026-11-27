@@ -1,10 +1,10 @@
 {
-  "ReportGuid": "7f53f3e006dd9197436e47191b9ca153",
+  "ReportGuid": "98877c97d378984a94c1172c87e0e179",
   "ReportName": "Report",
   "ReportAlias": "Report",
   "ReportFile": "report_pp.mrt",
   "ReportCreated": "/Date(1731911425000+0700)/",
-  "ReportChanged": "/Date(1775118241000+0700)/",
+  "ReportChanged": "/Date(1795741972000+0700)/",
   "EngineVersion": "EngineV2",
   "CalculationMode": "Interpretation",
   "ReportUnit": "Centimeters",
@@ -925,6 +925,7 @@
                 "Value": "{Line}"
               },
               "HorAlignment": "Center",
+              "Font": ";9;;",
               "Border": ";;;;;;;solid:0,0,0",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -957,6 +958,7 @@
                 "Value": "{Trim(detail.idbarang)}"
               },
               "HorAlignment": "Center",
+              "Font": ";9;;",
               "Border": ";;;;;;;solid:0,0,0",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -979,6 +981,7 @@
               "Text": {
                 "Value": "{Trim(detail.nmbarang)} - {Trim(detail.description)}"
               },
+              "Font": ";9;;",
               "Border": ";;;;;;;solid:0,0,0",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -1004,6 +1007,7 @@
               "Text": {
                 "Value": "{detail.unit}"
               },
+              "Font": ";9;;",
               "Border": ";;;;;;;solid:0,0,0",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -1030,6 +1034,7 @@
                 "Value": "{detail.qty}"
               },
               "HorAlignment": "Right",
+              "Font": ";9;;",
               "Border": ";;;;;;;solid:0,0,0",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -1056,12 +1061,13 @@
           "BreakIfLessThan": 10,
           "PrintIfDetailEmpty": true,
           "DataSourceName": "detail",
+          "CalcInvisible": true,
           "LimitRows": "10"
         },
         "2": {
           "Ident": "StiFooterBand",
           "Name": "FooterBand1",
-          "ClientRectangle": "0,5,20.6,2.6",
+          "ClientRectangle": "0,5,20.6,3",
           "Interaction": {
             "Ident": "StiInteraction"
           },
@@ -1422,7 +1428,7 @@
       "Margins": {
         "Left": 0.2,
         "Right": 0.2,
-        "Top": 0.5,
+        "Top": 0.2,
         "Bottom": 0.2
       }
     }

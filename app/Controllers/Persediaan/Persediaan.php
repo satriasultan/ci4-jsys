@@ -1277,6 +1277,70 @@ class Persediaan extends BaseController
             ]);
 
             $reload = true;
+        } else {
+
+            // ================================================
+            // UPDATE HEADER (DRAFT) SAAT SIMPAN DETAIL
+            // Hanya kolom yang benar-benar dikirim form yang di-update,
+            // supaya keterangan/pemohon/tujuan tidak hilang saat simpan item.
+            // ================================================
+            $headerUpdate = [];
+
+            if ($this->request->getPost('description') !== null) {
+                $headerUpdate['description'] = strtoupper(trim((string) $this->request->getPost('description')));
+            }
+            if ($this->request->getPost('pemohon') !== null) {
+                $headerUpdate['pemohon'] = strtoupper(trim((string) $this->request->getPost('pemohon')));
+            }
+            if ($this->request->getPost('docref') !== null) {
+                $headerUpdate['docref'] = trim((string) $this->request->getPost('docref'));
+            }
+            if ($this->request->getPost('docdate') !== null) {
+                $headerUpdate['docdate'] = trim((string) $this->request->getPost('docdate'));
+            }
+            if ($this->request->getPost('cabang') !== null) {
+                $headerUpdate['cabang'] = trim((string) $this->request->getPost('cabang'));
+            }
+            if ($this->request->getPost('cabang_sent') !== null) {
+                $headerUpdate['cabang_sent'] = trim((string) $this->request->getPost('cabang_sent'));
+            }
+
+            // location hanya di-update bila terisi (jangan mengosongkan header)
+            $locFrom = strtoupper(trim((string) $this->request->getPost('idlocation_from')));
+            if ($locFrom !== '') {
+                $headerUpdate['idlocation_from'] = $locFrom;
+            }
+
+            $locTo = strtoupper(trim((string) $this->request->getPost('idlocation_to')));
+            if ($locTo !== '') {
+                $headerUpdate['idlocation_to'] = $locTo;
+            }
+
+            $locTransit = strtoupper(trim((string) $this->request->getPost('idlocation_transit')));
+            if ($locTransit !== '') {
+                $headerUpdate['idlocation_transit'] = $locTransit;
+            }
+
+            if (!empty($headerUpdate)) {
+                $headerUpdate['updateby']   = $nama;
+                $headerUpdate['updatedate'] = date('Y-m-d H:i:s');
+
+                $updateHeader = $db->table('sc_tmp.transfer_location_mst')
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->where('status', 'E')
+                    ->update($headerUpdate);
+
+                if ($updateHeader === false) {
+                    $error = $db->error();
+                    $db->transRollback();
+
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => $error['message']
+                    ]);
+                }
+            }
         }
 
         // ================================================

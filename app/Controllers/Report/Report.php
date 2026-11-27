@@ -717,6 +717,7 @@ class Report extends BaseController
         $docno    = $this->request->getPost('docno');
         $idbarang = $this->request->getPost('idbarang');
         $cabang   = $this->request->getPost('cabang');
+        $pemohon  = trim((string) $this->request->getPost('pemohon'));
 
         $page    = max(1, (int)($this->request->getPost('page') ?? 1));
         $perpage = (int)($this->request->getPost('perpage') ?? 25);
@@ -746,6 +747,11 @@ class Report extends BaseController
         if (!empty($cabang)) {
             $where[] = "TRIM(pp.cabang) = ?";
             $bind[]  = trim(strtoupper($cabang));
+        }
+        if ($pemohon !== '') {
+            $where[] = "(TRIM(pp.pemohon) ILIKE ? OR TRIM(pp.inputby) ILIKE ?)";
+            $bind[]  = '%' . strtoupper($pemohon) . '%';
+            $bind[]  = '%' . strtoupper($pemohon) . '%';
         }
 
         /* =========================================================
@@ -917,6 +923,7 @@ class Report extends BaseController
         $docno    = $this->request->getPost('docno');
         $idbarang = $this->request->getPost('idbarang');
         $cabang   = $this->request->getPost('cabang');
+        $pemohon  = trim((string) $this->request->getPost('pemohon'));
 
         /* ====== BUILD WHERE ====== */
         $where = []; $bind = [];
@@ -940,6 +947,11 @@ class Report extends BaseController
         if (!empty($cabang)) {
             $where[] = "TRIM(pp.cabang) = ?";
             $bind[]  = trim(strtoupper($cabang));
+        }
+        if ($pemohon !== '') {
+            $where[] = "(TRIM(pp.pemohon) ILIKE ? OR TRIM(pp.inputby) ILIKE ?)";
+            $bind[]  = '%' . strtoupper($pemohon) . '%';
+            $bind[]  = '%' . strtoupper($pemohon) . '%';
         }
 
         /* =========================================================
@@ -2397,7 +2409,7 @@ class Report extends BaseController
         $totalPage = $perpage > 0 ? (int)ceil($total / $perpage) : 0;
 
         $rows = $this->db->query(
-            $sqlBase . " ORDER BY p.docdate DESC, d.docno, d.idurut LIMIT ? OFFSET ?",
+            $sqlBase . " ORDER BY p.docdate ASC, d.docno, d.idurut LIMIT ? OFFSET ?",
             array_merge($bind, [$perpage, $offset])
         )->getResultArray();
 
@@ -2438,7 +2450,7 @@ class Report extends BaseController
         }
         $whereSql = count($where) ? ' WHERE ' . implode(' AND ', $where) : '';
 
-        $sql = $this->buildQueryPOHarian() . $whereSql . " ORDER BY p.docdate DESC, d.docno, d.idurut";
+        $sql = $this->buildQueryPOHarian() . $whereSql . " ORDER BY p.docdate ASC, d.docno, d.idurut";
 
         ini_set('memory_limit', '512M');
         set_time_limit(0);
@@ -3607,7 +3619,7 @@ ORDER BY
 
     private function buildQueryKartuStock()
     {
-        $sql = "WITH parameter AS (
+        $sql = "WITH RECURSIVE parameter AS (
             SELECT
                 ?::date  AS tanggal_awal,
                 ?::date  AS tanggal_akhir,
@@ -3616,20 +3628,36 @@ ORDER BY
                 ?        AS idbarang
         ),
 
+        /* cabang terpilih + seluruh turunannya (parent = ALL) */
+        cabang_filter AS (
+            SELECT TRIM(b.idbranch) AS idbranch
+            FROM sc_mst.branchjob b
+            CROSS JOIN parameter p
+            WHERE TRIM(COALESCE(p.cabang, '')) <> ''
+              AND ( TRIM(b.idbranch) = TRIM(p.cabang)
+                 OR UPPER(TRIM(b.nmbranch)) = UPPER(TRIM(p.cabang)) )
+            UNION
+            SELECT TRIM(c.idbranch)
+            FROM sc_mst.branchjob c
+            JOIN cabang_filter f ON TRIM(c.induk) = f.idbranch
+        ),
+
         saldo_sebelumnya AS (
             SELECT
                 s.idlocation, s.idarea, s.idbarang, s.warehouse,
-                s.cabang, s.unit, s.subunit, s.idunit, s.idbranch,
+                TRIM(ml.idbranchjob) AS cabang, s.unit, s.subunit, s.idunit,
+                TRIM(ml.idbranchjob) AS idbranch,
                 SUM(COALESCE(s.qty_in, 0)) - SUM(COALESCE(s.qty_out, 0)) AS saldo_qty
             FROM sc_trx.stkblc s
             CROSS JOIN parameter p
+            LEFT JOIN sc_mst.mlocation ml ON TRIM(ml.idlocation) = TRIM(s.idlocation)
             WHERE s.trxdate::date < p.tanggal_awal
-            AND (p.cabang     IS NULL OR TRIM(p.cabang)     = '' OR TRIM(s.cabang)     = TRIM(p.cabang))
+            AND (p.cabang     IS NULL OR TRIM(p.cabang)     = '' OR TRIM(ml.idbranchjob) IN (SELECT idbranch FROM cabang_filter))
             AND (p.idlocation IS NULL OR TRIM(p.idlocation) = '' OR TRIM(s.idlocation) = TRIM(p.idlocation))
             AND (p.idbarang   IS NULL OR TRIM(p.idbarang)   = '' OR TRIM(s.idbarang)   = TRIM(p.idbarang))
             GROUP BY
                 s.idlocation, s.idarea, s.idbarang, s.warehouse,
-                s.cabang, s.unit, s.subunit, s.idunit, s.idbranch
+                TRIM(ml.idbranchjob), s.unit, s.subunit, s.idunit
         ),
 
         transaksi AS (
@@ -3639,9 +3667,10 @@ ORDER BY
                 CASE WHEN COALESCE(s.qty_out, 0) > 0 THEN COALESCE(s.totalcost, 0) ELSE 0 END AS cost_out
             FROM sc_trx.stkblc s
             CROSS JOIN parameter p
+            LEFT JOIN sc_mst.mlocation ml ON TRIM(ml.idlocation) = TRIM(s.idlocation)
             WHERE s.trxdate::date >= p.tanggal_awal
             AND s.trxdate::date <= p.tanggal_akhir
-            AND (p.cabang     IS NULL OR TRIM(p.cabang)     = '' OR TRIM(s.cabang)     = TRIM(p.cabang))
+            AND (p.cabang     IS NULL OR TRIM(p.cabang)     = '' OR TRIM(ml.idbranchjob) IN (SELECT idbranch FROM cabang_filter))
             AND (p.idlocation IS NULL OR TRIM(p.idlocation) = '' OR TRIM(s.idlocation) = TRIM(p.idlocation))
             AND (p.idbarang   IS NULL OR TRIM(p.idbarang)   = '' OR TRIM(s.idbarang)   = TRIM(p.idbarang))
         ),
@@ -3650,8 +3679,11 @@ ORDER BY
             SELECT idlocation, idarea, idbarang, warehouse, cabang, unit, subunit, idunit, idbranch
             FROM saldo_sebelumnya
             UNION
-            SELECT idlocation, idarea, idbarang, warehouse, cabang, unit, subunit, idunit, idbranch
-            FROM transaksi
+            SELECT t.idlocation, t.idarea, t.idbarang, t.warehouse,
+                   TRIM(ml.idbranchjob) AS cabang, t.unit, t.subunit, t.idunit,
+                   TRIM(ml.idbranchjob) AS idbranch
+            FROM transaksi t
+            LEFT JOIN sc_mst.mlocation ml ON TRIM(ml.idlocation) = TRIM(t.idlocation)
         ),
 
         saldo_awal AS (
@@ -3712,7 +3744,7 @@ ORDER BY
             TRIM(f.keterangan)               AS keterangan,
             COALESCE(f.qty_in, 0)            AS qty_debet,
             COALESCE(f.qty_out, 0)           AS qty_kredit,
-            TRIM(f.idbranch)                 AS job,
+            TRIM(ml.idbranchjob)             AS job,
             COALESCE(NULLIF(TRIM(pr.nmprincipal), ''), TRIM(mb.idprincipal), '') AS principal,
             TRIM(f.batch)                    AS batch,
             ''                               AS expdate
@@ -3879,7 +3911,7 @@ ORDER BY
 
     private function buildQueryPosisiBrg()
     {
-        $sql = "WITH parameter AS (
+        $sql = "WITH RECURSIVE parameter AS (
                 SELECT
                     ?::date  AS tanggal_awal,
                     ?::date  AS tanggal_akhir,
@@ -3888,34 +3920,52 @@ ORDER BY
                     ?        AS idbarang
             ),
 
+            /* cabang terpilih + seluruh turunannya (parent = ALL) */
+            cabang_filter AS (
+                SELECT TRIM(b.idbranch) AS idbranch
+                FROM sc_mst.branchjob b
+                CROSS JOIN parameter p
+                WHERE TRIM(COALESCE(p.cabang, '')) <> ''
+                  AND ( TRIM(b.idbranch) = TRIM(p.cabang)
+                     OR UPPER(TRIM(b.nmbranch)) = UPPER(TRIM(p.cabang)) )
+                UNION
+                SELECT TRIM(c.idbranch)
+                FROM sc_mst.branchjob c
+                JOIN cabang_filter f ON TRIM(c.induk) = f.idbranch
+            ),
+
             saldo_awal AS (
                 SELECT
                     s.idbarang, s.idlocation,
-                    s.cabang, s.idbranch,
+                    TRIM(ml.idbranchjob) AS cabang,
+                    TRIM(ml.idbranchjob) AS idbranch,
                     SUM(COALESCE(s.qty_in, 0)) - SUM(COALESCE(s.qty_out, 0)) AS saldo_awal
                 FROM sc_trx.stkblc s
                 CROSS JOIN parameter p
+                LEFT JOIN sc_mst.mlocation ml ON TRIM(ml.idlocation) = TRIM(s.idlocation)
                 WHERE s.trxdate::date < p.tanggal_awal
-                AND (p.cabang     IS NULL OR TRIM(p.cabang)     = '' OR TRIM(s.cabang)     = TRIM(p.cabang))
+                AND (p.cabang     IS NULL OR TRIM(p.cabang)     = '' OR TRIM(ml.idbranchjob) IN (SELECT idbranch FROM cabang_filter))
                 AND (p.idlocation IS NULL OR TRIM(p.idlocation) = '' OR TRIM(s.idlocation) = TRIM(p.idlocation))
                 AND (p.idbarang   IS NULL OR TRIM(p.idbarang)   = '' OR TRIM(s.idbarang)   = TRIM(p.idbarang))
-                GROUP BY s.idbarang, s.idlocation, s.cabang, s.idbranch
+                GROUP BY s.idbarang, s.idlocation, TRIM(ml.idbranchjob)
             ),
 
             mutasi AS (
                 SELECT
                     s.idbarang, s.idlocation,
-                    s.cabang, s.idbranch,
+                    TRIM(ml.idbranchjob) AS cabang,
+                    TRIM(ml.idbranchjob) AS idbranch,
                     SUM(COALESCE(s.qty_in, 0))  AS debet,
                     SUM(COALESCE(s.qty_out, 0)) AS kredit
                 FROM sc_trx.stkblc s
                 CROSS JOIN parameter p
+                LEFT JOIN sc_mst.mlocation ml ON TRIM(ml.idlocation) = TRIM(s.idlocation)
                 WHERE s.trxdate::date >= p.tanggal_awal
                 AND s.trxdate::date <= p.tanggal_akhir
-                AND (p.cabang     IS NULL OR TRIM(p.cabang)     = '' OR TRIM(s.cabang)     = TRIM(p.cabang))
+                AND (p.cabang     IS NULL OR TRIM(p.cabang)     = '' OR TRIM(ml.idbranchjob) IN (SELECT idbranch FROM cabang_filter))
                 AND (p.idlocation IS NULL OR TRIM(p.idlocation) = '' OR TRIM(s.idlocation) = TRIM(p.idlocation))
                 AND (p.idbarang   IS NULL OR TRIM(p.idbarang)   = '' OR TRIM(s.idbarang)   = TRIM(p.idbarang))
-                GROUP BY s.idbarang, s.idlocation, s.cabang, s.idbranch
+                GROUP BY s.idbarang, s.idlocation, TRIM(ml.idbranchjob)
             ),
 
             stock_list AS (

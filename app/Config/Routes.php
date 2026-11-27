@@ -1302,6 +1302,7 @@ $routes->group('api', ["namespace" => "App\Controllers\Api"], function ($routes)
     $routes->add('globalmodule/list_item', 'Globalmodule::list_item');
     $routes->add('globalmodule/list_item_std_cost', 'Globalmodule::list_item_std_cost');
     $routes->add('globalmodule/list_item_bom', 'Globalmodule::list_item_bom');
+    $routes->add('globalmodule/list_item_barangjadi', 'Globalmodule::list_item_barangjadi');
     $routes->add('globalmodule/list_supplier', 'Globalmodule::list_supplier');
     $routes->add('globalmodule/list_outstanding_po', 'Globalmodule::list_outstanding_po');
     $routes->add('globalmodule/list_user', 'Globalmodule::list_user');
@@ -1547,6 +1548,7 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('save_standart_cost_mst', 'Production::save_standart_cost_mst');
     $routes->add('clearStandartCostTmp', 'Production::clearStandartCostTmp');
     $routes->add('list_tmp_standart_cost_dtl', 'Production::list_tmp_standart_cost_dtl');
+    $routes->add('list_standart_cost_dtl_grid', 'Production::list_standart_cost_dtl_grid');
     $routes->add('list_mst_standart_cost_dtl', 'Production::list_mst_standart_cost_dtl');
     $routes->add('get_standart_cost_dtl(:any)', 'Production::get_standart_cost_dtl$1');
     $routes->add('final_input_standart_cost', 'Production::final_input_standart_cost');
@@ -1572,6 +1574,7 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('save_biaya_standart_mst', 'Production::save_biaya_standart_mst');
     $routes->add('clearBiayaStandartTmp', 'Production::clearBiayaStandartTmp');
     $routes->add('list_tmp_biaya_standart_dtl', 'Production::list_tmp_biaya_standart_dtl');
+    $routes->add('list_biaya_standart_dtl_grid', 'Production::list_biaya_standart_dtl_grid');
     $routes->add('list_mst_biaya_standart_dtl', 'Production::list_mst_biaya_standart_dtl');
     $routes->add('get_biaya_standart_dtl(:any)', 'Production::get_biaya_standart_dtl$1');
     $routes->add('final_input_biaya_standart', 'Production::final_input_biaya_standart');
@@ -1598,6 +1601,7 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('save_bom_mst', 'Production::save_bom_mst');
     $routes->add('clear_bom_Tmp', 'Production::clear_bom_Tmp');
     $routes->add('list_tmp_bom_material_dtl', 'Production::list_tmp_bom_material_dtl');
+    $routes->add('list_bom_dtl_grid', 'Production::list_bom_dtl_grid');
     $routes->add('list_trx_bom_material_dtl', 'Production::list_trx_bom_material_dtl');
     $routes->add('list_tmp_bom_cost_dtl', 'Production::list_tmp_bom_cost_dtl');
     $routes->add('list_trx_bom_cost_dtl', 'Production::list_trx_bom_cost_dtl');
@@ -1699,6 +1703,7 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('save_materialrelease_from_wo', 'Production::save_materialrelease_from_wo');
     $routes->add('clear_materialrelease_Tmp', 'Production::clear_materialrelease_Tmp');
     $routes->add('list_tmp_materialrelease_dtl', 'Production::list_tmp_materialrelease_dtl');
+    $routes->add('list_materialrelease_dtl_grid', 'Production::list_materialrelease_dtl_grid');
     $routes->add('list_trx_materialrelease_dtl', 'Production::list_trx_materialrelease_dtl');
     $routes->add('get_materialrelease_dtl(:any)', 'Production::get_materialrelease_dtl$1');
     $routes->add('final_input_materialrelease', 'Production::final_input_materialrelease');
@@ -1728,6 +1733,7 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('save_penerimaanbp_from_wo', 'Production::save_penerimaanbp_from_wo');
     $routes->add('clear_penerimaanbp_Tmp', 'Production::clear_penerimaanbp_Tmp');
     $routes->add('list_tmp_penerimaanbp_dtl', 'Production::list_tmp_penerimaanbp_dtl');
+    $routes->add('list_penerimaanbp_dtl_grid', 'Production::list_penerimaanbp_dtl_grid');
     $routes->add('list_trx_penerimaanbp_dtl', 'Production::list_trx_penerimaanbp_dtl');
     $routes->add('get_penerimaanbp_dtl(:any)', 'Production::get_penerimaanbp_dtl$1');
     $routes->add('final_input_penerimaanbp', 'Production::final_input_penerimaanbp');
@@ -1759,6 +1765,7 @@ $routes->group('/production/trans', ["namespace" => "App\Controllers\Production"
     $routes->add('save_bpnm_from_wo', 'Production::save_bpnm_from_wo');
     $routes->add('clear_bpnm_Tmp', 'Production::clear_bpnm_Tmp');
     $routes->add('list_tmp_bpnm_dtl', 'Production::list_tmp_bpnm_dtl');
+    $routes->add('list_bpnm_dtl_grid', 'Production::list_bpnm_dtl_grid');
     $routes->add('list_trx_bpnm_dtl', 'Production::list_trx_bpnm_dtl');
     $routes->add('get_bpnm_dtl(:any)', 'Production::get_bpnm_dtl$1');
     $routes->add('final_input_bpnm', 'Production::final_input_bpnm');

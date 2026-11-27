@@ -127,6 +127,15 @@
                                         class="form-control select2"></select>
                             </div>
                         </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Pemohon / Username</label>
+                                <input type="text" name="pemohon" id="lapPemohon"
+                                       class="form-control"
+                                       placeholder="Ketik nama pemohon / username"
+                                       autocomplete="off">
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>

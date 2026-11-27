@@ -494,7 +494,7 @@
         --corp-shadow:        0 1px 3px rgba(15, 23, 42, 0.06);
 
         font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-        color: var(--corp-text);
+        color: var(--corp-text, #1f2937);
         font-size: 13.5px;
     }
 
@@ -502,11 +502,11 @@
        CARD
     ========================================================= */
     .corp-form-container .card {
-        border: 1px solid var(--corp-border);
-        border-radius: var(--corp-radius);
-        box-shadow: var(--corp-shadow);
+        border: 1px solid var(--corp-border, #c3ccd8);
+        border-radius: var(--corp-radius, 6px);
+        box-shadow: var(--corp-shadow, 0 2px 6px rgba(15,23,42,.12));
         overflow: hidden;
-        background: var(--corp-bg-section);
+        background: var(--corp-bg-section, #f9fafb);
     }
 
     /* warna background header mengikuti global corporate header (layout) */
@@ -557,12 +557,12 @@
 
     .corp-form-container .card-body {
         padding: 22px;
-        background: var(--corp-bg-light);
+        background: var(--corp-bg-light, #f6f8fb);
     }
 
     .corp-form-container .card-footer {
-        background: var(--corp-bg-light) !important;
-        border-top: 1px solid var(--corp-border) !important;
+        background: var(--corp-bg-light, #f6f8fb) !important;
+        border-top: 1px solid var(--corp-border, #c3ccd8) !important;
         padding: 14px 22px;
     }
 
@@ -576,20 +576,20 @@
        SECTION BLOCK
     ========================================================= */
     .corp-form-container .section-block {
-        background: var(--corp-bg-section);
-        border: 1px solid var(--corp-border);
-        border-radius: var(--corp-radius);
+        background: var(--corp-bg-section, #f9fafb);
+        border: 1px solid var(--corp-border, #c3ccd8);
+        border-radius: var(--corp-radius, 6px);
         padding: 20px 22px;
         margin-bottom: 0;
-        box-shadow: var(--corp-shadow);
+        box-shadow: var(--corp-shadow, 0 2px 6px rgba(15,23,42,.12));
         transform: none;
         will-change: auto;
         transition: none;
     }
 
     .corp-form-container .section-block:hover {
-        box-shadow: var(--corp-shadow);
-        border-color: var(--corp-border);
+        box-shadow: var(--corp-shadow, 0 2px 6px rgba(15,23,42,.12));
+        border-color: var(--corp-border, #c3ccd8);
     }
 
     .corp-form-container .section-header {
@@ -597,18 +597,18 @@
         align-items: center;
         font-size: 13px;
         font-weight: 700;
-        color: var(--corp-primary);
+        color: var(--corp-primary, #1e3a5f);
         text-transform: uppercase;
         letter-spacing: 0.5px;
         margin-bottom: 18px;
         padding-bottom: 10px;
-        border-bottom: 1px solid var(--corp-border);
+        border-bottom: 1px solid var(--corp-border, #c3ccd8);
     }
 
     .corp-form-container .section-header i {
         margin-right: 8px;
         font-size: 14px;
-        color: var(--corp-primary);
+        color: var(--corp-primary, #1e3a5f);
     }
 
     /* =========================================================
@@ -622,7 +622,7 @@
         display: block;
         font-size: 12px;
         font-weight: 600;
-        color: var(--corp-text);
+        color: var(--corp-text, #1f2937);
         text-transform: uppercase;
         letter-spacing: 0.3px;
         margin-bottom: 6px;
@@ -630,18 +630,18 @@
 
     /* tanda wajib isi (*) */
     .corp-form-container label span[style*="color: red"] {
-        color: var(--corp-danger) !important;
+        color: var(--corp-danger, #dc2626) !important;
         font-weight: 700;
     }
 
     .corp-form-container .form-control,
     .corp-form-container .form-select,
     .corp-form-container select.form-control {
-        border: 1px solid var(--corp-border);
+        border: 1px solid var(--corp-border, #c3ccd8);
         border-radius: 4px;
         padding: 8px 12px;
         font-size: 13px;
-        color: var(--corp-text);
+        color: var(--corp-text, #1f2937);
         background-color: #ffffff;
         height: auto;
         min-height: 36px;
@@ -651,7 +651,7 @@
     .corp-form-container .form-control:focus,
     .corp-form-container .form-select:focus,
     .corp-form-container select.form-control:focus {
-        border-color: var(--corp-primary);
+        border-color: var(--corp-primary, #1e3a5f);
         box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.12);
         outline: none;
     }
@@ -669,11 +669,11 @@
 
     .corp-form-container .form-control:disabled,
     .corp-form-container .form-control[readonly] {
-        background-color: var(--corp-bg-disabled);
-        color: var(--corp-text-muted);
+        background-color: var(--corp-bg-disabled, #e5e7eb);
+        color: var(--corp-text-muted, #6b7280);
         opacity: 1;
         cursor: not-allowed;
-        border-color: var(--corp-border);
+        border-color: var(--corp-border, #c3ccd8);
     }
 
     /* =========================================================
@@ -681,14 +681,14 @@
     ========================================================= */
     .corp-form-container .select2-container .select2-selection--single {
         height: 36px !important;
-        border: 1px solid var(--corp-border) !important;
+        border: 1px solid var(--corp-border, #c3ccd8) !important;
         border-radius: 4px !important;
         background-color: #ffffff;
     }
 
     .corp-form-container .select2-container--focus .select2-selection--single,
     .corp-form-container .select2-container--open .select2-selection--single {
-        border-color: var(--corp-primary) !important;
+        border-color: var(--corp-primary, #1e3a5f) !important;
         box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.12);
     }
 
@@ -697,16 +697,16 @@
         padding-left: 10px !important;
         padding-right: 24px !important;
         font-size: 13px;
-        color: var(--corp-text) !important;
+        color: var(--corp-text, #1f2937) !important;
     }
 
     .corp-form-container .select2-container .select2-selection--single .select2-selection__placeholder {
-        color: var(--corp-text-muted);
+        color: var(--corp-text-muted, #6b7280);
     }
 
     .corp-form-container .select2-container .select2-selection--single .select2-selection__clear {
         font-size: 16px;
-        color: var(--corp-text-muted);
+        color: var(--corp-text-muted, #6b7280);
     }
 
     .corp-form-container .select2-container .select2-selection--single .select2-selection__arrow {
@@ -715,13 +715,13 @@
     }
 
     .corp-form-container .select2-dropdown {
-        border-color: var(--corp-border) !important;
+        border-color: var(--corp-border, #c3ccd8) !important;
         border-radius: 4px;
         font-size: 13px;
     }
 
     .corp-form-container .select2-results__option--highlighted {
-        background-color: var(--corp-primary) !important;
+        background-color: var(--corp-primary, #1e3a5f) !important;
         color: #ffffff !important;
     }
 
@@ -731,7 +731,7 @@
     .corp-form-container input[type="checkbox"] {
         width: 15px;
         height: 15px;
-        accent-color: var(--corp-primary);
+        accent-color: var(--corp-primary, #1e3a5f);
         cursor: pointer;
         vertical-align: middle;
     }
@@ -762,21 +762,21 @@
 
     .corp-form-container .btn-primary,
     .corp-form-container .btn-primary:focus {
-        background-color: var(--corp-primary);
-        border-color: var(--corp-primary);
+        background-color: var(--corp-primary, #1e3a5f);
+        border-color: var(--corp-primary, #1e3a5f);
         color: #ffffff;
     }
 
     .corp-form-container .btn-primary:hover {
-        background-color: var(--corp-primary-hover);
-        border-color: var(--corp-primary-hover);
+        background-color: var(--corp-primary-hover, #16304f);
+        border-color: var(--corp-primary-hover, #16304f);
         color: #ffffff;
         box-shadow: 0 2px 6px rgba(30, 58, 95, 0.25);
     }
 
     .corp-form-container .btn-success {
-        background-color: var(--corp-success);
-        border-color: var(--corp-success);
+        background-color: var(--corp-success, #16a34a);
+        border-color: var(--corp-success, #16a34a);
         color: #ffffff;
     }
 
@@ -789,8 +789,8 @@
     }
 
     .corp-form-container .btn-warning {
-        background-color: var(--corp-warning);
-        border-color: var(--corp-warning);
+        background-color: var(--corp-warning, #d97706);
+        border-color: var(--corp-warning, #d97706);
         color: #212529;
     }
 
@@ -803,8 +803,8 @@
     }
 
     .corp-form-container .btn-danger {
-        background-color: var(--corp-danger);
-        border-color: var(--corp-danger);
+        background-color: var(--corp-danger, #dc2626);
+        border-color: var(--corp-danger, #dc2626);
         color: #ffffff;
     }
 
@@ -819,16 +819,16 @@
     .corp-form-container .btn-default,
     .corp-form-container .btn-secondary {
         background-color: #ffffff;
-        border-color: var(--corp-border);
-        color: var(--corp-text);
+        border-color: var(--corp-border, #c3ccd8);
+        color: var(--corp-text, #1f2937);
     }
 
     .corp-form-container .btn-default:hover,
     .corp-form-container .btn-secondary:hover,
     .corp-form-container .btn-secondary:focus {
-        background-color: var(--corp-bg-disabled);
-        border-color: var(--corp-text-muted);
-        color: var(--corp-text);
+        background-color: var(--corp-bg-disabled, #e5e7eb);
+        border-color: var(--corp-text-muted, #6b7280);
+        color: var(--corp-text, #1f2937);
     }
 
     /* Tombol aksi pada header card */
@@ -862,14 +862,14 @@
     .corp-form-container #tabppdtl {
         background-color: #ffffff;
         margin-bottom: 0 !important;
-        border: 1px solid var(--corp-border);
+        border: 1px solid var(--corp-border, #c3ccd8);
         border-radius: 4px;
         overflow: hidden;
         font-size: 13px;
     }
 
     .corp-form-container #tabppdtl thead th {
-        background: var(--corp-primary) !important;
+        background: var(--corp-primary, #1e3a5f) !important;
         color: #ffffff !important;
         padding: 11px 12px !important;
         border: none !important;
@@ -893,13 +893,13 @@
 
     .corp-form-container #tabppdtl tbody td {
         padding: 10px 12px !important;
-        border-color: var(--corp-border) !important;
+        border-color: var(--corp-border, #c3ccd8) !important;
         vertical-align: middle;
-        color: var(--corp-text);
+        color: var(--corp-text, #1f2937);
     }
 
     .corp-form-container #tabppdtl tbody tr:hover {
-        background-color: var(--corp-primary-light) !important;
+        background-color: var(--corp-primary-light, #e8eef7) !important;
     }
 
     /* DataTables control */
@@ -907,23 +907,23 @@
     .corp-form-container .dataTables_wrapper .dataTables_filter,
     .corp-form-container .dataTables_wrapper .dataTables_info {
         font-size: 12.5px;
-        color: var(--corp-text-muted);
+        color: var(--corp-text-muted, #6b7280);
     }
 
     .corp-form-container .dataTables_wrapper .dataTables_length select,
     .corp-form-container .dataTables_wrapper .dataTables_filter input {
-        border: 1px solid var(--corp-border);
+        border: 1px solid var(--corp-border, #c3ccd8);
         border-radius: 4px;
         padding: 5px 10px;
         font-size: 12.5px;
-        color: var(--corp-text);
+        color: var(--corp-text, #1f2937);
         background-color: #ffffff;
         outline: none;
     }
 
     .corp-form-container .dataTables_wrapper .dataTables_filter input:focus,
     .corp-form-container .dataTables_wrapper .dataTables_length select:focus {
-        border-color: var(--corp-primary);
+        border-color: var(--corp-primary, #1e3a5f);
         box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.12);
     }
 
@@ -932,7 +932,7 @@
     ========================================================= */
     .corp-form-container .modal-content {
         border: none;
-        border-radius: var(--corp-radius);
+        border-radius: var(--corp-radius, 6px);
         box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
     }
 
@@ -966,7 +966,7 @@
 
     .corp-form-container .modal-body {
         padding: 20px 22px;
-        background: var(--corp-bg-light);
+        background: var(--corp-bg-light, #f6f8fb);
     }
 
     /* =========================================================
@@ -983,7 +983,7 @@
         padding: 7px 10px;
         font-size: 13px;
         line-height: 20px;
-        border: 1px solid var(--corp-border);
+        border: 1px solid var(--corp-border, #c3ccd8);
         border-radius: 4px;
     }
 
@@ -1003,7 +1003,7 @@
         box-sizing: border-box;
         height: 36px !important;
         min-height: 36px !important;
-        border: 1px solid var(--corp-border) !important;
+        border: 1px solid var(--corp-border, #c3ccd8) !important;
         border-radius: 4px !important;
     }
 
@@ -1025,8 +1025,8 @@
     }
 
     .corp-form-container .modal-footer {
-        background: var(--corp-bg-light) !important;
-        border-top: 1px solid var(--corp-border);
+        background: var(--corp-bg-light, #f6f8fb) !important;
+        border-top: 1px solid var(--corp-border, #c3ccd8);
         padding: 12px 22px;
     }
 
@@ -1040,12 +1040,12 @@
     ========================================================= */
     .corp-form-container .is-invalid,
     .corp-form-container .form-control.is-invalid {
-        border-color: var(--corp-danger) !important;
+        border-color: var(--corp-danger, #dc2626) !important;
     }
 
     .corp-form-container .invalid-feedback {
         display: block;
-        color: var(--corp-danger);
+        color: var(--corp-danger, #dc2626);
         font-size: 11.5px;
         margin-top: 4px;
     }
@@ -1060,8 +1060,8 @@
     .corp-form-container .estpakai-btn {
         padding: 5px 12px !important;
         background-color: #ffffff !important;
-        color: var(--corp-primary) !important;
-        border: 1px solid var(--corp-border) !important;
+        color: var(--corp-primary, #1e3a5f) !important;
+        border: 1px solid var(--corp-border, #c3ccd8) !important;
         border-radius: 4px !important;
         font-size: 11.5px !important;
         font-weight: 600;
@@ -1072,14 +1072,14 @@
     }
 
     .corp-form-container .estpakai-btn:hover {
-        background-color: var(--corp-primary-light) !important;
-        border-color: var(--corp-primary) !important;
-        color: var(--corp-primary) !important;
+        background-color: var(--corp-primary-light, #e8eef7) !important;
+        border-color: var(--corp-primary, #1e3a5f) !important;
+        color: var(--corp-primary, #1e3a5f) !important;
     }
 
     .corp-form-container .estpakai-btn.active {
-        background-color: var(--corp-primary) !important;
-        border-color: var(--corp-primary) !important;
+        background-color: var(--corp-primary, #1e3a5f) !important;
+        border-color: var(--corp-primary, #1e3a5f) !important;
         color: #ffffff !important;
     }
 
@@ -1094,7 +1094,7 @@
         font-size: 18px;
         font-weight: 700;
         letter-spacing: 0.3px;
-        color: var(--corp-primary);
+        color: var(--corp-primary, #1e3a5f);
         text-transform: uppercase;
     }
 
@@ -1107,17 +1107,17 @@
 
     .corp-form-container .content-header .breadcrumb-item,
     .corp-form-container .content-header .breadcrumb-item a {
-        color: var(--corp-text-muted);
+        color: var(--corp-text-muted, #6b7280);
         font-size: 12px;
     }
 
     .corp-form-container .content-header .breadcrumb-item a:hover {
-        color: var(--corp-primary);
+        color: var(--corp-primary, #1e3a5f);
         text-decoration: none;
     }
 
     .corp-form-container .content-header .breadcrumb-item.active {
-        color: var(--corp-primary);
+        color: var(--corp-primary, #1e3a5f);
         font-weight: 600;
     }
 
@@ -1397,7 +1397,413 @@
         color: #ffffff !important;
     }
 </style>
-<div class="corp-form-container">
+
+<style id="bom-grid-theme">
+    /* =========================================================================
+       Standart Cost — grid detail bergaya pmk_brng (inline input, sticky header)
+       Blok diletakkan paling akhir agar menimpa tema tabel sebelumnya.
+       ========================================================================= */
+
+    .corp-form-container .bom-detail-scroll {
+        max-height: 560px;
+        max-height: min(620px, 68vh);
+        overflow: auto;
+        border: 1px solid var(--corp-primary, #1e3a5f);
+        border-radius: 6px;
+        background: #ffffff;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, .06);
+    }
+
+    .corp-form-container .bom-detail-scroll::-webkit-scrollbar {
+        width: 12px;
+        height: 12px;
+    }
+
+    .corp-form-container .bom-detail-scroll::-webkit-scrollbar-track {
+        background: #eef2f7;
+    }
+
+    .corp-form-container .bom-detail-scroll::-webkit-scrollbar-thumb {
+        background: #19385f;
+        border: 2px solid #eef2f7;
+        border-radius: 6px;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) {
+        width: 100%;
+        min-width: 1100px;
+        margin-bottom: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        /* wajib visible: overflow hidden mematikan sticky header */
+        overflow: visible !important;
+        font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif !important;
+        font-size: 12.5px !important;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) thead th {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 3 !important;
+        padding: 9px 9px !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        line-height: 1.25 !important;
+        letter-spacing: .3px;
+        text-transform: uppercase;
+        white-space: nowrap !important;
+        vertical-align: middle !important;
+        color: #ffffff !important;
+        background: var(--corp-primary, #1e3a5f) !important;
+        border: 1px solid var(--corp-primary, #1e3a5f) !important;
+        border-bottom: 2px solid #102a45 !important;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody tr td {
+        padding: 4px 7px !important;
+        font-size: 12.5px !important;
+        font-weight: 600 !important;
+        line-height: 1.25 !important;
+        vertical-align: middle !important;
+        border: 1px solid #c3ccd8 !important;
+        white-space: nowrap;
+        background: #ffffff !important;
+        color: #1a202c !important;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody tr:nth-child(even):not(.bom-row-draft):not(.bom-row-checked) td {
+        background: #f6f8fb !important;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody tr:hover:not(.bom-row-draft) td {
+        background: #fff0b3 !important;
+        color: #000000 !important;
+    }
+
+    /* baris yang checkbox-nya dicentang */
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody tr.bom-row-checked td {
+        background: #d6e8fb !important;
+        color: #000000 !important;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody tr.bom-row-checked:hover td {
+        background: #c6def8 !important;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody tr.bom-row-checked td:first-child {
+        box-shadow: inset 3px 0 0 0 var(--corp-primary, #1e3a5f);
+    }
+
+    /* empty state */
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody tr.bom-empty-row td {
+        padding: 16px 10px !important;
+        font-size: 12.5px !important;
+        font-weight: 600 !important;
+        text-align: center;
+        color: var(--corp-text-muted, #6b7280) !important;
+        background: #ffffff !important;
+        cursor: pointer;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody tr.bom-empty-row:hover td {
+        background: #eef6ff !important;
+        color: var(--corp-primary, #1e3a5f) !important;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody tr.bom-empty-row td:focus {
+        outline: 2px solid var(--corp-primary, #1e3a5f);
+        outline-offset: -3px;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody tr.bom-empty-row td i {
+        margin-right: 6px;
+        font-size: 15px;
+        color: var(--corp-primary, #1e3a5f);
+    }
+
+    /* baris editor (draft / edit) */
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody tr.bom-row-draft td {
+        background: #fffbea !important;
+        border-top: 2px solid var(--corp-primary, #1e3a5f) !important;
+        box-shadow: inset 0 0 0 1px #f2d98a;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody tr.bom-row-editing td {
+        background: #e8f1fb !important;
+    }
+
+    /* kolom no & aksi */
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) .bom-col-no {
+        width: 46px !important;
+        min-width: 46px !important;
+        text-align: center;
+        padding-left: 2px !important;
+        padding-right: 2px !important;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) .bom-col-aksi {
+        width: 78px !important;
+        min-width: 78px !important;
+        text-align: center;
+        padding-left: 2px !important;
+        padding-right: 2px !important;
+        white-space: nowrap;
+    }
+
+    /* input & select di dalam sel */
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody td .form-control,
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody td .form-select {
+        width: 100% !important;
+        height: 30px !important;
+        min-height: 30px !important;
+        padding: 3px 7px !important;
+        font-size: 12.5px !important;
+        font-weight: 600 !important;
+        line-height: 1.3 !important;
+        color: var(--corp-text, #1f2937) !important;
+        background: #ffffff !important;
+        border: 1px solid #9fb3c8 !important;
+        border-radius: 4px !important;
+        box-shadow: none !important;
+        box-sizing: border-box !important;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody td .form-control:focus,
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody td .form-select:focus {
+        border-color: var(--corp-primary, #1e3a5f) !important;
+        box-shadow: 0 0 0 2px rgba(30, 58, 95, .18) !important;
+        outline: none !important;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody td .form-control[readonly] {
+        background: var(--corp-bg-disabled, #e5e7eb) !important;
+        color: #24384f !important;
+        font-weight: 700 !important;
+        cursor: default;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody td .form-control.text-end {
+        text-align: right !important;
+    }
+
+    /* select2 di dalam sel */
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody td .select2-container {
+        width: 100% !important;
+        min-width: 200px;
+        margin: 0 !important;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody td .select2-container .select2-selection--single {
+        height: 30px !important;
+        min-height: 30px !important;
+        display: flex !important;
+        align-items: center !important;
+        border: 1px solid #9fb3c8 !important;
+        border-radius: 4px !important;
+        background: #ffffff !important;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody td .select2-container .select2-selection--single .select2-selection__rendered {
+        flex: 1 1 auto;
+        padding-left: 7px !important;
+        padding-right: 20px !important;
+        margin: 0 !important;
+        font-size: 12.5px !important;
+        font-weight: 600 !important;
+        line-height: 28px !important;
+        color: var(--corp-text, #1f2937) !important;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody td .select2-container .select2-selection--single .select2-selection__arrow {
+        top: 2px !important;
+        height: 26px !important;
+        right: 2px !important;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody td .select2-container--focus .select2-selection--single,
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody td .select2-container--open .select2-selection--single {
+        border-color: var(--corp-primary, #1e3a5f) !important;
+        box-shadow: 0 0 0 2px rgba(30, 58, 95, .18) !important;
+    }
+
+    /* tombol aksi 26px */
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody td .bom-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        margin: 0 1px;
+        padding: 0;
+        font-size: 12px;
+        color: #ffffff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background .12s ease, transform .12s ease;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody td .bom-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 5px rgba(15, 23, 42, .22);
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody td .bom-btn-save {
+        background: var(--corp-success, #16a34a);
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody td .bom-btn-edit {
+        background: #d97706;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody td .bom-btn-delete {
+        background: var(--corp-danger, #dc2626);
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody td .bom-btn-cancel {
+        background: #64748b;
+    }
+
+    /* Saat ada baris yang sedang diedit/diinput: sembunyikan tombol edit baris lain
+       supaya tidak ada dua baris dalam mode edit sekaligus (pola pmk_brng). */
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl).bom-editing tbody tr.bom-row-saved .bom-btn-edit {
+        display: none !important;
+    }
+
+    /* teks read-only baris tersimpan */
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) .bom-readonly-text {
+        display: block;
+        max-width: 210px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) .bom-readonly-number {
+        display: block;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* checkbox */
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) input[type="checkbox"] {
+        width: 16px !important;
+        height: 16px !important;
+        accent-color: var(--corp-primary, #1e3a5f) !important;
+        cursor: pointer;
+        vertical-align: middle;
+    }
+
+    /* ===== header sortable (pengganti ordering DataTables) ===== */
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) thead th.bom-sortable {
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) thead th.bom-sortable::after {
+        content: " \25B2\25BC";
+        font-size: 9px;
+        opacity: .45;
+        margin-left: 3px;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) thead th.bom-sort-asc::after {
+        content: " \25B2";
+        opacity: 1;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) thead th.bom-sort-desc::after {
+        content: " \25BC";
+        opacity: 1;
+    }
+
+    /* ===== field wajib belum terisi (pengganti Swal) ===== */
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody td .bom-invalid {
+        border-color: var(--corp-danger, #dc2626) !important;
+        background: #fef2f2 !important;
+        box-shadow: 0 0 0 2px rgba(220, 38, 38, .15) !important;
+    }
+
+    .corp-form-container :is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl) tbody td .select2-container .select2-selection--single.bom-invalid {
+        border-color: var(--corp-danger, #dc2626) !important;
+        background: #fef2f2 !important;
+        box-shadow: 0 0 0 2px rgba(220, 38, 38, .15) !important;
+    }
+
+    /* chip "X dari Y baris dipilih" (ala pmk_brng) */
+    .corp-form-container .bom-selected-info {
+        padding: 4px 10px;
+        font-size: 11.5px;
+        font-weight: 600;
+        letter-spacing: .2px;
+        color: #ffffff;
+        background: rgba(255, 255, 255, .16);
+        border: 1px solid rgba(255, 255, 255, .32);
+        border-radius: 20px;
+        white-space: nowrap;
+    }
+
+    /* toolbar search di atas grid (gaya DataTables) */
+    .corp-form-container .bom-grid-toolbar {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .corp-form-container .bom-grid-toolbar label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #475569;
+    }
+</style>
+
+<style id="bom-grid-tweaks">
+    /* toolbar search — samakan ukuran dengan modul lain */
+    .corp-form-container .bom-grid-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    .corp-form-container .bom-grid-toolbar label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #1f2937;
+        margin: 0;
+    }
+
+    .corp-form-container .bom-grid-toolbar input.form-control {
+        width: 260px !important;
+        height: 34px !important;
+        font-size: 13px !important;
+        padding: 4px 10px !important;
+        border: 1px solid #9fb3c8 !important;
+        border-radius: 5px !important;
+        background: #ffffff !important;
+        color: #1f2937 !important;
+    }
+
+    .corp-form-container .bom-grid-toolbar input.form-control:focus {
+        border-color: #1e3a5f !important;
+        box-shadow: 0 0 0 2px rgba(30, 58, 95, .18) !important;
+    }
+
+    /* chip "x dari y baris dipilih" di header tab */
+    .corp-form-container .bom-selected-info {
+        font-size: 12px;
+        font-weight: 600;
+        color: #1e3a5f;
+        background: rgba(30, 58, 95, .10);
+        border: 1px solid rgba(30, 58, 95, .22);
+        border-radius: 999px;
+        padding: 3px 10px;
+        margin-right: 8px;
+        white-space: nowrap;
+    }
+</style>
+
+            <div class="corp-form-container">
 <div class="card card-primary">
                 <div class="card-header">
                     <h3 class="card-title"><?=  $typeTitle = ($typeform == 'INPUT') ? 'Input' : ($typeform == 'UPDATE' ? 'Edit' : 'Detail'); ?> BOM</h3>
@@ -1575,25 +1981,19 @@
                                     </h3>
 
                                     <div class="detail-tab-actions">
+                                        <span class="bom-selected-info" id="bomMatSelectedInfo">0 dari 0 baris dipilih</span>
+
                                         <button type="button"
                                                 class="btn-action btn-add"
-                                                title="Tambah Data (Ctrl + Q)"
+                                                title="Tambah baris (Ctrl+Q / Alt+N)"
                                                 id="btnAddDetailMaterial">
                                             <i class="fa fa-plus"></i>
                                         </button>
 
                                         <button type="button"
-                                                id="btnUpdateDetail"
-                                                class="btn-action btn-edit"
-                                                title="Update Data"
-                                                onclick="updateDetailBomMaterial()">
-                                            <i class="fa fa-edit"></i>
-                                        </button>
-
-                                        <button type="button"
                                                 class="btn-action btn-delete"
-                                                title="Hapus Data"
-                                                onclick="btnDeleteDetailMaterial()">
+                                                id="bomMatDeleteSelected"
+                                                title="Hapus baris terpilih (Ctrl+D)">
                                             <i class="fa fa-trash"></i>
                                         </button>
                                     </div>
@@ -1602,25 +2002,37 @@
                                 <!-- BODY -->
                                 <div class="detail-tab-body">
                                     <div class="table-responsive">
-                                        <table id="tmp_bommaterialdtl"
-                                            class="table table-bordered table-striped table-hover align-middle">
 
-                                            <thead class="bg-primary text-white">
+                                        <div class="bom-grid-toolbar">
+                                            <label class="mr-2 mb-0">Search:</label>
+                                            <input type="text"
+                                                   id="bomMatGridSearch"
+                                                   class="form-control form-control-sm"
+                                                   style="width:240px;"
+                                                   placeholder="Cari ID / Nama / Keterangan..."
+                                                   autocomplete="off">
+                                        </div>
+
+                                        <table id="tmp_bommaterialdtl"
+                                            class="table table-bordered table-striped bom-grid-table">
+
+                                            <thead>
                                                 <tr>
-                                                    <th class="text-center" width="50">
-                                                        <input type="checkbox" id="checkAll">
+                                                    <th class="bom-col-no" style="width:46px;min-width:46px;">
+                                                        <input type="checkbox" id="checkAll" title="Pilih semua baris (hapus massal: Ctrl+D)">
                                                     </th>
-                                                    <th>ID Barang</th>
-                                                    <th>Nama Barang</th>
-                                                    <th class="text-end">Qty</th>
-                                                    <th>Satuan</th>
-                                                    <th class="text-end">Standart Cost</th>
-                                                    <th class="text-end">Total Cost</th>
-                                                    <th>Keterangan</th>
+                                                    <th class="bom-sortable" data-key="idbarang" style="min-width:220px;">ID Barang</th>
+                                                    <th class="bom-sortable" data-key="nmbarang" style="min-width:200px;">Nama Barang</th>
+                                                    <th class="bom-sortable text-end" data-key="qty" style="min-width:110px;">Qty</th>
+                                                    <th class="bom-sortable text-center" data-key="unit" style="min-width:85px;">Satuan</th>
+                                                    <th class="bom-sortable text-end" data-key="standartcost" style="min-width:130px;">Standart Cost</th>
+                                                    <th class="bom-sortable text-end" data-key="totalcost" style="min-width:130px;">Total Cost</th>
+                                                    <th class="bom-sortable" data-key="description" style="min-width:200px;">Keterangan</th>
+                                                    <th class="bom-col-aksi">Aksi</th>
                                                 </tr>
                                             </thead>
 
-                                            <tbody>
+                                            <tbody id="bomMatGridBody">
                                             </tbody>
 
                                             <tfoot>
@@ -1631,6 +2043,8 @@
                                                     <th id="ttlmaterial" class="total-value">
                                                         0
                                                     </th>
+                                                    <th></th>
+                                                    <th></th>
                                                 </tr>
                                             </tfoot>
 
@@ -1658,25 +2072,19 @@
                                     </h3>
 
                                     <div class="detail-tab-actions">
+                                        <span class="bom-selected-info" id="bomCostSelectedInfo">0 dari 0 baris dipilih</span>
+
                                         <button type="button"
                                                 class="btn-action btn-add"
-                                                title="Tambah Data (Ctrl + Q)"
+                                                title="Tambah baris (Ctrl+Q / Alt+N)"
                                                 id="btnAddDetailCost">
                                             <i class="fa fa-plus"></i>
                                         </button>
 
                                         <button type="button"
-                                                id="btnUpdateDetailCost"
-                                                class="btn-action btn-edit"
-                                                title="Update Data"
-                                                onclick="updateDetailBomCost()">
-                                            <i class="fa fa-edit"></i>
-                                        </button>
-
-                                        <button type="button"
                                                 class="btn-action btn-delete"
-                                                title="Hapus Data"
-                                                onclick="btnDeleteDetailCost()">
+                                                id="bomCostDeleteSelected"
+                                                title="Hapus baris terpilih (Ctrl+D)">
                                             <i class="fa fa-trash"></i>
                                         </button>
                                     </div>
@@ -1685,25 +2093,37 @@
                                 <!-- BODY -->
                                 <div class="detail-tab-body">
                                     <div class="table-responsive">
-                                        <table id="tmp_bomcostdtl"
-                                            class="table table-bordered table-striped table-hover align-middle">
 
-                                            <thead class="bg-primary text-white">
+                                        <div class="bom-grid-toolbar">
+                                            <label class="mr-2 mb-0">Search:</label>
+                                            <input type="text"
+                                                   id="bomCostGridSearch"
+                                                   class="form-control form-control-sm"
+                                                   style="width:240px;"
+                                                   placeholder="Cari ID / Nama / Keterangan..."
+                                                   autocomplete="off">
+                                        </div>
+
+                                        <table id="tmp_bomcostdtl"
+                                            class="table table-bordered table-striped bom-grid-table">
+
+                                            <thead>
                                                 <tr>
-                                                    <th class="text-center" width="50">
-                                                        <input type="checkbox" id="checkAllCost">
+                                                    <th class="bom-col-no" style="width:46px;min-width:46px;">
+                                                        <input type="checkbox" id="checkAllCost" title="Pilih semua baris (hapus massal: Ctrl+D)">
                                                     </th>
-                                                    <th>ID Barang</th>
-                                                    <th>Nama Barang</th>
-                                                    <th class="text-end">Qty</th>
-                                                    <th>Satuan</th>
-                                                    <th class="text-end">Standart Cost</th>
-                                                    <th class="text-end">Total Cost</th>
-                                                    <th>Keterangan</th>
+                                                    <th class="bom-sortable" data-key="idbarang" style="min-width:220px;">ID Barang</th>
+                                                    <th class="bom-sortable" data-key="nmbarang" style="min-width:200px;">Nama Barang</th>
+                                                    <th class="bom-sortable text-end" data-key="qty" style="min-width:110px;">Qty</th>
+                                                    <th class="bom-sortable text-center" data-key="unit" style="min-width:85px;">Satuan</th>
+                                                    <th class="bom-sortable text-end" data-key="standartcost" style="min-width:130px;">Standart Cost</th>
+                                                    <th class="bom-sortable text-end" data-key="totalcost" style="min-width:130px;">Total Cost</th>
+                                                    <th class="bom-sortable" data-key="description" style="min-width:200px;">Keterangan</th>
+                                                    <th class="bom-col-aksi">Aksi</th>
                                                 </tr>
                                             </thead>
 
-                                            <tbody>
+                                            <tbody id="bomCostGridBody">
                                             </tbody>
 
                                             <tfoot>
@@ -1714,6 +2134,8 @@
                                                     <th id="ttlcost" class="total-value">
                                                         0
                                                     </th>
+                                                    <th></th>
+                                                    <th></th>
                                                 </tr>
                                             </tfoot>
 
@@ -1741,25 +2163,19 @@
                                     </h3>
 
                                     <div class="detail-tab-actions">
+                                        <span class="bom-selected-info" id="bomWipSelectedInfo">0 dari 0 baris dipilih</span>
+
                                         <button type="button"
                                                 class="btn-action btn-add"
-                                                title="Tambah Data (Ctrl + Q)"
+                                                title="Tambah baris (Ctrl+Q / Alt+N)"
                                                 id="btnAddDetailWip">
                                             <i class="fa fa-plus"></i>
                                         </button>
 
                                         <button type="button"
-                                                id="btnUpdateDetailWip"
-                                                class="btn-action btn-edit"
-                                                title="Update Data"
-                                                onclick="updateDetailBomWip()">
-                                            <i class="fa fa-edit"></i>
-                                        </button>
-
-                                        <button type="button"
                                                 class="btn-action btn-delete"
-                                                title="Hapus Data"
-                                                onclick="btnDeleteDetailWip()">
+                                                id="bomWipDeleteSelected"
+                                                title="Hapus baris terpilih (Ctrl+D)">
                                             <i class="fa fa-trash"></i>
                                         </button>
                                     </div>
@@ -1768,25 +2184,37 @@
                                 <!-- BODY -->
                                 <div class="detail-tab-body">
                                     <div class="table-responsive">
-                                        <table id="tmp_bomwipdtl"
-                                            class="table table-bordered table-striped table-hover align-middle">
 
-                                            <thead class="bg-primary text-white">
+                                        <div class="bom-grid-toolbar">
+                                            <label class="mr-2 mb-0">Search:</label>
+                                            <input type="text"
+                                                   id="bomWipGridSearch"
+                                                   class="form-control form-control-sm"
+                                                   style="width:240px;"
+                                                   placeholder="Cari ID / Nama / Keterangan..."
+                                                   autocomplete="off">
+                                        </div>
+
+                                        <table id="tmp_bomwipdtl"
+                                            class="table table-bordered table-striped bom-grid-table">
+
+                                            <thead>
                                                 <tr>
-                                                    <th class="text-center" width="50">
-                                                        <input type="checkbox" id="checkAllWip">
+                                                    <th class="bom-col-no" style="width:46px;min-width:46px;">
+                                                        <input type="checkbox" id="checkAllWip" title="Pilih semua baris (hapus massal: Ctrl+D)">
                                                     </th>
-                                                    <th>ID Barang</th>
-                                                    <th>Nama Barang</th>
-                                                    <th class="text-end">Qty</th>
-                                                    <th>Satuan</th>
-                                                    <th class="text-end">Standart Cost</th>
-                                                    <th class="text-end">Total Cost</th>
-                                                    <th>Keterangan</th>
+                                                    <th class="bom-sortable" data-key="idbarang" style="min-width:220px;">ID Barang</th>
+                                                    <th class="bom-sortable" data-key="nmbarang" style="min-width:200px;">Nama Barang</th>
+                                                    <th class="bom-sortable text-end" data-key="qty" style="min-width:110px;">Qty</th>
+                                                    <th class="bom-sortable text-center" data-key="unit" style="min-width:85px;">Satuan</th>
+                                                    <th class="bom-sortable text-end" data-key="standartcost" style="min-width:130px;">Standart Cost</th>
+                                                    <th class="bom-sortable text-end" data-key="totalcost" style="min-width:130px;">Total Cost</th>
+                                                    <th class="bom-sortable" data-key="description" style="min-width:200px;">Keterangan</th>
+                                                    <th class="bom-col-aksi">Aksi</th>
                                                 </tr>
                                             </thead>
 
-                                            <tbody>
+                                            <tbody id="bomWipGridBody">
                                             </tbody>
 
                                             <tfoot>
@@ -1797,6 +2225,8 @@
                                                     <th id="ttlwip" class="total-value">
                                                         0
                                                     </th>
+                                                    <th></th>
+                                                    <th></th>
                                                 </tr>
                                             </tfoot>
 
@@ -2237,6 +2667,7 @@
 
 
 <script type="application/javascript" src="<?= base_url('assets/pagejs/production/bom/bom.js') ?>"></script>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/production/bom/bom_grid.js') ?>"></script>
 <script type="text/javascript">
     /* ==========================================================
      * AUTOFILL INPUT AWAL CABANG / JOB (SESSION USER LOGIN)

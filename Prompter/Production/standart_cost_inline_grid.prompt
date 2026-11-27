@@ -1,0 +1,459 @@
+# DOKUMENTASI KONSEP: METODE PENGINPUTAN DETAIL INLINE GRID (GAYA pmk_brng)
+## Pilot implementasi: Modul Produksi — Add Standart Cost
+
+> Dokumen ini menjelaskan **konsep perubahan**, **arsitektur**, **aturan perilaku**,
+> **batasan ruang lingkup**, serta **jebakan teknis** dari penggantian input detail
+> berbasis modal menjadi inline grid. Ditulis sebagai acuan untuk migrasi modul
+> produksi lain (biaya_standart, materialrelease, penerimaanbp, bpnm, bom).
+> Status pilot: `standart_cost` (SELESAI & sudah diuji).
+
+---
+
+## 1. TUJUAN & LATAR BELAKANG
+
+1. Mempercepat input administrasi detail transaksi: user tidak lagi membuka/menutup
+   modal per baris, cukup Tab/Enter di dalam tabel.
+2. Mengurangi klik: pilih barang → ketik biaya → Tab/Enter → baris tersimpan dan
+   baris baru langsung siap diisi.
+3. Menyeragamkan UX dengan modul Persediaan (`pmk_brng` / `pnm_brng`) yang sudah
+   lebih dulu memakai inline grid.
+
+**Sebelum:** tabel detail memakai **DataTables server-side** + tombol `+` membuka
+**modal** `#modalDtlStandartCost`.
+
+**Sesudah:** tabel detail memakai **custom grid** (tanpa DataTables) dengan
+**baris editor inline**; modal lama tidak dipakai lagi (markup tetap ada untuk
+rollback).
+
+---
+
+## 2. PETA FILE & TANGGUNG JAWAB
+
+| File | Peran | Status |
+|---|---|---|
+| `app/Views/production/standart_cost/v_add_standart_cost.php` | Markup grid (`#tmp_stdcost` / `#stdGridBody`), toolbar (Search + `+` + Hapus), chip `#stdSelectedInfo`, blok CSS tema `<style id="std-grid-theme">` | diubah |
+| `assets/pagejs/production/standart_cost/standart_cost_grid.js` | **Engine grid**: state, render, empty state, baris editor, select2, keyboard, save/edit/delete | **file baru** |
+| `assets/pagejs/production/standart_cost/standart_cost.js` | Guard minimal: `btnInputDetail()`, `btnDeleteDetail()`, `updateStandartCost()`, `reload_standart_cost_dtl()`, `tabletmpStandartCost()` dialihkan ke grid saat `#stdGridBody` ada | diubah minimal |
+| `app/Controllers/Production/Production.php` | `list_standart_cost_dtl_grid()` — endpoint JSON daftar baris draft (bukan protokol DataTables) | +1 method |
+| `app/Config/Routes.php` | route `production/trans/list_standart_cost_dtl_grid` | +1 baris |
+
+**Tidak diubah:** proses simpan/update/delete di backend (`save_standart_cost_mst`,
+`delete_standart_cost_dtl`), model (`M_Production`), struktur tabel
+(`sc_tmp.standart_cost_dtl`), halaman master standart cost, dan modul lain.
+
+---
+
+## 3. KONTRAK DATA (WAJIB DIPERTAHANKAN)
+
+Payload simpan **identik** dengan versi modal — inilah kunci agar backend tidak perlu
+diubah:
+
+```
+DETAIL:
+  idurut, uniqueid, idbarang, nmbarang, unit,
+  actualcost, lastcost, newcost, description_detail
+
+HEADER:
+  docno  (gabungan prefix/infix/suffix), cabang, docref, docdate, activedate,
+  pemohon, penyesuaian_a, penyesuaian_b, idcostcenter, keterangan, idlocation, description
+```
+
+Endpoint yang dipakai (tidak berubah):
+
+| Aksi | Endpoint |
+|---|---|
+| Simpan baris (insert/update) | `POST production/trans/save_standart_cost_mst` |
+| Hapus baris (bisa massal) | `POST production/trans/delete_standart_cost_dtl` `{ ids: [uniqueid,...] }` |
+| Ambil satu baris (dipakai bila perlu) | `GET production/trans/get_standart_cost_dtl?id=<uniqueid>` |
+| **Daftar baris grid (BARU)** | `GET production/trans/list_standart_cost_dtl_grid` |
+
+Catatan penting endpoint baru:
+- Filter `coalesce(inputby,'') = <user login>` dan `order by idurut asc`
+  (baris lama di atas, baris baru di bawah).
+- Mengembalikan JSON sederhana `{ status: true, total: n, items: [...] }` —
+  **bukan** protokol DataTables.
+- `get_standart_cost_dtl` **dibungkus** `fiky_encryption->jDatatable()`, sehingga
+  bentuk responsnya `{ dataTables: { status, items } }` — bukan `{ status, items }`.
+---
+
+## 4. ALUR INPUT (END-TO-END)
+
+1. **Halaman dibuka** → grid memuat baris draft (`list_standart_cost_dtl_grid`).
+   - Jika **belum ada baris**: tampil empty state
+     *"Belum ada data detail. Klik tombol + (atau tekan Enter / Ctrl+Q)..."*
+     (baris input **tidak** dibuat otomatis).
+2. **Mulai input** → klik `+`, klik empty state, `Enter`, `Ctrl+Q`, atau `Alt+N`
+   → muncul **baris editor** (ikon `+` hijau) dan dropdown ID Barang
+   **langsung terbuka dengan fokus di kotak pencarian**.
+3. **Pilih barang** (ketik 2 huruf → Enter) → Nama Barang, Satuan, **Actual Std Cost**,
+   **Last Std Cost** terisi otomatis → fokus pindah ke **New Std Cost**.
+4. **Isi New Std Cost** (editable) dan **Keterangan** → tekan **Tab** (atau Enter)
+   di kolom terakhir → **baris tersimpan** + **baris baru langsung terbuka**.
+5. **Edit baris tersimpan** → klik ikon pensil di kolom Aksi → baris tersebut
+   **berubah menjadi editor di posisinya** (in-place, tanpa AJAX lookup, data dari
+   state) → ubah nilai → Tab/Enter → tersimpan.
+6. **Batal** → `Esc`:
+   - pada baris baru → baris dihapus (empty state kembali bila tidak ada baris lain);
+   - pada mode edit → baris tersimpan **dipulihkan** (re-render dari state).
+7. **Hapus** → centang baris → tombol **Hapus** di toolbar (atau `Ctrl+D`) →
+   konfirmasi → terhapus (massal).
+8. **Simpan header/final** → tidak berubah, memakai tombol Simpan Final yang sudah ada.
+
+---
+
+## 5. ATURAN KEYBOARD
+
+| Tombol | Perilaku |
+|---|---|
+| `Tab` | pindah ke kolom berikutnya (kolom readonly di-skip) |
+| `Enter` | sama seperti Tab (pindah kolom berikutnya) |
+| `Tab` / `Enter` di kolom **Keterangan** | simpan baris + buka baris baru + fokus kolom pertama (select2 terbuka) |
+| `Tab`/`Enter` di Keterangan saat baris **masih kosong** | **tidak** menyimpan, tidak ada error → fokus kembali ke kolom pertama |
+| `Shift+Tab` | navigasi mundur normal (tidak memicu simpan) |
+| `Esc` | batalkan baris (draft dihapus / edit dikembalikan) |
+| `Ctrl+Q` / `Alt+N` | buka baris input baru |
+| `Ctrl+E` | edit baris yang dicentang |
+| `Ctrl+D` | hapus baris yang dicentang (massal) |
+
+Catatan implementasi: `Esc` ditangani **global capture** (`document.addEventListener
+('keydown', …, true)`) karena saat dropdown Select2 terbuka fokus berada di
+`.select2-search__field` (di luar baris). Handler per-baris (`keydown` pada
+`input, select`) tidak menangkap event tersebut.
+
+---
+
+## 6. SELECT2 & AUTO-FILL
+
+- **Sumber data:** `POST api/globalmodule/list_item_std_cost` (minimal 2 karakter),
+  `dropdownParent: document.body` (agar dropdown tidak terpotong container scroll).
+- **Auto-open + fokus kotak pencarian:** setiap `select2:open` (klik, Tab, atau
+  programatik) → `stdGridFocusOpenSearch()` dipanggil langsung, lalu diulang pada
+  `setTimeout 0 ms` dan `80 ms` (pola `pmk_brng`), karena Select2 kadang memindahkan
+  fokus setelah animasi.
+- **Auto-fill saat item dipilih:**
+  - `nmbarang`, `unit`, `actualcost` ← data item
+  - `lastcost` ← prioritas `newcost` → `lastcost` → `actualcost`
+  - `newcost` **tidak** diisi otomatis (diisi user)
+- **Tab di kotak pencarian** → dropdown ditutup, fokus pindah ke **New Std Cost**.
+
+---
+
+## 7. TAMPILAN (PARITY pmk_brng)
+
+- Wrapper scroll `.std-detail-scroll` (`max-height: min(620px, 68vh)`, scrollbar custom).
+- `thead th` **sticky**, warna `--corp-primary` (#1e3a5f), uppercase 12px.
+- `tbody td` padding 4/7 px, font 12.5px weight 600, border `#c3ccd8`,
+  zebra `#f6f8fb`, hover `#fff0b3`.
+- Baris draft `.std-row-draft` → bg `#fffbea` + garis atas 2px primary.
+- Baris terpilih `.std-row-checked` → bg `#d6e8fb` + aksen kiri 3px.
+- Input/select dalam sel tinggi **30px**, select2 di dalam sel 30px.
+- Tombol aksi `.std-btn` ukuran **26×26** (edit oranye, hapus merah, simpan hijau,
+  batal slate).
+- Header card: **chip** `#stdSelectedInfo` → `"X dari Y baris dipilih"`.
+- Toolbar: **Search** (`#stdGridSearch`, gaya DataTables) + `+` (`#btnAddDetail`)
+  + **Hapus** (`#stdDeleteSelected`).
+- Kolom **Aksi** hanya berisi **Edit**; hapus dilakukan dari toolbar (massal).
+- Sort dicapai dengan klik header kolom (`th.std-sortable` + panah ▲/▼).
+
+---
+
+## 8. VALIDASI & UX PESAN
+
+| Aturan | Perilaku |
+|---|---|
+| ID Barang wajib | border merah pada select2 + tooltip "ID Barang wajib dipilih" + dropdown dibuka (tanpa Swal) |
+| New Std Cost wajib | border merah + latar `#fef2f2` + tooltip + fokus ke field (tanpa Swal) |
+| Activate Date wajib (header) | tetap memakai pesan seperti perilaku lama modul |
+| Simpan / hapus sukses | **tanpa popup** (percepatan input) |
+| Gagal simpan / gagal hapus | pesan error (Swal/toast) tetap ditampilkan |
+| Duplikasi item | tetap dicek backend (docno + idbarang + nmbarang + unit + inputby) |
+
+Penanda `.std-invalid` otomatis hilang saat field diisi/diubah (`input`, `change`,
+`select2:select`, `select2:clear`).
+
+---
+
+## 9. BATASAN / RUANG LINGKUP
+
+1. **Backend tidak berubah** — payload & endpoint simpan/hapus sama seperti versi modal.
+2. **Search & sort client-side** (bukan server-side DataTables). Cukup untuk draft
+   detail yang jumlah barisnya kecil.
+3. **Hanya satu baris editor aktif**. Saat ada baris diedit/diinput, tombol Edit baris
+   lain disembunyikan (class `std-editing`); bila terpanggil lewat shortcut, baris yang
+   sedang diedit dipulihkan lebih dulu.
+4. **Re-render dari server** (setelah simpan/hapus) mengganti seluruh body; nilai yang
+   belum disimpan akan hilang (perilaku normal).
+5. **Modal lama & init DataTables detail dibiarkan** di file (tidak dipakai) untuk
+   rollback. Jangan dihapus sebelum semua modul selesai migrasi.
+6. Grid hanya aktif di halaman **add**; halaman detail/TRX (`*_trx.js`,
+   `v_detail_*`) dan halaman master tidak diubah.
+7. Belum ada: paging detail, export detail, edit multi-baris sekaligus.
+
+---
+
+## 10. JEBAKAN TEKNIS (WAJIB DIBACA SAAT MIGRASI MODUL LAIN)
+
+1. **Duplikasi fungsi** — pernah terjadi dua definisi `stdGridRender()`; versi lama
+   (tanpa filter/sort) menimpa versi baru sehingga search/sort "do nothing".
+   Setelah append kode, selalu cek duplikasi:
+   `findstr /N "function stdGridRender" assets/pagejs/production/standart_cost/standart_cost_grid.js`
+2. **Respons get detail dibungkus** — `get_standart_cost_dtl` memakai
+   `fiky_encryption->jDatatable()` sehingga bentuknya `{ dataTables: { status, items } }`.
+   Gunakan `var payload = res.dataTables || res;`.
+3. **`uniqueid` wajib dikirim saat update** — backend update memakai `where uniqueid`.
+   Di penerimaanbp sebelumnya elemen `#uniqueid` bahkan tidak ada di view sehingga update
+   tidak pernah mengenai baris. Ambil dari data baris (`row.uniqueid`) dan kirim eksplisit.
+4. **`convertToDbNumber` belum tentu ada** — sediakan fallback lokal.
+5. **Select2 di dalam `<td>`** — `dropdownParent` harus di luar container ber-`overflow`
+   (pakai `document.body`), jika tidak dropdown terpotong.
+6. **Esc** — tangani global capture (`document.addEventListener('keydown', …, true)`),
+   karena fokus bisa berada di `.select2-selection` / `.select2-search__field`.
+7. **Jangan memakai `<form>` di dalam `<tbody>`** — payload dibangun manual dengan
+   `FormData`, nama field tetap sama.
+8. **Jumlah `<th>` = jumlah `<td>`** (termasuk kolom Aksi); `colspan` empty state harus
+   sama dengan jumlah kolom.
+9. **Guard DataTables** — fungsi init DataTables detail harus `return` lebih awal bila
+   grid body ada, agar tabel yang sama tidak diinisialisasi dua kali.
+10. **Fungsi “hilang” padahal `node --check` lolos** — pernah terjadi saat menyisipkan blok
+    kode tepat di baris `}` penutup sebuah fungsi: fungsi-fungsi berikutnya jadi **nested**
+    di dalam fungsi itu (sintaks tetap valid), sehingga muncul
+    `Uncaught ReferenceError: xxxRender is not defined` saat runtime.
+    Cek wajib setelah menulis/menyisipkan kode:
+    `node writable/_check_grid_scope.js assets/pagejs/production/<modul>/<modul>_grid.js <prefix>`
+    (harus `SCOPE-OK`, jumlah fungsi `global` = jumlah `^function ` di file).
+11. **Field header numerik berformat ribuan** — payload grid dibangun dari
+    `new FormData(document.getElementById('formStandarCostMst'))`, sehingga field header yang
+    memakai `jaccseparator` (mis. `#minimumqty`, `#buildfor`) terbawa sebagai `"24,300.3345"` →
+    PostgreSQL: `invalid input syntax for type numeric: "24,300.3345"`.
+    **Wajib** `formData.set(name, String(<prefix>GridNum($('#name').val())))` untuk
+    `minimumqty` & `buildfor` (sudah diterapkan di bom/materialrelease/bpnm/penerimaanbp).
+12. **Selektor gabungan + suffix** — `selBody + ' tr'` (dengan `selBody` hasil `join(', ')`)
+    hanya menempelkan suffix ke elemen **terakhir** → handler mati di tabel lain.
+    Selalu buat selector per-elemen (lihat `bomGridSel()` / `bomGridSelHead()`).
+
+---
+
+## 11. DAFTAR FUNGSI UTAMA (grid engine)
+
+| Fungsi | Peran |
+|---|---|
+| `stdGridLoadRows()` / `stdGridReload()` | ambil baris draft dari endpoint grid → state → render |
+| `stdGridRender()` | render hasil `stdGridVisibleRows()` (filter + sort), pertahankan baris editor, update chip info & empty state |
+| `stdGridVisibleRows()` | filter (ID/Nama/Satuan/Keterangan) + sort (numerik untuk kolom cost) |
+| `stdGridSavedRow(row)` | baris tersimpan (read-only + tombol Edit) |
+| `stdGridEditorRow(data)` | baris editor (select2 item, New Cost, Keterangan, tombol Simpan/Batal) |
+| `stdGridNewDraft()` | buka baris input baru |
+| `stdGridEditRow()` / `stdGridEditRowNow()` | edit **in-place** (tanpa AJAX, data dari state) |
+| `stdGridSave(openNext)` | validasi + POST `save_standart_cost_mst`; sukses → reload (+ baris baru) |
+| `stdGridDelete()` / `stdGridDeleteSelected()` | hapus massal (checkbox) |
+| `stdGridLastField()` / `stdGridMoveNext()` | Tab/Enter di kolom terakhir / pindah kolom |
+| `stdGridMarkInvalid()` / `stdGridClearInvalid()` | penanda field wajib (tooltip, tanpa Swal) |
+| `stdGridUpdateSelectedInfo()` | update chip "X dari Y baris dipilih" |
+| `stdGridOpenSelect2()` / `stdGridFocusOpenSearch()` | buka select2 + fokus kotak pencarian |
+
+---
+
+## 12. CHECKLIST UAT (wajib lulus sebelum migrasi modul berikutnya)
+
+- [ ] Halaman dibuka → empty state, tidak ada baris input otomatis
+- [ ] `+` / `Alt+N` / `Ctrl+Q` / klik empty state → baris editor + dropdown item terbuka & bisa langsung diketik
+- [ ] Pilih item → Nama/Satuan/Actual/Last terisi; New Cost kosong & fokus pindah
+- [ ] Tab/Enter di Keterangan → tersimpan + baris baru (tanpa popup sukses)
+- [ ] Tab di Keterangan saat baris kosong → tidak menyimpan, fokus kembali ke kolom pertama
+- [ ] Esc pada baris baru → baris hilang; Esc pada mode edit → baris tersimpan pulih
+- [ ] Edit in-place → hanya baris itu menjadi editor; tombol Edit baris lain hilang
+- [ ] Centang baris → chip info berubah; tombol Hapus toolbar → hapus massal berhasil
+- [ ] Klik di kolom mana saja pada baris → checkbox ter-centang
+- [ ] Search mengetik → filter langsung; Sort header → ▲/▼ (cost numerik)
+- [ ] Validasi: New Cost kosong → border merah + tooltip (tanpa Swal)
+- [ ] Simpan header & Simpan Final tetap berjalan
+- [ ] `node --check` JS + `php -l` view/controller/routes lolos
+- [ ] `node writable/_check_grid_scope.js <file grid> <prefix>` → `SCOPE-OK` (semua fungsi global)
+- [ ] `git status` hanya menyentuh file modul terkait
+
+---
+
+## 13. ROADMAP MIGRASI & STATUS
+
+| # | Modul | Tabel detail | Kekhususan | Status |
+|---|---|---|---|---|
+| 1 | `standart_cost` | `#tmp_stdcost` | acuan/pilot | ✅ selesai |
+| 2 | `biaya_standart` | `#tmp_stdcost` (halaman lain) | field identik standart_cost | ✅ implementasi (menunggu UAT) |
+| 3 | `materialrelease` | `#tmp_materialreleasedtl` | **issub**, Spec, kolom Stok | ✅ implementasi (menunggu UAT) |
+| 4 | `bpnm` | `#tmp_bpnmdtl` | **issub**, Harga, Nilai | ✅ implementasi (menunggu UAT) |
+| 5 | `penerimaanbp` | `#tmp_penerimaanbpdtl` | **issub**, BOM = `list_item_barangjadi`, harga dari `newcost` | ✅ implementasi (menunggu UAT) |
+| 6 | `bom` | `#tmp_bommaterialdtl`, `#tmp_bomcostdtl`, `#tmp_bomwipdtl` | 3 tab, field berprefix `*Material/*Cost/*Wip`, `doctype_detail` | ✅ implementasi (menunggu UAT) |
+
+### Catatan implementasi `biaya_standart` (modul #2)
+- Engine disalin dari `standart_cost_grid.js` → `biaya_standart_grid.js`, seluruh identifier
+  `stdGrid*` → `bstGrid*`, elemen `#stdGridBody/#stdSelectedInfo/#stdDeleteSelected/#stdGridSearch`
+  → `#bstGridBody/#bstSelectedInfo/#bstDeleteSelected/#bstGridSearch`. CSS class `std-*` dan
+  id tabel `#tmp_stdcost` tetap (per-halaman, tidak bentrok).
+- **Perbedaan field header**: biaya_standart tidak punya `docref`, `idcostcenter`, `idlocation`,
+  `description`. Karena itu payload header dibangun dengan **append bersyarat**
+  (`if ($('#nama').length) formData.append(...)`) — jangan kembali ke append hardcode, kalau tidak
+  field yang tidak ada akan terkirim sebagai string `undefined`.
+- **Nama field keterangan detail berbeda**: `description_detail` (bukan `description`).
+- Keterangan header memakai `#keterangan`; `dari_bagian` ikut dikirim (dipakai insert header).
+- Endpoint baru: `production/trans/list_biaya_standart_dtl_grid`.
+
+### Catatan implementasi `materialrelease` (modul #3)
+- Engine **ditulis baru** (`materialrelease_grid.js`, prefix `mrlGrid*`) karena field & sumber item
+  berbeda jauh dari standart_cost. CSS disalin dari tema standart_cost dengan rename
+  `.std-*` → `.mrl-*` dan `#tmp_stdcost` → `#tmp_materialreleasedtl`.
+- **Dua select item dalam satu sel** (`.mrl-item-bom` dari `api/globalmodule/list_item_bom` dan
+  `.mrl-item-sub` dari `api/globalmodule/list_item_std_cost`), masing-masing dibungkus
+  `.mrl-item-bom-wrap` / `.mrl-item-sub-wrap`. Penting: menyembunyikan `<select>` **tidak**
+  menyembunyikan kotak select2 → sembunyikan **wrapper**-nya.
+- **Enter pada checkbox Sub** → toggle; `T` tampilkan Substitute (BOM dikosongkan), `F` sebaliknya,
+  lalu fokus + buka select2 yang aktif. Klik mouse memakai jalur yang sama (`change`).
+- **Spec/Batch** = `api/globalmodule/list_batch_item` (`_parameterx_` = item aktif).
+- **Stok** = `api/globalmodule/stock_stkgdw_item` (idbarang + `#idlocation` + batch) → read-only;
+  endpoint grid juga mengirim `stock` (dari `sc_trx.stkblc`, presisi 4 desimal) sebagai nilai awal.
+  Validasi `qty > stok` memakai **tooltip** (tanpa Swal); final save tetap memakai
+  `cekStokMaterialRelease()` (`[data-over="1"]`).
+- Payload simpan dibangun dari `new FormData(document.getElementById('formStandarCostMst'))`
+  lalu **di-`set()`** untuk field detail → semua field header ikut tanpa perlu enumerasi id.
+- `Ctrl+Q` / `Ctrl+D` / `Ctrl+E` **sudah** ditangani page JS (`btnAddDetailMaterial.click()`,
+  `btnDeleteDetailMaterialRelease()`, `updateDetailMaterialRelease()`) → grid hanya menambah `Alt+N`,
+  agar tidak muncul konfirmasi hapus dua kali.
+
+#### Perbaikan pasca-UAT (materialrelease)
+1. **Select2 tidak langsung bisa dicari** → fokus kotak pencarian harus **per-instance**:
+   `mrlGridSearchField($select)` memakai `$select.data('select2').$dropdown.find('.select2-search__field')`
+   (fallback global `.last()`), lalu `mrlGridFocusOpenSearch()` retry 0/80/160 ms.
+   Jangan hanya memakai `$('.select2-container--open .select2-search__field')` — saat ada dua
+   select2 (BOM & Substitute) selector global bisa mengunci ke instance lain yang tersembunyi
+   sehingga ketikan tidak memfilter apa pun.
+2. **Substitute Item minimal 2 karakter** → `minimumInputLength: 2` pada `.mrl-item-sub`.
+3. **Container select2 berukuran 0** → select2 yang diinisialisasi saat wrapper `display:none`
+   perlu `mrlGridFixSelectWidth()` (set `width:100%`) setelah wrapper ditampilkan.
+4. **`idbarang` baris BOM tidak tersimpan** → `save_materialrelease_mst()` blok **INSERT** hanya
+   mengisi `'idbarang' => $idbarang` (NULL saat `issub='F'`), berbeda dengan blok **UPDATE** yang
+   memakai `$idbarang ?? $idbarangBom`. Insert disamakan menjadi
+   `($idbarang !== null && $idbarang !== '') ? $idbarang : $idbarangBom`.
+   Endpoint grid juga fallback `idbarang_bom` → `idbarang` agar baris lama (yang sudah terlanjur
+   NULL) tetap tampil; baris lama bisa dibetulkan permanen dengan **Edit → Simpan** (jalur update).
+
+### Catatan implementasi `bpnm` (modul #4)
+- Engine baru `bpnm_grid.js` (prefix `bnmGrid*`, 46 fungsi), struktur mengikuti materialrelease.
+  Kolom: checkbox, Sub, ID Barang, Nama, Spec, Qty, Satuan, Harga, Nilai, Keterangan, Aksi (11 kolom).
+- **Spec tidak bisa diedit**: modal BPNM tidak punya input spec dan `save_bpnm_mst()` tidak menulis
+  kolom `spec` → di baris editor kolom Spec hanya menampilkan `—`.
+- Item: BOM = `api/globalmodule/list_item_bom` (qty ikut item BOM, harga dari `newcost` bila ada);
+  Substitute = `api/globalmodule/list_item_std_cost` (**minimumInputLength 2**, harga = `newcost`).
+  Enter pada checkbox Sub men-toggle (T/F) + fokus & buka select2 aktif (pola sama modul #3).
+- **Nilai = Qty × Harga** dihitung ulang setiap `input` pada qty/harga dan saat simpan
+  (`bnmGridRecalcNilai()`), nilai/nilai qty disimpan sebagai angka tanpa pemisah ribuan.
+- Payload simpan memakai `new FormData(#formStandarCostMst)` + `set()` field detail
+  (`idurut, uniqueid, issub, idbarang, idbarang_bom, nmbarang, unit, qty, harga, nilai, description, docno`).
+- `#ttlprice` (footer TOTAL NILAI) **tidak** dihitung dari grid — nilainya berasal dari
+  `documentReadable()` (respons `ttlprice`), jadi tetap dipanggil setelah simpan/hapus.
+  Sel qty/harga/nilai diberi `data-export` agar fitur copy-sel tetap berfungsi.
+- Endpoint baru: `production/trans/list_bpnm_dtl_grid` (JSON `{status,total,items}`).
+- **Format ribuan (jaccseparator)**: `bnmGridDec()` memakai
+  `toLocaleString('en-US', {minimumFractionDigits:4, maximumFractionDigits:4})` — sama seperti
+  `stdGridDec()` di pilot, sehingga sel Qty/Harga/Nilai tampil `1,234.5678`.
+  `bnmGridSetNum()` menulis nilai terformat ke input editor lalu memanggil `jaccseparator()` /
+  `_jtsseparator()` bila ada; fallback `bnmGridFormatInput()` dijalankan pada `blur` (event
+  delegation `blur.bnmgridnum`) untuk halaman yang tidak menyediakan fungsi global.
+  Perbaikan yang sama diterapkan pada `materialrelease_grid.js` (`mrlGridDec` + `blur.mrlgridnum`).
+
+### Catatan implementasi `penerimaanbp` (modul #5)
+- Engine diturunkan dari `bpnm_grid.js` (PowerShell copy + rename terarah) → `penerimaanbp_grid.js`
+  prefix `pnpGrid*`, class `pnp-*`, event namespace `pnpgrid*`, id elemen `#pnpGridBody/#pnpGridSearch/
+  #pnpSelectedInfo/#pnpDeleteSelected`. Verifikasi: tidak ada sisa token `bnm`.
+- **Perbedaan penting vs bpnm**: item BOM memakai `api/globalmodule/list_item_barangjadi`
+  (bukan `list_item_bom`); harga diambil dari `newcost` item barang jadi (0 bila kosong).
+  Item substitute tetap `list_item_std_cost` dengan `minimumInputLength: 2`.
+- **`uniqueid` WAJIB dikirim dari state**: view tidak punya elemen `#uniqueid`, sedangkan
+  `save_penerimaanbp_mst()` melakukan UPDATE dengan `where('uniqueid', ...)` → tanpa ini edit
+  tidak mengenai baris mana pun. Grid mengambil `data-uniqueid` dari baris.
+- Kolom detail: checkbox, Sub, ID Barang, Nama, Spec, Qty, Satuan, Harga, Nilai, Keterangan, Aksi
+  (Spec tidak diedit karena backend tidak menulis kolom `spec`).
+- Nilai = Qty × Harga (dihitung ulang saat input & simpan), format ribuan lewat `pnpGridDec()`
+  (`toLocaleString`) + `pnpGridSetNum()` / fallback blur.
+- `#ttlprice` tetap bersumber dari `documentReadable()`; `data-export` di sel Qty/Harga/Nilai
+  menjaga fitur copy-sel.
+- Endpoint baru: `production/trans/list_penerimaanbp_dtl_grid`.
+
+### Catatan implementasi `bom` (modul #6 — 3 tab)
+- **Satu engine berparameter** (`bom_grid.js`, prefix `bomGrid*`) melayani 3 tab lewat objek
+  `bomGridTabs = { material, cost, wip }` (table id, selector search/chip/hapus/checkAll,
+  prefix field POST, group item, minimumInputLength).
+- **Satu endpoint** `list_bom_dtl_grid?doctype=MATERIAL|COST|WIP` (satu tabel `sc_tmp.bom_dtl`,
+  dibedakan `doctype_detail`) — bukan 3 endpoint terpisah.
+- **Identitas baris = `idurut`** (bukan uniqueid):
+  `delete_bom_detail` menghapus dengan `whereIn('idurut', ids)` dan DataTable lama memakai `idurut`
+  sebagai nilai checkbox → `data-idurut` + `value` checkbox pada grid = `idurut`.
+  Sebaliknya update memakai `where('uniqueid', $uniqueid)` → grid mengirim
+  `uniqueidMaterial|uniqueidCost|uniqueidWip` dari `data-uniqueid` baris.
+- **Nama field detail berbeda per tab** (lihat `bomGridTabs[x].f`), mis.
+  `idbarangMaterial/nmbarangmaterial/qtymaterial/standartcostmaterial/totalcostmaterial/
+  description_detail_material`; COST & WIP mengikuti pola serupa (perhatikan `nmbarang*` huruf kecil).
+  `idurut` & `doctype_detail` dikirim dengan nama generik.
+- **Group item** `list_item_std_cost`: Material `''`, Cost `'JSA'`, Wip `'WIP'`
+  (WIP `minimumInputLength: 2`). Standart Cost diisi dari `newcost`, Total Cost = Qty × Standart Cost.
+- CSS memakai **satu selector** `.bom-grid-table` (class di ketiga `<table>`) supaya tema cukup sekali;
+  state editing ditandai class `bom-editing` pada tabel masing-masing.
+- **Entry point modal dialihkan tanpa menyentuh `bom.js`**: blok terakhir `bom_grid.js` menimpa 15
+  nama global (`btnInputDetailMaterial/Cost/Wip`, `updateDetailBom*`, `btnDeleteDetail*`,
+  `tabletmpBOMMaterial/Cost/Wip`, `reload_bom_*_dtl`) **hanya bila `#bomMatGridBody` ada** →
+  aman untuk rollback (hilangkan grid body, modal & DataTables lama kembali otomatis).
+
+#### Perbaikan pasca-UAT (bom)
+1. **BUG selektor gabungan** (penyebab Tab/klik baris/centang/aksi mati di tab Material & Cost):
+   menyambung string hasil join dengan suffix, mis. `selBody + ' tr'` menghasilkan
+   `"#a tbody, #b tbody, #c tbody tr"` → suffix hanya menempel ke **tabel terakhir**.
+   Wajib pakai helper per-elemen: `bomGridSel('tr')`, `bomGridSel('.row-check')`,
+   `bomGridSel('[data-act]')`, `bomGridSelHead('th.bom-sortable')`.
+   (Kasus sama pernah terjadi pada `bomGridSel('.bom-qty') + ', ' + bomGridSel('.bom-cost')`.)
+2. **Tema tidak terpakai / tampilan putih**: dua penyebab
+   (a) selector memakai **class** (`.bom-grid-table`) sedangkan page CSS memakai **id** →
+       diganti `:is(#tmp_bommaterialdtl, #tmp_bomcostdtl, #tmp_bomwipdtl)` agar spesifisitas
+       setara dan tema (berada paling akhir) menang;
+   (b) `var(--corp-primary)` dll **tidak didefinisikan** di halaman ini → deklarasi invalid →
+       putih. Semua `var(--corp-*)` diberi **fallback** warna korporat.
+3. **Tab dari header** `#keterangan` → langsung membuka baris baru pada tab aktif
+   (`bomGridActiveDef()`); hanya Tab (bukan Enter, agar textarea tetap multi-baris).
+4. **Ukuran kotak Search** disamakan (blok `<style id="bom-grid-tweaks">`: tinggi 34px,
+   font 13px, border/​fokus biru) + chip “x dari y baris dipilih” bergaya korporat.
+
+### Aturan khusus checkbox `issub` (materialrelease, penerimaanbp, bpnm)
+1. Sel **Sub** pada baris editor berisi checkbox.
+2. **Enter** saat fokus di checkbox → **toggle** checked/unchecked.
+3. Setelah toggle (Enter maupun klik):
+   - `T` → tampilkan select **Substitute Item**, sembunyikan **BOM Item**, kosongkan nilai BOM;
+   - `F` → sebaliknya;
+   - lalu fokus + buka select2 yang aktif (kotak pencarian siap diketik).
+4. **Tab** dari checkbox → langsung ke select yang aktif.
+5. Payload selalu `issub = 'T' | 'F'`; backend memilih `idbarang` (T) atau `idbarang_bom` (F).
+6. penerimaanbp/bpnm: harga mengikuti sumber item terpilih; `nilai = qty × harga`.
+
+---
+
+## 14. CATATAN ROLLBACK
+
+- Modal lama & init DataTables detail **sengaja dibiarkan**.
+- Untuk kembali ke perilaku modal: hentikan pemanggilan fungsi `*Grid*` dan hapus elemen
+  grid body; guard `stdGridExists()` otomatis mengaktifkan DataTables + modal lama.
+- Riwayat perubahan tersimpan di git. Commit sebelum migrasi: `2522fc3 fix entry multiple`.
+
+
+---
+
+## 15. PERUBAHAN DI LUAR MIGRASI GRID
+
+### Working Order — edit qty (Build For) BOM tidak lagi wajib alasan
+- **File:** `assets/pagejs/production/workingorder/workingorder.js` → `saveUpdateBOM(docno, buildfor)`.
+- Sebelumnya konfirmasi memakai `Swal` + `input: 'textarea'` dengan validasi **alasan ≥5 karakter**
+  (teks “Alasan perubahan” + `preConfirm`).
+- Sekarang: konfirmasi biasa **“Update Build For (Qty)”** — tanpa input, tanpa `preConfirm`;
+  pesan tetap menjelaskan bahwa Qty Material/Cost/WIP dihitung ulang.
+- Payload mengirim `keterangan: ''`; backend `save_update_workingorder_bom()`
+  (`Production.php` ~6143) otomatis mengisi default **`UBAH BUILD FOR`** →
+  audit log `sc_log.workingorder_bom_change` (`jenis = 'UBAH_BUILDFOR'`) tetap terisi.
+- **Hapus / ganti BOM tetap wajib alasan** (`btnDeleteDetail()` → `delete_workingorder_detail`,
+  minimal 5 karakter, lengkap dengan tabel dampak transaksi turunan) — tidak diubah.
+- Backend, model, dan struktur DB tidak berubah.
+

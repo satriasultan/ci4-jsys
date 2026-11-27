@@ -1784,6 +1784,19 @@
     <?php
     $isIT = isset($userinfo['rolename']) && trim($userinfo['rolename']) === 'IT';
     $disabled = $isIT ? '' : 'disabled';
+
+    /* =====================================================
+     * VALIDASI INPUT AWAL CABANG / JOB
+     * Cabang mengikuti session user login (pola modul Production).
+     * Hanya PT JATIM TAMAN STEEL yang boleh memilih bebas.
+     * ===================================================== */
+    $sessionBranchId   = trim((string) session()->get('idbranchjob'));
+    $sessionBranchName = strtoupper(trim((string) session()->get('nmbranchjob')));
+
+    // Normalisasi agar variasi penulisan (PT / PT. / spasi ganda) tetap dikenali
+    $sessionBranchKey = preg_replace('/[^A-Z0-9]/', '', $sessionBranchName);
+    $canChooseBranch  = $sessionBranchKey !== ''
+            && strpos($sessionBranchKey, 'PTJATIMTAMANSTEEL') === 0;
     ?>
     <div class="row">
         <!-- left column -->
@@ -1807,7 +1820,11 @@
                                 <div class="col-lg-3 col-md-6">
                                     <div class="form-group">
                                         <label for="cabang">Cabang / Job</label>
-                                        <select name="cabang" id="cabang" class="form-control" required></select>
+                                        <select name="cabang" id="cabang" class="form-control" required
+                                                data-session-branch-id="<?= esc($sessionBranchId) ?>"
+                                                data-session-branch-name="<?= esc($sessionBranchName) ?>"
+                                                data-can-choose-branch="<?= $canChooseBranch ? '1' : '0' ?>"
+                                                data-draft-cabang="<?= esc(trim((string) ($dtldata['cabang'] ?? ''))) ?>"></select>
                                     </div>
 
                                     <div class="form-group">
@@ -2596,6 +2613,7 @@
     $lpb_js_ver  = is_file($lpb_js_path) ? filemtime($lpb_js_path) : date('Ymd');
 ?>
 <script type="application/javascript" src="<?= base_url('assets/pagejs/purchase/lpb.js') ?>?v=<?= $lpb_js_ver ?>"></script>
+<script type="application/javascript" src="<?= base_url('assets/pagejs/purchase/purchase_branch_autofill.js') ?>"></script>
 <script type="text/javascript">
     $(function() {
         $("#example1").dataTable();

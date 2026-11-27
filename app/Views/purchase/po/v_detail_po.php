@@ -365,12 +365,13 @@
                                             <th>PP</th>
                                             <th>ID Barang</th>
                                             <th>Nama Barang</th>
+                                            <th>Batch/Spec</th>
                                             <th>No. Capex</th>
                                             <th>Satuan</th>
                                             <th>Qty</th>
-                                            <th>Bonus Qty</th>
+                                            <!-- <th>Bonus Qty</th> -->
                                             <th>Harga</th>
-                                            <th>Multi Disc</th>
+                                            <!-- <th>Multi Disc</th> -->
                                             <th>Nilai</th>
                                             <th>Keterangan PO</th>
                                             <th>Keterangan PP</th>
