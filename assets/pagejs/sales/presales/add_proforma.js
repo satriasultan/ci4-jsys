@@ -113,7 +113,17 @@ function documentReadable(){
                     skipRoleChange = true;
                     $('[name="rolejob"]').val(json.dataTables.items[0].rolejob.trim()).trigger('change').prop('disabled',true);
                     $('[name="jnsinvoice"]').val(json.dataTables.items[0].jnsinvoice.trim()).trigger('change').prop('disabled',true);
-                    $('[name="docdate"]').val(json.dataTables.items[0].docdate.trim()).prop('readonly', false);
+
+                    // Cabang / Job mengikuti data header draft (referensi addDeliveryOrder)
+                    var cabangDraft = $.trim(String(json.dataTables.items[0].cabang || ''));
+                    if (cabangDraft !== '' && $('#cabang').length) {
+                        if ($('#cabang').find('option').filter(function () { return String($(this).val()) === cabangDraft; }).length === 0) {
+                            $('#cabang').append(new Option(cabangDraft, cabangDraft, true, true));
+                        }
+                        $('#cabang').val(cabangDraft).trigger('change.select2');
+                    }
+                    var docdateDraft = proformaTrim(json.dataTables.items[0].docdate);
+                    $('[name="docdate"]').val(proformaDateDisplay(docdateDraft)).prop('readonly', false);
                     $('[name="phone"]').val(json.dataTables.items[0].phone).prop('readonly', true);
                     $('[name="fax"]').val(json.dataTables.items[0].fax).prop('readonly', true);
                     $('[name="up"]').val(json.dataTables.items[0].up).prop('readonly', true);
@@ -125,6 +135,14 @@ function documentReadable(){
                     $('[name="consignee"]').val(json.dataTables.items[0].consignee.trim()).prop('readonly', false);
                     $('[name="shippingmark"]').val(json.dataTables.items[0].shippingmark.trim()).prop('readonly', false);
                     $('[name="notifyparty"]').val(json.dataTables.items[0].notifyparty.trim()).prop('readonly', false);
+
+                    // Customer Destination / Trader / End User (dropdown customer + alamat dari sc_mst.customer)
+                    proformaCustomerPickValue('#customerdestination', json.dataTables.items[0].customerdestination);
+                    $('[name="customerdestination_addr"]').val(proformaTrim(json.dataTables.items[0].customerdestination_addr));
+                    proformaCustomerPickValue('#trader', json.dataTables.items[0].trader);
+                    $('[name="trader_addr"]').val(proformaTrim(json.dataTables.items[0].trader_addr));
+                    proformaCustomerPickValue('#enduser', json.dataTables.items[0].enduser);
+                    $('[name="enduser_addr"]').val(proformaTrim(json.dataTables.items[0].enduser_addr));
 
                     $('[name="grosssales"]').val(convertToDbNumber(safeTrim(json.dataTables.items[0].grosssales))).prop('readonly', true);
                     $('[name="downpayment"]').val(convertToDbNumber(safeTrim(json.dataTables.items[0].downpayment))).prop('readonly', false);
@@ -590,6 +608,7 @@ function generateDocNo() {
                                     drp.maxDate = endDate;
                                     drp.setStartDate(startDate);
                                     drp.setEndDate(startDate);
+                                    $el.val(startDate.format('DD-MM-YYYY'));
                                 } else {
                                     // initialize picker
                                     $el.daterangepicker({
@@ -599,13 +618,13 @@ function generateDocNo() {
                                         startDate: startDate,
                                         minDate: startDate,
                                         maxDate: endDate,
-                                        locale: { format: 'YYYY-MM-DD' },
+                                        locale: { format: 'DD-MM-YYYY' },
                                         cancelLabel: 'Clear'
                                     });
 
                                     // bind handlers
                                     $el.on('apply.daterangepicker', function(ev, picker) {
-                                        $(this).val(picker.startDate.format('YYYY-MM-DD'));
+                                        $(this).val(picker.startDate.format('DD-MM-YYYY'));
                                     });
                                     $el.on('cancel.daterangepicker', function(ev, picker) {
                                         $(this).val('');
@@ -613,7 +632,7 @@ function generateDocNo() {
                                 }
 
                                 // isi default ke tanggal awal bulan
-                                $el.val(startDate.format('YYYY-MM-DD'));
+                                $el.val(startDate.format('DD-MM-YYYY'));
                             }
                         }
                         // Jika tetap ingin punya 1 full docno juga:
@@ -1150,12 +1169,17 @@ $("#cust").select2({
     templateResult: formatCust, // omitted for brevity, see the source of this page
     templateSelection: formatCustSelection // omitted for brevity, see the source of this page
 }).on('select2:select', function (e) {
-    var data = e.params.data;
+    var data = e.params.data || {};
+    // Bisa berupa item customer langsung, atau response { items: [...] }
+    var item = (data && data.items && data.items.length) ? data.items[0] : data;
 
-    if (data.alamat_kantor) $('#address').val(data.alamat_kantor);
-    if (data.phone) $('#phone').val(data.phone);
-    if (data.fax) $('#fax').val(data.fax);
-    if (data.cp) $('#up').val(data.cp);
+    if (!item) return;
+
+    // Alamat & kontak hanya diambil dari sc_mst.customer (api/globalmodule/list_customer)
+    if (item.alamat_kantor) $('#address').val(proformaTrim(item.alamat_kantor));
+    if (item.phone) $('#phone').val(proformaTrim(item.phone));
+    if (item.fax) $('#fax').val(proformaTrim(item.fax));
+    if (item.cp) $('#up').val(proformaTrim(item.cp));
 });
 
 /* Format Group */
@@ -1168,6 +1192,94 @@ function formatCust(repo) {
 function formatCustSelection(repo) {
     return repo.nmcustomer || repo.text;
 }
+
+/* ------------- Customer Destination / Trader / End User -------------
+   Dropdown diambil dari seluruh customer (sc_mst.customer) melalui
+   api/globalmodule/list_customer; alamat otomatis memakai kolom
+   alamat_kantor milik sc_mst.customer. Nilai boleh diketik manual. */
+function proformaCustomerPick(selector, addressSelector, placeholder) {
+    $(selector).select2({
+        placeholder: placeholder,
+        allowClear: true,
+        tags: true,
+        multiple: false,
+        width: '100%',
+        ajax: {
+            url: HOST_URL + 'api/globalmodule/list_customer',
+            type: 'POST',
+            dataType: 'json',
+            delay: 250,
+            data: function(params) {
+                return {
+                    _search_: params.term || '',
+                    _page_: params.page || 1,
+                    _draw_: true,
+                    _start_: 1,
+                    _perpage_: 20,
+                    _paramglobal_: '',
+                    _parameterx_: '',
+                    term: params.term || ''
+                };
+            },
+            processResults: function(data) {
+                var results = $.map((data && data.items) ? data.items : [], function(item) {
+                    var nm = proformaTrim(item.nmcustomer);
+
+                    return {
+                        id: nm,
+                        text: nm,
+                        kdcustomer: proformaTrim(item.kdcustomer),
+                        alamat: proformaTrim(item.alamat_kantor)
+                    };
+                });
+
+                return { results: results };
+            },
+            cache: true
+        },
+        escapeMarkup: function(markup) {
+            return markup;
+        },
+        templateResult: function(repo) {
+            if (repo.loading) return repo.text;
+
+            var text = $('<div>').text(repo.text || '').html();
+
+            if (!repo.kdcustomer) return text;
+
+            return "<div class='select2-result-repository__description'>" + $('<div>').text(repo.kdcustomer).html() + " <i class='fa fa-circle-o'></i> " + text + "</div>";
+        },
+        templateSelection: function(repo) {
+            return repo.text;
+        }
+    }).on('select2:select', function(e) {
+        var data = e.params.data || {};
+
+        if (data.alamat && addressSelector && $(addressSelector).length) {
+            $(addressSelector).val(data.alamat.toUpperCase());
+        }
+    }).on('select2:unselect', function() {
+        if (addressSelector && $(addressSelector).length) {
+            $(addressSelector).val('');
+        }
+    });
+}
+
+function proformaCustomerPickValue(selector, value) {
+    var val = proformaTrim(value);
+
+    if (val === '') return;
+
+    if ($(selector).find('option').filter(function() { return String($(this).val()) === val; }).length === 0) {
+        $(selector).append(new Option(val, val, true, true));
+    }
+
+    $(selector).val(val).trigger('change.select2');
+}
+
+proformaCustomerPick('#customerdestination', '#customerdestination_addr', 'Cari / ketik customer destination');
+proformaCustomerPick('#trader', '#trader_addr', 'Cari / ketik trader');
+proformaCustomerPick('#enduser', '#enduser_addr', 'Cari / ketik end user');
 
 
 
@@ -1377,7 +1489,15 @@ function finalEntryProforma() {
         accno: accno,
         accname:accname,
         swiftcode:swiftcode,
-        desc: desc
+        desc: desc,
+        // Tujuan / Rekanan (disimpan ulang saat final entry)
+        tujuan_sync: 1,
+        customerdestination: $('#customerdestination').val(),
+        customerdestination_addr: $('#customerdestination_addr').val(),
+        trader: $('#trader').val(),
+        trader_addr: $('#trader_addr').val(),
+        enduser: $('#enduser').val(),
+        enduser_addr: $('#enduser_addr').val()
     };
 
     // Konfirmasi sebelum submit
@@ -1564,6 +1684,7 @@ function insert_detail_sikbsp(){
 }
 
 $(document).on('input', '.form-control', function () {
+    if (!this.id) { return; }
     let id = $(this).attr('id').split('_')[1]; // ambil idurut
     if(id){
         let qty = parseFloat($('#qty_' + id).val().replace(/,/g, '')) || 0;
@@ -1676,6 +1797,14 @@ window.proformaPjo = null;
 
 function proformaTrim(value) {
     return (value === null || value === undefined) ? '' : String(value).trim();
+}
+
+/* Tanggal dari server selalu ISO (YYYY-MM-DD) -> tampil dd-mm-yyyy */
+function proformaDateDisplay(value) {
+    var s = proformaTrim(value);
+    var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+
+    return m ? (m[3] + '-' + m[2] + '-' + m[1]) : s;
 }
 
 function proformaNum(value) {

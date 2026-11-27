@@ -1007,11 +1007,18 @@ function salesSeparator(el) {
 function salesFormatNumber(value, maxDec) {
     var num = convertToDbNumber(value);
     if (!isFinite(num)) return '';
+
+    maxDec = parseInt(maxDec, 10);
+    if (!isFinite(maxDec) || maxDec < 0) maxDec = 0;
+
     if (maxDec <= 0) {
         return Math.round(num).toLocaleString('en-US');
     }
+
+    /* Nol di belakang koma tidak ditampilkan:
+       1500.0000 -> 1,500 ; 0.2300 -> 0.23 ; 0.2345 -> 0.2345 */
     return num.toLocaleString('en-US', {
-        minimumFractionDigits: maxDec,
+        minimumFractionDigits: 0,
         maximumFractionDigits: maxDec
     });
 }
@@ -1372,11 +1379,8 @@ $(document).on('input', '.form-control', function () {
         // Hitung nilai akhir setelah diskon
         let nilaiAkhir = nilaiAwal - diskon;
         
-        // Format ke en-US: separator ribuan = koma, desimal = titik
-        $('#nilai').val(nilaiAkhir.toLocaleString('en-US', {
-            minimumFractionDigits: 4, 
-            maximumFractionDigits: 4
-        }));
+        // Format ke en-US: separator ribuan = koma, desimal = titik (tanpa nol di belakang)
+        $('#nilai').val(salesFormatNumber(nilaiAkhir, SALES_DECIMAL_DIGITS));
     }
 });
 
@@ -1602,10 +1606,10 @@ function loadStokPenjualan() {
     }).done(function (res) {
         var total = parseFloat((res && res.total != null) ? res.total : 0) || 0;
         $('#infostock').data('stock', total);
-        setJtsValue('#infostock', total.toFixed(4));
+        setJtsValue('#infostock', total);
     }).fail(function () {
         $('#infostock').data('stock', 0);
-        setJtsValue('#infostock', '0.0000');
+        setJtsValue('#infostock', 0);
     });
 }
 function savePenjualanDetail() {
@@ -1631,7 +1635,7 @@ function savePenjualanDetail() {
                 Swal.fire({
                     icon: 'warning',
                     title: 'Stok tidak cukup',
-                    text: 'Qty ' + qtyNum.toFixed(4) + ' melebihi stok gudang (' + (parseFloat(stockRaw) || 0).toFixed(4) + ').'
+                    text: 'Qty ' + salesFormatNumber(qtyNum, SALES_DECIMAL_DIGITS) + ' melebihi stok gudang (' + salesFormatNumber(parseFloat(stockRaw) || 0, SALES_DECIMAL_DIGITS) + ').'
                 });
                 return;
             }

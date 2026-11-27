@@ -294,7 +294,7 @@
                                             <th width="30">
                                                 <input type="checkbox" id="checkAll">
                                             </th>
-                                            <th>No. SJ</th>
+                                            <th>No. SJ / DO</th>
                                             <th>SO</th>
                                             <th>ID Barang</th>
                                             <th>Nama Barang</th>
@@ -423,12 +423,20 @@
                     <hr>
 
                 </div>
-                <div class="card-footer bg-light">
-                    <a href="<?= base_url('sales/postsales/penjualan') ?>"
-                        class="btn btn-default btn-lg">
-                        <i class="fa fa-arrow-left mr-2"></i>
-                        Kembali
-                    </a>
+                <div class="card-footer bg-light clearfix">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <a href="<?= base_url('sales/postsales/penjualan') ?>"
+                            class="btn btn-default btn-lg">
+                            <i class="fa fa-arrow-left mr-2"></i>
+                            Kembali
+                        </a>
+
+                        <button type="button"
+                                id="btnLaporanJurnal"
+                                class="btn btn-primary btn-lg">
+                            <i class="fa fa-book"></i> Laporan Jurnal Transaksi
+                        </button>
+                    </div>
                 </div>
                 
             </div>
@@ -437,20 +445,7 @@
         <!-- /.card -->
     <!--/.col (left) -->
     <!-- right column -->
-    <div class="accounting-toolbar">
-
-        <button type="button"
-                id="btnLaporanJurnal"
-                class="btn btn-primary">
-            <i class="fa fa-book"></i> Laporan Jurnal Transaksi
-        </button>
-
-        <!-- <button class="accounting-btn btn-pembayaran" id="btnPembayaran">
-            <i class="fas fa-money-bill-wave"></i>
-            <span>Pembayaran</span>
-        </button> -->
-
-    </div>
+    <!-- Tombol Laporan Jurnal Transaksi dipindah ke card-footer (di samping tombol Kembali) -->
     <!--/.col (right) -->
 </div>
 

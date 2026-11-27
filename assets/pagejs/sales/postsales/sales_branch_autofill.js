@@ -110,6 +110,28 @@ function salesFindBranchFromSession(branchId, branchName, callback) {
     salesFindBranchByName(branchName, callback);
 }
 
+function salesLockBranchSelect2($cabang) {
+    // Kunci di level Select2: dropdown tidak bisa dibuka & pilihan tidak bisa diubah.
+    var s2 = $cabang.data('select2');
+
+    if (s2 && s2.options && typeof s2.options.set === 'function') {
+        s2.options.set('disabled', true);
+    }
+
+    $cabang.off('select2:selecting.saleslock select2:unselecting.saleslock');
+    $cabang.on('select2:selecting.saleslock select2:unselecting.saleslock', function (e) {
+        if (e && e.params) {
+            e.params.prevented = true;
+        }
+    });
+
+    // Tampilan seperti field disabled (tidak bisa diklik).
+    $cabang
+        .next('.select2-container')
+        .css({ 'pointer-events': 'none', 'background-color': '#e9ecef', 'border-radius': '4px' })
+        .attr('title', 'Cabang / Job mengikuti user login');
+}
+
 function salesApplyInitialBranch(item, canChoose, fireChange) {
     var $cabang = $('#cabang');
 
@@ -146,6 +168,7 @@ function salesApplyInitialBranch(item, canChoose, fireChange) {
         $cabang.empty();
         $cabang.append(new Option(branchName, branchId, true, true));
         $cabang.prop('disabled', true);
+        salesLockBranchSelect2($cabang);
     }
 
     if (fireChange === false) {

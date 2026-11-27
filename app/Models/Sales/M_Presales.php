@@ -1040,6 +1040,7 @@ private function _get_query_t_Task($nama = null, $role = null, $bagian = null)
         return $this->db->query("
             SELECT
                 d.idurut,
+                BTRIM(d.uniqueid) AS uniqueid,
                 BTRIM(d.idbarang) AS idbarang,
                 BTRIM(d.nmbarang) AS nmbarang,
                 BTRIM(d.unit) AS unit,

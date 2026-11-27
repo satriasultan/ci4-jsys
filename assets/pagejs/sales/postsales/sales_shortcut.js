@@ -2,6 +2,7 @@
  * SHORTCUT KEYBOARD MODUL PENJUALAN
  * Mengikuti pola modul PRODUCTION (Material Release):
  *   CTRL + Q : input item   (tombol + hijau)
+ *   ALT + N  : input item   (alias, pola grid PNM Barang)
  *   CTRL + E : update item  (tombol edit kuning)
  *   CTRL + D : hapus item   (tombol hapus merah)
  *   Panah atas/bawah : pindah sorotan baris detail
@@ -61,6 +62,15 @@ $(document).on('keydown', function (e) {
 
     // CTRL + Q : Input item
     if (e.ctrlKey && key === 'q') {
+        e.preventDefault();
+        if (typeof btnInputDetail === 'function') {
+            btnInputDetail();
+        }
+        return;
+    }
+
+    // ALT + N : Input item (alias, mengikuti pola grid PNM Barang)
+    if (e.altKey && key === 'n') {
         e.preventDefault();
         if (typeof btnInputDetail === 'function') {
             btnInputDetail();
