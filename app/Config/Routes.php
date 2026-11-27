@@ -830,6 +830,9 @@ $routes->group('/sales/postsales', ["namespace" => "App\Controllers\Sales"], fun
     $routes->add('saveSalesOrderDetail', 'PostSales::saveSalesOrderDetail');
     $routes->add("get_salesorder_detail(:any)", "PostSales::get_salesorder_detail$1");
     $routes->add("delete_salesorder_detail", "PostSales::delete_salesorder_detail");
+    $routes->add("getCustomerGradeInfo", "PostSales::getCustomerGradeInfo");
+    $routes->add("changeGradeTemp", "PostSales::changeGradeTemp");
+    $routes->add("moveDetailOrder", "PostSales::moveDetailOrder");
 
 
 
@@ -864,6 +867,19 @@ $routes->group('/sales/postsales', ["namespace" => "App\Controllers\Sales"], fun
     $routes->add('saveDeliveryOrderDetail', 'PostSales::saveDeliveryOrderDetail');
     $routes->add("get_deliveryorder_detail(:any)", "PostSales::get_deliveryorder_detail$1");
     $routes->add("delete_deliveryorder_detail", "PostSales::delete_deliveryorder_detail");
+// Delivery Order – inline entry (addDeliveryOrder)
+$routes->add('doLoadDeliveryOrder', 'PostSales::doLoadDeliveryOrder');
+$routes->add('doSaveDeliveryOrderHeader', 'PostSales::doSaveDeliveryOrderHeader');
+$routes->add('doSaveDeliveryOrderDraft', 'PostSales::doSaveDeliveryOrderDraft');
+$routes->add('doSaveDeliveryOrderRow', 'PostSales::doSaveDeliveryOrderRow');
+$routes->add('doDeleteDeliveryOrderRow', 'PostSales::doDeleteDeliveryOrderRow');
+$routes->add('doSwapDeliveryOrderRow', 'PostSales::doSwapDeliveryOrderRow');
+$routes->add('doListSO', 'PostSales::doListSO');
+$routes->add('doListSODetail', 'PostSales::doListSODetail');
+$routes->add('doPullSO', 'PostSales::doPullSO');
+$routes->add('doStokDeliveryOrder', 'PostSales::doStokDeliveryOrder');
+$routes->add('doStokDeliveryOrderRows', 'PostSales::doStokDeliveryOrderRows');
+$routes->add('doKursDeliveryOrder', 'PostSales::doKursDeliveryOrder');
 
 
 
@@ -934,6 +950,10 @@ $routes->group('/sales/postsales', ["namespace" => "App\Controllers\Sales"], fun
     $routes->add('savePenjualanDetail', 'PostSales::savePenjualanDetail');
     $routes->add("get_penjualan_detail(:any)", "PostSales::get_penjualan_detail$1");
     $routes->add("delete_penjualan_detail", "PostSales::delete_penjualan_detail");
+    // Tarik DO -> Penjualan (modal Tarik DO pada addPenjualan)
+    $routes->post('pjListDO', 'PostSales::pjListDO');
+    $routes->post('pjListDODetail', 'PostSales::pjListDODetail');
+    $routes->post('pjPullDO', 'PostSales::pjPullDO');
     $routes->add("recalculate_tax_temp", "PostSales::recalculate_tax_temp");
     $routes->post(
         'laporan_jurnal_transaksi_pjo', 'PostSales::laporan_jurnal_transaksi_pjo');
@@ -1070,6 +1090,13 @@ $routes->group('/sales/presales', ["namespace" => "App\Controllers\Sales"], func
     $routes->add('getRolePOProforma(:any)', 'PreSales::getRolePOProforma$1');
     $routes->post('list_penjualan_proforma', 'PreSales::list_penjualan_proforma');
     $routes->post('pull_penjualan_proforma', 'PreSales::pull_penjualan_proforma');
+    // Inline detail / tarik data penjualan / draft (addProforma)
+    $routes->post('proformaSaveRow', 'PreSales::proformaSaveRow');
+    $routes->post('proformaListPjo', 'PreSales::proformaListPjo');
+    $routes->post('proformaListPjoDetail', 'PreSales::proformaListPjoDetail');
+    $routes->post('proformaPullPjoSelection', 'PreSales::proformaPullPjoSelection');
+    $routes->post('proformaSaveDraft', 'PreSales::proformaSaveDraft');
+    $routes->post('proformaRefreshTotals', 'PreSales::proformaRefreshTotals');
 
 });
 

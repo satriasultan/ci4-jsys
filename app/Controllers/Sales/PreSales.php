@@ -1843,40 +1843,76 @@ class PreSales extends BaseController
 
     function clearEntryProforma()
     {
-        $nama=trim($this->session->get('nama'));
-        $param = " and coalesce(inputby,'')='$nama'";
-        $dtl = $this->m_presales->q_proforma_master_temp($param);
-        // if(isEmpty($dtl->getRowArray())){
-        //     return redirect()->to(base_url('sales/presales/offering'));
-        // }
-        $status = trim($dtl->getRowArray()['status']);
-        $builder = $this->db->table('sc_tmp.proforma');
-        $builder_dtl = $this->db->table('sc_tmp.proformadtl');
+        $nama = trim((string) $this->session->get('nama'));
+        $back = base_url('sales/presales/performainvoice');
 
-        if ($status==='I') {
-            // $builder= $this->db->table('sc_tmp.standart_usage_mst');
-            $builder->where('inputby',$nama);
-            $builder->delete();
-            // $builderDtl= $this->db->table('sc_tmp.proforma');
-            // $builderDtl->where('inputby',$nama);
-            // $builderDtl->delete();
-            return redirect()->to(base_url('sales/presales/performainvoice'));
-        } else if ($status==='E') {
-            $builder->where('inputby',$nama);
-            if ($builder->update(array('status' => 'C'))) {
-                $result = array('status' => true, 'messages' => 'Sukses Di Proses');
-                echo json_encode($result);
-                return redirect()->to(base_url('sales/presales/performainvoice'));
-            }
-            else {
-                $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                echo json_encode($result);
-            }
-        } else {
-            $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-            echo json_encode($result);
+        if ($nama === '') {
+            return redirect()->to($back)->with('proforma_error', 'Sesi login tidak valid. Silakan login kembali.');
         }
 
+        // Baca data temporary milik user (bisa kosong bila user belum / sudah tidak input)
+        $dtl = $this->m_presales->q_proforma_master_temp(" and coalesce(trim(inputby),'')='" . $nama . "'")->getRowArray();
+
+        if (empty($dtl) || trim((string) ($dtl['docno'] ?? '')) === '') {
+            return redirect()->to($back)->with('proforma_error', 'Tidak ada data proforma yang sedang diinput.');
+        }
+
+        $docno    = trim((string) $dtl['docno']);
+        $status   = strtoupper(trim((string) ($dtl['status'] ?? '')));
+        $docnotmp = trim((string) ($dtl['docnotmp'] ?? ''));
+
+        if (!in_array($status, ['E', 'I', ''], true)) {
+            return redirect()->to($back)
+                ->with('proforma_error', 'Status dokumen (' . $status . ') tidak dapat dibatalkan dari halaman input.');
+        }
+
+        $db      = $this->db;
+        $revisi  = $this->session->get('proforma_revisi');
+
+        $db->transStart();
+
+        // Bila sesi ini adalah revisi dokumen sc_trx (D/F/P -> E), pulihkan status asal
+        if ($docnotmp !== '') {
+            $restore = '';
+
+            if (is_array($revisi) && trim((string) ($revisi['docno'] ?? '')) === $docnotmp) {
+                $restore = strtoupper(trim((string) ($revisi['status'] ?? '')));
+            }
+
+            // Fallback (penanda sesi hilang): dokumen sc_trx yang masih E dikembalikan ke DRAFT
+            if ($restore === '') {
+                $trx = $db->table('sc_trx.proforma')->where('docno', $docnotmp)->get()->getRowArray();
+
+                if ($trx && strtoupper(trim((string) ($trx['status'] ?? ''))) === 'E') {
+                    $restore = 'D';
+                }
+            }
+
+            if (in_array($restore, ['D', 'F', 'P'], true)) {
+                $db->table('sc_trx.proforma')
+                    ->where('docno', $docnotmp)
+                    ->update([
+                        'status'     => $restore,
+                        'updateby'   => $nama,
+                        'updatedate' => date('Y-m-d H:i:s'),
+                    ]);
+            }
+        }
+
+        // Batalkan input: hapus detail lebih dulu, lalu header temporary milik user
+        $db->table('sc_tmp.proformadtl')->where('docno', $docno)->where('inputby', $nama)->delete();
+        $db->table('sc_tmp.proforma')->where('docno', $docno)->where('inputby', $nama)->delete();
+
+        $db->transComplete();
+
+        $this->session->remove('proforma_revisi');
+
+        if ($db->transStatus() === false) {
+            return redirect()->to($back)
+                ->with('proforma_error', 'Data gagal dibatalkan. Periksa data lalu coba lagi.');
+        }
+
+        return redirect()->to($back)->with('proforma_success', 'Input proforma ' . $docno . ' berhasil dibatalkan.');
     }
 
     function addProforma()
@@ -1927,6 +1963,12 @@ class PreSales extends BaseController
         $param = " and trim(inputby)='$nama'";
         $data['dtldata'] = $this->m_presales->q_proforma_master_temp($param)->getRowArray();
 
+        // Pesan dari proses simpan header (mis. No. Jurnal kosong / customer belum dipilih)
+        $flashError = session()->getFlashdata('proforma_error');
+        if (!empty($flashError)) {
+            $data['message'] = "<div class='alert alert-danger'>" . esc($flashError) . "</div>";
+        }
+
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
         return $this->template->render('sales/presales/v_add_proforma',$data);
@@ -1955,7 +1997,14 @@ class PreSales extends BaseController
 
         $status = trim((string) ($dtl['status'] ?? ''));
 
-        if ($status === 'F' || $status === 'P') {
+        if (in_array($status, ['D', 'F', 'P'], true)) {
+            // Simpan status asal: dipakai clearEntryProforma untuk memulihkan dokumen
+            // bila user membatalkan sesi revisi (Back).
+            $this->session->set('proforma_revisi', [
+                'docno'  => $docno,
+                'status' => $status,
+            ]);
+
             $builder = $this->db->table('sc_trx.proforma');
             $builder->where('trim(docno)', $docno);
             $builder->update(['status' => 'E']);
@@ -1972,8 +2021,27 @@ class PreSales extends BaseController
         $loccode = trim($this->session->get('loccode'));
         $docref = strtoupper($this->request->getPost('docref'));
         // $penerima = strtoupper($this->request->getPost('penerima'));
-        $docno = strtoupper($this->request->getPost('docno'));
-        $docdate = strtoupper($this->request->getPost('docdate'));
+        $docno = strtoupper(trim((string) $this->request->getPost('docno')));
+
+        if ($docno === '') {
+            return redirect()->to(base_url('sales/presales/addProforma'))
+                ->with('proforma_error', 'No. Jurnal/Dokumen proforma belum terbentuk. Lengkapi Prefix / Infix / Suffix terlebih dahulu.');
+        }
+
+        if (trim((string) $this->request->getPost('cust')) === '') {
+            return redirect()->to(base_url('sales/presales/addProforma'))
+                ->with('proforma_error', 'Customer wajib dipilih sebelum memproses Proforma.');
+        }
+        // Tanggal Dokumen/Periode dikirim dari form dalam format dd-mm-yyyy
+        $docdateRaw = trim((string) $this->request->getPost('docdate'));
+        $docdate = $docdateRaw;
+        if (preg_match('/^(\d{2})[-\/](\d{2})[-\/](\d{4})$/', $docdateRaw, $dm)) {
+            $docdate = $dm[3] . '-' . $dm[2] . '-' . $dm[1];
+        } elseif (preg_match('/^(\d{4})-(\d{2})-(\d{2})/', $docdateRaw, $dm)) {
+            $docdate = $dm[1] . '-' . $dm[2] . '-' . $dm[3];
+        } elseif ($docdateRaw === '') {
+            $docdate = date('Y-m-d');
+        }
         $cust = strtoupper($this->request->getPost('cust'));
         $phone = strtoupper($this->request->getPost('phone'));
         $fax = strtoupper($this->request->getPost('fax'));
@@ -1983,13 +2051,26 @@ class PreSales extends BaseController
         $description = strtoupper($this->request->getPost('desc'));
 
         $pono = strtoupper($this->request->getPost('pono'));
-        $podate = strtoupper($this->request->getPost('podate'));
+        $podate = $this->proformaDateOrNull($this->request->getPost('podate'));
         $jnsinvoice = strtoupper($this->request->getPost('jnsinvoice'));
+
+        // Cabang / Job (referensi addDeliveryOrder); fallback ke cabang session
+        $cabang = strtoupper(trim((string) $this->request->getPost('cabang')));
+        if ($cabang === '') {
+            $cabang = strtoupper(trim((string) $this->session->get('idbranchjob')));
+        }
         $facrisk = strtoupper($this->request->getPost('facrisk'));
         $shipper = strtoupper($this->request->getPost('shipper'));
         $consignee = strtoupper($this->request->getPost('consignee'));
         $shippingmark = strtoupper($this->request->getPost('shippingmark'));
         $notifyparty = strtoupper($this->request->getPost('notifyparty'));
+        // Tujuan / Rekanan (customer destination, trader, end user)
+        $customerdestination = strtoupper(trim((string) $this->request->getPost('customerdestination')));
+        $customerdestination_addr = strtoupper(trim((string) $this->request->getPost('customerdestination_addr')));
+        $trader = strtoupper(trim((string) $this->request->getPost('trader')));
+        $trader_addr = strtoupper(trim((string) $this->request->getPost('trader_addr')));
+        $enduser = strtoupper(trim((string) $this->request->getPost('enduser')));
+        $enduser_addr = strtoupper(trim((string) $this->request->getPost('enduser_addr')));
         // $paymentmethod = strtoupper($this->request->getPost('paymentmethod'));
         // $bank = strtoupper($this->request->getPost('bank'));
 
@@ -2028,12 +2109,19 @@ class PreSales extends BaseController
 
                 'pono' => $pono,
                 'podate' => $podate,
+                'cabang' => $cabang,
                 'jnsinvoice' => $jnsinvoice,
                 'facrisk' => $facrisk,
                 'shipper' => $shipper,
                 'consignee' => $consignee,
                 'shippingmark' => $shippingmark,
                 'notifyparty' => $notifyparty,
+                'customerdestination' => $customerdestination,
+                'customerdestination_addr' => $customerdestination_addr,
+                'trader' => $trader,
+                'trader_addr' => $trader_addr,
+                'enduser' => $enduser,
+                'enduser_addr' => $enduser_addr,
                 // 'paymentmethod' => $paymentmethod,
                 // 'bank' => $bank,
 
@@ -2053,6 +2141,7 @@ class PreSales extends BaseController
             $builder= $this->db->table('sc_tmp.proforma');
             $builder->where('docno',$docno);
             $builder->insert($info);
+            $this->session->remove('proforma_revisi');
             return redirect()->to(base_url('sales/presales/addProforma'));
         } else {
             /*RETURN FAILED*/
@@ -2158,10 +2247,15 @@ class PreSales extends BaseController
             'nmbarang'    => $namabarang,
             'unit'        => $idunit,
             'qty'         => $qtyVal,
-            'price'       => $priceVal,
+            'harga'       => $priceVal,
+            'hargasatuan' => $priceVal,
+            'nilai'       => $amountVal,
             'usdmt'       => 0,
             'exchange'    => 1,
             'amount'      => $amountVal,
+            'invmode'     => (strtoupper(trim((string) ($header['invmode'] ?? ''))) === 'MULTI' ? 'MULTI' : 'SINGLE'),
+            'currcode'    => trim((string) ($header['currcode'] ?? '')),
+            'kurs'        => (float) ($header['kurs'] ?? 1),
             'description' => $description,
             'status'      => 'E',
             'inputby'     => $inputby,
@@ -2263,6 +2357,10 @@ class PreSales extends BaseController
                 $qty = $update['qty'] ?? 0;
                 $price = $update['price'] ?? 0;
                 $amount = $update['amount'] ?? 0;
+
+                if ((float) $amount <= 0) {
+                    $amount = round((float) $qty * (float) $price, 4);
+                }
                 // $exchange = $update['exchange'] ?? 0;
 
                 // $description = strtoupper($update['description']) ?? '';
@@ -2277,7 +2375,9 @@ class PreSales extends BaseController
                     'nmbarang' => $nmbarang,
                     'unit' => $idunit,
                     'qty' => $qty,
-                    'price' => $price,
+                    'harga' => $price,
+                    'hargasatuan' => $price,
+                    'nilai' => $amount,
                     'amount' => $amount,
                     // 'usdmt' => $usdmt,
 
@@ -2377,7 +2477,7 @@ class PreSales extends BaseController
                     type="text"  
                     id="price_'.$lm->idurut.'" 
                     name="price_'.$lm->idurut.'" 
-                    value="'.number_format($lm->price, 4, '.', ',').'" 
+                    value="'.number_format((float) ($lm->harga ?? 0), 4, '.', ',').'" 
                     disabled min="0">
             </div>';
 
@@ -2460,7 +2560,7 @@ class PreSales extends BaseController
                     type="text"  
                     id="price_'.$lm->idurut.'" 
                     name="price_'.$lm->idurut.'" 
-                    value="'.number_format($lm->price, 4, '.', ',').'" 
+                    value="'.number_format((float) ($lm->harga ?? 0), 4, '.', ',').'" 
                     disabled min="0">
             </div>';
 
@@ -2662,10 +2762,25 @@ class PreSales extends BaseController
                 'accname'      => $accname,
                 'swiftcode'      => $swiftcode,
 
-
-
-
             ];
+
+            // Tujuan / Rekanan: hanya diupdate jika form mengirim penanda tujuan_sync
+            // (mencegah nilai lama terhapus saat JS versi lama masih ter-cache browser)
+            if ((string) $this->request->getPost('tujuan_sync') === '1') {
+                $postAll = $this->request->getPost();
+                foreach ([
+                    'customerdestination',
+                    'customerdestination_addr',
+                    'trader',
+                    'trader_addr',
+                    'enduser',
+                    'enduser_addr',
+                ] as $fieldTujuan) {
+                    if (array_key_exists($fieldTujuan, $postAll)) {
+                        $updateHeader[$fieldTujuan] = strtoupper(trim((string) $postAll[$fieldTujuan]));
+                    }
+                }
+            }
 
             $builder->where('docno', $proformaDocno);
             $builder->where('inputby', $nama);
@@ -2684,6 +2799,8 @@ class PreSales extends BaseController
                 // $docno = trim(bin2hex(trim($dtlerror['nomorakhir1'])));
 
                 // return redirect()->to(base_url('/sales/presales/performainvoice'));
+                $this->session->remove('proforma_revisi');
+
                 return $this->response->setJSON([
                     'status'      => 'success',
                     'message'     => 'Proforma/Invoice berhasil difinalkan.',
@@ -2940,6 +3057,7 @@ class PreSales extends BaseController
             ->where('inputby', $nama)
             ->update([
                 'docnopjo'    => $docnopjo,
+                'invmode'     => 'SINGLE',
                 'jurnalno'    => trim((string) $pjo['jurnalno']),
                 'cust'        => $custPjo,
                 'nmcustomer'  => trim((string) $pjo['nmcustomer']),
@@ -2947,7 +3065,7 @@ class PreSales extends BaseController
                 'phone'       => (string) ($pjo['phone'] ?? ''),
                 'fax'         => (string) ($pjo['fax'] ?? ''),
                 'pono'        => $docnopjo,
-                'podate'      => (string) ($pjo['docdate'] ?? ''),
+                'podate'      => $this->proformaDateOrNull($pjo['docdate'] ?? ''),
                 'idtax'       => trim((string) ($pjo['idtax'] ?? '')),
                 'isinclusive' => trim((string) ($pjo['isinclusive'] ?? '')),
                 'currcode'    => trim((string) ($pjo['currcode'] ?? '')),
@@ -2976,10 +3094,15 @@ class PreSales extends BaseController
                 'nmbarang'      => $detail['nmbarang'],
                 'unit'          => $detail['unit'],
                 'qty'           => $detail['qty'],
-                'price'         => $detail['price'],
+                'harga'         => $detail['price'],
+                'hargasatuan'   => $detail['price'],
+                'nilai'         => $detail['amount'],
                 'usdmt'         => 0,
                 'exchange'      => 1,
                 'amount'        => $detail['amount'],
+                'invmode'       => 'SINGLE',
+                'currcode'      => trim((string) ($pjo['currcode'] ?? '')),
+                'kurs'          => (float) ($pjo['kurs'] ?? 1),
                 'description'   => $detail['description'],
                 'status'        => 'E',
                 'inputby'       => $nama,
@@ -3021,6 +3144,832 @@ class PreSales extends BaseController
             ],
             'totals'  => $totals,
             'details' => $details,
+        ]);
+    }
+
+    /* =====================================================================
+     * PROFORMA (addProforma) — INLINE DETAIL, TARIK DATA PENJUALAN, DRAFT
+     * ---------------------------------------------------------------------
+     * Semua fungsi di bawah khusus halaman sales/presales/addProforma.
+     * Tidak mengubah alur final entry yang sudah ada.
+     * ===================================================================== */
+
+    /**
+     * Normalisasi nilai tanggal untuk kolom DATE PostgreSQL.
+     * String kosong / format tidak dikenal -> NULL (PostgreSQL menolak '' untuk tipe date).
+     */
+    private function proformaDateOrNull($value): ?string
+    {
+        $v = trim((string) $value);
+
+        if ($v === '') {
+            return null;
+        }
+
+        if (preg_match('/^(\d{2})[-\/](\d{2})[-\/](\d{4})$/', $v, $m)) {
+            return $m[3] . '-' . $m[2] . '-' . $m[1];
+        }
+
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})/', $v, $m)) {
+            return $m[1] . '-' . $m[2] . '-' . $m[3];
+        }
+
+        return null;
+    }
+
+    /** Konversi angka terformat (1.234,56 / 1,234.56) ke float. */
+    private function proformaToNumber($value): float
+    {
+        $s = trim((string) $value);
+        if ($s === '') {
+            return 0.0;
+        }
+
+        $s = str_replace(' ', '', $s);
+
+        if (strpos($s, ',') !== false && strpos($s, '.') !== false) {
+            $s = str_replace('.', '', $s);
+            $s = str_replace(',', '.', $s);
+        } elseif (strpos($s, ',') !== false) {
+            $s = str_replace(',', '.', $s);
+        }
+
+        $s = preg_replace('/[^0-9\.\-]/', '', $s);
+
+        return (float) $s;
+    }
+
+    /** Header temporary proforma milik user. */
+    private function proformaTmpHeader(string $docno, string $nama)
+    {
+        return $this->db->table('sc_tmp.proforma')
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->get()
+            ->getRowArray();
+    }
+
+    /** Detail temporary proforma milik user. */
+    private function proformaTmpDetails(string $docno, string $nama): array
+    {
+        return $this->db->table('sc_tmp.proformadtl')
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->orderBy('idurut', 'ASC')
+            ->get()
+            ->getResultArray();
+    }
+
+    /** Hitung & simpan total ringkasan proforma (gross, net, vat, pph22, total). */
+    private function proformaApplyTotals(array $header, array $details): array
+    {
+        $fromPjo = trim((string) ($header['docnopjo'] ?? '')) !== '';
+        $totals  = $this->proforma_hitung_totals($header, $details, $fromPjo);
+
+        $this->db->table('sc_tmp.proforma')
+            ->where('docno', $header['docno'])
+            ->where('inputby', $header['inputby'])
+            ->update([
+                'grosssales' => $totals['grosssales'],
+                'netsales'   => $totals['netsales'],
+                'taxbasis'   => $totals['taxbasis'],
+                'vat'        => $totals['vat'],
+                'pph22'      => $totals['pph22'],
+                'ttlprice'   => $totals['ttlprice'],
+                'updateby'   => $header['inputby'],
+                'updatedate' => date('Y-m-d H:i:s'),
+            ]);
+
+        return $totals;
+    }
+
+    /** Simpan satu baris detail (insert bila idurut = 0, update bila > 0). */
+    public function proformaSaveRow()
+    {
+        if (!$this->proforma_can_update()) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Anda tidak memiliki hak update untuk menu ini.',
+            ]);
+        }
+
+        $nama   = trim((string) $this->session->get('nama'));
+        $docno  = strtoupper(trim((string) $this->request->getPost('docno')));
+        $idurut = (int) $this->request->getPost('idurut');
+
+        if ($docno === '') {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'No. Jurnal/Dokumen belum terbentuk. Klik Proses terlebih dahulu.',
+            ]);
+        }
+
+        $header = $this->proformaTmpHeader($docno, $nama);
+        if (!$header || trim((string) ($header['status'] ?? '')) !== 'E') {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Header proforma belum ada atau tidak dalam status edit (E).',
+            ]);
+        }
+
+        $idbarang    = strtoupper(trim((string) $this->request->getPost('idbarang')));
+        $nmbarang    = strtoupper(trim((string) $this->request->getPost('nmbarang')));
+        $unit        = strtoupper(trim((string) $this->request->getPost('unit')));
+        $description = strtoupper(trim((string) $this->request->getPost('description')));
+        $qty         = $this->proformaToNumber($this->request->getPost('qty'));
+        $price       = $this->proformaToNumber($this->request->getPost('price'));
+
+        // Simpan DP / PPh22 terbaru dari header (dipakai perhitungan total)
+        if ($this->request->getPost('downpayment') !== null || $this->request->getPost('pph22') !== null) {
+            $upd = [];
+
+            if ($this->request->getPost('downpayment') !== null) {
+                $upd['downpayment'] = $this->proformaToNumber($this->request->getPost('downpayment'));
+            }
+
+            if ($this->request->getPost('pph22') !== null) {
+                $upd['pph22'] = $this->proformaToNumber($this->request->getPost('pph22'));
+            }
+
+            if (!empty($upd)) {
+                $this->db->table('sc_tmp.proforma')
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->update($upd);
+
+                $header = $this->proformaTmpHeader($docno, $nama);
+            }
+        }
+
+        if ($nmbarang === '') {
+            return $this->response->setJSON(['status' => false, 'message' => 'Nama Barang wajib diisi.']);
+        }
+
+        if ($unit === '') {
+            return $this->response->setJSON(['status' => false, 'message' => 'Unit/Satuan wajib dipilih.']);
+        }
+
+        if ($qty <= 0) {
+            return $this->response->setJSON(['status' => false, 'message' => 'Qty (Weight) harus lebih besar dari 0.']);
+        }
+
+        $amount = round($qty * $price, 4);
+
+        // Kolom detail mengikuti skema sc_tmp.proformadtl (tidak ada kolom "price"):
+        // harga / hargasatuan = harga satuan, nilai / amount = qty * harga.
+        $dataRow = [
+            'idbarang'    => $idbarang,
+            'nmbarang'    => $nmbarang,
+            'unit'        => $unit,
+            'qty'         => $qty,
+            'harga'       => $price,
+            'hargasatuan' => $price,
+            'nilai'       => $amount,
+            'amount'      => $amount,
+            'invmode'     => (strtoupper(trim((string) ($header['invmode'] ?? ''))) === 'MULTI' ? 'MULTI' : 'SINGLE'),
+            'currcode'    => trim((string) ($header['currcode'] ?? '')),
+            'kurs'        => (float) ($header['kurs'] ?? 1),
+            'description' => $description,
+        ];
+
+        $idgudang = strtoupper(trim((string) $this->request->getPost('idgudang')));
+        $idspec   = strtoupper(trim((string) $this->request->getPost('idspec')));
+        $idtax    = strtoupper(trim((string) $this->request->getPost('idtax')));
+
+        if ($idgudang !== '') {
+            $dataRow['idgudang'] = $idgudang;
+        }
+
+        if ($idspec !== '') {
+            $dataRow['idspec'] = $idspec;
+        }
+
+        if ($idtax !== '') {
+            $dataRow['idtax'] = $idtax;
+        }
+
+        if ($idurut > 0) {
+            $exists = $this->db->table('sc_tmp.proformadtl')
+                ->where('idurut', $idurut)
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->countAllResults();
+
+            if (!$exists) {
+                return $this->response->setJSON(['status' => false, 'message' => 'Baris detail tidak ditemukan.']);
+            }
+
+            $dataRow['updateby']   = $nama;
+            $dataRow['updatedate'] = date('Y-m-d H:i:s');
+
+            $this->db->table('sc_tmp.proformadtl')
+                ->where('idurut', $idurut)
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->update($dataRow);
+        } else {
+            $dataRow['docno']     = $docno;
+            $dataRow['status']    = 'E';
+            $dataRow['inputby']   = $nama;
+            $dataRow['inputdate'] = date('Y-m-d H:i:s');
+
+            $this->db->table('sc_tmp.proformadtl')->insert($dataRow);
+            $idurut = (int) $this->db->insertID();
+        }
+
+        $totals = $this->proformaApplyTotals($header, $this->proformaTmpDetails($docno, $nama));
+
+        return $this->response->setJSON([
+            'status'  => true,
+            'message' => 'Detail berhasil disimpan.',
+            'idurut'  => $idurut,
+            'amount'  => $amount,
+            'totals'  => $totals,
+        ]);
+    }
+
+    /** Daftar Penjualan (PJO) FINAL + jurnal SALESX POSTED untuk modal Tarik Data. */
+    public function proformaListPjo()
+    {
+        $branch = trim((string) $this->session->get('idbranchjob'));
+        if ($branch === '') {
+            $branch = trim((string) $this->session->get('loccode'));
+        }
+
+        $customer = strtoupper(trim((string) $this->request->getPost('cust')));
+        $search   = trim((string) $this->request->getPost('search'));
+
+        $items = $this->m_presales->q_list_penjualan_proforma($branch, $customer, $search);
+
+        return $this->response->setJSON([
+            'status' => true,
+            'rows'   => $items,
+        ]);
+    }
+
+    /** Detail satu Penjualan (parent-child modal Tarik Data) + flag sudah ditarik. */
+    public function proformaListPjoDetail()
+    {
+        $nama     = trim((string) $this->session->get('nama'));
+        $docnopjo = strtoupper(trim((string) $this->request->getPost('docnopjo')));
+        $docno    = strtoupper(trim((string) $this->request->getPost('docno')));
+
+        if ($docnopjo === '') {
+            return $this->response->setJSON([
+                'status' => false,
+                'message' => 'Nomor Penjualan tidak valid.',
+                'rows'   => [],
+            ]);
+        }
+
+        $rows   = $this->m_presales->q_penjualan_proforma_dtl($docnopjo);
+        $header = $this->m_presales->q_penjualan_proforma_header($docnopjo);
+
+        // Baris yang sudah ada pada dokumen proforma ini (berdasarkan sumber PJO)
+        $pulled = [];
+        if ($docno !== '') {
+            $tmp = $this->db->query("
+                SELECT COALESCE(idurutpjo, 0) AS idurutpjo
+                  FROM sc_tmp.proformadtl
+                 WHERE docno = ?
+                   AND inputby = ?
+                   AND TRIM(COALESCE(docnopjo, '')) = ?
+                   AND idurutpjo IS NOT NULL
+            ", [$docno, $nama, $docnopjo])->getResultArray();
+
+            foreach ($tmp as $t) {
+                $pulled[(int) $t['idurutpjo']] = true;
+            }
+        }
+
+        $out = [];
+        foreach ($rows as $r) {
+            $idspec = trim((string) ($r->idspec ?? ''));
+            if (strtoupper($idspec) === 'NULL') {
+                $idspec = '';
+            }
+
+            $out[] = [
+                'idurutpjo'  => (int) $r->idurut,
+                'idbarang'   => trim((string) $r->idbarang),
+                'nmbarang'   => trim((string) $r->nmbarang),
+                'idspec'     => $idspec,
+                'unit'       => trim((string) $r->unit),
+                'qty'        => (float) $r->qty,
+                'harga'      => (float) $r->harga,
+                'multidisc'  => (float) $r->multidisc,
+                'nilai'      => (float) $r->nilai,
+                'nilaipajak' => (float) $r->nilaipajak,
+                'description'=> (string) ($r->description ?? ''),
+                'sudah'      => isset($pulled[(int) $r->idurut]) ? 1 : 0,
+            ];
+        }
+
+        return $this->response->setJSON([
+            'status' => true,
+            'header' => $header ? [
+                'docno'      => trim((string) ($header['docno'] ?? $docnopjo)),
+                'docdate'    => (string) ($header['docdate'] ?? ''),
+                'kdcustomer' => trim((string) ($header['kdcustomer'] ?? '')),
+                'nmcustomer' => trim((string) ($header['nmcustomer'] ?? '')),
+                'jurnalno'   => trim((string) ($header['jurnalno'] ?? '')),
+            ] : null,
+            'rows'   => $out,
+        ]);
+    }
+
+    /** Tarik detail Penjualan terpilih (single / multi dokumen) ke detail proforma. */
+    public function proformaPullPjoSelection()
+    {
+        if (!$this->proforma_can_update()) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Anda tidak memiliki hak update untuk menu ini.',
+            ]);
+        }
+
+        $nama  = trim((string) $this->session->get('nama'));
+        $docno = strtoupper(trim((string) $this->request->getPost('docno')));
+        $mode  = strtolower(trim((string) $this->request->getPost('mode')));
+        $mode  = ($mode === 'multi') ? 'multi' : 'single';
+
+        if ($docno === '') {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'No. Jurnal/Dokumen proforma belum terbentuk.',
+            ]);
+        }
+
+        $header = $this->proformaTmpHeader($docno, $nama);
+        if (!$header || trim((string) ($header['status'] ?? '')) !== 'E') {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Header proforma belum ada atau tidak dalam status edit (E).',
+            ]);
+        }
+
+        $raw = $this->request->getPost('items');
+        if (is_string($raw)) {
+            $decoded = json_decode($raw, true);
+            $raw     = is_array($decoded) ? $decoded : explode(',', $raw);
+        }
+        $raw = is_array($raw) ? $raw : [];
+
+        $picks = [];
+        foreach ($raw as $v) {
+            $v = trim((string) $v);
+            if ($v === '' || strpos($v, '|') === false) {
+                continue;
+            }
+
+            [$pdoc, $pid] = explode('|', $v, 2);
+            $pdoc = strtoupper(trim($pdoc));
+            $pid  = (int) $pid;
+
+            if ($pdoc === '' || $pid <= 0) {
+                continue;
+            }
+
+            if (!isset($picks[$pdoc])) {
+                $picks[$pdoc] = [];
+            }
+
+            $picks[$pdoc][$pid] = true;
+        }
+
+        if (empty($picks)) {
+            // Tarik SELURUH detail satu dokumen penjualan: dipakai saat kode docno
+            // Penjualan diketik/dipilih langsung pada baris detail inline.
+            $docnopjoSingle = strtoupper(trim((string) $this->request->getPost('docnopjo')));
+
+            if ($docnopjoSingle === '') {
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Pilih minimal satu detail penjualan yang akan ditarik.',
+                ]);
+            }
+
+            $rows = $this->m_presales->q_penjualan_proforma_dtl($docnopjoSingle);
+            if (empty($rows)) {
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Penjualan ' . $docnopjoSingle . ' tidak memiliki detail item.',
+                ]);
+            }
+
+            $picks[$docnopjoSingle] = [];
+            foreach ($rows as $row) {
+                $picks[$docnopjoSingle][(int) $row->idurut] = true;
+            }
+
+            $mode = 'single';
+        }
+
+        if ($mode === 'single' && count($picks) > 1) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Mode SINGLE hanya untuk satu dokumen penjualan.',
+            ]);
+        }
+
+        $docs    = [];
+        $details = [];
+
+        foreach ($picks as $pdoc => $ids) {
+            $pjo = $this->m_presales->q_penjualan_proforma_header($pdoc);
+            if (!$pjo) {
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Penjualan ' . $pdoc . ' tidak valid / belum FINAL-APPROVE atau jurnal SALESX belum POSTED.',
+                ]);
+            }
+
+            // Customer proforma harus sama dengan customer dokumen Penjualan
+            $custHeader = strtoupper(trim((string) ($header['cust'] ?? '')));
+            $custPjo    = strtoupper(trim((string) ($pjo['kdcustomer'] ?? '')));
+
+            if ($custHeader !== '' && $custPjo !== '' && $custHeader !== $custPjo) {
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Customer proforma (' . $custHeader . ') tidak sama dengan customer Penjualan ' . $pdoc . ' (' . $custPjo . ').',
+                ]);
+            }
+
+            // Mode MULTI: dokumen diambil utuh (1 dokumen = 1 baris detail),
+            // jadi tidak perlu memecah detail per item barang.
+            if ($mode === 'multi') {
+                $docs[$pdoc] = $pjo;
+                continue;
+            }
+
+            $rows = $this->m_presales->q_penjualan_proforma_dtl($pdoc);
+            foreach ($rows as $row) {
+                if (!isset($ids[(int) $row->idurut])) {
+                    continue;
+                }
+
+                $idspec = trim((string) ($row->idspec ?? ''));
+                if (strtoupper($idspec) === 'NULL') {
+                    $idspec = '';
+                }
+
+                $details[] = [
+                    'docnopjo'      => $pdoc,
+                    'idurutpjo'     => (int) $row->idurut,
+                    'uniqueidpjo'   => trim((string) ($row->uniqueid ?? '')),
+                    'idbarang'      => trim((string) $row->idbarang),
+                    'nmbarang'      => trim((string) $row->nmbarang),
+                    'unit'          => trim((string) $row->unit),
+                    'qty'           => (float) $row->qty,
+                    'price'         => (float) $row->harga,
+                    'amount'        => (float) $row->nilai,
+                    'nilai'         => (float) $row->nilai,
+                    'discount'      => (float) $row->multidisc,
+                    'nilaikonversi' => (float) $row->nilaikonversi,
+                    'nilaipajak'    => (float) $row->nilaipajak,
+                    'idtax'         => trim((string) $row->idtax),
+                    'idgudang'      => trim((string) $row->idgudang),
+                    'idspec'        => $idspec,
+                    'currcode'      => trim((string) ($pjo['currcode'] ?? '')),
+                    'kurs'          => (float) ($pjo['kurs'] ?? 1),
+                    'description'   => (string) ($row->description ?? ''),
+                ];
+            }
+
+            $docs[$pdoc] = $pjo;
+        }
+
+        // Mode MULTI: semua dokumen yang ditarik wajib dari customer yang sama
+        if ($mode === 'multi') {
+            $custDocs = [];
+            foreach ($docs as $pdocItem => $pjoItem) {
+                $custDocs[strtoupper(trim((string) ($pjoItem['kdcustomer'] ?? '')))] = true;
+            }
+
+            if (count($custDocs) > 1) {
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Mode MULTI hanya boleh menarik dokumen dari customer yang sama.',
+                ]);
+            }
+        }
+
+        // Mode MULTI: satu dokumen Penjualan menjadi SATU baris detail.
+        // Baris berisi No. Penjualan (bukan kode barang) + total nilai dokumen tersebut.
+        if ($mode === 'multi') {
+            $details = [];
+
+            foreach ($docs as $pdocAgg => $pjoAgg) {
+                $nilai = (float) ($pjoAgg['dpp'] ?? 0);
+                $ppn   = (float) ($pjoAgg['jumlahpajak'] ?? 0);
+
+                // Cadangan bila total header Penjualan belum terisi
+                if ($nilai <= 0 || $ppn <= 0) {
+                    $sumNilai = 0.0;
+                    $sumPpn   = 0.0;
+
+                    foreach ($this->m_presales->q_penjualan_proforma_dtl($pdocAgg) as $rowAgg) {
+                        $sumNilai += (float) $rowAgg->nilai;
+                        $sumPpn   += (float) $rowAgg->nilaipajak;
+                    }
+
+                    if ($nilai <= 0) {
+                        $nilai = $sumNilai;
+                    }
+
+                    if ($ppn <= 0) {
+                        $ppn = $sumPpn;
+                    }
+                }
+
+                $kurs = (float) ($pjoAgg['kurs'] ?? 1);
+                $kurs = $kurs > 0 ? $kurs : 1;
+
+                $details[] = [
+                    'docnopjo'      => $pdocAgg,
+                    'idurutpjo'     => null,
+                    'uniqueidpjo'   => null,
+                    'idbarang'      => substr($pdocAgg, 0, 20), // idbarang diisi No. Penjualan (char 20)
+                    'nmbarang'      => 'PENJUALAN',
+                    'unit'          => 'UNIT',
+                    'qty'           => 1,
+                    'price'         => round($nilai, 4),
+                    'amount'        => round($nilai, 4),
+                    'nilai'         => round($nilai, 4),
+                    'discount'      => 0,
+                    'nilaikonversi' => round($nilai * $kurs, 4),
+                    'nilaipajak'    => round($ppn, 4),
+                    'idtax'         => trim((string) ($pjoAgg['idtax'] ?? '')),
+                    'idgudang'      => '',
+                    'idspec'        => '',
+                    'currcode'      => trim((string) ($pjoAgg['currcode'] ?? '')),
+                    'kurs'          => $kurs,
+                    'description'   => 'NO. PENJUALAN ' . $pdocAgg,
+                ];
+            }
+        }
+
+        if (empty($details)) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Detail penjualan yang dipilih tidak ditemukan.',
+            ]);
+        }
+
+        $primaryDocno = array_key_first($docs);
+        $primary      = $docs[$primaryDocno];
+
+        $dppSum = 0.0;
+        $ppnSum = 0.0;
+        foreach ($details as $d) {
+            $dppSum += (float) $d['nilai'];
+            $ppnSum += (float) $d['nilaipajak'];
+        }
+
+        $db = $this->db;
+        $db->transStart();
+
+        $db->table('sc_tmp.proformadtl')
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->delete();
+
+        foreach ($details as $d) {
+            $db->table('sc_tmp.proformadtl')->insert([
+                'docno'         => $docno,
+                'idbarang'      => $d['idbarang'],
+                'nmbarang'      => $d['nmbarang'],
+                'unit'          => $d['unit'],
+                'qty'           => $d['qty'],
+                'harga'         => $d['price'],
+                'hargasatuan'   => $d['price'],
+                'nilai'         => $d['nilai'],
+                'usdmt'         => 0,
+                'exchange'      => 1,
+                'amount'        => $d['amount'],
+                'invmode'       => ($mode === 'multi' ? 'MULTI' : 'SINGLE'),
+                'currcode'      => trim((string) (($d['currcode'] ?? '') !== '' ? $d['currcode'] : ($primary['currcode'] ?? ''))),
+                'kurs'          => (float) ((($d['kurs'] ?? 0) > 0) ? $d['kurs'] : ($primary['kurs'] ?? 1)),
+                'description'   => $d['description'],
+                'status'        => 'E',
+                'inputby'       => $nama,
+                'inputdate'     => date('Y-m-d H:i:s'),
+                'docnopjo'      => $d['docnopjo'],
+                'idurutpjo'     => $d['idurutpjo'],
+                'uniqueidpjo'   => $d['uniqueidpjo'],
+                'idtax'         => $d['idtax'],
+                'idgudang'      => $d['idgudang'],
+                'idspec'        => $d['idspec'],
+                'nilaikonversi' => $d['nilaikonversi'],
+                'nilaipajak'    => $d['nilaipajak'],
+                'discount'      => $d['discount'],
+            ]);
+        }
+
+        $db->table('sc_tmp.proforma')
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->update([
+                'docnopjo'    => $primaryDocno,
+                'jurnalno'    => trim((string) ($primary['jurnalno'] ?? '')),
+                'cust'        => strtoupper(trim((string) ($primary['kdcustomer'] ?? ''))),
+                'kdcustomer'  => strtoupper(trim((string) ($primary['kdcustomer'] ?? ''))),
+                'nmcustomer'  => trim((string) ($primary['nmcustomer'] ?? '')),
+                'address'     => (string) ($primary['address'] ?? ''),
+                'phone'       => (string) ($primary['phone'] ?? ''),
+                'fax'         => (string) ($primary['fax'] ?? ''),
+                'pono'        => $primaryDocno,
+                'podate'      => $this->proformaDateOrNull($primary['docdate'] ?? ''),
+                'idtax'       => trim((string) ($primary['idtax'] ?? '')),
+                'isinclusive' => trim((string) ($primary['isinclusive'] ?? '')),
+                'currcode'    => trim((string) ($primary['currcode'] ?? '')),
+                'kurs'        => (float) ($primary['kurs'] ?? 1),
+                'invmode'     => ($mode === 'multi' ? 'MULTI' : 'SINGLE'),
+                'dpp'         => round($dppSum, 4),
+                'jumlahpajak' => round($ppnSum, 4),
+                'total'       => round($dppSum + $ppnSum, 4),
+                'updateby'    => $nama,
+                'updatedate'  => date('Y-m-d H:i:s'),
+            ]);
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Gagal menarik data penjualan. Periksa data lalu coba lagi.',
+            ]);
+        }
+
+        $newHeader = $this->proformaTmpHeader($docno, $nama);
+        $totals    = $this->proformaApplyTotals($newHeader, $this->proformaTmpDetails($docno, $nama));
+
+        $message = ($mode === 'multi')
+            ? count($details) . ' dokumen Penjualan berhasil ditarik (1 dokumen = 1 baris detail).'
+            : count($details) . ' detail penjualan berhasil ditarik.';
+
+        return $this->response->setJSON([
+            'status'   => true,
+            'message'  => $message,
+            'mode'     => $mode,
+            'docnopjo' => $primaryDocno,
+            'docs'     => array_keys($docs),
+            'inserted' => count($details),
+            'totals'   => $totals,
+        ]);
+    }
+
+    /**
+     * Simpan proforma sebagai DRAFT (status D).
+     * Trigger sc_tmp.tr_proforma_finalize memindahkan header+detail ke sc_trx
+     * dengan status D; dokumen bisa dibuka kembali (updateProforma) untuk revisi.
+     */
+    public function proformaSaveDraft()
+    {
+        if (!$this->proforma_can_update()) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Anda tidak memiliki hak update untuk menu ini.',
+            ]);
+        }
+
+        $nama  = trim((string) $this->session->get('nama'));
+        $docno = strtoupper(trim((string) $this->request->getPost('docno')));
+
+        if ($docno === '') {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'No. Jurnal/Dokumen proforma belum terbentuk.',
+            ]);
+        }
+
+        $header = $this->proformaTmpHeader($docno, $nama);
+        if (!$header || trim((string) ($header['status'] ?? '')) !== 'E') {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Header proforma belum ada atau tidak dalam status edit (E).',
+            ]);
+        }
+
+        $details = $this->proformaTmpDetails($docno, $nama);
+        if (empty($details)) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Detail masih kosong. Tambahkan minimal satu item sebelum menyimpan draft.',
+            ]);
+        }
+
+        $downpayment = $this->proformaToNumber($this->request->getPost('downpayment'));
+        $pph22       = $this->proformaToNumber($this->request->getPost('pph22'));
+
+        $updateHeader = [
+            'downpayment' => $downpayment,
+            'pph22'       => $pph22,
+            'description' => strtoupper(trim((string) $this->request->getPost('desc'))),
+            'updateby'    => $nama,
+            'updatedate'  => date('Y-m-d H:i:s'),
+        ];
+
+        // Data bank hanya ditimpa bila diisi: saat revisi draft, form bisa belum
+        // memuat ulang data bank sehingga nilai lama harus dipertahankan.
+        foreach (['bank', 'nmbank', 'alamatbank', 'accname', 'accno', 'swiftcode'] as $fieldBank) {
+            $valBank = strtoupper(trim((string) $this->request->getPost($fieldBank)));
+
+            if ($valBank !== '') {
+                $updateHeader[$fieldBank] = $valBank;
+            }
+        }
+
+        // Tujuan / Rekanan: ikut disimpan saat draft (sama seperti final entry)
+        if ((string) $this->request->getPost('tujuan_sync') === '1') {
+            $postAll = $this->request->getPost();
+
+            foreach ([
+                'customerdestination',
+                'customerdestination_addr',
+                'trader',
+                'trader_addr',
+                'enduser',
+                'enduser_addr',
+            ] as $fieldTujuan) {
+                if (array_key_exists($fieldTujuan, $postAll)) {
+                    $updateHeader[$fieldTujuan] = strtoupper(trim((string) $postAll[$fieldTujuan]));
+                }
+            }
+        }
+
+        $this->db->table('sc_tmp.proforma')
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->update($updateHeader);
+
+        $header = $this->proformaTmpHeader($docno, $nama);
+        $this->proformaApplyTotals($header, $details);
+
+        // E -> D : trigger memindahkan dokumen ke sc_trx.proforma sebagai DRAFT
+        $this->db->table('sc_tmp.proforma')
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->update(['status' => 'D']);
+
+        if ($this->db->affectedRows() <= 0) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Draft gagal disimpan. Periksa data lalu coba lagi.',
+            ]);
+        }
+
+        $this->session->remove('proforma_revisi');
+
+        return $this->response->setJSON([
+            'status'   => true,
+            'message'  => 'Draft proforma ' . $docno . ' berhasil disimpan. Dokumen dapat dibuka kembali dari daftar untuk revisi.',
+            'docno'    => $docno,
+            'redirect' => base_url('sales/presales/performainvoice'),
+        ]);
+    }
+
+    /** Hitung ulang total proforma (dipakai setelah hapus baris / perubahan header). */
+    public function proformaRefreshTotals()
+    {
+        $nama  = trim((string) $this->session->get('nama'));
+        $docno = strtoupper(trim((string) $this->request->getPost('docno')));
+
+        $header = $this->proformaTmpHeader($docno, $nama);
+        if (!$header) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Header temporary proforma tidak ditemukan.',
+            ]);
+        }
+
+        // Ikutkan DP / PPh22 terbaru dari form bila dikirim
+        if ($this->request->getPost('downpayment') !== null || $this->request->getPost('pph22') !== null) {
+            $upd = [];
+
+            if ($this->request->getPost('downpayment') !== null) {
+                $upd['downpayment'] = $this->proformaToNumber($this->request->getPost('downpayment'));
+            }
+
+            if ($this->request->getPost('pph22') !== null) {
+                $upd['pph22'] = $this->proformaToNumber($this->request->getPost('pph22'));
+            }
+
+            if (!empty($upd)) {
+                $this->db->table('sc_tmp.proforma')
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->update($upd);
+
+                $header = $this->proformaTmpHeader($docno, $nama);
+            }
+        }
+
+        $totals = $this->proformaApplyTotals($header, $this->proformaTmpDetails($docno, $nama));
+
+        return $this->response->setJSON([
+            'status' => true,
+            'totals' => $totals,
         ]);
     }
 

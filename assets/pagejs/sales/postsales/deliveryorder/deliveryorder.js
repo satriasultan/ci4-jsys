@@ -44,6 +44,7 @@ function tableDeliveryOrderTrx(){
                 "type": "POST",
                 "data": function(data) {
                     data.tglrange = $('#tglrange').val();
+                    data.docno_filter = $('#docno_filter').val();
                     data.idbarang = $('#idbarang_filter').val();
                     data.namacustomer = $('#namacustomer').val();
                     data.status_filter = $('#status_filter').val(); //A,P,S,ALL
@@ -95,9 +96,75 @@ $('#btn-filter').click(function(){ //button filter event click
 });
 $('#btn-reset').click(function(){ //button reset event click
     $('#form-filter')[0].reset();
+    // select2 tidak ikut ter-reset oleh form.reset(), jadi bersihkan manual
+    if ($('#idbarang_filter').length && $.fn.select2) {
+        $('#idbarang_filter').val(null).trigger('change');
+    }
     var table = $('#tabledeliveryorderTrx');
     table.DataTable().ajax.reload(); //reload datatable ajax
     $('#filter').modal('hide');
+});
+
+/* ===== Filter Item (barang) pada modal "Filtering Item" =====
+   Sebelumnya deliveryorder.js sudah mengirim data.idbarang tetapi field
+   #idbarang_filter tidak ada di modal sehingga filter item tidak pernah jalan.
+   Nilai idbarang dipakai server (M_Postsales) untuk EXISTS ke
+   sc_trx.deliveryorder_dtl. */
+function doInitItemFilter() {
+    var $item = $('#idbarang_filter');
+    if ($item.length === 0 || $.fn.select2 === undefined) return;
+
+    $item.select2({
+        placeholder: "Type/ Choose your item",
+        allowClear: true,
+        dropdownParent: $('#filter'),
+        multiple: false,
+        width: '100%',
+        ajax: {
+            url: HOST_URL + 'api/globalmodule/list_item',
+            type: 'POST',
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    _search_: params.term,
+                    _page_: params.page || 1,
+                    _pagesize_: 30, // mode paginated di Globalmodule::list_item
+                    _draw_: true,
+                    _start_: 1,
+                    term: params.term
+                };
+            },
+            processResults: function (data, params) {
+                params.page = params.page || 1;
+                var items = $.map((data.items || []), function (it) {
+                    return {
+                        id: String(it.idbarang || '').trim(),
+                        text: String(it.nmbarang || '').trim(),
+                        idbarang: it.idbarang,
+                        nmbarang: it.nmbarang
+                    };
+                });
+                return {
+                    results: items,
+                    pagination: { more: (params.page * 30) < (data.total_count || 0) }
+                };
+            },
+            cache: false
+        },
+        escapeMarkup: function (markup) { return markup; },
+        templateResult: function (repo) {
+            if (repo.loading) return repo.text;
+            return "<div>" + (repo.idbarang || '') + " <i class='fa fa-circle-o'></i> " + (repo.nmbarang || '') + "</div>";
+        },
+        templateSelection: function (repo) {
+            return repo.nmbarang || repo.text;
+        }
+    });
+}
+
+$(function () {
+    doInitItemFilter();
 });
 
 

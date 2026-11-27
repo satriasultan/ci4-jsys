@@ -199,13 +199,76 @@ class M_Postsales extends Model
         return $this->db->query("select * from sc_trx.salesorder_dtl where docno is not null $param order by idurut desc");
     }
 
+    /* =========================================================
+     * OPEN PRICE MENGIKUTI GRADE CUSTOMER
+     * ========================================================= */
+
+    /* Grade customer aktual (sc_mst.customer.grade) */
+    public function getCustomerGrade($kdcustomer)
+    {
+        $kdcustomer = trim((string) $kdcustomer);
+
+        if ($kdcustomer === '') {
+            return '';
+        }
+
+        $row = $this->db->query(
+            "select trim(grade) as grade
+               from sc_mst.customer
+              where trim(kdcustomer) = trim(?)
+              limit 1",
+            [$kdcustomer]
+        )->getRowArray();
+
+        return $row ? trim((string) $row['grade']) : '';
+    }
+
+    /* Flag open price dari master grade (sc_mst.gradecust.isopenprice) */
+    public function getGradeOpenPrice($grade)
+    {
+        $grade = strtoupper(trim((string) $grade));
+
+        if ($grade === '') {
+            return false;
+        }
+
+        $row = $this->db->query(
+            "select trim(isopenprice) as isopenprice
+               from sc_mst.gradecust
+              where upper(trim(kdgradecust)) = ?
+                 or upper(trim(nmgradecust)) = ?
+              order by case when upper(trim(kdgradecust)) = ? then 0 else 1 end
+              limit 1",
+            [$grade, $grade, $grade]
+        )->getRowArray();
+
+        if (!$row) {
+            return false;
+        }
+
+        return in_array(strtoupper(trim((string) $row['isopenprice'])), ['1', 'Y', 'YES', 'T', 'TRUE', 'ON'], true);
+    }
+
+    /* Daftar uniqueid detail draft sesuai urutan tampilan (idurut_view) */
+    public function getSalesOrderDetailOrder($docno, $nama)
+    {
+        return $this->db->query(
+            "select uniqueid
+               from sc_tmp.salesorder_dtl
+              where trim(docno) = trim(?)
+                and inputby = ?
+              order by coalesce(idurut_view, idurut), idurut",
+            [$docno, $nama]
+        )->getResultArray();
+    }
+
 
     //WO TEMP
     /* WO DETAIL */
     var $t_salesorder_dtl_temp_view = "sc_tmp.salesorder_dtl";
-    var $t_salesorder_dtl_temp_view_column = array('idurut','idbarang','nmbarang','idprincipal','idgudang','idspec','unit','qty','harga','multidisc','nilai','bomdesc');
-    var $t_salesorder_dtl_temp_view_colmap = [null,'idbarang','nmbarang','idprincipal','idgudang','idspec','unit','qty','harga','multidisc','nilai','bomdesc'];
-    var $t_salesorder_dtl_temp_view_order = array("idurut" => 'desc'); // default order
+    var $t_salesorder_dtl_temp_view_column = array('idurut','idbarang','nmbarang','idspec','unit','qty','harga','nilai','etd','eta','idgudang','bomdesc');
+    var $t_salesorder_dtl_temp_view_colmap = [null,'idbarang','nmbarang','idspec','unit','qty','harga','nilai','etd','eta','idgudang','bomdesc',null];
+    var $t_salesorder_dtl_temp_view_order = array("idurut_view" => 'asc', "idurut" => 'asc'); // urutan manual detail (▲▼)
     private function _get_query_t_salesorder_dtl_temp($docno)
     {
         $this->session = \Config\Services::session();
@@ -238,18 +301,28 @@ class M_Postsales extends Model
             $i++;
         }
 
+        $orderField = null;
+        $orderDir   = 'asc';
+
         if (isset($_POST['order'])) {
             $orderColumn = isset($_POST['order'][0]['column']) ? (int) $_POST['order'][0]['column'] : -1;
             $orderDir    = (isset($_POST['order'][0]['dir']) && strtolower($_POST['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
             $orderField  = ($orderColumn >= 0 && isset($this->t_salesorder_dtl_temp_view_colmap[$orderColumn])) ? $this->t_salesorder_dtl_temp_view_colmap[$orderColumn] : null;
+        }
 
-            if ($orderField !== null && $orderField !== '') {
-                $builder->orderBy($orderField, $orderDir);
-            } else if (isset($this->t_salesorder_dtl_temp_view_order)) { foreach ($this->t_salesorder_dtl_temp_view_order as $key => $dir) {
+        if ($orderField !== null && $orderField !== '') {
+            $builder->orderBy($orderField, $orderDir);
+        }
+
+        /* Urutan default (idurut_view) selalu dipakai agar urutan manual ▲▼ konsisten */
+        if (isset($this->t_salesorder_dtl_temp_view_order)) {
+            foreach ($this->t_salesorder_dtl_temp_view_order as $key => $dir) {
+                if ($key !== $orderField) {
                     $builder->orderBy($key, $dir);
                 }
             }
         }
+
         return $builder;
     }
 
@@ -883,9 +956,52 @@ class M_Postsales extends Model
                 }
             }
         }
+        /* FILTER MODAL: docno / tanggal / customer / status */
+        $req = \Config\Services::request();
+
+        $docnoFilter = trim((string) $req->getPost('docno_filter'));
+        if ($docnoFilter !== '') {
+            $builder->like('upper(cast(x.docno as varchar))', strtoupper($docnoFilter));
+        }
+
+        /* Filter item (barang): DO hanya tampil bila punya detail dengan idbarang tsb.
+           Dipakai modal "Filtering Item" di halaman list Delivery Order.
+           Nilai di-escape manual karena QB CI4 menambah escape lagi bila memakai '?'. */
+        $itemFilter = trim((string) $req->getPost('idbarang'));
+        if ($itemFilter !== '') {
+            $builder->where(
+                "exists (select 1 from sc_trx.deliveryorder_dtl d
+                          where trim(d.docno) = trim(x.docno)
+                            and trim(d.idbarang) = " . $this->db->escape($itemFilter) . ")"
+            );
+        }
+
+        $tglrange = trim((string) $req->getPost('tglrange'));
+        if ($tglrange !== '') {
+            $dates = explode(' - ', $tglrange);
+            if (count($dates) === 2) {
+                $start = date('Y-m-d', strtotime(trim($dates[0])));
+                $end   = date('Y-m-d', strtotime(trim($dates[1])));
+                $builder->where('x.docdate >=', $start);
+                $builder->where('x.docdate <=', $end);
+            }
+        }
+
+        $customerFilter = trim((string) $req->getPost('namacustomer'));
+        if ($customerFilter !== '') {
+            $builder->groupStart()
+                ->like('upper(cast(x.kdcust as varchar))', strtoupper($customerFilter))
+                ->orLike('upper(cast(x.nmcust as varchar))', strtoupper($customerFilter))
+                ->groupEnd();
+        }
+
+        $statusFilter = trim((string) $req->getPost('status_filter'));
+        if ($statusFilter !== '' && strtoupper($statusFilter) !== 'ALL') {
+            $builder->where('trim(x.status)', $statusFilter);
+        }
+
         return $builder;
     }
-
 
     function get_t_front_deliveryorder_view(){
         $builder = $this->_get_query_front_deliveryorder();
@@ -938,7 +1054,7 @@ class M_Postsales extends Model
     left outer join sc_mst.salesman s on a.kdsalesman=s.kdsalesman
     left outer join sc_mst.kotakab d on c.kota_kantor=d.kodekotakab
     left outer join sc_mst.trxtype z on a.status=z.kdtrx and z.jenistrx='I.S.B.2'
-    where z.uraian != 'APPROVED' AND z.uraian != 'CANCEL') as x";
+    where z.uraian != 'APPROVED' AND z.uraian != 'CANCEL' AND a.status <> 'D') as x";
     var $t_front_deliveryorder_apprv_view_column = array('docno','docdate','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','nmsalesman','keterangan','nmbranch','status_desc');
     var $t_front_deliveryorder_apprv_view_colmap = [null,null,'docno','docdate','kdcustomer','nmcust','alamatcust','nmkota','currcode','jthtempo','nmsalesman','keterangan','nmbranch','status_desc'];
     var $t_front_deliveryorder_apprv_view_order = array('inputdate' => 'desc'); // default order
@@ -1652,8 +1768,8 @@ class M_Postsales extends Model
 
     /* TRX MRP DETAIL */
     var $t_penjualan_dtl_view = "sc_trx.penjualan_dtl";
-    var $t_penjualan_dtl_view_column = array('idurut','docnosj','docnoso','idbarang','nmbarang','idprincipal','idgudang','idspec','unit','qty','harga','multidisc','nilai','description');
-    var $t_penjualan_dtl_view_colmap = [null,'docnosj','docnoso','idbarang','nmbarang','idprincipal','idgudang','idspec','unit','qty','harga','multidisc','nilai','description'];
+    var $t_penjualan_dtl_view_column = array('idurut','docnodo','docnoso','idbarang','nmbarang','idprincipal','idgudang','idspec','unit','qty','harga','multidisc','nilai','description');
+    var $t_penjualan_dtl_view_colmap = [null,'docnodo','docnoso','idbarang','nmbarang','idprincipal','idgudang','idspec','unit','qty','harga','multidisc','nilai','description'];
     var $t_penjualan_dtl_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_t_penjualan_dtl($docnoParam)
     {
@@ -1759,8 +1875,8 @@ class M_Postsales extends Model
     //WO TEMP
     /* WO DETAIL */
     var $t_penjualan_dtl_temp_view = "sc_tmp.penjualan_dtl";
-    var $t_penjualan_dtl_temp_view_column = array('idurut','docnosj','docnoso','idbarang','nmbarang','idprincipal','idgudang','idspec','unit','qty','harga','multidisc','nilai','description');
-    var $t_penjualan_dtl_temp_view_colmap = [null,'docnosj','docnoso','idbarang','nmbarang','idprincipal','idgudang','idspec','unit','qty','harga','multidisc','nilai','description',null];
+    var $t_penjualan_dtl_temp_view_column = array('idurut','docnodo','docnoso','idbarang','nmbarang','idprincipal','idgudang','idspec','unit','qty','harga','multidisc','nilai','description');
+    var $t_penjualan_dtl_temp_view_colmap = [null,'docnodo','docnoso','idbarang','nmbarang','idprincipal','idgudang','idspec','unit','qty','harga','multidisc','nilai','description',null];
     var $t_penjualan_dtl_temp_view_order = array("idurut" => 'desc'); // default order
     private function _get_query_t_penjualan_dtl_temp($docno)
     {

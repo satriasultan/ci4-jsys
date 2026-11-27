@@ -333,16 +333,22 @@ function documentReadable(){
                 'checked',
                 $.trim((json.dataTables.items[0].isinclusive || '')).toUpperCase() === 'YES'
             );
-            $('[name="isopenprice"]').prop(
-                'checked',
-                $.trim((json.dataTables.items[0].isopenprice || '')).toUpperCase() === 'YES'
-            );
+            soSetOpenPriceFlag(json.dataTables.items[0].isopenprice);
             // $('[name="jthtempo"]').val(json.dataTables.items[0].jthtempo);
             $('[name="alamatcustomer"]').val(json.dataTables.items[0].alamatcustomer);
             $('[name="gradecustomer"]').val(json.dataTables.items[0].gradecustomer);
             // $('[name="isinclusive"]').val(json.dataTables.items[0].isinclusive);
             $('[name="keterangan"]').val(json.dataTables.items[0].keterangan);
-            $('[name="nodp"]').val(json.dataTables.items[0].nodp);
+            // No. DP (dropdown tags): pastikan nilai tersimpan tetap tampil sebagai pilihan
+            var nodpValue = $.trim((json.dataTables.items[0].nodp || '').toString());
+            if ($('#nodp').length) {
+                if (nodpValue !== '' && $('#nodp option').filter(function () {
+                    return ($(this).val() || '') === nodpValue;
+                }).length === 0) {
+                    $('#nodp').append(new Option(nodpValue, nodpValue, true, true));
+                }
+                $('#nodp').val(nodpValue !== '' ? nodpValue : null).trigger('change.select2');
+            }
             $('[name="pocust"]').val(json.dataTables.items[0].pocust);
 
             setJtsValue('[name="dpp"]', convertToDbNumber(json.dataTables.items[0].dpp));
@@ -444,14 +450,32 @@ $("#idbarang").select2({
     });
 });
 
-/* Format Group */
+/* Format Group: dropdown menampilkan kode + nama barang (untuk pencarian),
+   field terpilih hanya menampilkan kode (bisa diseleksi & dicopy Ctrl+C) */
 function formatItem(repo) {
     if (repo.loading) return repo.text;
-    var markup ="<div class='select2-result-repository__description'>" + repo.idbarang +"   <i class='fa fa-circle-o'></i>   "+ repo.nmbarang +"</div>";
+
+    var kode = $.trim(repo.idbarang || repo.id || '');
+    var nama = $.trim(repo.nmbarang || repo.text || '');
+
+    if (kode === '') {
+        kode = nama;
+        nama = '';
+    }
+
+    if (nama === kode) {
+        nama = '';
+    }
+
+    var markup = "<div class='select2-result-repository__description so-select2-copy'>" +
+        "<b>" + kode + "</b>" + (nama !== '' ? " &mdash; " + nama : "") +
+        "</div>";
+
     return markup;
 }
 function formatItemSelection(repo) {
-    return repo.nmbarang || repo.text;
+    // field terpilih: kode barang saja (id sudah ter-trim dari server)
+    return $.trim(repo.id || repo.idbarang || repo.text || '');
 }
 
 
@@ -768,11 +792,14 @@ function formatPOSelection(repo) {
 
 function formatCurrency(repo) {
 if (repo.loading) return repo.text;
-    var markup ="<div class='select2-result-repository__description'>" + repo.currcode +"   <i class='fa fa-circle'></i>   "+ repo.currname +"   <i class='fa fa-circle'></i>   "+  repo.kurs +"  </div>";
+    var markup ="<div class='select2-result-repository__description'>" + repo.currcode +"     </div>";
     return markup;
 }
 function formatCurrencySelection(repo) {
-    return repo.currname || repo.text;
+    // Tampilkan kode mata uang saja pada field terpilih
+    // repo.id = currcode (nilai option), aman juga untuk option yang dibuat manual
+    if (!repo.id) return repo.text;
+    return repo.id;
 }
 
 // ======================= PEMBELIAN ==================================
@@ -957,7 +984,10 @@ function updateDetailTax(idtax) {
 
 /* =========================================================
  * FORMAT ANGKA PENJUALAN (NUMERIC 18,4)
- * Tampilan angka selalu 4 digit desimal.
+ * Tampilan angka TIDAK memaksa 4 digit desimal:
+ *   5.0000 -> 5      |  5.5000 -> 5.5  |  5.2500 -> 5.25
+ * Desimal tetap dibatasi maksimal 4 angka di belakang koma
+ * (pemisah desimal = titik, pemisah ribuan = koma).
  * PENGECUALIAN: Jatuh Tempo (jthtempo) = jumlah hari (bulat).
  * ========================================================= */
 const SALES_DECIMAL_DIGITS = 4;
@@ -982,8 +1012,10 @@ function salesFormatNumber(value, maxDec) {
     if (maxDec <= 0) {
         return Math.round(num).toLocaleString('en-US');
     }
+    // Nol di belakang koma tidak ditampilkan (5.0000 -> 5),
+    // tetapi input tetap dibatasi maksimal maxDec angka desimal.
     return num.toLocaleString('en-US', {
-        minimumFractionDigits: maxDec,
+        minimumFractionDigits: 0,
         maximumFractionDigits: maxDec
     });
 }
@@ -1016,7 +1048,13 @@ function tableSalesOrderDetail(){
         table.DataTable({
             "processing": true, //Feature control the processing indicator.
             "serverSide": true, //Feature control DataTables' server-side processing mode.
-            "language":  languageDatatable(),
+            // Empty state baris detail (menggantikan pesan bawaan
+            // "Ooooops Sorry Data Not Available"): pola grid inline PNM / PMK.
+            "language":  $.extend({}, languageDatatable(), {
+                "emptyTable": '<i class="fa fa-inbox"></i> Belum ada data detail. ' +
+                    'Klik tombol <b>+</b> (atau tekan <b>Alt+N</b>) untuk menambah barang.',
+                "zeroRecords": '<i class="fa fa-filter"></i> Tidak ada baris yang cocok dengan pencarian.'
+            }),
             "paging": false,
             "lengthChange": true,
             "searching": true,
@@ -1040,6 +1078,20 @@ function tableSalesOrderDetail(){
                     json.recordsTotal = json.dataTables.recordsTotal;
                     json.recordsFiltered = json.dataTables.recordsFiltered;
                     json.data = json.dataTables.data;
+
+                    // Kolom Aksi (kolom terakhir) tidak dikirim server: rapikan
+                    // panjang baris agar DataTables tidak memunculkan warning.
+                    // Catatan: JANGAN memakai $.map untuk ini. $.map meratakan
+                    // (flatten) array yang dikembalikan callback, sehingga baris
+                    // (array of cells) berubah menjadi daftar cell dan setiap cell
+                    // tampil sebagai satu baris karakter di grid.
+                    if ($.isArray(json.data)) {
+                        $.each(json.data, function (i, row) {
+                            if (!$.isArray(row)) return;
+                            while (row.length < 13) row.push('');
+                        });
+                    }
+
                     return JSON.stringify(json); // return JSON string
                 }
             },
@@ -1056,10 +1108,55 @@ function tableSalesOrderDetail(){
                     }
                 },
                 {
-                    "targets": [ -1 ],
-                    "orderable": false
+                    // Kolom Satuan: lebar minimum dijaga agar dropdown satuan
+                    // (baris inline) tetap terlihat, tidak menyempit.
+                    "targets": 4,
+                    "className": "so-col-unit-cell"
+                },
+                {
+                    // Kolom Aksi: tombol update / hapus baris (pola grid PNM / PMK).
+                    // Tombol urutan ▲ / ▼ tidak lagi di baris, tetapi di kiri
+                    // kotak pencarian DataTables (lihat initComplete di bawah).
+                    "targets": -1,
+                    "orderable": false,
+                    "searchable": false,
+                    "className": "text-center so-col-aksi-cell",
+                    "render": function (data, type, row) {
+                        if (type !== 'display') return '';
+
+                        var id = (row && row[0] !== undefined && row[0] !== null) ? String(row[0]) : '';
+
+                        if ($.trim(id) === '') return '';
+
+                        return '<button type="button" class="so-row-btn so-row-btn-edit" data-id="' + id + '" title="Update baris">' +
+                            '<i class="fa fa-pencil"></i></button> ' +
+                            '<button type="button" class="so-row-btn so-row-btn-delete" data-id="' + id + '" title="Hapus baris">' +
+                            '<i class="fa fa-trash"></i></button>';
+                    }
                 }
-            ]
+            ],
+            "initComplete": function () {
+                // Pindah urutan: tombol ▲ / ▼ diletakkan di kiri kotak pencarian
+                // DataTables. Baris yang dipindah harus dicentang dulu karena
+                // urutan memakai idurut_view baris terpilih.
+                var $wrap   = $(this.api().table().container());
+                var $filter = $wrap.find('.dataTables_filter');
+
+                if (!$filter.length) return;
+
+                $filter.addClass('so-dt-filter');
+
+                if ($filter.find('.so-dt-move').length) return;
+
+                $filter.prepend(
+                    '<span class="so-dt-move">' +
+                    '<button type="button" class="so-dt-btn so-dt-btn-up" title="Naikkan urutan baris terpilih (centang 1 baris)">' +
+                    '<i class="fa fa-arrow-up"></i></button>' +
+                    '<button type="button" class="so-dt-btn so-dt-btn-down" title="Turunkan urutan baris terpilih (centang 1 baris)">' +
+                    '<i class="fa fa-arrow-down"></i></button>' +
+                    '</span>'
+                );
+            }
         });
 
         $('#tabsalesorderdtl tbody').on('click', 'tr', function(e) {
@@ -1089,6 +1186,801 @@ function reload_table_salesorder_dtl()
     var table = $('#tabsalesorderdtl');
     table.DataTable().ajax.reload(); //reload datatable ajax
 }
+
+
+/* =========================================================
+ * INLINE DETAIL ENTRY (pola grid PNM Barang)
+ * ---------------------------------------------------------
+ * Detail barang diinput langsung pada baris di dalam
+ * tfoot #tabsalesorderdtl sehingga tidak perlu membuka modal.
+ * Penyimpanan tetap memakai endpoint
+ * sales/postsales/saveSalesOrderDetail (insert & update).
+ * ========================================================= */
+
+function soInlineFoot() {
+    return $('#soInlineFoot');
+}
+
+function soInlineActiveRow() {
+    return soInlineFoot().find('tr.so-inline-row').first();
+}
+
+function soInlineFormatNum(value) {
+    var num = convertToDbNumber(value);
+
+    // Nilai kosong / nol ditampilkan kosong (bukan "0.0000")
+    if (num === 0) return '';
+
+    return salesFormatNumber(num, SALES_DECIMAL_DIGITS);
+}
+
+function soInlineSetNum($input, value) {
+    if (!$input.length) return;
+    $input.val(soInlineFormatNum(value));
+}
+
+function soInlineDocno() {
+    var prefix = $.trim($('#prefix').val() || '');
+    var infix  = $.trim($('#infix').val() || '');
+    var suffix = $.trim($('#suffix').val() || '');
+
+    if (prefix === '' && infix === '' && suffix === '') return '';
+
+    return prefix + '/' + infix + '/' + suffix;
+}
+
+function soInlineFocusItem($tr) {
+    if (!$tr || !$tr.length) return;
+
+    setTimeout(function () {
+        var $item = $tr.find('select.so-inline-item');
+        if ($item.length && !$item.prop('disabled')) {
+            $item.select2('open');
+        }
+    }, 50);
+}
+
+/* Arahkan fokus ke dropdown gudang pada baris inline (validasi wajib isi) */
+function soInlineFocusGudang($tr) {
+    if (!$tr || !$tr.length) return;
+
+    setTimeout(function () {
+        var $gudang = $tr.find('select.so-inline-gudang');
+        if (!$gudang.length) return;
+
+        if ($gudang.data('select2')) {
+            $gudang.select2('open');
+        } else {
+            $gudang.focus();
+        }
+    }, 50);
+}
+
+function soInlineDestroySelects($tr) {
+    // lepas datepicker ETD / ETA sebelum baris dihapus
+    $tr.find('input.so-inline-date').each(function () {
+        var drp = $(this).data('daterangepicker');
+        if (drp) {
+            drp.remove();
+        }
+    });
+
+    $tr.find('select').each(function () {
+        if ($(this).hasClass('select2-hidden-accessible')) {
+            $(this).select2('destroy');
+        }
+    });
+}
+
+function soInlineRemoveRow() {
+    var $tr = soInlineActiveRow();
+    if (!$tr.length) return;
+
+    soInlineDestroySelects($tr);
+    $tr.remove();
+
+    // lepas sorotan baris yang sedang diedit
+    $('#tabsalesorderdtl tbody tr.row-active').removeClass('row-active');
+
+    soInlineSyncEmptyState();
+}
+
+/* Sembunyikan pesan empty state selama baris input inline terbuka
+   (baris input berada di tfoot, sehingga tidak menghapus isi tbody). */
+function soInlineSyncEmptyState() {
+    var $table = $('#tabsalesorderdtl');
+    if (!$table.length) return;
+
+    $table.toggleClass('so-has-draft', soInlineActiveRow().length > 0);
+}
+
+/* Satuan baris inline: dropdown native diisi dari master satuan barang
+   (endpoint list_unit_item — barang bisa punya beberapa satuan).
+   Default satuan mengikuti field `unit` pada master barang. */
+function soInlineResetUnits($tr) {
+    var $unit = $tr.find('select[data-field="unit"]');
+    if (!$unit.length) return;
+
+    $unit.empty().append(new Option('-- Pilih --', ''));
+}
+
+function soInlineFillUnits($tr, units, selected) {
+    var $unit = $tr.find('select[data-field="unit"]');
+    if (!$unit.length) return;
+
+    var def = $.trim(selected || '');
+    var found = false;
+    var list = units || [];
+
+    $unit.empty().append(new Option('-- Pilih --', ''));
+
+    $.each(list, function (i, it) {
+        var unit = $.trim(it.idunit || it.unit || '');
+
+        if (unit === '') return;
+
+        $unit.append(new Option(unit, unit));
+
+        if (unit === def) found = true;
+    });
+
+    if (def !== '' && !found) {
+        $unit.append(new Option(def, def));
+    }
+
+    if (def === '' && list.length > 0) {
+        def = $.trim(list[0].unit_default || list[0].idunit || list[0].unit || '');
+    }
+
+    $unit.val(def || '');
+}
+
+function soInlineLoadUnits($tr, idbarang, selected) {
+    idbarang = $.trim(idbarang || '');
+    var def = $.trim(selected || '');
+
+    soInlineResetUnits($tr);
+
+    if (idbarang === '') return;
+
+    // Satuan default barang langsung terpasang (tanpa menunggu AJAX),
+    // supaya Enter cepat setelah pilih barang tetap menyimpan satuan yang benar.
+    if (def !== '') {
+        $tr.find('select[data-field="unit"]').append(new Option(def, def)).val(def);
+    }
+
+    $.ajax({
+        url: HOST_URL + 'api/globalmodule/list_unit_item',
+        type: 'POST',
+        dataType: 'json',
+        data: { idbarang: idbarang },
+        success: function (res) {
+            var items = (res && res.items) ? res.items : [];
+            var first = items.length
+                ? $.trim(items[0].unit_default || items[0].idunit || '')
+                : '';
+
+            soInlineFillUnits($tr, items, def || first);
+        },
+        error: function () {
+            // master satuan gagal dimuat: tetap sediakan satuan default barang
+            soInlineFillUnits($tr, [], def);
+        }
+    });
+}
+
+/* Select2 untuk baris input: item, batch/spec, dan gudang */
+function soInlineInitSelects($tr) {
+    var $item      = $tr.find('select.so-inline-item');
+    var $spec      = $tr.find('select.so-inline-spec');
+    var $gudang    = $tr.find('select.so-inline-gudang');
+    var dropdownParent = $(document.body);
+
+    $item.select2({
+        placeholder: "Cari / pilih barang",
+        allowClear: true,
+        minimumInputLength: 2,
+        width: '100%',
+        dropdownParent: dropdownParent,
+        ajax: {
+            url: HOST_URL + 'api/globalmodule/list_item',
+            type: 'POST',
+            dataType: 'json',
+            delay: 250,
+            data: function(params) {
+                return {
+                    _search_: params.term,
+                    _page_: params.page,
+                    _draw_: true,
+                    _start_: 1,
+                    _perpage_: 2,
+                    _paramglobal_: '',
+                    _parameterx_: '',
+                    term: params.term
+                };
+            },
+            processResults: function(data, params) {
+                params.page = params.page || 1;
+                return {
+                    results: data.items,
+                    pagination: {
+                        more: (params.page * 30) < data.total_count
+                    }
+                };
+            },
+            cache: false
+        },
+        escapeMarkup: function(markup) {
+            return markup;
+        },
+        templateResult: formatItem,
+        templateSelection: formatItemSelection
+    }).on("select2:select", function(e) {
+        var data = e.params.data || {};
+
+        $tr.find('[data-field="nmbarang"]').val($.trim(data.nmbarang || ''));
+
+        // Satuan berupa dropdown, diisi dari master satuan barang
+        // (default mengikuti satuan barang pada master barang)
+        soInlineLoadUnits($tr, data.idbarang || data.id || '', data.unit || '');
+
+        // spesifikasi mengikuti barang yang dipilih
+        $tr.find('select.so-inline-spec').val(null).trigger('change');
+    }).on("select2:clear", function() {
+        $tr.find('[data-field="nmbarang"]').val('');
+        soInlineResetUnits($tr);
+        $tr.find('select.so-inline-spec').val(null).trigger('change');
+    });
+
+    $spec.select2({
+        placeholder: "Batch / Spec",
+        allowClear: true,
+        width: '100%',
+        dropdownParent: dropdownParent,
+        ajax: {
+            url: HOST_URL + 'api/globalmodule/list_batch_item',
+            type: 'POST',
+            dataType: 'json',
+            delay: 250,
+            data: function(params) {
+                return {
+                    _search_: params.term,
+                    _page_: params.page,
+                    _draw_: true,
+                    _start_: 1,
+                    _perpage_: 30,
+                    _paramglobal_: '',
+                    // Item bisa berasal dari select (baris ADD) atau data baris (baris EDIT)
+                    _parameterx_: $.trim($item.val() || $tr.data('idbarang') || ''),
+                    term: params.term
+                };
+            },
+            processResults: function(data, params) {
+                params.page = params.page || 1;
+
+                var results = $.map(data.items || [], function(item) {
+                    return {
+                        id: item.batch,
+                        text: item.batch,
+                        batch: item.batch
+                    };
+                });
+
+                return {
+                    results: results,
+                    pagination: {
+                        more: (params.page * 30) < (data.total_count || 0)
+                    }
+                };
+            },
+            cache: false
+        },
+        escapeMarkup: function(markup) {
+            return markup;
+        },
+        templateResult: formatBatch,
+        templateSelection: formatBatchSelection
+    });
+
+    /* Gudang asal (lokasi) */
+    $gudang.select2({
+        placeholder: "Gudang",
+        allowClear: true,
+        width: '100%',
+        dropdownParent: dropdownParent,
+        maximumSelectionLength: 1,
+        multiple: false,
+        ajax: {
+            url: HOST_URL + 'api/globalmodule/list_mlocation',
+            type: 'POST',
+            dataType: 'json',
+            delay: 250,
+            data: function(params) {
+                return {
+                    _search_: params.term,
+                    _page_: params.page,
+                    _draw_: true,
+                    _start_: 1,
+                    _perpage_: 30,
+                    _paramglobal_: '',
+                    _parameterx_: '',
+                    term: params.term
+                };
+            },
+            processResults: function(data, params) {
+                params.page = params.page || 1;
+
+                return {
+                    results: data.items,
+                    pagination: {
+                        more: (params.page * 30) < (data.total_count || 0)
+                    }
+                };
+            },
+            cache: false
+        },
+        escapeMarkup: function(markup) {
+            return markup;
+        },
+        templateResult: formatLocation,
+        templateSelection: formatLocationSelection
+    });
+
+    $tr.find('select').on('select2:open', function() {
+        setTimeout(function() {
+            $('.select2-container--open').css('z-index', 999999);
+        }, 0);
+    });
+}
+
+/* Datepicker ETD / ETA pada baris inline: format dd-mm-yyyy */
+function soInlineInitDate($tr) {
+    $tr.find('input.so-inline-date').each(function () {
+        var $el = $(this);
+
+        $el.daterangepicker({
+            autoUpdateInput: false,
+            singleDatePicker: true,
+            showDropdowns: true,
+            drops: 'auto',
+            locale: {
+                format: 'DD-MM-YYYY',
+                applyLabel: 'Pilih',
+                cancelLabel: 'Hapus'
+            }
+        });
+
+        $el.on('apply.daterangepicker', function (ev, picker) {
+            $(this).val(picker.startDate.format('DD-MM-YYYY')).trigger('change');
+        });
+
+        $el.on('cancel.daterangepicker', function () {
+            $(this).val('').trigger('change');
+        });
+    });
+}
+
+/* Bangun baris input inline (13 kolom: checkbox + 11 data + Aksi) */
+function soInlineAddRow(focus) {
+    var $foot = soInlineFoot();
+    if (!$foot.length) return $();
+
+    var $open = soInlineActiveRow();
+    if ($open.length) {
+        if (focus) soInlineFocusItem($open);
+        return $open;
+    }
+
+    // Hint format angka: desimal memakai titik, maksimal 4 digit di belakang koma
+    var soNumHint = 'Gunakan titik (.) untuk desimal, maksimal 4 angka di belakang koma';
+
+    var $tr = $('<tr class="so-inline-row table-warning"></tr>')
+
+        /* 1. kolom checkbox: baris draft belum bisa dicentang */
+        .append($('<td class="text-center so-col-no"></td>')
+            .append('<i class="fa fa-plus-circle" style="color:#16a34a"></i>'))
+        .append($('<td></td>').append('<select class="so-inline-item" style="width:100%"></select>'))
+        .append($('<td></td>').append('<input type="text" class="form-control form-control-sm" data-field="nmbarang" readonly tabindex="-1" placeholder="Otomatis">'))
+        .append($('<td></td>').append('<select class="so-inline-spec" style="width:100%"></select>'))
+        .append($('<td></td>').append('<select class="form-control form-control-sm so-inline-unit" data-field="unit" style="width:100%"><option value="">-- Pilih --</option></select>'))
+        .append($('<td></td>').append('<input type="text" class="form-control form-control-sm jaccseparator text-end" data-field="qty" placeholder="0" inputmode="decimal" title="' + soNumHint + '">'))
+        .append($('<td></td>').append('<input type="text" class="form-control form-control-sm jaccseparator text-end" data-field="harga" placeholder="0" inputmode="decimal" title="' + soNumHint + '">'))
+        .append($('<td></td>').append('<input type="text" class="form-control form-control-sm text-end" data-field="nilai" readonly tabindex="-1" placeholder="0" title="Nilai dihitung otomatis (Qty x Harga)">'))
+        .append($('<td></td>').append('<input type="text" class="form-control form-control-sm so-inline-date" data-field="etd" placeholder="dd-mm-yyyy" maxlength="10" autocomplete="off" title="ETD (dd-mm-yyyy)">'))
+        .append($('<td></td>').append('<input type="text" class="form-control form-control-sm so-inline-date" data-field="eta" placeholder="dd-mm-yyyy" maxlength="10" autocomplete="off" title="ETA (dd-mm-yyyy)">'))
+        .append($('<td></td>').append('<select class="so-inline-gudang" style="width:100%"></select>'))
+        .append($('<td></td>').append('<input type="text" class="form-control form-control-sm" data-field="bomdesc" maxlength="200" placeholder="BOM Description" style="text-transform:uppercase">'))
+
+        /* 13. aksi: simpan + batal (letak mengikuti grid inline PNM / PMK) */
+        .append($('<td class="text-center so-col-aksi"></td>')
+            .append('<button type="button" class="so-inline-btn so-inline-save" title="Simpan baris (Enter)"><i class="fa fa-check"></i></button> ')
+            .append('<button type="button" class="so-inline-btn so-inline-cancel" title="Batal (Esc)"><i class="fa fa-times"></i></button>'));
+
+    $foot.append($tr);
+
+    if ($tr[0] && typeof $tr[0].scrollIntoView === 'function') {
+        $tr[0].scrollIntoView({ block: 'nearest' });
+    }
+
+    soInlineInitSelects($tr);
+    soInlineInitDate($tr);
+    soInlineRecalc($tr);
+    soInlineSyncEmptyState();
+
+    if (focus) soInlineFocusItem($tr);
+
+    return $tr;
+}
+
+/* Hitung Nilai = Qty * Harga - Multi Disc% (multi disc hanya ada pada baris edit) */
+function soInlineRecalc($tr) {
+    if (!$tr || !$tr.length) return;
+
+    var qty       = convertToDbNumber($tr.find('[data-field="qty"]').val() || '');
+    var harga     = convertToDbNumber($tr.find('[data-field="harga"]').val() || '');
+    var multidisc = convertToDbNumber($tr.find('[data-field="multidisc"]').val() || '');
+    var nilai     = qty * harga * (1 - ((multidisc || 0) / 100));
+
+    soInlineSetNum($tr.find('[data-field="nilai"]'), nilai);
+}
+
+function soInlineIsEmpty($tr) {
+    if (!$tr || !$tr.length) return true;
+
+    return $.trim($tr.find('select.so-inline-item').val() || '') === '' &&
+        convertToDbNumber($tr.find('[data-field="qty"]').val()) === 0;
+}
+
+/* Ambil nilai seluruh field pada baris input (ADD maupun EDIT inline) */
+function soInlinePayload($tr) {
+    var idbarang = $.trim($tr.find('select.so-inline-item').val() || '');
+
+    // Baris EDIT: barang tidak diubah, nilai diambil dari data baris
+    if (idbarang === '') {
+        idbarang = $.trim(String($tr.data('idbarang') || ''));
+    }
+
+    return {
+        idurut:     $.trim(String($tr.data('idurut') || '')),
+        uniqueid:   $.trim(String($tr.data('uniqueid') || '')),
+        idbarang:   idbarang,
+        nmbarang:   $.trim($tr.find('[data-field="nmbarang"]').val() || ''),
+        unit:       $.trim($tr.find('[data-field="unit"]').val() || ''),
+        // Principal hanya diubah pada baris EDIT (baris ADD tidak punya principal)
+        idprincipal: $.trim($tr.find('select.so-inline-principal').val() || ''),
+        idgudang:   $.trim($tr.find('select.so-inline-gudang').val() || ''),
+        idspec:     $.trim($tr.find('select.so-inline-spec').val() || ''),
+        qty:        convertToDbNumber($tr.find('[data-field="qty"]').val() || ''),
+        harga:      convertToDbNumber($tr.find('[data-field="harga"]').val() || ''),
+        multidisc:  convertToDbNumber($tr.find('[data-field="multidisc"]').val() || ''),
+        nilai:      convertToDbNumber($tr.find('[data-field="nilai"]').val() || ''),
+        etd:        $.trim($tr.find('[data-field="etd"]').val() || ''),
+        eta:        $.trim($tr.find('[data-field="eta"]').val() || ''),
+        bomdesc:    $.trim($tr.find('[data-field="bomdesc"]').val() || '')
+    };
+}
+
+/* Data header yang ikut dikirim saat menyimpan detail (dipakai modal & inline) */
+function salesOrderHeaderFormData() {
+    var fd = new FormData();
+
+    var customerData = $('#kdcustomer').select2('data');
+    var kdcustomer = '';
+    var nmcustomer = '';
+
+    if (customerData && customerData.length > 0) {
+        kdcustomer = customerData[0].kdcustomer || customerData[0].id || '';
+        nmcustomer = customerData[0].nmcustomer || customerData[0].text || '';
+    }
+
+    fd.set('docdate', $('#docdate').val() || '');
+    fd.set('cabang', $('#cabang').val() || '');
+    fd.set('delivdate', $('#delivdate').val() || '');
+    fd.set('jthtempo', convertToDbNumber($('#jthtempo').val()));
+    fd.set('kdcustomer', kdcustomer);
+    fd.set('nmcustomer', nmcustomer);
+    fd.set('kdsalesman', $('#kdsalesman').val() || '');
+    fd.set('isinclusive', $('#isinclusive').is(':checked') ? 'YES' : 'NO');
+    fd.set('isopenprice', $('#isopenprice').is(':checked') ? 'YES' : 'NO');
+    fd.set('alamatcustomer', $('#alamatcustomer').val() || '');
+    fd.set('gradecustomer', $('#gradecustomer').val() || '');
+    fd.set('idtax', $('#idtax').val() || '');
+    fd.set('currcode', $('#currcode').val() || '');
+    fd.set('kurs', convertToDbNumber($('#kurs').val()));
+    fd.set('keterangan', $('#keterangan').val() || '');
+    fd.set('pocust', $('#pocust').val() || '');
+    fd.set('nodp', $('#nodp').val() || '');
+    fd.set('docno', soInlineDocno());
+
+    return fd;
+}
+
+/* Simpan satu baris detail inline (insert / update) */
+function soInlineSave($tr) {
+    if (!$tr || !$tr.length) return;
+
+    var p = soInlinePayload($tr);
+    var isEdit = soInlineIsEdit($tr);
+
+    // Baris EDIT wajib memiliki uniqueid (identitas baris di database)
+    if (isEdit && p.uniqueid === '') {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Baris detail tidak valid (uniqueid kosong). Muat ulang halaman lalu coba lagi.'
+        });
+        return;
+    }
+
+    if (!p.idbarang) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Peringatan',
+            text: 'ID Barang wajib dipilih'
+        });
+        soInlineFocusItem($tr);
+        return;
+    }
+
+    if (p.qty <= 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Peringatan',
+            text: 'Qty wajib diisi dan harus lebih besar dari 0'
+        });
+        $tr.find('[data-field="qty"]').focus();
+        return;
+    }
+
+    // Gudang (lokasi asal) wajib dipilih
+    if (!p.idgudang) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Peringatan',
+            text: 'Gudang wajib dipilih'
+        });
+        soInlineFocusGudang($tr);
+        return;
+    }
+
+    // ETD / ETA memakai format dd-mm-yyyy (opsional)
+    if (p.etd !== '' && !moment(p.etd, 'DD-MM-YYYY', true).isValid()) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Peringatan',
+            text: 'Format ETD harus dd-mm-yyyy'
+        });
+        $tr.find('[data-field="etd"]').focus();
+        return;
+    }
+
+    if (p.eta !== '' && !moment(p.eta, 'DD-MM-YYYY', true).isValid()) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Peringatan',
+            text: 'Format ETA harus dd-mm-yyyy'
+        });
+        $tr.find('[data-field="eta"]').focus();
+        return;
+    }
+
+    var docno = soInlineDocno();
+    if (docno === '') {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Peringatan',
+            text: 'No. Jurnal belum terbentuk'
+        });
+        return;
+    }
+
+    var formData = new FormData();
+    salesOrderHeaderFormData().forEach(function (value, key) {
+        formData.set(key, value);
+    });
+
+    formData.set('docno', docno);
+    formData.set('idurut', p.idurut);
+    formData.set('uniqueid', p.uniqueid);
+    formData.set('idbarang', p.idbarang);
+    formData.set('nmbarang', p.nmbarang);
+    formData.set('unit', p.unit);
+    formData.set('idprincipal', p.idprincipal);
+    formData.set('idgudang', p.idgudang);
+    formData.set('idspec', p.idspec);
+    formData.set('qty', p.qty);
+    formData.set('harga', p.harga);
+    formData.set('multidisc', p.multidisc);
+    formData.set('nilai', p.nilai);
+    formData.set('etd', p.etd);
+    formData.set('eta', p.eta);
+    formData.set('bomdesc', p.bomdesc);
+
+    var $saveBtn = $tr.find('.so-inline-save').prop('disabled', true);
+
+    $.ajax({
+        url: HOST_URL + 'sales/postsales/saveSalesOrderDetail',
+        type: 'POST',
+        data: formData,
+        dataType: 'json',
+        processData: false,
+        contentType: false,
+
+        success: function (res) {
+            if (!res.success) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Gagal',
+                    text: res.message || 'Data gagal disimpan'
+                });
+                return;
+            }
+
+            if (res.reload === true) {
+                window.location.reload();
+                return;
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil',
+                text: res.message || 'Data berhasil disimpan',
+                timer: 1500,
+                showConfirmButton: false
+            });
+
+            soInlineRemoveRow();
+            reload_table_salesorder_dtl();
+            documentReadable();
+
+            // siapkan baris kosong berikutnya untuk input cepat (khusus mode ADD)
+            if (!isEdit) {
+                soInlineAddRow(false);
+            }
+        },
+
+        error: function (xhr) {
+            console.error(xhr.responseText);
+            Swal.fire({
+                icon: 'error',
+                title: 'Server Error',
+                text: 'Terjadi kesalahan pada server (500)'
+            });
+        },
+
+        complete: function () {
+            $saveBtn.prop('disabled', false);
+        }
+    });
+}
+
+/* ===== EVENT BARIS INLINE ===== */
+
+// Tombol toolbar detail (sebelumnya belum memiliki handler klik)
+$(document).on('click', '#btnAddDetail', function () {
+    btnInputDetail();
+});
+
+// Update memakai modal detail (New Batch/Spec tetap tersedia)
+$(document).on('click', '#btnUpdateDetail', function () {
+    var $draft = soInlineActiveRow();
+
+    if ($draft.length && !soInlineIsEmpty($draft)) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Perhatian',
+            text: 'Selesaikan atau batalkan baris input yang sedang aktif terlebih dahulu'
+        });
+        return;
+    }
+
+    if ($draft.length) {
+        soInlineRemoveRow();
+    }
+
+    btnUpdateDetail();
+});
+
+$(document).on('click', '#btnDeleteDetail', function () {
+    btnDeleteDetail();
+});
+
+// Tombol aksi per baris pada kolom Aksi (update / hapus), letak disamakan
+// dengan grid inline PNM / PMK Barang.
+$('#tabsalesorderdtl tbody').on('click', '.so-row-btn', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    var $btn = $(this);
+    var $cb  = $btn.closest('tr').find('.row-check');
+
+    if (!$cb.length) return;
+
+    // Fokuskan pilihan pada baris ini saja agar update / hapus tepat sasaran
+    $('#tabsalesorderdtl tbody .row-check').not($cb).prop('checked', false);
+    $cb.prop('checked', true).trigger('change');
+
+    if ($btn.hasClass('so-row-btn-edit')) {
+        btnUpdateDetail();
+    } else {
+        btnDeleteDetail();
+    }
+});
+
+// Tombol urutan (▲ / ▼) di kiri kotak pencarian DataTables:
+// baris harus dicentang dulu (tepat satu) karena urutan memakai idurut_view.
+$(document).on('click', '.so-dt-btn-up, .so-dt-btn-down', function (e) {
+    e.preventDefault();
+
+    var ids = getSelectedSalesOrderDetail();
+
+    if (ids.length === 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Peringatan',
+            text: 'Centang satu baris detail terlebih dahulu sebelum memindahkan urutan'
+        });
+        return;
+    }
+
+    if (ids.length > 1) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Peringatan',
+            text: 'Pemindahan urutan hanya untuk satu baris'
+        });
+        return;
+    }
+
+    soMoveDetailOrder(
+        $.trim(String(ids[0])),
+        $(this).hasClass('so-dt-btn-up') ? 'up' : 'down'
+    );
+});
+
+// Klik pada pesan empty state detail = buka baris input inline
+// (pola grid PNM / PMK Barang: empty state dapat diklik / Enter)
+$(document).on('click', '#tabsalesorderdtl td.dataTables_empty', function () {
+    btnInputDetail();
+});
+
+
+// Nilai dihitung ulang saat qty / harga berubah
+$(document).on('input change', '#soInlineFoot [data-field="qty"], #soInlineFoot [data-field="harga"]', function () {
+    soInlineRecalc($(this).closest('tr'));
+});
+
+$(document).on('click', '.so-inline-save', function () {
+    soInlineSave($(this).closest('tr'));
+});
+
+$(document).on('click', '.so-inline-cancel', function () {
+    soInlineRemoveRow();
+});
+
+// Enter = simpan baris, Esc = batalkan baris
+$(document).on('keydown', '#soInlineFoot input, #soInlineFoot select', function (e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+
+        // Dropdown satuan: Enter memindahkan fokus ke Qty (belum menyimpan),
+        // karena pengguna masih memilih satuan (pola grid PMK Barang).
+        if ($(this).is('select[data-field="unit"]')) {
+            $(this).closest('tr').find('[data-field="qty"]').focus();
+            return;
+        }
+
+        soInlineSave($(this).closest('tr'));
+    } else if (e.key === 'Escape') {
+        e.preventDefault();
+        soInlineRemoveRow();
+    }
+});
+
+
+
+
+
 
 
 
@@ -1247,11 +2139,8 @@ $(document).on('input', '.form-control', function () {
         // Hitung nilai akhir setelah diskon
         let nilaiAkhir = nilaiAwal - diskon;
         
-        // Format ke en-US: separator ribuan = koma, desimal = titik
-        $('#nilai').val(nilaiAkhir.toLocaleString('en-US', {
-            minimumFractionDigits: 4, 
-            maximumFractionDigits: 4
-        }));
+        // Format tanpa memaksa 4 angka desimal (10.0000 -> 10, 10.5000 -> 10.5)
+        $('#nilai').val(nilaiAkhir === 0 ? '' : salesFormatNumber(nilaiAkhir, SALES_DECIMAL_DIGITS));
     // }
 });
 
@@ -1400,6 +2289,26 @@ $('#formSalesOrderdetail').bootstrapValidator({
 
 function saveSalesOrderDetail() {
 
+    // Validasi: gudang wajib dipilih sebelum detail disimpan
+    var idgudang = $.trim($('#idgudang').val() || '');
+
+    if (idgudang === '') {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Peringatan',
+            text: 'Gudang wajib dipilih'
+        });
+
+        var $gd = $('#idgudang');
+        if ($gd.data('select2')) {
+            $gd.select2('open');
+        } else {
+            $gd.focus();
+        }
+
+        return;
+    }
+
     Swal.fire({
         title: 'Konfirmasi',
         text: 'Simpan data Sales Order Detail?',
@@ -1412,41 +2321,13 @@ function saveSalesOrderDetail() {
 
         if (!result.isConfirmed) return;
 
-        let customerData = $('#kdcustomer').select2('data');
-
-        let kdcustomer = '';
-        let nmcustomer = '';
-
-        if (customerData && customerData.length > 0) {
-            kdcustomer = customerData[0].kdcustomer || customerData[0].id || '';
-            nmcustomer = customerData[0].nmcustomer || customerData[0].text || '';
-        }
-
         let formData = new FormData(document.getElementById('formSalesOrderDetail'));
-        formData.append('docdate', $('#docdate').val());
-        formData.append('cabang', $('#cabang').val());
-        formData.append('delivdate', $('#delivdate').val());
-        formData.append('jthtempo', convertToDbNumber($('#jthtempo').val()));
-        formData.append('kdcustomer', kdcustomer);
-        formData.append('nmcustomer', nmcustomer);
 
-        formData.append('kdsalesman', $('#kdsalesman').val());
-        formData.append('isinclusive', $('#isinclusive').is(':checked') ? 'YES' : 'NO');
-        formData.append('isopenprice', $('#isopenprice').is(':checked') ? 'YES' : 'NO');
-        formData.append('alamatcustomer', $('#alamatcustomer').val());
-        formData.append('gradecustomer', $('#gradecustomer').val());
-        // formData.append('nofaktur', $('#nofaktur').val());
-        formData.append('idtax', $('#idtax').val());
-        formData.append('currcode', $('#currcode').val());
-        formData.append('kurs', convertToDbNumber($('#kurs').val()));
-        // formData.append('biayavol', convertToDbNumber($('#biayavol').val()));
-        // formData.append('biayavol2', convertToDbNumber($('#biayavol').val()));
-        // formData.append('alamatkirim', $('#alamatkirim').val());
-        formData.append('keterangan', $('#keterangan').val());
-        // formData.append('estpakai', $('#estpakai').val());
+        // Data header (dipakai bersama dengan penyimpanan detail inline)
+        salesOrderHeaderFormData().forEach(function (value, key) {
+            formData.set(key, value);
+        });
 
-        // docno gabungan (lebih aman pakai hidden header)
-        formData.set('docno', $('#prefix').val() + '/' + $('#infix').val() + '/' + $('#suffix').val());
         // convert qty ke numeric DB
         let qty = $('#qty').val();
         // let qtybonus = $('#qtybonus').val();
@@ -1891,15 +2772,33 @@ $("#idgudang").select2({
 }).on('select2:close', function() {
     $(this).parent().css('z-index', '');
 });
-/* Format Group */
+/* Format Group: dropdown menampilkan kode + nama gudang (untuk pencarian),
+   field terpilih hanya menampilkan kode gudang */
 function formatLocation(repo) {
     if (repo.loading) return repo.text;
-    var markup ="<div class='select2-result-repository__description'>" + repo.idlocation +"   <i class='fa fa-circle-o'></i>   "+ repo.nmlocation +"</div>";
+
+    var kode = $.trim(repo.idlocation || repo.id || '');
+    var nama = $.trim(repo.nmlocation || repo.text || '');
+
+    if (kode === '') {
+        kode = nama;
+        nama = '';
+    }
+
+    if (nama === kode) {
+        nama = '';
+    }
+
+    var markup = "<div class='select2-result-repository__description so-select2-copy'>" +
+        "<b>" + kode + "</b>" + (nama !== '' ? " &mdash; " + nama : "") +
+        "</div>";
+
     return markup;
 }
 
 function formatLocationSelection(repo) {
-    return repo.nmlocation || repo.text;
+    // field terpilih: kode gudang saja (id sudah ter-trim dari server)
+    return $.trim(repo.id || repo.idlocation || repo.text || '');
 }
 
 
@@ -1966,28 +2865,128 @@ $("#idprincipal").select2({
 });
 
 function btnInputDetail() {
+    // Input detail inline pada tabel Detail Barang (pola grid PNM Barang)
+    if (soInlineActiveRow().length) {
+        soInlineFocusItem(soInlineActiveRow());
+        return;
+    }
 
-    $('#formSalesOrderDetail')[0].reset();
-
-    
-    // 🔹 Clear select2
-    // $('#docnopo').val(null).trigger('change');
-    $('#idbarang').val(null).trigger('change').prop('disabled',false);
-    $('#idprincipal').val(null).trigger('change');
-    $('#idgudang').val(null).trigger('change');
-    
-
-    // Jika ada select2 lain, lakukan hal sama
-    // $('#selectlain').val(null).trigger('change');
-
-    $('#idurut').val(''); // pastikan id kosong (mode insert)
-
-    $('#modalDetailSalesOrderLabel').text('Tambah Item Detail');
-    $('#modalDetailSalesOrder').modal('show');
+    soInlineAddRow(true);
 }
 
 
 
+
+/* =========================================================
+ * OPEN PRICE MENGIKUTI GRADE CUSTOMER
+ * ---------------------------------------------------------
+ * Flag open price tidak diinput manual: nilainya diturunkan
+ * dari grade customer (sc_mst.gradecust.isopenprice).
+ * Perubahan grade (customer terpilih / Change Grade Temp.)
+ * disimpan ke dokumen draft lewat endpoint changeGradeTemp.
+ * ========================================================= */
+
+/* Normalisasi nilai flag dari server (YES/NO, 1/0, true/false) */
+function soIsFlagTrue(value) {
+    if (value === true) return true;
+    if (value === false) return false;
+
+    var text = $.trim((value === undefined || value === null ? '' : value).toString()).toUpperCase();
+
+    return (text === 'YES' || text === 'TRUE' || text === 'T' || text === 'Y' || text === '1');
+}
+
+function soSetOpenPriceFlag(value) {
+    var open = soIsFlagTrue(value);
+
+    $('#isopenprice').prop('checked', open);
+    $('#isopenpriceState').text(open ? 'YES' : 'NO');
+
+    return open;
+}
+
+/* Sinkronkan grade -> open price (dan simpan ke draft bila header sudah ada) */
+function soSyncGradeOpenPrice(grade, options) {
+    options = (options === true) ? { notify: true } : (options || {});
+
+    var tempGrade = $.trim((grade === undefined || grade === null
+        ? ($('#gradecustomer').val() || '')
+        : grade).toString()).toUpperCase();
+
+    if (tempGrade === '') {
+        soSetOpenPriceFlag('NO');
+        return;
+    }
+
+    $.ajax({
+        url: HOST_URL + 'sales/postsales/changeGradeTemp',
+        type: 'POST',
+        dataType: 'json',
+        data: {
+            docno: soInlineDocno(),
+            grade: tempGrade
+        },
+        success: function (res) {
+            if (!res || !res.success) {
+                if (options.notify) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Grade tidak dapat disimpan',
+                        text: (res && res.message) ? res.message : 'Terjadi kesalahan pada server'
+                    });
+                }
+                return;
+            }
+
+            soSetOpenPriceFlag(res.isopenprice);
+
+            if (options.notify) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Grade temp. diset',
+                    html: 'Grade dokumen: <b>' + tempGrade + '</b><br>Open Price: <b>' + (res.isopenprice || 'NO') + '</b>',
+                    timer: 1800,
+                    showConfirmButton: false
+                });
+            }
+        }
+    });
+}
+
+/* Pindahkan urutan baris detail memakai idurut_view (tombol ▲ / ▼) */
+function soMoveDetailOrder(uniqueid, direction) {
+    if (!uniqueid) return;
+
+    $.ajax({
+        url: HOST_URL + 'sales/postsales/moveDetailOrder',
+        type: 'POST',
+        dataType: 'json',
+        data: {
+            uniqueid: uniqueid,
+            direction: direction
+        },
+        success: function (res) {
+            if (!res || !res.status) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Urutan tidak dapat diubah',
+                    text: (res && res.message) ? res.message : 'Terjadi kesalahan pada server'
+                });
+                return;
+            }
+
+            reload_table_salesorder_dtl();
+        },
+        error: function (xhr) {
+            console.error(xhr.responseText);
+            Swal.fire({
+                icon: 'error',
+                title: 'Server Error',
+                text: 'Terjadi kesalahan pada server (500)'
+            });
+        }
+    });
+}
 
 function formatCustomer(repo) {
     if (repo.loading) return repo.text;
@@ -2047,9 +3046,12 @@ $("#kdcustomer").select2({
         var selectedData = e.params.data;
         
         $("#alamatcustomer").val(selectedData.alamat_kantor || '').prop('disabled', true);
-        $("#gradecustomer").val(selectedData.grade || '').prop('disabled', true);
+        $("#gradecustomer").val(selectedData.grade || '').prop('readonly', true);
         $("#jthtempo").val(selectedData.jthtempo || '')
         // $("#phone").val(selectedData.phone || '').prop('disabled', true);
+
+        // Open price mengikuti grade customer terpilih
+        soSyncGradeOpenPrice(selectedData.grade || '');
     }
 });
 
@@ -2269,10 +3271,20 @@ function cleanSuffix(value) {
 
 
 
+/* =========================================================
+ * CABANG / JOB mengikuti session user login
+ * - User cabang "01 JATIM TAMAN STEEL" => boleh memilih cabang lain
+ * - User PLAN 1 / PLAN 2 (PLANT I / PLANT II) => terkunci ke cabang session
+ *   (nilai & lock diisi oleh sales_branch_autofill.js)
+ * ========================================================= */
+var canChooseBranch = ($('#cabang').attr('data-can-choose-branch') || '0').toString() === '1';
+var lockBranch      = !canChooseBranch;
+
 var defaultInitialBranch = '';
 $("#cabang").select2({
     placeholder: "Type/ Choose your Branch",
-    allowClear: true,
+    allowClear: !lockBranch,
+    disabled: lockBranch,
     width: '100%',
     //minimumInputLength: 2, // only start searching when the user has input 3 or more characters
     maximumSelectionLength: 1,
@@ -2340,6 +3352,75 @@ function formatBranch(repo) {
 function formatBranchSelection(repo) {
     return repo.nmbranch || repo.text;
 }
+
+/* =========================================================
+ * NO. DP (dropdown)
+ * Belum ada master No. DP, sehingga dropdown bersifat
+ * searchable + tetap bisa diketik nilai baru (tags).
+ * Nilai dikirim ke server lewat fd.set('nodp', ...).
+ * ========================================================= */
+$("#nodp").select2({
+    placeholder: "No. DP",
+    allowClear: true,
+    tags: true,
+    width: '100%',
+    createTag: function (params) {
+        var term = $.trim((params.term || '')).toUpperCase();
+
+        if (term === '') {
+            return null;
+        }
+
+        return {
+            id: term,
+            text: term,
+            newTag: true
+        };
+    }
+});
+
+
+/* =========================================================
+ * CHANGE GRADE TEMP.
+ * Mengubah grade customer untuk dokumen ini (sementara).
+ * Nilai disimpan ke field #gradecustomer yang sudah dipakai
+ * saat simpan header (gradecustomer), tanpa mengubah master.
+ * ========================================================= */
+$(document).on('click', '#btnChangeGradeTemp', function () {
+    var currentGrade = $.trim(($('#gradecustomer').val() || '').toString());
+
+    Swal.fire({
+        title: 'Change Grade Temp.',
+        input: 'text',
+        inputLabel: 'Temp. Grade',
+        inputValue: currentGrade,
+        inputPlaceholder: 'Temp. Grade',
+        inputAttributes: {
+            maxlength: 30,
+            autocapitalize: 'characters',
+            autocomplete: 'off'
+        },
+        showCancelButton: true,
+        confirmButtonText: 'Simpan',
+        cancelButtonText: 'Batal',
+        inputValidator: function (value) {
+            if (!$.trim(value || '')) {
+                return 'Temp. Grade wajib diisi';
+            }
+        }
+    }).then(function (result) {
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        var newGrade = $.trim(result.value || '').toUpperCase();
+
+        $('#gradecustomer').val(newGrade);
+
+        // Simpan grade ke dokumen draft + sinkronkan flag open price
+        soSyncGradeOpenPrice(newGrade, true);
+    });
+});
 
 var audio = document.getElementById('chatAudio');
 function play(){
@@ -2469,3 +3550,317 @@ $(document).ready(function() {
 
 
 });
+
+/* =====================================================================
+ * Select2: teks hasil pilihan bisa diseleksi & dicopy (Ctrl+C).
+ * Dipakai untuk kode idbarang / idgudang yang hanya menampilkan kode.
+ * ===================================================================== */
+(function () {
+    /* Saat user men-drag teks di dropdown, jangan langsung memilih option
+       supaya teks tetap terseleksi dan bisa dicopy. */
+    document.addEventListener('mouseup', function (e) {
+        var opt = (e.target && e.target.closest) ? e.target.closest('.select2-results__option') : null;
+
+        if (!opt || !window.getSelection) {
+            return;
+        }
+
+        var sel = window.getSelection();
+
+        if (!sel || sel.isCollapsed || $.trim(String(sel)) === '') {
+            return;
+        }
+
+        var anchor = sel.anchorNode;
+
+        if (!anchor || !opt.contains(anchor.nodeType === 1 ? anchor : anchor.parentNode)) {
+            return;
+        }
+
+        e.stopPropagation();
+    }, true);
+
+    /* Ctrl+C / Cmd+C di area select2: salin teks yang sedang terseleksi. */
+    $(document).on('keydown', function (e) {
+        if (!(e.ctrlKey || e.metaKey) || String(e.key).toLowerCase() !== 'c') {
+            return;
+        }
+
+        if (!$(e.target).closest('.select2-container, .select2-dropdown').length) {
+            return;
+        }
+
+        if (!window.getSelection) {
+            return;
+        }
+
+        var text = $.trim(String(window.getSelection()));
+
+        if (text === '') {
+            return;
+        }
+
+        e.preventDefault();
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text);
+            return;
+        }
+
+        var $tmp = $('<textarea>')
+            .val(text)
+            .css({ position: 'fixed', top: '-1000px', left: '-1000px' })
+            .appendTo('body');
+
+        $tmp[0].select();
+        document.execCommand('copy');
+        $tmp.remove();
+    });
+})();
+
+/* =========================================================================
+ * EDIT INLINE (menggantikan modal "Update Sales Order Detail")
+ * -------------------------------------------------------------------------
+ * Baris yang dicentang (tombol Update / pensil / Ctrl+E) dibuka kembali
+ * sebagai baris input di tfoot #tabsalesorderdtl — sama seperti input inline
+ * ADD — lalu disimpan lewat sales/postsales/saveSalesOrderDetail (mode EDIT).
+ * ========================================================================= */
+
+function soInlineIsEdit($tr) {
+    return !!($tr && $tr.length && String($tr.data('mode') || '') === 'EDIT');
+}
+
+/* Tanggal DB (Y-m-d) -> tampilan dd-mm-yyyy */
+function soInlineDateDisplay(value) {
+    var s = String(value || '').substring(0, 10);
+    if (s === '') { return ''; }
+
+    var p = s.split('-');
+    return (p.length === 3) ? (p[2] + '-' + p[1] + '-' + p[0]) : s;
+}
+
+/* Isi select2 baris edit tanpa menunggu AJAX */
+function soInlineSetRowSelect($sel, value, text) {
+    if (!$sel || !$sel.length) return;
+
+    value = $.trim(value === undefined || value === null ? '' : String(value));
+
+    if (value === '' || value.toUpperCase() === 'NULL') {
+        $sel.val(null).trigger('change');
+        return;
+    }
+
+    if ($sel.find('option').filter(function () { return $(this).val() === value; }).length === 0) {
+        $sel.append(new Option(text || value, value, true, true));
+    }
+
+    $sel.val(value).trigger('change');
+}
+
+/* Bangun baris EDIT inline (13 kolom, sama dengan baris input ADD) */
+function soInlineAddEditRow(data) {
+    var $foot = soInlineFoot();
+    if (!$foot.length || !data) return $();
+
+    var idbarang  = $.trim(String(data.idbarang || ''));
+    var nmbarang  = $.trim(String(data.nmbarang || ''));
+    var unit      = $.trim(String(data.unit || ''));
+    var idgudang  = $.trim(String(data.idgudang || ''));
+    var idspec    = $.trim(String(data.idspec || ''));
+    var soNumHint = 'Gunakan titik (.) untuk desimal, maksimal 4 angka di belakang koma';
+
+    var $tr = $('<tr class="so-inline-row table-info"></tr>');
+
+    /* 1. penanda baris edit + multi disc tersembunyi */
+    var $noCell = $('<td class="text-center so-col-no"></td>')
+        .append('<i class="fa fa-pencil" style="color:#d97706"></i>');
+    $noCell.append($('<input type="hidden" data-field="multidisc">').val(convertToDbNumber(data.multidisc || 0)));
+    $tr.append($noCell);
+
+    /* 2. ID Barang (readonly) */
+    $tr.append($('<td></td>').append(
+        $('<input type="text" class="form-control form-control-sm" readonly tabindex="-1" title="ID barang tidak dapat diubah">').val(idbarang)
+    ));
+
+    /* 3. Nama Barang (readonly) */
+    $tr.append($('<td></td>').append(
+        $('<input type="text" class="form-control form-control-sm" data-field="nmbarang" readonly tabindex="-1" title="Nama barang mengikuti master">').val(nmbarang)
+    ));
+
+    /* 4. Spec / batch */
+    $tr.append($('<td></td>').append('<select class="so-inline-spec" style="width:100%"></select>'));
+
+    /* 5. Satuan (readonly) */
+    var $unit = $('<select class="form-control form-control-sm so-inline-unit" data-field="unit" style="width:100%" disabled></select>');
+    $unit.append(new Option(unit, unit, true, true));
+    $tr.append($('<td class="so-col-unit-cell"></td>').append($unit));
+
+    /* 6 - 8. Qty / Harga / Nilai */
+    $tr.append($('<td></td>').append('<input type="text" class="form-control form-control-sm jaccseparator text-end" data-field="qty" placeholder="0" inputmode="decimal" title="' + soNumHint + '">'));
+    $tr.append($('<td></td>').append('<input type="text" class="form-control form-control-sm jaccseparator text-end" data-field="harga" placeholder="0" inputmode="decimal" title="' + soNumHint + '">'));
+    $tr.append($('<td></td>').append('<input type="text" class="form-control form-control-sm text-end" data-field="nilai" readonly tabindex="-1" placeholder="0" title="Nilai dihitung otomatis (Qty x Harga - Multi Disc)">'));
+
+    /* 9 - 10. ETD / ETA */
+    $tr.append($('<td></td>').append('<input type="text" class="form-control form-control-sm so-inline-date" data-field="etd" placeholder="dd-mm-yyyy" maxlength="10" autocomplete="off" title="ETD (dd-mm-yyyy)">'));
+    $tr.append($('<td></td>').append('<input type="text" class="form-control form-control-sm so-inline-date" data-field="eta" placeholder="dd-mm-yyyy" maxlength="10" autocomplete="off" title="ETA (dd-mm-yyyy)">'));
+
+    /* 11. Gudang asal */
+    $tr.append($('<td></td>').append('<select class="so-inline-gudang" style="width:100%"></select>'));
+
+    /* 12. BOM Description */
+    $tr.append($('<td></td>').append('<input type="text" class="form-control form-control-sm" data-field="bomdesc" maxlength="200" placeholder="BOM Description" style="text-transform:uppercase">'));
+
+    /* 13. Aksi */
+    $tr.append($('<td class="text-center so-col-aksi"></td>')
+        .append('<button type="button" class="so-inline-btn so-inline-save" title="Simpan perubahan (Enter)"><i class="fa fa-check"></i></button> ')
+        .append('<button type="button" class="so-inline-btn so-inline-cancel" title="Batal (Esc)"><i class="fa fa-times"></i></button>'));
+
+    $tr.attr('data-mode', 'EDIT');
+    $tr.data('mode', 'EDIT');
+    $tr.data('idurut', data.idurut || '');
+    $tr.data('uniqueid', data.uniqueid || '');
+    $tr.data('idbarang', idbarang);
+
+    $foot.append($tr);
+
+    soInlineApplyEditValues($tr, data);
+
+    return $tr;
+}
+
+/* Inisialisasi select2/datepicker + isi nilai pada baris edit */
+function soInlineApplyEditValues($tr, data) {
+    if (!$tr || !$tr.length) return;
+
+    var idgudang = $.trim(String(data.idgudang || ''));
+    var idspec   = $.trim(String(data.idspec || ''));
+
+    soInlineInitSelects($tr);   /* spec + gudang (select item tidak ada pada baris edit) */
+    soInlineInitDate($tr);
+
+    soInlineSetRowSelect($tr.find('select.so-inline-spec'), idspec, idspec);
+    soInlineSetRowSelect($tr.find('select.so-inline-gudang'), idgudang, idgudang);
+
+    soInlineSetNum($tr.find('[data-field="qty"]'), data.qty);
+    soInlineSetNum($tr.find('[data-field="harga"]'), data.harga);
+    soInlineSetNum($tr.find('[data-field="nilai"]'), data.nilai);
+    $tr.find('[data-field="etd"]').val(soInlineDateDisplay(data.etd));
+    $tr.find('[data-field="eta"]').val(soInlineDateDisplay(data.eta));
+    $tr.find('[data-field="bomdesc"]').val($.trim(data.bomdesc || ''));
+
+    soInlineRecalc($tr);
+    soInlineSyncEmptyState();
+
+    if ($tr[0] && typeof $tr[0].scrollIntoView === 'function') {
+        $tr[0].scrollIntoView({ block: 'nearest' });
+    }
+
+    setTimeout(function () {
+        $tr.find('[data-field="qty"]').focus().select();
+    }, 60);
+}
+
+
+/* Ambil data baris lalu buka baris edit inline (tanpa modal) */
+function soInlineOpenEdit(uniqueid) {
+    uniqueid = $.trim(String(uniqueid || ''));
+    if (uniqueid === '') return;
+
+    var $open = soInlineActiveRow();
+
+    if ($open.length) {
+        if (!soInlineIsEmpty($open)) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Perhatian',
+                text: 'Selesaikan atau batalkan baris input yang sedang aktif terlebih dahulu'
+            });
+            return;
+        }
+
+        soInlineRemoveRow();
+    }
+
+    $.ajax({
+        url: HOST_URL + 'sales/postsales/get_salesorder_detail',
+        type: 'GET',
+        data: { id: uniqueid },
+        dataType: 'json',
+        success: function (res) {
+            if (!res || !res.status) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: (res && res.message) ? res.message : 'Data tidak ditemukan'
+                });
+                return;
+            }
+
+            soInlineAddEditRow(res.data);
+
+            // sorot baris asli yang sedang diedit
+            var $grid = $('#tabsalesorderdtl tbody');
+            $grid.find('tr').removeClass('row-active');
+            $grid.find('.row-check').filter(function () {
+                return String($(this).val()) === uniqueid;
+            }).closest('tr').addClass('row-active');
+        },
+        error: function (xhr) {
+            console.error(xhr.responseText);
+            Swal.fire({
+                icon: 'error',
+                title: 'Server Error',
+                text: 'Data detail tidak dapat dimuat'
+            });
+        }
+    });
+}
+
+/* Tombol + / Ctrl+Q / Alt+N: hanya membuka baris ADD (bukan saat baris edit aktif) */
+function btnInputDetail() {
+    var $open = soInlineActiveRow();
+
+    if ($open.length) {
+        if (soInlineIsEdit($open)) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Perhatian',
+                text: 'Selesaikan atau batalkan baris edit terlebih dahulu'
+            });
+            return;
+        }
+
+        soInlineFocusItem($open);
+        return;
+    }
+
+    soInlineAddRow(true);
+}
+
+/* Tombol Update / pensil / Ctrl+E: edit inline (menggantikan modal) */
+function btnUpdateDetail() {
+    var ids = (typeof getSelectedSalesOrderDetail === 'function')
+        ? getSelectedSalesOrderDetail()
+        : [];
+
+    if (ids.length === 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Peringatan',
+            text: 'Pilih satu data yang akan diupdate'
+        });
+        return;
+    }
+
+    if (ids.length > 1) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Peringatan',
+            text: 'Update hanya boleh satu data'
+        });
+        return;
+    }
+
+    soInlineOpenEdit(ids[0]);
+}
+

@@ -1,0 +1,4 @@
+1. button arrow di inline list di hilangkan dibuatkan di sebelah kiri search datatable jadi pemindahan urutan harus melakukan klik dulu check pilih 1 row untuk idurut_view
+2. satuan / unit bisa pilih, dropdown coba cek http://localhost:85/ci4-85/persediaan/trans/add_pmk_brng_mst sebagai referensi.
+3. pemilihan idbarang bisa memunculkan idbarang + nama barang untuk di cari , tetapi saat selected yang tertampil hanya idbarang saja.
+4. pemilihan idbarang class so-inline-gudang bisa memunculkan id gudang + nama gudang untuk di cari , tetapi saat selected yang tertampil hanya id/kode gudang saja saja.

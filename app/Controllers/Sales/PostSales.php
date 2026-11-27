@@ -3,6 +3,7 @@
 namespace App\Controllers\Sales;
 
 use App\Controllers\BaseController;
+use App\Models\Sales\DeliveryOrderModel;
 
 use function PHPUnit\Framework\isEmpty;
 
@@ -2176,13 +2177,43 @@ class PostSales extends BaseController
         ]);
     }
 
+    /* =========================================================
+     * CABANG / JOB mengikuti session user login.
+     * - User "01 JATIM TAMAN STEEL" boleh memakai cabang pilihan.
+     * - User PLAN 1 / PLAN 2 (PLANT I / PLANT II) dipaksa memakai
+     *   cabang session, walaupun request dimanipulasi.
+     * ========================================================= */
+    private function salesOrderResolveBranch($cabang)
+    {
+        $posted     = trim((string) $cabang);
+        $sessionId  = trim((string) $this->session->get('idbranchjob'));
+        $sessionKey = preg_replace('/[^A-Z0-9]/', '', strtoupper(trim((string) $this->session->get('nmbranchjob'))));
+
+        if ($sessionId === '' || $sessionKey === '') {
+            return $posted;
+        }
+
+        $isPlantBranch      = strpos($sessionKey, 'PLANT') !== false
+            || strpos($sessionKey, 'PLAN1') !== false
+            || strpos($sessionKey, 'PLAN2') !== false;
+
+        $isHeadOfficeBranch = ($sessionId === '01')
+            || strpos($sessionKey, 'JATIMTAMANSTEEL') !== false;
+
+        if (!$isHeadOfficeBranch || $isPlantBranch) {
+            return $sessionId;
+        }
+
+        return ($posted !== '') ? $posted : $sessionId;
+    }
+
     public function initSalesOrderHeader()
     {
         $nama = trim($this->session->get('nama'));
 
         $docno      = strtoupper($this->request->getPost('docno'));
         $docdate    = $this->request->getPost('docdate');
-        $cabang     = $this->request->getPost('cabang');
+        $cabang     = $this->salesOrderResolveBranch($this->request->getPost('cabang'));
         $pemohon    = strtoupper($this->request->getPost('pemohon'));
         // $estpakai   = $this->request->getPost('estpakai');
         // $keterangan = strtoupper($this->request->getPost('keterangan'));
@@ -2268,39 +2299,44 @@ class PostSales extends BaseController
 
             $isinclusive = ($isinclusive === 'YES') ? 'YES' : 'NO';
 
-            $isopenprice = strtoupper(trim(
-                $this->request->getPost('isopenprice')
-                ?? $dataprocess->isopenprice
-                ?? 'NO'
-            ));
+            /* Open price mengikuti grade customer (sc_mst.gradecust.isopenprice) */
+            $gradecustomer = $this->soClip(strtoupper(trim((string) $this->request->getPost('gradecustomer'))), 20);
+            $isopenprice   = $this->m_postsales->getGradeOpenPrice($gradecustomer) ? 'YES' : 'NO';
 
-            $isopenprice = ($isopenprice === 'YES') ? 'YES' : 'NO';
+            try {
+                $builderHeader->insert([
+                    'docno'     => $this->soClip($docno, 30),
+                    'cabang'     => $this->salesOrderResolveBranch($this->request->getPost('cabang')),
+                    'docdate'   => date('Y-m-d', strtotime(trim($this->request->getPost('docdate')))),
+                    'delivdate'   => date('Y-m-d', strtotime(trim($this->request->getPost('delivdate')))),
+                    'jthtempo'     => $this->soToNumber($this->request->getPost('jthtempo')),
+                    'isinclusive'     => $isinclusive,
+                    'isopenprice'     => $isopenprice,
 
-            $builderHeader->insert([
-                'docno'     => $docno,
-                'cabang'     => $this->request->getPost('cabang'),
-                'docdate'   => date('Y-m-d', strtotime(trim($this->request->getPost('docdate')))),
-                'delivdate'   => date('Y-m-d', strtotime(trim($this->request->getPost('delivdate')))),
-                'jthtempo'     => $this->request->getPost('jthtempo'),
-                'isinclusive'     => $isinclusive,
-                'isopenprice'     => $isopenprice,
+                    'kdcustomer'    => $this->soClip(strtoupper((string) $this->request->getPost('kdcustomer')), 20),
+                    'nmcustomer'    => $this->soClip(strtoupper((string) $this->request->getPost('nmcustomer')), 100),
+                    'alamatcustomer'    => strtoupper((string) $this->request->getPost('alamatcustomer')),
+                    // 'alamatkirim'    => strtoupper($this->request->getPost('alamatkirim')),
+                    'idtax'    => $this->soClip(strtoupper((string) $this->request->getPost('idtax')), 20),
+                    'kdsalesman'    => $this->soClip($this->request->getPost('kdsalesman'), 20),
+                    'gradecustomer'    => $gradecustomer,
+                    'currcode'    => $this->soClip(strtoupper((string) $this->request->getPost('currcode')), 10),
+                    'kurs'    => $this->soToNumber($this->request->getPost('kurs')),
+                    'keterangan'    => strtoupper((string) $this->request->getPost('keterangan')),
+                    'pocust'    => $this->soClip(strtoupper((string) $this->request->getPost('pocust')), 50),
+                    'nodp'    => $this->soClip(strtoupper((string) $this->request->getPost('nodp')), 50),
+                    'status'    => 'E',
+                    'inputby'   => $this->soClip($nama, 50),
+                    'inputdate' => date('Y-m-d H:i:s')
+                ]);
+            } catch (\Throwable $e) {
+                $db->transRollback();
 
-                'kdcustomer'    => strtoupper($this->request->getPost('kdcustomer')),
-                'nmcustomer'    => strtoupper($this->request->getPost('nmcustomer')),
-                'alamatcustomer'    => strtoupper($this->request->getPost('alamatcustomer')),
-                // 'alamatkirim'    => strtoupper($this->request->getPost('alamatkirim')),
-                'idtax'    => strtoupper($this->request->getPost('idtax')),
-                'kdsalesman'    => ($this->request->getPost('kdsalesman')),
-                'gradecustomer'    => ($this->request->getPost('gradecustomer')),
-                'currcode'    => strtoupper($this->request->getPost('currcode')),
-                'kurs'    => ($this->request->getPost('kurs')),
-                'keterangan'    => strtoupper($this->request->getPost('keterangan')),
-                'pocust'    => strtoupper($this->request->getPost('pocust')),
-                'nodp'    => strtoupper($this->request->getPost('nodp')),
-                'status'    => 'E',
-                'inputby'   => $nama,
-                'inputdate' => date('Y-m-d H:i:s')
-            ]);
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal menyimpan header: ' . $e->getMessage()
+                ]);
+            }
 
             $reload = true;
         }
@@ -2365,32 +2401,53 @@ class PostSales extends BaseController
                 $nilaipajak = $nilai;
             }
 
-            $builderDetail
-                ->where('docno', $docno)
-                ->where('inputby', $nama)
-                ->where('uniqueid', $uniqueid)->update([
-                    'qty'          => $qty,
-                    // 'qtybonus'     => $qtybonus,
-                    'harga'        => $harga,
-                    'multidisc'    => $multidisc,
-                    'nilai'        => $nilai,
-                    'nilaikonversi' => $nilaikonversi,  // Tambahkan ini
-                    'nilaipajak'   => $nilaipajak,      // Tambahkan ini
-                    'kurs'          => strtoupper($this->request->getPost('kurs')),
-                    'idtax'         => strtoupper($this->request->getPost('idtax')),
-                    'currcode'      => strtoupper($this->request->getPost('currcode')),
-                    // 'volitem'      => $volitem,
+            $updateDetail = [
+                'qty'          => $qty,
+                // 'qtybonus'     => $qtybonus,
+                'harga'        => $harga,
+                'multidisc'    => $multidisc,
+                'nilai'        => $nilai,
+                'nilaikonversi' => $nilaikonversi,  // Tambahkan ini
+                'nilaipajak'   => $nilaipajak,      // Tambahkan ini
+                'kurs'          => strtoupper((string) $this->request->getPost('kurs')),
+                'idtax'         => strtoupper((string) $this->request->getPost('idtax')),
+                'currcode'      => strtoupper((string) $this->request->getPost('currcode')),
+                // 'volitem'      => $volitem,
 
-                    // 'biaya'      => $biaya,
-                    // 'biaya2'      => $biaya2,
-                    'idprincipal'      => $idprincipal,
-                    'idgudang'      => $idgudang,
-                    'idspec'      => $idspec,
+                // 'biaya'      => $biaya,
+                // 'biaya2'      => $biaya2,
+                'idprincipal'      => $idprincipal,
+                'idgudang'      => $idgudang,
+                'idspec'      => $idspec,
 
-                    'bomdesc' => $bomdesc,
-                    'updateby'     => $nama,
-                    'updatedate'   => date('Y-m-d H:i:s')
+                'bomdesc' => $bomdesc,
+                'updateby'     => $nama,
+                'updatedate'   => date('Y-m-d H:i:s')
+            ];
+
+            // ETD / ETA hanya diperbarui bila dikirim form (modal update tidak memilikinya)
+            if ($this->request->getPost('etd') !== null) {
+                $updateDetail['etd'] = $this->soNormalizeDate($this->request->getPost('etd'));
+            }
+
+            if ($this->request->getPost('eta') !== null) {
+                $updateDetail['eta'] = $this->soNormalizeDate($this->request->getPost('eta'));
+            }
+
+            try {
+                $builderDetail
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->where('uniqueid', $uniqueid)
+                    ->update($updateDetail);
+            } catch (\Throwable $e) {
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal mengubah detail: ' . $e->getMessage()
                 ]);
+            }
 
 
 
@@ -2403,9 +2460,9 @@ class PostSales extends BaseController
             // =====================================================
             // MODE ADD - INSERT DATA DARI PP
             // =====================================================
-            $idbarang    = $this->request->getPost('idbarang');
-            $nmbarang    = strtoupper($this->request->getPost('nmbarang'));
-            $unit        = strtoupper($this->request->getPost('unit'));
+            $idbarang    = $this->soClip($this->request->getPost('idbarang'), 30);
+            $nmbarang    = $this->soClip(strtoupper((string) $this->request->getPost('nmbarang')), 150);
+            $unit        = $this->soClip(strtoupper((string) $this->request->getPost('unit')), 20);
             $qty         = $this->request->getPost('qty');
             $harga       = $this->request->getPost('harga') ?: 0;
             $multidisc   = $this->request->getPost('multidisc') ?: 0;
@@ -2454,39 +2511,76 @@ class PostSales extends BaseController
 
 
 
+            /* Urutan tampilan detail (idurut_view) = MAX + 1 per dokumen */
+            $maxViewRow = $db->table('sc_tmp.salesorder_dtl')
+                ->select('COALESCE(MAX(idurut_view), 0) AS max_view')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->get()
+                ->getRowArray();
+
+            $idurutView = (int) ($maxViewRow['max_view'] ?? 0) + 1;
+
             $inputdate = date('Y-m-d H:i:s');
             $rawUnique = $nmbarang
                 . '|' . $docno
                 . '|' . $nama
                 . '|' . $inputdate;
 
-            $uniqueid  = hash('sha256', $rawUnique);
+            /* uniqueid bertipe varchar(50), sedangkan hash sha256 = 64 karakter.
+               Wajib dipotong, kalau tidak INSERT gagal ("value too long for
+               character varying(50)") dan seluruh transaksi ikut batal. */
+            $uniqueid  = substr(hash('sha256', $rawUnique), 0, 50);
 
 
-            // 🔹 INSERT
-            $builderDetail->insert([
-                'docno'       => $docno,
-                'idbarang'    => $idbarang,
-                'nmbarang'    => $nmbarang,
-                'unit'        => $unit,
-                'qty'         => $qty,
-                'multidisc'         => $multidisc,
-                'harga'         => $harga,
-                'idprincipal'      => $idprincipal,
-                'idgudang'      => $idgudang,
-                'idspec'      => $idspec,
-                'nilai'         => $nilai,
-                'nilaipajak'         => $nilaipajak,
-                'nilaikonversi'         => $nilaikonversi,
-                'kurs'          => strtoupper($this->request->getPost('kurs')),
-                'idtax'         => strtoupper($this->request->getPost('idtax')),
-                'currcode'      => strtoupper($this->request->getPost('currcode')),
-                'bomdesc' => $bomdesc,
-                'status'      => 'F',
-                'inputby'     => $nama,
-                'inputdate'   => date('Y-m-d H:i:s'),
-                'uniqueid'    => $uniqueid
-            ]);
+            // 🔹 INSERT (nilai string dibatasi panjang kolom agar aman di PostgreSQL)
+            try {
+                $saved = $builderDetail->insert([
+                    'docno'       => $this->soClip($docno, 30),
+                    'idbarang'    => $this->soClip($idbarang, 30),
+                    'nmbarang'    => $this->soClip($nmbarang, 150),
+                    'unit'        => $this->soClip($unit, 20),
+                    'qty'         => $qty,
+                    'multidisc'         => $multidisc,
+                    'harga'         => $harga,
+                    'idprincipal'      => $this->soClip($idprincipal, 20),
+                    'idgudang'      => $this->soClip($idgudang, 20),
+                    'idspec'      => $this->soClip($idspec, 50),
+                    'etd'         => $this->soNormalizeDate($this->request->getPost('etd')),
+                    'eta'         => $this->soNormalizeDate($this->request->getPost('eta')),
+                    'nilai'         => $nilai,
+                    'nilaipajak'         => $nilaipajak,
+                    'nilaikonversi'         => $nilaikonversi,
+                    'kurs'          => $this->soToNumber($this->request->getPost('kurs')),
+                    'idtax'         => $this->soClip(strtoupper((string) $this->request->getPost('idtax')), 20),
+                    'currcode'      => $this->soClip(strtoupper((string) $this->request->getPost('currcode')), 10),
+                    'bomdesc' => $bomdesc,
+                    'idurut_view' => $idurutView,
+                    'status'      => 'F',
+                    'inputby'     => $this->soClip($nama, 50),
+                    'inputdate'   => date('Y-m-d H:i:s'),
+                    'uniqueid'    => $uniqueid
+                ]);
+            } catch (\Throwable $e) {
+                /* Rollback wajib: kalau transaksi PostgreSQL dibiarkan gagal,
+                   query berikutnya (termasuk write session) ikut error dan
+                   halaman membalas 500. */
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal menyimpan detail: ' . $e->getMessage()
+                ]);
+            }
+
+            if ($saved === false) {
+                $db->transRollback();
+
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal menyimpan detail, periksa kembali data yang diinput.'
+                ]);
+            }
 
             $message = "item berhasil ditambahkan";
         }
@@ -2938,6 +3032,272 @@ class PostSales extends BaseController
         }
     }
 
+    /* =====================================================
+     * OPEN PRICE MENGIKUTI GRADE CUSTOMER
+     * ===================================================== */
+
+    /* Info grade customer + flag open price (dipakai saat pilih customer) */
+    public function getCustomerGradeInfo()
+    {
+        $nama = trim((string) $this->session->get('nama'));
+
+        if ($nama === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Session login tidak ditemukan'
+            ]);
+        }
+
+        $kdcustomer = trim((string) $this->request->getGet('kdcustomer'));
+        $grade      = strtoupper(trim((string) $this->request->getGet('grade')));
+
+        if ($grade === '' && $kdcustomer !== '') {
+            $grade = strtoupper($this->m_postsales->getCustomerGrade($kdcustomer));
+        }
+
+        return $this->response->setJSON([
+            'success'     => true,
+            'grade'       => $grade,
+            'isopenprice' => $this->m_postsales->getGradeOpenPrice($grade) ? 'YES' : 'NO'
+        ]);
+    }
+
+    /* Ubah grade pada draft (temp) + simpan flag open price hasil derivasi grade */
+    public function changeGradeTemp()
+    {
+        $nama = trim((string) $this->session->get('nama'));
+
+        if ($nama === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Session login tidak ditemukan'
+            ]);
+        }
+
+        $docno = strtoupper(trim((string) $this->request->getPost('docno')));
+        $grade = strtoupper(trim((string) $this->request->getPost('grade')));
+
+        if ($grade === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Transaction Grade wajib diisi'
+            ]);
+        }
+
+        $isopenprice = $this->m_postsales->getGradeOpenPrice($grade) ? 'YES' : 'NO';
+        $saved       = false;
+
+        if ($docno !== '') {
+            $exists = $this->db->table('sc_tmp.salesorder')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->countAllResults();
+
+            if ($exists > 0) {
+                $this->db->transStart();
+
+                $this->db->table('sc_tmp.salesorder')
+                    ->where('docno', $docno)
+                    ->where('inputby', $nama)
+                    ->update([
+                        'gradecustomer' => $grade,
+                        'isopenprice'   => $isopenprice,
+                        'updateby'      => $nama,
+                        'updatedate'    => date('Y-m-d H:i:s')
+                    ]);
+
+                $this->db->transComplete();
+
+                $saved = true;
+            }
+        }
+
+        return $this->response->setJSON([
+            'success'     => true,
+            'saved'       => $saved,
+            'grade'       => $grade,
+            'isopenprice' => $isopenprice,
+            'message'     => 'Transaction Grade berhasil diubah'
+        ]);
+    }
+
+    /* Pindahkan urutan detail draft memakai idurut_view (tombol ▲ / ▼) */
+    public function moveDetailOrder()
+    {
+        $nama = trim((string) $this->session->get('nama'));
+
+        if ($nama === '') {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Session login tidak ditemukan'
+            ]);
+        }
+
+        $uniqueid  = trim((string) $this->request->getPost('uniqueid'));
+        $direction = strtolower(trim((string) $this->request->getPost('direction')));
+
+        if ($uniqueid === '' || ! in_array($direction, ['up', 'down'], true)) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Parameter urutan tidak valid'
+            ]);
+        }
+
+        $rowDetail = $this->db->table('sc_tmp.salesorder_dtl')
+            ->select('docno')
+            ->where('uniqueid', $uniqueid)
+            ->where('inputby', $nama)
+            ->get()
+            ->getRowArray();
+
+        if (! $rowDetail) {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Data detail tidak ditemukan'
+            ]);
+        }
+
+        $docno = trim((string) $rowDetail['docno']);
+
+        $rowHeader = $this->db->table('sc_tmp.salesorder')
+            ->select('status')
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->get()
+            ->getRowArray();
+
+        if ($rowHeader && strtoupper(trim((string) $rowHeader['status'])) === 'F') {
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => 'Dokumen sudah final, urutan tidak dapat diubah'
+            ]);
+        }
+
+        $this->db->transBegin();
+
+        try {
+            $orderRow = $this->m_postsales->getSalesOrderDetailOrder($docno, $nama);
+
+            $ids = [];
+            foreach ($orderRow as $item) {
+                $ids[] = (string) $item['uniqueid'];
+            }
+
+            $index = array_search($uniqueid, $ids, true);
+
+            if ($index === false) {
+                $this->db->transRollback();
+
+                return $this->response->setJSON([
+                    'status'  => false,
+                    'message' => 'Data detail tidak ditemukan'
+                ]);
+            }
+
+            $target = ($direction === 'up') ? $index - 1 : $index + 1;
+
+            if ($target < 0 || $target >= count($ids)) {
+                $this->db->transRollback();
+
+                return $this->response->setJSON([
+                    'status'  => true,
+                    'message' => 'Urutan sudah berada di batas'
+                ]);
+            }
+
+            $swap         = $ids[$index];
+            $ids[$index]  = $ids[$target];
+            $ids[$target] = $swap;
+
+            /* Tulis ulang idurut_view 1..N agar urutan konsisten dan tanpa nilai kosong */
+            $seq = 1;
+            foreach ($ids as $id) {
+                $this->db->table('sc_tmp.salesorder_dtl')
+                    ->where('uniqueid', $id)
+                    ->where('inputby', $nama)
+                    ->update(['idurut_view' => $seq]);
+
+                $seq++;
+            }
+
+            $this->db->transCommit();
+
+            return $this->response->setJSON([
+                'status'  => true,
+                'message' => 'Urutan detail berhasil diubah'
+            ]);
+
+        } catch (\Throwable $e) {
+
+            $this->db->transRollback();
+
+            return $this->response->setJSON([
+                'status'  => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /* Format angka grid detail: maksimal 4 desimal, tanpa nol di belakang koma
+       (5.0000 -> 5, 5.5000 -> 5.5). Desimal memakai titik, ribuan memakai koma. */
+    private function soFormatGridNumber($value, $decimals = 4)
+    {
+        $text = number_format((float) $value, $decimals, '.', ',');
+
+        if (strpos($text, '.') !== false) {
+            $text = rtrim(rtrim($text, '0'), '.');
+        }
+
+        return ($text === '' || $text === '-0') ? '0' : $text;
+    }
+
+    /* Normalisasi tanggal dari form: input date (Y-m-d) atau teks (d-m-Y / d/m/Y) */
+    private function soNormalizeDate($value)
+    {
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        foreach (['Y-m-d', 'd-m-Y', 'd/m/Y'] as $format) {
+            $date = \DateTime::createFromFormat($format, $value);
+            if ($date instanceof \DateTime && $date->format($format) === $value) {
+                return $date->format('Y-m-d');
+            }
+        }
+
+        $timestamp = strtotime($value);
+
+        return $timestamp ? date('Y-m-d', $timestamp) : null;
+    }
+
+    /* Potong nilai string sesuai panjang kolom PostgreSQL (varchar).
+       Mencegah error "value too long for character varying(n)". */
+    private function soClip($value, int $length)
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = (string) $value;
+
+        return (mb_strlen($value) > $length) ? mb_substr($value, 0, $length) : $value;
+    }
+
+    /* Konversi input POST ke angka; string kosong / bukan angka menjadi default
+       (mencegah error "invalid input syntax for type numeric" di PostgreSQL). */
+    private function soToNumber($value, $default = 0)
+    {
+        $value = trim((string) $value);
+
+        if ($value === '' || !is_numeric($value)) {
+            return $default;
+        }
+
+        return $value + 0;
+    }
+
     function list_tmp_salesorder_dtl(){
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_postsales->get_t_salesorder_dtl_temp_view($docno);
@@ -2952,18 +3312,18 @@ class PostSales extends BaseController
             // $row[] = $lm->docnopo;
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
-            $row[] = $lm->idprincipal;
-            $row[] = $lm->idgudang;
             $row[] = $lm->idspec;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. $this->soFormatGridNumber($lm->qty) . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->harga, 4, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 4, '.', ',') . '% </div>';
+            $row[] = '<div class="ratakanan">'. $this->soFormatGridNumber($lm->harga) . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 0, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 0, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan text-bold">'. $this->soFormatGridNumber($lm->nilai) . '</div>';
+            $row[] = '<div class="text-center">'. ($lm->etd ? date('d-m-Y', strtotime($lm->etd)) : '') . '</div>';
+            $row[] = '<div class="text-center">'. ($lm->eta ? date('d-m-Y', strtotime($lm->eta)) : '') . '</div>';
+            $row[] = '<div class="text-center">'. trim((string) $lm->idgudang) . '</div>';
             $row[] = $lm->bomdesc;
             // $row[] = $lm->descriptionpp;
             $data[] = $row;
@@ -2996,14 +3356,14 @@ class PostSales extends BaseController
             $row[] = $lm->idgudang;
             $row[] = $lm->idspec;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. $this->soFormatGridNumber($lm->qty) . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->harga, 4, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. $this->soFormatGridNumber($lm->harga) . '</div>';
+            $row[] = '<div class="ratakanan">'. $this->soFormatGridNumber($lm->multidisc) . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 0, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 0, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan text-bold">'. $this->soFormatGridNumber($lm->nilai) . '</div>';
             $row[] = $lm->bomdesc;
             // $row[] = $lm->descriptionpp;
             $data[] = $row;
@@ -3086,6 +3446,9 @@ class PostSales extends BaseController
             // $nmcustomer   = trim($this->request->getPost('nmcustomer'));
             $alamatcustomer   = trim($this->request->getPost('alamatcustomer'));
             $gradecustomer   = trim($this->request->getPost('gradecustomer'));
+            if ($gradecustomer === '' && $headerRow) {
+                $gradecustomer = trim((string) ($headerRow['gradecustomer'] ?? ''));
+            }
             // $alamatkirim   = trim($this->request->getPost('alamatkirim'));
             // $keterangan   = trim($this->request->getPost('keterangan'));
             $currcode   = trim($this->request->getPost('currcode'));
@@ -3111,7 +3474,8 @@ class PostSales extends BaseController
             $nodp   = trim($this->request->getPost('nodp'));
             $pocust   = trim($this->request->getPost('pocust'));
             $isinclusive = $this->request->getPost('isinclusive') ? 'YES' : 'NO';
-            $isopenprice = $this->request->getPost('isopenprice') ? 'YES' : 'NO';
+            /* Open price mengikuti grade customer (sc_mst.gradecust.isopenprice) */
+            $isopenprice = $this->m_postsales->getGradeOpenPrice($gradecustomer) ? 'YES' : 'NO';
 
 
 
@@ -3495,6 +3859,12 @@ class PostSales extends BaseController
             $row = array();
 
             $status = strtoupper(trim($lm->status_desc));
+            $statusRaw = strtoupper(trim((string) ($lm->status ?? '')));
+            // Status 'D' = DRAFT (alur trigger DO); master trxtype memetakan 'D' ke DISAPPROVED.
+            if ($statusRaw === 'D') {
+                $status = 'DRAFT';
+            }
+
             $docno  = trim($lm->docno);
             $docnoHex = bin2hex($docno);
 
@@ -3521,6 +3891,21 @@ class PostSales extends BaseController
                     <i class="fa fa-edit"></i> Update DeliveryOrder 
                 </a>';
             }
+            // Draft (status 'D') bisa dilanjutkan: revisi draft memindahkan
+            // dokumen kembali ke sc_tmp dengan status 'E'.
+            if ($updateBtn === '' && $canUpdate && trim($lm->inputby) == $nama
+                && empty($lm->printby) && empty($lm->printdate)
+                && trim($status) == 'DRAFT'
+            ) {
+                $updateBtn = '
+                <a class="dropdown-item bg-warning" 
+                    href="' . base_url('sales/postsales/updateDeliveryOrder') . '/?id=' . $docnoHex . '&docno=' . $docnoHex . '" 
+                    onclick="return confirm(\'Lanjutkan Draft DeliveryOrder : ' . $docno . '\')">
+                    <i class="fa fa-edit"></i> Lanjutkan Draft 
+                </a>';
+            }
+
+
 
             if($canView){
                 $detailBtn =
@@ -3549,6 +3934,16 @@ class PostSales extends BaseController
                 $cancelBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToCancel(\'' . trim($lm->docno) . '\');">
                     <i class="fa fa-undo"></i> Batalkan Delivery Order</a>';
             }
+            // Draft (status 'D') boleh dibatalkan tanpa revert stok & qtydo SO.
+            if ($cancelBtn === '' && $canDelete && trim($lm->inputby) == $nama
+                && empty($lm->printby) && empty($lm->printdate)
+                && trim($status) == 'DRAFT'
+            ) {
+                $cancelBtn = '<a class="dropdown-item bg-danger" href="#" onclick="setToCancel(\'' . trim($lm->docno) . '\');">
+                    <i class="fa fa-undo"></i> Batalkan Delivery Order</a>';
+            }
+
+
 
 
             // if (trim($status) !== 'APPROVED' && trim($status) !== 'REVISION/EDITING') {
@@ -3616,6 +4011,10 @@ class PostSales extends BaseController
                 strtotime(trim($lm->docdate))
             );
             $status = $lm->status_desc ?? $lm->status;
+            if ($statusRaw === 'D') {
+                $status = 'DRAFT';
+            }
+
             $badgeClass = 'badge-secondary'; // Default
 
             switch (strtoupper($status)) {
@@ -3906,35 +4305,70 @@ class PostSales extends BaseController
         $nama=trim($this->session->get('nama'));
         $param = " and coalesce(inputby,'')='$nama'";
         $dtl = $this->m_postsales->q_deliveryorder_master_temp($param);
-        if(empty($dtl->getRowArray())){
+        $row = $dtl->getRowArray();
+        if(empty($row)){
             return redirect()->to(base_url('sales/postsales/deliveryorder'));
         }
         // if(isEmpty($dtl->getRowArray()['status'])){
         //     return redirect()->to(base_url('sales/postsales/pp'));
         // }
-        $status = trim($dtl->getRowArray()['status']);
+        $status   = trim($row['status']);
+        /* docnotmp diisi trigger saat revisi (sc_trx status D/F -> E) =
+           docno asli dokumen di sc_trx.deliveryorder */
+        $docnotmp = trim((string) ($row['docnotmp'] ?? ''));
         $builder = $this->db->table('sc_tmp.deliveryorder');
         $builder_dtl = $this->db->table('sc_tmp.deliveryorder_dtl');
 
         if ($status==='I') {
-            // $builder= $this->db->table('sc_tmp.standart_usage_mst');
             $builder->where('inputby',$nama);
             $builder->delete();
-            // $builderDtl= $this->db->table('sc_tmp.pp');
-            // $builderDtl->where('inputby',$nama);
-            // $builderDtl->delete();
+            // detail temporary ikut dibersihkan (tidak menyisakan baris yatim)
+            $builder_dtl->where('inputby',$nama);
+            $builder_dtl->delete();
             return redirect()->to(base_url('sales/postsales/deliveryorder'));
         } else if ($status==='E') {
-            $builder->where('inputby',$nama);
-            if ($builder->update(array('status' => 'C'))) {
-                $result = array('status' => true, 'messages' => 'Sukses Di Proses');
-                echo json_encode($result);
+            /* Satu transaksi: pembatalan entry temporary dan pengembalian status
+               dokumen di sc_trx harus berhasil bersama-sama. */
+            $this->db->transBegin();
+            try {
+                // Batal input di tmp (E -> C). Trigger sc_tmp.tr_deliveryorder_finalize()
+                // yang menghapus header + detail temporary.
+                $builder->where('inputby',$nama);
+                $builder->update(array('status' => 'C'));
+
+                /* Detail ditemukan / dokumen sudah ada di sc_trx: status DO di sc_trx
+                   WAJIB kembali ke 'D' (draft). Saat Edit, sc_trx berubah D/F -> 'E'
+                   dan datanya disalin ke sc_tmp (docnotmp = docno asli); kalau entry
+                   dibatalkan (clear entry) status 'E' tertinggal sehingga DO tidak
+                   tampil di tab Draft maupun tab status lain dan tidak bisa
+                   dilanjutkan. */
+                if ($docnotmp !== '') {
+                    $hasDtl = $this->db->query(
+                        "select 1 as ada from sc_trx.deliveryorder_dtl where trim(docno) = ? limit 1",
+                        [$docnotmp]
+                    )->getRowArray();
+
+                    if (!empty($hasDtl)) {
+                        $builderTrx = $this->db->table('sc_trx.deliveryorder');
+                        $builderTrx->where('trim(docno)', $docnotmp);
+                        $builderTrx->where("trim(status) = 'E'");
+                        $builderTrx->update(array(
+                            'status'     => 'D',
+                            'updateby'   => $nama,
+                            'updatedate' => date('Y-m-d H:i:s'),
+                        ));
+                    }
+                }
+
+                $this->db->transCommit();
+            } catch (\Throwable $e) {
+                $this->db->transRollback();
                 return redirect()->to(base_url('sales/postsales/deliveryorder'));
             }
-            else {
-                $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
-                echo json_encode($result);
-            }
+
+            $result = array('status' => true, 'messages' => 'Sukses Di Proses');
+            echo json_encode($result);
+            return redirect()->to(base_url('sales/postsales/deliveryorder'));
         } else {
             // $result = array('status' => false, 'messages' => 'Data Gagal Di Proses Ada Kesalahan Data');
             // echo json_encode($result);
@@ -3984,6 +4418,12 @@ class PostSales extends BaseController
         }
 
 
+        // Pesan dari validasi simpan final (mis. stok tidak mencukupi)
+        $doFlashError = session()->getFlashdata('do_error');
+        if (!empty($doFlashError)) {
+            $data['message'] .= "<div class='alert alert-warning'>" . esc($doFlashError) . "</div>";
+        }
+
         $param = " and trim(inputby)='$nama'";
         $data['mst'] = $this->m_postsales->q_deliveryorder_master_temp($param)->getRowArray();
         $logindate = trim($this->session->get('logindate'));
@@ -3997,7 +4437,7 @@ class PostSales extends BaseController
 
         $pterror = " and userid='$nama'";
         $this->m_trxerror->q_deltrxerror($pterror);
-        return $this->template->render('sales/postsales/v_add_deliveryorder',$data);
+        return $this->template->render('sales/postsales/v_add_deliveryorder_inline',$data);
     }
 
 
@@ -4419,9 +4859,12 @@ class PostSales extends BaseController
         $docno = hex2bin($this->request->getGet('id'));
         $param = " and coalesce(docno,'')='$docno'";
         $dtl = $this->m_postsales->q_deliveryorder_master($param)->getRowArray();
-        $status = trim($dtl['status']);
+        $status = strtoupper(trim((string) ($dtl['status'] ?? '')));
 
-        if ($status === 'F' || $status === 'P') {
+        // D = Draft  : revisi draft (D -> E) tanpa revert qtydo / stok
+        // F = Final  : revisi final (F -> E) dengan revert qtydo / stok
+        // P = Printed: sama seperti final
+        if (in_array($status, ['D', 'F', 'P'], true)) {
             // Update hanya status di tabel sc_trx.standart_usage_mst
             $info = array(
                 'status' => 'E',
@@ -5015,6 +5458,12 @@ class PostSales extends BaseController
         // $loccode = trim($this->session->get('loccode'));
         $builder = $this->db->table('sc_tmp.deliveryorder');
 
+        // Bila form mengirim docno, finalize hanya untuk dokumen tersebut.
+        $docnoPost = strtoupper(trim((string) $this->request->getPost('docno')));
+        if ($docnoPost !== '') {
+            $builder->where('docno', $docnoPost);
+        }
+
         // Ambil header draft milik user (bind via Query Builder, hindari interpolasi SQL)
         $headerRow = $builder
             ->where('inputby', $nama)
@@ -5029,6 +5478,7 @@ class PostSales extends BaseController
         // Detail tidak valid (unit kosong / qty 0 / nmbarang kosong)
         $cek = $this->db->table('sc_tmp.deliveryorder_dtl')
             ->where('inputby', $nama)
+            ->where('docno', $docno)
             ->groupStart()
             ->where('unit', '')
             ->orWhere('qty', '0.00')
@@ -5040,7 +5490,48 @@ class PostSales extends BaseController
         // Total detail
         $cek2 = $this->db->table('sc_tmp.deliveryorder_dtl')
             ->where('inputby', $nama)
+            ->where('docno', $docno)
             ->countAllResults();
+
+        // ------------------------------------------------------------------
+        // Validasi stok akhir (gudang + idbarang + spec).
+        // Stok KOSONG (0 / minus) => HANYA boleh disimpan sebagai draft.
+        // ------------------------------------------------------------------
+        $doModel    = new DeliveryOrderModel();
+        $stokKurang = [];
+        if ($docno !== '') {
+            $rowsStok = $this->db->table('sc_tmp.deliveryorder_dtl')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->get()
+                ->getResultArray();
+
+            // Stok posisi tanggal dokumen DO (sc_trx.stkblc s/d docdate header).
+            $docdateStok = $doModel->normalDate($headerRow['docdate'] ?? '');
+            $stokInfo    = $doModel->stokForRows($rowsStok, $docdateStok);
+
+            foreach ($rowsStok as $dRow) {
+                $info = $stokInfo[(int) ($dRow['idurut'] ?? 0)] ?? null;
+                $stok = $info ? (float) $info['stokakhir'] : 0.0;
+                $qty  = $doModel->num($dRow['qty'] ?? 0);
+
+                if ($stok <= 0) {
+                    $stokKurang[] = trim((string) ($dRow['idbarang'] ?? ''))
+                        . ' / ' . trim((string) ($dRow['idgudang'] ?? ''))
+                        . ' / ' . (trim((string) ($dRow['idspec'] ?? '')) !== '' ? trim((string) $dRow['idspec']) : '-')
+                        . ' : stok ' . number_format($stok, 4, '.', ',')
+                        . ', butuh ' . number_format($qty, 4, '.', ',');
+                }
+            }
+        }
+
+        if (!empty($stokKurang)) {
+            return redirect()
+                ->to(base_url('/sales/postsales/addDeliveryOrder'))
+                ->with('do_error', 'Stok kosong sehingga tidak bisa Simpan Final: '
+                    . implode('; ', array_slice($stokKurang, 0, 5))
+                    . '. Simpan sebagai DRAFT atau perbaiki gudang / spec.');
+        }
 
         //INSERT TRX ERROR
         $builder_trxerror = $this->db->table('sc_mst.trxerror');
@@ -8207,6 +8698,677 @@ class PostSales extends BaseController
     //     ]);
     // }
 
+    /* =====================================================================
+     * TARIK DO -> PENJUALAN (khusus halaman sales/postsales/addPenjualan)
+     * ---------------------------------------------------------------------
+     * pjListDO       : daftar DO yang sudah POSTED (status P) dan masih memiliki sisa qty
+     * pjListDODetail : detail DO (parent-child pada modal Tarik DO)
+     * pjPullDO       : tarik detail DO terpilih ke sc_tmp.penjualan_dtl
+     * ===================================================================== */
+
+    public function pjListDO()
+    {
+        $kdcustomer = strtoupper(trim((string) $this->request->getPost('kdcustomer')));
+        $search     = trim((string) $this->request->getPost('search'));
+
+        $sql = "SELECT a.docno,
+                       a.docdate,
+                       a.kdcustomer,
+                       a.nmcustomer,
+                       COALESCE(a.total, 0) AS total,
+                       a.status,
+                       COALESCE(a.currcode, '') AS currcode,
+                       COALESCE(a.kurs, 0) AS kurs
+                  FROM sc_trx.deliveryorder a
+                 WHERE COALESCE(TRIM(a.docno), '') <> ''
+                   AND UPPER(TRIM(a.status)) = 'P'
+                   AND (? = '' OR TRIM(a.kdcustomer) = ?)
+                   AND (? = '' OR a.docno ILIKE ? OR a.nmcustomer ILIKE ?)
+                   AND EXISTS (
+                        SELECT 1
+                          FROM sc_trx.deliveryorder_dtl d
+                         WHERE TRIM(d.docno) = TRIM(a.docno)
+                           AND (COALESCE(d.qty, 0) - COALESCE(d.qtysj, 0)) > 0
+                   )
+                 ORDER BY a.docdate DESC, a.docno DESC
+                 LIMIT 50";
+
+        $rows = $this->db->query($sql, [
+            $kdcustomer, $kdcustomer,
+            $search, '%' . $search . '%', '%' . $search . '%',
+        ])->getResultArray();
+
+        return $this->response->setJSON([
+            'success' => true,
+            'rows'    => $rows,
+        ]);
+    }
+
+    public function pjListDODetail()
+    {
+        $nama    = trim($this->session->get('nama'));
+        $docnodo = strtoupper(trim((string) $this->request->getPost('docnodo')));
+        $docno   = strtoupper(trim((string) $this->request->getPost('docno')));
+
+        if ($docnodo === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Nomor DO tidak valid',
+                'rows'    => [],
+            ]);
+        }
+
+        $rows = $this->db->query("
+            SELECT idurut,
+                   TRIM(uniqueid) AS uniqueid,
+                   TRIM(COALESCE(uniqueidso, '')) AS uniqueidso,
+                   idbarang,
+                   nmbarang,
+                   COALESCE(idspec, '') AS idspec,
+                   COALESCE(unit, '') AS unit,
+                   COALESCE(qty, 0) AS qty,
+                   COALESCE(qtysj, 0) AS qtysj,
+                   COALESCE(harga, 0) AS harga,
+                   COALESCE(multidisc, 0) AS multidisc,
+                   COALESCE(idprincipal, '') AS idprincipal,
+                   COALESCE(idgudang, '') AS idgudang,
+                   COALESCE(description, '') AS description
+              FROM sc_trx.deliveryorder_dtl
+             WHERE TRIM(docno) = ?
+             ORDER BY idurut ASC
+        ", [$docnodo])->getResultArray();
+
+        // Qty yang sudah masuk draft penjualan user ini (per baris DO)
+        $pulled  = [];
+        $tmpRows = $this->db->query("
+            SELECT TRIM(COALESCE(uniqueiddo, '')) AS uid,
+                   COALESCE(SUM(qty), 0) AS qty
+              FROM sc_tmp.penjualan_dtl
+             WHERE inputby = ?
+               AND COALESCE(TRIM(uniqueiddo), '') <> ''
+               AND (? = '' OR TRIM(docno) = ?)
+             GROUP BY 1
+        ", [$nama, $docno, $docno])->getResultArray();
+
+        foreach ($tmpRows as $tmp) {
+            $uid = trim((string) ($tmp['uid'] ?? ''));
+            if ($uid !== '') {
+                $pulled[$uid] = (float) ($tmp['qty'] ?? 0);
+            }
+        }
+
+        // Qty yang sudah masuk dokumen penjualan FINAL untuk DO ini
+        $trxRows = $this->db->query("
+            SELECT TRIM(COALESCE(uniqueiddo, '')) AS uid,
+                   COALESCE(SUM(qty), 0) AS qty
+              FROM sc_trx.penjualan_dtl
+             WHERE COALESCE(TRIM(uniqueiddo), '') <> ''
+               AND TRIM(COALESCE(docnodo, '')) = ?
+             GROUP BY 1
+        ", [$docnodo])->getResultArray();
+
+        foreach ($trxRows as $trx) {
+            $uid = trim((string) ($trx['uid'] ?? ''));
+            if ($uid !== '') {
+                $pulled[$uid] = (float) ($pulled[$uid] ?? 0) + (float) ($trx['qty'] ?? 0);
+            }
+        }
+
+        foreach ($rows as &$row) {
+            $uid     = trim((string) ($row['uniqueid'] ?? ''));
+            $dipakai = isset($pulled[$uid]) ? (float) $pulled[$uid] : 0;
+
+            $row['qtydo']   = (float) ($row['qty'] ?? 0);
+            $row['qtysisa'] = max(0, $row['qtydo'] - (float) ($row['qtysj'] ?? 0) - $dipakai);
+            $row['sudah']   = ($dipakai > 0) ? 1 : 0;
+        }
+        unset($row);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'rows'    => $rows,
+        ]);
+    }
+
+
+    public function pjPullDO()
+    {
+        $nama    = trim($this->session->get('nama'));
+        $docno   = strtoupper(trim((string) $this->request->getPost('docno')));
+        $docnodo = strtoupper(trim((string) $this->request->getPost('docnodo')));
+
+        // Detail DO terpilih (uniqueid baris DO)
+        $ids = $this->request->getPost('ids');
+        if (is_string($ids)) {
+            $ids     = trim($ids);
+            $decoded = ($ids !== '' && $ids[0] === '[') ? json_decode($ids, true) : null;
+            $ids     = is_array($decoded) ? $decoded : ($ids === '' ? [] : explode(',', $ids));
+        }
+        $ids = is_array($ids) ? $ids : [];
+
+        $picks = [];
+        foreach ($ids as $v) {
+            $v = trim((string) $v);
+            if ($v !== '') {
+                $picks[$v] = $v;
+            }
+        }
+
+        if ($docno === '' || $docnodo === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Nomor jurnal / DO tidak valid',
+            ]);
+        }
+
+        if (empty($picks)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Centang minimal satu detail DO yang akan ditarik',
+            ]);
+        }
+
+        $db  = $this->db;
+        $doH = $db->table('sc_trx.deliveryorder')->where('docno', $docnodo)->get()->getRowArray();
+
+        if (!$doH) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => "Data DO dengan nomor {$docnodo} tidak ditemukan",
+            ]);
+        }
+
+        /* Hanya DO yang sudah POSTED (status P) yang boleh ditarik ke Penjualan.
+           Modal Tarik DO juga hanya menampilkan DO berstatus P (pjListDO). */
+        if (strtoupper(trim((string) ($doH['status'] ?? ''))) !== 'P') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => "DO {$docnodo} belum berstatus POSTED (P), tidak dapat ditarik",
+            ]);
+        }
+
+        $db->transStart();
+
+        // =====================================================
+        // HEADER (pola sama dengan savePenjualanDetail)
+        // =====================================================
+        $builderHeader = $db->table('sc_tmp.penjualan');
+
+        $exists = $builderHeader
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->countAllResults();
+
+        $reload = false;
+
+        /* Referensi SO / DO asal tarikan (ikut header DO) */
+        $docnosoDo = strtoupper(trim((string) ($doH['docnoso'] ?? '')));
+
+        if ($exists == 0) {
+            $isinclusive = strtoupper(trim($this->request->getPost('isinclusive') ?? 'NO'));
+            $isinclusive = ($isinclusive === 'YES') ? 'YES' : 'NO';
+
+            $isopenprice = strtoupper(trim($this->request->getPost('isopenprice') ?? 'NO'));
+            $isopenprice = ($isopenprice === 'YES') ? 'YES' : 'NO';
+
+            $docdatePost = trim((string) $this->request->getPost('docdate'));
+            $docdate     = ($docdatePost !== '') ? date('Y-m-d', strtotime($docdatePost)) : date('Y-m-d');
+
+            $kdcustomer = strtoupper(trim((string) $this->request->getPost('kdcustomer')));
+            if ($kdcustomer === '') {
+                $kdcustomer = strtoupper(trim((string) ($doH['kdcustomer'] ?? '')));
+            }
+
+            $alamatcustomer = trim((string) $this->request->getPost('alamatcustomer'));
+            if ($alamatcustomer === '') {
+                $alamatcustomer = trim((string) ($doH['alamatcustomer'] ?? ''));
+            }
+
+            $kdcustomerdeliv = strtoupper(trim((string) $this->request->getPost('kdcustomerdeliv')));
+            if ($kdcustomerdeliv === '') {
+                $kdcustomerdeliv = strtoupper(trim((string) ($doH['kdcustomerdeliv'] ?? $doH['kdcustomer'] ?? '')));
+            }
+
+            $alamatcustomerdeliv = trim((string) $this->request->getPost('alamatcustomerdeliv'));
+            if ($alamatcustomerdeliv === '') {
+                $alamatcustomerdeliv = trim((string) ($doH['alamatcustomerdeliv'] ?? $doH['alamatcustomer'] ?? ''));
+            }
+
+            $idtax = strtoupper(trim((string) $this->request->getPost('idtax')));
+            if ($idtax === '') {
+                $idtax = strtoupper(trim((string) ($doH['idtax'] ?? '')));
+            }
+
+            $currcode = strtoupper(trim((string) $this->request->getPost('currcode')));
+            if ($currcode === '') {
+                $currcode = strtoupper(trim((string) ($doH['currcode'] ?? '')));
+            }
+
+            $kurs = $this->request->getPost('kurs');
+            if (trim((string) $kurs) === '' || (float) $kurs <= 0) {
+                $kurs = $doH['kurs'] ?? 1;
+            }
+
+            /* =================================================
+             * INFO & KETERANGAN HEADER DO IKUT DIMASUKKAN
+             * Nilai dari form dipakai bila ada, selain itu
+             * ambil dari header sc_trx.deliveryorder.
+             * ================================================= */
+            $pemohon = trim((string) $this->request->getPost('pemohon'));
+            if ($pemohon === '') {
+                $pemohon = trim((string) ($doH['pemohon'] ?? ''));
+            }
+
+            $nmcustomer = trim((string) $this->request->getPost('nmcustomer'));
+            if ($nmcustomer === '') {
+                $nmcustomer = trim((string) ($doH['nmcustomer'] ?? ''));
+            }
+
+            $nmcustomerdeliv = trim((string) $this->request->getPost('nmcustomerdeliv'));
+            if ($nmcustomerdeliv === '') {
+                $nmcustomerdeliv = trim((string) ($doH['nmcustomerdeliv'] ?? ''));
+                if ($nmcustomerdeliv === '') {
+                    $nmcustomerdeliv = $nmcustomer;
+                }
+            }
+
+            $jthtempo = trim((string) $this->request->getPost('jthtempo'));
+            if ($jthtempo === '') {
+                $jthtempo = trim((string) ($doH['jthtempo'] ?? ''));
+            }
+
+            $kdsalesman = strtoupper(trim((string) $this->request->getPost('kdsalesman')));
+            if ($kdsalesman === '') {
+                $kdsalesman = strtoupper(trim((string) ($doH['kdsalesman'] ?? '')));
+            }
+
+            $gradecustomer = strtoupper(trim((string) $this->request->getPost('gradecustomer')));
+            if ($gradecustomer === '') {
+                $gradecustomer = strtoupper(trim((string) ($doH['gradecustomer'] ?? '')));
+            }
+
+            $carabayar = strtoupper(trim((string) $this->request->getPost('carabayar')));
+            if ($carabayar === '') {
+                $carabayar = strtoupper(trim((string) ($doH['carabayar'] ?? '')));
+            }
+
+            $keterangan = strtoupper(trim((string) $this->request->getPost('keterangan')));
+            if ($keterangan === '') {
+                $keterangan = strtoupper(trim((string) ($doH['keterangan'] ?? '')));
+            }
+
+            $builderHeader->insert([
+                'docno'               => $docno,
+                'docnoso'             => ($docnosoDo !== '') ? $docnosoDo : null,
+                'docnodo'             => $docnodo,
+                'cabang'              => $this->request->getPost('cabang'),
+                'docdate'             => $docdate,
+                'pemohon'             => $pemohon,
+                'jthtempo'            => ($jthtempo !== '') ? $jthtempo : null,
+                'isinclusive'         => $isinclusive,
+                'isopenprice'         => $isopenprice,
+                'kdcustomer'          => $kdcustomer,
+                'nmcustomer'          => $nmcustomer,
+                'alamatcustomer'      => strtoupper($alamatcustomer),
+                'kdcustomerdeliv'     => $kdcustomerdeliv,
+                'nmcustomerdeliv'     => $nmcustomerdeliv,
+                'alamatcustomerdeliv' => strtoupper($alamatcustomerdeliv),
+                'idtax'               => $idtax,
+                'kdsalesman'          => $kdsalesman,
+                'gradecustomer'       => $gradecustomer,
+                'carabayar'           => $carabayar,
+                'currcode'            => $currcode,
+                'kurs'                => $kurs,
+                'keterangan'          => $keterangan,
+                'status'              => 'E',
+                'inputby'             => $nama,
+                'inputdate'           => date('Y-m-d H:i:s'),
+            ]);
+
+            $reload = true;
+        } else {
+            /* Header sudah ada (mis. baris diinput lebih dulu): lengkapi
+               informasi & keterangan yang masih kosong dari header DO. */
+            $headNow = $builderHeader
+                ->select('pemohon, nmcustomer, nmcustomerdeliv, keterangan, carabayar, kdsalesman, gradecustomer, jthtempo, docnoso, docnodo')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->get()
+                ->getRowArray();
+
+            if ($headNow) {
+                $doInfo = [
+                    'pemohon'         => (string) ($doH['pemohon'] ?? ''),
+                    'nmcustomer'      => (string) ($doH['nmcustomer'] ?? ''),
+                    'nmcustomerdeliv' => ((string) ($doH['nmcustomerdeliv'] ?? '') !== '')
+                        ? (string) $doH['nmcustomerdeliv']
+                        : (string) ($doH['nmcustomer'] ?? ''),
+                    'keterangan'      => (string) ($doH['keterangan'] ?? ''),
+                    'carabayar'       => (string) ($doH['carabayar'] ?? ''),
+                    'kdsalesman'      => (string) ($doH['kdsalesman'] ?? ''),
+                    'gradecustomer'   => (string) ($doH['gradecustomer'] ?? ''),
+                    'jthtempo'        => (string) ($doH['jthtempo'] ?? ''),
+                    'docnoso'         => $docnosoDo,
+                    'docnodo'         => $docnodo,
+                ];
+
+                $fill = [];
+                foreach ($doInfo as $col => $val) {
+                    if (trim((string) ($headNow[$col] ?? '')) === '' && trim($val) !== '') {
+                        $fill[$col] = $val;
+                    }
+                }
+
+                if (!empty($fill)) {
+                    $fill['updateby']   = $nama;
+                    $fill['updatedate'] = date('Y-m-d H:i:s');
+
+                    $db->table('sc_tmp.penjualan')
+                        ->where('docno', $docno)
+                        ->where('inputby', $nama)
+                        ->update($fill);
+                }
+            }
+        }
+
+        // =====================================================
+        // DETAIL DO -> sc_tmp.penjualan_dtl
+        // =====================================================
+        $builderDetail = $db->table('sc_tmp.penjualan_dtl');
+
+        $ph     = implode(',', array_fill(0, count($picks), '?'));
+        $params = array_merge([$docnodo], array_values($picks));
+
+        $rows = $db->query("
+            SELECT idurut,
+                   TRIM(uniqueid) AS uniqueid,
+                   TRIM(COALESCE(uniqueidso, '')) AS uniqueidso,
+                   idbarang,
+                   nmbarang,
+                   COALESCE(idspec, '') AS idspec,
+                   COALESCE(unit, '') AS unit,
+                   COALESCE(qty, 0) AS qty,
+                   COALESCE(qtysj, 0) AS qtysj,
+                   COALESCE(harga, 0) AS harga,
+                   COALESCE(multidisc, 0) AS multidisc,
+                   COALESCE(idprincipal, '') AS idprincipal,
+                   COALESCE(idgudang, '') AS idgudang,
+                   COALESCE(description, '') AS description
+              FROM sc_trx.deliveryorder_dtl
+             WHERE TRIM(docno) = ?
+               AND TRIM(uniqueid) IN ({$ph})
+             ORDER BY idurut ASC
+        ", $params)->getResultArray();
+
+        if (empty($rows)) {
+            $db->transRollback();
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Detail DO yang dipilih tidak ditemukan',
+            ]);
+        }
+
+        /* =====================================================
+           ETD / ETA baris DO diambil dari SO asal
+           (sc_trx.salesorder_dtl), dicocokkan dengan docno SO pada
+           header DO + uniqueidso baris DO.
+           ===================================================== */
+        $soEtdMap = [];
+
+        $soUidList = [];
+        foreach ($rows as $row) {
+            $uidSo = trim((string) ($row['uniqueidso'] ?? ''));
+            if ($uidSo !== '') {
+                $soUidList[$uidSo] = $uidSo;
+            }
+        }
+        $soUidList = array_values($soUidList);
+
+        if (!empty($soUidList)) {
+            $phSo = implode(',', array_fill(0, count($soUidList), '?'));
+
+            // Kunci utama: docno SO (header DO) + uniqueid baris SO
+            if ($docnosoDo !== '') {
+                $soRows = $db->query("
+                    SELECT TRIM(uniqueid) AS uid, etd, eta
+                      FROM sc_trx.salesorder_dtl
+                     WHERE TRIM(docno) = ?
+                       AND TRIM(uniqueid) IN ({$phSo})
+                ", array_merge([$docnosoDo], $soUidList))->getResultArray();
+
+                foreach ($soRows as $soRow) {
+                    $soEtdMap[trim((string) $soRow['uid'])] = [
+                        'etd' => $soRow['etd'] ?? null,
+                        'eta' => $soRow['eta'] ?? null,
+                    ];
+                }
+            }
+
+            // Cadangan: cocokkan uniqueid saja (bila docnoso header kosong/beda)
+            $soMissing = array_values(array_diff($soUidList, array_keys($soEtdMap)));
+            if (!empty($soMissing)) {
+                $phMiss = implode(',', array_fill(0, count($soMissing), '?'));
+
+                $soRows = $db->query("
+                    SELECT TRIM(uniqueid) AS uid, etd, eta
+                      FROM sc_trx.salesorder_dtl
+                     WHERE TRIM(uniqueid) IN ({$phMiss})
+                ", $soMissing)->getResultArray();
+
+                foreach ($soRows as $soRow) {
+                    $soEtdMap[trim((string) $soRow['uid'])] = [
+                        'etd' => $soRow['etd'] ?? null,
+                        'eta' => $soRow['eta'] ?? null,
+                    ];
+                }
+            }
+        }
+
+        $head = $db->table('sc_tmp.penjualan')
+            ->select('kurs, idtax, currcode')
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->get()
+            ->getRowArray();
+
+        $kursHeader = (float) ($head['kurs'] ?? 1);
+        if ($kursHeader <= 0) {
+            $kursHeader = 1;
+        }
+
+        $idtaxHeader = trim((string) ($head['idtax'] ?? 'NON'));
+        $currHeader  = trim((string) ($head['currcode'] ?? ''));
+
+        $taxPercent = 0;
+        if ($idtaxHeader !== '' && strtoupper($idtaxHeader) !== 'NON') {
+            $taxRows = $db->table('sc_mst.tax_dtl')
+                ->select('percentation')
+                ->where('idtax', $idtaxHeader)
+                ->get()
+                ->getResultArray();
+
+            $taxPercent = array_sum(array_column($taxRows, 'percentation'));
+        }
+
+        $inserted  = 0;
+
+        foreach ($rows as $row) {
+            $uid = trim((string) ($row['uniqueid'] ?? ''));
+            if ($uid === '') {
+                continue;
+            }
+
+            $uidSo  = trim((string) ($row['uniqueidso'] ?? ''));
+            $etdRow = $soEtdMap[$uidSo]['etd'] ?? null;
+            $etaRow = $soEtdMap[$uidSo]['eta'] ?? null;
+
+            // Sudah ada di dokumen ini?
+            $dup = $db->query("
+                SELECT COUNT(*) AS c
+                  FROM sc_tmp.penjualan_dtl
+                 WHERE docno = ?
+                   AND inputby = ?
+                   AND TRIM(COALESCE(uniqueiddo, '')) = ?
+            ", [$docno, $nama, $uid])->getRowArray();
+
+            if ((int) ($dup['c'] ?? 0) > 0) {
+                /* Baris sudah ditarik sebelumnya: lengkapi ETD/ETA yang kosong
+                   dari SO asal agar tidak tertinggal null. */
+                if ($etdRow !== null || $etaRow !== null) {
+                    $db->query("
+                        UPDATE sc_tmp.penjualan_dtl
+                           SET etd = COALESCE(etd, ?),
+                               eta = COALESCE(eta, ?)
+                         WHERE docno = ?
+                           AND inputby = ?
+                           AND TRIM(COALESCE(uniqueiddo, '')) = ?
+                    ", [$etdRow, $etaRow, $docno, $nama, $uid]);
+                }
+
+                continue;
+            }
+
+            // Qty yang sudah dipakai draft lain milik user ini
+            $lain = $db->query("
+                SELECT COALESCE(SUM(qty), 0) AS qty
+                  FROM sc_tmp.penjualan_dtl
+                 WHERE inputby = ?
+                   AND TRIM(COALESCE(uniqueiddo, '')) = ?
+                   AND docno <> ?
+            ", [$nama, $uid, $docno])->getRowArray();
+
+            $sisa = (float) ($row['qty'] ?? 0)
+                  - (float) ($row['qtysj'] ?? 0)
+                  - (float) ($lain['qty'] ?? 0);
+
+            // Kurangi qty yang sudah masuk dokumen penjualan FINAL untuk DO ini
+            $trxFinal = $db->query("
+                SELECT COALESCE(SUM(qty), 0) AS qty
+                  FROM sc_trx.penjualan_dtl
+                 WHERE TRIM(COALESCE(uniqueiddo, '')) = ?
+                   AND TRIM(COALESCE(docnodo, '')) = ?
+            ", [$uid, $docnodo])->getRowArray();
+
+            $sisa -= (float) ($trxFinal['qty'] ?? 0);
+
+            if ($sisa <= 0) {
+                continue;
+            }
+
+            $harga = (float) ($row['harga'] ?? 0);
+            $disc  = (float) ($row['multidisc'] ?? 0);
+
+            $idspec = trim((string) ($row['idspec'] ?? ''));
+            if (strtoupper($idspec) === 'NULL') {
+                $idspec = '';
+            }
+
+            $nilai         = $sisa * $harga;
+            $nilaikonversi = $nilai * $kursHeader;
+            $nilaipajak    = ($taxPercent > 0) ? ($nilai * $taxPercent / 100) : 0;
+
+            $builderDetail->insert([
+                'docno'          => $docno,
+                'docnoso'        => $docnosoDo,
+                'docnodo'        => $docnodo,
+                'idurutdo'       => (int) ($row['idurut'] ?? 0),
+                'uniqueiddo'     => $uid,
+                'uniqueidso'     => trim((string) ($row['uniqueidso'] ?? '')),
+                'uniqueid'       => (trim((string) ($row['uniqueidso'] ?? '')) !== '')
+                                        ? trim((string) $row['uniqueidso'])
+                                        : $uid,
+                'idbarang'       => strtoupper(trim((string) ($row['idbarang'] ?? ''))),
+                'nmbarang'       => strtoupper(trim((string) ($row['nmbarang'] ?? ''))),
+                'idprincipal'    => strtoupper(trim((string) ($row['idprincipal'] ?? ''))),
+                'idgudang'       => strtoupper(trim((string) ($row['idgudang'] ?? ''))),
+                'idspec'         => $idspec,
+                'unit'           => strtoupper(trim((string) ($row['unit'] ?? ''))),
+                'qtyref'         => (float) ($row['qty'] ?? 0),
+                'hargasatuanref' => $harga,
+                'qty'            => $sisa,
+                'harga'          => $harga,
+                'hargasatuan'    => $harga,
+                'multidisc'      => $disc,
+                'nilai'          => $nilai,
+                'idtax'          => $idtaxHeader,
+                'currcode'       => $currHeader,
+                'kurs'           => $kursHeader,
+                'nilaikonversi'  => $nilaikonversi,
+                'nilaipajak'     => $nilaipajak,
+                'description'    => strtoupper(trim((string) ($row['description'] ?? ''))),
+                'etd'            => $etdRow,
+                'eta'            => $etaRow,
+                'inputby'        => $nama,
+                'inputdate'      => date('Y-m-d H:i:s'),
+            ]);
+
+            $inserted++;
+        }
+
+        // =====================================================
+        // HITUNG TOTAL HEADER
+        // =====================================================
+        $penjualanHeader = $builderHeader->select('idtax')
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->get()->getRowArray();
+
+        $idtaxHead = trim((string) ($penjualanHeader['idtax'] ?? ''));
+
+        $totalDpp = $db->table('sc_tmp.penjualan_dtl')
+            ->select('COALESCE(SUM(nilai), 0) AS total_dpp')
+            ->where('docno', $docno)
+            ->where('inputby', $nama)
+            ->get()
+            ->getRowArray();
+
+        $dpp         = (float) ($totalDpp['total_dpp'] ?? 0);
+        $jumlahPajak = 0;
+
+        if ($idtaxHead !== '' && strtoupper($idtaxHead) !== 'NON' && $dpp > 0) {
+            $taxRows = $db->table('sc_mst.tax_dtl')
+                ->select('percentation')
+                ->where('idtax', $idtaxHead)
+                ->get()
+                ->getResultArray();
+
+            foreach ($taxRows as $tax) {
+                $jumlahPajak += $dpp * (((float) ($tax['percentation'] ?? 0)) / 100);
+            }
+        }
+
+        $total = $dpp + $jumlahPajak;
+
+        $builderHeader->where('inputby', $nama)
+            ->where('docno', $docno)
+            ->update([
+                'dpp'         => number_format($dpp, 4, '.', ''),
+                'jumlahpajak' => number_format($jumlahPajak, 4, '.', ''),
+                'total'       => number_format($total, 4, '.', ''),
+                'updateby'    => $nama,
+                'updatedate'  => date('Y-m-d H:i:s'),
+            ]);
+
+        $db->transComplete();
+
+        if (!$db->transStatus()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Gagal menarik DO, transaksi dibatalkan',
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'success'  => true,
+            'reload'   => $reload,
+            'inserted' => $inserted,
+            'message'  => $inserted > 0
+                ? $inserted . ' detail DO berhasil ditarik'
+                : 'Tidak ada detail baru (sudah ada di dokumen ini)',
+        ]);
+    }
+
     public function savePenjualanDetail()
     {
         $nama    = trim($this->session->get('nama'));
@@ -8427,8 +9589,8 @@ class PostSales extends BaseController
                         . ($nmbarangCek !== '' ? ' (' . $nmbarangCek . ')' : '')
                         . ' di gudang ' . $idgudang
                         . ($idspec !== '' ? ', batch ' . $idspec : '')
-                        . '. Tersedia: ' . number_format($stokSaldo, 4, '.', ',')
-                        . ', dibutuhkan: ' . number_format($qtyTotal, 4, '.', ',') . '.'
+                        . '. Tersedia: ' . $this->soFormatGridNumber($stokSaldo)
+                        . ', dibutuhkan: ' . $this->soFormatGridNumber($qtyTotal) . '.'
                 ]);
             }
             // ===== END VALIDASI STOK =====
@@ -8565,12 +9727,21 @@ class PostSales extends BaseController
 
                 if ($sisaQty <= 0) continue;
 
-                $duplicate = $builderDetail
+                $dupBuilder = $builderDetail
                     ->where('docno', $docno)
                     ->where('uniqueid', $row->uniqueid)
-                    ->where('inputby', $nama)
-                    ->where($isFromSJ ? 'docnosj' : 'docnoso', $isFromSJ ? $docnosj : $docnoso)
-                    ->countAllResults();
+                    ->where('inputby', $nama);
+
+                /* sc_tmp.penjualan_dtl tidak memiliki kolom docnosj. Baris yang
+                   berasal dari SJ disimpan dengan docnoso NULL, baris dari SO
+                   memakai nomor SO. */
+                if ($isFromSJ) {
+                    $dupBuilder->where('docnoso', null);
+                } else {
+                    $dupBuilder->where('docnoso', $docnoso);
+                }
+
+                $duplicate = $dupBuilder->countAllResults();
 
                 $nilaiRow = $sisaQty * $row->harga;
 
@@ -8602,7 +9773,7 @@ class PostSales extends BaseController
                     $builderDetail->insert([
                         'docno'         => $docno,
                         'docnoso'       => $isFromSJ ? null : $docnoso,
-                        'docnosj'       => $isFromSJ ? $docnosj : null,
+                        // kolom docnosj tidak ada pada sc_tmp.penjualan_dtl
                         'idbarang'      => $row->idbarang,
                         'uniqueid'      => $row->uniqueid,
                         'nmbarang'      => $row->nmbarang,
@@ -8995,6 +10166,25 @@ class PostSales extends BaseController
         }
     }
 
+    /* Nomor referensi baris detail Penjualan (kolom "No. SJ / DO").
+       sc_tmp.penjualan_dtl / sc_trx.penjualan_dtl pada DB yang dipakai aplikasi
+       tidak memiliki kolom docnosj; baris hasil "Tarik DO" menyimpan nomor DO
+       pada docnodo. Karena itu pembacaan harus aman terhadap property yang
+       tidak ada supaya server-side DataTables tidak error (Ajax error). */
+    private function penjualan_dtl_ref_doc($row)
+    {
+        foreach (array('docnosj', 'docnodo') as $col) {
+            if (property_exists($row, $col)) {
+                $val = trim((string) $row->$col);
+                if ($val !== '') {
+                    return $val;
+                }
+            }
+        }
+
+        return '';
+    }
+
     function list_tmp_penjualan_dtl(){
         $docno = trim($this->request->getPost('docno')); // ambil dari POST
         $list = $this->m_postsales->get_t_penjualan_dtl_temp_view($docno);
@@ -9007,7 +10197,7 @@ class PostSales extends BaseController
             // $row[] = $no;
             $row[] = $lm->uniqueid;
             //item
-            $row[] = $lm->docnosj;
+            $row[] = $this->penjualan_dtl_ref_doc($lm);
             $row[] = $lm->docnoso;
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
@@ -9015,14 +10205,14 @@ class PostSales extends BaseController
             $row[] = $lm->idgudang;
             $row[] = $lm->idspec;
             $row[] = $lm->unit;
-            $row[] = '<div class="ratakanan">'. number_format($lm->qty, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan">'. $this->soFormatGridNumber($lm->qty) . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->qtybonus, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->harga, 4, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan">'. number_format($lm->multidisc, 4, '.', ',') . '% </div>';
+            $row[] = '<div class="ratakanan">'. $this->soFormatGridNumber($lm->harga) . '</div>';
+            $row[] = '<div class="ratakanan">'. $this->soFormatGridNumber($lm->multidisc) . '% </div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->volitem, 0, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->biaya, 0, '.', ',') . '</div>';
             // $row[] = '<div class="ratakanan">'. number_format($lm->biaya2, 0, '.', ',') . '</div>';
-            $row[] = '<div class="ratakanan text-bold">'. number_format($lm->nilai, 4, '.', ',') . '</div>';
+            $row[] = '<div class="ratakanan text-bold">'. $this->soFormatGridNumber($lm->nilai) . '</div>';
             $row[] = $lm->description;
             $idbarangRow = trim((string) $lm->idbarang);
             $idgudangRow = trim((string) $lm->idgudang);
@@ -9038,7 +10228,7 @@ class PostSales extends BaseController
 
             $stokRow     = (float) $stockCache[$stockKey];
             $qtyRow      = (float) $lm->qty;
-            $stokRowText = number_format($stokRow, 4, '.', ',');
+            $stokRowText = $this->soFormatGridNumber($stokRow);
 
             if ($idgudangRow === '') {
                 $row[] = '<div class="ratakanan text-danger" title="Gudang belum dipilih">- <i class="fa fa-exclamation-triangle"></i></div>';
@@ -9049,6 +10239,12 @@ class PostSales extends BaseController
                 $row[] = '<div class="ratakanan">' . $stokRowText . '</div>';
             }
             // $row[] = $lm->descriptionpp;
+            /* Kolom Aksi (index 15) dirender di sisi client oleh penjualan_inline.js
+               (tombol update / hapus baris). Server tetap wajib mengirim satu nilai
+               placeholder agar jumlah kolom data sama dengan jumlah <th> pada
+               v_add_penjualan.php (16 kolom); jika tidak, DataTables memunculkan
+               "Requested unknown parameter '15' for row 0, column 15". */
+            $row[] = '';
             $data[] = $row;
         }
 
@@ -9072,7 +10268,7 @@ class PostSales extends BaseController
             // $row[] = $no;
             $row[] = $lm->idurut;
             //item
-            $row[] = $lm->docnosj;
+            $row[] = $this->penjualan_dtl_ref_doc($lm);
             $row[] = $lm->docnoso;
             $row[] = $lm->idbarang;
             $row[] = $lm->nmbarang;
@@ -9244,6 +10440,29 @@ class PostSales extends BaseController
                 'carabayar'         => strtoupper($carabayar),
                 // 'pemohon'       => $pemohon (jika masih diperlukan nanti bisa ditambahkan)
             ];
+
+            /* Jangan menimpa informasi/keterangan header draft (mis. hasil
+               tarik DO) dengan nilai kosong dari form. */
+            foreach ([
+                'jthtempo',
+                'alamatcustomer',
+                'gradecustomer',
+                'kdcustomerdeliv',
+                'alamatcustomerdeliv',
+                'keterangan',
+                'currcode',
+                'kdsalesman',
+                'idtax',
+                'carabayar',
+            ] as $col) {
+                if (trim((string) ($updateHeader[$col] ?? '')) === '') {
+                    $updateHeader[$col] = $headerRow[$col] ?? $updateHeader[$col];
+                }
+            }
+
+            if ((float) ($updateHeader['kurs'] ?? 0) <= 0) {
+                $updateHeader['kurs'] = $headerRow['kurs'] ?? $updateHeader['kurs'];
+            }
 
             try {
                 $this->db->transStart();
@@ -11007,6 +12226,409 @@ class PostSales extends BaseController
 
         return '';
     }
+
+    /* ==================================================================
+     * DELIVERY ORDER – INLINE ENTRY (addDeliveryOrder)
+     * Endpoint khusus halaman add/edit DO. Tidak menyentuh menu lain.
+     * ================================================================== */
+
+    private function doModel()
+    {
+        return new DeliveryOrderModel();
+    }
+
+    public function doLoadDeliveryOrder()
+    {
+        $docno = strtoupper(trim((string) ($this->request->getGet('docno') ?? $this->request->getPost('docno'))));
+        if ($docno === '') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Nomor DO kosong']);
+        }
+        $model = $this->doModel();
+        $nama  = trim((string) $this->session->get('nama'));
+        $rows  = $model->getDetail($docno);
+        $docdate = $model->getDocDate($docno, $nama);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'header'  => $model->getHeader($docno),
+            'rows'    => $rows,
+            'docdate' => $docdate,
+            // Stok akhir sc_trx.stkblc posisi tanggal DO (bukan nilai tersimpan).
+            'stok'    => $model->stokForRows($rows, $docdate),
+        ]);
+    }
+
+    public function doSaveDeliveryOrderHeader()
+    {
+        $nama   = trim($this->session->get('nama'));
+        $model  = $this->doModel();
+        $header = $model->saveHeader($this->request->getPost(), $nama);
+
+        if (!$header) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Nomor DO wajib diisi']);
+        }
+
+        $header = $model->recalcTotals(trim((string) $header['docno']));
+
+        return $this->response->setJSON([
+            'success' => true,
+            'header'  => $header,
+            'message' => 'Header Delivery Order tersimpan',
+        ]);
+    }
+
+    public function doSaveDeliveryOrderRow()
+    {
+        $nama     = trim($this->session->get('nama'));
+        $model    = $this->doModel();
+        $post     = $this->request->getPost();
+
+        $docno    = strtoupper(trim((string) ($post['docno'] ?? '')));
+        $idbarang = strtoupper(trim((string) ($post['idbarang'] ?? '')));
+        $idgudang = strtoupper(trim((string) ($post['idgudang'] ?? '')));
+        $unit     = strtoupper(trim((string) ($post['unit'] ?? '')));
+        $qty      = $model->num($post['qty'] ?? 0);
+
+        if ($docno === '' || $idbarang === '') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Item DO wajib dipilih']);
+        }
+        if ($idgudang === '') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Gudang wajib dipilih']);
+        }
+        if ($unit === '') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Satuan wajib dipilih']);
+        }
+        if ($qty <= 0) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Qty harus lebih besar dari 0']);
+        }
+
+        $row = $model->saveDetail($post, $nama);
+        if (!$row) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Gagal menyimpan item DO']);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'row'     => $row,
+            'header'  => $model->getHeader($docno),
+            'message' => 'Item DO tersimpan',
+        ]);
+    }
+
+    /**
+     * Simpan Draft = dokumen resmi DRAFT (status 'D').
+     *
+     * Alurnya mengikuti trigger sc_tmp.tr_deliveryorder_finalize():
+     *   E -> D  : header + detail dipindah dari sc_tmp ke sc_trx dengan
+     *             status 'D' TANPA update qtydo SO dan TANPA potong stok.
+     * Stok kosong/kurang TIDAK memblokir draft — hanya dilaporkan sebagai
+     * peringatan (baris dengan stok kosong tetap hanya boleh Simpan Draft).
+     */
+    public function doSaveDeliveryOrderDraft()
+    {
+        $nama  = trim($this->session->get('nama'));
+        $model = $this->doModel();
+        $post  = $this->request->getPost();
+
+        $docno = strtoupper(trim((string) ($post['docno'] ?? '')));
+        if ($docno === '') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Nomor DO wajib diisi']);
+        }
+        if (trim((string) ($post['kdcustomer'] ?? '')) === '') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Customer wajib dipilih']);
+        }
+
+        $header = $model->saveHeader($post, $nama);
+        if (!$header) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Header DO gagal disimpan']);
+        }
+
+        $rows = $model->getDetail($docno);
+        if (empty($rows)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Detail DO masih kosong']);
+        }
+
+        // Validasi baris sama seperti simpan final.
+        foreach ($rows as $r) {
+            if (
+                trim((string) ($r['unit'] ?? '')) === ''
+                || $model->num($r['qty'] ?? 0) <= 0
+                || trim((string) ($r['nmbarang'] ?? '')) === ''
+            ) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Masih ada baris dengan satuan / qty / nama barang kosong',
+                ]);
+            }
+        }
+
+        $header = $model->recalcTotals($docno);
+
+        // Peringatan stok posisi tanggal DO (sc_trx.stkblc s/d docdate).
+        $docdate  = $model->normalDate($header['docdate'] ?? '');
+        $stokInfo = $model->stokForRows($rows, $docdate);
+
+        $stokKurang = [];
+        foreach ($rows as $r) {
+            $info = $stokInfo[(int) ($r['idurut'] ?? 0)] ?? null;
+            if (!$info || empty($info['kurang'])) {
+                continue;
+            }
+            $stokKurang[] = trim((string) $r['idbarang'])
+                . ' / ' . trim((string) $r['idgudang'])
+                . ' / ' . (trim((string) $r['idspec']) !== '' ? trim((string) $r['idspec']) : '-')
+                . ' : stok ' . $this->soFormatGridNumber($info['stokakhir'])
+                . ', butuh ' . $this->soFormatGridNumber($info['qty']);
+        }
+
+        try {
+            $this->db->transBegin();
+
+            // Penanda untuk membaca nomor final (trigger bisa menaikkan nomor
+            // bila nomor sudah dipakai dokumen lain di sc_trx).
+            $mxRow  = $this->db->query("SELECT COALESCE(MAX(idurut), 0) AS mx FROM sc_trx.deliveryorder")->getRowArray();
+            $idMax  = (int) ($mxRow['mx'] ?? 0);
+
+            // CAS E -> D: trigger memindahkan header+detail ke sc_trx (status 'D').
+            $this->db->table('sc_tmp.deliveryorder')
+                ->where('docno', $docno)
+                ->where('inputby', $nama)
+                ->where('status', 'E')
+                ->update([
+                    'status'     => 'D',
+                    'updateby'   => $nama,
+                    'updatedate' => date('Y-m-d H:i:s'),
+                ]);
+
+            if ($this->db->affectedRows() <= 0) {
+                $this->db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Draft DO tidak bisa disimpan (header temporary tidak ditemukan / sudah diproses).',
+                ]);
+            }
+
+            $saved = $this->db->query(
+                "SELECT TRIM(docno) AS docno
+                   FROM sc_trx.deliveryorder
+                  WHERE idurut > ?
+                    AND status = 'D'
+                    AND TRIM(inputby) = ?
+                  ORDER BY idurut DESC
+                  LIMIT 1",
+                [$idMax, $nama]
+            )->getRowArray();
+
+            $newDocno = trim((string) ($saved['docno'] ?? ''));
+            if ($newDocno === '') {
+                $this->db->transRollback();
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Draft DO gagal diproses oleh database (trigger draft tidak berjalan).',
+                ]);
+            }
+
+            $this->db->transCommit();
+        } catch (\Throwable $e) {
+            $this->db->transRollback();
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Draft DO gagal disimpan: ' . $e->getMessage(),
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'success'     => true,
+            'docno'       => $newDocno,
+            'status'      => 'D',
+            'redirect'    => base_url('sales/postsales/deliveryorder'),
+            'stok_kurang' => $stokKurang,
+            'message'     => 'Draft Delivery Order tersimpan',
+        ]);
+    }
+
+    public function doDeleteDeliveryOrderRow()
+    {
+        $model  = $this->doModel();
+        $docno  = strtoupper(trim((string) $this->request->getPost('docno')));
+        $idurut = (int) $this->request->getPost('idurut');
+
+        if ($docno === '' || $idurut <= 0) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Parameter hapus tidak valid']);
+        }
+
+        $model->deleteDetail($docno, $idurut);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'header'  => $model->getHeader($docno),
+            'message' => 'Item DO dihapus',
+        ]);
+    }
+
+    public function doSwapDeliveryOrderRow()
+    {
+        $model     = $this->doModel();
+        $docno     = strtoupper(trim((string) $this->request->getPost('docno')));
+        $idurutView = (int) $this->request->getPost('idurut_view');
+        $direction = strtolower(trim((string) $this->request->getPost('direction')));
+
+        if ($docno === '' || $idurutView <= 0 || !in_array($direction, ['up', 'down'], true)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Parameter urutan tidak valid']);
+        }
+
+        $ok = $model->swapView($docno, $idurutView, $direction);
+
+        return $this->response->setJSON([
+            'success' => $ok,
+            'rows'    => $model->getDetail($docno),
+            'message' => $ok ? '' : 'Baris sudah berada di posisi teratas/terbawah',
+        ]);
+    }
+
+    public function doListSO()
+    {
+        $model = $this->doModel();
+        $rows  = $model->listSO(
+            (string) $this->request->getPost('kdcustomer'),
+            (string) $this->request->getPost('search')
+        );
+
+        return $this->response->setJSON(['success' => true, 'rows' => $rows]);
+    }
+
+    /**
+     * Detail SO untuk modal Tarik SO (parent-child, bisa pilih sebagian baris).
+     */
+    public function doListSODetail()
+    {
+        $model   = $this->doModel();
+        $docnoso = strtoupper(trim((string) $this->request->getPost('docnoso')));
+        $docno   = strtoupper(trim((string) $this->request->getPost('docno')));
+
+        if ($docnoso === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Nomor SO tidak valid',
+                'rows'    => [],
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'rows'    => $model->listSODetail($docnoso, $docno),
+        ]);
+    }
+
+    public function doPullSO()
+    {
+        $nama    = trim($this->session->get('nama'));
+        $docno   = strtoupper(trim((string) $this->request->getPost('docno')));
+        $docnoso = strtoupper(trim((string) $this->request->getPost('docnoso')));
+
+        // Detail SO terpilih (uniqueid). Kosong = tarik semua item SO.
+        $ids = $this->request->getPost('ids');
+        if (is_string($ids)) {
+            $ids = trim($ids);
+            $decoded = ($ids !== '' && $ids[0] === '[') ? json_decode($ids, true) : null;
+            $ids = is_array($decoded) ? $decoded : ($ids === '' ? [] : explode(',', $ids));
+        }
+        $ids = is_array($ids) ? $ids : [];
+
+        $picks = [];
+        foreach ($ids as $v) {
+            $v = trim((string) $v);
+            if ($v !== '') {
+                $picks[$v] = $v;
+            }
+        }
+
+        $model = $this->doModel();
+        $res   = $model->pullSO($docno, $docnoso, $nama, array_values($picks));
+
+        if (!empty($res['success'])) {
+            $res['rows'] = $model->getDetail($docno);
+        }
+
+        return $this->response->setJSON($res);
+    }
+
+    public function doStokDeliveryOrder()
+    {
+        $model    = $this->doModel();
+        $nama     = trim((string) $this->session->get('nama'));
+        $docno    = strtoupper(trim((string) ($this->request->getPost('docno') ?? '')));
+        $idbarang = strtoupper(trim((string) $this->request->getPost('idbarang')));
+        $idgudang = strtoupper(trim((string) $this->request->getPost('idgudang')));
+        $idspec   = trim((string) $this->request->getPost('idspec'));
+        $qty      = $model->num($this->request->getPost('qty') ?? 0);
+
+        // Batas stok = tanggal dokumen DO (header sc_tmp milik user).
+        $docdate = $model->normalDate($this->request->getPost('docdate') ?? '');
+        if ($docdate === '') {
+            $docdate = $model->getDocDate($docno, $nama);
+        }
+
+        $stok = $model->stokAkhir($idbarang, $idgudang, $idspec, $docdate);
+
+        return $this->response->setJSON([
+            'success'   => true,
+            'stok'      => $stok,
+            'docdate'   => $docdate,
+            'kosong'    => ($stok <= 0),
+            'kurang'    => (($stok <= 0) || ($qty > $stok)),
+        ]);
+    }
+
+    /**
+     * Refresh stok akhir seluruh baris inline (satu query agregat).
+     * Dipakai saat grid detail dimuat ulang / tanggal DO berubah.
+     */
+    public function doStokDeliveryOrderRows()
+    {
+        $model = $this->doModel();
+        $nama  = trim((string) $this->session->get('nama'));
+        $docno = strtoupper(trim((string) ($this->request->getPost('docno') ?? '')));
+
+        if ($docno === '') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Nomor DO kosong',
+                'rows'    => [],
+            ]);
+        }
+
+        $docdate = $model->normalDate($this->request->getPost('docdate') ?? '');
+        if ($docdate === '') {
+            $docdate = $model->getDocDate($docno, $nama);
+        }
+
+        $rows = $model->getDetail($docno);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'docdate' => $docdate,
+            'rows'    => $model->stokForRows($rows, $docdate),
+        ]);
+    }
+
+    /**
+     * Kurs otomatis dari sc_mst.exchangerate berdasarkan docdate:
+     * rate terakhir pada / sebelum docdate, fallback rate terakhir.
+     */
+    public function doKursDeliveryOrder()
+    {
+        $model    = $this->doModel();
+        $currcode = strtoupper(trim((string) ($this->request->getPost('currcode') ?? '')));
+        $docdate  = trim((string) ($this->request->getPost('docdate') ?? ''));
+
+        return $this->response->setJSON([
+            'success' => true,
+            'kurs'    => $model->kursByDocdate($currcode, $docdate),
+        ]);
+    }
+
+
 
 }
 

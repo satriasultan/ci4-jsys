@@ -1,768 +1,672 @@
+--##############################################################################
+-- PENJUALAN (PJO) - POSTGRESQL
+-- ONE-SHOT EXECUTION: DROP + CREATE + TRIGGER + JURNAL (TAHAP 01-04)
+--
+-- PERINGATAN:
+--   Script ini MENGHAPUS seluruh data:
+--     - sc_tmp.penjualan, sc_tmp.penjualan_dtl
+--     - sc_trx.penjualan, sc_trx.penjualan_dtl
+--   Jalankan HANYA pada database DEVELOPMENT / hasil backup.
+--   WAJIB backup sebelum eksekusi.
+--
+-- CATATAN PENTING:
+--   - Script ini TIDAK meng-update tabel SO (sc_trx.salesorder / _dtl).
+--   - Outstanding SO dihitung via view/query terpisah (v_so_outstanding).
+--   - Stock movement via transaction_dt (journal_type='DELIVR').
+--   - Accounting via transaction_dt (journal_type='SALESX').
+--   - Tidak ada panggilan sc_inv.fn_stok_keluar / fn_stok_masuk.
+--
+-- DEPENDENCY (HARUS SUDAH ADA):
+--   - TAHAP 01: sc_trx.fn_stock_uniqueid, sc_trx.fn_stock_key
+--   - TAHAP 02: sc_mst.journal_type
+--   - TAHAP 03: sc_mst.journal_type_coa
+--   - TAHAP 04: sc_trx.transaction_dt, sc_trx.fn_resolve_transaction_coa,
+--               sc_trx.fn_get_transaction_tax_accounts
+--   - sc_mst.coa, mbarang, currency, konfigurasi_umum, tax_dtl
+--   - sc_log.fn_log_transaction, sc_log.fn_get_user_ip
+--##############################################################################
 
--- JALANKAN INI DULU
+BEGIN;
 
-DROP TABLE IF EXISTS sc_tmp.penjualan_dtl
-DROP TABLE IF EXISTS sc_trx.penjualan_dtl
+-- ============================================================================
+-- 0. DROP OBJECTS
+-- ============================================================================
+DROP TRIGGER IF EXISTS tr_penjualan_finalize ON sc_tmp.penjualan;
+DROP TRIGGER IF EXISTS tr_penjualan          ON sc_trx.penjualan;
 
+DROP TRIGGER IF EXISTS tr_penjualan_dtl_to_transaction ON sc_trx.penjualan_dtl;
+DROP TRIGGER IF EXISTS tr_penjualan_dtl_to_stok        ON sc_trx.penjualan_dtl;
 
+DROP FUNCTION IF EXISTS sc_tmp.tr_penjualan_finalize();
+DROP FUNCTION IF EXISTS sc_trx.tr_penjualan();
+DROP FUNCTION IF EXISTS sc_trx.fn_penjualan_dtl_to_transaction();
+DROP FUNCTION IF EXISTS sc_trx.fn_penjualan_dtl_to_stok();
+DROP FUNCTION IF EXISTS sc_trx.fn_sync_penjualan_dtl_to_transaction(TEXT, TEXT);
+DROP FUNCTION IF EXISTS sc_trx.fn_sync_penjualan_dtl_to_delivr(TEXT, TEXT);
+DROP FUNCTION IF EXISTS sc_trx.fn_sync_penjualan_dtl_to_salesx(TEXT, TEXT);
 
+DROP TABLE IF EXISTS sc_tmp.penjualan_dtl CASCADE;
+DROP TABLE IF EXISTS sc_tmp.penjualan     CASCADE;
+DROP TABLE IF EXISTS sc_trx.penjualan_dtl CASCADE;
+DROP TABLE IF EXISTS sc_trx.penjualan     CASCADE;
 
-CREATE TABLE IF NOT EXISTS sc_tmp.penjualan
+-- ============================================================================
+-- 1. HEADER TEMPORARY
+-- ============================================================================
+CREATE TABLE sc_tmp.penjualan
 (
-    idurut serial NOT NULL,
-    docno character(30) COLLATE pg_catalog."default" NOT NULL,
-    docdate character(20) COLLATE pg_catalog."default",
-    cabang character (30 ) COLLATE pg_catalog."default",    
-    pemohon character(100) COLLATE pg_catalog."default",
-    kdcustomer character(30) COLLATE pg_catalog."default",
-    nmcustomer character(250) COLLATE pg_catalog."default",
-    alamatcustomer TEXT,
-    gradecustomer character(30),
-    kdcustomerdeliv character(30) COLLATE pg_catalog."default",
-    nmcustomerdeliv character(250) COLLATE pg_catalog."default",
+    idurut              SERIAL NOT NULL,
+    idurut_view         INTEGER,
+    docno               CHARACTER(30) NOT NULL,
+    docnoso             CHARACTER(30),
+    docnodo             CHARACTER(30),
+    idrev               CHARACTER(30),
+    docdate             DATE,
+    cabang              CHARACTER(30),
+    pemohon             CHARACTER(100),
+    kdcustomer          CHARACTER(30),
+    nmcustomer          CHARACTER(250),
+    alamatcustomer      TEXT,
+    gradecustomer       CHARACTER(30),
+    kdcustomerdeliv     CHARACTER(30),
+    nmcustomerdeliv     CHARACTER(250),
     alamatcustomerdeliv TEXT,
-    kdsalesman character(10),
-    -- alamatkirim TEXT,
-    jthtempo numeric(18,2),
-    idtax character(20),
-    isinclusive character(6),
-    isopenprice character(6),
-    currcode character(3),
-    kurs numeric(18,2),
-    dpp numeric(18,2),
-    jumlahpajak numeric(18,2),
-    total numeric(18,2),
-    -- syarat TEXT,
-    carabayar character(30),
-    status character(6) COLLATE pg_catalog."default",
-    keterangan TEXT,
-    inputby character varying(50) COLLATE pg_catalog."default",
-    inputdate timestamp without time zone,
-    updateby character varying(50) COLLATE pg_catalog."default",
-    updatedate timestamp without time zone,
-    printby character varying(50) COLLATE pg_catalog."default",
-    printdate timestamp without time zone,
-    docnotmp character(30) COLLATE pg_catalog."default",
-    doctype CHARACTER(10) DEFAULT 'SALES',
+    kdsalesman          CHARACTER(10),
+    jthtempo            NUMERIC(18,4),
+    idtax               CHARACTER(20),
+    isinclusive         CHARACTER(6),
+    isopenprice         CHARACTER(6),
+    currcode            CHARACTER(3),
+    kurs                NUMERIC(18,4),
+    dpp                 NUMERIC(18,4),
+    jumlahpajak         NUMERIC(18,4),
+    total               NUMERIC(18,4),
+    carabayar           CHARACTER(30),
+    status              CHARACTER(6),
+    keterangan          TEXT,
+    inputby             VARCHAR(50),
+    inputdate           TIMESTAMP,
+    updateby            VARCHAR(50),
+    updatedate          TIMESTAMP,
+    printby             VARCHAR(50),
+    printdate           TIMESTAMP,
+    printcount          INTEGER DEFAULT 0,
+    docnotmp            CHARACTER(30),
+    doctype             CHARACTER(10) DEFAULT 'SALES',
     CONSTRAINT pk_tmp_penjualan PRIMARY KEY (docno)
-)
+);
 
-TABLESPACE pg_default;
+ALTER TABLE sc_tmp.penjualan OWNER TO postgres;
+CREATE INDEX idx_tmp_pjo_view    ON sc_tmp.penjualan (idurut_view);
+CREATE INDEX idx_tmp_pjo_docnoso ON sc_tmp.penjualan (docnoso);
+CREATE INDEX idx_tmp_pjo_docnodo ON sc_tmp.penjualan (docnodo);
 
-ALTER TABLE IF EXISTS sc_tmp.penjualan
-    OWNER to postgres;
-
-
-
-
-
-CREATE TABLE IF NOT EXISTS sc_trx.penjualan
+-- ============================================================================
+-- 2. HEADER TRANSAKSI
+-- ============================================================================
+CREATE TABLE sc_trx.penjualan
 (
-    idurut serial NOT NULL,
-    docno character(30) COLLATE pg_catalog."default" NOT NULL,
-    docdate character(20) COLLATE pg_catalog."default",
-    cabang character (30 ) COLLATE pg_catalog."default",    
-    pemohon character(100) COLLATE pg_catalog."default",
-    kdcustomer character(30) COLLATE pg_catalog."default",
-    nmcustomer character(250) COLLATE pg_catalog."default",
-    alamatcustomer TEXT,
-    gradecustomer character(30),
-    kdcustomerdeliv character(30) COLLATE pg_catalog."default",
-    nmcustomerdeliv character(250) COLLATE pg_catalog."default",
+    idurut              SERIAL NOT NULL,
+    idurut_view         INTEGER,
+    docno               CHARACTER(30) NOT NULL,
+    docnoso             CHARACTER(30),
+    docnodo             CHARACTER(30),
+    idrev               CHARACTER(30),
+    docdate             DATE,
+    cabang              CHARACTER(30),
+    pemohon             CHARACTER(100),
+    kdcustomer          CHARACTER(30),
+    nmcustomer          CHARACTER(250),
+    alamatcustomer      TEXT,
+    gradecustomer       CHARACTER(30),
+    kdcustomerdeliv     CHARACTER(30),
+    nmcustomerdeliv     CHARACTER(250),
     alamatcustomerdeliv TEXT,
-    kdsalesman character(10),
-    -- alamatkirim TEXT,
-    jthtempo numeric(18,2),
-    idtax character(20),
-    isinclusive character(6),
-    isopenprice character(6),
-    currcode character(3),
-    kurs numeric(18,2),
-    dpp numeric(18,2),
-    jumlahpajak numeric(18,2),
-    total numeric(18,2),
-    -- syarat TEXT,
-    carabayar character(30),
-    status character(6) COLLATE pg_catalog."default",
-    keterangan TEXT,
-    inputby character varying(50) COLLATE pg_catalog."default",
-    inputdate timestamp without time zone,
-    updateby character varying(50) COLLATE pg_catalog."default",
-    updatedate timestamp without time zone,
-    printby character varying(50) COLLATE pg_catalog."default",
-    printdate timestamp without time zone,
-    docnotmp character(30) COLLATE pg_catalog."default",
-    doctype CHARACTER(10) DEFAULT 'SALES',
+    kdsalesman          CHARACTER(10),
+    jthtempo            NUMERIC(18,4),
+    idtax               CHARACTER(20),
+    isinclusive         CHARACTER(6),
+    isopenprice         CHARACTER(6),
+    currcode            CHARACTER(3),
+    kurs                NUMERIC(18,4),
+    dpp                 NUMERIC(18,4),
+    jumlahpajak         NUMERIC(18,4),
+    total               NUMERIC(18,4),
+    carabayar           CHARACTER(30),
+    status              CHARACTER(6),
+    keterangan          TEXT,
+    inputby             VARCHAR(50),
+    inputdate           TIMESTAMP,
+    updateby            VARCHAR(50),
+    updatedate          TIMESTAMP,
+    printby             VARCHAR(50),
+    printdate           TIMESTAMP,
+    printcount          INTEGER DEFAULT 0,
+    docnotmp            CHARACTER(30),
+    doctype             CHARACTER(10) DEFAULT 'SALES',
     CONSTRAINT pk_trx_penjualan PRIMARY KEY (docno)
-)
+);
 
-TABLESPACE pg_default;
+ALTER TABLE sc_trx.penjualan OWNER TO postgres;
+CREATE INDEX idx_trx_pjo_view    ON sc_trx.penjualan (idurut_view);
+CREATE INDEX idx_trx_pjo_docnoso ON sc_trx.penjualan (docnoso);
+CREATE INDEX idx_trx_pjo_docnodo ON sc_trx.penjualan (docnodo);
 
-ALTER TABLE IF EXISTS sc_trx.penjualan
-    OWNER to postgres;
-
-
-
-CREATE TABLE IF NOT EXISTS sc_tmp.penjualan_dtl
+-- ============================================================================
+-- 3. DETAIL TEMPORARY
+-- ============================================================================
+CREATE TABLE sc_tmp.penjualan_dtl
 (
-    idurut SERIAL PRIMARY KEY,
-    docno CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
-    docnoso CHARACTER(30),
-    docnosj CHARACTER(30),
-    uniqueid VARCHAR(64),
-    idbarang CHARACTER(20) COLLATE pg_catalog."default",
-    nmbarang CHARACTER(150) COLLATE pg_catalog."default",
-    idprincipal CHARACTER(20) COLLATE pg_catalog."default",
-    idgudang CHARACTER(30) COLLATE pg_catalog."default",
-    idspec CHARACTER(30) COLLATE pg_catalog."default",
-    unit CHARACTER(20) COLLATE pg_catalog."default",
-    qty NUMERIC(18,2),
-    harga NUMERIC(18,2),
-    multidisc NUMERIC(18,2),
-    nilai NUMERIC(18,2),
-    bomdesc TEXT COLLATE pg_catalog."default",
-    description TEXT COLLATE pg_catalog."default",
-    status CHARACTER(6) COLLATE pg_catalog."default",
-    inputby CHARACTER VARYING(50) COLLATE pg_catalog."default",
-    inputdate TIMESTAMP WITHOUT TIME ZONE,
-    updateby CHARACTER VARYING(50) COLLATE pg_catalog."default",
-    updatedate TIMESTAMP WITHOUT TIME ZONE,
-    doctype CHARACTER(10) DEFAULT 'SALES',
-    docnotmp character(30)
-)
-TABLESPACE pg_default;
+    idurut          SERIAL PRIMARY KEY,
+    idurut_view     INTEGER,
+    docno           CHARACTER(30) NOT NULL,
 
-ALTER TABLE IF EXISTS sc_tmp.penjualan_dtl
-    OWNER TO postgres;
+    docnoso         CHARACTER(30),
+    idrev           CHARACTER(30),
+    idurutso        INTEGER,
+    uniqueidso      VARCHAR(64),
 
+    docnodo         CHARACTER(30),
+    idurutdo        INTEGER,
+    uniqueiddo      VARCHAR(64),
 
+    uniqueid        VARCHAR(64) NOT NULL,
 
+    idbarangref     CHARACTER(20),
+    nmbarangref     CHARACTER(150),
+    idbarang        CHARACTER(20),
+    nmbarang        CHARACTER(150),
 
-CREATE TABLE IF NOT EXISTS sc_trx.penjualan_dtl
+    idprincipal     CHARACTER(20),
+    idgudang        CHARACTER(30),
+    idspec          CHARACTER(30),
+    unit            CHARACTER(20),
+
+    qtyref          NUMERIC(18,4),
+    hargasatuanref  NUMERIC(18,4),
+
+    qty             NUMERIC(18,4),
+    harga           NUMERIC(18,4),
+    hargasatuan     NUMERIC(18,4),
+    multidisc       NUMERIC(18,4),
+    nilai           NUMERIC(18,4),
+
+    idtax           CHARACTER(20),
+    currcode        CHARACTER(3),
+    kurs            NUMERIC(18,4),
+    nilaikonversi   NUMERIC(18,4),
+    nilaipajak      NUMERIC(18,4),
+    qtyretur        NUMERIC(18,4) DEFAULT 0,
+
+    stokakhir       NUMERIC(18,4),
+
+    bomdesc         TEXT,
+    description     TEXT,
+    etd             DATE,
+    eta             DATE,
+    status          CHARACTER(6),
+    inputby         VARCHAR(50),
+    inputdate       TIMESTAMP,
+    updateby        VARCHAR(50),
+    updatedate      TIMESTAMP,
+    doctype         CHARACTER(10) DEFAULT 'SALES',
+    docnotmp        CHARACTER(30)
+);
+
+ALTER TABLE sc_tmp.penjualan_dtl OWNER TO postgres;
+CREATE INDEX idx_tmp_pjo_dtl_view    ON sc_tmp.penjualan_dtl (docno, idurut_view);
+CREATE INDEX idx_tmp_pjo_dtl_uid     ON sc_tmp.penjualan_dtl (uniqueid);
+CREATE INDEX idx_tmp_pjo_dtl_uidso   ON sc_tmp.penjualan_dtl (uniqueidso);
+CREATE INDEX idx_tmp_pjo_dtl_uiddo   ON sc_tmp.penjualan_dtl (uniqueiddo);
+CREATE INDEX idx_tmp_pjo_dtl_docnoso ON sc_tmp.penjualan_dtl (docnoso);
+CREATE INDEX idx_tmp_pjo_dtl_docnodo ON sc_tmp.penjualan_dtl (docnodo);
+
+-- ============================================================================
+-- 4. DETAIL TRANSAKSI
+-- ============================================================================
+CREATE TABLE sc_trx.penjualan_dtl
 (
-    idurut SERIAL PRIMARY KEY,
-    docno CHARACTER(30) COLLATE pg_catalog."default" NOT NULL,
-    docnoso CHARACTER(30),
-    docnosj CHARACTER(30),
-    uniqueid VARCHAR(64),
-    idbarang CHARACTER(20) COLLATE pg_catalog."default",
-    nmbarang CHARACTER(150) COLLATE pg_catalog."default",
-    idprincipal CHARACTER(20) COLLATE pg_catalog."default",
-    idgudang CHARACTER(30) COLLATE pg_catalog."default",
-    idspec CHARACTER(30) COLLATE pg_catalog."default",
-    unit CHARACTER(20) COLLATE pg_catalog."default",
-    qty NUMERIC(18,2),
-    harga NUMERIC(18,2),
-    multidisc NUMERIC(18,2),
-    nilai NUMERIC(18,2),
-    bomdesc TEXT COLLATE pg_catalog."default",
-    description TEXT COLLATE pg_catalog."default",
-    status CHARACTER(6) COLLATE pg_catalog."default",
-    inputby CHARACTER VARYING(50) COLLATE pg_catalog."default",
-    inputdate TIMESTAMP WITHOUT TIME ZONE,
-    updateby CHARACTER VARYING(50) COLLATE pg_catalog."default",
-    updatedate TIMESTAMP WITHOUT TIME ZONE,
-    doctype CHARACTER(10) DEFAULT 'SALES',
-    docnotmp character(30)
-)
-TABLESPACE pg_default;
+    idurut          SERIAL PRIMARY KEY,
+    idurut_view     INTEGER,
+    docno           CHARACTER(30) NOT NULL,
+    docnoso         CHARACTER(30),
+    idrev           CHARACTER(30),
+    idurutso        INTEGER,
+    uniqueidso      VARCHAR(64),
+    docnodo         CHARACTER(30),
+    idurutdo        INTEGER,
+    uniqueiddo      VARCHAR(64),
+    uniqueid        VARCHAR(64) NOT NULL,
+    idbarangref     CHARACTER(20),
+    nmbarangref     CHARACTER(150),
+    idbarang        CHARACTER(20),
+    nmbarang        CHARACTER(150),
+    idprincipal     CHARACTER(20),
+    idgudang        CHARACTER(30),
+    idspec          CHARACTER(30),
+    unit            CHARACTER(20),
+    qtyref          NUMERIC(18,4),
+    hargasatuanref  NUMERIC(18,4),
+    qty             NUMERIC(18,4),
+    harga           NUMERIC(18,4),
+    hargasatuan     NUMERIC(18,4),
+    multidisc       NUMERIC(18,4),
+    nilai           NUMERIC(18,4),
+    idtax           CHARACTER(20),
+    currcode        CHARACTER(3),
+    kurs            NUMERIC(18,4),
+    nilaikonversi   NUMERIC(18,4),
+    nilaipajak      NUMERIC(18,4),
+    qtyretur        NUMERIC(18,4) DEFAULT 0,
+    stokakhir       NUMERIC(18,4),
+    bomdesc         TEXT,
+    description     TEXT,
+    etd             DATE,
+    eta             DATE,
+    status          CHARACTER(6),
+    inputby         VARCHAR(50),
+    inputdate       TIMESTAMP,
+    updateby        VARCHAR(50),
+    updatedate      TIMESTAMP,
+    doctype         CHARACTER(10) DEFAULT 'SALES',
+    docnotmp        CHARACTER(30)
+);
 
-ALTER TABLE IF EXISTS sc_trx.penjualan_dtl
-    OWNER TO postgres;
+ALTER TABLE sc_trx.penjualan_dtl OWNER TO postgres;
+CREATE INDEX idx_trx_pjo_dtl_view    ON sc_trx.penjualan_dtl (docno, idurut_view);
+CREATE INDEX idx_trx_pjo_dtl_uid     ON sc_trx.penjualan_dtl (uniqueid);
+CREATE INDEX idx_trx_pjo_dtl_uidso   ON sc_trx.penjualan_dtl (uniqueidso);
+CREATE INDEX idx_trx_pjo_dtl_uiddo   ON sc_trx.penjualan_dtl (uniqueiddo);
+CREATE INDEX idx_trx_pjo_dtl_docnoso ON sc_trx.penjualan_dtl (docnoso);
+CREATE INDEX idx_trx_pjo_dtl_docnodo ON sc_trx.penjualan_dtl (docnodo);
 
-
-
-
-
--- FUNCTION: sc_tmp.tr_penjualan_finalize()
-
--- DROP FUNCTION IF EXISTS sc_tmp.tr_penjualan_finalize();
+-- ============================================================================
+-- 5. FUNCTION: sc_tmp.tr_penjualan_finalize()
+--    AFTER UPDATE ON sc_tmp.penjualan
+--    TANPA update ke sc_trx.salesorder / salesorder_dtl.
+-- ============================================================================
 CREATE OR REPLACE FUNCTION sc_tmp.tr_penjualan_finalize()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $BODY$
 DECLARE
-    v_docno     TEXT;
-    v_inputby   TEXT;
-    v_idurut    INTEGER;
-    v_prefix    TEXT;
-    v_num       TEXT;
-    v_num_int   INTEGER;
-    v_lock_key  BIGINT;
-    v_base_docno TEXT;
-    v_new_docno  TEXT;
-
-    v_client_ip TEXT;
-    v_uniqueid  VARCHAR(64);
+    v_docno       TEXT;
+    v_inputby     TEXT;
+    v_idurut      INTEGER;
+    v_num         TEXT;
+    v_num_int     BIGINT;
+    v_base_docno  TEXT;
+    v_new_docno   TEXT;
+    v_client_ip   TEXT;
+    v_docnotmp    TEXT;
+    v_new_view    INTEGER;
 BEGIN
-    -- ===============================
-    -- AMBIL IP DARI sc_log.useronline
-    -- ===============================
-    v_client_ip := sc_log.fn_get_user_ip(NEW.inputby);
-    v_inputby := NEW.inputby;
-    IF OLD.status = 'E' AND NEW.status = 'F' AND COALESCE(NEW.docnotmp, '') = '' THEN
+    IF NOT (
+        (OLD.status = 'E' AND NEW.status = 'F') OR
+        (OLD.status = 'E' AND NEW.status = 'C')
+    ) THEN
+        RETURN NEW;
+    END IF;
 
-        -- ===============================
-        -- NORMALISASI
-        v_docno := rtrim(NEW.docno);
-        v_idurut  := NEW.idurut;
-        -- ambil base docno (tanpa angka belakang)
-        -- contoh:
-        -- 05M/2601/PA0001 -> 05M/2601/PA
-        -- PPB/2601/PT0025 -> PPB/2601/PT
+    v_inputby   := NEW.inputby;
+    v_idurut    := NEW.idurut;
+    v_docno     := BTRIM(NEW.docno);
+    v_docnotmp  := NULLIF(BTRIM(NEW.docnotmp), '');
+    v_client_ip := sc_log.fn_get_user_ip(v_inputby);
+
+    -- ===================== NORMAL FINALIZE E -> F ========================
+    IF OLD.status = 'E' AND NEW.status = 'F' AND v_docnotmp IS NULL THEN
+
+        IF v_docno IS NULL OR v_docno = '' THEN
+            RAISE EXCEPTION 'Nomor Penjualan tidak boleh kosong';
+        END IF;
+
+        IF v_docno !~ '[0-9]+$' THEN
+            RAISE EXCEPTION
+                'Format nomor Penjualan tidak valid (harus diakhiri angka): %',
+                v_docno;
+        END IF;
+
         v_base_docno := regexp_replace(v_docno, '[0-9]+$', '');
+        v_num        := substring(v_docno FROM '([0-9]+)$');
 
-        -- ===============================
-        -- ADVISORY LOCK (ANTI RACE CONDITION)
-        -- ===============================
-        PERFORM pg_advisory_xact_lock(hashtext(v_base_docno));
+        PERFORM pg_advisory_xact_lock(hashtextextended(v_base_docno, 0));
 
-        -- ===============================
-        -- AUTO INCREMENT JIKA SUDAH ADA
-        -- ===============================
         v_new_docno := v_docno;
 
         LOOP
             EXIT WHEN NOT EXISTS (
-                SELECT 1
-                FROM sc_trx.penjualan
-                WHERE rtrim(docno) = v_new_docno
+                SELECT 1 FROM sc_trx.penjualan pj
+                WHERE BTRIM(pj.docno) = v_new_docno
             );
 
-            -- ambil angka terakhir (dinamis)
-            v_num := regexp_replace(v_new_docno, '.*?([0-9]+)$', '\1');
-            v_num_int := v_num::INTEGER + 1;
+            v_num := substring(v_new_docno FROM '([0-9]+)$');
+            IF v_num IS NULL OR v_num = '' THEN
+                RAISE EXCEPTION 'Tidak dapat membaca nomor urut dari dokumen: %', v_new_docno;
+            END IF;
 
-            -- padding mengikuti panjang awal
-            v_new_docno := v_base_docno
-                        || lpad(v_num_int::TEXT, length(v_num), '0');
+            v_num_int   := v_num::BIGINT + 1;
+            v_new_docno := v_base_docno || lpad(v_num_int::TEXT, length(v_num), '0');
+
+            IF length(v_new_docno) > 30 THEN
+                RAISE EXCEPTION 'Nomor Penjualan melebihi 30 karakter: %', v_new_docno;
+            END IF;
         END LOOP;
 
-        -- gunakan docno final
         v_docno := v_new_docno;
 
+        SELECT COALESCE(MAX(idurut_view), 0) + 1 INTO v_new_view
+        FROM sc_trx.penjualan;
 
-        -- ===============================
-        -- INSERT HEADER
-        -- ===============================
+        -- Insert HEADER
         INSERT INTO sc_trx.penjualan (
-            idurut, docno, cabang, docdate, pemohon, 
-            kdcustomerdeliv, nmcustomerdeliv, alamatcustomerdeliv, carabayar,
-            kdcustomer,nmcustomer, alamatcustomer, jthtempo,
+            idurut_view, docno, docnoso, docnodo, idrev, cabang, docdate,
+            pemohon, kdcustomerdeliv, nmcustomerdeliv, alamatcustomerdeliv,
+            carabayar, kdcustomer, nmcustomer, alamatcustomer, jthtempo,
             isopenprice, kdsalesman, gradecustomer,
-            idtax,isinclusive, currcode, kurs, dpp, 
-            jumlahpajak, total,
-            keterangan, status, inputby, inputdate,
-            updateby, updatedate, printby, printdate, printcount
+            idtax, isinclusive, currcode, kurs, dpp,
+            jumlahpajak, total, keterangan, status, inputby, inputdate,
+            updateby, updatedate, printby, printdate, printcount,
+            docnotmp, doctype
         )
         SELECT
-            idurut, v_docno, cabang, docdate, pemohon, 
-            kdcustomerdeliv, nmcustomerdeliv, alamatcustomerdeliv, carabayar,
-            kdcustomer,nmcustomer, alamatcustomer, jthtempo,
+            v_new_view, v_docno, docnoso, docnodo, idrev, cabang, docdate,
+            pemohon, kdcustomerdeliv, nmcustomerdeliv, alamatcustomerdeliv,
+            carabayar, kdcustomer, nmcustomer, alamatcustomer, jthtempo,
             isopenprice, kdsalesman, gradecustomer,
-            idtax,isinclusive, currcode, kurs, dpp, 
-            jumlahpajak, total,
-            keterangan, 'F', inputby, inputdate,
-            updateby, updatedate, printby, printdate, printcount
+            idtax, isinclusive, currcode, kurs, dpp,
+            jumlahpajak, total, keterangan, 'F', inputby, inputdate,
+            updateby, updatedate, printby, printdate,
+            COALESCE(printcount, 0), docnotmp,
+            COALESCE(doctype, 'SALES')
         FROM sc_tmp.penjualan
-        WHERE rtrim(docno) = rtrim(OLD.docno)
-            AND inputby = v_inputby
-            AND idurut = v_idurut;
+        WHERE BTRIM(docno) = BTRIM(OLD.docno)
+          AND inputby = v_inputby
+          AND idurut = v_idurut;
 
-        -- ===============================
-        -- INSERT DETAIL
-        -- ===============================
+        IF NOT FOUND THEN
+            RAISE EXCEPTION
+                'Header temporary PJO tidak ditemukan. docno=%, inputby=%, idurut=%',
+                OLD.docno, v_inputby, v_idurut;
+        END IF;
+
+        -- Insert DETAIL
         INSERT INTO sc_trx.penjualan_dtl (
-            idurut, docno, docnoso, docnosj, idbarang, uniqueid,  nmbarang,
-            idprincipal, idgudang, idspec, unit, qty, 
-            harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
-            bomdesc, multidisc,
-            inputby, inputdate, status, updateby, updatedate
+            idurut_view, docno,
+            docnoso, idrev, idurutso, uniqueidso,
+            docnodo, idurutdo, uniqueiddo,
+            uniqueid,
+            idbarangref, nmbarangref, idbarang, nmbarang,
+            idprincipal, idgudang, idspec, unit,
+            qtyref, hargasatuanref,
+            qty, harga, hargasatuan, multidisc, nilai,
+            idtax, currcode, kurs, nilaikonversi, nilaipajak, qtyretur,
+            stokakhir, bomdesc, description, etd, eta,
+            inputby, inputdate, status, updateby, updatedate,
+            doctype, docnotmp
         )
         SELECT
-            idurut, v_docno, docnoso, docnosj, idbarang, uniqueid,  nmbarang,
-            idprincipal, idgudang, idspec, unit, qty, 
-            harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
-            bomdesc, multidisc,
-            inputby, inputdate, status, updateby, updatedate
+            ROW_NUMBER() OVER (ORDER BY COALESCE(idurut_view, idurut), idurut)::INTEGER,
+            v_docno,
+            docnoso, idrev, idurutso, uniqueidso,
+            docnodo, idurutdo, uniqueiddo,
+            uniqueid,
+            idbarangref, nmbarangref, idbarang, nmbarang,
+            idprincipal, idgudang, idspec, unit,
+            qtyref, hargasatuanref,
+            qty, harga, hargasatuan, multidisc, nilai,
+            idtax, currcode, kurs, nilaikonversi, nilaipajak, COALESCE(qtyretur, 0),
+            stokakhir, bomdesc, description, etd, eta,
+            inputby, inputdate, status, updateby, updatedate,
+            COALESCE(doctype, 'SALES'), docnotmp
         FROM sc_tmp.penjualan_dtl
-        WHERE rtrim(docno) = rtrim(OLD.docno)
-            AND inputby = v_inputby;
+        WHERE BTRIM(docno) = BTRIM(OLD.docno)
+          AND inputby = v_inputby;
 
-        UPDATE sc_trx.salesorder_dtl ppd
-        SET qtypenjualan = COALESCE(ppd.qtypenjualan, 0) + pod.qty_used
-            -- updateby = v_inputby,
-            -- updatedate = CURRENT_TIMESTAMP
-        FROM (
-            SELECT 
-                uniqueid,
-                SUM(qty) as qty_used
-            FROM sc_tmp.penjualan_dtl
-            WHERE rtrim(docno) = rtrim(OLD.docno)
-                AND inputby = v_inputby
-                AND uniqueid IS NOT NULL
-                AND uniqueid <> ''
-            GROUP BY uniqueid
-        ) pod
-        WHERE ppd.uniqueid = pod.uniqueid;
+        -- *** TIDAK ADA UPDATE KE sc_trx.salesorder / salesorder_dtl ***
+        -- Outstanding SO dihitung via view/query terpisah.
 
-        -- ===============================
-        -- UPDATE STATUS SO_DTL BERDASARKAN QTYPJO
-        -- ===============================
-        UPDATE sc_trx.salesorder_dtl sod
-        SET status = CASE 
-            WHEN sod.qty = COALESCE(sod.qtypenjualan, 0) THEN 'PJO'
-            ELSE 'F'
-        END
-        FROM sc_tmp.penjualan_dtl t
-        WHERE rtrim(t.docno) = rtrim(OLD.docno)
-        AND t.inputby = v_inputby
-        AND sod.uniqueid = t.uniqueid;
-        
-        -- ===============================
-        -- UPDATE STATUS PJO HEADER MENJADI 'PJO' 
-        -- JIKA ADA DETAIL YANG QTYPJO > 0
-        -- ===============================
-        UPDATE sc_trx.salesorder so
-        SET status = 'PJO'
-        WHERE so.docno IN (
-            SELECT DISTINCT t.docnoso
-            FROM sc_tmp.penjualan_dtl t
-            WHERE rtrim(t.docno) = rtrim(OLD.docno)
-            AND t.inputby = v_inputby
-            AND t.docnoso IS NOT NULL
-            AND t.docnoso <> ''
-        );
-
-        -- ===============================
-        -- LOG: INSERT HEADER PJO
-        -- ===============================
         PERFORM sc_log.fn_log_transaction(
-            v_docno::CHAR(30),
-            NULL,
-            'I.S',                  -- kode module dari menuprg
-            'I.S.B.4',              -- kode menu untuk PJO
-            'I',                    -- action: INPUT (1 huruf)
-            v_inputby,
-            v_client_ip,
-            v_inputby
+            v_docno::CHAR(30), NULL, 'I.S', 'I.S.B.4', 'I',
+            v_inputby, v_client_ip, v_inputby
         );
-
-        -- -- ===============================
-        -- -- CLEANUP TMP
-        -- -- ===============================
-        DELETE FROM sc_tmp.penjualan
-        WHERE rtrim(docno) = rtrim(OLD.docno)
-            AND inputby = v_inputby
-            
-            AND idurut = v_idurut;
 
         DELETE FROM sc_tmp.penjualan_dtl
-        WHERE rtrim(docno) = rtrim(OLD.docno)
-            AND inputby = v_inputby;
+        WHERE BTRIM(docno) = BTRIM(OLD.docno) AND inputby = v_inputby;
 
-    -- ===============================
-    -- DOCNOTMP FLOW (TETAP)
-    -- ===============================
-    ELSIF OLD.status = 'E' AND NEW.status = 'F' AND COALESCE(NEW.docnotmp, '') <> '' THEN
+        DELETE FROM sc_tmp.penjualan
+        WHERE BTRIM(docno) = BTRIM(OLD.docno)
+          AND inputby = v_inputby
+          AND idurut = v_idurut;
 
-        -- ===============================
-        -- STEP 1: REVERT QTYPJO (KURANGI DENGAN DATA LAMA)
-        -- ===============================
-        UPDATE sc_trx.salesorder_dtl sod
-        SET qtypenjualan = COALESCE(sod.qtypenjualan, 0) - pjo_lama.qty_pjo_lama
-        FROM (
-            SELECT 
-                uniqueid,
-                SUM(qty) as qty_pjo_lama
-            FROM sc_trx.penjualan_dtl
-            WHERE rtrim(docno) = rtrim(NEW.docno)
-                AND inputby = NEW.inputby
-                AND uniqueid IS NOT NULL
-                AND uniqueid <> ''
-            GROUP BY uniqueid
-        ) pjo_lama
-        WHERE sod.uniqueid = pjo_lama.uniqueid;
+    -- ===================== DOCNOTMP FLOW E -> F =========================
+    ELSIF OLD.status = 'E' AND NEW.status = 'F' AND v_docnotmp IS NOT NULL THEN
 
-        DELETE FROM sc_trx.penjualan WHERE docno = NEW.docnotmp;
-        DELETE FROM sc_trx.penjualan_dtl WHERE docno = NEW.docnotmp;
+        -- Hapus transaction_dt lama (DELIVR + SALESX)
+        DELETE FROM sc_trx.transaction_dt
+        WHERE BTRIM(docno) = v_docnotmp
+          AND journal_type IN ('DELIVR', 'SALESX');
 
-        INSERT INTO sc_trx.penjualan
-        (idurut, docno, cabang, docdate, pemohon, 
-        kdcustomerdeliv, nmcustomerdeliv, alamatcustomerdeliv, carabayar,
-        kdcustomer,nmcustomer, alamatcustomer, jthtempo,
-        isopenprice, kdsalesman, gradecustomer,
-        idtax,isinclusive, currcode, kurs, dpp, 
-        jumlahpajak, total,
-        keterangan, status, inputby, inputdate,
-        updateby, updatedate, printby, printdate, printcount, docnotmp)
-        SELECT
-            idurut, NEW.docnotmp, cabang, docdate, pemohon, 
-            kdcustomerdeliv, nmcustomerdeliv, alamatcustomerdeliv, carabayar,
-            kdcustomer,nmcustomer, alamatcustomer, jthtempo,
+        DELETE FROM sc_trx.penjualan_dtl WHERE BTRIM(docno) = v_docnotmp;
+        DELETE FROM sc_trx.penjualan     WHERE BTRIM(docno) = v_docnotmp;
+
+        SELECT COALESCE(MAX(idurut_view), 0) + 1 INTO v_new_view
+        FROM sc_trx.penjualan;
+
+        INSERT INTO sc_trx.penjualan (
+            idurut_view, docno, docnoso, docnodo, idrev, cabang, docdate,
+            pemohon, kdcustomerdeliv, nmcustomerdeliv, alamatcustomerdeliv,
+            carabayar, kdcustomer, nmcustomer, alamatcustomer, jthtempo,
             isopenprice, kdsalesman, gradecustomer,
-            idtax,isinclusive, currcode, kurs, dpp, 
-            jumlahpajak, total,
-            keterangan, status, inputby, inputdate,
-            updateby, updatedate, printby, printdate, printcount, docnotmp
-        FROM sc_tmp.penjualan
-        WHERE rtrim(docno) = rtrim(NEW.docno);
-        
-        INSERT INTO sc_trx.penjualan_dtl
-        (idurut, docno, docnoso, docnosj, idbarang, uniqueid,  nmbarang,
-        idprincipal, idgudang, idspec, unit, qty, 
-        harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
-        bomdesc, multidisc,
-        inputby, inputdate, status, updateby, updatedate, docnotmp)
+            idtax, isinclusive, currcode, kurs, dpp,
+            jumlahpajak, total, keterangan, status, inputby, inputdate,
+            updateby, updatedate, printby, printdate, printcount,
+            docnotmp, doctype
+        )
         SELECT
-            idurut, NEW.docnotmp, docnoso, docnosj, idbarang, uniqueid,  nmbarang,
-            idprincipal, idgudang, idspec, unit, qty, 
-            harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
-            bomdesc, multidisc,
-            inputby, inputdate, status, updateby, updatedate, docnotmp
+            v_new_view, v_docnotmp, docnoso, docnodo, idrev, cabang, docdate,
+            pemohon, kdcustomerdeliv, nmcustomerdeliv, alamatcustomerdeliv,
+            carabayar, kdcustomer, nmcustomer, alamatcustomer, jthtempo,
+            isopenprice, kdsalesman, gradecustomer,
+            idtax, isinclusive, currcode, kurs, dpp,
+            jumlahpajak, total, keterangan, status, inputby, inputdate,
+            updateby, updatedate, printby, printdate,
+            COALESCE(printcount, 0), docnotmp,
+            COALESCE(doctype, 'SALES')
+        FROM sc_tmp.penjualan
+        WHERE BTRIM(docno) = BTRIM(NEW.docno);
+
+        IF NOT FOUND THEN
+            RAISE EXCEPTION 'Header temporary PJO DOCNOTMP tidak ditemukan: %', NEW.docno;
+        END IF;
+
+        INSERT INTO sc_trx.penjualan_dtl (
+            idurut_view, docno,
+            docnoso, idrev, idurutso, uniqueidso,
+            docnodo, idurutdo, uniqueiddo,
+            uniqueid,
+            idbarangref, nmbarangref, idbarang, nmbarang,
+            idprincipal, idgudang, idspec, unit,
+            qtyref, hargasatuanref,
+            qty, harga, hargasatuan, multidisc, nilai,
+            idtax, currcode, kurs, nilaikonversi, nilaipajak, qtyretur,
+            stokakhir, bomdesc, description, etd, eta,
+            inputby, inputdate, status, updateby, updatedate,
+            doctype, docnotmp
+        )
+        SELECT
+            ROW_NUMBER() OVER (ORDER BY COALESCE(idurut_view, idurut), idurut)::INTEGER,
+            v_docnotmp,
+            docnoso, idrev, idurutso, uniqueidso,
+            docnodo, idurutdo, uniqueiddo,
+            uniqueid,
+            idbarangref, nmbarangref, idbarang, nmbarang,
+            idprincipal, idgudang, idspec, unit,
+            qtyref, hargasatuanref,
+            qty, harga, hargasatuan, multidisc, nilai,
+            idtax, currcode, kurs, nilaikonversi, nilaipajak, COALESCE(qtyretur, 0),
+            stokakhir, bomdesc, description, etd, eta,
+            inputby, inputdate, status, updateby, updatedate,
+            COALESCE(doctype, 'SALES'), docnotmp
         FROM sc_tmp.penjualan_dtl
-        WHERE rtrim(docno) = rtrim(NEW.docno);
+        WHERE BTRIM(docno) = BTRIM(NEW.docno);
 
-
-        -- DELETE TRANS DT YANG SUDAH TIDAK ADA DI LPB DTL
-        DELETE FROM sc_trx.transaction_dt td
-        WHERE rtrim(td.docno) = rtrim(NEW.docnotmp)
-        AND td.doctype IN ('SALES', 'SALESX')
-        AND NOT EXISTS (
-            SELECT 1
-            FROM sc_trx.penjualan_dtl d
-            WHERE rtrim(d.docno) = rtrim(NEW.docnotmp)
-                AND d.uniqueid = td.source_uniqueid
-        );
-
-
-        UPDATE sc_trx.salesorder_dtl ppd
-        SET qtypenjualan = COALESCE(ppd.qtypenjualan, 0) + pod.qty_used
-            -- updateby = v_inputby,
-            -- updatedate = CURRENT_TIMESTAMP
-        FROM (
-            SELECT 
-                uniqueid,
-                SUM(qty) as qty_used
-            FROM sc_tmp.penjualan_dtl
-            WHERE rtrim(docno) = rtrim(OLD.docno)
-                AND inputby = v_inputby
-                AND uniqueid IS NOT NULL
-                AND uniqueid <> ''
-            GROUP BY uniqueid
-        ) pod
-        WHERE ppd.uniqueid = pod.uniqueid;
-
-
-        -- ===============================
-        -- UPDATE STATUS SO_DTL BERDASARKAN QTYPJO
-        -- ===============================
-        UPDATE sc_trx.salesorder_dtl sod
-        SET status = CASE 
-            WHEN sod.qty = COALESCE(sod.qtypenjualan, 0) THEN 'PJO'
-            ELSE 'F'
-        END
-        FROM sc_tmp.penjualan_dtl t
-        WHERE rtrim(t.docno) = rtrim(NEW.docno)
-        AND t.inputby = v_inputby
-        AND sod.uniqueid = t.uniqueid;
-
-
-        -- ===============================
-        -- UPDATE STATUS SO HEADER MENJADI 'PJO' 
-        -- JIKA ADA DETAIL YANG QTYPJO > 0
-        -- ===============================
-        UPDATE sc_trx.salesorder so
-        SET status = 'PJO'
-        WHERE so.docno IN (
-            SELECT DISTINCT t.docnoso
-            FROM sc_tmp.penjualan_dtl t
-            WHERE rtrim(t.docno) = rtrim(NEW.docno)
-            AND t.docnoso IS NOT NULL
-            AND t.docnoso <> ''
-        );
-
-
-        
+        -- *** TIDAK ADA UPDATE KE sc_trx.salesorder / salesorder_dtl ***
 
         PERFORM sc_log.fn_log_transaction(
-            NEW.docno,
-            NULL,
-            'I.S',                  -- kode module dari menuprg
-            'I.S.B.4',              -- kode menu untuk PJO
-            'U',                    -- action: UPDATE (1 huruf)
+            NEW.docno, NULL, 'I.S', 'I.S.B.4', 'U',
             COALESCE(NEW.updateby, NEW.inputby),
             v_client_ip,
             COALESCE(NEW.updateby, NEW.inputby)
         );
 
-        
+        DELETE FROM sc_tmp.penjualan_dtl WHERE BTRIM(docno) = BTRIM(NEW.docno);
+        DELETE FROM sc_tmp.penjualan     WHERE BTRIM(docno) = BTRIM(NEW.docno);
 
-        DELETE FROM sc_tmp.penjualan WHERE rtrim(docno) = rtrim(NEW.docno);
-        DELETE FROM sc_tmp.penjualan_dtl WHERE rtrim(docno) = rtrim(NEW.docno);
+    -- ============================ CANCEL E -> C =========================
+    ELSIF OLD.status = 'E' AND NEW.status = 'C' THEN
 
-    ELSEIF (OLD.STATUS = 'E' AND NEW.STATUS = 'C') THEN
-        IF NEW.printby IS NOT NULL AND NEW.printby <> '' AND NEW.printdate IS NOT NULL THEN
-            UPDATE sc_trx.penjualan SET status = 'P' WHERE docno = NEW.docnotmp;
+        IF NEW.printby IS NOT NULL
+           AND BTRIM(NEW.printby) <> ''
+           AND NEW.printdate IS NOT NULL THEN
+            UPDATE sc_trx.penjualan SET status = 'P' WHERE BTRIM(docno) = v_docnotmp;
         ELSE
-            UPDATE sc_trx.penjualan SET status = 'F' WHERE docno = NEW.docnotmp;
+            UPDATE sc_trx.penjualan SET status = 'F' WHERE BTRIM(docno) = v_docnotmp;
         END IF;
 
-            
-        DELETE FROM sc_tmp.penjualan WHERE docno = NEW.docno;
-        DELETE FROM sc_tmp.penjualan_dtl WHERE docno = NEW.docno;
-    
+        DELETE FROM sc_tmp.penjualan_dtl WHERE BTRIM(docno) = BTRIM(NEW.docno);
+        DELETE FROM sc_tmp.penjualan     WHERE BTRIM(docno) = BTRIM(NEW.docno);
     END IF;
 
     RETURN NEW;
 END;
 $BODY$;
 
-
-
-CREATE TRIGGER tr_penjualan_finalize
-    AFTER UPDATE ON sc_tmp.penjualan
-    FOR EACH ROW
-    EXECUTE FUNCTION sc_tmp.tr_penjualan_finalize();
-
-
-
-
-
-
-
--- DROP FUNCTION IF EXISTS sc_trx.tr_penjualan();
-
+-- ============================================================================
+-- 6. FUNCTION: sc_trx.tr_penjualan()
+--    AFTER UPDATE ON sc_trx.penjualan
+--    TANPA update ke sc_trx.salesorder / salesorder_dtl.
+-- ============================================================================
 CREATE OR REPLACE FUNCTION sc_trx.tr_penjualan()
-    RETURNS trigger
-    LANGUAGE 'plpgsql'
-    COST 100
-    VOLATILE NOT LEAKPROOF
+RETURNS trigger
+LANGUAGE plpgsql
+COST 100
+VOLATILE
 AS $BODY$
-
-DECLARE 
-	vr_nomor char(15); 
-	vr_cekprefix char(15);
-	vr_nowprefix char(15);  
-	vr_id_dtl numeric;
-	vr_lastdoc NUMERIC(18);
-
-    v_docno     TEXT;
+DECLARE
     v_client_ip TEXT;
     v_inputby   TEXT;
+BEGIN
+    IF OLD.status IS NOT DISTINCT FROM NEW.status THEN
+        RETURN NEW;
+    END IF;
 
-    v_total_po  NUMERIC(18,2);
-    v_total_void NUMERIC(18,2);
-    v_rec       RECORD;
-BEGIN		
+    v_inputby   := COALESCE(NEW.updateby, NEW.inputby);
+    v_client_ip := sc_log.fn_get_user_ip(v_inputby);
 
-        -- ===============================
-        -- AMBIL IP DARI sc_log.useronline
-        -- ===============================
-        v_docno := rtrim(NEW.docno);
-        v_inputby := NEW.inputby;
+    -- ============================ F -> C ================================
+    IF OLD.status = 'F' AND NEW.status = 'C' THEN
 
-        v_client_ip := sc_log.fn_get_user_ip(v_inputby);
+        -- *** TIDAK ADA UPDATE KE sc_trx.salesorder / salesorder_dtl ***
 
-        IF (OLD.STATUS='F' AND NEW.STATUS='C') THEN
+        -- Hapus transaction_dt (DELIVR + SALESX)
+        DELETE FROM sc_trx.transaction_dt
+        WHERE BTRIM(docno) = BTRIM(NEW.docno)
+          AND journal_type IN ('DELIVR', 'SALESX');
 
-            -- ===============================
-            -- REVERT QTYPJO DI SO_DTL
-            -- ===============================
-            UPDATE sc_trx.salesorder_dtl sod
-            SET qtypenjualan = COALESCE(sod.qtypenjualan, 0) - pod.qty_used
-            FROM (
-                SELECT 
-                    uniqueid,
-                    SUM(qty) as qty_used
-                FROM sc_trx.penjualan_dtl
-                WHERE rtrim(docno) = rtrim(NEW.docno)
-                    AND uniqueid IS NOT NULL
-                    AND uniqueid <> ''
-                GROUP BY uniqueid
-            ) pod
-            WHERE sod.uniqueid = pod.uniqueid;
+        PERFORM sc_log.fn_log_transaction(
+            NEW.docno, NULL, 'I.S', 'I.S.B.4', 'C',
+            v_inputby, v_client_ip, v_inputby
+        );
+    END IF;
 
+    -- ============================ F -> E ================================
+    IF OLD.status = 'F' AND NEW.status = 'E' THEN
 
-            -- ===============================
-            -- UPDATE STATUS PJO HEADER 
-            -- 'PJO' JIKA MASIH ADA QTYPJO, 'P' JIKA TIDAK ADA QTYPJO
-            -- ===============================
-            UPDATE sc_trx.salesorder so
-            SET status = CASE 
-                WHEN EXISTS (
-                    SELECT 1 
-                    FROM sc_trx.salesorder_dtl sod
-                    WHERE rtrim(sod.docno) = rtrim(so.docno)
-                    AND COALESCE(sod.qtypenjualan, 0) > 0
-                ) THEN 'PJO'   -- masih ada qtypenjualan
-                ELSE 'P'      -- tidak ada qtypenjualan
-            END
-            WHERE EXISTS (
-                SELECT 1 
-                FROM sc_trx.penjualan_dtl pd
-                WHERE rtrim(pd.docno) = rtrim(NEW.docno)
-                AND pd.uniqueid IN (
-                    SELECT uniqueid 
-                    FROM sc_trx.salesorder_dtl 
-                    WHERE rtrim(docno) = rtrim(so.docno)
-                )
-            );
+        -- Hapus transaction_dt lama (DELIVR + SALESX)
+        DELETE FROM sc_trx.transaction_dt
+        WHERE BTRIM(docno) = BTRIM(NEW.docno)
+          AND journal_type IN ('DELIVR', 'SALESX');
 
-            -- ===============================
-            -- UPDATE STATUS SO_DTL BERDASARKAN QTYPJO
-            -- ===============================
-            UPDATE sc_trx.salesorder_dtl sod
-            SET status = CASE 
-                WHEN sod.qty = COALESCE(sod.qtypenjualan, 0) THEN 'PJO'
-                ELSE 'F'
-            END
-            FROM sc_trx.penjualan_dtl pd
-            WHERE sod.uniqueid = pd.uniqueid
-                AND rtrim(pd.docno) = rtrim(NEW.docno);
+        DELETE FROM sc_tmp.penjualan_dtl WHERE BTRIM(docno) = BTRIM(NEW.docno);
+        DELETE FROM sc_tmp.penjualan     WHERE BTRIM(docno) = BTRIM(NEW.docno);
 
+        INSERT INTO sc_tmp.penjualan (
+            idurut_view, docno, docnoso, docnodo, idrev, cabang, docdate,
+            pemohon, kdcustomerdeliv, nmcustomerdeliv, alamatcustomerdeliv,
+            carabayar, kdcustomer, nmcustomer, alamatcustomer, jthtempo,
+            isopenprice, kdsalesman, gradecustomer,
+            idtax, isinclusive, currcode, kurs, dpp,
+            jumlahpajak, total, keterangan, status, inputby, inputdate,
+            updateby, updatedate, printby, printdate, printcount,
+            docnotmp, doctype
+        )
+        SELECT
+            COALESCE(h.idurut_view, h.idurut),
+            h.docno, h.docnoso, h.docnodo, h.idrev, h.cabang, h.docdate,
+            h.pemohon, h.kdcustomerdeliv, h.nmcustomerdeliv, h.alamatcustomerdeliv,
+            h.carabayar, h.kdcustomer, h.nmcustomer, h.alamatcustomer, h.jthtempo,
+            h.isopenprice, h.kdsalesman, h.gradecustomer,
+            h.idtax, h.isinclusive, h.currcode, h.kurs, h.dpp,
+            h.jumlahpajak, h.total, h.keterangan, h.status, h.inputby, h.inputdate,
+            h.updateby, h.updatedate, h.printby, h.printdate,
+            COALESCE(h.printcount, 0), h.docnotmp,
+            COALESCE(h.doctype, 'SALES')
+        FROM sc_trx.penjualan h
+        WHERE BTRIM(h.docno) = BTRIM(NEW.docno);
 
-            -- ===============================
-            -- LOG: INSERT HEADER PJO
-            -- ===============================
-            PERFORM sc_log.fn_log_transaction(
-                NEW.docno,
-                NULL,
-                'I.S',                  -- kode module dari menuprg
-                'I.S.B.4',              -- kode menu untuk PJO
-                'C',                    -- action: UPDATE (1 huruf)
-                COALESCE(NEW.updateby, NEW.inputby),
-                v_client_ip,
-                COALESCE(NEW.updateby, NEW.inputby)
-            );
-
+        IF NOT FOUND THEN
+            RAISE EXCEPTION
+                'Header transaksi PJO tidak ditemukan saat revisi F->E: %',
+                NEW.docno;
         END IF;
 
-		IF (OLD.STATUS='F' AND NEW.STATUS='E') THEN
-			-- Insert into pp_dtl with new columns
-			INSERT INTO sc_tmp.penjualan_dtl
-			( idurut, docno, docnoso, docnosj, idbarang, uniqueid, nmbarang,
-            idprincipal, idgudang, idspec, unit, qty, 
-            harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
-            bomdesc, multidisc,
-            inputby, inputdate, status, updateby, updatedate, docnotmp)
-			SELECT idurut, NEW.docno, docnoso, docnosj, idbarang, uniqueid, nmbarang,
-            idprincipal, idgudang, idspec, unit, qty, 
-            harga, nilai, nilaikonversi, nilaipajak, kurs, idtax, currcode,
-            bomdesc, multidisc,
-            inputby, inputdate, status, updateby, updatedate, NEW.docno
-			FROM sc_trx.penjualan_dtl 
-			WHERE docno = NEW.docno;
+        INSERT INTO sc_tmp.penjualan_dtl (
+            idurut_view, docno,
+            docnoso, idrev, idurutso, uniqueidso,
+            docnodo, idurutdo, uniqueiddo,
+            uniqueid,
+            idbarangref, nmbarangref, idbarang, nmbarang,
+            idprincipal, idgudang, idspec, unit,
+            qtyref, hargasatuanref,
+            qty, harga, hargasatuan, multidisc, nilai,
+            idtax, currcode, kurs, nilaikonversi, nilaipajak, qtyretur,
+            stokakhir, bomdesc, description, etd, eta,
+            inputby, inputdate, status, updateby, updatedate,
+            doctype, docnotmp
+        )
+        SELECT
+            ROW_NUMBER() OVER (ORDER BY COALESCE(d.idurut_view, d.idurut), d.idurut)::INTEGER,
+            NEW.docno,
+            d.docnoso, d.idrev, d.idurutso, d.uniqueidso,
+            d.docnodo, d.idurutdo, d.uniqueiddo,
+            d.uniqueid,
+            d.idbarangref, d.nmbarangref, d.idbarang, d.nmbarang,
+            d.idprincipal, d.idgudang, d.idspec, d.unit,
+            d.qtyref, d.hargasatuanref,
+            d.qty, d.harga, d.hargasatuan, d.multidisc, d.nilai,
+            d.idtax, d.currcode, d.kurs, d.nilaikonversi, d.nilaipajak,
+            COALESCE(d.qtyretur, 0),
+            d.stokakhir, d.bomdesc, d.description, d.etd, d.eta,
+            d.inputby, d.inputdate, COALESCE(d.status, 'F'),
+            d.updateby, d.updatedate,
+            COALESCE(d.doctype, 'SALES'),
+            COALESCE(NULLIF(BTRIM(d.docnotmp), ''), NEW.docno)
+        FROM sc_trx.penjualan_dtl d
+        WHERE BTRIM(d.docno) = BTRIM(NEW.docno);
+    END IF;
 
-			-- Insert into pp with new columns
-			INSERT INTO sc_tmp.penjualan
-            (
-                idurut, docno, cabang, docdate, pemohon, 
-                kdcustomerdeliv, nmcustomerdeliv, alamatcustomerdeliv, carabayar,
-                kdcustomer,nmcustomer, alamatcustomer, jthtempo,
-                isopenprice, kdsalesman, gradecustomer,
-                idtax,isinclusive, currcode, kurs, dpp, 
-                jumlahpajak, total,
-                keterangan, status, inputby, inputdate, updateby, updatedate,
-                printby, printdate, printcount, docnotmp
-            )
-			SELECT  idurut, NEW.docno, cabang, docdate, pemohon, 
-            kdcustomerdeliv, nmcustomerdeliv, alamatcustomerdeliv, carabayar,
-            kdcustomer,nmcustomer, alamatcustomer, jthtempo,
-            isopenprice, kdsalesman, gradecustomer,
-            idtax,isinclusive, currcode, kurs, dpp, 
-            jumlahpajak, total,
-            keterangan, status , inputby, inputdate, updateby, updatedate,
-            printby, printdate, printcount, NEW.docno
-			FROM sc_trx.penjualan 
-			WHERE docno = NEW.docno;
-
-		END IF;	
-			
-		RETURN NEW;
-
+    RETURN NEW;
 END;
 $BODY$;
 
-ALTER FUNCTION sc_trx.tr_penjualan()
-    OWNER TO postgres;
+ALTER FUNCTION sc_trx.tr_penjualan() OWNER TO postgres;
 
-
-    
-
--- FUNCTION: sc_trx.tr_penjualan()
--- Trigger: tr_penjualan
-
--- DROP TRIGGER IF EXISTS tr_penjualan ON sc_trx.penjualan;
-
-CREATE OR REPLACE TRIGGER tr_penjualan
-    AFTER UPDATE 
-    ON sc_trx.penjualan
-    FOR EACH ROW
-    EXECUTE FUNCTION sc_trx.tr_penjualan();
-
-
-
-
-
-
--- ALTER TABLE sc_tmp.penjualan_dtl
--- ADD COLUMN uniqueid VARCHAR(64)
-
--- ALTER TABLE sc_trx.penjualan_dtl
--- ADD COLUMN uniqueid VARCHAR(64)
-
-
-
--- Tambahkan kolom di sc_trx.penjualan_dtl
-ALTER TABLE sc_trx.penjualan_dtl 
-ADD COLUMN idtax character(20),
-ADD COLUMN currcode character(3),
-ADD COLUMN kurs numeric(18,2),
-ADD COLUMN nilaikonversi numeric(18,2),
-ADD COLUMN nilaipajak numeric(18,2),
-ADD COLUMN IF NOT EXISTS qtyretur numeric(18,2) DEFAULT 0;
-
--- Tambahkan kolom di sc_tmp.penjualan_dtl
-ALTER TABLE sc_tmp.penjualan_dtl 
-ADD COLUMN idtax character(20),
-ADD COLUMN currcode character(3),
-ADD COLUMN kurs numeric(18,2),
-ADD COLUMN nilaikonversi numeric(18,2),
-ADD COLUMN nilaipajak numeric(18,2),
-ADD COLUMN IF NOT EXISTS qtyretur numeric(18,2) DEFAULT 0;
-
-
-
--- =========== TAMBAHAN 24/8/26 ====================
--- docdate
-ALTER TABLE sc_trx.penjualan
-ALTER COLUMN docdate TYPE DATE
-USING TRIM(docdate)::DATE;
-ALTER TABLE sc_tmp.penjualan
-ALTER COLUMN docdate TYPE DATE
-USING TRIM(docdate)::DATE;
-
-
--- printcount
-ALTER TABLE sc_tmp.penjualan
-ADD COLUMN printcount integer
-ALTER TABLE sc_trx.penjualan
-ADD COLUMN printcount integer
-
--- ==================== END OFTAMBAHAN 24/8/26  ====================
-
-
-ALTER TABLE sc_tmp.penjualan_dtl 
-    ALTER COLUMN docnoso DROP NOT NULL;
-
-ALTER TABLE sc_trx.penjualan_dtl 
-    ALTER COLUMN docnoso DROP NOT NULL;
-
-
-
-
-CREATE OR REPLACE FUNCTION sc_trx.fn_sync_penjualan_dtl_to_transaction(
+-- ============================================================================
+-- 7. FUNCTION: sc_trx.fn_sync_penjualan_dtl_to_delivr()
+--    Insert/update ke transaction_dt untuk journal_type='DELIVR' (STOCK)
+-- ============================================================================
+CREATE OR REPLACE FUNCTION sc_trx.fn_sync_penjualan_dtl_to_delivr(
     p_docno TEXT,
     p_uniqueid TEXT
 )
@@ -770,174 +674,368 @@ RETURNS VOID
 LANGUAGE plpgsql
 AS $$
 DECLARE
-    v_pjo          sc_trx.penjualan%ROWTYPE;
-    v_dtl          sc_trx.penjualan_dtl%ROWTYPE;
-    v_journal      CHAR(6);
-    v_type         CHAR(3);
-    v_tx_uid       TEXT;
-    v_source_uid   TEXT;
-    v_exists       BOOLEAN;
-    v_idbranch     CHAR(20);
-
-    v_dpp          NUMERIC(18,2);
-    v_pajak        NUMERIC(18,2);
-    v_nilai        NUMERIC(18,2);
-    v_bruto        NUMERIC(18,2);
+    v_pjo         sc_trx.penjualan%ROWTYPE;
+    v_dtl         sc_trx.penjualan_dtl%ROWTYPE;
+    v_jt          sc_mst.journal_type%ROWTYPE;
+    v_tx_uid      TEXT;
+    v_stock_uid   TEXT;
+    v_stock_key   CHAR(32);
+    v_idbranch    CHAR(20);
+    v_nilai       NUMERIC(18,6);
+    v_dpp         NUMERIC(18,6);
+    v_pajak       NUMERIC(18,6);
+    v_bruto       NUMERIC(18,6);
 BEGIN
-    -- 1. Ambil header
     SELECT * INTO v_pjo
     FROM sc_trx.penjualan
-    WHERE rtrim(docno) = rtrim(p_docno);
+    WHERE BTRIM(docno) = BTRIM(p_docno);
+    IF NOT FOUND THEN RETURN; END IF;
 
-    IF NOT FOUND THEN
-        RETURN;
-    END IF;
-
-    -- 2. Ambil detail
     SELECT * INTO v_dtl
     FROM sc_trx.penjualan_dtl
-    WHERE rtrim(docno) = rtrim(p_docno)
+    WHERE BTRIM(docno) = BTRIM(p_docno)
       AND uniqueid = p_uniqueid;
+    IF NOT FOUND THEN RETURN; END IF;
 
-    IF NOT FOUND THEN
-        RETURN;
-    END IF;
+    SELECT * INTO v_jt
+    FROM sc_mst.journal_type
+    WHERE journal_type = 'DELIVR';
 
-    -- 3. Tentukan journal_type dari doctype
-    v_journal := CASE rtrim(COALESCE(v_dtl.doctype, v_pjo.doctype))
-        WHEN 'SALES'    THEN 'SALESX'::CHAR(6)
-        -- WHEN 'GRRET' THEN 'GRNRET'::CHAR(6)
-        ELSE 'SALESX'::CHAR(6)
-    END;
-
-    v_type := CASE v_journal
-        WHEN 'SALESX' THEN 'OUT'::CHAR(3)
-        -- WHEN 'GRNRET' THEN 'OUT'::CHAR(3)
-        ELSE 'OUT'::CHAR(3)
-    END;
-
-    -- 4. idbranch
     v_idbranch := CASE rtrim(v_pjo.cabang)
         WHEN 'JTS1' THEN 'JTS'::CHAR(20)
         WHEN 'JTS2' THEN 'JTS'::CHAR(20)
         ELSE rtrim(v_pjo.cabang)::CHAR(20)
     END;
 
-    -- 5. Hitung nilai
+    -- Stock identity (TAHAP 01)
+    v_stock_uid := sc_trx.fn_stock_uniqueid(
+        v_idbranch, v_dtl.idgudang, '', v_dtl.idbarang,
+        v_dtl.unit, v_dtl.idspec, ''
+    );
+    v_stock_key := sc_trx.fn_stock_key(
+        v_idbranch, v_dtl.idgudang, '', v_dtl.idbarang,
+        v_dtl.unit, v_dtl.idspec, ''
+    );
+
     v_dpp   := COALESCE(v_dtl.nilaikonversi, 0);
     v_pajak := COALESCE(v_dtl.nilaipajak, 0);
     v_nilai := v_dpp + v_pajak;
     v_bruto := v_nilai;
 
-    -- 6. Generate uniqueid transaksi
-    v_tx_uid := md5(rtrim(p_docno) || '|' || COALESCE(v_dtl.uniqueid, ''));
+    v_tx_uid := md5(BTRIM(p_docno) || '|DELIVR|' || COALESCE(v_dtl.uniqueid, ''));
 
-    v_source_uid := COALESCE(v_dtl.uniqueid, '');
-
-    -- 7. Cek apakah sudah ada
-    SELECT EXISTS (
-        SELECT 1 FROM sc_trx.transaction_dt
-        WHERE rtrim(docno) = rtrim(p_docno)
-          AND uniqueid = v_tx_uid
-    ) INTO v_exists;
-
-    -- 8. Insert atau update
-    IF v_exists THEN
-        UPDATE sc_trx.transaction_dt
-        SET
-            qty             = v_dtl.qty,
-            harga           = v_dtl.harga,
-            bruto           = v_bruto,
-            discount        = COALESCE(v_dtl.multidisc, 0),
-            nilai           = v_nilai,
-            dpp             = v_dpp,
-            pajak           = v_pajak,
-            total           = v_nilai,
-            idtax           = rtrim(v_dtl.idtax),
-            isinclusive     = rtrim(v_pjo.isinclusive),
-            currcode        = rtrim(v_pjo.currcode),
-            kurs            = v_pjo.kurs,
-            idbarang        = rtrim(v_dtl.idbarang),
-            namabarang      = rtrim(v_dtl.nmbarang),
-            idunit          = rtrim(v_dtl.unit),
-            warehouse       = rtrim(v_dtl.idgudang),
-            idarea          = rtrim(v_dtl.idgudang),
-            kdcustomer      = rtrim(v_pjo.kdcustomer),
-            ncustomer       = rtrim(v_pjo.nmcustomer),
-            updatedby       = v_pjo.updateby,
-            updateddate     = CURRENT_TIMESTAMP
-        WHERE rtrim(docno) = rtrim(p_docno)
-          AND uniqueid = v_tx_uid;
-    ELSE
-        INSERT INTO sc_trx.transaction_dt (
-            uniqueid, source_uniqueid, docno, doctype, journal_type,
-            line_no, docdate, idbranch, cabang, type_in_out,
-            ref_docno, ref_doctype,
-            kdcustomer, ncustomer,
-            idbarang, namabarang, idunit, idarea, warehouse,
-            bin, batch, lotno,
-            qty, harga, bruto, discount, nilai, dpp, pajak, total,
-            idtax, isinclusive, currcode, kurs, createdby
-        )
-        VALUES (
-            v_tx_uid,
-            v_source_uid,
-            rtrim(p_docno),
-            rtrim(COALESCE(v_dtl.doctype, v_pjo.doctype)),
-            v_journal,
-            v_dtl.idurut,
-            v_pjo.docdate,
-            v_idbranch,
-            rtrim(v_pjo.cabang),
-            v_type,
-            rtrim(v_dtl.docnoso),
-            'PJO',
-            rtrim(v_pjo.kdcustomer),
-            rtrim(v_pjo.nmcustomer),
-            rtrim(v_dtl.idbarang),
-            rtrim(v_dtl.nmbarang),
-            rtrim(v_dtl.unit),
-            rtrim(v_dtl.idgudang),
-            rtrim(v_dtl.idgudang),
-            '',                              -- bin
-            rtrim(v_dtl.idspec),                              -- batch
-            '',                              -- lotno
-            v_dtl.qty,
-            v_dtl.harga,
-            v_bruto,
-            COALESCE(v_dtl.multidisc, 0),
-            v_nilai,
-            v_dpp,
-            v_pajak,
-            v_nilai,
-            rtrim(v_dtl.idtax),
-            rtrim(v_pjo.isinclusive),
-            rtrim(v_pjo.currcode),
-            v_pjo.kurs,
-            rtrim(v_pjo.inputby)
-        );
-    END IF;
+    INSERT INTO sc_trx.transaction_dt (
+        uniqueid, source_uniqueid, docno, doctype, journal_type,
+        line_no, docdate, idbranch, cabang, type_in_out,
+        ref_docno, ref_doctype,
+        kdcustomer, ncustomer,
+        idbarang, namabarang, idunit, idarea, warehouse,
+        bin, batch, lotno,
+        qty, harga, bruto, discount, nilai, dpp, pajak, total,
+        idtax, isinclusive, currcode, kurs,
+        currcode_trans, kurs_trans, nilai_trans,
+        module, direction, stock_effect, accounting_effect, asset_effect,
+        stock_uniqueid, stock_key,
+        createdby
+    )
+    VALUES (
+        v_tx_uid, COALESCE(v_dtl.uniqueid, ''),
+        rtrim(p_docno), 'SALES', 'DELIVR',
+        v_dtl.idurut, v_pjo.docdate, v_idbranch, rtrim(v_pjo.cabang), 'OUT',
+        COALESCE(rtrim(v_dtl.docnoso), rtrim(v_dtl.docnodo)), 'PJO',
+        rtrim(v_pjo.kdcustomer), rtrim(v_pjo.nmcustomer),
+        rtrim(v_dtl.idbarang), rtrim(v_dtl.nmbarang), rtrim(v_dtl.unit),
+        rtrim(v_dtl.idgudang), rtrim(v_dtl.idgudang),
+        '', rtrim(v_dtl.idspec), '',
+        v_dtl.qty, v_dtl.harga,
+        v_bruto,
+        COALESCE(v_dtl.multidisc, 0),
+        v_nilai, v_dpp, v_pajak, v_nilai,
+        rtrim(v_dtl.idtax), rtrim(v_pjo.isinclusive),
+        rtrim(v_pjo.currcode), v_pjo.kurs,
+        rtrim(v_pjo.currcode), v_pjo.kurs, COALESCE(v_dtl.nilai, 0),
+        TRIM(v_jt.module), TRIM(v_jt.direction),
+        TRIM(v_jt.stock_effect), TRIM(v_jt.accounting_effect),
+        TRIM(v_jt.asset_effect),
+        v_stock_uid, v_stock_key,
+        rtrim(v_pjo.inputby)
+    )
+    ON CONFLICT (uniqueid) DO UPDATE
+    SET
+        qty             = EXCLUDED.qty,
+        harga           = EXCLUDED.harga,
+        bruto           = EXCLUDED.bruto,
+        discount        = EXCLUDED.discount,
+        nilai           = EXCLUDED.nilai,
+        dpp             = EXCLUDED.dpp,
+        pajak           = EXCLUDED.pajak,
+        total           = EXCLUDED.total,
+        stock_uniqueid  = EXCLUDED.stock_uniqueid,
+        stock_key       = EXCLUDED.stock_key,
+        updatedby       = EXCLUDED.createdby,
+        updateddate     = CURRENT_TIMESTAMP;
 END;
 $$;
 
+-- ============================================================================
+-- 8. FUNCTION: sc_trx.fn_sync_penjualan_dtl_to_salesx()
+--    Insert/update ke transaction_dt untuk journal_type='SALESX' (ACCOUNTING)
+-- ============================================================================
+CREATE OR REPLACE FUNCTION sc_trx.fn_sync_penjualan_dtl_to_salesx(
+    p_docno TEXT,
+    p_uniqueid TEXT
+)
+RETURNS VOID
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_pjo         sc_trx.penjualan%ROWTYPE;
+    v_dtl         sc_trx.penjualan_dtl%ROWTYPE;
+    v_jt          sc_mst.journal_type%ROWTYPE;
+    v_tx_uid      TEXT;
+    v_idbranch    CHAR(20);
+    v_idcoa_ar    TEXT;
+    v_nilai       NUMERIC(18,6);
+    v_dpp         NUMERIC(18,6);
+    v_pajak       NUMERIC(18,6);
+    v_bruto       NUMERIC(18,6);
+BEGIN
+    SELECT * INTO v_pjo
+    FROM sc_trx.penjualan
+    WHERE BTRIM(docno) = BTRIM(p_docno);
+    IF NOT FOUND THEN RETURN; END IF;
 
+    SELECT * INTO v_dtl
+    FROM sc_trx.penjualan_dtl
+    WHERE BTRIM(docno) = BTRIM(p_docno)
+      AND uniqueid = p_uniqueid;
+    IF NOT FOUND THEN RETURN; END IF;
 
+    SELECT * INTO v_jt
+    FROM sc_mst.journal_type
+    WHERE journal_type = 'SALESX';
 
+    v_idbranch := CASE rtrim(v_pjo.cabang)
+        WHEN 'JTS1' THEN 'JTS'::CHAR(20)
+        WHEN 'JTS2' THEN 'JTS'::CHAR(20)
+        ELSE rtrim(v_pjo.cabang)::CHAR(20)
+    END;
 
+    -- Resolve primary COA (AR) via TAHAP 04
+    v_idcoa_ar := sc_trx.fn_resolve_transaction_coa(
+        'SALESX',
+        rtrim(v_dtl.idbarang),
+        rtrim(v_pjo.currcode),
+        rtrim(v_dtl.idtax),
+        'OUT',
+        NULL
+    );
+
+    v_dpp   := COALESCE(v_dtl.nilaikonversi, 0);
+    v_pajak := COALESCE(v_dtl.nilaipajak, 0);
+    v_nilai := v_dpp + v_pajak;
+    v_bruto := v_nilai;
+
+    v_tx_uid := md5(BTRIM(p_docno) || '|SALESX|' || COALESCE(v_dtl.uniqueid, ''));
+
+    INSERT INTO sc_trx.transaction_dt (
+        uniqueid, source_uniqueid, docno, doctype, journal_type,
+        line_no, docdate, idbranch, cabang, type_in_out,
+        ref_docno, ref_doctype,
+        kdcustomer, ncustomer,
+        idbarang, namabarang, idunit, idarea, warehouse,
+        bin, batch, lotno,
+        qty, harga, bruto, discount, nilai, dpp, pajak, total,
+        idtax, isinclusive, currcode, kurs,
+        currcode_trans, kurs_trans, nilai_trans,
+        idcoa, counter_idcoa, debet_kredit,
+        module, direction, stock_effect, accounting_effect, asset_effect,
+        createdby
+    )
+    VALUES (
+        v_tx_uid, COALESCE(v_dtl.uniqueid, ''),
+        rtrim(p_docno), 'SALES', 'SALESX',
+        v_dtl.idurut, v_pjo.docdate, v_idbranch, rtrim(v_pjo.cabang), 'OUT',
+        COALESCE(rtrim(v_dtl.docnoso), rtrim(v_dtl.docnodo)), 'PJO',
+        rtrim(v_pjo.kdcustomer), rtrim(v_pjo.nmcustomer),
+        rtrim(v_dtl.idbarang), rtrim(v_dtl.nmbarang), rtrim(v_dtl.unit),
+        rtrim(v_dtl.idgudang), rtrim(v_dtl.idgudang),
+        '', rtrim(v_dtl.idspec), '',
+        v_dtl.qty, v_dtl.harga,
+        v_bruto,
+        COALESCE(v_dtl.multidisc, 0),
+        v_nilai, v_dpp, v_pajak, v_nilai,
+        rtrim(v_dtl.idtax), rtrim(v_pjo.isinclusive),
+        rtrim(v_pjo.currcode), v_pjo.kurs,
+        rtrim(v_pjo.currcode), v_pjo.kurs, COALESCE(v_dtl.nilai, 0),
+        COALESCE(v_idcoa_ar, ''), '', 'D',
+        TRIM(v_jt.module), TRIM(v_jt.direction),
+        TRIM(v_jt.stock_effect), TRIM(v_jt.accounting_effect),
+        TRIM(v_jt.asset_effect),
+        rtrim(v_pjo.inputby)
+    )
+    ON CONFLICT (uniqueid) DO UPDATE
+    SET
+        qty             = EXCLUDED.qty,
+        harga           = EXCLUDED.harga,
+        bruto           = EXCLUDED.bruto,
+        discount        = EXCLUDED.discount,
+        nilai           = EXCLUDED.nilai,
+        dpp             = EXCLUDED.dpp,
+        pajak           = EXCLUDED.pajak,
+        total           = EXCLUDED.total,
+        idcoa           = EXCLUDED.idcoa,
+        updatedby       = EXCLUDED.createdby,
+        updateddate     = CURRENT_TIMESTAMP;
+END;
+$$;
+
+-- ============================================================================
+-- 9. TRIGGER: jurnal (AFTER INSERT/UPDATE ON sc_trx.penjualan_dtl)
+--    Memanggil 2 fungsi: DELIVR (stock) + SALESX (accounting)
+-- ============================================================================
 CREATE OR REPLACE FUNCTION sc_trx.fn_penjualan_dtl_to_transaction()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    IF TG_OP IN ('INSERT') THEN
-        PERFORM sc_trx.fn_sync_penjualan_dtl_to_transaction(NEW.docno, NEW.uniqueid);
+    IF TG_OP IN ('INSERT', 'UPDATE') THEN
+        -- 1) Stock movement (DELIVR)
+        PERFORM sc_trx.fn_sync_penjualan_dtl_to_delivr(NEW.docno, NEW.uniqueid);
+        -- 2) Accounting (SALESX)
+        PERFORM sc_trx.fn_sync_penjualan_dtl_to_salesx(NEW.docno, NEW.uniqueid);
         RETURN NEW;
     END IF;
+    RETURN NEW;
 END;
 $$;
 
 CREATE TRIGGER tr_penjualan_dtl_to_transaction
-AFTER INSERT
+AFTER INSERT OR UPDATE
 ON sc_trx.penjualan_dtl
 FOR EACH ROW
 EXECUTE FUNCTION sc_trx.fn_penjualan_dtl_to_transaction();
+
+-- ============================================================================
+-- 10. PASANG TRIGGER UTAMA
+-- ============================================================================
+CREATE TRIGGER tr_penjualan_finalize
+    AFTER UPDATE ON sc_tmp.penjualan
+    FOR EACH ROW
+    EXECUTE FUNCTION sc_tmp.tr_penjualan_finalize();
+
+CREATE TRIGGER tr_penjualan
+    AFTER UPDATE ON sc_trx.penjualan
+    FOR EACH ROW
+    EXECUTE FUNCTION sc_trx.tr_penjualan();
+
+-- ============================================================================
+-- 11. VIEW OUTSTANDING SO (query terpisah, pengganti update SO)
+-- ============================================================================
+-- COMPATIBILITY PATCH:
+-- View versi sebelumnya menggunakan nama kolom qty_do.
+-- Rename secara eksplisit sebelum CREATE OR REPLACE VIEW.
+-- DO block aman dijalankan berulang dan tidak error jika view/kolom belum ada.
+DO $$
+BEGIN
+    IF to_regclass('sc_trx.v_so_outstanding') IS NOT NULL
+       AND EXISTS (
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_schema = 'sc_trx'
+              AND table_name = 'v_so_outstanding'
+              AND column_name = 'qty_do'
+       )
+       AND NOT EXISTS (
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_schema = 'sc_trx'
+              AND table_name = 'v_so_outstanding'
+              AND column_name = 'qty_pjo'
+       )
+    THEN
+        ALTER VIEW sc_trx.v_so_outstanding
+            RENAME COLUMN qty_do TO qty_pjo;
+    END IF;
+END;
+$$;
+
+CREATE OR REPLACE VIEW sc_trx.v_so_outstanding AS
+WITH pjo_source AS (
+    -- PJO final/print
+    SELECT
+        pjo.uniqueidso,
+        pjo.qty
+    FROM sc_trx.penjualan_dtl pjo
+    JOIN sc_trx.penjualan h
+         ON BTRIM(h.docno) = BTRIM(pjo.docno)
+    WHERE BTRIM(h.status) IN ('F', 'P')
+      AND pjo.uniqueidso IS NOT NULL
+      AND pjo.uniqueidso <> ''
+
+    UNION ALL
+
+    -- PJO draft di sc_tmp (prioritas jika sedang diedit)
+    SELECT
+        t.uniqueidso,
+        t.qty
+    FROM sc_tmp.penjualan_dtl t
+    WHERE t.uniqueidso IS NOT NULL
+      AND t.uniqueidso <> ''
+),
+pjo_sum AS (
+    SELECT uniqueidso, SUM(qty) AS qty_pjo
+    FROM pjo_source
+    GROUP BY uniqueidso
+)
+SELECT
+    sod.docno                     AS docnoso,
+    sod.idurut                    AS idurutso,
+    sod.uniqueid                  AS uniqueidso,
+    sod.idbarang,
+    sod.nmbarang,
+    sod.unit,
+    sod.idgudang,
+    sod.qty                       AS qty_so,
+    sod.harga,
+    sod.nilai,
+    sod.nilaikonversi,
+    sod.nilaipajak,
+    COALESCE(ps.qty_pjo, 0)       AS qty_pjo,
+    sod.qty - COALESCE(ps.qty_pjo, 0) AS qty_outstanding
+FROM sc_trx.salesorder_dtl sod
+LEFT JOIN pjo_sum ps ON ps.uniqueidso = sod.uniqueid
+WHERE sod.status IN ('F', 'DO', 'P', 'PJO');
+
+COMMIT;
+
+-- ============================================================================
+-- 12. VERIFIKASI (jalankan manual setelah COMMIT)
+-- ============================================================================
+-- -- Cek trigger:
+-- SELECT n.nspname AS schema_name, c.relname AS table_name,
+--        t.tgname AS trigger_name, pg_get_triggerdef(t.oid) AS trigger_definition
+-- FROM pg_trigger t
+-- JOIN pg_class c ON c.oid = t.tgrelid
+-- JOIN pg_namespace n ON n.oid = c.relnamespace
+-- WHERE NOT t.tgisinternal
+--   AND n.nspname IN ('sc_tmp','sc_trx')
+--   AND c.relname IN ('penjualan','penjualan_dtl')
+-- ORDER BY n.nspname, c.relname, t.tgname;
+--
+-- -- Cek jurnal per dokumen PJO (harus ada 2 baris per detail):
+-- SELECT docno, journal_type, stock_effect, accounting_effect,
+--        idcoa, qty, nilai
+-- FROM sc_trx.transaction_dt
+-- WHERE BTRIM(docno) = 'PJO/2601/PA0001'
+-- ORDER BY line_no, journal_type;
+--
+-- -- Cek outstanding SO:
+-- SELECT * FROM sc_trx.v_so_outstanding
+-- WHERE docnoso = 'SO/2601/PA0001'
+--   AND qty_outstanding > 0
+-- ORDER BY idurutso;
+--
+-- -- Contoh query tampilan:
+-- SELECT * FROM sc_trx.penjualan     ORDER BY idurut_view, idurut;
+-- SELECT * FROM sc_trx.penjualan_dtl WHERE docno = ? ORDER BY idurut_view, idurut;
